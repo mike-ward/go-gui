@@ -395,6 +395,43 @@ type MenubarStyle struct {
 	TextStyleSubtitle TextStyle
 }
 
+// DatePickerStyle defines date picker visual properties.
+type DatePickerStyle struct {
+	HideTodayIndicator     bool
+	MondayFirstDayOfWeek   bool
+	ShowAdjacentMonths     bool
+	CellSpacing            float32
+	WeekdaysLen            DatePickerWeekdayLen
+	Color                  Color
+	ColorHover             Color
+	ColorFocus             Color
+	ColorClick             Color
+	ColorBorder            Color
+	ColorBorderFocus       Color
+	ColorSelect            Color
+	Padding                Padding
+	SizeBorder             float32
+	Radius                 float32
+	RadiusBorder           float32
+	Shadow                 *BoxShadow
+	TextStyle              TextStyle
+}
+
+// ColorPickerStyle defines color picker visual properties.
+type ColorPickerStyle struct {
+	Color            Color
+	ColorHover       Color
+	ColorBorder      Color
+	ColorBorderFocus Color
+	Padding          Padding
+	SizeBorder       float32
+	Radius           float32
+	SVSize           float32
+	SliderHeight     float32
+	IndicatorSize    float32
+	TextStyle        TextStyle
+}
+
 // Default widget styles (dark theme).
 var (
 	DefaultInputStyle = InputStyle{
@@ -754,6 +791,36 @@ var (
 			Size:  SizeTextMedium,
 		},
 		BackdropColor: RGBA(0, 0, 0, 120),
+	}
+
+	DefaultDatePickerStyle = DatePickerStyle{
+		CellSpacing:  3,
+		Color:        colorInteriorDark,
+		ColorHover:   colorHoverDark,
+		ColorFocus:   colorFocusDark,
+		ColorClick:   colorActiveDark,
+		ColorBorder:  colorBorderDark,
+		ColorBorderFocus: colorSelectDark,
+		ColorSelect:  colorSelectDark,
+		Padding:      PaddingNone,
+		SizeBorder:   SizeBorderDef,
+		Radius:       RadiusMedium,
+		RadiusBorder: RadiusMedium,
+		TextStyle:    DefaultTextStyle,
+	}
+
+	DefaultColorPickerStyle = ColorPickerStyle{
+		Color:            colorInteriorDark,
+		ColorHover:       colorHoverDark,
+		ColorBorder:      colorBorderDark,
+		ColorBorderFocus: colorSelectDark,
+		Padding:          PaddingSmall,
+		SizeBorder:       SizeBorderDef,
+		Radius:           RadiusMedium,
+		SVSize:           200,
+		SliderHeight:     24,
+		IndicatorSize:    16,
+		TextStyle:        DefaultTextStyle,
 	}
 
 	DefaultMenubarStyle = MenubarStyle{

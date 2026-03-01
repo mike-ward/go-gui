@@ -50,6 +50,8 @@ type Theme struct {
 	ComboboxStyle        ComboboxStyle
 	CommandPaletteStyle  CommandPaletteStyle
 	MenubarStyle         MenubarStyle
+	DatePickerStyle      DatePickerStyle
+	ColorPickerStyle     ColorPickerStyle
 
 	// Text size shortcuts (N = normal, B = bold).
 	N1 TextStyle
@@ -560,6 +562,34 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 				Size:  cfg.SizeTextSmall,
 			},
 		},
+		DatePickerStyle: DatePickerStyle{
+			CellSpacing:  3,
+			Color:        cfg.ColorInterior,
+			ColorHover:   cfg.ColorHover,
+			ColorFocus:   cfg.ColorFocus,
+			ColorClick:   cfg.ColorActive,
+			ColorBorder:  cfg.ColorBorder,
+			ColorBorderFocus: borderFocus,
+			ColorSelect:  cfg.ColorSelect,
+			Padding:      PaddingNone,
+			SizeBorder:   cfg.SizeBorder,
+			Radius:       cfg.RadiusMedium,
+			RadiusBorder: cfg.RadiusMedium,
+			TextStyle:    ts,
+		},
+		ColorPickerStyle: ColorPickerStyle{
+			Color:            cfg.ColorInterior,
+			ColorHover:       cfg.ColorHover,
+			ColorBorder:      cfg.ColorBorder,
+			ColorBorderFocus: borderFocus,
+			Padding:          cfg.PaddingSmall,
+			SizeBorder:       cfg.SizeBorder,
+			Radius:           cfg.RadiusMedium,
+			SVSize:           200,
+			SliderHeight:     24,
+			IndicatorSize:    16,
+			TextStyle:        ts,
+		},
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,
@@ -639,6 +669,8 @@ func SetTheme(t Theme) {
 	DefaultComboboxStyle = t.ComboboxStyle
 	DefaultCommandPaletteStyle = t.CommandPaletteStyle
 	DefaultMenubarStyle = t.MenubarStyle
+	DefaultDatePickerStyle = t.DatePickerStyle
+	DefaultColorPickerStyle = t.ColorPickerStyle
 }
 
 // With*Style methods for selective overrides.
@@ -765,6 +797,16 @@ func (t Theme) WithCommandPaletteStyle(s CommandPaletteStyle) Theme {
 
 func (t Theme) WithMenubarStyle(s MenubarStyle) Theme {
 	t.MenubarStyle = s
+	return t
+}
+
+func (t Theme) WithDatePickerStyle(s DatePickerStyle) Theme {
+	t.DatePickerStyle = s
+	return t
+}
+
+func (t Theme) WithColorPickerStyle(s ColorPickerStyle) Theme {
+	t.ColorPickerStyle = s
 	return t
 }
 
@@ -947,6 +989,19 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.MenubarStyle.ColorBorder = border
 	t.MenubarStyle.ColorBorderFocus = borderFocus
 	t.MenubarStyle.ColorSelect = sel
+
+	t.DatePickerStyle.Color = interior
+	t.DatePickerStyle.ColorHover = hover
+	t.DatePickerStyle.ColorFocus = focus
+	t.DatePickerStyle.ColorClick = active
+	t.DatePickerStyle.ColorBorder = border
+	t.DatePickerStyle.ColorBorderFocus = borderFocus
+	t.DatePickerStyle.ColorSelect = sel
+
+	t.ColorPickerStyle.Color = interior
+	t.ColorPickerStyle.ColorHover = hover
+	t.ColorPickerStyle.ColorBorder = border
+	t.ColorPickerStyle.ColorBorderFocus = borderFocus
 
 	return t
 }

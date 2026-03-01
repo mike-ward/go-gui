@@ -131,6 +131,9 @@ const (
 	nsCmdPaletteHighlight = "gui.cmd_palette.highlight"
 	nsDrawCanvas          = "gui.draw_canvas"
 	nsMenu                = "gui.menu"
+	nsDatePicker          = "gui.date_picker"
+	nsColorPicker         = "gui.color_picker"
+	nsInputDate           = "gui.input_date"
 )
 
 // Capacity tiers.
