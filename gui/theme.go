@@ -43,6 +43,10 @@ type Theme struct {
 	ExpandPanelStyle  ExpandPanelStyle
 	ProgressBarStyle  ProgressBarStyle
 	RangeSliderStyle  RangeSliderStyle
+	TabControlStyle   TabControlStyle
+	BreadcrumbStyle   BreadcrumbStyle
+	SplitterStyle     SplitterStyle
+	TableStyle        TableStyle
 
 	// Text size shortcuts (N = normal, B = bold).
 	N1 TextStyle
@@ -397,6 +401,103 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			SizeBorder:       cfg.SizeBorder,
 			Radius:           cfg.RadiusSmall,
 		},
+		TabControlStyle: TabControlStyle{
+			Color:              cfg.ColorPanel,
+			ColorBorder:        cfg.ColorBorder,
+			ColorHeader:        ColorTransparent,
+			ColorHeaderBorder:  ColorTransparent,
+			ColorContent:       cfg.ColorPanel,
+			ColorContentBorder: cfg.ColorBorder,
+			ColorTab:           cfg.ColorInterior,
+			ColorTabHover:      cfg.ColorHover,
+			ColorTabFocus:      cfg.ColorFocus,
+			ColorTabClick:      cfg.ColorActive,
+			ColorTabSelected:   cfg.ColorSelect,
+			ColorTabDisabled:   cfg.ColorPanel,
+			ColorTabBorder:     cfg.ColorBorder,
+			ColorTabBorderFocus: borderFocus,
+			Padding:            PaddingNone,
+			PaddingHeader:      PaddingNone,
+			PaddingContent:     cfg.PaddingMedium,
+			PaddingTab:         cfg.PaddingSmall,
+			SizeBorder:         cfg.SizeBorder,
+			SizeContentBorder:  cfg.SizeBorder,
+			SizeTabBorder:      cfg.SizeBorder,
+			Radius:             cfg.RadiusMedium,
+			RadiusHeader:       cfg.RadiusSmall,
+			RadiusContent:      cfg.RadiusMedium,
+			RadiusTab:          cfg.RadiusSmall,
+			RadiusTabBorder:    cfg.RadiusSmall,
+			Spacing:            cfg.SpacingSmall,
+			SpacingHeader:      cfg.SpacingSmall,
+			TextStyle:          ts,
+			TextStyleSelected:  ts,
+			TextStyleDisabled: TextStyle{
+				Color: RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 130),
+				Size:  ts.Size,
+			},
+		},
+		BreadcrumbStyle: BreadcrumbStyle{
+			Separator:          "/",
+			Color:              ColorTransparent,
+			ColorBorder:        ColorTransparent,
+			ColorTrail:         ColorTransparent,
+			ColorCrumb:         ColorTransparent,
+			ColorCrumbHover:    cfg.ColorHover,
+			ColorCrumbClick:    cfg.ColorActive,
+			ColorCrumbSelected: ColorTransparent,
+			ColorCrumbDisabled: ColorTransparent,
+			ColorContent:       cfg.ColorPanel,
+			ColorContentBorder: cfg.ColorBorder,
+			Padding:            PaddingNone,
+			PaddingTrail:       cfg.PaddingSmall,
+			PaddingCrumb:       NewPadding(2, 4, 2, 4),
+			PaddingContent:     cfg.PaddingMedium,
+			Radius:             cfg.RadiusMedium,
+			RadiusCrumb:        cfg.RadiusSmall,
+			RadiusContent:      cfg.RadiusMedium,
+			Spacing:            cfg.SpacingSmall,
+			SpacingTrail:       cfg.SpacingSmall,
+			SizeContentBorder:  cfg.SizeBorder,
+			TextStyle:          ts,
+			TextStyleSelected:  ts,
+			TextStyleDisabled: TextStyle{
+				Color: RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 130),
+				Size:  ts.Size,
+			},
+			TextStyleSeparator: TextStyle{
+				Color: RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 160),
+				Size:  ts.Size,
+			},
+		},
+		SplitterStyle: SplitterStyle{
+			HandleSize:        9,
+			DragStep:          0.02,
+			DragStepLarge:     0.10,
+			ColorHandle:       cfg.ColorInterior,
+			ColorHandleHover:  cfg.ColorHover,
+			ColorHandleActive: cfg.ColorActive,
+			ColorHandleBorder: cfg.ColorBorder,
+			ColorGrip:         cfg.ColorSelect,
+			ColorButton:       cfg.ColorInterior,
+			ColorButtonHover:  cfg.ColorHover,
+			ColorButtonActive: cfg.ColorActive,
+			ColorButtonIcon:   ts.Color,
+			SizeBorder:        cfg.SizeBorder,
+			Radius:            cfg.RadiusSmall,
+			RadiusBorder:      cfg.RadiusSmall,
+		},
+		TableStyle: TableStyle{
+			ColorBorder:        cfg.ColorBorder,
+			ColorSelect:        cfg.ColorSelect,
+			ColorHover:         cfg.ColorHover,
+			CellPadding:        PaddingTwoFive,
+			TextStyle:          ts,
+			TextStyleHead:      ts,
+			AlignHead:          HAlignCenter,
+			ColumnWidthDefault: 50,
+			ColumnWidthMin:     20,
+		},
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,
@@ -469,6 +570,10 @@ func SetTheme(t Theme) {
 	DefaultExpandPanelStyle = t.ExpandPanelStyle
 	DefaultProgressBarStyle = t.ProgressBarStyle
 	DefaultRangeSliderStyle = t.RangeSliderStyle
+	DefaultTabControlStyle = t.TabControlStyle
+	DefaultBreadcrumbStyle = t.BreadcrumbStyle
+	DefaultSplitterStyle = t.SplitterStyle
+	DefaultTableStyle = t.TableStyle
 }
 
 // With*Style methods for selective overrides.
@@ -560,6 +665,26 @@ func (t Theme) WithProgressBarStyle(s ProgressBarStyle) Theme {
 
 func (t Theme) WithRangeSliderStyle(s RangeSliderStyle) Theme {
 	t.RangeSliderStyle = s
+	return t
+}
+
+func (t Theme) WithTabControlStyle(s TabControlStyle) Theme {
+	t.TabControlStyle = s
+	return t
+}
+
+func (t Theme) WithBreadcrumbStyle(s BreadcrumbStyle) Theme {
+	t.BreadcrumbStyle = s
+	return t
+}
+
+func (t Theme) WithSplitterStyle(s SplitterStyle) Theme {
+	t.SplitterStyle = s
+	return t
+}
+
+func (t Theme) WithTableStyle(s TableStyle) Theme {
+	t.TableStyle = s
 	return t
 }
 
@@ -693,6 +818,37 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.RangeSliderStyle.ColorHover = hover
 	t.RangeSliderStyle.ColorBorder = border
 	t.RangeSliderStyle.ColorBorderFocus = borderFocus
+
+	t.TabControlStyle.Color = panel
+	t.TabControlStyle.ColorBorder = border
+	t.TabControlStyle.ColorContent = panel
+	t.TabControlStyle.ColorContentBorder = border
+	t.TabControlStyle.ColorTab = interior
+	t.TabControlStyle.ColorTabHover = hover
+	t.TabControlStyle.ColorTabFocus = focus
+	t.TabControlStyle.ColorTabClick = active
+	t.TabControlStyle.ColorTabSelected = sel
+	t.TabControlStyle.ColorTabDisabled = panel
+	t.TabControlStyle.ColorTabBorder = border
+	t.TabControlStyle.ColorTabBorderFocus = borderFocus
+
+	t.BreadcrumbStyle.ColorCrumbHover = hover
+	t.BreadcrumbStyle.ColorCrumbClick = active
+	t.BreadcrumbStyle.ColorContent = panel
+	t.BreadcrumbStyle.ColorContentBorder = border
+
+	t.SplitterStyle.ColorHandle = interior
+	t.SplitterStyle.ColorHandleHover = hover
+	t.SplitterStyle.ColorHandleActive = active
+	t.SplitterStyle.ColorHandleBorder = border
+	t.SplitterStyle.ColorGrip = sel
+	t.SplitterStyle.ColorButton = interior
+	t.SplitterStyle.ColorButtonHover = hover
+	t.SplitterStyle.ColorButtonActive = active
+
+	t.TableStyle.ColorBorder = border
+	t.TableStyle.ColorSelect = sel
+	t.TableStyle.ColorHover = hover
 
 	return t
 }

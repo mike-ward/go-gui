@@ -1,0 +1,101 @@
+package gui
+
+import "testing"
+
+func TestRadioButtonGroupColumnBasic(t *testing.T) {
+	v := RadioButtonGroupColumn(RadioButtonGroupCfg{
+		Value: "b",
+		Options: []RadioOption{
+			{Label: "A", Value: "a"},
+			{Label: "B", Value: "b"},
+			{Label: "C", Value: "c"},
+		},
+		OnSelect: func(_ string, _ *Window) {},
+	})
+	kids := v.Content()
+	if len(kids) != 3 {
+		t.Fatalf("children = %d, want 3", len(kids))
+	}
+}
+
+func TestRadioButtonGroupRowBasic(t *testing.T) {
+	v := RadioButtonGroupRow(RadioButtonGroupCfg{
+		Value: "x",
+		Options: []RadioOption{
+			{Label: "X", Value: "x"},
+			{Label: "Y", Value: "y"},
+		},
+		OnSelect: func(_ string, _ *Window) {},
+	})
+	kids := v.Content()
+	if len(kids) != 2 {
+		t.Fatalf("children = %d, want 2", len(kids))
+	}
+}
+
+func TestRadioButtonGroupIDFocusIncrement(t *testing.T) {
+	v := RadioButtonGroupColumn(RadioButtonGroupCfg{
+		Value:   "a",
+		IDFocus: 100,
+		Options: []RadioOption{
+			{Label: "A", Value: "a"},
+			{Label: "B", Value: "b"},
+			{Label: "C", Value: "c"},
+		},
+		OnSelect: func(_ string, _ *Window) {},
+	})
+	w := &Window{}
+	kids := v.Content()
+	if len(kids) != 3 {
+		t.Fatalf("children = %d, want 3", len(kids))
+	}
+	// Each radio should get incrementing IDFocus.
+	for i, child := range kids {
+		layout := child.GenerateLayout(w)
+		expected := uint32(100 + i)
+		if layout.Shape.IDFocus != expected {
+			t.Errorf("child[%d] IDFocus = %d, want %d",
+				i, layout.Shape.IDFocus, expected)
+		}
+	}
+}
+
+func TestRadioButtonGroupEmpty(t *testing.T) {
+	v := RadioButtonGroupColumn(RadioButtonGroupCfg{
+		OnSelect: func(_ string, _ *Window) {},
+	})
+	if len(v.Content()) != 0 {
+		t.Error("empty options should produce no children")
+	}
+}
+
+func TestRadioButtonGroupOnSelect(t *testing.T) {
+	var selected string
+	v := RadioButtonGroupColumn(RadioButtonGroupCfg{
+		Value: "a",
+		Options: []RadioOption{
+			{Label: "A", Value: "a"},
+			{Label: "B", Value: "b"},
+		},
+		OnSelect: func(val string, _ *Window) {
+			selected = val
+		},
+	})
+	w := &Window{}
+	kids := v.Content()
+	// Click second radio.
+	layout := kids[1].GenerateLayout(w)
+	if layout.Shape.HasEvents() && layout.Shape.Events.OnClick != nil {
+		layout.Shape.Events.OnClick(&layout, &Event{}, w)
+	}
+	if selected != "b" {
+		t.Errorf("selected = %q, want b", selected)
+	}
+}
+
+func TestNewRadioOption(t *testing.T) {
+	opt := NewRadioOption("Go", "go")
+	if opt.Label != "Go" || opt.Value != "go" {
+		t.Errorf("got %+v", opt)
+	}
+}

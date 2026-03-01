@@ -240,6 +240,105 @@ type RangeSliderStyle struct {
 	Radius           float32
 }
 
+// TabControlStyle defines tab control visual properties.
+type TabControlStyle struct {
+	Color              Color
+	ColorBorder        Color
+	ColorHeader        Color
+	ColorHeaderBorder  Color
+	ColorContent       Color
+	ColorContentBorder Color
+	ColorTab           Color
+	ColorTabHover      Color
+	ColorTabFocus      Color
+	ColorTabClick      Color
+	ColorTabSelected   Color
+	ColorTabDisabled   Color
+	ColorTabBorder     Color
+	ColorTabBorderFocus Color
+	Padding            Padding
+	PaddingHeader      Padding
+	PaddingContent     Padding
+	PaddingTab         Padding
+	SizeBorder         float32
+	SizeHeaderBorder   float32
+	SizeContentBorder  float32
+	SizeTabBorder      float32
+	Radius             float32
+	RadiusHeader       float32
+	RadiusContent      float32
+	RadiusTab          float32
+	RadiusTabBorder    float32
+	Spacing            float32
+	SpacingHeader      float32
+	TextStyle          TextStyle
+	TextStyleSelected  TextStyle
+	TextStyleDisabled  TextStyle
+}
+
+// BreadcrumbStyle defines breadcrumb visual properties.
+type BreadcrumbStyle struct {
+	Separator          string
+	Color              Color
+	ColorBorder        Color
+	ColorTrail         Color
+	ColorCrumb         Color
+	ColorCrumbHover    Color
+	ColorCrumbClick    Color
+	ColorCrumbSelected Color
+	ColorCrumbDisabled Color
+	ColorContent       Color
+	ColorContentBorder Color
+	Padding            Padding
+	PaddingTrail       Padding
+	PaddingCrumb       Padding
+	PaddingContent     Padding
+	Radius             float32
+	RadiusCrumb        float32
+	RadiusContent      float32
+	Spacing            float32
+	SpacingTrail       float32
+	SizeBorder         float32
+	SizeContentBorder  float32
+	TextStyle          TextStyle
+	TextStyleSelected  TextStyle
+	TextStyleDisabled  TextStyle
+	TextStyleSeparator TextStyle
+}
+
+// SplitterStyle defines splitter visual properties.
+type SplitterStyle struct {
+	HandleSize        float32
+	DragStep          float32
+	DragStepLarge     float32
+	ColorHandle       Color
+	ColorHandleHover  Color
+	ColorHandleActive Color
+	ColorHandleBorder Color
+	ColorGrip         Color
+	ColorButton       Color
+	ColorButtonHover  Color
+	ColorButtonActive Color
+	ColorButtonIcon   Color
+	SizeBorder        float32
+	Radius            float32
+	RadiusBorder      float32
+}
+
+// TableStyle defines table visual properties.
+type TableStyle struct {
+	ColorBorder        Color
+	ColorSelect        Color
+	ColorHover         Color
+	CellPadding        Padding
+	TextStyle          TextStyle
+	TextStyleHead      TextStyle
+	AlignHead          HorizontalAlign
+	ColumnWidthDefault float32
+	ColumnWidthMin     float32
+	SizeBorder         float32
+}
+
 // Default widget styles (dark theme).
 var (
 	DefaultInputStyle = InputStyle{
@@ -457,5 +556,112 @@ var (
 		Padding:          PaddingNone,
 		SizeBorder:       SizeBorderDef,
 		Radius:           RadiusSmall,
+	}
+
+	DefaultTabControlStyle = TabControlStyle{
+		Color:              colorPanelDark,
+		ColorBorder:        colorBorderDark,
+		ColorHeader:        ColorTransparent,
+		ColorHeaderBorder:  ColorTransparent,
+		ColorContent:       colorPanelDark,
+		ColorContentBorder: colorBorderDark,
+		ColorTab:           colorInteriorDark,
+		ColorTabHover:      colorHoverDark,
+		ColorTabFocus:      colorFocusDark,
+		ColorTabClick:      colorActiveDark,
+		ColorTabSelected:   colorSelectDark,
+		ColorTabDisabled:   colorPanelDark,
+		ColorTabBorder:     colorBorderDark,
+		ColorTabBorderFocus: colorSelectDark,
+		Padding:            PaddingNone,
+		PaddingHeader:      PaddingNone,
+		PaddingContent:     PaddingMedium,
+		PaddingTab:         PaddingSmall,
+		SizeBorder:         SizeBorderDef,
+		SizeContentBorder:  SizeBorderDef,
+		SizeTabBorder:      SizeBorderDef,
+		Radius:             RadiusMedium,
+		RadiusHeader:       RadiusSmall,
+		RadiusContent:      RadiusMedium,
+		RadiusTab:          RadiusSmall,
+		RadiusTabBorder:    RadiusSmall,
+		Spacing:            SpacingSmall,
+		SpacingHeader:      SpacingSmall,
+		TextStyle:          DefaultTextStyle,
+		TextStyleSelected: TextStyle{
+			Color: colorTextDark,
+			Size:  SizeTextMedium,
+		},
+		TextStyleDisabled: TextStyle{
+			Color: RGBA(colorTextDark.R, colorTextDark.G, colorTextDark.B, 130),
+			Size:  SizeTextMedium,
+		},
+	}
+
+	DefaultBreadcrumbStyle = BreadcrumbStyle{
+		Separator:          "/",
+		Color:              ColorTransparent,
+		ColorBorder:        ColorTransparent,
+		ColorTrail:         ColorTransparent,
+		ColorCrumb:         ColorTransparent,
+		ColorCrumbHover:    colorHoverDark,
+		ColorCrumbClick:    colorActiveDark,
+		ColorCrumbSelected: ColorTransparent,
+		ColorCrumbDisabled: ColorTransparent,
+		ColorContent:       colorPanelDark,
+		ColorContentBorder: colorBorderDark,
+		Padding:            PaddingNone,
+		PaddingTrail:       PaddingSmall,
+		PaddingCrumb:       NewPadding(2, 4, 2, 4),
+		PaddingContent:     PaddingMedium,
+		Radius:             RadiusMedium,
+		RadiusCrumb:        RadiusSmall,
+		RadiusContent:      RadiusMedium,
+		Spacing:            SpacingSmall,
+		SpacingTrail:       SpacingSmall,
+		SizeContentBorder:  SizeBorderDef,
+		TextStyle:          DefaultTextStyle,
+		TextStyleSelected: TextStyle{
+			Color: colorTextDark,
+			Size:  SizeTextMedium,
+		},
+		TextStyleDisabled: TextStyle{
+			Color: RGBA(colorTextDark.R, colorTextDark.G, colorTextDark.B, 130),
+			Size:  SizeTextMedium,
+		},
+		TextStyleSeparator: TextStyle{
+			Color: RGBA(colorTextDark.R, colorTextDark.G, colorTextDark.B, 160),
+			Size:  SizeTextMedium,
+		},
+	}
+
+	DefaultSplitterStyle = SplitterStyle{
+		HandleSize:        9,
+		DragStep:          0.02,
+		DragStepLarge:     0.10,
+		ColorHandle:       colorInteriorDark,
+		ColorHandleHover:  colorHoverDark,
+		ColorHandleActive: colorActiveDark,
+		ColorHandleBorder: colorBorderDark,
+		ColorGrip:         colorSelectDark,
+		ColorButton:       colorInteriorDark,
+		ColorButtonHover:  colorHoverDark,
+		ColorButtonActive: colorActiveDark,
+		ColorButtonIcon:   colorTextDark,
+		SizeBorder:        SizeBorderDef,
+		Radius:            RadiusSmall,
+		RadiusBorder:      RadiusSmall,
+	}
+
+	DefaultTableStyle = TableStyle{
+		ColorBorder:        colorBorderDark,
+		ColorSelect:        colorSelectDark,
+		ColorHover:         colorHoverDark,
+		CellPadding:        PaddingTwoFive,
+		TextStyle:          DefaultTextStyle,
+		TextStyleHead:      DefaultTextStyle,
+		AlignHead:          HAlignCenter,
+		ColumnWidthDefault: 50,
+		ColumnWidthMin:     20,
 	}
 )

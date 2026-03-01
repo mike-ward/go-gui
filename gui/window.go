@@ -88,6 +88,7 @@ type ViewState struct {
 	mouseCursor    MouseCursor
 	mouseLock      MouseLockCfg
 	cursorOnSticky bool
+	inputCursorOn  bool
 	mousePosX      float32
 	mousePosY      float32
 	tooltip        tooltipState
@@ -203,6 +204,11 @@ func (w *Window) SetMouseCursorEW()           { w.SetMouseCursor(CursorResizeEW)
 func (w *Window) SetMouseCursorResizeNESW()   { w.SetMouseCursor(CursorResizeNESW) }
 func (w *Window) SetMouseCursorResizeNWSE()   { w.SetMouseCursor(CursorResizeNWSE) }
 func (w *Window) SetMouseCursorNotAllowed()   { w.SetMouseCursor(CursorNotAllowed) }
+
+// InputCursorOn returns the input cursor blink state.
+func (w *Window) InputCursorOn() bool {
+	return w.viewState.inputCursorOn
+}
 
 // MouseIsLocked returns true if the mouse is locked (drag).
 func (w *Window) MouseIsLocked() bool {

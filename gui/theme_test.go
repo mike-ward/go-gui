@@ -72,6 +72,10 @@ func TestSetTheme(t *testing.T) {
 	savedExpand := DefaultExpandPanelStyle
 	savedProgress := DefaultProgressBarStyle
 	savedRange := DefaultRangeSliderStyle
+	savedTabCtl := DefaultTabControlStyle
+	savedBreadcrumb := DefaultBreadcrumbStyle
+	savedSplitter := DefaultSplitterStyle
+	savedTable := DefaultTableStyle
 	defer func() {
 		DefaultButtonStyle = savedBtn
 		DefaultTextStyle = savedText
@@ -91,6 +95,10 @@ func TestSetTheme(t *testing.T) {
 		DefaultExpandPanelStyle = savedExpand
 		DefaultProgressBarStyle = savedProgress
 		DefaultRangeSliderStyle = savedRange
+		DefaultTabControlStyle = savedTabCtl
+		DefaultBreadcrumbStyle = savedBreadcrumb
+		DefaultSplitterStyle = savedSplitter
+		DefaultTableStyle = savedTable
 	}()
 
 	theme := Theme{
