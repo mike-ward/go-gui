@@ -58,6 +58,7 @@ func (w *Window) EventFn(e *Event) {
 
 	case EventMouseMove:
 		w.SetMouseCursor(CursorArrow)
+		w.viewState.menuKeyNav = false
 		w.viewState.mousePosX = e.MouseX
 		w.viewState.mousePosY = e.MouseY
 		mouseMoveHandler(&layout, e, w)

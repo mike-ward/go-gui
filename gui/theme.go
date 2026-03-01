@@ -49,6 +49,7 @@ type Theme struct {
 	TableStyle        TableStyle
 	ComboboxStyle        ComboboxStyle
 	CommandPaletteStyle  CommandPaletteStyle
+	MenubarStyle         MenubarStyle
 
 	// Text size shortcuts (N = normal, B = bold).
 	N1 TextStyle
@@ -533,6 +534,32 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			},
 			BackdropColor: RGBA(0, 0, 0, 120),
 		},
+		MenubarStyle: MenubarStyle{
+			WidthSubmenuMin:  50,
+			WidthSubmenuMax:  200,
+			Color:           cfg.ColorInterior,
+			ColorHover:      cfg.ColorHover,
+			ColorFocus:      cfg.ColorFocus,
+			ColorBorder:     cfg.ColorBorder,
+			ColorBorderFocus: borderFocus,
+			ColorSelect:     cfg.ColorSelect,
+			Padding:         cfg.PaddingSmall,
+			PaddingMenuItem: PaddingTwoFive,
+			PaddingSubmenu:  cfg.PaddingSmall,
+			PaddingSubtitle: NewPadding(0, cfg.PaddingSmall.Right, 0, cfg.PaddingSmall.Left),
+			SizeBorder:      cfg.SizeBorder,
+			Radius:          cfg.RadiusSmall,
+			RadiusBorder:    cfg.RadiusMedium,
+			RadiusSubmenu:   cfg.RadiusSmall,
+			RadiusMenuItem:  cfg.RadiusSmall,
+			Spacing:         cfg.SpacingMedium,
+			SpacingSubmenu:  1,
+			TextStyle:       ts,
+			TextStyleSubtitle: TextStyle{
+				Color: ts.Color,
+				Size:  cfg.SizeTextSmall,
+			},
+		},
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,
@@ -611,6 +638,7 @@ func SetTheme(t Theme) {
 	DefaultTableStyle = t.TableStyle
 	DefaultComboboxStyle = t.ComboboxStyle
 	DefaultCommandPaletteStyle = t.CommandPaletteStyle
+	DefaultMenubarStyle = t.MenubarStyle
 }
 
 // With*Style methods for selective overrides.
@@ -732,6 +760,11 @@ func (t Theme) WithComboboxStyle(s ComboboxStyle) Theme {
 
 func (t Theme) WithCommandPaletteStyle(s CommandPaletteStyle) Theme {
 	t.CommandPaletteStyle = s
+	return t
+}
+
+func (t Theme) WithMenubarStyle(s MenubarStyle) Theme {
+	t.MenubarStyle = s
 	return t
 }
 
@@ -907,6 +940,13 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.CommandPaletteStyle.Color = panel
 	t.CommandPaletteStyle.ColorBorder = border
 	t.CommandPaletteStyle.ColorHighlight = sel
+
+	t.MenubarStyle.Color = interior
+	t.MenubarStyle.ColorHover = hover
+	t.MenubarStyle.ColorFocus = focus
+	t.MenubarStyle.ColorBorder = border
+	t.MenubarStyle.ColorBorderFocus = borderFocus
+	t.MenubarStyle.ColorSelect = sel
 
 	return t
 }

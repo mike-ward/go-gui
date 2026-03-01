@@ -42,3 +42,25 @@ func TestLightThemeColors(t *testing.T) {
 		t.Error("light text color mismatch")
 	}
 }
+
+func TestPresetThemesRegistered(t *testing.T) {
+	names := ThemeRegisteredNames()
+	if len(names) < 7 {
+		t.Errorf("registered themes = %d, want >= 7",
+			len(names))
+	}
+	expected := []string{
+		"dark", "dark-no-padding", "dark-bordered",
+		"light", "light-no-padding", "light-bordered",
+		"blue-dark-bordered",
+	}
+	nameSet := make(map[string]bool, len(names))
+	for _, n := range names {
+		nameSet[n] = true
+	}
+	for _, e := range expected {
+		if !nameSet[e] {
+			t.Errorf("missing registered theme %q", e)
+		}
+	}
+}

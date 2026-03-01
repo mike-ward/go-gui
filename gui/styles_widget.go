@@ -370,6 +370,31 @@ type CommandPaletteStyle struct {
 	BackdropColor  Color
 }
 
+// MenubarStyle defines menubar visual properties.
+type MenubarStyle struct {
+	WidthSubmenuMin   float32
+	WidthSubmenuMax   float32
+	Color             Color
+	ColorHover        Color
+	ColorFocus        Color
+	ColorBorder       Color
+	ColorBorderFocus  Color
+	ColorSelect       Color
+	Padding           Padding
+	PaddingMenuItem   Padding
+	PaddingSubmenu    Padding
+	PaddingSubtitle   Padding
+	SizeBorder        float32
+	Radius            float32
+	RadiusBorder      float32
+	RadiusSubmenu     float32
+	RadiusMenuItem    float32
+	Spacing           float32
+	SpacingSubmenu    float32
+	TextStyle         TextStyle
+	TextStyleSubtitle TextStyle
+}
+
 // Default widget styles (dark theme).
 var (
 	DefaultInputStyle = InputStyle{
@@ -729,5 +754,32 @@ var (
 			Size:  SizeTextMedium,
 		},
 		BackdropColor: RGBA(0, 0, 0, 120),
+	}
+
+	DefaultMenubarStyle = MenubarStyle{
+		WidthSubmenuMin:  50,
+		WidthSubmenuMax:  200,
+		Color:           colorInteriorDark,
+		ColorHover:      colorHoverDark,
+		ColorFocus:      colorFocusDark,
+		ColorBorder:     colorBorderDark,
+		ColorBorderFocus: colorSelectDark,
+		ColorSelect:     colorSelectDark,
+		Padding:         PaddingSmall,
+		PaddingMenuItem: PaddingTwoFive,
+		PaddingSubmenu:  PaddingSmall,
+		PaddingSubtitle: NewPadding(0, PadSmall, 0, PadSmall),
+		SizeBorder:      SizeBorderDef,
+		Radius:          RadiusSmall,
+		RadiusBorder:    RadiusMedium,
+		RadiusSubmenu:   RadiusSmall,
+		RadiusMenuItem:  RadiusSmall,
+		Spacing:         SpacingMedium,
+		SpacingSubmenu:  1,
+		TextStyle:       DefaultTextStyle,
+		TextStyleSubtitle: TextStyle{
+			Color: colorTextDark,
+			Size:  SizeTextSmall,
+		},
 	}
 )

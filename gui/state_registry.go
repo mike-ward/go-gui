@@ -130,6 +130,7 @@ const (
 	nsCmdPaletteQuery     = "gui.cmd_palette.query"
 	nsCmdPaletteHighlight = "gui.cmd_palette.highlight"
 	nsDrawCanvas          = "gui.draw_canvas"
+	nsMenu                = "gui.menu"
 )
 
 // Capacity tiers.

@@ -78,6 +78,7 @@ func TestSetTheme(t *testing.T) {
 	savedTable := DefaultTableStyle
 	savedCombobox := DefaultComboboxStyle
 	savedCmdPalette := DefaultCommandPaletteStyle
+	savedMenubar := DefaultMenubarStyle
 	defer func() {
 		DefaultButtonStyle = savedBtn
 		DefaultTextStyle = savedText
@@ -103,6 +104,7 @@ func TestSetTheme(t *testing.T) {
 		DefaultTableStyle = savedTable
 		DefaultComboboxStyle = savedCombobox
 		DefaultCommandPaletteStyle = savedCmdPalette
+		DefaultMenubarStyle = savedMenubar
 	}()
 
 	theme := Theme{

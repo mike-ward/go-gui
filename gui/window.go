@@ -91,6 +91,7 @@ type ViewState struct {
 	inputCursorOn  bool
 	mousePosX      float32
 	mousePosY      float32
+	menuKeyNav     bool
 	tooltip        tooltipState
 }
 

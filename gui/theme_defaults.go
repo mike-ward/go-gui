@@ -220,6 +220,15 @@ func init() {
 	}
 	ThemeBlueBordered = ThemeMaker(ThemeBlueBorderedCfg)
 
+	// Register all preset themes.
+	ThemeRegister(ThemeDark)
+	ThemeRegister(ThemeDarkNoPadding)
+	ThemeRegister(ThemeDarkBordered)
+	ThemeRegister(ThemeLight)
+	ThemeRegister(ThemeLightNoPadding)
+	ThemeRegister(ThemeLightBordered)
+	ThemeRegister(ThemeBlueBordered)
+
 	// Set default active theme to dark.
 	guiTheme = ThemeDark
 }
