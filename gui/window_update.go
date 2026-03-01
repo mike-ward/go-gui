@@ -51,3 +51,67 @@ func (w *Window) UpdateWindow() {
 func (w *Window) RequestRenderOnly() {
 	w.markRenderOnlyRefresh()
 }
+
+// UpdateView sets the view generator and triggers a full refresh.
+func (w *Window) UpdateView(gen func(*Window) View) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.viewState.registry.Clear()
+	w.viewGenerator = gen
+	w.markLayoutRefresh()
+}
+
+// FrameFn is called by the backend each frame. It flushes
+// queued commands and rebuilds layout/renderers as needed.
+func (w *Window) FrameFn() {
+	w.flushCommands()
+	if w.refreshLayout {
+		w.Update()
+	} else if w.refreshRenderOnly {
+		w.UpdateRenderOnly()
+	}
+}
+
+// Update performs a full layout rebuild and re-renders.
+func (w *Window) Update() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.refreshLayout = false
+	w.refreshRenderOnly = false
+
+	if w.viewGenerator == nil {
+		return
+	}
+
+	view := w.viewGenerator(w)
+	rootLayout := GenerateViewLayout(view, w)
+	layers := layoutArrange(&rootLayout, w)
+	w.layout = composeLayout(layers, w)
+	w.buildRenderers(w.Config.BgColor, w.WindowRect())
+}
+
+// UpdateRenderOnly rebuilds renderers from the existing layout.
+func (w *Window) UpdateRenderOnly() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.refreshRenderOnly = false
+	w.buildRenderers(w.Config.BgColor, w.WindowRect())
+}
+
+// composeLayout wraps layer layouts into a single root.
+func composeLayout(layers []Layout, w *Window) Layout {
+	root := Layout{
+		Shape: &Shape{
+			Width:  float32(w.windowWidth),
+			Height: float32(w.windowHeight),
+		},
+		Children: layers,
+	}
+	return root
+}
+
+// buildRenderers resets and rebuilds the render command list.
+func (w *Window) buildRenderers(bgColor Color, clip DrawClip) {
+	w.renderers = w.renderers[:0]
+	renderLayout(&w.layout, bgColor, clip, w)
+}

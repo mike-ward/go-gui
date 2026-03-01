@@ -59,7 +59,9 @@ type RenderCmd struct {
 	GroupIdx   int  // FilterBegin
 
 	// String data.
-	Text string // Text
+	Text     string  // Text
+	FontName string  // Text font family
+	FontSize float32 // Text font size (points)
 
 	// Slice data (Svg).
 	Triangles    []float32

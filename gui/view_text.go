@@ -65,14 +65,18 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 		},
 	}
 
-	// Placeholder dimensions until text system is integrated.
-	// Estimate width from text length; height from font size.
 	if ts.Size == 0 {
 		ts.Size = SizeTextMedium
 	}
-	charWidth := ts.Size * 0.6
-	layout.Shape.Width = float32(len(c.Text)) * charWidth
-	layout.Shape.Height = ts.Size * 1.4
+	if w.textMeasurer != nil {
+		layout.Shape.Width = w.textMeasurer.TextWidth(c.Text, *ts)
+		layout.Shape.Height = w.textMeasurer.FontHeight(*ts)
+	} else {
+		// Fallback for tests (no backend).
+		charWidth := ts.Size * 0.6
+		layout.Shape.Width = float32(len(c.Text)) * charWidth
+		layout.Shape.Height = ts.Size * 1.4
+	}
 
 	if c.Mode == TextModeSingleLine ||
 		layout.Shape.Sizing.Width == SizingFixed {

@@ -112,7 +112,7 @@ func renderShapeInner(shape *Shape, parentColor Color, clip DrawClip, w *Window)
 	case ShapeRectangle:
 		renderContainer(shape, parentColor, clip, w)
 	case ShapeText:
-		// TODO: renderText — Phase 3
+		renderText(shape, clip, w)
 	case ShapeImage:
 		// TODO: renderImage — Phase 3
 	case ShapeCircle:
@@ -310,3 +310,41 @@ func renderCircle(shape *Shape, clip DrawClip, w *Window) {
 		shape.Disabled = true
 	}
 }
+
+// renderText emits a RenderText command for a text shape.
+func renderText(shape *Shape, clip DrawClip, w *Window) {
+	tc := shape.TC
+	if tc == nil || len(tc.Text) == 0 {
+		return
+	}
+	dr := DrawClip{
+		X: shape.X, Y: shape.Y,
+		Width: shape.Width, Height: shape.Height,
+	}
+	if !rectsOverlap(dr, clip) {
+		return
+	}
+	c := tc.TextStyle.Color
+	if shape.Opacity < 1.0 {
+		c = c.WithOpacity(shape.Opacity)
+	}
+	if shape.Disabled {
+		c = dimAlpha(c)
+	}
+
+	text := tc.Text
+	if tc.TextIsPassword {
+		text = passwordMask(tc.Text)
+	}
+
+	emitRenderer(RenderCmd{
+		Kind:     RenderText,
+		X:        shape.X + shape.PaddingLeft(),
+		Y:        shape.Y + shape.PaddingTop(),
+		Color:    c,
+		Text:     text,
+		FontName: tc.TextStyle.Family,
+		FontSize: tc.TextStyle.Size,
+	}, w)
+}
+

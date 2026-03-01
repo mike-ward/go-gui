@@ -2,6 +2,14 @@ package gui
 
 import "sync"
 
+// TextMeasurer measures text dimensions. Set by the backend
+// after initialization; nil in tests (placeholder fallback).
+type TextMeasurer interface {
+	TextWidth(text string, style TextStyle) float32
+	TextHeight(text string, style TextStyle) float32
+	FontHeight(style TextStyle) float32
+}
+
 // Window is the main application window.
 type Window struct {
 	// Mutexes.
@@ -52,6 +60,15 @@ type Window struct {
 
 	// OnEvent is called for unhandled events. Nil-safe.
 	OnEvent func(*Event, *Window)
+
+	// Text measurement — set by backend, nil in tests.
+	textMeasurer TextMeasurer
+
+	// View generator — produces the root View each frame.
+	viewGenerator func(*Window) View
+
+	// Config stores the WindowCfg for backend access.
+	Config WindowCfg
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a
@@ -203,4 +220,19 @@ func (w *Window) MouseLock(cfg MouseLockCfg) {
 // MouseUnlock returns mouse handling events to normal behavior.
 func (w *Window) MouseUnlock() {
 	w.viewState.mouseLock = MouseLockCfg{}
+}
+
+// SetTextMeasurer sets the text measurement backend.
+func (w *Window) SetTextMeasurer(tm TextMeasurer) {
+	w.textMeasurer = tm
+}
+
+// Renderers returns the current render command slice.
+func (w *Window) Renderers() []RenderCmd {
+	return w.renderers
+}
+
+// MouseCursorState returns the current mouse cursor shape.
+func (w *Window) MouseCursorState() MouseCursor {
+	return w.viewState.mouseCursor
 }
