@@ -1,0 +1,92 @@
+package gui
+
+// DrawCanvasCfg configures a draw canvas view.
+type DrawCanvasCfg struct {
+	ID        string
+	Version   uint64
+	Sizing    Sizing
+	Width     float32
+	Height    float32
+	MinWidth  float32
+	MaxWidth  float32
+	MinHeight float32
+	MaxHeight float32
+	Padding   Padding
+	Clip      bool
+	Color     Color
+	Radius    float32
+	OnDraw    func(*DrawContext)
+	OnClick   func(*Layout, *Event, *Window)
+	OnHover   func(*Layout, *Event, *Window)
+	OnMouseScroll func(*Layout, *Event, *Window)
+}
+
+// drawCanvasView implements View for user-drawn canvas content.
+type drawCanvasView struct {
+	cfg DrawCanvasCfg
+}
+
+// DrawCanvas creates a canvas with user-drawn geometry.
+func DrawCanvas(cfg DrawCanvasCfg) View {
+	if cfg.Sizing == (Sizing{}) {
+		cfg.Sizing = FixedFixed
+	}
+	if cfg.Color == (Color{}) {
+		cfg.Color = ColorTransparent
+	}
+	return &drawCanvasView{cfg: cfg}
+}
+
+func (dv *drawCanvasView) Content() []View { return nil }
+
+func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
+	c := &dv.cfg
+	if c.OnDraw != nil {
+		sm := StateMap[string, DrawCanvasCache](w, nsDrawCanvas, capModerate)
+		needsDraw := true
+		if cached, ok := sm.Get(c.ID); ok {
+			needsDraw = cached.Version != c.Version
+		}
+		if needsDraw {
+			dc := DrawContext{
+				Width:  c.Width - c.Padding.Left - c.Padding.Right,
+				Height: c.Height - c.Padding.Top - c.Padding.Bottom,
+			}
+			c.OnDraw(&dc)
+			sm.Set(c.ID, DrawCanvasCache{
+				Version: c.Version,
+				Batches: dc.batches,
+			})
+		}
+	}
+
+	var events *EventHandlers
+	if c.OnClick != nil || c.OnHover != nil || c.OnMouseScroll != nil {
+		events = &EventHandlers{
+			OnClick:        leftClickOnly(c.OnClick),
+			OnHover:        c.OnHover,
+			OnMouseScroll:  c.OnMouseScroll,
+		}
+	}
+
+	layout := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeDrawCanvas,
+			ID:        c.ID,
+			Width:     c.Width,
+			Height:    c.Height,
+			MinWidth:  c.MinWidth,
+			MaxWidth:  c.MaxWidth,
+			MinHeight: c.MinHeight,
+			MaxHeight: c.MaxHeight,
+			Sizing:    c.Sizing,
+			Padding:   c.Padding,
+			Clip:      c.Clip,
+			Color:     c.Color,
+			Radius:    c.Radius,
+			Events:    events,
+		},
+	}
+	ApplyFixedSizingConstraints(layout.Shape)
+	return layout
+}

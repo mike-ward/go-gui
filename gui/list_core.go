@@ -1,9 +1,51 @@
 package gui
 
+import "sort"
+
 // list_core.go provides pure functions shared by ListBox, Select,
 // and other list widgets. No state, no Window dependency.
 
 const listCoreVirtualBufferRows = 2
+
+// ListCoreItem is the normalized item for the shared list engine.
+// Widgets map their domain types to this before calling core fns.
+type ListCoreItem struct {
+	ID           string
+	Label        string
+	Detail       string
+	Icon         string
+	Group        string
+	Disabled     bool
+	IsSubheading bool
+}
+
+// ListCoreCfg configures listCoreViews rendering.
+type ListCoreCfg struct {
+	TextStyle      TextStyle
+	DetailStyle    TextStyle
+	SubheadingStyle TextStyle
+	ColorHighlight Color
+	ColorHover     Color
+	ColorSelected  Color
+	PaddingItem    Padding
+	ShowDetails    bool
+	ShowIcons      bool
+	OnItemClick    func(string, int, *Event, *Window)
+	OnItemHover    func(int, *Event, *Window)
+}
+
+// ListCorePrepared holds pre-computed filter results for a frame.
+type ListCorePrepared struct {
+	Items []ListCoreItem
+	IDs   []string
+	HL    int
+}
+
+// listCoreScored pairs an index with its fuzzy score.
+type listCoreScored struct {
+	index int
+	score int
+}
 
 // ListCoreAction represents a keyboard navigation action.
 type ListCoreAction uint8
@@ -136,6 +178,199 @@ func toLowerByte(b byte) byte {
 		return b + 32
 	}
 	return b
+}
+
+// listCoreFilter filters + ranks items by query. Returns indices
+// sorted by score. Empty query returns all in order.
+func listCoreFilter(items []ListCoreItem, query string) []int {
+	if len(query) == 0 {
+		all := make([]int, len(items))
+		for i := range items {
+			all[i] = i
+		}
+		return all
+	}
+	scored := make([]listCoreScored, 0, len(items))
+	for i, item := range items {
+		if item.IsSubheading {
+			continue
+		}
+		s := listCoreFuzzyScore(item.Label, query)
+		if s >= 0 {
+			scored = append(scored, listCoreScored{index: i, score: s})
+		}
+	}
+	sort.Slice(scored, func(a, b int) bool {
+		return scored[a].score < scored[b].score
+	})
+	result := make([]int, len(scored))
+	for i, sc := range scored {
+		result[i] = sc.index
+	}
+	return result
+}
+
+// listCorePrepare filters items by query, clamps highlight, and
+// collects selectable IDs. Skips subheadings from IDs.
+func listCorePrepare(items []ListCoreItem, query string, rawHighlight int) ListCorePrepared {
+	filteredIndices := listCoreFilter(items, query)
+	filtered := make([]ListCoreItem, 0, len(filteredIndices))
+	for _, idx := range filteredIndices {
+		if idx >= 0 && idx < len(items) {
+			filtered = append(filtered, items[idx])
+		}
+	}
+	hl := 0
+	if len(filtered) > 0 {
+		hl = intClamp(rawHighlight, 0, len(filtered)-1)
+	}
+	ids := make([]string, 0, len(filtered))
+	for _, item := range filtered {
+		if !item.IsSubheading {
+			ids = append(ids, item.ID)
+		}
+	}
+	return ListCorePrepared{Items: filtered, IDs: ids, HL: hl}
+}
+
+// listCoreViews builds visible item views with virtualization
+// spacers. first/last are indices from listCoreVisibleRange.
+func listCoreViews(items []ListCoreItem, cfg ListCoreCfg, first, last, highlighted int, selectedIDs []string, rowHeight float32) []View {
+	total := len(items)
+	cap := 2
+	if last >= first {
+		cap = last - first + 3
+	}
+	views := make([]View, 0, cap)
+
+	if first > 0 && rowHeight > 0 {
+		views = append(views, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(first) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+
+	for idx := first; idx <= last; idx++ {
+		if idx < 0 || idx >= total {
+			continue
+		}
+		isHL := idx == highlighted
+		isSel := containsStr(selectedIDs, items[idx].ID)
+		views = append(views,
+			listCoreItemView(items[idx], idx, isHL, isSel, cfg))
+	}
+
+	if last < total-1 && rowHeight > 0 {
+		remaining := total - 1 - last
+		views = append(views, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(remaining) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+	return views
+}
+
+// listCoreItemView renders a single item row.
+func listCoreItemView(item ListCoreItem, index int, isHighlighted, isSelected bool, cfg ListCoreCfg) View {
+	bg := ColorTransparent
+	if isHighlighted {
+		bg = cfg.ColorHighlight
+	} else if isSelected {
+		bg = cfg.ColorSelected
+	}
+
+	if item.IsSubheading {
+		return listCoreSubheadingView(item, cfg)
+	}
+
+	content := make([]View, 0, 4)
+
+	if cfg.ShowIcons && len(item.Icon) > 0 {
+		content = append(content, Text(TextCfg{
+			Text:      item.Icon,
+			TextStyle: cfg.TextStyle,
+		}))
+	}
+
+	content = append(content, Text(TextCfg{
+		Text:      item.Label,
+		TextStyle: cfg.TextStyle,
+		Mode:      TextModeSingleLine,
+	}))
+
+	if cfg.ShowDetails && len(item.Detail) > 0 {
+		content = append(content,
+			Row(ContainerCfg{
+				Sizing:  FillFill,
+				Padding: PaddingNone,
+			}),
+			Text(TextCfg{
+				Text:      item.Detail,
+				TextStyle: cfg.DetailStyle,
+				Mode:      TextModeSingleLine,
+			}),
+		)
+	}
+
+	onItemClick := cfg.OnItemClick
+	onItemHover := cfg.OnItemHover
+	hasClick := onItemClick != nil
+	hasHover := onItemHover != nil
+	colorHover := cfg.ColorHover
+	isDisabled := item.Disabled
+	itemID := item.ID
+
+	return Row(ContainerCfg{
+		Color:   bg,
+		Padding: cfg.PaddingItem,
+		Sizing:  FillFit,
+		Content: content,
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			if hasClick && !isDisabled {
+				onItemClick(itemID, index, e, w)
+			}
+		},
+		OnHover: func(layout *Layout, e *Event, w *Window) {
+			if !isDisabled {
+				w.SetMouseCursor(CursorPointingHand)
+				if layout.Shape.Color == ColorTransparent {
+					layout.Shape.Color = colorHover
+				}
+			}
+			if hasHover {
+				onItemHover(index, e, w)
+			}
+		},
+	})
+}
+
+// listCoreSubheadingView renders a subheading row.
+func listCoreSubheadingView(item ListCoreItem, cfg ListCoreCfg) View {
+	return Column(ContainerCfg{
+		Spacing: 1,
+		Padding: PaddingNone,
+		Sizing:  FillFit,
+		Content: []View{
+			Text(TextCfg{
+				Text:      item.Label,
+				TextStyle: cfg.SubheadingStyle,
+			}),
+			Row(ContainerCfg{
+				Padding: PaddingNone,
+				Sizing:  FillFit,
+				Content: []View{
+					Rectangle(RectangleCfg{
+						Width:  1,
+						Height: 1,
+						Sizing: FillFit,
+						Color:  cfg.SubheadingStyle.Color,
+					}),
+				},
+			}),
+		},
+	})
 }
 
 // listBoxNextSelectedIDs computes the next selection set after

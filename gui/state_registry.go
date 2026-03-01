@@ -123,6 +123,13 @@ const (
 	nsListBoxFocus = "gui.listbox.focus"
 	nsProgress     = "gui.progress"
 	nsSidebar      = "gui.sidebar"
+	nsCombobox          = "gui.combobox"
+	nsComboboxQuery     = "gui.combobox.query"
+	nsComboboxHighlight = "gui.combobox.highlight"
+	nsCmdPalette          = "gui.cmd_palette"
+	nsCmdPaletteQuery     = "gui.cmd_palette.query"
+	nsCmdPaletteHighlight = "gui.cmd_palette.highlight"
+	nsDrawCanvas          = "gui.draw_canvas"
 )
 
 // Capacity tiers.

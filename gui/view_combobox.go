@@ -1,0 +1,326 @@
+package gui
+
+// ComboboxCfg configures a combobox view with typeahead filtering.
+type ComboboxCfg struct {
+	ID                string
+	Value             string
+	Placeholder       string
+	Options           []string
+	OnSelect          func(string, *Event, *Window)
+	TextStyle         TextStyle
+	PlaceholderStyle  TextStyle
+	Color             Color
+	ColorBorder       Color
+	ColorBorderFocus  Color
+	ColorFocus        Color
+	ColorHighlight    Color
+	ColorHover        Color
+	Padding           Padding
+	SizeBorder        float32
+	Radius            float32
+	MinWidth          float32
+	MaxWidth          float32
+	MaxDropdownHeight float32
+	IDFocus           uint32
+	IDScroll          uint32
+	Sizing            Sizing
+	Disabled          bool
+
+	A11YLabel       string
+	A11YDescription string
+}
+
+// comboboxView implements View for combobox.
+type comboboxView struct {
+	cfg ComboboxCfg
+}
+
+// Combobox creates a combobox view.
+func Combobox(cfg ComboboxCfg) View {
+	applyComboboxDefaults(&cfg)
+	return &comboboxView{cfg: cfg}
+}
+
+func (cv *comboboxView) Content() []View { return nil }
+
+func (cv *comboboxView) GenerateLayout(w *Window) Layout {
+	cfg := &cv.cfg
+	isOpen := StateReadOr[string, bool](w, nsCombobox, cfg.ID, false)
+	query := StateReadOr[string, string](w, nsComboboxQuery, cfg.ID, "")
+	highlighted := StateReadOr[string, int](w, nsComboboxHighlight, cfg.ID, 0)
+
+	// Convert options to core items.
+	items := make([]ListCoreItem, len(cfg.Options))
+	for i, opt := range cfg.Options {
+		items[i] = ListCoreItem{ID: opt, Label: opt}
+	}
+
+	// Filter when query is present.
+	filterQuery := query
+	prepared := listCorePrepare(items, filterQuery, highlighted)
+	filtered := prepared.Items
+	filteredIDs := prepared.IDs
+	hl := prepared.HL
+
+	// Virtualization.
+	rowH := listCoreRowHeightEstimate(cfg.TextStyle, cfg.Padding)
+	listH := cfg.MaxDropdownHeight
+	var scrollY float32
+	if cfg.IDScroll > 0 {
+		scrollY = StateReadOr[uint32, float32](w, nsScrollY, cfg.IDScroll, 0)
+	}
+	first, last := listCoreVisibleRange(len(filtered), rowH, listH, scrollY)
+
+	// Build dropdown content.
+	onSelect := cfg.OnSelect
+	cfgID := cfg.ID
+	coreCfg := ListCoreCfg{
+		TextStyle:      cfg.TextStyle,
+		ColorHighlight: cfg.ColorHighlight,
+		ColorHover:     cfg.ColorHover,
+		ColorSelected:  cfg.ColorHighlight,
+		PaddingItem:    cfg.Padding,
+		OnItemClick: func(itemID string, _ int, e *Event, w *Window) {
+			if onSelect != nil {
+				onSelect(itemID, e, w)
+			}
+			comboboxClose(cfgID, w)
+		},
+	}
+
+	content := make([]View, 0, 4)
+
+	if isOpen {
+		content = append(content, Input(InputCfg{
+			ID:            cfg.ID + ".input",
+			IDFocus:       cfg.IDFocus,
+			Text:          query,
+			Placeholder:   cfg.Placeholder,
+			TextStyle:     cfg.TextStyle,
+			OnTextChanged: makeComboboxOnTextChanged(cfg.ID),
+			Sizing:        FillFit,
+		}))
+	} else {
+		empty := len(cfg.Value) == 0
+		txt := cfg.Value
+		ts := cfg.TextStyle
+		if empty {
+			txt = cfg.Placeholder
+			ts = cfg.PlaceholderStyle
+		}
+		content = append(content, Text(TextCfg{
+			Text:      txt,
+			TextStyle: ts,
+			Mode:      TextModeSingleLine,
+		}))
+	}
+
+	content = append(content,
+		Row(ContainerCfg{
+			Sizing:  FillFill,
+			Padding: PaddingNone,
+		}),
+	)
+
+	arrowText := "▼"
+	if isOpen {
+		arrowText = "▲"
+	}
+	content = append(content, Text(TextCfg{
+		Text:      arrowText,
+		TextStyle: cfg.TextStyle,
+	}))
+
+	if isOpen {
+		dropdownContent := listCoreViews(filtered, coreCfg,
+			first, last, hl, nil, rowH)
+		content = append(content, Column(ContainerCfg{
+			ID:           cfg.ID + ".dropdown",
+			SizeBorder:   cfg.SizeBorder,
+			Radius:       cfg.Radius,
+			ColorBorder:  cfg.ColorBorder,
+			Color:        cfg.Color,
+			MinHeight:    50,
+			MaxHeight:    cfg.MaxDropdownHeight,
+			MinWidth:     cfg.MinWidth,
+			MaxWidth:     cfg.MaxWidth,
+			Float:        true,
+			FloatAnchor:  FloatBottomLeft,
+			FloatTieOff:  FloatTopLeft,
+			FloatOffsetY: -cfg.SizeBorder,
+			IDScroll:     cfg.IDScroll,
+			Padding:      cfg.Padding,
+			Spacing:      0,
+			Content:      dropdownContent,
+		}))
+	}
+
+	colorFocus := cfg.ColorFocus
+	colorBorderFocus := cfg.ColorBorderFocus
+	idFocus := cfg.IDFocus
+
+	outerRow := &containerView{
+		cfg: ContainerCfg{
+			ID:          cfg.ID,
+			IDFocus:     idFocus,
+			A11YRole:    AccessRoleComboBox,
+			A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
+			Color:       cfg.Color,
+			ColorBorder: cfg.ColorBorder,
+			SizeBorder:  cfg.SizeBorder,
+			Radius:      cfg.Radius,
+			Padding:     cfg.Padding,
+			Sizing:      cfg.Sizing,
+			MinWidth:    cfg.MinWidth,
+			MaxWidth:    cfg.MaxWidth,
+			Disabled:    cfg.Disabled,
+			axis:        AxisLeftToRight,
+			AmendLayout: func(layout *Layout, w *Window) {
+				if layout.Shape.Disabled {
+					return
+				}
+				if w.IsFocus(layout.Shape.IDFocus) {
+					layout.Shape.Color = colorFocus
+					layout.Shape.ColorBorder = colorBorderFocus
+				}
+			},
+			OnKeyDown: makeComboboxOnKeyDown(cfg.ID, onSelect, idFocus, filteredIDs),
+			OnClick: func(_ *Layout, e *Event, w *Window) {
+				if !isOpen {
+					comboboxOpen(cfgID, idFocus, w)
+				}
+				e.IsHandled = true
+			},
+			Opacity: 1.0,
+		},
+		content:   content,
+		shapeType: ShapeRectangle,
+	}
+	outerRow.cfg.OnClick = leftClickOnly(outerRow.cfg.OnClick)
+	return GenerateViewLayout(outerRow, w)
+}
+
+func comboboxOpen(id string, idFocus uint32, w *Window) {
+	ss := StateMap[string, bool](w, nsCombobox, capModerate)
+	ss.Set(id, true)
+	sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
+	sq.Set(id, "")
+	sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
+	sh.Set(id, 0)
+	if idFocus > 0 {
+		w.SetIDFocus(idFocus)
+	}
+	w.UpdateWindow()
+}
+
+func comboboxClose(id string, w *Window) {
+	ss := StateMap[string, bool](w, nsCombobox, capModerate)
+	ss.Set(id, false)
+	sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
+	sq.Set(id, "")
+	sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
+	sh.Set(id, 0)
+	w.UpdateWindow()
+}
+
+func makeComboboxOnTextChanged(cfgID string) func(*Layout, string, *Window) {
+	return func(_ *Layout, newText string, w *Window) {
+		sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
+		sq.Set(cfgID, newText)
+		sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
+		sh.Set(cfgID, 0)
+		w.UpdateWindow()
+	}
+}
+
+func makeComboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idFocus uint32, filteredIDs []string) func(*Layout, *Event, *Window) {
+	return func(_ *Layout, e *Event, w *Window) {
+		comboboxOnKeyDown(cfgID, onSelect, idFocus, filteredIDs, e, w)
+	}
+}
+
+func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idFocus uint32, filteredIDs []string, e *Event, w *Window) {
+	ss := StateMap[string, bool](w, nsCombobox, capModerate)
+	isOpen, _ := ss.Get(cfgID)
+
+	if !isOpen {
+		if e.KeyCode == KeySpace || e.KeyCode == KeyEnter ||
+			e.KeyCode == KeyUp || e.KeyCode == KeyDown {
+			comboboxOpen(cfgID, idFocus, w)
+			e.IsHandled = true
+		}
+		return
+	}
+
+	if e.KeyCode == KeyEscape || e.KeyCode == KeyTab {
+		comboboxClose(cfgID, w)
+		e.IsHandled = true
+		return
+	}
+
+	itemCount := len(filteredIDs)
+	sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
+	cur, _ := sh.Get(cfgID)
+	action := listCoreNavigate(e.KeyCode, itemCount)
+
+	if action == ListCoreSelectItem {
+		if cur >= 0 && cur < itemCount && onSelect != nil {
+			onSelect(filteredIDs[cur], e, w)
+			comboboxClose(cfgID, w)
+		}
+		e.IsHandled = true
+		return
+	}
+	next, changed := listCoreApplyNav(action, cur, itemCount)
+	if changed {
+		sh.Set(cfgID, next)
+		w.UpdateWindow()
+		e.IsHandled = true
+	}
+}
+
+func applyComboboxDefaults(cfg *ComboboxCfg) {
+	d := &DefaultComboboxStyle
+	if cfg.Color == (Color{}) {
+		cfg.Color = d.Color
+	}
+	if cfg.ColorHover == (Color{}) {
+		cfg.ColorHover = d.ColorHover
+	}
+	if cfg.ColorFocus == (Color{}) {
+		cfg.ColorFocus = d.ColorFocus
+	}
+	if cfg.ColorBorder == (Color{}) {
+		cfg.ColorBorder = d.ColorBorder
+	}
+	if cfg.ColorBorderFocus == (Color{}) {
+		cfg.ColorBorderFocus = d.ColorBorderFocus
+	}
+	if cfg.ColorHighlight == (Color{}) {
+		cfg.ColorHighlight = d.ColorHighlight
+	}
+	if cfg.Padding == (Padding{}) {
+		cfg.Padding = d.Padding
+	}
+	if cfg.SizeBorder == 0 {
+		cfg.SizeBorder = d.SizeBorder
+	}
+	if cfg.Radius == 0 {
+		cfg.Radius = d.Radius
+	}
+	if cfg.MinWidth == 0 {
+		cfg.MinWidth = d.MinWidth
+	}
+	if cfg.MaxWidth == 0 {
+		cfg.MaxWidth = d.MaxWidth
+	}
+	if cfg.TextStyle == (TextStyle{}) {
+		cfg.TextStyle = d.TextStyle
+	}
+	if cfg.PlaceholderStyle == (TextStyle{}) {
+		cfg.PlaceholderStyle = d.PlaceholderStyle
+	}
+	if cfg.MaxDropdownHeight == 0 {
+		cfg.MaxDropdownHeight = 200
+	}
+}

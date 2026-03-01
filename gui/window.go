@@ -242,3 +242,9 @@ func (w *Window) Renderers() []RenderCmd {
 func (w *Window) MouseCursorState() MouseCursor {
 	return w.viewState.mouseCursor
 }
+
+// SetTheme sets the active theme and updates the window.
+func (w *Window) SetTheme(t Theme) {
+	SetTheme(t)
+	w.UpdateWindow()
+}

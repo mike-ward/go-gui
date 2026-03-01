@@ -122,7 +122,7 @@ func renderShapeInner(shape *Shape, parentColor Color, clip DrawClip, w *Window)
 	case ShapeSVG:
 		// TODO: renderSvg — Phase 7
 	case ShapeDrawCanvas:
-		// TODO: renderDrawCanvas — Phase 7
+		renderDrawCanvas(shape, clip, w)
 	case ShapeNone:
 		// no-op
 	}

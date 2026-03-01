@@ -47,6 +47,8 @@ type Theme struct {
 	BreadcrumbStyle   BreadcrumbStyle
 	SplitterStyle     SplitterStyle
 	TableStyle        TableStyle
+	ComboboxStyle        ComboboxStyle
+	CommandPaletteStyle  CommandPaletteStyle
 
 	// Text size shortcuts (N = normal, B = bold).
 	N1 TextStyle
@@ -498,6 +500,39 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			ColumnWidthDefault: 50,
 			ColumnWidthMin:     20,
 		},
+		ComboboxStyle: ComboboxStyle{
+			Color:            cfg.ColorInterior,
+			ColorHover:       cfg.ColorHover,
+			ColorFocus:       cfg.ColorInterior,
+			ColorBorder:      cfg.ColorBorder,
+			ColorBorderFocus: borderFocus,
+			ColorHighlight:   cfg.ColorSelect,
+			Padding:          cfg.PaddingSmall,
+			SizeBorder:       cfg.SizeBorder,
+			Radius:           cfg.Radius,
+			MinWidth:         75,
+			MaxWidth:         200,
+			TextStyle:        ts,
+			PlaceholderStyle: TextStyle{
+				Color: placeholderColor,
+				Size:  ts.Size,
+			},
+		},
+		CommandPaletteStyle: CommandPaletteStyle{
+			Color:          cfg.ColorPanel,
+			ColorBorder:    cfg.ColorBorder,
+			ColorHighlight: cfg.ColorSelect,
+			SizeBorder:     cfg.SizeBorder,
+			Radius:         cfg.Radius,
+			Width:          500,
+			MaxHeight:      400,
+			TextStyle:      ts,
+			DetailStyle: TextStyle{
+				Color: RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 140),
+				Size:  ts.Size,
+			},
+			BackdropColor: RGBA(0, 0, 0, 120),
+		},
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,
@@ -574,6 +609,8 @@ func SetTheme(t Theme) {
 	DefaultBreadcrumbStyle = t.BreadcrumbStyle
 	DefaultSplitterStyle = t.SplitterStyle
 	DefaultTableStyle = t.TableStyle
+	DefaultComboboxStyle = t.ComboboxStyle
+	DefaultCommandPaletteStyle = t.CommandPaletteStyle
 }
 
 // With*Style methods for selective overrides.
@@ -685,6 +722,16 @@ func (t Theme) WithSplitterStyle(s SplitterStyle) Theme {
 
 func (t Theme) WithTableStyle(s TableStyle) Theme {
 	t.TableStyle = s
+	return t
+}
+
+func (t Theme) WithComboboxStyle(s ComboboxStyle) Theme {
+	t.ComboboxStyle = s
+	return t
+}
+
+func (t Theme) WithCommandPaletteStyle(s CommandPaletteStyle) Theme {
+	t.CommandPaletteStyle = s
 	return t
 }
 
@@ -849,6 +896,17 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.TableStyle.ColorBorder = border
 	t.TableStyle.ColorSelect = sel
 	t.TableStyle.ColorHover = hover
+
+	t.ComboboxStyle.Color = interior
+	t.ComboboxStyle.ColorHover = hover
+	t.ComboboxStyle.ColorFocus = interior
+	t.ComboboxStyle.ColorBorder = border
+	t.ComboboxStyle.ColorBorderFocus = borderFocus
+	t.ComboboxStyle.ColorHighlight = sel
+
+	t.CommandPaletteStyle.Color = panel
+	t.CommandPaletteStyle.ColorBorder = border
+	t.CommandPaletteStyle.ColorHighlight = sel
 
 	return t
 }

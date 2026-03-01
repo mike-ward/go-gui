@@ -339,6 +339,37 @@ type TableStyle struct {
 	SizeBorder         float32
 }
 
+// ComboboxStyle defines combobox visual properties.
+type ComboboxStyle struct {
+	Color            Color
+	ColorHover       Color
+	ColorFocus       Color
+	ColorBorder      Color
+	ColorBorderFocus Color
+	ColorHighlight   Color
+	Padding          Padding
+	SizeBorder       float32
+	Radius           float32
+	MinWidth         float32
+	MaxWidth         float32
+	TextStyle        TextStyle
+	PlaceholderStyle TextStyle
+}
+
+// CommandPaletteStyle defines command palette visual properties.
+type CommandPaletteStyle struct {
+	Color          Color
+	ColorBorder    Color
+	ColorHighlight Color
+	SizeBorder     float32
+	Radius         float32
+	Width          float32
+	MaxHeight      float32
+	TextStyle      TextStyle
+	DetailStyle    TextStyle
+	BackdropColor  Color
+}
+
 // Default widget styles (dark theme).
 var (
 	DefaultInputStyle = InputStyle{
@@ -663,5 +694,40 @@ var (
 		AlignHead:          HAlignCenter,
 		ColumnWidthDefault: 50,
 		ColumnWidthMin:     20,
+	}
+
+	DefaultComboboxStyle = ComboboxStyle{
+		Color:            colorInteriorDark,
+		ColorHover:       colorHoverDark,
+		ColorFocus:       colorInteriorDark,
+		ColorBorder:      colorBorderDark,
+		ColorBorderFocus: colorSelectDark,
+		ColorHighlight:   colorSelectDark,
+		Padding:          PaddingSmall,
+		SizeBorder:       SizeBorderDef,
+		Radius:           RadiusMedium,
+		MinWidth:         75,
+		MaxWidth:         200,
+		TextStyle:        DefaultTextStyle,
+		PlaceholderStyle: TextStyle{
+			Color: RGBA(128, 128, 128, 200),
+			Size:  SizeTextMedium,
+		},
+	}
+
+	DefaultCommandPaletteStyle = CommandPaletteStyle{
+		Color:          colorPanelDark,
+		ColorBorder:    colorBorderDark,
+		ColorHighlight: colorSelectDark,
+		SizeBorder:     SizeBorderDef,
+		Radius:         RadiusMedium,
+		Width:          500,
+		MaxHeight:      400,
+		TextStyle:      DefaultTextStyle,
+		DetailStyle: TextStyle{
+			Color: RGBA(128, 128, 128, 200),
+			Size:  SizeTextMedium,
+		},
+		BackdropColor: RGBA(0, 0, 0, 120),
 	}
 )

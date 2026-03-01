@@ -52,6 +52,8 @@ func (w *Window) EventFn(e *Event) {
 		if !e.IsHandled {
 			ss := StateMap[string, bool](w, nsSelect, capModerate)
 			ss.Clear()
+			cs := StateMap[string, bool](w, nsCombobox, capModerate)
+			cs.Clear()
 		}
 
 	case EventMouseMove:

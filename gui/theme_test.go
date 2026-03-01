@@ -76,6 +76,8 @@ func TestSetTheme(t *testing.T) {
 	savedBreadcrumb := DefaultBreadcrumbStyle
 	savedSplitter := DefaultSplitterStyle
 	savedTable := DefaultTableStyle
+	savedCombobox := DefaultComboboxStyle
+	savedCmdPalette := DefaultCommandPaletteStyle
 	defer func() {
 		DefaultButtonStyle = savedBtn
 		DefaultTextStyle = savedText
@@ -99,6 +101,8 @@ func TestSetTheme(t *testing.T) {
 		DefaultBreadcrumbStyle = savedBreadcrumb
 		DefaultSplitterStyle = savedSplitter
 		DefaultTableStyle = savedTable
+		DefaultComboboxStyle = savedCombobox
+		DefaultCommandPaletteStyle = savedCmdPalette
 	}()
 
 	theme := Theme{
