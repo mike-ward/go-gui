@@ -39,6 +39,13 @@ type Window struct {
 
 	// Active animations keyed by ID.
 	animations map[string]Animation
+
+	// Dialog state.
+	dialogCfg DialogCfg
+
+	// Toast state.
+	toasts       []toastNotification
+	toastCounter uint64
 }
 
 // ViewState holds per-window UI state.
@@ -48,6 +55,9 @@ type ViewState struct {
 	mouseCursor    MouseCursor
 	mouseLocked    bool
 	cursorOnSticky bool
+	mousePosX      float32
+	mousePosY      float32
+	tooltip        tooltipState
 }
 
 // State returns a typed pointer to the user-supplied state.

@@ -1,5 +1,7 @@
 package gui
 
+import "time"
+
 // InputStyle defines input field visual properties.
 type InputStyle struct {
 	Color            Color
@@ -116,6 +118,71 @@ type ListBoxStyle struct {
 	SubheadingStyle  TextStyle
 }
 
+// DialogStyle defines dialog visual properties.
+type DialogStyle struct {
+	Color            Color
+	ColorBorder      Color
+	ColorBorderFocus Color
+	Padding          Padding
+	SizeBorder       float32
+	Radius           float32
+	RadiusBorder     float32
+	BlurRadius       float32
+	Shadow           *BoxShadow
+	AlignButtons     HorizontalAlign
+	TitleTextStyle   TextStyle
+	TextStyle        TextStyle
+}
+
+// ToastAnchor specifies toast notification position.
+type ToastAnchor uint8
+
+const (
+	ToastTopLeft ToastAnchor = iota
+	ToastTopRight
+	ToastBottomLeft
+	ToastBottomRight
+)
+
+// ToastStyle defines toast notification visual properties.
+type ToastStyle struct {
+	MaxVisible  int
+	Anchor      ToastAnchor
+	Width       float32
+	Margin      float32
+	Spacing     float32
+	AccentWidth float32
+	Padding     Padding
+	Radius      float32
+	SizeBorder  float32
+	Color       Color
+	ColorBorder Color
+	ColorInfo    Color
+	ColorSuccess Color
+	ColorWarning Color
+	ColorError   Color
+	TextStyle   TextStyle
+	TitleStyle  TextStyle
+	Shadow      *BoxShadow
+}
+
+// TooltipStyle defines tooltip visual properties.
+type TooltipStyle struct {
+	Delay            time.Duration
+	Color            Color
+	ColorHover       Color
+	ColorFocus       Color
+	ColorClick       Color
+	ColorBorder      Color
+	ColorBorderFocus Color
+	Padding          Padding
+	SizeBorder       float32
+	Radius           float32
+	RadiusBorder     float32
+	Shadow           *BoxShadow
+	TextStyle        TextStyle
+}
+
 // Default widget styles (dark theme).
 var (
 	DefaultInputStyle = InputStyle{
@@ -226,5 +293,59 @@ var (
 		Radius:           RadiusMedium,
 		TextStyleNormal:  DefaultTextStyle,
 		SubheadingStyle:  DefaultTextStyle,
+	}
+
+	DefaultDialogStyle = DialogStyle{
+		Color:            colorPanelDark,
+		ColorBorder:      colorBorderDark,
+		ColorBorderFocus: colorSelectDark,
+		Padding:          PaddingLarge,
+		SizeBorder:       SizeBorderDef,
+		Radius:           RadiusMedium,
+		RadiusBorder:     RadiusMedium,
+		AlignButtons:     HAlignCenter,
+		TitleTextStyle: TextStyle{
+			Color: colorTextDark,
+			Size:  SizeTextLarge,
+		},
+		TextStyle: DefaultTextStyle,
+	}
+
+	DefaultToastStyle = ToastStyle{
+		MaxVisible:   5,
+		Anchor:       ToastBottomRight,
+		Width:        260,
+		Margin:       16,
+		Spacing:      8,
+		AccentWidth:  4,
+		Padding:      PaddingMedium,
+		Radius:       RadiusMedium,
+		SizeBorder:   SizeBorderDef,
+		Color:        colorPanelDark,
+		ColorBorder:  colorBorderDark,
+		ColorInfo:    colorSelectDark,
+		ColorSuccess: RGBA(46, 160, 67, 255),
+		ColorWarning: RGBA(210, 153, 34, 255),
+		ColorError:   RGBA(218, 54, 51, 255),
+		TextStyle:    DefaultTextStyle,
+		TitleStyle: TextStyle{
+			Color: colorTextDark,
+			Size:  SizeTextMedium,
+		},
+	}
+
+	DefaultTooltipStyle = TooltipStyle{
+		Delay:            500 * time.Millisecond,
+		Color:            colorInteriorDark,
+		ColorHover:       colorHoverDark,
+		ColorFocus:       colorActiveDark,
+		ColorClick:       colorActiveDark,
+		ColorBorder:      colorBorderDark,
+		ColorBorderFocus: colorSelectDark,
+		Padding:          PaddingSmall,
+		SizeBorder:       SizeBorderDef,
+		Radius:           RadiusSmall,
+		RadiusBorder:     RadiusSmall,
+		TextStyle:        DefaultTextStyle,
 	}
 )

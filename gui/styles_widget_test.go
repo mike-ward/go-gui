@@ -41,3 +41,39 @@ func TestDefaultWidgetStylesNonZero(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultDialogStyle(t *testing.T) {
+	s := DefaultDialogStyle
+	if s.Color.Eq(Color{}) {
+		t.Error("dialog color should not be zero")
+	}
+	if s.Radius != RadiusMedium {
+		t.Errorf("radius = %f, want %f", s.Radius, RadiusMedium)
+	}
+	if s.AlignButtons != HAlignCenter {
+		t.Errorf("align = %d, want center", s.AlignButtons)
+	}
+}
+
+func TestDefaultToastStyle(t *testing.T) {
+	s := DefaultToastStyle
+	if s.MaxVisible != 5 {
+		t.Errorf("max_visible = %d, want 5", s.MaxVisible)
+	}
+	if s.Width != 260 {
+		t.Errorf("width = %f, want 260", s.Width)
+	}
+	if s.Anchor != ToastBottomRight {
+		t.Errorf("anchor = %d, want bottom-right", s.Anchor)
+	}
+}
+
+func TestDefaultTooltipStyle(t *testing.T) {
+	s := DefaultTooltipStyle
+	if s.Delay == 0 {
+		t.Error("delay should not be zero")
+	}
+	if s.Radius != RadiusSmall {
+		t.Errorf("radius = %f, want %f", s.Radius, RadiusSmall)
+	}
+}

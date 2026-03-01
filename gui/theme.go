@@ -1,6 +1,9 @@
 package gui
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 // guiTheme is the package-level active theme.
 var guiTheme Theme
@@ -33,6 +36,9 @@ type Theme struct {
 	ToggleStyle    ToggleStyle
 	SelectStyle    SelectStyle
 	ListBoxStyle   ListBoxStyle
+	DialogStyle    DialogStyle
+	ToastStyle     ToastStyle
+	TooltipStyle   TooltipStyle
 
 	// Text size shortcuts (N = normal, B = bold).
 	N1 TextStyle
@@ -291,6 +297,51 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			TextStyleNormal:  ts,
 			SubheadingStyle:  ts,
 		},
+		DialogStyle: DialogStyle{
+			Color:            cfg.ColorPanel,
+			ColorBorder:      cfg.ColorBorder,
+			ColorBorderFocus: borderFocus,
+			Padding:          cfg.PaddingLarge,
+			SizeBorder:       cfg.SizeBorder,
+			Radius:           cfg.RadiusMedium,
+			RadiusBorder:     cfg.RadiusMedium,
+			AlignButtons:     HAlignCenter,
+			TitleTextStyle:   makeStyle(ts, cfg.SizeTextLarge),
+			TextStyle:        ts,
+		},
+		ToastStyle: ToastStyle{
+			MaxVisible:   5,
+			Anchor:       ToastBottomRight,
+			Width:        260,
+			Margin:       16,
+			Spacing:      8,
+			AccentWidth:  4,
+			Padding:      cfg.PaddingMedium,
+			Radius:       cfg.RadiusMedium,
+			SizeBorder:   cfg.SizeBorder,
+			Color:        cfg.ColorPanel,
+			ColorBorder:  cfg.ColorBorder,
+			ColorInfo:    cfg.ColorSelect,
+			ColorSuccess: RGBA(46, 160, 67, 255),
+			ColorWarning: RGBA(210, 153, 34, 255),
+			ColorError:   RGBA(218, 54, 51, 255),
+			TextStyle:    ts,
+			TitleStyle:   makeStyle(ts, cfg.SizeTextMedium),
+		},
+		TooltipStyle: TooltipStyle{
+			Delay:            500 * time.Millisecond,
+			Color:            cfg.ColorInterior,
+			ColorHover:       cfg.ColorHover,
+			ColorFocus:       cfg.ColorActive,
+			ColorClick:       cfg.ColorActive,
+			ColorBorder:      cfg.ColorBorder,
+			ColorBorderFocus: borderFocus,
+			Padding:          cfg.PaddingSmall,
+			SizeBorder:       cfg.SizeBorder,
+			Radius:           cfg.RadiusSmall,
+			RadiusBorder:     cfg.RadiusSmall,
+			TextStyle:        ts,
+		},
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,
@@ -356,6 +407,9 @@ func SetTheme(t Theme) {
 	DefaultToggleStyle = t.ToggleStyle
 	DefaultSelectStyle = t.SelectStyle
 	DefaultListBoxStyle = t.ListBoxStyle
+	DefaultDialogStyle = t.DialogStyle
+	DefaultToastStyle = t.ToastStyle
+	DefaultTooltipStyle = t.TooltipStyle
 }
 
 // With*Style methods for selective overrides.
@@ -412,6 +466,21 @@ func (t Theme) WithSelectStyle(s SelectStyle) Theme {
 
 func (t Theme) WithListBoxStyle(s ListBoxStyle) Theme {
 	t.ListBoxStyle = s
+	return t
+}
+
+func (t Theme) WithDialogStyle(s DialogStyle) Theme {
+	t.DialogStyle = s
+	return t
+}
+
+func (t Theme) WithToastStyle(s ToastStyle) Theme {
+	t.ToastStyle = s
+	return t
+}
+
+func (t Theme) WithTooltipStyle(s TooltipStyle) Theme {
+	t.TooltipStyle = s
 	return t
 }
 
@@ -510,6 +579,19 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.ScrollbarStyle.ColorThumb = active
 
 	t.RectangleStyle.ColorBorder = border
+
+	t.DialogStyle.Color = panel
+	t.DialogStyle.ColorBorder = border
+	t.DialogStyle.ColorBorderFocus = borderFocus
+
+	t.ToastStyle.Color = panel
+	t.ToastStyle.ColorBorder = border
+	t.ToastStyle.ColorInfo = sel
+
+	t.TooltipStyle.Color = interior
+	t.TooltipStyle.ColorHover = hover
+	t.TooltipStyle.ColorBorder = border
+	t.TooltipStyle.ColorBorderFocus = borderFocus
 
 	return t
 }

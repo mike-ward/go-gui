@@ -1,0 +1,65 @@
+package gui
+
+// layoutArrange is the top-level layout orchestrator. It sets
+// parents, extracts floats, injects toast/dialog overlays, runs
+// the pipeline on each layer, and processes hover in reverse
+// layer order.
+func layoutArrange(layout *Layout, w *Window) []Layout {
+	// Set parent pointers.
+	layoutParents(layout, nil)
+
+	// Extract floating layouts from main tree.
+	var floatingLayouts []*Layout
+	layoutRemoveFloatingLayouts(layout, &floatingLayouts)
+
+	// Inject toast container as floating layer.
+	if len(w.toasts) > 0 {
+		tv := toastContainerView(w)
+		if tv != nil {
+			tl := GenerateViewLayout(tv, w)
+			heapLayout := new(Layout)
+			*heapLayout = tl
+			layoutParents(heapLayout, nil)
+			floatingLayouts = append(floatingLayouts, heapLayout)
+		}
+	}
+
+	// Inject dialog as last floating layer (always on top).
+	if w.dialogCfg.visible {
+		dv := dialogViewGenerator(w.dialogCfg)
+		if dv != nil {
+			dl := GenerateViewLayout(dv, w)
+			heapLayout := new(Layout)
+			*heapLayout = dl
+			layoutParents(heapLayout, nil)
+			floatingLayouts = append(floatingLayouts, heapLayout)
+		}
+	}
+
+	// Run pipeline on main layout.
+	layoutPipeline(layout, w)
+	layouts := make([]Layout, 0, 1+len(floatingLayouts))
+	layouts = append(layouts, *layout)
+
+	// Run pipeline on each floating layout.
+	for _, fl := range floatingLayouts {
+		if fl.Shape.ShapeClip.Width <= 0 &&
+			fl.Shape.ShapeClip.Height <= 0 {
+			// Skip invisible floats — but still run pipeline
+			// since clips haven't been set yet at this point.
+		}
+		layoutPipeline(fl, w)
+		layouts = append(layouts, *fl)
+	}
+
+	// Hover processing: topmost first.
+	for i := len(layouts) - 1; i >= 0; i-- {
+		handled := layoutHover(&layouts[i], w)
+		if handled && i > 0 {
+			// Cursor inside a floating layer blocks lower layers.
+			break
+		}
+	}
+
+	return layouts
+}
