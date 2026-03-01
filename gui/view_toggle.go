@@ -1,0 +1,168 @@
+package gui
+
+// ToggleCfg configures a toggle/checkbox button.
+type ToggleCfg struct {
+	ID               string
+	Label            string
+	TextSelect       string
+	TextUnselect     string
+	OnClick          func(*Layout, *Event, *Window)
+	TextStyle        TextStyle
+	TextStyleLabel   TextStyle
+	Color            Color
+	ColorFocus       Color
+	ColorHover       Color
+	ColorClick       Color
+	ColorBorder      Color
+	ColorBorderFocus Color
+	ColorSelect      Color
+	Padding          Padding
+	SizeBorder       float32
+	Radius           float32
+	MinWidth         float32
+	IDFocus          uint32
+	Disabled         bool
+	Invisible        bool
+	Selected         bool
+
+	A11YLabel       string
+	A11YDescription string
+}
+
+// Checkbox is an alias for Toggle.
+func Checkbox(cfg ToggleCfg) View { return Toggle(cfg) }
+
+// Toggle creates a toggle/checkbox view.
+func Toggle(cfg ToggleCfg) View {
+	applyToggleDefaults(&cfg)
+
+	boxColor := cfg.Color
+	if cfg.Selected {
+		boxColor = cfg.ColorSelect
+	}
+
+	txt := cfg.TextSelect
+	if !cfg.Selected && cfg.TextUnselect != " " {
+		txt = cfg.TextUnselect
+	}
+	txtStyle := cfg.TextStyle
+	if !cfg.Selected && cfg.TextUnselect == " " {
+		txtStyle.Color = ColorTransparent
+	}
+
+	colorFocus := cfg.ColorFocus
+	colorBorderFocus := cfg.ColorBorderFocus
+	colorHover := cfg.ColorHover
+	colorClick := cfg.ColorClick
+
+	content := make([]View, 0, 2)
+	content = append(content, Row(ContainerCfg{
+		Color:       boxColor,
+		ColorBorder: cfg.ColorBorder,
+		SizeBorder:  cfg.SizeBorder,
+		Padding:     cfg.Padding,
+		Radius:      cfg.Radius,
+		Disabled:    cfg.Disabled,
+		Invisible:   cfg.Invisible,
+		HAlign:      HAlignCenter,
+		VAlign:      VAlignMiddle,
+		Content: []View{
+			Text(TextCfg{Text: txt, TextStyle: txtStyle}),
+		},
+	}))
+
+	if len(cfg.Label) > 0 {
+		content = append(content,
+			Text(TextCfg{Text: cfg.Label, TextStyle: cfg.TextStyleLabel}))
+	}
+
+	a11yState := AccessStateNone
+	if cfg.Selected {
+		a11yState = AccessStateChecked
+	}
+
+	return Row(ContainerCfg{
+		ID:              cfg.ID,
+		IDFocus:         cfg.IDFocus,
+		Padding:         PaddingNone,
+		VAlign:          VAlignMiddle,
+		A11YRole:        AccessRoleCheckbox,
+		A11YState:       a11yState,
+		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.Label),
+		A11YDescription: cfg.A11YDescription,
+		OnChar:          spacebarToClick(cfg.OnClick),
+		OnClick:         leftClickOnly(cfg.OnClick),
+		MinWidth:        cfg.MinWidth,
+		OnHover: func(layout *Layout, e *Event, w *Window) {
+			w.SetMouseCursor(CursorPointingHand)
+			if len(layout.Children) == 0 {
+				return
+			}
+			layout.Children[0].Shape.Color = colorHover
+			if e.MouseButton == MouseLeft {
+				layout.Children[0].Shape.Color = colorClick
+			}
+		},
+		AmendLayout: func(layout *Layout, w *Window) {
+			if layout.Shape.Disabled ||
+				!layout.Shape.HasEvents() ||
+				layout.Shape.Events.OnClick == nil {
+				return
+			}
+			if len(layout.Children) == 0 {
+				return
+			}
+			if w.IsFocus(layout.Shape.IDFocus) {
+				layout.Children[0].Shape.Color = colorFocus
+				layout.Children[0].Shape.ColorBorder = colorBorderFocus
+			}
+		},
+		Content: content,
+	})
+}
+
+func applyToggleDefaults(cfg *ToggleCfg) {
+	d := &DefaultButtonStyle
+	if cfg.TextSelect == "" {
+		cfg.TextSelect = "✓"
+	}
+	if cfg.TextUnselect == "" {
+		cfg.TextUnselect = " "
+	}
+	if cfg.Color == (Color{}) {
+		cfg.Color = d.Color
+	}
+	if cfg.ColorFocus == (Color{}) {
+		cfg.ColorFocus = d.ColorFocus
+	}
+	if cfg.ColorHover == (Color{}) {
+		cfg.ColorHover = d.ColorHover
+	}
+	if cfg.ColorClick == (Color{}) {
+		cfg.ColorClick = d.ColorClick
+	}
+	if cfg.ColorBorder == (Color{}) {
+		cfg.ColorBorder = d.ColorBorder
+	}
+	if cfg.ColorBorderFocus == (Color{}) {
+		cfg.ColorBorderFocus = d.ColorBorderFocus
+	}
+	if cfg.ColorSelect == (Color{}) {
+		cfg.ColorSelect = colorSelectDark
+	}
+	if cfg.SizeBorder == 0 {
+		cfg.SizeBorder = SizeBorderDef
+	}
+	if cfg.Radius == 0 {
+		cfg.Radius = RadiusSmall
+	}
+	if cfg.Padding == (Padding{}) {
+		cfg.Padding = PaddingTwoThree
+	}
+	if cfg.TextStyle == (TextStyle{}) {
+		cfg.TextStyle = DefaultTextStyle
+	}
+	if cfg.TextStyleLabel == (TextStyle{}) {
+		cfg.TextStyleLabel = DefaultTextStyle
+	}
+}

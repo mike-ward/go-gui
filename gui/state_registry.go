@@ -113,10 +113,14 @@ func (r *StateRegistry) entryCount(ns string) int {
 
 // Namespace constants for internal gui state maps.
 const (
-	nsOverflow          = "gui.overflow"
-	nsScrollX           = "gui.scroll.x"
-	nsScrollY           = "gui.scroll.y"
-	nsSelect            = "gui.select"
+	nsOverflow    = "gui.overflow"
+	nsScrollX     = "gui.scroll.x"
+	nsScrollY     = "gui.scroll.y"
+	nsSelect      = "gui.select"
+	nsInput       = "gui.input"
+	nsInputFocus  = "gui.input.focus"
+	nsSelectHL    = "gui.select.highlight"
+	nsListBoxFocus = "gui.listbox.focus"
 )
 
 // Capacity tiers.
