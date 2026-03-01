@@ -257,9 +257,42 @@ type BoxShadow struct {
 	SpreadRadius float32
 }
 
-// GradientDef defines a gradient.
+// GradientType specifies the gradient algorithm.
+type GradientType uint8
+
+const (
+	GradientLinear GradientType = iota
+	GradientRadial
+)
+
+// GradientDirection specifies the gradient direction for linear
+// gradients.
+type GradientDirection uint8
+
+const (
+	GradientToTop GradientDirection = iota
+	GradientToTopRight
+	GradientToRight
+	GradientToBottomRight
+	GradientToBottom
+	GradientToBottomLeft
+	GradientToLeft
+	GradientToTopLeft
+)
+
+// GradientStop defines a color at a position along the gradient.
+type GradientStop struct {
+	Color Color
+	Pos   float32 // 0.0 to 1.0
+}
+
+// GradientDef defines a gradient with stops and direction.
 type GradientDef struct {
-	// Placeholder — full implementation in Phase 5.
+	Stops     []GradientStop
+	Type      GradientType
+	Direction GradientDirection
+	Angle     float32 // explicit angle in degrees
+	HasAngle  bool    // true when Angle overrides Direction
 }
 
 // AccessInfo holds string accessibility data.

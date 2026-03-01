@@ -36,6 +36,9 @@ type Window struct {
 
 	// Render guard — warnings emitted once per kind.
 	renderGuardWarned map[string]bool
+
+	// Active animations keyed by ID.
+	animations map[string]Animation
 }
 
 // ViewState holds per-window UI state.

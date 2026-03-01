@@ -1,0 +1,111 @@
+package gui
+
+import "time"
+
+// Keyframe represents a single animation waypoint.
+type Keyframe struct {
+	At     float32  // position 0.0-1.0
+	Value  float32
+	Easing EasingFn // easing TO this keyframe
+}
+
+// KeyframeAnimation interpolates through multiple waypoints
+// with per-segment easing.
+type KeyframeAnimation struct {
+	AnimID    string
+	Duration  time.Duration
+	Keyframes []Keyframe
+	OnValue   func(float32, *Window)
+	OnDone    func(*Window)
+	Repeat    bool
+	delay     time.Duration
+	start     time.Time
+	stopped   bool
+}
+
+const keyframeDefaultDuration = 500 * time.Millisecond
+
+func (k *KeyframeAnimation) ID() string                    { return k.AnimID }
+func (k *KeyframeAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
+func (k *KeyframeAnimation) IsStopped() bool               { return k.stopped }
+func (k *KeyframeAnimation) SetStart(now time.Time)        { k.start = now }
+
+// NewKeyframeAnimation creates a KeyframeAnimation with defaults.
+func NewKeyframeAnimation(id string, keyframes []Keyframe, onValue func(float32, *Window)) *KeyframeAnimation {
+	return &KeyframeAnimation{
+		AnimID:    id,
+		Duration:  keyframeDefaultDuration,
+		Keyframes: keyframes,
+		OnValue:   onValue,
+	}
+}
+
+func updateKeyframe(kf *KeyframeAnimation, w *Window, deferred *[]func(*Window)) bool {
+	if kf.stopped {
+		return false
+	}
+	elapsed := time.Since(kf.start)
+	if elapsed < kf.delay {
+		return false
+	}
+	animElapsed := elapsed - kf.delay
+	if animElapsed >= kf.Duration {
+		if len(kf.Keyframes) > 0 {
+			val := kf.Keyframes[len(kf.Keyframes)-1].Value
+			onValue := kf.OnValue
+			*deferred = append(*deferred, func(w *Window) {
+				onValue(val, w)
+			})
+		}
+		if kf.Repeat {
+			kf.start = time.Now()
+			return true
+		}
+		if kf.OnDone != nil {
+			*deferred = append(*deferred, kf.OnDone)
+		}
+		kf.stopped = true
+		return true
+	}
+	progress := float32(animElapsed) / float32(kf.Duration)
+	value := interpolateKeyframes(kf.Keyframes, progress)
+	onValue := kf.OnValue
+	*deferred = append(*deferred, func(w *Window) {
+		onValue(value, w)
+	})
+	return true
+}
+
+func interpolateKeyframes(keyframes []Keyframe, progress float32) float32 {
+	if len(keyframes) < 2 {
+		if len(keyframes) == 1 {
+			return keyframes[0].Value
+		}
+		return 0
+	}
+	// Binary search for the first keyframe with At >= progress.
+	lo, hi := 0, len(keyframes)-1
+	for lo < hi {
+		mid := (lo + hi) / 2
+		if keyframes[mid].At < progress {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+	if lo == 0 {
+		return keyframes[0].Value
+	}
+	prev := keyframes[lo-1]
+	curr := keyframes[lo]
+	segLen := curr.At - prev.At
+	if segLen <= 0 {
+		return curr.Value
+	}
+	local := (progress - prev.At) / segLen
+	easing := curr.Easing
+	if easing == nil {
+		easing = EaseLinear
+	}
+	return Lerp(prev.Value, curr.Value, easing(local))
+}
