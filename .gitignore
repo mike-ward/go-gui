@@ -1,0 +1,44 @@
+# ignore all
+*
+# unignore files with extensions
+!*.*
+# unignore all dirs
+!*/
+### Above combination will ignore all files without extension
+
+!Makefile
+!LICENSE
+
+# Binaries
+main
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Built example binaries
+
+# Test binary
+*.test
+
+# Output
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Dependency directory
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

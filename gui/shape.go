@@ -1,0 +1,308 @@
+package gui
+
+import "math/rand/v2"
+
+// Shape is the only data structure used to draw to the screen.
+type Shape struct {
+	UID uint64 // internal use only
+
+	// String fields
+	ID       string // unique identifier assigned by the user
+	Resource string // image path or SVG source
+
+	// Optional sub-structs (nil when unused)
+	Events *EventHandlers // event handlers
+	TC     *ShapeTextConfig // text/RTF fields
+	FX     *ShapeEffects    // visual effects
+	A11Y   *AccessInfo      // accessibility metadata
+
+	// Structs
+	ShapeClip DrawClip // calculated clipping rectangle
+	Padding   Padding  // inner spacing
+	Sizing    Sizing   // sizing logic
+
+	// Numeric fields
+	X          float32 // final calculated X position (absolute)
+	Y          float32 // final calculated Y position (absolute)
+	Width      float32
+	MinWidth   float32
+	MaxWidth   float32
+	Height     float32
+	MinHeight  float32
+	MaxHeight  float32
+	Radius     float32 // corner radius
+	Spacing    float32 // spacing between children
+	FloatOffsetX float32
+	FloatOffsetY float32
+
+	IDFocus          uint32 // >0 means focusable; value = tab order
+	IDScroll         uint32 // >0 means receives scroll events
+	IDScrollContainer uint32
+
+	Color       Color
+	ColorBorder Color
+	SizeBorder  float32
+
+	// Accessibility
+	A11YRole  AccessRole
+	A11YState AccessState
+
+	// Enums/bools
+	Axis                 Axis
+	ShapeType            ShapeType
+	HAlign               HorizontalAlign
+	VAlign               VerticalAlign
+	ScrollMode           ScrollMode
+	ScrollbarOrientation ScrollbarOrientation
+	TextDir              TextDirection
+	FloatAnchor          FloatAttach
+	FloatTieOff          FloatAttach
+
+	Clip      bool
+	Disabled  bool
+	Float     bool
+	FocusSkip bool
+	OverDraw  bool
+	Hero      bool
+	Wrap      bool
+	Overflow  bool
+	Opacity   float32
+}
+
+// NewShape returns a Shape with default field values.
+func NewShape() *Shape {
+	return &Shape{
+		UID:     rand.Uint64(),
+		Opacity: 1.0,
+	}
+}
+
+// ShapeType defines the kind of Shape.
+type ShapeType uint8
+
+const (
+	ShapeNone ShapeType = iota
+	ShapeRectangle
+	ShapeText
+	ShapeImage
+	ShapeCircle
+	ShapeRTF
+	ShapeSVG
+	ShapeDrawCanvas
+)
+
+// TextDirection controls text/layout direction.
+type TextDirection uint8
+
+const (
+	TextDirAuto TextDirection = iota // inherit from parent/global
+	TextDirLTR
+	TextDirRTL
+)
+
+// ScrollMode allows scrolling in one or both directions.
+type ScrollMode uint8
+
+const (
+	ScrollBoth ScrollMode = iota
+	ScrollVerticalOnly
+	ScrollHorizontalOnly
+)
+
+// ScrollbarOrientation determines scrollbar orientation.
+type ScrollbarOrientation uint8
+
+const (
+	ScrollbarNone ScrollbarOrientation = iota
+	ScrollbarVertical
+	ScrollbarHorizontal
+)
+
+// FloatAttach defines anchor points for floating elements.
+type FloatAttach uint8
+
+const (
+	FloatTopLeft FloatAttach = iota
+	FloatTopCenter
+	FloatTopRight
+	FloatMiddleLeft
+	FloatMiddleCenter
+	FloatMiddleRight
+	FloatBottomLeft
+	FloatBottomCenter
+	FloatBottomRight
+)
+
+// AccessRole identifies a shape's semantic role.
+type AccessRole uint8
+
+const (
+	AccessRoleNone AccessRole = iota
+	AccessRoleButton
+	AccessRoleCheckbox
+	AccessRoleColorWell
+	AccessRoleComboBox
+	AccessRoleDateField
+	AccessRoleDialog
+	AccessRoleDisclosure
+	AccessRoleGrid
+	AccessRoleGridCell
+	AccessRoleGroup
+	AccessRoleHeading
+	AccessRoleImage
+	AccessRoleLink
+	AccessRoleList
+	AccessRoleListItem
+	AccessRoleMenu
+	AccessRoleMenuBar
+	AccessRoleMenuItem
+	AccessRoleProgressBar
+	AccessRoleRadioButton
+	AccessRoleRadioGroup
+	AccessRoleScrollArea
+	AccessRoleScrollBar
+	AccessRoleSlider
+	AccessRoleSplitter
+	AccessRoleStaticText
+	AccessRoleSwitchToggle
+	AccessRoleTab
+	AccessRoleTabItem
+	AccessRoleTextField
+	AccessRoleTextArea
+	AccessRoleToolbar
+	AccessRoleTree
+	AccessRoleTreeItem
+)
+
+// AccessState is a bitmask of dynamic accessibility states.
+type AccessState uint16
+
+const (
+	AccessStateNone     AccessState = 0
+	AccessStateExpanded AccessState = 1
+	AccessStateSelected AccessState = 2
+	AccessStateChecked  AccessState = 4
+	AccessStateRequired AccessState = 8
+	AccessStateInvalid  AccessState = 16
+	AccessStateBusy     AccessState = 32
+	AccessStateReadOnly AccessState = 64
+	AccessStateModal    AccessState = 128
+	AccessStateLive     AccessState = 256
+)
+
+// Has checks if the state bitmask contains the given flag.
+func (s AccessState) Has(flag AccessState) bool {
+	return uint16(s)&uint16(flag) > 0 || s == flag
+}
+
+// DrawClip represents a clipping rectangle.
+type DrawClip struct {
+	X      float32
+	Y      float32
+	Width  float32
+	Height float32
+}
+
+// ShapeTextConfig holds text/RTF-specific fields for a Shape.
+type ShapeTextConfig struct {
+	Text            string
+	TextMode        TextMode
+	TextSelBeg      uint32
+	TextSelEnd      uint32
+	TextTabSize     uint32
+	TextIsPassword  bool
+	TextIsPlaceholder bool
+	HangingIndent   float32
+}
+
+// TextMode controls how a text view renders text.
+type TextMode uint8
+
+const (
+	TextModeSingleLine TextMode = iota
+	TextModeMultiline
+	TextModeWrap
+	TextModeWrapKeepSpaces
+)
+
+// EventHandlers holds optional event callback fields.
+type EventHandlers struct {
+	OnChar       func(*Layout, *Event, *Window)
+	OnKeyDown    func(*Layout, *Event, *Window)
+	OnClick      func(*Layout, *Event, *Window)
+	OnMouseMove  func(*Layout, *Event, *Window)
+	OnMouseUp    func(*Layout, *Event, *Window)
+	OnMouseScroll func(*Layout, *Event, *Window)
+	OnScroll     func(*Layout, *Window)
+	AmendLayout  func(*Layout, *Window)
+	OnHover      func(*Layout, *Event, *Window)
+	OnIMECommit  func(*Layout, string, *Window)
+}
+
+// ShapeEffects holds optional visual effect fields.
+type ShapeEffects struct {
+	Shadow         *BoxShadow
+	Gradient       *GradientDef
+	BorderGradient *GradientDef
+	BlurRadius     float32
+}
+
+// BoxShadow defines drop shadow properties.
+type BoxShadow struct {
+	Color        Color
+	OffsetX      float32
+	OffsetY      float32
+	BlurRadius   float32
+	SpreadRadius float32
+}
+
+// GradientDef defines a gradient.
+type GradientDef struct {
+	// Placeholder — full implementation in Phase 5.
+}
+
+// AccessInfo holds string accessibility data.
+type AccessInfo struct {
+	Label       string
+	Description string
+}
+
+// HasEvents returns true if EventHandlers is allocated.
+func (s *Shape) HasEvents() bool {
+	return s.Events != nil
+}
+
+// PointInShape determines if the given point is within ShapeClip.
+func (s *Shape) PointInShape(x, y float32) bool {
+	sc := s.ShapeClip
+	if sc.Width <= 0 || sc.Height <= 0 {
+		return false
+	}
+	return x >= sc.X && y >= sc.Y &&
+		x < (sc.X+sc.Width) && y < (sc.Y+sc.Height)
+}
+
+// PaddingLeft returns effective left padding (padding + border).
+func (s *Shape) PaddingLeft() float32 {
+	return s.Padding.Left + s.SizeBorder
+}
+
+// PaddingTop returns effective top padding (padding + border).
+func (s *Shape) PaddingTop() float32 {
+	return s.Padding.Top + s.SizeBorder
+}
+
+// PaddingWidth returns total horizontal padding.
+func (s *Shape) PaddingWidth() float32 {
+	return s.Padding.Width() + (s.SizeBorder * 2)
+}
+
+// PaddingHeight returns total vertical padding.
+func (s *Shape) PaddingHeight() float32 {
+	return s.Padding.Height() + (s.SizeBorder * 2)
+}
+
+// Event holds input event data.
+type Event struct {
+	IsHandled bool
+}
