@@ -205,14 +205,15 @@ type DrawClip struct {
 
 // ShapeTextConfig holds text/RTF-specific fields for a Shape.
 type ShapeTextConfig struct {
-	Text            string
-	TextMode        TextMode
-	TextSelBeg      uint32
-	TextSelEnd      uint32
-	TextTabSize     uint32
-	TextIsPassword  bool
+	Text              string
+	TextStyle         *TextStyle
+	TextMode          TextMode
+	TextSelBeg        uint32
+	TextSelEnd        uint32
+	TextTabSize       uint32
+	TextIsPassword    bool
 	TextIsPlaceholder bool
-	HangingIndent   float32
+	HangingIndent     float32
 }
 
 // TextMode controls how a text view renders text.
@@ -302,7 +303,18 @@ func (s *Shape) PaddingHeight() float32 {
 	return s.Padding.Height() + (s.SizeBorder * 2)
 }
 
-// Event holds input event data.
-type Event struct {
-	IsHandled bool
+// makeA11YInfo returns an AccessInfo if label or desc is set.
+func makeA11YInfo(label, desc string) *AccessInfo {
+	if label == "" && desc == "" {
+		return nil
+	}
+	return &AccessInfo{Label: label, Description: desc}
+}
+
+// a11yLabel returns label if set, otherwise falls back to text.
+func a11yLabel(label, text string) string {
+	if label != "" {
+		return label
+	}
+	return text
 }

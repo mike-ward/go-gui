@@ -40,9 +40,11 @@ type Window struct {
 
 // ViewState holds per-window UI state.
 type ViewState struct {
-	registry    StateRegistry
-	idFocus     uint32
-	mouseCursor int // placeholder, expanded in Phase 3
+	registry       StateRegistry
+	idFocus        uint32
+	mouseCursor    MouseCursor
+	mouseLocked    bool
+	cursorOnSticky bool
 }
 
 // State returns a typed pointer to the user-supplied state.
@@ -103,4 +105,14 @@ func (w *Window) SetIDFocus(id uint32) {
 // IsFocus tests if the given id_focus equals the window's id_focus.
 func (w *Window) IsFocus(idFocus uint32) bool {
 	return w.viewState.idFocus > 0 && w.viewState.idFocus == idFocus
+}
+
+// SetMouseCursor sets the mouse cursor shape.
+func (w *Window) SetMouseCursor(cursor MouseCursor) {
+	w.viewState.mouseCursor = cursor
+}
+
+// MouseIsLocked returns true if the mouse is locked (drag).
+func (w *Window) MouseIsLocked() bool {
+	return w.viewState.mouseLocked
 }
