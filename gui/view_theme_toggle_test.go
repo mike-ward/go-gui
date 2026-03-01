@@ -34,7 +34,9 @@ func TestThemeToggleOpen(t *testing.T) {
 }
 
 func TestThemeToggleSyncHighlight(t *testing.T) {
+	savedName := guiTheme.Name
 	defer func() {
+		guiTheme.Name = savedName
 		themeRegistryMu.Lock()
 		delete(themeRegistry, "alpha")
 		delete(themeRegistry, "beta")
@@ -54,6 +56,9 @@ func TestThemeToggleSyncHighlight(t *testing.T) {
 }
 
 func TestThemeToggleSetTheme(t *testing.T) {
+	saved := guiTheme
+	defer SetTheme(saved)
+
 	w := &Window{}
 	// Verify SetTheme on Window exists and doesn't panic.
 	w.SetTheme(Theme{Name: "set-theme-test"})

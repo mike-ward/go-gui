@@ -53,59 +53,8 @@ func TestThemeMaker(t *testing.T) {
 }
 
 func TestSetTheme(t *testing.T) {
-	// Save all globals modified by SetTheme.
-	savedBtn := DefaultButtonStyle
-	savedText := DefaultTextStyle
-	savedCtr := DefaultContainerStyle
-	savedRect := DefaultRectangleStyle
-	savedInp := DefaultInputStyle
-	savedSb := DefaultScrollbarStyle
-	savedRad := DefaultRadioStyle
-	savedSw := DefaultSwitchStyle
-	savedTog := DefaultToggleStyle
-	savedSel := DefaultSelectStyle
-	savedLb := DefaultListBoxStyle
-	savedDlg := DefaultDialogStyle
-	savedToast := DefaultToastStyle
-	savedTip := DefaultTooltipStyle
-	savedBadge := DefaultBadgeStyle
-	savedExpand := DefaultExpandPanelStyle
-	savedProgress := DefaultProgressBarStyle
-	savedRange := DefaultRangeSliderStyle
-	savedTabCtl := DefaultTabControlStyle
-	savedBreadcrumb := DefaultBreadcrumbStyle
-	savedSplitter := DefaultSplitterStyle
-	savedTable := DefaultTableStyle
-	savedCombobox := DefaultComboboxStyle
-	savedCmdPalette := DefaultCommandPaletteStyle
-	savedMenubar := DefaultMenubarStyle
-	defer func() {
-		DefaultButtonStyle = savedBtn
-		DefaultTextStyle = savedText
-		DefaultContainerStyle = savedCtr
-		DefaultRectangleStyle = savedRect
-		DefaultInputStyle = savedInp
-		DefaultScrollbarStyle = savedSb
-		DefaultRadioStyle = savedRad
-		DefaultSwitchStyle = savedSw
-		DefaultToggleStyle = savedTog
-		DefaultSelectStyle = savedSel
-		DefaultListBoxStyle = savedLb
-		DefaultDialogStyle = savedDlg
-		DefaultToastStyle = savedToast
-		DefaultTooltipStyle = savedTip
-		DefaultBadgeStyle = savedBadge
-		DefaultExpandPanelStyle = savedExpand
-		DefaultProgressBarStyle = savedProgress
-		DefaultRangeSliderStyle = savedRange
-		DefaultTabControlStyle = savedTabCtl
-		DefaultBreadcrumbStyle = savedBreadcrumb
-		DefaultSplitterStyle = savedSplitter
-		DefaultTableStyle = savedTable
-		DefaultComboboxStyle = savedCombobox
-		DefaultCommandPaletteStyle = savedCmdPalette
-		DefaultMenubarStyle = savedMenubar
-	}()
+	saved := guiTheme
+	defer SetTheme(saved)
 
 	theme := Theme{
 		ButtonStyle: ButtonStyle{Color: Red},

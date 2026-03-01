@@ -64,6 +64,14 @@ func f32IsFinite(value float32) bool {
 	return !math.IsNaN(float64(value)) && !math.IsInf(float64(value), 0)
 }
 
+// intMin returns the smaller of a and b.
+func intMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // intMax returns the larger of a and b.
 func intMax(a, b int) int {
 	if a > b {
