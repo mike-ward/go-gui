@@ -46,6 +46,12 @@ type Window struct {
 	// Toast state.
 	toasts       []toastNotification
 	toastCounter uint64
+
+	// Window focus state — backend sets false on unfocus event.
+	focused bool
+
+	// OnEvent is called for unhandled events. Nil-safe.
+	OnEvent func(*Event, *Window)
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a
@@ -120,9 +126,39 @@ func (w *Window) IDFocus() uint32 {
 	return w.viewState.idFocus
 }
 
-// SetIDFocus sets the focus id.
+// SetIDFocus sets the focus id and clears input selections.
 func (w *Window) SetIDFocus(id uint32) {
+	w.clearInputSelections()
 	w.viewState.idFocus = id
+}
+
+// PointerOverApp returns true if the mouse pointer is within
+// the application window bounds.
+func (w *Window) PointerOverApp(e *Event) bool {
+	if e.MouseX < 0 || e.MouseY < 0 {
+		return false
+	}
+	if e.MouseX > float32(w.windowWidth) ||
+		e.MouseY > float32(w.windowHeight) {
+		return false
+	}
+	return true
+}
+
+// clearInputSelections zeros SelectBeg/SelectEnd for all
+// input states.
+func (w *Window) clearInputSelections() {
+	imap := StateMapRead[uint32, InputState](w, nsInput)
+	if imap == nil {
+		return
+	}
+	for _, key := range imap.Keys() {
+		if v, ok := imap.Get(key); ok {
+			v.SelectBeg = 0
+			v.SelectEnd = 0
+			imap.Set(key, v)
+		}
+	}
 }
 
 // IsFocus tests if the given id_focus equals the window's id_focus.

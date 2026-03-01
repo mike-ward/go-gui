@@ -134,6 +134,30 @@ func focusFindPrevious(candidates []focusCandidate, idFocus uint32) (*Shape, boo
 	return nil, false
 }
 
+// NextFocusable returns the next focusable shape after the
+// current focus. Wraps to first if at end.
+func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
+	var candidates []focusCandidate
+	seen := make(map[uint32]bool)
+	collectFocusCandidates(layout, &candidates, seen)
+	if len(candidates) == 0 {
+		return nil, false
+	}
+	return focusFindNext(candidates, w.viewState.idFocus)
+}
+
+// PreviousFocusable returns the previous focusable shape before
+// the current focus. Wraps to last if at beginning.
+func (layout *Layout) PreviousFocusable(w *Window) (*Shape, bool) {
+	var candidates []focusCandidate
+	seen := make(map[uint32]bool)
+	collectFocusCandidates(layout, &candidates, seen)
+	if len(candidates) == 0 {
+		return nil, false
+	}
+	return focusFindPrevious(candidates, w.viewState.idFocus)
+}
+
 // rectIntersection returns the intersection of two rectangles.
 // Returns (DrawClip, false) if no intersection.
 func rectIntersection(a, b DrawClip) (DrawClip, bool) {

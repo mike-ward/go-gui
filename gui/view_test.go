@@ -690,6 +690,76 @@ func TestA11YLabelFallback(t *testing.T) {
 	}
 }
 
+// --- PointerOverApp tests ---
+
+func TestPointerOverApp(t *testing.T) {
+	w := &Window{windowWidth: 800, windowHeight: 600}
+	tests := []struct {
+		name string
+		mx   float32
+		my   float32
+		want bool
+	}{
+		{"inside", 400, 300, true},
+		{"origin", 0, 0, true},
+		{"neg x", -1, 300, false},
+		{"neg y", 400, -1, false},
+		{"over width", 801, 300, false},
+		{"over height", 400, 601, false},
+		{"at edge", 800, 600, true},
+	}
+	for _, tc := range tests {
+		e := &Event{MouseX: tc.mx, MouseY: tc.my}
+		if got := w.PointerOverApp(e); got != tc.want {
+			t.Errorf("%s: got %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestClearInputSelections(t *testing.T) {
+	w := &Window{}
+	imap := StateMap[uint32, InputState](w, nsInput, capMany)
+	imap.Set(1, InputState{CursorPos: 5, SelectBeg: 2, SelectEnd: 8})
+	imap.Set(2, InputState{CursorPos: 3, SelectBeg: 0, SelectEnd: 4})
+
+	w.clearInputSelections()
+
+	v1, _ := imap.Get(1)
+	if v1.SelectBeg != 0 || v1.SelectEnd != 0 {
+		t.Error("selection 1 not cleared")
+	}
+	if v1.CursorPos != 5 {
+		t.Error("cursor pos should be preserved")
+	}
+	v2, _ := imap.Get(2)
+	if v2.SelectBeg != 0 || v2.SelectEnd != 0 {
+		t.Error("selection 2 not cleared")
+	}
+}
+
+func TestSetIDFocusClearsSelections(t *testing.T) {
+	w := &Window{}
+	imap := StateMap[uint32, InputState](w, nsInput, capMany)
+	imap.Set(1, InputState{SelectBeg: 1, SelectEnd: 5})
+
+	w.SetIDFocus(2)
+
+	v, _ := imap.Get(1)
+	if v.SelectBeg != 0 || v.SelectEnd != 0 {
+		t.Error("SetIDFocus should clear selections")
+	}
+	if w.IDFocus() != 2 {
+		t.Error("focus not set")
+	}
+}
+
+func TestWindowFocusedDefaultFalse(t *testing.T) {
+	w := &Window{}
+	if w.focused {
+		t.Error("focused should default to false")
+	}
+}
+
 // --- Full integration: Column with children ---
 
 func TestColumnWithTextAndButton(t *testing.T) {

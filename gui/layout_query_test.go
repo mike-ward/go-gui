@@ -48,6 +48,87 @@ func TestFocusFindNextByID(t *testing.T) {
 	}
 }
 
+func TestNextFocusable(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{},
+		Children: []Layout{
+			{Shape: &Shape{IDFocus: 10}},
+			{Shape: &Shape{IDFocus: 20}},
+			{Shape: &Shape{IDFocus: 30}},
+		},
+	}
+	w := &Window{}
+	w.viewState.idFocus = 10
+
+	s, ok := root.NextFocusable(w)
+	if !ok || s.IDFocus != 20 {
+		t.Errorf("next from 10: got %v, want 20", s)
+	}
+
+	w.viewState.idFocus = 30
+	s, ok = root.NextFocusable(w)
+	if !ok || s.IDFocus != 10 {
+		t.Errorf("wrap from 30: got %v, want 10", s)
+	}
+}
+
+func TestPreviousFocusable(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{},
+		Children: []Layout{
+			{Shape: &Shape{IDFocus: 10}},
+			{Shape: &Shape{IDFocus: 20}},
+			{Shape: &Shape{IDFocus: 30}},
+		},
+	}
+	w := &Window{}
+	w.viewState.idFocus = 20
+
+	s, ok := root.PreviousFocusable(w)
+	if !ok || s.IDFocus != 10 {
+		t.Errorf("prev from 20: got %v, want 10", s)
+	}
+
+	w.viewState.idFocus = 10
+	s, ok = root.PreviousFocusable(w)
+	if !ok || s.IDFocus != 30 {
+		t.Errorf("wrap from 10: got %v, want 30", s)
+	}
+}
+
+func TestFocusableSkipsDisabledAndFocusSkip(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{},
+		Children: []Layout{
+			{Shape: &Shape{IDFocus: 10}},
+			{Shape: &Shape{IDFocus: 20, Disabled: true}},
+			{Shape: &Shape{IDFocus: 30, FocusSkip: true}},
+			{Shape: &Shape{IDFocus: 40}},
+		},
+	}
+	w := &Window{}
+	w.viewState.idFocus = 10
+
+	s, ok := root.NextFocusable(w)
+	if !ok || s.IDFocus != 40 {
+		t.Errorf("next from 10 skipping disabled/focusskip: got %v, want 40", s)
+	}
+}
+
+func TestFocusableEmpty(t *testing.T) {
+	root := &Layout{Shape: &Shape{}}
+	w := &Window{}
+
+	_, ok := root.NextFocusable(w)
+	if ok {
+		t.Error("empty should return false")
+	}
+	_, ok = root.PreviousFocusable(w)
+	if ok {
+		t.Error("empty should return false")
+	}
+}
+
 func TestFocusFindPreviousByID(t *testing.T) {
 	s1 := &Shape{IDFocus: 30}
 	s2 := &Shape{IDFocus: 10}
