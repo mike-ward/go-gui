@@ -1,0 +1,115 @@
+package gui
+
+// rendererValidForDraw checks whether a RenderCmd has valid
+// parameters for drawing. Returns false for NaN/Inf coordinates,
+// negative sizes, nil pointers, etc.
+func rendererValidForDraw(r RenderCmd) bool {
+	switch r.Kind {
+	case RenderClip:
+		return f32AllFinite4(r.X, r.Y, r.W, r.H) &&
+			r.W >= 0 && r.H >= 0
+	case RenderRect:
+		return f32AllFinite5(r.X, r.Y, r.W, r.H, r.Radius) &&
+			r.W >= 0 && r.H >= 0
+	case RenderStrokeRect:
+		return f32AllFinite6(r.X, r.Y, r.W, r.H, r.Radius, r.Thickness) &&
+			r.W >= 0 && r.H >= 0 && r.Thickness > 0
+	case RenderGradient:
+		return f32AllFinite5(r.X, r.Y, r.W, r.H, r.Radius) &&
+			r.W >= 0 && r.H >= 0 && r.Gradient != nil
+	case RenderCircle:
+		return f32AllFinite3(r.X, r.Y, r.Radius) && r.Radius > 0
+	case RenderText:
+		return f32AllFinite2(r.X, r.Y) && len(r.Text) > 0
+	case RenderImage:
+		return f32AllFinite4(r.X, r.Y, r.W, r.H) &&
+			r.W > 0 && r.H > 0 && f32IsFinite(r.ClipRadius)
+	case RenderSvg:
+		if !f32AllFinite3(r.X, r.Y, r.Scale) || r.Scale <= 0 {
+			return false
+		}
+		if len(r.Triangles) == 0 || len(r.Triangles)%6 != 0 {
+			return false
+		}
+		if !f32AllFinite(r.Triangles) {
+			return false
+		}
+		if len(r.VertexColors) > 0 &&
+			len(r.VertexColors)*2 != len(r.Triangles) {
+			return false
+		}
+		return true
+	case RenderFilterComposite:
+		return f32AllFinite4(r.X, r.Y, r.W, r.H) &&
+			r.W > 0 && r.H > 0 && r.Layers > 0
+	default:
+		return true
+	}
+}
+
+// f32AllFinite checks if all values in a slice are finite.
+func f32AllFinite(values []float32) bool {
+	for _, v := range values {
+		if !f32IsFinite(v) {
+			return false
+		}
+	}
+	return true
+}
+
+func f32AllFinite2(a, b float32) bool {
+	return f32IsFinite(a) && f32IsFinite(b)
+}
+
+func f32AllFinite3(a, b, c float32) bool {
+	return f32IsFinite(a) && f32IsFinite(b) && f32IsFinite(c)
+}
+
+func f32AllFinite4(a, b, c, d float32) bool {
+	return f32IsFinite(a) && f32IsFinite(b) &&
+		f32IsFinite(c) && f32IsFinite(d)
+}
+
+func f32AllFinite5(a, b, c, d, e float32) bool {
+	return f32AllFinite4(a, b, c, d) && f32IsFinite(e)
+}
+
+func f32AllFinite6(a, b, c, d, e, f float32) bool {
+	return f32AllFinite4(a, b, c, d) &&
+		f32IsFinite(e) && f32IsFinite(f)
+}
+
+// guardRendererOrSkip returns true if valid. Logs a warning (once
+// per kind) for invalid renderers.
+func guardRendererOrSkip(r RenderCmd, w *Window) bool {
+	if rendererValidForDraw(r) {
+		return true
+	}
+	kind := renderCmdKindName(r.Kind)
+	if w.renderGuardWarned == nil {
+		w.renderGuardWarned = make(map[string]bool)
+	}
+	if !w.renderGuardWarned[kind] {
+		w.renderGuardWarned[kind] = true
+	}
+	return false
+}
+
+// emitRendererIfValid appends r to the window's renderers if valid.
+// Returns true if appended.
+func emitRendererIfValid(r RenderCmd, w *Window) bool {
+	if !rendererValidForDraw(r) {
+		return false
+	}
+	w.renderers = append(w.renderers, r)
+	return true
+}
+
+// emitRenderer appends r to the window's renderers, logging a
+// warning if the renderer is invalid.
+func emitRenderer(r RenderCmd, w *Window) {
+	if emitRendererIfValid(r, w) {
+		return
+	}
+	guardRendererOrSkip(r, w)
+}
