@@ -609,9 +609,54 @@ func TestMouseIsLocked(t *testing.T) {
 	if w.MouseIsLocked() {
 		t.Error("should start unlocked")
 	}
-	w.viewState.mouseLocked = true
+	w.MouseLock(MouseLockCfg{
+		MouseMove: func(*Layout, *Event, *Window) {},
+	})
 	if !w.MouseIsLocked() {
 		t.Error("should be locked")
+	}
+}
+
+func TestMouseLockUnlock(t *testing.T) {
+	w := &Window{}
+	w.MouseLock(MouseLockCfg{
+		MouseDown: func(*Layout, *Event, *Window) {},
+		MouseMove: func(*Layout, *Event, *Window) {},
+		MouseUp:   func(*Layout, *Event, *Window) {},
+	})
+	if !w.MouseIsLocked() {
+		t.Error("should be locked after MouseLock")
+	}
+	w.MouseUnlock()
+	if w.MouseIsLocked() {
+		t.Error("should be unlocked after MouseUnlock")
+	}
+}
+
+func TestMouseIsLockedChecksCallbacks(t *testing.T) {
+	w := &Window{}
+
+	w.MouseLock(MouseLockCfg{
+		MouseDown: func(*Layout, *Event, *Window) {},
+	})
+	if !w.MouseIsLocked() {
+		t.Error("MouseDown alone should lock")
+	}
+	w.MouseUnlock()
+
+	w.MouseLock(MouseLockCfg{
+		MouseMove: func(*Layout, *Event, *Window) {},
+	})
+	if !w.MouseIsLocked() {
+		t.Error("MouseMove alone should lock")
+	}
+	w.MouseUnlock()
+
+	w.MouseLock(MouseLockCfg{
+		MouseUp: func(*Layout, *Event, *Window) {},
+	})
+	if !w.MouseIsLocked() {
+		t.Error("MouseUp alone should lock")
 	}
 }
 

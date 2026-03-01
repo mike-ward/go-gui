@@ -81,6 +81,11 @@ type ContainerCfg struct {
 	// Content
 	Content []View
 
+	// Scrollbar config overrides. nil = use defaults when
+	// IDScroll > 0. Set Overflow to ScrollbarHidden to suppress.
+	ScrollbarCfgX *ScrollbarCfg
+	ScrollbarCfgY *ScrollbarCfg
+
 	// Internal — set by factory functions.
 	axis                 Axis
 	scrollbarOrientation ScrollbarOrientation
@@ -217,9 +222,44 @@ func container(cfg ContainerCfg) View {
 	if cfg.Opacity == 0 {
 		cfg.Opacity = 1.0
 	}
+
+	content := cfg.Content
+	if cfg.IDScroll > 0 {
+		extra := make([]View, 0, 2)
+		if cfg.ScrollbarCfgX != nil {
+			if cfg.ScrollbarCfgX.Overflow != ScrollbarHidden {
+				merged := *cfg.ScrollbarCfgX
+				merged.Orientation = ScrollbarHorizontal
+				merged.IDScroll = cfg.IDScroll
+				extra = append(extra, Scrollbar(merged))
+			}
+		} else {
+			extra = append(extra, Scrollbar(ScrollbarCfg{
+				Orientation: ScrollbarHorizontal,
+				IDScroll:    cfg.IDScroll,
+			}))
+		}
+		if cfg.ScrollbarCfgY != nil {
+			if cfg.ScrollbarCfgY.Overflow != ScrollbarHidden {
+				merged := *cfg.ScrollbarCfgY
+				merged.Orientation = ScrollbarVertical
+				merged.IDScroll = cfg.IDScroll
+				extra = append(extra, Scrollbar(merged))
+			}
+		} else {
+			extra = append(extra, Scrollbar(ScrollbarCfg{
+				Orientation: ScrollbarVertical,
+				IDScroll:    cfg.IDScroll,
+			}))
+		}
+		content = make([]View, 0, len(cfg.Content)+len(extra))
+		content = append(content, cfg.Content...)
+		content = append(content, extra...)
+	}
+
 	return &containerView{
 		cfg:       cfg,
-		content:   cfg.Content,
+		content:   content,
 		shapeType: ShapeRectangle,
 	}
 }

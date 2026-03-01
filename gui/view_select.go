@@ -7,41 +7,52 @@ import (
 
 // SelectCfg configures a select (dropdown) view.
 type SelectCfg struct {
-	ID              string
-	Placeholder     string
-	Selected        []string // currently selected option text(s)
-	Options         []string
-	Color           Color
-	ColorBorder     Color
+	ID               string
+	Placeholder      string
+	Selected         []string // currently selected option text(s)
+	Options          []string
+	Color            Color
+	ColorBorder      Color
 	ColorBorderFocus Color
-	ColorFocus      Color
-	ColorSelect     Color
-	Padding         Padding
-	SizeBorder      float32
-	TextStyle       TextStyle
-	SubheadingStyle TextStyle
+	ColorFocus       Color
+	ColorSelect      Color
+	Padding          Padding
+	SizeBorder       float32
+	TextStyle        TextStyle
+	SubheadingStyle  TextStyle
 	PlaceholderStyle TextStyle
-	OnSelect        func([]string, *Event, *Window)
-	MinWidth        float32
-	MaxWidth        float32
-	Radius          float32
-	IDFocus         uint32
-	SelectMultiple  bool
-	NoWrap          bool
-	Sizing          Sizing
-	Disabled        bool
-	Invisible       bool
+	OnSelect         func([]string, *Event, *Window)
+	MinWidth         float32
+	MaxWidth         float32
+	Radius           float32
+	IDFocus          uint32
+	SelectMultiple   bool
+	NoWrap           bool
+	Sizing           Sizing
+	Disabled         bool
+	Invisible        bool
 
 	A11YLabel       string
 	A11YDescription string
 }
 
+// selectView implements View for select (dropdown).
+type selectView struct {
+	cfg SelectCfg
+}
+
 // Select creates a select (dropdown) view.
 func Select(cfg SelectCfg) View {
 	applySelectDefaults(&cfg)
+	return &selectView{cfg: cfg}
+}
 
-	isOpen := false // read from state at runtime via AmendLayout
-	_ = fnvSum32   // dropdown scroll ID deferred to Phase 6
+func (sv *selectView) Content() []View { return nil }
+
+func (sv *selectView) GenerateLayout(w *Window) Layout {
+	cfg := &sv.cfg
+	isOpen := StateReadOr[string, bool](w, nsSelect, cfg.ID, false)
+	idScroll := fnvSum32(cfg.ID + "dropdown")
 
 	empty := len(cfg.Selected) == 0 || len(cfg.Selected[0]) == 0
 	clip := cfg.SelectMultiple && cfg.NoWrap
@@ -59,19 +70,18 @@ func Select(cfg SelectCfg) View {
 		wrapMode = TextModeWrap
 	}
 
-	id := cfg.ID
-	colorFocus := cfg.ColorFocus
-	colorBorderFocus := cfg.ColorBorderFocus
-
 	arrowText := "▼"
-	_ = isOpen // open/close managed by state
+	if isOpen {
+		arrowText = "▲"
+	}
 
 	spacerSizing := FillFill
 	if wrapMode != TextModeSingleLine {
 		spacerSizing = FitFill
 	}
 
-	content := []View{
+	content := make([]View, 0, 4)
+	content = append(content,
 		Text(TextCfg{
 			Text:      txt,
 			TextStyle: txtStyle,
@@ -85,41 +95,216 @@ func Select(cfg SelectCfg) View {
 			Text:      arrowText,
 			TextStyle: cfg.TextStyle,
 		}),
+	)
+
+	if isOpen {
+		highlightedIdx := StateReadOr[string, int](
+			w, nsSelectHL, cfg.ID, 0)
+		options := make([]View, 0, len(cfg.Options))
+		for i, option := range cfg.Options {
+			if strings.HasPrefix(option, "---") {
+				options = append(options,
+					selectSubHeaderView(cfg, option))
+			} else {
+				options = append(options,
+					selectOptionView(cfg, option, i,
+						i == highlightedIdx, idScroll))
+			}
+		}
+		content = append(content, Column(ContainerCfg{
+			ID:          cfg.ID + "dropdown",
+			SizeBorder:  cfg.SizeBorder,
+			Radius:      cfg.Radius,
+			ColorBorder: cfg.ColorBorder,
+			Color:       cfg.Color,
+			MinHeight:   50,
+			MaxHeight:   200,
+			MinWidth:    cfg.MinWidth,
+			MaxWidth:    cfg.MaxWidth,
+			Float:       true,
+			FloatAnchor: FloatBottomLeft,
+			FloatTieOff: FloatTopLeft,
+			FloatOffsetY: -cfg.SizeBorder,
+			IDScroll:    idScroll,
+			Padding: NewPadding(
+				PadSmall, PadMedium, PadSmall, PadSmall),
+			Spacing: 0,
+			Content: options,
+		}))
+	}
+
+	id := cfg.ID
+	colorFocus := cfg.ColorFocus
+	colorBorderFocus := cfg.ColorBorderFocus
+
+	// Build the outer row layout directly.
+	cv := &containerView{
+		cfg: ContainerCfg{
+			ID:          cfg.ID,
+			IDFocus:     cfg.IDFocus,
+			Clip:        clip,
+			A11YRole:    AccessRoleComboBox,
+			A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
+			Color:       cfg.Color,
+			ColorBorder: cfg.ColorBorder,
+			SizeBorder:  cfg.SizeBorder,
+			Radius:      cfg.Radius,
+			Padding:     cfg.Padding,
+			Sizing:      cfg.Sizing,
+			MinWidth:    cfg.MinWidth,
+			MaxWidth:    cfg.MaxWidth,
+			Disabled:    cfg.Disabled,
+			Invisible:   cfg.Invisible,
+			axis:        AxisLeftToRight,
+			AmendLayout: func(layout *Layout, w *Window) {
+				if layout.Shape.Disabled {
+					return
+				}
+				if w.IsFocus(layout.Shape.IDFocus) {
+					layout.Shape.Color = colorFocus
+					layout.Shape.ColorBorder = colorBorderFocus
+				}
+			},
+			OnKeyDown: makeSelectOnKeyDown(sv.cfg),
+			OnClick: func(_ *Layout, e *Event, w *Window) {
+				ss := StateMap[string, bool](
+					w, nsSelect, capModerate)
+				ss.Clear()
+				cur := StateReadOr[string, bool](
+					w, nsSelect, id, false)
+				ss.Set(id, !cur)
+				e.IsHandled = true
+			},
+			Opacity: 1.0,
+		},
+		content:   content,
+		shapeType: ShapeRectangle,
+	}
+	// Resolve click handler.
+	cv.cfg.OnClick = leftClickOnly(cv.cfg.OnClick)
+	return GenerateViewLayout(cv, w)
+}
+
+// selectOptionView builds a single option row.
+func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool, idScroll uint32) View {
+	selectMultiple := cfg.SelectMultiple
+	onSelect := cfg.OnSelect
+	selectArray := cfg.Selected
+	colorSelect := cfg.ColorSelect
+	cfgID := cfg.ID
+
+	optColor := ColorTransparent
+	if highlighted {
+		optColor = cfg.ColorSelect
+	}
+
+	checkColor := ColorTransparent
+	for _, s := range cfg.Selected {
+		if s == option {
+			checkColor = cfg.TextStyle.Color
+			break
+		}
 	}
 
 	return Row(ContainerCfg{
-		ID:          cfg.ID,
-		IDFocus:     cfg.IDFocus,
-		Clip:        clip,
-		A11YRole:    AccessRoleComboBox,
-		A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
-		Color:       cfg.Color,
-		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  cfg.SizeBorder,
-		Radius:      cfg.Radius,
-		Padding:     cfg.Padding,
-		Sizing:      cfg.Sizing,
-		MinWidth:    cfg.MinWidth,
-		MaxWidth:    cfg.MaxWidth,
-		Disabled:    cfg.Disabled,
-		Invisible:   cfg.Invisible,
-		AmendLayout: func(layout *Layout, w *Window) {
-			if layout.Shape.Disabled {
+		Color:   optColor,
+		Padding: NewPadding(0, PadSmall, 0, 1),
+		Sizing:  FillFit,
+		Spacing: 0,
+		Content: []View{
+			Row(ContainerCfg{
+				Spacing: 0,
+				Padding: PadTBLR(2, 0),
+				Content: []View{
+					Text(TextCfg{
+						Text: "✓",
+						TextStyle: TextStyle{
+							Color: checkColor,
+							Size:  cfg.TextStyle.Size,
+						},
+					}),
+					Text(TextCfg{
+						Text:      option,
+						TextStyle: cfg.TextStyle,
+					}),
+				},
+			}),
+		},
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			if onSelect == nil {
 				return
 			}
-			if w.IsFocus(layout.Shape.IDFocus) {
-				layout.Shape.Color = colorFocus
-				layout.Shape.ColorBorder = colorBorderFocus
+			ss := StateMap[string, bool](
+				w, nsSelect, capModerate)
+			if !selectMultiple {
+				ss.Clear()
+			}
+			var s []string
+			if selectMultiple {
+				s = listBoxNextSelectedIDs(
+					selectArray, option, true)
+			} else {
+				ss.Clear()
+				s = []string{option}
+			}
+			onSelect(s, e, w)
+			e.IsHandled = true
+		},
+		OnHover: func(layout *Layout, _ *Event, w *Window) {
+			w.SetMouseCursor(CursorPointingHand)
+			layout.Shape.Color = colorSelect
+			sh := StateMap[string, int](
+				w, nsSelectHL, capModerate)
+			cur, _ := sh.Get(cfgID)
+			if cur != index {
+				sh.Set(cfgID, index)
 			}
 		},
-		OnKeyDown: makeSelectOnKeyDown(cfg),
-		OnClick: func(_ *Layout, e *Event, w *Window) {
-			ss := StateMap[string, bool](w, nsSelect, capModerate)
-			ss.Clear()
-			cur, _ := ss.Get(id)
-			ss.Set(id, !cur)
+	})
+}
+
+// selectSubHeaderView builds a section header row.
+func selectSubHeaderView(cfg *SelectCfg, option string) View {
+	label := option
+	if len(option) > 3 {
+		label = option[3:]
+	}
+	return Column(ContainerCfg{
+		Spacing: 0,
+		Padding: NewPadding(guiTheme.PaddingMedium.Top, 0, 0, 0),
+		Sizing:  FillFit,
+		Content: []View{
+			Row(ContainerCfg{
+				Padding: PaddingNone,
+				Sizing:  FillFit,
+				Spacing: PadXSmall,
+				Content: []View{
+					Text(TextCfg{
+						Text: "✓",
+						TextStyle: TextStyle{
+							Color: ColorTransparent,
+							Size:  cfg.SubheadingStyle.Size,
+						},
+					}),
+					Text(TextCfg{
+						Text:      label,
+						TextStyle: cfg.SubheadingStyle,
+					}),
+				},
+			}),
+			Row(ContainerCfg{
+				Padding: PadTBLR(0, PadMedium),
+				Sizing:  FillFit,
+				Content: []View{
+					Rectangle(RectangleCfg{
+						Width:  1,
+						Height: 1,
+						Sizing: FillFit,
+						Color:  cfg.SubheadingStyle.Color,
+					}),
+				},
+			}),
 		},
-		Content: content,
 	})
 }
 
@@ -162,6 +347,7 @@ func selectOnKeyDown(cfg SelectCfg, e *Event, w *Window) {
 
 	if isOpen {
 		currentIdx, _ := sh.Get(cfg.ID)
+		idScroll := fnvSum32(cfg.ID + "dropdown")
 		action := listCoreNavigate(e.KeyCode, len(cfg.Options))
 
 		if action == ListCoreSelectItem {
@@ -218,6 +404,11 @@ func selectOnKeyDown(cfg SelectCfg, e *Event, w *Window) {
 			if nextIdx >= 0 && nextIdx < len(cfg.Options) &&
 				!strings.HasPrefix(cfg.Options[nextIdx], "---") {
 				sh.Set(cfg.ID, nextIdx)
+				rowH := cfg.TextStyle.Size + 4
+				scrollSY := StateMap[uint32, float32](
+					w, nsScrollY, capScroll)
+				scrollSY.Set(idScroll,
+					float32(nextIdx)*rowH)
 			}
 		}
 	}

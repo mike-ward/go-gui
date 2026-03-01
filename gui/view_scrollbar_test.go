@@ -1,0 +1,260 @@
+package gui
+
+import (
+	"math"
+	"testing"
+)
+
+func TestOffsetMouseChangeX(t *testing.T) {
+	w := &Window{}
+	// Layout: 100 wide, content 400 wide (axis LTR so contentWidth sums children).
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 400, Height: 50}}
+	layout := &Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  1,
+			Width:     100,
+			Height:    50,
+			Axis:      AxisLeftToRight,
+		},
+		Children: []Layout{child},
+	}
+
+	offset := offsetMouseChangeX(layout, 10, 1, w)
+	// ratio = 400/100 = 4, newOffset = 10*4 = 40, offset = 0 - 40 = -40
+	// clamped: min(0, max(-40, 100-400)) = min(0, max(-40, -300)) = min(0, -40) = -40
+	if offset != -40 {
+		t.Errorf("expected -40, got %v", offset)
+	}
+}
+
+func TestOffsetMouseChangeY(t *testing.T) {
+	w := &Window{}
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 50, Height: 500}}
+	layout := &Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  2,
+			Width:     50,
+			Height:    100,
+			Axis:      AxisTopToBottom,
+		},
+		Children: []Layout{child},
+	}
+
+	offset := offsetMouseChangeY(layout, 5, 2, w)
+	// ratio = 500/100 = 5, newOffset = 5*5 = 25, offset = 0 - 25 = -25
+	// clamped: min(0, max(-25, 100-500)) = -25
+	if offset != -25 {
+		t.Errorf("expected -25, got %v", offset)
+	}
+}
+
+func TestOffsetFromMouseY(t *testing.T) {
+	w := &Window{}
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 50, Height: 400}}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  3,
+			Width:     50,
+			Height:    100,
+			Axis:      AxisTopToBottom,
+		},
+		Children: []Layout{child},
+	}
+	root := &Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	// mouseY=50 → percent=50/100=0.5 → offset = -0.5*(400-100) = -150
+	offsetFromMouseY(root, 50, 3, w)
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, _ := sy.Get(uint32(3))
+	if v != -150 {
+		t.Errorf("expected -150, got %v", v)
+	}
+}
+
+func TestOffsetFromMouseX(t *testing.T) {
+	w := &Window{}
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 300, Height: 50}}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  4,
+			Width:     100,
+			Height:    50,
+			Axis:      AxisLeftToRight,
+		},
+		Children: []Layout{child},
+	}
+	root := &Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	// mouseX=100 → percent=100/100=1.0 → snap to 1
+	// offset = -1*(300-100) = -200
+	offsetFromMouseX(root, 100, 4, w)
+	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	v, _ := sx.Get(uint32(4))
+	if v != -200 {
+		t.Errorf("expected -200, got %v", v)
+	}
+}
+
+func TestOffsetFromMouseYSnap(t *testing.T) {
+	w := &Window{}
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 50, Height: 400}}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  5,
+			Width:     50,
+			Height:    100,
+			Axis:      AxisTopToBottom,
+		},
+		Children: []Layout{child},
+	}
+	root := &Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	// mouseY=2 → percent=0.02 → below snapMin(0.03) → snaps to 0
+	offsetFromMouseY(root, 2, 5, w)
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, _ := sy.Get(uint32(5))
+	if v != 0 {
+		t.Errorf("expected 0 (snap to start), got %v", v)
+	}
+
+	// mouseY=98 → percent=0.98 → above snapMax(0.97) → snaps to 1
+	offsetFromMouseY(root, 98, 5, w)
+	v, _ = sy.Get(uint32(5))
+	// -1*(400-100) = -300
+	if v != -300 {
+		t.Errorf("expected -300 (snap to end), got %v", v)
+	}
+}
+
+func TestScrollbarMouseMoveVertical(t *testing.T) {
+	w := &Window{}
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 50, Height: 400}}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  6,
+			Width:     50,
+			Height:    100,
+			Y:         10,
+			Axis:      AxisTopToBottom,
+		},
+		Children: []Layout{child},
+	}
+	root := Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	e := &Event{MouseY: 50, MouseDY: 5}
+	scrollbarMouseMove(ScrollbarVertical, 6, &root, e, w)
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, _ := sy.Get(uint32(6))
+	// ratio=400/100=4, newOffset=5*4=20, offset=0-20=-20
+	if v != -20 {
+		t.Errorf("expected -20, got %v", v)
+	}
+}
+
+func TestScrollbarMouseMoveHorizontal(t *testing.T) {
+	w := &Window{}
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 300, Height: 50}}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  7,
+			Width:     100,
+			Height:    50,
+			X:         0,
+			Axis:      AxisLeftToRight,
+		},
+		Children: []Layout{child},
+	}
+	root := Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	e := &Event{MouseX: 50, MouseDX: 10}
+	scrollbarMouseMove(ScrollbarHorizontal, 7, &root, e, w)
+	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	v, _ := sx.Get(uint32(7))
+	// ratio=300/100=3, newOffset=10*3=30, offset=0-30=-30
+	if v != -30 {
+		t.Errorf("expected -30, got %v", v)
+	}
+}
+
+func TestThumbOnClickLocksAndUnlocks(t *testing.T) {
+	w := &Window{}
+	e := &Event{}
+	handler := makeScrollbarOnMouseDown(ScrollbarCfg{
+		Orientation: ScrollbarVertical,
+		IDScroll:    1,
+	})
+	handler(nil, e, w)
+	if !w.MouseIsLocked() {
+		t.Error("expected mouse locked after thumb click")
+	}
+	if !e.IsHandled {
+		t.Error("expected event handled")
+	}
+
+	// Simulate mouse up.
+	w.viewState.mouseLock.MouseUp(nil, e, w)
+	if w.MouseIsLocked() {
+		t.Error("expected mouse unlocked after mouse up")
+	}
+}
+
+func TestGutterClickSetsOffsetAndLocks(t *testing.T) {
+	w := &Window{}
+	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 50, Height: 400}}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  8,
+			Width:     50,
+			Height:    100,
+			Axis:      AxisTopToBottom,
+		},
+		Children: []Layout{child},
+	}
+	w.layout = Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	e := &Event{MouseY: 50}
+	handler := makeScrollbarGutterClick(ScrollbarCfg{
+		Orientation: ScrollbarVertical,
+		IDScroll:    8,
+	})
+	handler(nil, e, w)
+
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, _ := sy.Get(uint32(8))
+	// percent=50/100=0.5, offset = -0.5*(400-100) = -150
+	if math.Abs(float64(v+150)) > 0.01 {
+		t.Errorf("expected -150, got %v", v)
+	}
+	if !w.MouseIsLocked() {
+		t.Error("expected mouse locked after gutter click")
+	}
+	if !e.IsHandled {
+		t.Error("expected event handled")
+	}
+}

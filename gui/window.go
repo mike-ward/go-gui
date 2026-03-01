@@ -48,12 +48,22 @@ type Window struct {
 	toastCounter uint64
 }
 
+// MouseLockCfg stores callbacks for mouse event handling in a
+// locked state (drag operations). When mouse is locked, these
+// callbacks intercept normal mouse event processing.
+type MouseLockCfg struct {
+	CursorPos int
+	MouseDown func(*Layout, *Event, *Window)
+	MouseMove func(*Layout, *Event, *Window)
+	MouseUp   func(*Layout, *Event, *Window)
+}
+
 // ViewState holds per-window UI state.
 type ViewState struct {
 	registry       StateRegistry
 	idFocus        uint32
 	mouseCursor    MouseCursor
-	mouseLocked    bool
+	mouseLock      MouseLockCfg
 	cursorOnSticky bool
 	mousePosX      float32
 	mousePosY      float32
@@ -127,5 +137,18 @@ func (w *Window) SetMouseCursor(cursor MouseCursor) {
 
 // MouseIsLocked returns true if the mouse is locked (drag).
 func (w *Window) MouseIsLocked() bool {
-	return w.viewState.mouseLocked
+	ml := &w.viewState.mouseLock
+	return ml.MouseDown != nil ||
+		ml.MouseMove != nil || ml.MouseUp != nil
+}
+
+// MouseLock locks the mouse so all mouse events go to the
+// handlers in MouseLockCfg.
+func (w *Window) MouseLock(cfg MouseLockCfg) {
+	w.viewState.mouseLock = cfg
+}
+
+// MouseUnlock returns mouse handling events to normal behavior.
+func (w *Window) MouseUnlock() {
+	w.viewState.mouseLock = MouseLockCfg{}
 }

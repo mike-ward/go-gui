@@ -78,6 +78,7 @@ func Scrollbar(cfg ScrollbarCfg) View {
 			scrollbarOrientation: ScrollbarHorizontal,
 			AmendLayout:          makeScrollbarAmendLayout(cfg),
 			OnHover:              makeScrollbarOnHover(cfg),
+			OnClick:              makeScrollbarGutterClick(cfg),
 			Content:              []View{thumbView},
 		})
 	}
@@ -91,6 +92,7 @@ func Scrollbar(cfg ScrollbarCfg) View {
 		scrollbarOrientation: ScrollbarVertical,
 		AmendLayout:          makeScrollbarAmendLayout(cfg),
 		OnHover:              makeScrollbarOnHover(cfg),
+		OnClick:              makeScrollbarGutterClick(cfg),
 		Content:              []View{thumbView},
 	})
 }
@@ -101,6 +103,7 @@ func scrollbarThumb(cfg ScrollbarCfg) View {
 		Radius:  cfg.RadiusThumb,
 		Padding: PaddingNone,
 		Spacing: 0,
+		OnClick: makeScrollbarOnMouseDown(cfg),
 	})
 }
 
@@ -207,6 +210,150 @@ func scrollbarAmendLayout(cfg ScrollbarCfg, layout *Layout, w *Window) {
 			cfg.Overflow == ScrollbarOnHover {
 			layout.Children[thumbIndex].Shape.Color = ColorTransparent
 		}
+	}
+}
+
+// makeScrollbarOnMouseDown creates the thumb OnClick handler
+// that initiates a drag via MouseLock.
+func makeScrollbarOnMouseDown(cfg ScrollbarCfg) func(*Layout, *Event, *Window) {
+	orientation := cfg.Orientation
+	idScroll := cfg.IDScroll
+	return func(_ *Layout, e *Event, w *Window) {
+		w.MouseLock(MouseLockCfg{
+			MouseMove: func(layout *Layout, e *Event, w *Window) {
+				scrollbarMouseMove(orientation, idScroll, layout, e, w)
+			},
+			MouseUp: func(_ *Layout, _ *Event, w *Window) {
+				w.MouseUnlock()
+			},
+		})
+		e.IsHandled = true
+	}
+}
+
+// makeScrollbarGutterClick creates the scrollbar container
+// OnClick that jumps to the click position then locks mouse
+// for continued dragging.
+func makeScrollbarGutterClick(cfg ScrollbarCfg) func(*Layout, *Event, *Window) {
+	orientation := cfg.Orientation
+	idScroll := cfg.IDScroll
+	return func(_ *Layout, e *Event, w *Window) {
+		if w.MouseIsLocked() {
+			return
+		}
+		if orientation == ScrollbarHorizontal {
+			offsetFromMouseX(&w.layout, e.MouseX, idScroll, w)
+		} else {
+			offsetFromMouseY(&w.layout, e.MouseY, idScroll, w)
+		}
+		w.MouseLock(MouseLockCfg{
+			MouseMove: func(layout *Layout, e *Event, w *Window) {
+				scrollbarMouseMove(orientation, idScroll, layout, e, w)
+			},
+			MouseUp: func(_ *Layout, _ *Event, w *Window) {
+				w.MouseUnlock()
+			},
+		})
+		e.IsHandled = true
+	}
+}
+
+// scrollbarMouseMove handles mouse movement during thumb drag.
+func scrollbarMouseMove(orientation ScrollbarOrientation, idScroll uint32, layout *Layout, e *Event, w *Window) {
+	ly, ok := FindLayoutByIDScroll(layout, idScroll)
+	if !ok {
+		return
+	}
+	if orientation == ScrollbarHorizontal {
+		if e.MouseX >= ly.Shape.X-scrollExtend &&
+			e.MouseX <= ly.Shape.X+ly.Shape.Width+scrollExtend {
+			offset := offsetMouseChangeX(ly, e.MouseDX, idScroll, w)
+			sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+			sx.Set(idScroll, offset)
+			if ly.Shape.HasEvents() && ly.Shape.Events.OnScroll != nil {
+				ly.Shape.Events.OnScroll(ly, w)
+			}
+		}
+	} else {
+		if e.MouseY >= ly.Shape.Y-scrollExtend &&
+			e.MouseY <= ly.Shape.Y+ly.Shape.Height+scrollExtend {
+			offset := offsetMouseChangeY(ly, e.MouseDY, idScroll, w)
+			sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+			sy.Set(idScroll, offset)
+			if ly.Shape.HasEvents() && ly.Shape.Events.OnScroll != nil {
+				ly.Shape.Events.OnScroll(ly, w)
+			}
+		}
+	}
+}
+
+// offsetMouseChangeX calculates new horizontal offset based on
+// mouse movement delta.
+func offsetMouseChangeX(layout *Layout, mouseDX float32, idScroll uint32, w *Window) float32 {
+	totalWidth := contentWidth(layout)
+	shapeWidth := layout.Shape.Width - layout.Shape.PaddingWidth()
+	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	oldOffset, _ := sx.Get(idScroll)
+	newOffset := mouseDX * (totalWidth / shapeWidth)
+	offset := oldOffset - newOffset
+	return f32Min(0, f32Max(offset, shapeWidth-totalWidth))
+}
+
+// offsetMouseChangeY calculates new vertical offset based on
+// mouse movement delta.
+func offsetMouseChangeY(layout *Layout, mouseDY float32, idScroll uint32, w *Window) float32 {
+	totalHeight := contentHeight(layout)
+	shapeHeight := layout.Shape.Height - layout.Shape.PaddingHeight()
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	oldOffset, _ := sy.Get(idScroll)
+	newOffset := mouseDY * (totalHeight / shapeHeight)
+	offset := oldOffset - newOffset
+	return f32Min(0, f32Max(offset, shapeHeight-totalHeight))
+}
+
+// offsetFromMouseX calculates and applies horizontal offset
+// from absolute mouse x position.
+func offsetFromMouseX(layout *Layout, mouseX float32, idScroll uint32, w *Window) {
+	sb, ok := FindLayoutByIDScroll(layout, idScroll)
+	if !ok {
+		return
+	}
+	totalWidth := contentWidth(sb)
+	percent := mouseX / sb.Shape.Width
+	percent = f32Clamp(percent, 0, 1)
+	if percent <= scrollSnapMin {
+		percent = 0
+	}
+	if percent >= scrollSnapMax {
+		percent = 1
+	}
+	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	sx.Set(idScroll, -percent*(totalWidth-sb.Shape.Width))
+	if sb.Shape.HasEvents() && sb.Shape.Events.OnScroll != nil {
+		sb.Shape.Events.OnScroll(sb, w)
+	}
+}
+
+// offsetFromMouseY calculates and applies vertical offset
+// from absolute mouse y position.
+func offsetFromMouseY(layout *Layout, mouseY float32, idScroll uint32, w *Window) {
+	sb, ok := FindLayoutByIDScroll(layout, idScroll)
+	if !ok {
+		return
+	}
+	totalHeight := contentHeight(sb)
+	percent := mouseY / sb.Shape.Height
+	percent = f32Clamp(percent, 0, 1)
+	if percent <= scrollSnapMin {
+		percent = 0
+	}
+	if percent >= scrollSnapMax {
+		percent = 1
+	}
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	sy.Set(idScroll, -percent*(totalHeight-sb.Shape.Height))
+	if sb.Shape.HasEvents() && sb.Shape.Events.OnScroll != nil {
+		sb.Shape.Events.OnScroll(sb, w)
 	}
 }
 

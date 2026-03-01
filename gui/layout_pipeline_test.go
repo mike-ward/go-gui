@@ -118,7 +118,7 @@ func TestLayoutHoverOutsideShape(t *testing.T) {
 
 func TestLayoutHoverMouseLocked(t *testing.T) {
 	w := &Window{}
-	w.viewState.mouseLocked = true
+	w.MouseLock(MouseLockCfg{MouseMove: func(*Layout, *Event, *Window) {}})
 	w.viewState.mousePosX = 15
 	w.viewState.mousePosY = 15
 
