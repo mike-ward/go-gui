@@ -56,11 +56,14 @@ func baseDarkCfg() ThemeCfg {
 		ScrollMultiplier: scrollMultiplier,
 		ScrollDeltaLine:  scrollDeltaLine,
 		ScrollDeltaPage:  scrollDeltaPage,
-		SizeSwitchWidth:  36,
-		SizeSwitchHeight: 22,
-		SizeRadio:        16,
-		SizeScrollbar:    7,
-		SizeScrollbarMin: 20,
+		SizeSwitchWidth:      36,
+		SizeSwitchHeight:     22,
+		SizeRadio:            16,
+		SizeScrollbar:        7,
+		SizeScrollbarMin:     20,
+		SizeProgressBar:      20,
+		SizeRangeSlider:      20,
+		SizeRangeSliderThumb: 16,
 	}
 }
 
@@ -143,11 +146,14 @@ func init() {
 		ScrollMultiplier: scrollMultiplier,
 		ScrollDeltaLine:  scrollDeltaLine,
 		ScrollDeltaPage:  scrollDeltaPage,
-		SizeSwitchWidth:  36,
-		SizeSwitchHeight: 22,
-		SizeRadio:        16,
-		SizeScrollbar:    7,
-		SizeScrollbarMin: 20,
+		SizeSwitchWidth:      36,
+		SizeSwitchHeight:     22,
+		SizeRadio:            16,
+		SizeScrollbar:        7,
+		SizeScrollbarMin:     20,
+		SizeProgressBar:      20,
+		SizeRangeSlider:      20,
+		SizeRangeSliderThumb: 16,
 	}
 	ThemeLight = ThemeMaker(ThemeLightCfg)
 
@@ -203,11 +209,14 @@ func init() {
 		ScrollMultiplier: scrollMultiplier,
 		ScrollDeltaLine:  scrollDeltaLine,
 		ScrollDeltaPage:  scrollDeltaPage,
-		SizeSwitchWidth:  36,
-		SizeSwitchHeight: 22,
-		SizeRadio:        16,
-		SizeScrollbar:    7,
-		SizeScrollbarMin: 20,
+		SizeSwitchWidth:      36,
+		SizeSwitchHeight:     22,
+		SizeRadio:            16,
+		SizeScrollbar:        7,
+		SizeScrollbarMin:     20,
+		SizeProgressBar:      20,
+		SizeRangeSlider:      20,
+		SizeRangeSliderThumb: 16,
 	}
 	ThemeBlueBordered = ThemeMaker(ThemeBlueBorderedCfg)
 

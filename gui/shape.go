@@ -299,6 +299,9 @@ type GradientDef struct {
 type AccessInfo struct {
 	Label       string
 	Description string
+	ValueNum    float32
+	ValueMin    float32
+	ValueMax    float32
 }
 
 // HasEvents returns true if EventHandlers is allocated.

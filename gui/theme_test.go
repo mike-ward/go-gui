@@ -68,6 +68,10 @@ func TestSetTheme(t *testing.T) {
 	savedDlg := DefaultDialogStyle
 	savedToast := DefaultToastStyle
 	savedTip := DefaultTooltipStyle
+	savedBadge := DefaultBadgeStyle
+	savedExpand := DefaultExpandPanelStyle
+	savedProgress := DefaultProgressBarStyle
+	savedRange := DefaultRangeSliderStyle
 	defer func() {
 		DefaultButtonStyle = savedBtn
 		DefaultTextStyle = savedText
@@ -83,6 +87,10 @@ func TestSetTheme(t *testing.T) {
 		DefaultDialogStyle = savedDlg
 		DefaultToastStyle = savedToast
 		DefaultTooltipStyle = savedTip
+		DefaultBadgeStyle = savedBadge
+		DefaultExpandPanelStyle = savedExpand
+		DefaultProgressBarStyle = savedProgress
+		DefaultRangeSliderStyle = savedRange
 	}()
 
 	theme := Theme{
@@ -159,5 +167,50 @@ func TestWithButtonStyle(t *testing.T) {
 	updated := theme.WithButtonStyle(s)
 	if updated.ButtonStyle.Color != Blue {
 		t.Error("WithButtonStyle not applied")
+	}
+}
+
+func TestThemeMakerBadgeStyle(t *testing.T) {
+	cfg := baseDarkCfg()
+	theme := ThemeMaker(cfg)
+	if theme.BadgeStyle.ColorInfo != cfg.ColorSelect {
+		t.Error("badge info color should match select")
+	}
+	if theme.BadgeStyle.DotSize != 8 {
+		t.Errorf("dot size = %f, want 8", theme.BadgeStyle.DotSize)
+	}
+}
+
+func TestThemeMakerProgressBarStyle(t *testing.T) {
+	cfg := baseDarkCfg()
+	theme := ThemeMaker(cfg)
+	if theme.ProgressBarStyle.Size != cfg.SizeProgressBar {
+		t.Errorf("size = %f, want %f",
+			theme.ProgressBarStyle.Size, cfg.SizeProgressBar)
+	}
+	if theme.ProgressBarStyle.ColorBar != cfg.ColorSelect {
+		t.Error("bar color should match select")
+	}
+}
+
+func TestWithColorsBadge(t *testing.T) {
+	theme := ThemeMaker(baseDarkCfg())
+	sel := RGB(100, 200, 50)
+	updated := theme.WithColors(ColorOverrides{
+		ColorSelect: &sel,
+	})
+	if updated.BadgeStyle.ColorInfo != sel {
+		t.Error("badge info not propagated from select")
+	}
+}
+
+func TestWithColorsRangeSlider(t *testing.T) {
+	theme := ThemeMaker(baseDarkCfg())
+	hover := RGB(99, 99, 99)
+	updated := theme.WithColors(ColorOverrides{
+		ColorHover: &hover,
+	})
+	if updated.RangeSliderStyle.ColorHover != hover {
+		t.Error("range slider hover not propagated")
 	}
 }

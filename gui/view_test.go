@@ -804,3 +804,45 @@ func TestColumnWithTextAndButton(t *testing.T) {
 		t.Error("button child should be text")
 	}
 }
+
+// --- HasFocus ---
+
+func TestHasFocus(t *testing.T) {
+	w := &Window{}
+	if w.HasFocus() {
+		t.Error("should start unfocused")
+	}
+	w.focused = true
+	if !w.HasFocus() {
+		t.Error("should be focused")
+	}
+}
+
+// --- Cursor helpers ---
+
+func TestCursorHelpers(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func(*Window)
+		want MouseCursor
+	}{
+		{"Arrow", (*Window).SetMouseCursorArrow, CursorArrow},
+		{"IBeam", (*Window).SetMouseCursorIBeam, CursorIBeam},
+		{"Crosshair", (*Window).SetMouseCursorCrosshair, CursorCrosshair},
+		{"PointingHand", (*Window).SetMouseCursorPointingHand, CursorPointingHand},
+		{"All", (*Window).SetMouseCursorAll, CursorResizeAll},
+		{"NS", (*Window).SetMouseCursorNS, CursorResizeNS},
+		{"EW", (*Window).SetMouseCursorEW, CursorResizeEW},
+		{"NESW", (*Window).SetMouseCursorResizeNESW, CursorResizeNESW},
+		{"NWSE", (*Window).SetMouseCursorResizeNWSE, CursorResizeNWSE},
+		{"NotAllowed", (*Window).SetMouseCursorNotAllowed, CursorNotAllowed},
+	}
+	for _, tt := range tests {
+		w := &Window{}
+		tt.fn(w)
+		if w.viewState.mouseCursor != tt.want {
+			t.Errorf("%s: got %d, want %d",
+				tt.name, w.viewState.mouseCursor, tt.want)
+		}
+	}
+}

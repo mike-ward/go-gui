@@ -171,6 +171,22 @@ func (w *Window) SetMouseCursor(cursor MouseCursor) {
 	w.viewState.mouseCursor = cursor
 }
 
+// HasFocus returns true if the window has focus.
+func (w *Window) HasFocus() bool {
+	return w.focused
+}
+
+func (w *Window) SetMouseCursorArrow()        { w.SetMouseCursor(CursorArrow) }
+func (w *Window) SetMouseCursorIBeam()        { w.SetMouseCursor(CursorIBeam) }
+func (w *Window) SetMouseCursorCrosshair()    { w.SetMouseCursor(CursorCrosshair) }
+func (w *Window) SetMouseCursorPointingHand() { w.SetMouseCursor(CursorPointingHand) }
+func (w *Window) SetMouseCursorAll()          { w.SetMouseCursor(CursorResizeAll) }
+func (w *Window) SetMouseCursorNS()           { w.SetMouseCursor(CursorResizeNS) }
+func (w *Window) SetMouseCursorEW()           { w.SetMouseCursor(CursorResizeEW) }
+func (w *Window) SetMouseCursorResizeNESW()   { w.SetMouseCursor(CursorResizeNESW) }
+func (w *Window) SetMouseCursorResizeNWSE()   { w.SetMouseCursor(CursorResizeNWSE) }
+func (w *Window) SetMouseCursorNotAllowed()   { w.SetMouseCursor(CursorNotAllowed) }
+
 // MouseIsLocked returns true if the mouse is locked (drag).
 func (w *Window) MouseIsLocked() bool {
 	ml := &w.viewState.mouseLock

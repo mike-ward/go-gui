@@ -121,6 +121,8 @@ const (
 	nsInputFocus  = "gui.input.focus"
 	nsSelectHL    = "gui.select.highlight"
 	nsListBoxFocus = "gui.listbox.focus"
+	nsProgress     = "gui.progress"
+	nsSidebar      = "gui.sidebar"
 )
 
 // Capacity tiers.

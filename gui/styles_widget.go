@@ -183,6 +183,63 @@ type TooltipStyle struct {
 	TextStyle        TextStyle
 }
 
+// BadgeStyle defines badge visual properties.
+type BadgeStyle struct {
+	Color        Color
+	ColorInfo    Color
+	ColorSuccess Color
+	ColorWarning Color
+	ColorError   Color
+	Padding      Padding
+	Radius       float32
+	TextStyle    TextStyle
+	DotSize      float32
+}
+
+// ExpandPanelStyle defines expand panel visual properties.
+type ExpandPanelStyle struct {
+	Color        Color
+	ColorHover   Color
+	ColorClick   Color
+	ColorBorder  Color
+	Padding      Padding
+	SizeBorder   float32
+	Radius       float32
+	RadiusBorder float32
+}
+
+// ProgressBarStyle defines progress bar visual properties.
+type ProgressBarStyle struct {
+	Size           float32
+	Color          Color
+	ColorBar       Color
+	ColorBorder    Color
+	TextBackground Color
+	Padding        Padding
+	TextPadding    Padding
+	SizeBorder     float32
+	Radius         float32
+	TextShow       bool
+	TextStyle      TextStyle
+}
+
+// RangeSliderStyle defines range slider visual properties.
+type RangeSliderStyle struct {
+	Size             float32
+	ThumbSize        float32
+	Color            Color
+	ColorClick       Color
+	ColorThumb       Color
+	ColorLeft        Color
+	ColorFocus       Color
+	ColorHover       Color
+	ColorBorder      Color
+	ColorBorderFocus Color
+	Padding          Padding
+	SizeBorder       float32
+	Radius           float32
+}
+
 // Default widget styles (dark theme).
 var (
 	DefaultInputStyle = InputStyle{
@@ -347,5 +404,58 @@ var (
 		Radius:           RadiusSmall,
 		RadiusBorder:     RadiusSmall,
 		TextStyle:        DefaultTextStyle,
+	}
+
+	DefaultBadgeStyle = BadgeStyle{
+		Color:        colorActiveDark,
+		ColorInfo:    colorSelectDark,
+		ColorSuccess: RGBA(46, 160, 67, 255),
+		ColorWarning: RGBA(210, 153, 34, 255),
+		ColorError:   RGBA(218, 54, 51, 255),
+		Padding:      NewPadding(2, 8, 2, 8),
+		Radius:       RadiusSmall,
+		TextStyle:    DefaultTextStyle,
+		DotSize:      8,
+	}
+
+	DefaultExpandPanelStyle = ExpandPanelStyle{
+		Color:        colorPanelDark,
+		ColorHover:   colorHoverDark,
+		ColorClick:   colorActiveDark,
+		ColorBorder:  colorBorderDark,
+		Padding:      PaddingMedium,
+		SizeBorder:   SizeBorderDef,
+		Radius:       RadiusMedium,
+		RadiusBorder: RadiusMedium,
+	}
+
+	DefaultProgressBarStyle = ProgressBarStyle{
+		Size:           20,
+		Color:          colorInteriorDark,
+		ColorBar:       colorSelectDark,
+		ColorBorder:    colorBorderDark,
+		TextBackground: colorPanelDark,
+		Padding:        PaddingNone,
+		TextPadding:    NewPadding(1, 4, 1, 4),
+		SizeBorder:     0,
+		Radius:         RadiusSmall,
+		TextShow:       true,
+		TextStyle:      DefaultTextStyle,
+	}
+
+	DefaultRangeSliderStyle = RangeSliderStyle{
+		Size:             20,
+		ThumbSize:        16,
+		Color:            colorInteriorDark,
+		ColorClick:       colorActiveDark,
+		ColorThumb:       colorPanelDark,
+		ColorLeft:        colorSelectDark,
+		ColorFocus:       colorSelectDark,
+		ColorHover:       colorHoverDark,
+		ColorBorder:      colorBorderDark,
+		ColorBorderFocus: colorSelectDark,
+		Padding:          PaddingNone,
+		SizeBorder:       SizeBorderDef,
+		Radius:           RadiusSmall,
 	}
 )

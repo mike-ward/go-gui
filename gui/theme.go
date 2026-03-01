@@ -37,8 +37,12 @@ type Theme struct {
 	SelectStyle    SelectStyle
 	ListBoxStyle   ListBoxStyle
 	DialogStyle    DialogStyle
-	ToastStyle     ToastStyle
-	TooltipStyle   TooltipStyle
+	ToastStyle        ToastStyle
+	TooltipStyle      TooltipStyle
+	BadgeStyle        BadgeStyle
+	ExpandPanelStyle  ExpandPanelStyle
+	ProgressBarStyle  ProgressBarStyle
+	RangeSliderStyle  RangeSliderStyle
 
 	// Text size shortcuts (N = normal, B = bold).
 	N1 TextStyle
@@ -126,11 +130,14 @@ type ThemeCfg struct {
 	ScrollDeltaLine  float32
 	ScrollDeltaPage  float32
 
-	SizeSwitchWidth  float32
-	SizeSwitchHeight float32
-	SizeRadio        float32
-	SizeScrollbar    float32
-	SizeScrollbarMin float32
+	SizeSwitchWidth      float32
+	SizeSwitchHeight     float32
+	SizeRadio            float32
+	SizeScrollbar        float32
+	SizeScrollbarMin     float32
+	SizeProgressBar      float32
+	SizeRangeSlider      float32
+	SizeRangeSliderThumb float32
 }
 
 // ThemeMaker builds a full Theme from a ThemeCfg.
@@ -342,6 +349,54 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			RadiusBorder:     cfg.RadiusSmall,
 			TextStyle:        ts,
 		},
+		BadgeStyle: BadgeStyle{
+			Color:        cfg.ColorActive,
+			ColorInfo:    cfg.ColorSelect,
+			ColorSuccess: RGBA(46, 160, 67, 255),
+			ColorWarning: RGBA(210, 153, 34, 255),
+			ColorError:   RGBA(218, 54, 51, 255),
+			Padding:      NewPadding(2, 8, 2, 8),
+			Radius:       cfg.RadiusSmall,
+			TextStyle:    ts,
+			DotSize:      8,
+		},
+		ExpandPanelStyle: ExpandPanelStyle{
+			Color:        cfg.ColorPanel,
+			ColorHover:   cfg.ColorHover,
+			ColorClick:   cfg.ColorActive,
+			ColorBorder:  cfg.ColorBorder,
+			Padding:      cfg.PaddingMedium,
+			SizeBorder:   cfg.SizeBorder,
+			Radius:       cfg.RadiusMedium,
+			RadiusBorder: cfg.RadiusMedium,
+		},
+		ProgressBarStyle: ProgressBarStyle{
+			Size:           cfg.SizeProgressBar,
+			Color:          cfg.ColorInterior,
+			ColorBar:       cfg.ColorSelect,
+			ColorBorder:    cfg.ColorBorder,
+			TextBackground: cfg.ColorPanel,
+			Padding:        PaddingNone,
+			TextPadding:    NewPadding(1, 4, 1, 4),
+			Radius:         cfg.RadiusSmall,
+			TextShow:       true,
+			TextStyle:      ts,
+		},
+		RangeSliderStyle: RangeSliderStyle{
+			Size:             cfg.SizeRangeSlider,
+			ThumbSize:        cfg.SizeRangeSliderThumb,
+			Color:            cfg.ColorInterior,
+			ColorClick:       cfg.ColorActive,
+			ColorThumb:       cfg.ColorPanel,
+			ColorLeft:        cfg.ColorSelect,
+			ColorFocus:       cfg.ColorSelect,
+			ColorHover:       cfg.ColorHover,
+			ColorBorder:      cfg.ColorBorder,
+			ColorBorderFocus: borderFocus,
+			Padding:          PaddingNone,
+			SizeBorder:       cfg.SizeBorder,
+			Radius:           cfg.RadiusSmall,
+		},
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,
@@ -410,6 +465,10 @@ func SetTheme(t Theme) {
 	DefaultDialogStyle = t.DialogStyle
 	DefaultToastStyle = t.ToastStyle
 	DefaultTooltipStyle = t.TooltipStyle
+	DefaultBadgeStyle = t.BadgeStyle
+	DefaultExpandPanelStyle = t.ExpandPanelStyle
+	DefaultProgressBarStyle = t.ProgressBarStyle
+	DefaultRangeSliderStyle = t.RangeSliderStyle
 }
 
 // With*Style methods for selective overrides.
@@ -481,6 +540,26 @@ func (t Theme) WithToastStyle(s ToastStyle) Theme {
 
 func (t Theme) WithTooltipStyle(s TooltipStyle) Theme {
 	t.TooltipStyle = s
+	return t
+}
+
+func (t Theme) WithBadgeStyle(s BadgeStyle) Theme {
+	t.BadgeStyle = s
+	return t
+}
+
+func (t Theme) WithExpandPanelStyle(s ExpandPanelStyle) Theme {
+	t.ExpandPanelStyle = s
+	return t
+}
+
+func (t Theme) WithProgressBarStyle(s ProgressBarStyle) Theme {
+	t.ProgressBarStyle = s
+	return t
+}
+
+func (t Theme) WithRangeSliderStyle(s RangeSliderStyle) Theme {
+	t.RangeSliderStyle = s
 	return t
 }
 
@@ -592,6 +671,28 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.TooltipStyle.ColorHover = hover
 	t.TooltipStyle.ColorBorder = border
 	t.TooltipStyle.ColorBorderFocus = borderFocus
+
+	t.BadgeStyle.Color = active
+	t.BadgeStyle.ColorInfo = sel
+
+	t.ExpandPanelStyle.Color = panel
+	t.ExpandPanelStyle.ColorHover = hover
+	t.ExpandPanelStyle.ColorClick = active
+	t.ExpandPanelStyle.ColorBorder = border
+
+	t.ProgressBarStyle.Color = interior
+	t.ProgressBarStyle.ColorBar = sel
+	t.ProgressBarStyle.ColorBorder = border
+	t.ProgressBarStyle.TextBackground = panel
+
+	t.RangeSliderStyle.Color = interior
+	t.RangeSliderStyle.ColorClick = active
+	t.RangeSliderStyle.ColorThumb = panel
+	t.RangeSliderStyle.ColorLeft = sel
+	t.RangeSliderStyle.ColorFocus = sel
+	t.RangeSliderStyle.ColorHover = hover
+	t.RangeSliderStyle.ColorBorder = border
+	t.RangeSliderStyle.ColorBorderFocus = borderFocus
 
 	return t
 }
