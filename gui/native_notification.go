@@ -1,0 +1,63 @@
+package gui
+
+// NativeNotificationStatus reports notification outcome.
+type NativeNotificationStatus uint8
+
+const (
+	NotificationOK     NativeNotificationStatus = iota
+	NotificationDenied                          // permission denied
+	NotificationError                           // platform error
+)
+
+// NativeNotificationResult contains notification delivery data.
+type NativeNotificationResult struct {
+	Status       NativeNotificationStatus
+	ErrorCode    string
+	ErrorMessage string
+}
+
+// NativeNotificationCfg configures an OS-level notification.
+type NativeNotificationCfg struct {
+	Title  string
+	Body   string
+	OnDone func(NativeNotificationResult, *Window)
+}
+
+// NativeNotification posts an OS-level notification.
+func (w *Window) NativeNotification(cfg NativeNotificationCfg) {
+	if cfg.Title == "" {
+		dispatchNotificationDone(w, cfg.OnDone, NativeNotificationResult{
+			Status:       NotificationError,
+			ErrorCode:    "invalid_cfg",
+			ErrorMessage: "title is required",
+		})
+		return
+	}
+	w.QueueCommand(func(w *Window) {
+		nativeNotificationImpl(w, cfg)
+	})
+}
+
+func nativeNotificationImpl(w *Window, cfg NativeNotificationCfg) {
+	if w.nativePlatform == nil {
+		dispatchNotificationDone(w, cfg.OnDone, NativeNotificationResult{
+			Status:       NotificationError,
+			ErrorCode:    "unsupported",
+			ErrorMessage: "no native platform",
+		})
+		return
+	}
+	// Notification may block; run in goroutine.
+	go func() {
+		result := w.nativePlatform.SendNotification(cfg.Title, cfg.Body)
+		w.QueueCommand(func(w *Window) {
+			dispatchNotificationDone(w, cfg.OnDone, result)
+		})
+	}()
+}
+
+func dispatchNotificationDone(w *Window, onDone func(NativeNotificationResult, *Window), result NativeNotificationResult) {
+	if onDone != nil {
+		onDone(result, w)
+	}
+}

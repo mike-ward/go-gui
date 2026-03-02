@@ -67,6 +67,18 @@ type Window struct {
 	// SVG parser — set by backend, nil in tests.
 	svgParser SvgParser
 
+	// Native platform — set by backend, nil in tests.
+	nativePlatform NativePlatform
+
+	// File access / security-scoped bookmarks.
+	fileAccess fileAccessState
+
+	// Accessibility backend state.
+	a11y a11y
+
+	// Input Method Editor state.
+	ime ime
+
 	// View generator — produces the root View each frame.
 	viewGenerator func(*Window) View
 
