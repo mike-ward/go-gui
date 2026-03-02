@@ -22,8 +22,8 @@ type CommandPaletteCfg struct {
 	Color          Color
 	ColorBorder    Color
 	ColorHighlight Color
-	SizeBorder     float32
-	Radius         float32
+	SizeBorder     Opt[float32]
+	Radius         Opt[float32]
 	Width          float32
 	MaxHeight      float32
 	BackdropColor  Color
@@ -47,6 +47,9 @@ func (cp *commandPaletteView) Content() []View { return nil }
 
 func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 	cfg := &cp.cfg
+	dn := &DefaultCommandPaletteStyle
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	radius := cfg.Radius.Get(dn.Radius)
 	visible := StateReadOr[string, bool](w, nsCmdPalette, cfg.ID, false)
 	if !visible {
 		return GenerateViewLayout(Row(ContainerCfg{}), w)
@@ -122,11 +125,11 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 				IDFocus:     cfg.IDFocus,
 				Color:       cfg.Color,
 				ColorBorder: cfg.ColorBorder,
-				SizeBorder:  cfg.SizeBorder,
-				Radius:      cfg.Radius,
+				SizeBorder:  Some(sizeBorder),
+				Radius:      Some(radius),
 				Width:       cfg.Width,
 				Padding:     PaddingNone,
-				Spacing:     0,
+				Spacing:     Some(float32(0)),
 				Sizing:      FixedFit,
 				OnKeyDown:   makePaletteOnKeyDown(paletteID, onAction, onDismiss, filteredIDs),
 				OnClick: func(_ *Layout, e *Event, _ *Window) {
@@ -154,7 +157,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 						MaxHeight: cfg.MaxHeight,
 						Sizing:    FillFit,
 						Padding:   PaddingNone,
-						Spacing:   0,
+						Spacing:   Some(float32(0)),
 						Clip:      true,
 						Content:   resultViews,
 					}),
@@ -279,12 +282,6 @@ func applyCommandPaletteDefaults(cfg *CommandPaletteCfg) {
 	}
 	if cfg.ColorHighlight == (Color{}) {
 		cfg.ColorHighlight = d.ColorHighlight
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
 	}
 	if cfg.Width == 0 {
 		cfg.Width = d.Width

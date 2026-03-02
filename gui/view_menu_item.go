@@ -124,7 +124,7 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg) View {
 		Color:   itemColor,
 		Sizing:  itemCfg.sizing,
 		Padding: itemCfg.Padding,
-		Radius:  itemCfg.radius,
+		Radius:  Some(itemCfg.radius),
 		OnClick: menuItemClick(menubarCfg, itemCfg),
 		OnHover: onHover,
 		Content: []View{content},

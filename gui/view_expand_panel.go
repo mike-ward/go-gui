@@ -14,8 +14,8 @@ type ExpandPanelCfg struct {
 	ColorClick Color
 	ColorBorder Color
 	Padding    Padding
-	SizeBorder float32
-	Radius     float32
+	SizeBorder Opt[float32]
+	Radius     Opt[float32]
 	MinWidth   float32
 	MaxWidth   float32
 	MinHeight  float32
@@ -43,12 +43,8 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = guiTheme.ExpandPanelStyle.Padding
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = guiTheme.ExpandPanelStyle.SizeBorder
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = guiTheme.ExpandPanelStyle.Radius
-	}
+	sizeBorder := cfg.SizeBorder.Get(guiTheme.ExpandPanelStyle.SizeBorder)
+	radius := cfg.Radius.Get(guiTheme.ExpandPanelStyle.Radius)
 
 	onToggle := cfg.OnToggle
 	colorHover := cfg.ColorHover
@@ -72,15 +68,15 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 		A11YDescription: cfg.A11YDescription,
 		Color:           cfg.Color,
 		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      cfg.SizeBorder,
+		SizeBorder:      Some(sizeBorder),
 		Padding:         cfg.Padding,
-		Radius:          cfg.Radius,
+		Radius:          Some(radius),
 		Sizing:          cfg.Sizing,
 		MinWidth:        cfg.MinWidth,
 		MaxWidth:        cfg.MaxWidth,
 		MinHeight:       cfg.MinHeight,
 		MaxHeight:       cfg.MaxHeight,
-		Spacing:         0,
+		Spacing:         Some[float32](0),
 		Content: []View{
 			Row(ContainerCfg{
 				Padding: PaddingNone,
@@ -123,7 +119,7 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 				Invisible: !cfg.Open,
 				Padding:   PaddingNone,
 				Sizing:    FillFit,
-				Spacing:   0,
+				Spacing:   Some[float32](0),
 				Content: []View{
 					cfg.Content,
 				},

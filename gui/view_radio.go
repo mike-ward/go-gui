@@ -15,9 +15,9 @@ type RadioCfg struct {
 	Padding          Padding
 	TextStyle        TextStyle
 	OnClick          func(*Layout, *Event, *Window)
-	Size             float32
+	Size             Opt[float32]
 	IDFocus          uint32
-	SizeBorder       float32
+	SizeBorder       Opt[float32]
 	Disabled         bool
 	Selected         bool
 	Invisible        bool
@@ -30,6 +30,10 @@ type RadioCfg struct {
 func Radio(cfg RadioCfg) View {
 	applyRadioDefaults(&cfg)
 
+	dr := &DefaultRadioStyle
+	size := cfg.Size.Get(dr.Size)
+	sizeBorder := cfg.SizeBorder.Get(dr.SizeBorder)
+
 	colorBorderFocus := cfg.ColorBorderFocus
 	circleColor := cfg.ColorUnselect
 	if cfg.Selected {
@@ -38,11 +42,11 @@ func Radio(cfg RadioCfg) View {
 
 	content := make([]View, 0, 2)
 	content = append(content, Circle(ContainerCfg{
-		Width:       cfg.Size,
-		Height:      cfg.Size,
+		Width:       size,
+		Height:      size,
 		Color:       circleColor,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  cfg.SizeBorder,
+		SizeBorder:  Some(sizeBorder),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		Sizing:      FixedFixed,
@@ -120,12 +124,6 @@ func applyRadioDefaults(cfg *RadioCfg) {
 	}
 	if cfg.ColorUnselect == (Color{}) {
 		cfg.ColorUnselect = colorInteriorDark
-	}
-	if cfg.Size == 0 {
-		cfg.Size = SizeTextMedium
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = SizeBorderDef
 	}
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = PaddingSmall

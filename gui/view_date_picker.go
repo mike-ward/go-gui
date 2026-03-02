@@ -71,10 +71,10 @@ type DatePickerCfg struct {
 	ColorBorderFocus Color
 	ColorSelect      Color
 	Padding          Padding
-	SizeBorder       float32
-	CellSpacing      float32
-	Radius           float32
-	RadiusBorder     float32
+	SizeBorder       Opt[float32]
+	CellSpacing      Opt[float32]
+	Radius           Opt[float32]
+	RadiusBorder     Opt[float32]
 	IDFocus          uint32
 	Disabled         bool
 	Invisible        bool
@@ -98,6 +98,10 @@ func (dv *datePickerView) Content() []View { return nil }
 
 func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 	cfg := &dv.cfg
+	dn := &DefaultDatePickerStyle
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
+	radiusBorder := cfg.RadiusBorder.Get(dn.RadiusBorder)
 
 	// Get/init state.
 	state := datePickerGetState(w, cfg)
@@ -117,10 +121,10 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 			IDFocus:     cfg.IDFocus,
 			Color:       cfg.Color,
 			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  cfg.SizeBorder,
-			Radius:      cfg.RadiusBorder,
+			SizeBorder:  Some(sizeBorder),
+			Radius:      Some(radiusBorder),
 			Padding:     cfg.Padding,
-			Spacing:     cfg.CellSpacing,
+			Spacing:     Some(cellSpacing),
 			Disabled:    cfg.Disabled,
 			Invisible:   cfg.Invisible,
 			Content:     content,
@@ -164,6 +168,8 @@ func (w *Window) DatePickerReset(id string) {
 func datePickerControls(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) View {
+	dn := &DefaultDatePickerStyle
+	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	cfgID := cfg.ID
 	monthLabel := LocaleFormatDate(
 		datePickerViewTime(state),
@@ -191,7 +197,7 @@ func datePickerControls(
 
 	return Row(ContainerCfg{
 		Padding: PaddingSmall,
-		Spacing: cfg.CellSpacing,
+		Spacing: Some(cellSpacing),
 		Content: []View{
 			Button(ButtonCfg{
 				Sizing:  FillFit,
@@ -216,11 +222,13 @@ func datePickerControls(
 func datePickerCalendar(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) View {
+	dn := &DefaultDatePickerStyle
+	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	var content []View
 	content = append(content, datePickerWeekdays(cfg))
 	content = append(content, datePickerMonth(cfg, state, w)...)
 	return Column(ContainerCfg{
-		Spacing: cfg.CellSpacing,
+		Spacing: Some(cellSpacing),
 		Padding: PaddingSmall,
 		Content: content,
 	})
@@ -228,6 +236,8 @@ func datePickerCalendar(
 
 // datePickerWeekdays builds the weekday header row.
 func datePickerWeekdays(cfg *DatePickerCfg) View {
+	dn := &DefaultDatePickerStyle
+	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	var labels []View
 	for i := range 7 {
 		dow := datePickerWeekdayIndex(i, cfg.MondayFirstDayOfWeek)
@@ -247,7 +257,7 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 		}))
 	}
 	return Row(ContainerCfg{
-		Spacing: cfg.CellSpacing,
+		Spacing: Some(cellSpacing),
 		Content: labels,
 	})
 }
@@ -256,6 +266,10 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 func datePickerMonth(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) []View {
+	dn := &DefaultDatePickerStyle
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	radius := cfg.Radius.Get(dn.Radius)
+	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	viewTime := datePickerViewTime(state)
 	year, month := viewTime.Year(), viewTime.Month()
 	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
@@ -313,8 +327,8 @@ func datePickerMonth(
 				Height:      40,
 				Color:       cellColor,
 				ColorBorder: borderColor,
-				SizeBorder:  cfg.SizeBorder,
-				Radius:      cfg.Radius,
+				SizeBorder:  Some(sizeBorder),
+				Radius:      Some(radius),
 				Disabled:    disabled,
 				Content: []View{Text(TextCfg{
 					Text: dayStr, TextStyle: ts,
@@ -331,7 +345,7 @@ func datePickerMonth(
 			}))
 		}
 		rows = append(rows, Row(ContainerCfg{
-			Spacing: cfg.CellSpacing,
+			Spacing: Some(cellSpacing),
 			Content: cells,
 		}))
 		// Stop generating rows if all days rendered.
@@ -585,19 +599,13 @@ func applyDatePickerDefaults(cfg *DatePickerCfg) {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = d.Padding
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
-	if cfg.CellSpacing == 0 {
-		cfg.CellSpacing = d.CellSpacing
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
-	}
-	if cfg.RadiusBorder == 0 {
-		cfg.RadiusBorder = d.RadiusBorder
-	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = d.TextStyle
+	}
+	if !cfg.CellSpacing.IsSet() {
+		cfg.CellSpacing = Some(d.CellSpacing)
+	}
+	if !cfg.Radius.IsSet() {
+		cfg.Radius = Some(d.Radius)
 	}
 }

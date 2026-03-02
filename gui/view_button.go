@@ -11,7 +11,7 @@ type ButtonCfg struct {
 	ColorBorder      Color
 	ColorBorderFocus Color
 	Padding          Padding
-	SizeBorder       float32
+	SizeBorder       Opt[float32]
 	BlurRadius       float32
 	Shadow           *BoxShadow
 	Gradient         *GradientDef
@@ -23,7 +23,7 @@ type ButtonCfg struct {
 	FloatTieOff      FloatAttach
 	FloatOffsetX     float32
 	FloatOffsetY     float32
-	Radius           float32
+	Radius           Opt[float32]
 	IDFocus          uint32
 	HAlign           HorizontalAlign
 	VAlign           VerticalAlign
@@ -53,6 +53,10 @@ func Button(cfg ButtonCfg) View {
 	// Apply defaults from button style.
 	applyButtonDefaults(&cfg)
 
+	d := &DefaultButtonStyle
+	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
+	radius := cfg.Radius.Get(d.Radius)
+
 	// Capture values for closures.
 	colorHover := cfg.ColorHover
 	colorClick := cfg.ColorClick
@@ -75,12 +79,12 @@ func Button(cfg ButtonCfg) View {
 		A11YDescription:  cfg.A11YDescription,
 		Color:            cfg.Color,
 		ColorBorder:      cfg.ColorBorder,
-		SizeBorder:       cfg.SizeBorder,
+		SizeBorder:       Some(sizeBorder),
 		BlurRadius:       cfg.BlurRadius,
 		Shadow:           cfg.Shadow,
 		Gradient:         cfg.Gradient,
 		Padding:          cfg.Padding,
-		Radius:           cfg.Radius,
+		Radius:           Some(radius),
 		Width:            cfg.Width,
 		Height:           cfg.Height,
 		MinWidth:         cfg.MinWidth,
@@ -152,12 +156,6 @@ func applyButtonDefaults(cfg *ButtonCfg) {
 	}
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = d.Padding
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
 	}
 	if cfg.HAlign == HAlignStart {
 		cfg.HAlign = HAlignCenter

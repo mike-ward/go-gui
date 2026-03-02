@@ -14,19 +14,19 @@ type MenubarCfg struct {
 	Sizing          Sizing
 	Padding         Padding
 	PaddingMenuItem Padding
-	SizeBorder      float32
+	SizeBorder      Opt[float32]
 	PaddingSubmenu  Padding
 	PaddingSubtitle Padding
 	Action          func(string, *Event, *Window)
 	Items           []MenuItemCfg
-	WidthSubmenuMin float32
-	WidthSubmenuMax float32
-	Radius          float32
-	RadiusBorder    float32
-	RadiusSubmenu   float32
-	RadiusMenuItem  float32
-	Spacing         float32
-	SpacingSubmenu  float32
+	WidthSubmenuMin Opt[float32]
+	WidthSubmenuMax Opt[float32]
+	Radius          Opt[float32]
+	RadiusBorder    Opt[float32]
+	RadiusSubmenu   Opt[float32]
+	RadiusMenuItem  Opt[float32]
+	Spacing         Opt[float32]
+	SpacingSubmenu  Opt[float32]
 	IDFocus         uint32
 	FloatAnchor     FloatAttach
 	FloatTieOff     FloatAttach
@@ -116,33 +116,6 @@ func applyMenubarDefaults(cfg *MenubarCfg) {
 	}
 	if cfg.PaddingSubtitle == (Padding{}) {
 		cfg.PaddingSubtitle = d.PaddingSubtitle
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
-	}
-	if cfg.RadiusBorder == 0 {
-		cfg.RadiusBorder = d.RadiusBorder
-	}
-	if cfg.RadiusSubmenu == 0 {
-		cfg.RadiusSubmenu = d.RadiusSubmenu
-	}
-	if cfg.RadiusMenuItem == 0 {
-		cfg.RadiusMenuItem = d.RadiusMenuItem
-	}
-	if cfg.Spacing == 0 {
-		cfg.Spacing = d.Spacing
-	}
-	if cfg.SpacingSubmenu == 0 {
-		cfg.SpacingSubmenu = d.SpacingSubmenu
-	}
-	if cfg.WidthSubmenuMin == 0 {
-		cfg.WidthSubmenuMin = d.WidthSubmenuMin
-	}
-	if cfg.WidthSubmenuMax == 0 {
-		cfg.WidthSubmenuMax = d.WidthSubmenuMax
 	}
 	if cfg.Action == nil {
 		cfg.Action = func(_ string, e *Event, _ *Window) {

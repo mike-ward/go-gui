@@ -34,19 +34,19 @@ func TestInputDateLayoutZeroDate(t *testing.T) {
 
 func TestInputDateDefaultsPreserve(t *testing.T) {
 	cfg := InputDateCfg{
-		SizeBorder:  1,
-		CellSpacing: 3,
-		Radius:      4,
-		RadiusBorder: 4,
+		SizeBorder:  Some[float32](1),
+		CellSpacing: Some[float32](3),
+		Radius:      Some[float32](4),
+		RadiusBorder: Some[float32](4),
 		TextStyle:   DefaultTextStyle,
 		Color:       RGB(30, 30, 30),
 	}
 	applyInputDateDefaults(&cfg)
-	if cfg.SizeBorder != 1 {
-		t.Errorf("SizeBorder overwritten = %f", cfg.SizeBorder)
+	if cfg.SizeBorder.Get(0) != 1 {
+		t.Errorf("SizeBorder overwritten = %f", cfg.SizeBorder.Get(0))
 	}
-	if cfg.CellSpacing != 3 {
-		t.Errorf("CellSpacing overwritten = %f", cfg.CellSpacing)
+	if cfg.CellSpacing.Get(0) != 3 {
+		t.Errorf("CellSpacing overwritten = %f", cfg.CellSpacing.Get(0))
 	}
 	if cfg.Color != RGB(30, 30, 30) {
 		t.Error("Color should not be overwritten")

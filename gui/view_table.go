@@ -183,7 +183,7 @@ func Table(cfg TableCfg) View {
 			cells = append(cells, Column(ContainerCfg{
 				Color:       ColorTransparent,
 				ColorBorder: cfg.ColorBorder,
-				SizeBorder:  cellBorder,
+				SizeBorder:  Some(cellBorder),
 				Padding:     cfg.CellPadding,
 				HAlign:      hAlign,
 				Sizing:      FixedFill,
@@ -208,7 +208,7 @@ func Table(cfg TableCfg) View {
 
 		rows = append(rows, Row(ContainerCfg{
 			Color:   rowColor,
-			Spacing: -cellBorder,
+			Spacing: Some(-cellBorder),
 			Padding: PaddingNone,
 			Content: cells,
 			OnClick: func(layout *Layout, e *Event, w *Window) {
@@ -267,7 +267,7 @@ func Table(cfg TableCfg) View {
 		ID:        cfg.ID,
 		Color:     ColorTransparent,
 		Padding:   PaddingNone,
-		Spacing:   rowSpacing,
+		Spacing:   Some(rowSpacing),
 		Sizing:    cfg.Sizing,
 		Width:     cfg.Width,
 		Height:    cfg.Height,

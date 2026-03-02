@@ -19,7 +19,7 @@ type RadioButtonGroupCfg struct {
 	Sizing      Sizing
 	Padding     Padding
 	ColorBorder Color
-	SizeBorder  float32
+	SizeBorder  Opt[float32]
 	MinWidth    float32
 	MinHeight   float32
 	IDFocus     uint32
@@ -28,16 +28,25 @@ type RadioButtonGroupCfg struct {
 	A11YDescription string
 }
 
+// DefaultRadioGroupStyle holds defaults for RadioButtonGroupCfg Opt fields.
+var DefaultRadioGroupStyle = struct {
+	SizeBorder float32
+}{
+	SizeBorder: 0,
+}
+
 // RadioButtonGroupColumn creates a vertically stacked radio
 // button group.
 func RadioButtonGroupColumn(cfg RadioButtonGroupCfg) View {
 	applyRadioGroupDefaults(&cfg)
+	drg := &DefaultRadioGroupStyle
+	sizeBorder := cfg.SizeBorder.Get(drg.SizeBorder)
 	return Column(ContainerCfg{
 		A11YRole:        AccessRoleRadioGroup,
 		A11YLabel:       cfg.A11YLabel,
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      cfg.SizeBorder,
+		SizeBorder:      Some(sizeBorder),
 		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
 		MinHeight:       cfg.MinHeight,
@@ -50,12 +59,14 @@ func RadioButtonGroupColumn(cfg RadioButtonGroupCfg) View {
 // button group.
 func RadioButtonGroupRow(cfg RadioButtonGroupCfg) View {
 	applyRadioGroupDefaults(&cfg)
+	drg2 := &DefaultRadioGroupStyle
+	sizeBorder2 := cfg.SizeBorder.Get(drg2.SizeBorder)
 	return Row(ContainerCfg{
 		A11YRole:        AccessRoleRadioGroup,
 		A11YLabel:       cfg.A11YLabel,
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      cfg.SizeBorder,
+		SizeBorder:      Some(sizeBorder2),
 		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
 		MinHeight:       cfg.MinHeight,
@@ -90,9 +101,6 @@ func buildRadioOptions(cfg RadioButtonGroupCfg) []View {
 func applyRadioGroupDefaults(cfg *RadioButtonGroupCfg) {
 	if cfg.ColorBorder == (Color{}) {
 		cfg.ColorBorder = guiTheme.ColorBorder
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = guiTheme.SizeBorder
 	}
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = guiTheme.PaddingLarge

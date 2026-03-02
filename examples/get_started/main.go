@@ -37,15 +37,14 @@ func mainView(w *gui.Window) gui.View {
 	app := gui.State[App](w)
 
 	return gui.Column(gui.ContainerCfg{
-		Width:   float32(ww),
-		Height:  float32(wh),
-		Sizing:  gui.FixedFixed,
-		HAlign:  gui.HAlignCenter,
-		VAlign:  gui.VAlignMiddle,
-		Spacing: 10,
+		Width:  float32(ww),
+		Height: float32(wh),
+		Sizing: gui.FixedFixed,
+		HAlign: gui.HAlignCenter,
+		VAlign: gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      "Hello go-gui! 😀🚀🎉👍",
+				Text:      "Hello GUI! 😀🚀🎉👍",
 				TextStyle: gui.CurrentTheme().B1,
 			}),
 			gui.Button(gui.ButtonCfg{

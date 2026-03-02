@@ -21,7 +21,7 @@ type DialogCfg struct {
 	Color     Color
 	ColorBorder Color
 	Padding     Padding
-	SizeBorder  float32
+	SizeBorder  Opt[float32]
 
 	TitleTextStyle TextStyle
 	TextStyle      TextStyle
@@ -39,8 +39,8 @@ type DialogCfg struct {
 	MaxWidth  float32
 	MaxHeight float32
 
-	Radius       float32
-	RadiusBorder float32
+	Radius       Opt[float32]
+	RadiusBorder Opt[float32]
 
 	IDFocus      uint32
 	DialogType   DialogType
@@ -54,6 +54,10 @@ type DialogCfg struct {
 // dialogViewGenerator builds the dialog overlay view from cfg.
 func dialogViewGenerator(cfg DialogCfg) View {
 	applyDialogDefaults(&cfg)
+	dn := &DefaultDialogStyle
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	radius := cfg.Radius.Get(dn.Radius)
+	_ = cfg.RadiusBorder.Get(dn.RadiusBorder)
 
 	var content []View
 
@@ -90,8 +94,8 @@ func dialogViewGenerator(cfg DialogCfg) View {
 		ID:           reservedDialogID,
 		Color:        cfg.Color,
 		ColorBorder:  cfg.ColorBorder,
-		SizeBorder:   cfg.SizeBorder,
-		Radius:       cfg.Radius,
+		SizeBorder:   Some(sizeBorder),
+		Radius:       Some(radius),
 		Padding:      cfg.Padding,
 		Width:        cfg.Width,
 		Height:       cfg.Height,
@@ -102,7 +106,7 @@ func dialogViewGenerator(cfg DialogCfg) View {
 		Float:        true,
 		FloatAnchor:  FloatMiddleCenter,
 		FloatTieOff:  FloatMiddleCenter,
-		Spacing:      SpacingMedium,
+		Spacing:      Some(SpacingMedium),
 		OnKeyDown:    dialogKeyDown(cfg),
 		A11YRole:     AccessRoleDialog,
 		A11YState:    AccessStateModal,
@@ -141,7 +145,7 @@ func confirmView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Spacing: SpacingMedium,
+		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus: cfg.IDFocus + 1,
@@ -189,7 +193,7 @@ func promptView(cfg DialogCfg) []View {
 	views = append(views, Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Spacing: SpacingMedium,
+		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus:  cfg.IDFocus + 1,
@@ -247,20 +251,11 @@ func applyDialogDefaults(cfg *DialogCfg) {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = d.Padding
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
 	if cfg.TitleTextStyle == (TextStyle{}) {
 		cfg.TitleTextStyle = d.TitleTextStyle
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = d.TextStyle
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
-	}
-	if cfg.RadiusBorder == 0 {
-		cfg.RadiusBorder = d.RadiusBorder
 	}
 	if cfg.IDFocus == 0 {
 		cfg.IDFocus = dialogBaseIDFocus

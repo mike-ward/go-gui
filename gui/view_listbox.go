@@ -28,8 +28,8 @@ type ListBoxCfg struct {
 	MaxWidth        float32
 	MinHeight       float32
 	MaxHeight       float32
-	Radius          float32
-	SizeBorder      float32
+	Radius          Opt[float32]
+	SizeBorder      Opt[float32]
 	IDScroll        uint32
 	IDFocus         uint32
 	Multiple        bool
@@ -55,6 +55,10 @@ func NewListBoxSubheading(id, title string) ListBoxOption {
 // ListBox creates a list box view.
 func ListBox(cfg ListBoxCfg) View {
 	applyListBoxDefaults(&cfg)
+
+	dn := &DefaultListBoxStyle
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	radius := cfg.Radius.Get(dn.Radius)
 
 	list := make([]View, 0, len(cfg.Data))
 	for _, dat := range cfg.Data {
@@ -102,11 +106,11 @@ func ListBox(cfg ListBoxCfg) View {
 		MaxHeight:   cfg.MaxHeight,
 		Color:       cfg.Color,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  cfg.SizeBorder,
-		Radius:      cfg.Radius,
+		SizeBorder:  Some(sizeBorder),
+		Radius:      Some(radius),
 		Padding:     cfg.Padding,
 		Sizing:      cfg.Sizing,
-		Spacing:     0,
+		Spacing:     Some(float32(0)),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		Content:     list,
@@ -162,7 +166,7 @@ func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg) View {
 func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 	if dat.IsSubheading {
 		return Column(ContainerCfg{
-			Spacing: 1,
+			Spacing: Some[float32](1),
 			Padding: PaddingNone,
 			Sizing:  FillFit,
 			Content: []View{
@@ -258,12 +262,7 @@ func applyListBoxDefaults(cfg *ListBoxCfg) {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = PaddingTwo
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = SizeBorderDef
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = RadiusSmall
-	}
+
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle
 	}

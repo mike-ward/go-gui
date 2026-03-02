@@ -24,8 +24,8 @@ type InputCfg struct {
 
 	// Appearance
 	Padding          Padding
-	Radius           float32
-	SizeBorder       float32
+	Radius           Opt[float32]
+	SizeBorder       Opt[float32]
 	Color            Color
 	ColorHover       Color
 	ColorBorder      Color
@@ -52,6 +52,10 @@ type InputCfg struct {
 // Input creates a text input field view.
 func Input(cfg InputCfg) View {
 	applyInputDefaults(&cfg)
+
+	d := &DefaultInputStyle
+	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
+	radius := cfg.Radius.Get(d.Radius)
 
 	placeholderActive := len(cfg.Text) == 0
 	txt := cfg.Text
@@ -113,13 +117,13 @@ func Input(cfg InputCfg) View {
 		Clip:            true,
 		Color:           cfg.Color,
 		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      cfg.SizeBorder,
+		SizeBorder:      Some(sizeBorder),
 		Invisible:       cfg.Invisible,
 		Padding:         cfg.Padding,
-		Radius:          cfg.Radius,
+		Radius:          Some(radius),
 		Sizing:          cfg.Sizing,
 		IDScroll:        cfg.IDScroll,
-		Spacing:         0,
+		Spacing:         Some(float32(0)),
 		OnHover: func(_ *Layout, _ *Event, w *Window) {
 			if w.IsFocus(idFocus) {
 				w.SetMouseCursor(CursorIBeam)
@@ -174,12 +178,6 @@ func applyInputDefaults(cfg *InputCfg) {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = PaddingTwoFour
 	}
-	if cfg.Radius == 0 {
-		cfg.Radius = RadiusMedium
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = SizeBorderDef
-	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle
 	}
@@ -188,6 +186,12 @@ func applyInputDefaults(cfg *InputCfg) {
 			Color: RGB(150, 150, 150),
 			Size:  SizeTextMedium,
 		}
+	}
+	if !cfg.Radius.IsSet() {
+		cfg.Radius = Some(d.Radius)
+	}
+	if !cfg.SizeBorder.IsSet() {
+		cfg.SizeBorder = Some(d.SizeBorder)
 	}
 }
 

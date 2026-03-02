@@ -73,7 +73,6 @@ func Scrollbar(cfg ScrollbarCfg) View {
 			A11YRole:             AccessRoleScrollBar,
 			Color:                cfg.ColorBackground,
 			OverDraw:             true,
-			Spacing:              0,
 			Padding:              PaddingNone,
 			scrollbarOrientation: ScrollbarHorizontal,
 			AmendLayout:          makeScrollbarAmendLayout(cfg),
@@ -87,7 +86,6 @@ func Scrollbar(cfg ScrollbarCfg) View {
 		A11YRole:             AccessRoleScrollBar,
 		Color:                cfg.ColorBackground,
 		OverDraw:             true,
-		Spacing:              0,
 		Padding:              PaddingNone,
 		scrollbarOrientation: ScrollbarVertical,
 		AmendLayout:          makeScrollbarAmendLayout(cfg),
@@ -100,9 +98,8 @@ func Scrollbar(cfg ScrollbarCfg) View {
 func scrollbarThumb(cfg ScrollbarCfg) View {
 	return Column(ContainerCfg{
 		Color:   cfg.ColorThumb,
-		Radius:  cfg.RadiusThumb,
+		Radius:  Some(cfg.RadiusThumb),
 		Padding: PaddingNone,
-		Spacing: 0,
 		OnClick: makeScrollbarOnMouseDown(cfg),
 	})
 }

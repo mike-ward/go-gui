@@ -18,8 +18,8 @@ func Menu(w *Window, cfg MenubarCfg) View {
 		ColorBorder:  cfg.ColorBorder,
 		SizeBorder:   cfg.SizeBorder,
 		Radius:       cfg.RadiusBorder,
-		MinWidth:     cfg.WidthSubmenuMin,
-		MaxWidth:     cfg.WidthSubmenuMax,
+		MinWidth:     cfg.WidthSubmenuMin.Get(DefaultMenubarStyle.WidthSubmenuMin),
+		MaxWidth:     cfg.WidthSubmenuMax.Get(DefaultMenubarStyle.WidthSubmenuMax),
 		Spacing:      cfg.SpacingSubmenu,
 		Padding:      cfg.PaddingSubmenu,
 		Float:        cfg.Float,
@@ -69,8 +69,8 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 		configured.Padding = pad
 		configured.selected = (selectedID == item.ID)
 		configured.sizing = sizing
-		configured.radius = cfg.RadiusMenuItem
-		configured.spacing = cfg.SpacingSubmenu
+		configured.radius = cfg.RadiusMenuItem.Get(DefaultMenubarStyle.RadiusMenuItem)
+		configured.spacing = cfg.SpacingSubmenu.Get(DefaultMenubarStyle.SpacingSubmenu)
 		configured.textStyle = ts
 
 		views = append(views, menuItem(cfg, configured))
@@ -95,8 +95,8 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 				ColorBorder: cfg.ColorBorder,
 				SizeBorder:  cfg.SizeBorder,
 				Radius:      cfg.RadiusSubmenu,
-				MinWidth:    cfg.WidthSubmenuMin,
-				MaxWidth:    cfg.WidthSubmenuMax,
+				MinWidth:    cfg.WidthSubmenuMin.Get(DefaultMenubarStyle.WidthSubmenuMin),
+				MaxWidth:    cfg.WidthSubmenuMax.Get(DefaultMenubarStyle.WidthSubmenuMax),
 				Spacing:     cfg.SpacingSubmenu,
 				Padding:     cfg.PaddingSubmenu,
 				Float:       true,

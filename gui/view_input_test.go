@@ -85,10 +85,10 @@ func TestInputDefaults(t *testing.T) {
 	if cfg.Color == (Color{}) {
 		t.Fatal("Color not defaulted")
 	}
-	if cfg.Radius == 0 {
+	if !cfg.Radius.IsSet() {
 		t.Fatal("Radius not defaulted")
 	}
-	if cfg.SizeBorder == 0 {
+	if !cfg.SizeBorder.IsSet() {
 		t.Fatal("SizeBorder not defaulted")
 	}
 	if cfg.TextStyle == (TextStyle{}) {

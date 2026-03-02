@@ -17,14 +17,14 @@ type SelectCfg struct {
 	ColorFocus       Color
 	ColorSelect      Color
 	Padding          Padding
-	SizeBorder       float32
+	SizeBorder       Opt[float32]
 	TextStyle        TextStyle
 	SubheadingStyle  TextStyle
 	PlaceholderStyle TextStyle
 	OnSelect         func([]string, *Event, *Window)
 	MinWidth         float32
 	MaxWidth         float32
-	Radius           float32
+	Radius           Opt[float32]
 	IDFocus          uint32
 	SelectMultiple   bool
 	NoWrap           bool
@@ -51,6 +51,9 @@ func (sv *selectView) Content() []View { return nil }
 
 func (sv *selectView) GenerateLayout(w *Window) Layout {
 	cfg := &sv.cfg
+	dn := &DefaultSelectStyle
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	radius := cfg.Radius.Get(dn.Radius)
 	isOpen := StateReadOr[string, bool](w, nsSelect, cfg.ID, false)
 	idScroll := fnvSum32(cfg.ID + "dropdown")
 
@@ -113,8 +116,8 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 		}
 		content = append(content, Column(ContainerCfg{
 			ID:          cfg.ID + "dropdown",
-			SizeBorder:  cfg.SizeBorder,
-			Radius:      cfg.Radius,
+			SizeBorder:  Some(sizeBorder),
+			Radius:      Some(radius),
 			ColorBorder: cfg.ColorBorder,
 			Color:       cfg.Color,
 			MinHeight:   50,
@@ -124,11 +127,11 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			Float:       true,
 			FloatAnchor: FloatBottomLeft,
 			FloatTieOff: FloatTopLeft,
-			FloatOffsetY: -cfg.SizeBorder,
+			FloatOffsetY: -sizeBorder,
 			IDScroll:    idScroll,
 			Padding: NewPadding(
 				PadSmall, PadMedium, PadSmall, PadSmall),
-			Spacing: 0,
+			Spacing: Some(float32(0)),
 			Content: options,
 		}))
 	}
@@ -147,8 +150,8 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
 			Color:       cfg.Color,
 			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  cfg.SizeBorder,
-			Radius:      cfg.Radius,
+			SizeBorder:  Some(sizeBorder),
+			Radius:      Some(radius),
 			Padding:     cfg.Padding,
 			Sizing:      cfg.Sizing,
 			MinWidth:    cfg.MinWidth,
@@ -210,11 +213,9 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 		Color:   optColor,
 		Padding: NewPadding(0, PadSmall, 0, 1),
 		Sizing:  FillFit,
-		Spacing: 0,
 		Content: []View{
-			Row(ContainerCfg{
-				Spacing: 0,
-				Padding: PadTBLR(2, 0),
+				Row(ContainerCfg{
+					Padding: PadTBLR(2, 0),
 				Content: []View{
 					Text(TextCfg{
 						Text: "✓",
@@ -270,14 +271,13 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 		label = option[3:]
 	}
 	return Column(ContainerCfg{
-		Spacing: 0,
 		Padding: NewPadding(guiTheme.PaddingMedium.Top, 0, 0, 0),
 		Sizing:  FillFit,
 		Content: []View{
-			Row(ContainerCfg{
-				Padding: PaddingNone,
-				Sizing:  FillFit,
-				Spacing: PadXSmall,
+				Row(ContainerCfg{
+					Padding: PaddingNone,
+					Sizing:  FillFit,
+					Spacing: Some[float32](PadXSmall),
 				Content: []View{
 					Text(TextCfg{
 						Text: "✓",
@@ -440,12 +440,7 @@ func applySelectDefaults(cfg *SelectCfg) {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = PaddingTwoFour
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = SizeBorderDef
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = RadiusMedium
-	}
+
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle
 	}

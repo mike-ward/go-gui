@@ -73,7 +73,7 @@ func (w *Window) Sidebar(cfg SidebarCfg) View {
 		Padding:         pad,
 		Color:           cfg.Color,
 		Shadow:          cfg.Shadow,
-		Radius:          cfg.Radius,
+		Radius:          Some(cfg.Radius),
 		Clip:            cfg.Clip,
 		Disabled:        cfg.Disabled,
 		A11YRole:        AccessRoleGroup,

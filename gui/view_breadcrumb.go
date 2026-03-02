@@ -39,13 +39,13 @@ type BreadcrumbCfg struct {
 	PaddingTrail       Padding
 	PaddingCrumb       Padding
 	PaddingContent     Padding
-	Radius             float32
-	RadiusCrumb        float32
-	RadiusContent      float32
-	Spacing            float32
-	SpacingTrail       float32
-	SizeBorder         float32
-	SizeContentBorder  float32
+	Radius             Opt[float32]
+	RadiusCrumb        Opt[float32]
+	RadiusContent      Opt[float32]
+	Spacing            Opt[float32]
+	SpacingTrail       Opt[float32]
+	SizeBorder         Opt[float32]
+	SizeContentBorder  Opt[float32]
 	TextStyle          TextStyle
 	TextStyleSelected  TextStyle
 	TextStyleDisabled  TextStyle
@@ -108,24 +108,6 @@ func applyBreadcrumbDefaults(cfg *BreadcrumbCfg) {
 	if cfg.PaddingContent == (Padding{}) {
 		cfg.PaddingContent = s.PaddingContent
 	}
-	if cfg.Radius == 0 {
-		cfg.Radius = s.Radius
-	}
-	if cfg.RadiusCrumb == 0 {
-		cfg.RadiusCrumb = s.RadiusCrumb
-	}
-	if cfg.RadiusContent == 0 {
-		cfg.RadiusContent = s.RadiusContent
-	}
-	if cfg.Spacing == 0 {
-		cfg.Spacing = s.Spacing
-	}
-	if cfg.SpacingTrail == 0 {
-		cfg.SpacingTrail = s.SpacingTrail
-	}
-	if cfg.SizeContentBorder == 0 {
-		cfg.SizeContentBorder = s.SizeContentBorder
-	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = s.TextStyle
 	}
@@ -143,6 +125,16 @@ func applyBreadcrumbDefaults(cfg *BreadcrumbCfg) {
 // Breadcrumb creates a breadcrumb navigation control.
 func Breadcrumb(cfg BreadcrumbCfg) View {
 	applyBreadcrumbDefaults(&cfg)
+
+	s := &DefaultBreadcrumbStyle
+	radius := cfg.Radius.Get(s.Radius)
+	radiusCrumb := cfg.RadiusCrumb.Get(s.RadiusCrumb)
+	radiusContent := cfg.RadiusContent.Get(s.RadiusContent)
+	spacing := cfg.Spacing.Get(s.Spacing)
+	spacingTrail := cfg.SpacingTrail.Get(s.SpacingTrail)
+	sizeBorder := cfg.SizeBorder.Get(s.SizeBorder)
+	sizeContentBorder := cfg.SizeContentBorder.Get(s.SizeContentBorder)
+
 	selectedIdx := bcSelectedIndex(cfg.Items, cfg.Selected)
 
 	trailItems := make([]View, 0, len(cfg.Items)*2)
@@ -198,8 +190,8 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 			ID:      bcCrumbID(cfg.ID, item.ID),
 			Color:   crumbColor,
 			Padding: cfg.PaddingCrumb,
-			Radius:  cfg.RadiusCrumb,
-			Spacing: cfg.SpacingTrail,
+			Radius:  Some(radiusCrumb),
+			Spacing: Some(spacingTrail),
 			OnClick: onClick,
 			OnHover: onHover,
 			Content: crumbContent,
@@ -210,7 +202,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 	outerContent = append(outerContent, Row(ContainerCfg{
 		Color:   cfg.ColorTrail,
 		Padding: cfg.PaddingTrail,
-		Spacing: cfg.SpacingTrail,
+		Spacing: Some(spacingTrail),
 		Sizing:  FillFit,
 		VAlign:  VAlignMiddle,
 		Content: trailItems,
@@ -222,8 +214,8 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 		outerContent = append(outerContent, Column(ContainerCfg{
 			Color:       cfg.ColorContent,
 			ColorBorder: cfg.ColorContentBorder,
-			SizeBorder:  cfg.SizeContentBorder,
-			Radius:      cfg.RadiusContent,
+			SizeBorder:  Some(sizeContentBorder),
+			Radius:      Some(radiusContent),
 			Padding:     cfg.PaddingContent,
 			Sizing:      FillFill,
 			Content:     activeContent,
@@ -246,10 +238,10 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 		Sizing:          cfg.Sizing,
 		Color:           cfg.Color,
 		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      cfg.SizeBorder,
-		Radius:          cfg.Radius,
+		SizeBorder:      Some(sizeBorder),
+		Radius:          Some(radius),
 		Padding:         cfg.Padding,
-		Spacing:         cfg.Spacing,
+		Spacing:         Some(spacing),
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {

@@ -86,7 +86,7 @@ func (dv *dockLayoutView) GenerateLayout(w *Window) Layout {
 		ID:      cfg.ID,
 		Sizing:  cfg.Sizing,
 		Padding: PaddingNone,
-		Spacing: 0,
+		Spacing: Some(float32(0)),
 		Clip:    true,
 		AmendLayout: func(layout *Layout, w *Window) {
 			dockLayoutAmend(dockID, colorZone, layout, w)
@@ -265,7 +265,7 @@ func dockGroupView(
 	groupContent = append(groupContent, Row(ContainerCfg{
 		Sizing:  FillFit,
 		Padding: NewPadding(2, 4, 0, 4),
-		Spacing: 0,
+		Spacing: Some(float32(0)),
 		Color:   cfg.ColorTabBar,
 		Content: tabButtons,
 	}))
@@ -274,7 +274,7 @@ func dockGroupView(
 	groupContent = append(groupContent, Column(ContainerCfg{
 		Sizing:  FillFill,
 		Padding: PaddingNone,
-		Spacing: 0,
+		Spacing: Some(float32(0)),
 		Clip:    true,
 		Color:   cfg.ColorContent,
 		Content: activeContent,
@@ -284,7 +284,7 @@ func dockGroupView(
 		ID:      group.ID,
 		Sizing:  FillFill,
 		Padding: PaddingNone,
-		Spacing: 0,
+		Spacing: Some(float32(0)),
 		Clip:    true,
 		Content: groupContent,
 	})
@@ -320,10 +320,10 @@ func dockTabButton(
 			Height:     14,
 			Sizing:     FixedFixed,
 			Padding:    PaddingNone,
-			SizeBorder: 0,
+			SizeBorder: Some[float32](0),
 			Color:      ColorTransparent,
 			ColorHover: guiTheme.ColorHover,
-			Radius:     2,
+			Radius:     Some[float32](2),
 			OnClick: func(_ *Layout, _ *Event, w *Window) {
 				onPanelClose(panelID, w)
 			},
@@ -343,8 +343,8 @@ func dockTabButton(
 		Sizing:     FillFit,
 		HAlign:     HAlignLeft,
 		Padding:    NewPadding(4, 8, 4, 8),
-		Radius:     0,
-		SizeBorder: 0,
+		Radius:     Some[float32](0),
+		SizeBorder: Some[float32](0),
 		Color:      colorTab,
 		ColorHover: colorHover,
 		OnClick: func(layout *Layout, e *Event, w *Window) {

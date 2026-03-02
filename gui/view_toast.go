@@ -106,7 +106,7 @@ func toastContainerView(w *Window) View {
 		FloatOffsetX: offsetX,
 		FloatOffsetY: offsetY,
 		Sizing:       FitFit,
-		Spacing:      style.Spacing,
+		Spacing:      Some(style.Spacing),
 		Color:        ColorTransparent,
 		Content:      items,
 	})
@@ -174,11 +174,11 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 		Sizing:      FixedFit,
 		Color:       style.Color,
 		ColorBorder: style.ColorBorder,
-		SizeBorder:  style.SizeBorder,
-		Radius:      style.Radius,
+		SizeBorder:  Some(style.SizeBorder),
+		Radius:      Some(style.Radius),
 		Clip:        true,
 		Opacity:     frac,
-		Spacing:     SpacingSmall,
+		Spacing:     Some(SpacingSmall),
 		AmendLayout: func(layout *Layout, _ *Window) {
 			if frac < 1.0 {
 				layout.Shape.Height *= frac

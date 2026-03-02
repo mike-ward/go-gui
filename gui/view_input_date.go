@@ -24,10 +24,10 @@ type InputDateCfg struct {
 	ColorBorderFocus       Color
 	ColorSelect            Color
 	Padding                Padding
-	SizeBorder             float32
-	CellSpacing            float32
-	Radius                 float32
-	RadiusBorder           float32
+	SizeBorder             Opt[float32]
+	CellSpacing            Opt[float32]
+	Radius                 Opt[float32]
+	RadiusBorder           Opt[float32]
 	IDFocus                uint32
 	Sizing                 Sizing
 	Width                  float32
@@ -83,7 +83,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	content = append(content,
 		Row(ContainerCfg{
 			Sizing:  FillFit,
-			Spacing: SpacingSmall,
+			Spacing: Some(SpacingSmall),
 			VAlign:  VAlignMiddle,
 			Content: []View{
 				Text(TextCfg{
@@ -111,7 +111,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 			Float:        true,
 			FloatAnchor:  FloatBottomLeft,
 			FloatTieOff:  FloatTopLeft,
-			FloatOffsetY: -cfg.SizeBorder,
+			FloatOffsetY: -cfg.SizeBorder.Get(0),
 			Content: []View{
 				DatePicker(DatePickerCfg{
 					ID:                     cfgID + ".picker",
@@ -234,18 +234,14 @@ func applyInputDateDefaults(cfg *InputDateCfg) {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = PaddingSmall
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
-	if cfg.CellSpacing == 0 {
-		cfg.CellSpacing = d.CellSpacing
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
-	}
-	if cfg.RadiusBorder == 0 {
-		cfg.RadiusBorder = d.RadiusBorder
-	}
+	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
+	cellSpacing := cfg.CellSpacing.Get(d.CellSpacing)
+	radius := cfg.Radius.Get(d.Radius)
+	radiusBorder := cfg.RadiusBorder.Get(d.RadiusBorder)
+	cfg.SizeBorder = Some(sizeBorder)
+	cfg.CellSpacing = Some(cellSpacing)
+	cfg.Radius = Some(radius)
+	cfg.RadiusBorder = Some(radiusBorder)
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = d.TextStyle
 	}

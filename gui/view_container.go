@@ -18,7 +18,7 @@ type ContainerCfg struct {
 	MaxHeight float32
 
 	// Layout
-	Spacing  float32
+	Spacing  Opt[float32]
 	Padding  Padding
 	HAlign   HorizontalAlign
 	VAlign   VerticalAlign
@@ -29,8 +29,8 @@ type ContainerCfg struct {
 	// Appearance
 	Color          Color
 	ColorBorder    Color
-	SizeBorder     float32
-	Radius         float32
+	SizeBorder     Opt[float32]
+	Radius         Opt[float32]
 	BlurRadius     float32
 	Opacity        float32
 	Shadow         *BoxShadow
@@ -91,6 +91,13 @@ type ContainerCfg struct {
 	scrollbarOrientation ScrollbarOrientation
 }
 
+func applyContainerDefaults(cfg *ContainerCfg) (spacing, sizeBorder, radius float32) {
+	d := &DefaultContainerStyle
+	return cfg.Spacing.Get(d.Spacing),
+		cfg.SizeBorder.Get(d.SizeBorder),
+		cfg.Radius.Get(d.Radius)
+}
+
 // containerView implements View for container-based layouts.
 type containerView struct {
 	cfg       ContainerCfg
@@ -102,6 +109,7 @@ func (cv *containerView) Content() []View { return cv.content }
 
 func (cv *containerView) GenerateLayout(w *Window) Layout {
 	c := &cv.cfg
+	spacing, sizeBorder, radius := applyContainerDefaults(c)
 	layout := Layout{
 		Shape: &Shape{
 			ShapeType:            cv.shapeType,
@@ -119,16 +127,16 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 			MaxHeight:            c.MaxHeight,
 			Clip:                 c.Clip,
 			FocusSkip:            c.FocusSkip,
-			Spacing:              c.Spacing,
+			Spacing:              spacing,
 			Sizing:               c.Sizing,
 			Padding:              c.Padding,
 			HAlign:               c.HAlign,
 			VAlign:               c.VAlign,
 			TextDir:              c.TextDir,
-			Radius:               c.Radius,
+			Radius:               radius,
 			Color:                c.Color,
 			FX:                   cv.makeEffects(),
-			SizeBorder:           c.SizeBorder,
+			SizeBorder:           sizeBorder,
 			ColorBorder:          c.ColorBorder,
 			Disabled:             c.Disabled,
 			Float:                c.Float,

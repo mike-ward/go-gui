@@ -208,8 +208,8 @@ func RangeSlider(cfg RangeSliderCfg) View {
 				Sizing:      trackSizing,
 				Color:       cfg.Color,
 				ColorBorder: cfg.ColorBorder,
-				SizeBorder:  cfg.SizeBorder,
-				Radius:      cfg.RadiusBorder,
+				SizeBorder:  Some(cfg.SizeBorder),
+				Radius:      Some(cfg.RadiusBorder),
 				Padding:     PaddingNone,
 				axis:        trackAxis,
 				Content: []View{
@@ -223,7 +223,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 						Height:      cfg.ThumbSize,
 						Color:       cfg.ColorThumb,
 						ColorBorder: cfg.ColorBorder,
-						SizeBorder:  1.5,
+						SizeBorder:  Some[float32](1.5),
 						Padding:     PaddingNone,
 						AmendLayout: func(
 							layout *Layout, w *Window,

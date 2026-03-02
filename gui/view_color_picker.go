@@ -87,10 +87,10 @@ func (cv *colorPickerView) GenerateLayout(w *Window) Layout {
 			A11YLabel:   a11yLabel(cfg.A11YLabel, "Color Picker"),
 			Color:       style.Color,
 			ColorBorder: style.ColorBorder,
-			SizeBorder:  style.SizeBorder,
-			Radius:      style.Radius,
+			SizeBorder:  Some(style.SizeBorder),
+			Radius:      Some(style.Radius),
 			Padding:     style.Padding,
-			Spacing:     SpacingSmall,
+			Spacing:     Some(SpacingSmall),
 			Sizing:      cfg.Sizing,
 			Width:       cfg.Width,
 			Height:      cfg.Height,
@@ -109,9 +109,9 @@ func cpSVAndHueRow(
 	svSize, sliderH, indicatorSize float32,
 ) View {
 	return Row(ContainerCfg{
-		Spacing: SpacingSmall,
-		Content: []View{
-			cpSVArea(cfg, hsv, svSize, indicatorSize),
+			Spacing: Some(SpacingSmall),
+			Content: []View{
+				cpSVArea(cfg, hsv, svSize, indicatorSize),
 			cpHueSlider(cfg, hsv, sliderH, svSize,
 				indicatorSize),
 		},
@@ -140,7 +140,7 @@ func cpSVArea(
 			},
 		},
 		Padding: PaddingNone,
-		Radius:  cfg.Style.Radius,
+		Radius:  Some(cfg.Style.Radius),
 		Content: []View{
 			container(ContainerCfg{
 				Sizing: FillFill,
@@ -158,7 +158,7 @@ func cpSVArea(
 						Height:      indicatorSize,
 						Color:       cfgColor,
 						ColorBorder: White,
-						SizeBorder:  2,
+						SizeBorder:  Some(float32(2)),
 						Padding:     PaddingNone,
 						AmendLayout: func(
 							layout *Layout, _ *Window,
@@ -222,14 +222,14 @@ func cpHueSlider(
 			},
 		},
 		Padding: PaddingNone,
-		Radius:  cfg.Style.Radius,
+		Radius:  Some(cfg.Style.Radius),
 		Content: []View{
 			Circle(ContainerCfg{
 				Width:       indicatorSize,
 				Height:      indicatorSize,
 				Color:       HueColor(hsv.H),
 				ColorBorder: White,
-				SizeBorder:  2,
+				SizeBorder:  Some(float32(2)),
 				Padding:     PaddingNone,
 				AmendLayout: func(
 					layout *Layout, _ *Window,
@@ -292,7 +292,7 @@ func cpPreviewRow(cfg *ColorPickerCfg) View {
 	cfgID := cfg.ID
 
 	return Row(ContainerCfg{
-		Spacing: SpacingSmall,
+		Spacing: Some(SpacingSmall),
 		VAlign:  VAlignMiddle,
 		Content: []View{
 			Rectangle(RectangleCfg{
@@ -332,7 +332,7 @@ func cpPreviewRow(cfg *ColorPickerCfg) View {
 func cpRGBAInputs(cfg *ColorPickerCfg) View {
 	c := cfg.Color
 	return Row(ContainerCfg{
-		Spacing: SpacingSmall,
+		Spacing: Some(SpacingSmall),
 		Content: []View{
 			cpChannelInput(cfg, "R", c.R, 0),
 			cpChannelInput(cfg, "G", c.G, 1),
@@ -346,7 +346,7 @@ func cpHSVInputs(
 	cfg *ColorPickerCfg, hsv colorPickerState,
 ) View {
 	return Row(ContainerCfg{
-		Spacing: SpacingSmall,
+		Spacing: Some(SpacingSmall),
 		Content: []View{
 			cpHSVChannelInput(cfg, "H", int(hsv.H), 360, 0),
 			cpHSVChannelInput(cfg, "S",
@@ -366,7 +366,7 @@ func cpChannelInput(
 	c := cfg.Color
 
 	return Column(ContainerCfg{
-		Spacing: 2,
+		Spacing: Some(float32(2)),
 		Content: []View{
 			Text(TextCfg{
 				Text: ch,
@@ -420,7 +420,7 @@ func cpHSVChannelInput(
 	cfgID := cfg.ID
 
 	return Column(ContainerCfg{
-		Spacing: 2,
+		Spacing: Some(float32(2)),
 		Content: []View{
 			Text(TextCfg{
 				Text: ch,

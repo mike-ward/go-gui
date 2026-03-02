@@ -165,9 +165,9 @@ func dataGridCrudToolbarRow(cfg *DataGridCfg, state dataGridCrudState, caps Grid
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  0,
+		SizeBorder:  Some(float32(0)),
 		Padding:     dataGridPagerPadding(cfg),
-		Spacing:     6,
+		Spacing:     Some(float32(6)),
 		VAlign:      VAlignMiddle,
 		Content: []View{
 			dataGridIndicatorButton(guiLocale.StrAdd, cfg.TextStyleFilter, cfg.ColorHeaderHover,

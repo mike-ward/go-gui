@@ -187,7 +187,7 @@ func renderMdMath(
 	codeFallback := Column(ContainerCfg{
 		Color:      cfg.Style.CodeBlockBG,
 		Padding:    cfg.Style.CodeBlockPadding,
-		Radius:     cfg.Style.CodeBlockRadius,
+		Radius:     Some(cfg.Style.CodeBlockRadius),
 		Sizing:     FillFit,
 		Content: []View{
 			Text(TextCfg{
@@ -255,7 +255,7 @@ func renderMdMermaid(
 	codeFallback := Column(ContainerCfg{
 		Color:   cfg.Style.CodeBlockBG,
 		Padding: cfg.Style.CodeBlockPadding,
-		Radius:  cfg.Style.CodeBlockRadius,
+		Radius:  Some(cfg.Style.CodeBlockRadius),
 		Sizing:  FillFit,
 		Content: []View{
 			RTF(RtfCfg{
@@ -328,7 +328,7 @@ func renderMdCode(
 	return Column(ContainerCfg{
 		Color:   cfg.Style.CodeBlockBG,
 		Padding: cfg.Style.CodeBlockPadding,
-		Radius:  cfg.Style.CodeBlockRadius,
+		Radius:  Some(cfg.Style.CodeBlockRadius),
 		Sizing:  FillFit,
 		Clip:    true,
 		Content: []View{
@@ -412,7 +412,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		if !block.IsList && len(listItems) > 0 {
 			content = append(content, Column(ContainerCfg{
 				Sizing:  FillFit,
-				Spacing: cfg.Style.BlockSpacing / 2,
+				Spacing: Some(cfg.Style.BlockSpacing / 2),
 				Content: listItems,
 			}))
 			listItems = nil
@@ -559,7 +559,6 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			}
 			listItems = append(listItems, Row(ContainerCfg{
 				Sizing:  FillFit,
-				Spacing: 0,
 				Padding: NewPadding(0, 0, 0, indentW),
 				Content: []View{
 					Column(ContainerCfg{
@@ -588,7 +587,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			if i == len(blocks)-1 && len(listItems) > 0 {
 				content = append(content, Column(ContainerCfg{
 					Sizing:  FillFit,
-					Spacing: cfg.Style.BlockSpacing / 2,
+					Spacing: Some(cfg.Style.BlockSpacing / 2),
 					Content: listItems,
 				}))
 				listItems = nil
@@ -619,10 +618,10 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		A11YRole:    AccessRoleGroup,
 		Color:       cfg.Color,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  cfg.SizeBorder,
-		Radius:      cfg.Radius,
+		SizeBorder:  Some(cfg.SizeBorder),
+		Radius:      Some(cfg.Radius),
 		Padding:     cfg.Padding,
-		Spacing:     cfg.Style.BlockSpacing,
+		Spacing:     Some(cfg.Style.BlockSpacing),
 		Sizing:      sizing,
 		Content:     content,
 	})

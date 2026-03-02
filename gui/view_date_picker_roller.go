@@ -97,7 +97,7 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 		MinWidth: cfg.MinWidth,
 		MaxWidth: cfg.MaxWidth,
 		Padding:  PaddingSmall,
-		Spacing:  SpacingSmall,
+		Spacing:  Some(SpacingSmall),
 		HAlign:   HAlignCenter,
 		VAlign:   VAlignMiddle,
 		axis:     AxisLeftToRight,

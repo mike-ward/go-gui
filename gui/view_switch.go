@@ -13,12 +13,12 @@ type SwitchCfg struct {
 	ColorSelect      Color
 	ColorUnselect    Color
 	Padding          Padding
-	SizeBorder       float32
+	SizeBorder       Opt[float32]
 	TextStyle        TextStyle
 	OnClick          func(*Layout, *Event, *Window)
-	Width            float32
-	Height           float32
-	Radius           float32
+	Width            Opt[float32]
+	Height           Opt[float32]
+	Radius           Opt[float32]
 	IDFocus          uint32
 	Disabled         bool
 	Invisible        bool
@@ -32,11 +32,17 @@ type SwitchCfg struct {
 func Switch(cfg SwitchCfg) View {
 	applySwitchDefaults(&cfg)
 
+	d := &DefaultSwitchStyle
+	width := cfg.Width.Get(d.SizeWidth)
+	height := cfg.Height.Get(d.SizeHeight)
+	radius := cfg.Radius.Get(d.Radius)
+	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
+
 	thumbColor := cfg.ColorUnselect
 	if cfg.Selected {
 		thumbColor = cfg.ColorSelect
 	}
-	circleSize := cfg.Height - cfg.Padding.Height() - (cfg.SizeBorder * 2)
+	circleSize := height - cfg.Padding.Height() - (sizeBorder * 2)
 
 	colorFocus := cfg.ColorFocus
 	colorBorderFocus := cfg.ColorBorderFocus
@@ -51,13 +57,13 @@ func Switch(cfg SwitchCfg) View {
 	content := make([]View, 0, 2)
 	content = append(content, Row(ContainerCfg{
 		ID:          cfg.ID,
-		Width:       cfg.Width,
-		Height:      cfg.Height,
+		Width:       width,
+		Height:      height,
 		Sizing:      FixedFit,
 		Color:       cfg.Color,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  cfg.SizeBorder,
-		Radius:      cfg.Radius,
+		SizeBorder:  Some(sizeBorder),
+		Radius:      Some(radius),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		Padding:     cfg.Padding,
@@ -141,18 +147,7 @@ func applySwitchDefaults(cfg *SwitchCfg) {
 	if cfg.ColorUnselect == (Color{}) {
 		cfg.ColorUnselect = colorInteriorDark
 	}
-	if cfg.Width == 0 {
-		cfg.Width = 40
-	}
-	if cfg.Height == 0 {
-		cfg.Height = 22
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = 11
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = SizeBorderDef
-	}
+
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = PaddingTwo
 	}

@@ -55,7 +55,6 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 			FloatOffsetX: cfg.FloatOffsetX,
 			FloatOffsetY: cfg.FloatOffsetY,
 			Padding:      PaddingNone,
-			Spacing:      0,
 			Content: []View{
 				ListBox(ListBoxCfg{
 					ID:          lbID,

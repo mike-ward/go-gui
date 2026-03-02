@@ -17,8 +17,8 @@ type ToggleCfg struct {
 	ColorBorderFocus Color
 	ColorSelect      Color
 	Padding          Padding
-	SizeBorder       float32
-	Radius           float32
+	SizeBorder       Opt[float32]
+	Radius           Opt[float32]
 	MinWidth         float32
 	IDFocus          uint32
 	Disabled         bool
@@ -35,6 +35,10 @@ func Checkbox(cfg ToggleCfg) View { return Toggle(cfg) }
 // Toggle creates a toggle/checkbox view.
 func Toggle(cfg ToggleCfg) View {
 	applyToggleDefaults(&cfg)
+
+	d := &DefaultToggleStyle
+	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
+	radius := cfg.Radius.Get(d.Radius)
 
 	boxColor := cfg.Color
 	if cfg.Selected {
@@ -59,9 +63,9 @@ func Toggle(cfg ToggleCfg) View {
 	content = append(content, Row(ContainerCfg{
 		Color:       boxColor,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  cfg.SizeBorder,
+		SizeBorder:  Some(sizeBorder),
 		Padding:     cfg.Padding,
-		Radius:      cfg.Radius,
+		Radius:      Some(radius),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		HAlign:      HAlignCenter,
@@ -150,12 +154,7 @@ func applyToggleDefaults(cfg *ToggleCfg) {
 	if cfg.ColorSelect == (Color{}) {
 		cfg.ColorSelect = colorSelectDark
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = SizeBorderDef
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = RadiusSmall
-	}
+
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = PaddingTwoThree
 	}

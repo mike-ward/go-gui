@@ -16,8 +16,8 @@ type ComboboxCfg struct {
 	ColorHighlight    Color
 	ColorHover        Color
 	Padding           Padding
-	SizeBorder        float32
-	Radius            float32
+	SizeBorder        Opt[float32]
+	Radius            Opt[float32]
 	MinWidth          float32
 	MaxWidth          float32
 	MaxDropdownHeight float32
@@ -45,6 +45,9 @@ func (cv *comboboxView) Content() []View { return nil }
 
 func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	cfg := &cv.cfg
+	dn := &DefaultComboboxStyle
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	radius := cfg.Radius.Get(dn.Radius)
 	isOpen := StateReadOr[string, bool](w, nsCombobox, cfg.ID, false)
 	query := StateReadOr[string, string](w, nsComboboxQuery, cfg.ID, "")
 	highlighted := StateReadOr[string, int](w, nsComboboxHighlight, cfg.ID, 0)
@@ -136,8 +139,8 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			first, last, hl, nil, rowH)
 		content = append(content, Column(ContainerCfg{
 			ID:           cfg.ID + ".dropdown",
-			SizeBorder:   cfg.SizeBorder,
-			Radius:       cfg.Radius,
+			SizeBorder:   Some(sizeBorder),
+			Radius:       Some(radius),
 			ColorBorder:  cfg.ColorBorder,
 			Color:        cfg.Color,
 			MinHeight:    50,
@@ -147,10 +150,10 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			Float:        true,
 			FloatAnchor:  FloatBottomLeft,
 			FloatTieOff:  FloatTopLeft,
-			FloatOffsetY: -cfg.SizeBorder,
+			FloatOffsetY: -sizeBorder,
 			IDScroll:     cfg.IDScroll,
 			Padding:      cfg.Padding,
-			Spacing:      0,
+			Spacing:      Some(float32(0)),
 			Content:      dropdownContent,
 		}))
 	}
@@ -167,8 +170,8 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
 			Color:       cfg.Color,
 			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  cfg.SizeBorder,
-			Radius:      cfg.Radius,
+			SizeBorder:  Some(sizeBorder),
+			Radius:      Some(radius),
 			Padding:     cfg.Padding,
 			Sizing:      cfg.Sizing,
 			MinWidth:    cfg.MinWidth,
@@ -301,12 +304,6 @@ func applyComboboxDefaults(cfg *ComboboxCfg) {
 	}
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = d.Padding
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
 	}
 	if cfg.MinWidth == 0 {
 		cfg.MinWidth = d.MinWidth

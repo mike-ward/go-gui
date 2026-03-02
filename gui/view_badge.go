@@ -21,9 +21,9 @@ type BadgeCfg struct {
 	Dot       bool
 	Color     Color
 	Padding   Padding
-	Radius    float32
+	Radius    Opt[float32]
 	TextStyle TextStyle
-	DotSize   float32
+	DotSize   Opt[float32]
 
 	// Accessibility
 	A11YLabel       string
@@ -39,17 +39,13 @@ func Badge(cfg BadgeCfg) View {
 	if cfg.Padding == (Padding{}) {
 		cfg.Padding = guiTheme.BadgeStyle.Padding
 	}
-	if cfg.Radius == 0 {
-		cfg.Radius = guiTheme.BadgeStyle.Radius
-	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = guiTheme.BadgeStyle.TextStyle
 	}
-	if cfg.DotSize == 0 {
-		cfg.DotSize = guiTheme.BadgeStyle.DotSize
-	}
 
 	style := guiTheme.BadgeStyle
+	radius := cfg.Radius.Get(style.Radius)
+	dotSize := cfg.DotSize.Get(style.DotSize)
 	bg := cfg.Color
 	switch cfg.Variant {
 	case BadgeInfo:
@@ -63,11 +59,11 @@ func Badge(cfg BadgeCfg) View {
 	}
 
 	if cfg.Dot {
-		sz := cfg.DotSize
+		sz := dotSize
 		return Row(ContainerCfg{
 			A11YLabel: a11yLabel(cfg.A11YLabel, "status"),
 			Color:     bg,
-			Radius:    sz / 2,
+			Radius:    Some(sz / 2),
 			Width:     sz,
 			Height:    sz,
 			Sizing:    FixedFixed,
@@ -79,7 +75,7 @@ func Badge(cfg BadgeCfg) View {
 	return Row(ContainerCfg{
 		A11YLabel: a11yLabel(cfg.A11YLabel, label),
 		Color:     bg,
-		Radius:    cfg.Radius,
+		Radius:    Some(radius),
 		Sizing:    FitFit,
 		Padding:   cfg.Padding,
 		HAlign:    HAlignCenter,

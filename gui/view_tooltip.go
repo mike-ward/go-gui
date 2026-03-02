@@ -39,8 +39,8 @@ func Tooltip(cfg TooltipCfg) View {
 		FloatOffsetY: cfg.OffsetY,
 		Color:        cfg.Color,
 		ColorBorder:  cfg.ColorBorder,
-		SizeBorder:   cfg.SizeBorder,
-		Radius:       cfg.Radius,
+		SizeBorder:   Some(cfg.SizeBorder),
+		Radius:       Some(cfg.Radius),
 		Padding:      cfg.Padding,
 		Content:      cfg.Content,
 	})
