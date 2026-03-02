@@ -114,6 +114,28 @@ func (b *Backend) Run(w *gui.Window) {
 		w.Config.OnInit(w)
 	}
 
+	// Register event watcher for live resize rendering on macOS.
+	// During window drag-resize, macOS enters a modal loop that
+	// blocks PollEvent. This callback fires from within that loop,
+	// allowing re-layout and re-render at the new size.
+	watchHandle := sdl.AddEventWatchFunc(
+		func(ev sdl.Event, _ interface{}) bool {
+			we, ok := ev.(*sdl.WindowEvent)
+			if !ok || we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
+				return true
+			}
+			e := gui.Event{
+				Type:         gui.EventResized,
+				WindowWidth:  int(float32(we.Data1) / b.dpiScale),
+				WindowHeight: int(float32(we.Data2) / b.dpiScale),
+			}
+			w.EventFn(&e)
+			w.FrameFn()
+			b.renderFrame(w)
+			return true
+		}, nil)
+	defer sdl.DelEventWatch(watchHandle)
+
 	running := true
 	for running {
 		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
@@ -131,24 +153,7 @@ func (b *Backend) Run(w *gui.Window) {
 		}
 
 		w.FrameFn()
-
-		// Clear with background color.
-		bg := w.Config.BgColor
-		if bg == (gui.Color{}) {
-			t := gui.CurrentTheme()
-			bg = t.ColorBackground
-		}
-		b.renderer.SetDrawColor(bg.R, bg.G, bg.B, bg.A)
-		b.renderer.Clear()
-		b.renderer.SetClipRect(nil)
-
-		// Draw.
-		w.Lock()
-		b.renderersDraw(w)
-		w.Unlock()
-
-		b.textSys.Commit()
-		b.renderer.Present()
+		b.renderFrame(w)
 
 		// Update cursor.
 		mc := w.MouseCursorState()
@@ -156,6 +161,25 @@ func (b *Backend) Run(w *gui.Window) {
 			sdl.SetCursor(b.cursors[mc])
 		}
 	}
+}
+
+// renderFrame clears the screen, draws the current layout, and presents.
+func (b *Backend) renderFrame(w *gui.Window) {
+	bg := w.Config.BgColor
+	if bg == (gui.Color{}) {
+		t := gui.CurrentTheme()
+		bg = t.ColorBackground
+	}
+	b.renderer.SetDrawColor(bg.R, bg.G, bg.B, bg.A)
+	b.renderer.Clear()
+	b.renderer.SetClipRect(nil)
+
+	w.Lock()
+	b.renderersDraw(w)
+	w.Unlock()
+
+	b.textSys.Commit()
+	b.renderer.Present()
 }
 
 // Destroy releases all backend resources.
