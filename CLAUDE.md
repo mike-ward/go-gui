@@ -1,0 +1,82 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+```
+go test ./...          # run all tests (headless, ~0.25s)
+go test ./gui/... -run TestFoo  # run single test
+go vet ./...           # static analysis
+golangci-lint run      # full lint (govet, staticcheck, errcheck, gosimple, unused, gofmt, goimports, revive)
+go build ./...         # build all packages
+go run ./examples/get_started/  # run the example app (requires SDL2)
+```
+
+## Architecture
+
+Immediate-mode pipeline — no virtual DOM, no diffing:
+
+```
+View fn → GenerateViewLayout() → Layout tree
+  → layoutArrange() (Fit/Fixed/Grow sizing)
+  → renderLayout() → []RenderCmd
+  → Backend (SDL2 + Metal/OpenGL)
+```
+
+### Packages
+
+- `gui/` — core package: all widget factories, layout engine, theme system,
+  animation subsystem, event dispatch, state management (~255 .go files)
+- `gui/backend/sdl2/` — SDL2 backend; implements `TextMeasurer`, `SvgParser`,
+  `NativePlatform`; wires into window via `sdl2.New(w)`
+- `gui/backend/test/` — headless no-op backend used by all unit tests
+- `examples/get_started/` — minimal counter app demonstrating window + view + state
+
+### Core Types
+
+- `Layout` — tree node with `*Shape`, `*Layout` parent, `[]Layout` children
+- `Shape` — central renderable: position, size, color, type, events, text, effects
+- `RenderCmd` — single draw operation (rect, text, circle, image, SVG, …)
+- `Window` — top-level container; holds typed state slot, layout tree, animations
+- `View` — interface satisfied by `*Layout`; widget factories return `*Layout`
+
+### State Management
+
+One typed slot per window — no globals, no closures:
+
+```go
+w := gui.NewWindow(gui.WindowCfg{State: &App{}})
+app := gui.State[App](w)  // type-asserts; panics if wrong type
+```
+
+### Sizing
+
+`Sizing` is a combined axis enum: `SizingFit`, `SizingFixed`, `SizingGrow`,
+`SizingFitFixed`, `SizingFixedFixed`, `SizingGrowGrow`, `SizingFixedGrow`,
+`SizingGrowFixed`. Convenience aliases: `FitFit`, `FixedFixed`, `GrowGrow`, etc.
+
+### Widgets
+
+All widgets accept a `*Cfg` struct (zero-initializable). Event callbacks share
+the signature `func(*Layout, *Event, *Window)`. `IDFocus uint32 > 0` opts a
+widget into tab-order focus.
+
+### Injected Interfaces
+
+Backend injects at startup; nil in tests:
+- `TextMeasurer` — glyph metrics for layout
+- `SvgParser` — SVG parse + tessellate
+- `NativePlatform` — native dialogs, notifications, print, a11y, IME, titlebar
+
+### Key Implementation Notes
+
+- `spacing()` counts only visible children (`ShapeType != ShapeNone`, `!Float`,
+  `!OverDraw`) — fence-post gap calculation
+- Shape text fields live in `Shape.TC` (`*ShapeTextConfig`), not on `Shape`
+- `ContainerCfg` has no `Title`/`TitleBG` fields
+- `Children []Layout` holds values; parents are pointers — avoids cycles
+- `StateMap` (keyed by namespace constants like `nsOverflow`, `nsSvgCache`) is
+  the per-window typed key-value store used by widgets for internal state
+- `AmendLayout` hook on shapes runs after sizing to reposition overlay elements
+  (color picker circles, splitter handles, etc.)
