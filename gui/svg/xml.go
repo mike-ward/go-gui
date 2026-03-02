@@ -2,6 +2,7 @@ package svg
 
 import (
 	"fmt"
+	"html"
 	"os"
 	"strings"
 
@@ -627,7 +628,7 @@ func makeTextFromParent(text string, x, y float32, p textParentAttrs) gui.SvgTex
 // parseTspan parses a <tspan> element, inheriting parent <text>
 // attrs and applying overrides.
 func parseTspan(elem, body string, p textParentAttrs, curY *float32, state *parseState) {
-	text := strings.TrimSpace(body)
+	text := html.UnescapeString(strings.TrimSpace(body))
 	if text == "" {
 		return
 	}
@@ -703,7 +704,7 @@ func parseTspan(elem, body string, p textParentAttrs, curY *float32, state *pars
 
 // parseTextPathChild parses a <textPath> child element.
 func parseTextPathChild(elem, body string, p textParentAttrs, state *parseState) {
-	text := strings.TrimSpace(body)
+	text := html.UnescapeString(strings.TrimSpace(body))
 	if text == "" {
 		return
 	}
@@ -792,9 +793,9 @@ func cleanFontFamily(ff string) string {
 func extractPlainText(body string) string {
 	lt := strings.IndexByte(body, '<')
 	if lt < 0 {
-		return strings.TrimSpace(body)
+		return html.UnescapeString(strings.TrimSpace(body))
 	}
-	return strings.TrimSpace(body[:lt])
+	return html.UnescapeString(strings.TrimSpace(body[:lt]))
 }
 
 // --- Defs parsing ---
