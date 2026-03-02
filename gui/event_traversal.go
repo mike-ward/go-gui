@@ -1,6 +1,5 @@
 package gui
 
-import "log"
 
 // ShapeCallback is the type for shape event callbacks.
 type ShapeCallback = func(*Layout, *Event, *Window)
@@ -22,11 +21,7 @@ func executeFocusCallback(
 		return false
 	}
 	callback(layout, e, w)
-	if e.IsHandled {
-		log.Printf("debug: %s handled by %s", name, layout.Shape.ID)
-		return true
-	}
-	return false
+	return e.IsHandled
 }
 
 // executeMouseCallback executes a callback if the mouse is
@@ -46,7 +41,6 @@ func executeMouseCallback(
 	callback(layout, &ev, w)
 	if ev.IsHandled {
 		e.IsHandled = true
-		log.Printf("debug: %s handled by %s", name, layout.Shape.ID)
 		return true
 	}
 	return false

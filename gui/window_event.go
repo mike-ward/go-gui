@@ -1,6 +1,5 @@
 package gui
 
-import "log"
 
 // EventFn handles user events, dispatching to child views.
 // Called by the backend event loop.
@@ -79,9 +78,6 @@ func (w *Window) EventFn(e *Event) {
 
 	if !e.IsHandled && w.OnEvent != nil {
 		w.OnEvent(e, w)
-	}
-	if e.IsHandled {
-		log.Printf("debug: EventFn: %d handled", e.Type)
 	}
 	w.viewState.tooltip.id = ""
 	w.UpdateWindow()

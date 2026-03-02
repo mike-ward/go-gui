@@ -1,6 +1,5 @@
 package gui
 
-import "log"
 
 // charHandler handles character input events (typing).
 // Traverses forward (depth-first) and delivers to focused element.
@@ -51,10 +50,6 @@ func keydownHandler(layout *Layout, e *Event, w *Window) {
 	}
 	if layout.Shape.IDScroll > 0 {
 		keyDownScrollHandler(layout, e, w)
-		if e.IsHandled {
-			log.Printf("debug: keydownHandler scrolled by %s",
-				layout.Shape.ID)
-		}
 	}
 }
 
