@@ -145,6 +145,11 @@ const (
 	nsDgJump              = "gui.dg.jump"
 	nsDgPendingJump       = "gui.dg.pending_jump"
 	nsDgSource            = "gui.dg.source"
+	nsActiveDownloads     = "gui.active_downloads"
+	nsSvgCache            = "gui.svg_cache"
+	nsSvgDimCache         = "gui.svg_dim_cache"
+	nsSvgAnimSeen         = "gui.svg_anim_seen"
+	nsSvgAnimStart        = "gui.svg_anim_start"
 )
 
 // Capacity tiers.

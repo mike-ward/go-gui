@@ -1,0 +1,509 @@
+package gui
+
+import (
+	"math"
+	"strconv"
+	"strings"
+	"unicode"
+)
+
+// renderSvgTextPath places text along a referenced SVG path and
+// emits RenderText commands for each glyph. Pure geometry — no
+// external SVG module dependency.
+func renderSvgTextPath(tp SvgTextPath, defsPaths map[string]string,
+	shapeX, shapeY, scale float32, w *Window) {
+	d, ok := defsPaths[tp.PathID]
+	if !ok {
+		return
+	}
+	polyline := flattenDefsPath(d, scale)
+	if len(polyline) < 4 {
+		return
+	}
+	table, totalLen := buildArcLengthTable(polyline)
+	if totalLen <= 0 {
+		return
+	}
+
+	// Build text style.
+	ts := TextStyle{
+		Family:        tp.FontFamily,
+		Size:          tp.FontSize * scale,
+		LetterSpacing: tp.LetterSpacing * scale,
+	}
+	if tp.Opacity < 1.0 {
+		ts.Color = Color{tp.Color.R, tp.Color.G, tp.Color.B,
+			uint8(float32(tp.Color.A) * tp.Opacity)}
+	} else {
+		ts.Color = svgToColor(tp.Color)
+	}
+
+	// Measure text to compute advances per character.
+	text := tp.Text
+	if len(text) == 0 {
+		return
+	}
+	// Approximate per-character advance.
+	charWidth := ts.Size * 0.6
+	if w.textMeasurer != nil {
+		totalW := w.textMeasurer.TextWidth(text, ts)
+		if len(text) > 0 {
+			charWidth = totalW / float32(len([]rune(text)))
+		}
+	}
+	runes := []rune(text)
+	totalAdvance := float32(len(runes)) * charWidth
+
+	// Resolve startOffset.
+	offset := tp.StartOffset * scale
+	if tp.IsPercent {
+		offset = tp.StartOffset * totalLen
+	}
+	// text-anchor adjustment.
+	if tp.Anchor == 1 {
+		offset -= totalAdvance / 2
+	} else if tp.Anchor == 2 {
+		offset -= totalAdvance
+	}
+
+	// method=stretch: scale advances.
+	advanceScale := float32(1)
+	if tp.Method == 1 && totalAdvance > 0 {
+		remaining := totalLen - offset
+		if remaining > 0 {
+			advanceScale = remaining / totalAdvance
+		}
+	}
+
+	// Place glyphs along the path.
+	curAdvance := float32(0)
+	for _, r := range runes {
+		advance := charWidth * advanceScale
+		centerDist := offset + curAdvance + advance/2
+		px, py, angle := samplePathAt(polyline, table, centerDist)
+		_ = angle // rotation not directly supported in RenderText
+		gx := px + shapeX
+		gy := py + shapeY
+		emitRenderer(RenderCmd{
+			Kind:     RenderText,
+			Text:     string(r),
+			X:        gx,
+			Y:        gy,
+			Color:    ts.Color,
+			FontName: ts.Family,
+			FontSize: ts.Size,
+		}, w)
+		curAdvance += advance
+	}
+}
+
+// flattenDefsPath parses an SVG path d attribute and flattens it
+// to a polyline with coordinates scaled by scale. Supports M, L,
+// C, Q, A commands (absolute and relative).
+func flattenDefsPath(d string, scale float32) []float32 {
+	tokens := tokenizeSvgPath(d)
+	if len(tokens) == 0 {
+		return nil
+	}
+
+	var out []float32
+	var cx, cy float32 // current position
+	var startX, startY float32
+	i := 0
+
+	for i < len(tokens) {
+		cmd := tokens[i]
+		i++
+
+		switch cmd {
+		case "M", "m":
+			rel := cmd == "m"
+			for i+1 < len(tokens) && !isSvgCommand(tokens[i]) {
+				x := parseFloat(tokens[i])
+				y := parseFloat(tokens[i+1])
+				i += 2
+				if rel {
+					x += cx
+					y += cy
+				}
+				cx, cy = x, y
+				startX, startY = cx, cy
+				out = append(out, cx*scale, cy*scale)
+			}
+
+		case "L", "l":
+			rel := cmd == "l"
+			for i+1 < len(tokens) && !isSvgCommand(tokens[i]) {
+				x := parseFloat(tokens[i])
+				y := parseFloat(tokens[i+1])
+				i += 2
+				if rel {
+					x += cx
+					y += cy
+				}
+				cx, cy = x, y
+				out = append(out, cx*scale, cy*scale)
+			}
+
+		case "H", "h":
+			rel := cmd == "h"
+			for i < len(tokens) && !isSvgCommand(tokens[i]) {
+				x := parseFloat(tokens[i])
+				i++
+				if rel {
+					x += cx
+				}
+				cx = x
+				out = append(out, cx*scale, cy*scale)
+			}
+
+		case "V", "v":
+			rel := cmd == "v"
+			for i < len(tokens) && !isSvgCommand(tokens[i]) {
+				y := parseFloat(tokens[i])
+				i++
+				if rel {
+					y += cy
+				}
+				cy = y
+				out = append(out, cx*scale, cy*scale)
+			}
+
+		case "C", "c":
+			rel := cmd == "c"
+			for i+5 < len(tokens) && !isSvgCommand(tokens[i]) {
+				x1 := parseFloat(tokens[i])
+				y1 := parseFloat(tokens[i+1])
+				x2 := parseFloat(tokens[i+2])
+				y2 := parseFloat(tokens[i+3])
+				x := parseFloat(tokens[i+4])
+				y := parseFloat(tokens[i+5])
+				i += 6
+				if rel {
+					x1 += cx
+					y1 += cy
+					x2 += cx
+					y2 += cy
+					x += cx
+					y += cy
+				}
+				flattenCubic(&out, cx, cy, x1, y1, x2, y2, x, y, scale)
+				cx, cy = x, y
+			}
+
+		case "Q", "q":
+			rel := cmd == "q"
+			for i+3 < len(tokens) && !isSvgCommand(tokens[i]) {
+				x1 := parseFloat(tokens[i])
+				y1 := parseFloat(tokens[i+1])
+				x := parseFloat(tokens[i+2])
+				y := parseFloat(tokens[i+3])
+				i += 4
+				if rel {
+					x1 += cx
+					y1 += cy
+					x += cx
+					y += cy
+				}
+				flattenQuadratic(&out, cx, cy, x1, y1, x, y, scale)
+				cx, cy = x, y
+			}
+
+		case "A", "a":
+			rel := cmd == "a"
+			for i+6 < len(tokens) && !isSvgCommand(tokens[i]) {
+				rx := parseFloat(tokens[i])
+				ry := parseFloat(tokens[i+1])
+				rot := parseFloat(tokens[i+2])
+				largeArc := parseFloat(tokens[i+3])
+				sweep := parseFloat(tokens[i+4])
+				x := parseFloat(tokens[i+5])
+				y := parseFloat(tokens[i+6])
+				i += 7
+				if rel {
+					x += cx
+					y += cy
+				}
+				flattenArc(&out, cx, cy, rx, ry, rot,
+					largeArc != 0, sweep != 0, x, y, scale)
+				cx, cy = x, y
+			}
+
+		case "Z", "z":
+			cx, cy = startX, startY
+			out = append(out, cx*scale, cy*scale)
+
+		default:
+			// Skip unknown commands.
+		}
+	}
+	return out
+}
+
+// tokenizeSvgPath splits an SVG path d attribute into command
+// letters and numeric tokens.
+func tokenizeSvgPath(d string) []string {
+	var tokens []string
+	r := strings.NewReader(d)
+	for {
+		ch, _, err := r.ReadRune()
+		if err != nil {
+			break
+		}
+		if unicode.IsSpace(ch) || ch == ',' {
+			continue
+		}
+		if isSvgCommandRune(ch) {
+			tokens = append(tokens, string(ch))
+			continue
+		}
+		// Numeric token.
+		var sb strings.Builder
+		sb.WriteRune(ch)
+		for {
+			ch, _, err := r.ReadRune()
+			if err != nil {
+				break
+			}
+			if ch == '-' && sb.Len() > 0 {
+				// Negative sign starts new number (unless
+				// after 'e'/'E' for scientific notation).
+				last := sb.String()
+				if last[len(last)-1] != 'e' &&
+					last[len(last)-1] != 'E' {
+					r.UnreadRune()
+					break
+				}
+			}
+			if unicode.IsDigit(ch) || ch == '.' ||
+				ch == '-' || ch == '+' ||
+				ch == 'e' || ch == 'E' {
+				sb.WriteRune(ch)
+			} else {
+				r.UnreadRune()
+				break
+			}
+		}
+		tokens = append(tokens, sb.String())
+	}
+	return tokens
+}
+
+func isSvgCommand(s string) bool {
+	if len(s) != 1 {
+		return false
+	}
+	return isSvgCommandRune(rune(s[0]))
+}
+
+func isSvgCommandRune(ch rune) bool {
+	switch ch {
+	case 'M', 'm', 'L', 'l', 'H', 'h', 'V', 'v',
+		'C', 'c', 'Q', 'q', 'A', 'a', 'Z', 'z',
+		'S', 's', 'T', 't':
+		return true
+	}
+	return false
+}
+
+func parseFloat(s string) float32 {
+	v, _ := strconv.ParseFloat(s, 32)
+	return float32(v)
+}
+
+// flattenCubic approximates a cubic Bezier with line segments.
+func flattenCubic(out *[]float32,
+	x0, y0, x1, y1, x2, y2, x3, y3, scale float32) {
+	const steps = 16
+	for i := 1; i <= steps; i++ {
+		t := float32(i) / steps
+		t2 := t * t
+		t3 := t2 * t
+		mt := 1 - t
+		mt2 := mt * mt
+		mt3 := mt2 * mt
+		x := mt3*x0 + 3*mt2*t*x1 + 3*mt*t2*x2 + t3*x3
+		y := mt3*y0 + 3*mt2*t*y1 + 3*mt*t2*y2 + t3*y3
+		*out = append(*out, x*scale, y*scale)
+	}
+}
+
+// flattenQuadratic approximates a quadratic Bezier with line
+// segments.
+func flattenQuadratic(out *[]float32,
+	x0, y0, x1, y1, x2, y2, scale float32) {
+	const steps = 12
+	for i := 1; i <= steps; i++ {
+		t := float32(i) / steps
+		mt := 1 - t
+		x := mt*mt*x0 + 2*mt*t*x1 + t*t*x2
+		y := mt*mt*y0 + 2*mt*t*y1 + t*t*y2
+		*out = append(*out, x*scale, y*scale)
+	}
+}
+
+// flattenArc approximates an SVG arc with line segments using
+// endpoint parameterization.
+func flattenArc(out *[]float32,
+	cx, cy, rxIn, ryIn, rotDeg float32,
+	largeArc, sweepFlag bool, x, y, scale float32) {
+	// Degenerate: treat as line.
+	if rxIn == 0 || ryIn == 0 {
+		*out = append(*out, x*scale, y*scale)
+		return
+	}
+	rx := float64(f32Abs(rxIn))
+	ry := float64(f32Abs(ryIn))
+	phi := float64(rotDeg) * math.Pi / 180
+
+	dx := float64(cx-x) / 2
+	dy := float64(cy-y) / 2
+	cosPhi := math.Cos(phi)
+	sinPhi := math.Sin(phi)
+	x1p := cosPhi*dx + sinPhi*dy
+	y1p := -sinPhi*dx + cosPhi*dy
+
+	// Ensure radii are large enough.
+	lambda := (x1p*x1p)/(rx*rx) + (y1p*y1p)/(ry*ry)
+	if lambda > 1 {
+		sqrtL := math.Sqrt(lambda)
+		rx *= sqrtL
+		ry *= sqrtL
+	}
+
+	num := rx*rx*ry*ry - rx*rx*y1p*y1p - ry*ry*x1p*x1p
+	den := rx*rx*y1p*y1p + ry*ry*x1p*x1p
+	if den == 0 {
+		*out = append(*out, x*scale, y*scale)
+		return
+	}
+	sq := num / den
+	if sq < 0 {
+		sq = 0
+	}
+	root := math.Sqrt(sq)
+	if largeArc == sweepFlag {
+		root = -root
+	}
+	cxp := root * rx * y1p / ry
+	cyp := -root * ry * x1p / rx
+
+	cxArc := cosPhi*cxp - sinPhi*cyp +
+		float64(cx+x)/2
+	cyArc := sinPhi*cxp + cosPhi*cyp +
+		float64(cy+y)/2
+
+	theta1 := vecAngle(1, 0, (x1p-cxp)/rx, (y1p-cyp)/ry)
+	dtheta := vecAngle(
+		(x1p-cxp)/rx, (y1p-cyp)/ry,
+		(-x1p-cxp)/rx, (-y1p-cyp)/ry)
+	if !sweepFlag && dtheta > 0 {
+		dtheta -= 2 * math.Pi
+	}
+	if sweepFlag && dtheta < 0 {
+		dtheta += 2 * math.Pi
+	}
+
+	steps := int(math.Ceil(math.Abs(dtheta) / (math.Pi / 8)))
+	if steps < 4 {
+		steps = 4
+	}
+	for i := 1; i <= steps; i++ {
+		t := theta1 + dtheta*float64(i)/float64(steps)
+		xr := rx*math.Cos(t)
+		yr := ry*math.Sin(t)
+		px := cosPhi*xr - sinPhi*yr + cxArc
+		py := sinPhi*xr + cosPhi*yr + cyArc
+		*out = append(*out, float32(px)*scale, float32(py)*scale)
+	}
+}
+
+func vecAngle(ux, uy, vx, vy float64) float64 {
+	dot := ux*vx + uy*vy
+	lenU := math.Sqrt(ux*ux + uy*uy)
+	lenV := math.Sqrt(vx*vx + vy*vy)
+	d := dot / (lenU * lenV)
+	if d < -1 {
+		d = -1
+	}
+	if d > 1 {
+		d = 1
+	}
+	a := math.Acos(d)
+	if ux*vy-uy*vx < 0 {
+		a = -a
+	}
+	return a
+}
+
+// buildArcLengthTable computes cumulative arc lengths along a
+// polyline. Returns (table, totalLength). polyline is [x0,y0, ...].
+func buildArcLengthTable(polyline []float32) ([]float32, float32) {
+	n := len(polyline) / 2
+	if n < 1 {
+		return nil, 0
+	}
+	table := make([]float32, n)
+	table[0] = 0
+	for i := 1; i < n; i++ {
+		dx := polyline[i*2] - polyline[(i-1)*2]
+		dy := polyline[i*2+1] - polyline[(i-1)*2+1]
+		table[i] = table[i-1] + float32(math.Sqrt(
+			float64(dx*dx+dy*dy)))
+	}
+	return table, table[n-1]
+}
+
+// samplePathAt returns (x, y, angle) at distance dist along the
+// polyline. Uses binary search on the arc-length table.
+func samplePathAt(polyline, table []float32,
+	dist float32) (float32, float32, float32) {
+	n := len(table)
+	if n < 2 {
+		if n == 1 {
+			return polyline[0], polyline[1], 0
+		}
+		return 0, 0, 0
+	}
+	// Clamp before start.
+	if dist <= 0 {
+		dx := polyline[2] - polyline[0]
+		dy := polyline[3] - polyline[1]
+		return polyline[0], polyline[1],
+			float32(math.Atan2(float64(dy), float64(dx)))
+	}
+	total := table[n-1]
+	// Clamp beyond end.
+	if dist >= total {
+		last := (n - 1) * 2
+		prev := (n - 2) * 2
+		dx := polyline[last] - polyline[prev]
+		dy := polyline[last+1] - polyline[prev+1]
+		return polyline[last], polyline[last+1],
+			float32(math.Atan2(float64(dy), float64(dx)))
+	}
+	// Binary search for enclosing segment.
+	lo, hi := 0, n-1
+	for lo < hi-1 {
+		mid := (lo + hi) / 2
+		if table[mid] <= dist {
+			lo = mid
+		} else {
+			hi = mid
+		}
+	}
+	// Interpolate within segment.
+	segLen := table[hi] - table[lo]
+	t := float32(0)
+	if segLen > 0 {
+		t = (dist - table[lo]) / segLen
+	}
+	x0 := polyline[lo*2]
+	y0 := polyline[lo*2+1]
+	x1 := polyline[hi*2]
+	y1 := polyline[hi*2+1]
+	x := x0 + (x1-x0)*t
+	y := y0 + (y1-y0)*t
+	angle := float32(math.Atan2(float64(y1-y0), float64(x1-x0)))
+	return x, y, angle
+}

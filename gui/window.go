@@ -64,6 +64,9 @@ type Window struct {
 	// Text measurement — set by backend, nil in tests.
 	textMeasurer TextMeasurer
 
+	// SVG parser — set by backend, nil in tests.
+	svgParser SvgParser
+
 	// View generator — produces the root View each frame.
 	viewGenerator func(*Window) View
 

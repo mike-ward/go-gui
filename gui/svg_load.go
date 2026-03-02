@@ -1,0 +1,380 @@
+package gui
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	glyph "github.com/mike-ward/go-glyph"
+)
+
+const maxSvgSourceBytes = int64(4 * 1024 * 1024)
+
+var validSvgExtensions = []string{".svg"}
+
+// CachedSvgPath holds tessellated geometry with vertex colors.
+type CachedSvgPath struct {
+	Triangles    []float32
+	Color        Color
+	VertexColors []Color
+	IsClipMask   bool
+	ClipGroup    int
+	GroupID      string
+}
+
+// CachedSvgTextDraw holds cached text rendering data.
+type CachedSvgTextDraw struct {
+	Text      string
+	TextStyle TextStyle
+	X, Y      float32
+}
+
+// CachedFilteredGroup holds tessellated geometry for a filter group.
+type CachedFilteredGroup struct {
+	Filter      SvgFilter
+	RenderPaths []CachedSvgPath
+	Texts       []SvgText
+	TextDraws   []CachedSvgTextDraw
+	TextPaths   []SvgTextPath
+	Gradients   map[string]SvgGradientDef
+	BBox        [4]float32 // x, y, width, height
+}
+
+// CachedSvg holds pre-tessellated SVG data for efficient rendering.
+type CachedSvg struct {
+	RenderPaths    []CachedSvgPath
+	Texts          []SvgText
+	TextDraws      []CachedSvgTextDraw
+	TextPaths      []SvgTextPath
+	DefsPaths      map[string]string
+	FilteredGroups []CachedFilteredGroup
+	Gradients      map[string]SvgGradientDef
+	Animations     []SvgAnimation
+	HasAnimations  bool
+	Width          float32
+	Height         float32
+	Scale          float32
+}
+
+// cachedSvgPaths converts TessellatedPath slices to CachedSvgPath.
+func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
+	out := make([]CachedSvgPath, 0, len(paths))
+	for _, p := range paths {
+		var vcols []Color
+		if len(p.VertexColors) > 0 {
+			vcols = make([]Color, 0, len(p.VertexColors))
+			for _, vc := range p.VertexColors {
+				vcols = append(vcols, Color{vc.R, vc.G, vc.B, vc.A})
+			}
+		}
+		out = append(out, CachedSvgPath{
+			Triangles:    p.Triangles,
+			Color:        Color{p.Color.R, p.Color.G, p.Color.B, p.Color.A},
+			VertexColors: vcols,
+			IsClipMask:   p.IsClipMask,
+			ClipGroup:    p.ClipGroup,
+			GroupID:      p.GroupID,
+		})
+	}
+	return out
+}
+
+// cachedSvgTextDraws converts SvgText elements to CachedSvgTextDraw.
+func cachedSvgTextDraws(texts []SvgText, scale float32, w *Window) []CachedSvgTextDraw {
+	draws := make([]CachedSvgTextDraw, 0, len(texts))
+	for _, t := range texts {
+		if len(t.Text) == 0 {
+			continue
+		}
+		typeface := glyph.TypefaceRegular
+		if t.IsBold && t.IsItalic {
+			typeface = glyph.TypefaceBoldItalic
+		} else if t.IsBold {
+			typeface = glyph.TypefaceBold
+		} else if t.IsItalic {
+			typeface = glyph.TypefaceItalic
+		}
+		ts := TextStyle{
+			Family:        t.FontFamily,
+			Size:          t.FontSize * scale,
+			LetterSpacing: t.LetterSpacing * scale,
+			Typeface:      typeface,
+		}
+		if t.Opacity < 1.0 {
+			ts.Color = Color{t.Color.R, t.Color.G, t.Color.B,
+				uint8(float32(t.Color.A) * t.Opacity)}
+		} else {
+			ts.Color = svgToColor(t.Color)
+		}
+
+		// Measure text width for anchor adjustment.
+		var tw float32
+		var fh float32
+		if w.textMeasurer != nil {
+			tw = w.textMeasurer.TextWidth(t.Text, ts)
+			fh = w.textMeasurer.FontHeight(ts)
+		} else {
+			fh = t.FontSize * scale
+		}
+		ascent := fh * 0.8
+		x := t.X * scale
+		y := t.Y*scale - ascent
+		if t.Anchor == 1 {
+			x -= tw / 2
+		} else if t.Anchor == 2 {
+			x -= tw
+		}
+		draws = append(draws, CachedSvgTextDraw{
+			Text:      t.Text,
+			TextStyle: ts,
+			X:         x,
+			Y:         y,
+		})
+	}
+	return draws
+}
+
+// validateSvgSource rejects file paths containing '..'.
+func validateSvgSource(svgSrc string) error {
+	if strings.HasPrefix(svgSrc, "<") {
+		return nil
+	}
+	if strings.Contains(svgSrc, "..") {
+		return fmt.Errorf("invalid svg path: contains ..")
+	}
+	ext := strings.ToLower(filepath.Ext(svgSrc))
+	valid := false
+	for _, e := range validSvgExtensions {
+		if ext == e {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return fmt.Errorf("unsupported svg format: %s", ext)
+	}
+	return nil
+}
+
+// checkSvgSourceSize validates SVG source size.
+func checkSvgSourceSize(svgSrc string) error {
+	if strings.HasPrefix(svgSrc, "<") {
+		if int64(len(svgSrc)) > maxSvgSourceBytes {
+			return fmt.Errorf("SVG source too large")
+		}
+		return nil
+	}
+	info, err := os.Stat(svgSrc)
+	if err != nil {
+		return fmt.Errorf("SVG not found: %s", svgSrc)
+	}
+	if info.Size() > maxSvgSourceBytes {
+		return fmt.Errorf("SVG file too large")
+	}
+	return nil
+}
+
+// LoadSvg loads and tessellates an SVG, caching the result.
+// svgSrc can be a file path or inline SVG data (starting with '<').
+func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, error) {
+	srcHash := hashString(svgSrc)
+	cacheKey := fmt.Sprintf("%x:%dx%d", srcHash,
+		int(width*10), int(height*10))
+
+	sm := StateMapRead[string, *CachedSvg](w, nsSvgCache)
+	if sm != nil {
+		if cached, ok := sm.Get(cacheKey); ok {
+			return cached, nil
+		}
+	}
+
+	if err := validateSvgSource(svgSrc); err != nil {
+		return nil, err
+	}
+	if err := checkSvgSourceSize(svgSrc); err != nil {
+		return nil, err
+	}
+
+	if w.svgParser == nil {
+		return nil, fmt.Errorf("no SVG parser configured")
+	}
+
+	var parsed *SvgParsed
+	var err error
+	if strings.HasPrefix(svgSrc, "<") {
+		parsed, err = w.svgParser.ParseSvg(svgSrc)
+	} else {
+		parsed, err = w.svgParser.ParseSvgFile(svgSrc)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache dimensions.
+	dimCache := StateMap[uint64, [2]float32](w, nsSvgDimCache, capModerate)
+	dimCache.Set(srcHash, [2]float32{parsed.Width, parsed.Height})
+
+	// Compute scale.
+	scale := float32(1)
+	if width > 0 && height > 0 {
+		scaleX := float32(1)
+		if parsed.Width > 0 {
+			scaleX = width / parsed.Width
+		}
+		scaleY := float32(1)
+		if parsed.Height > 0 {
+			scaleY = height / parsed.Height
+		}
+		if scaleX < scaleY {
+			scale = scaleX
+		} else {
+			scale = scaleY
+		}
+	}
+
+	triangles := w.svgParser.Tessellate(parsed, scale)
+	renderPaths := cachedSvgPaths(triangles)
+	textDraws := cachedSvgTextDraws(parsed.Texts, scale, w)
+
+	cached := &CachedSvg{
+		RenderPaths:   renderPaths,
+		Texts:         parsed.Texts,
+		TextDraws:     textDraws,
+		TextPaths:     parsed.TextPaths,
+		DefsPaths:     parsed.DefsPaths,
+		Gradients:     parsed.Gradients,
+		Animations:    parsed.Animations,
+		HasAnimations: len(parsed.Animations) > 0,
+		Width:         parsed.Width,
+		Height:        parsed.Height,
+		Scale:         scale,
+	}
+
+	// Cache if vertex count is reasonable.
+	totalVerts := 0
+	for _, p := range renderPaths {
+		totalVerts += len(p.Triangles)
+	}
+	const maxCachedVerts = 1_250_000
+	if totalVerts <= maxCachedVerts {
+		svgCache := StateMap[string, *CachedSvg](w, nsSvgCache, capModerate)
+		svgCache.Set(cacheKey, cached)
+	}
+	return cached, nil
+}
+
+// GetSvgDimensions returns natural SVG dimensions without full
+// parse+tessellate. Uses cached dimensions when available.
+func (w *Window) GetSvgDimensions(svgSrc string) (float32, float32, error) {
+	srcHash := hashString(svgSrc)
+	dimCache := StateMapRead[uint64, [2]float32](w, nsSvgDimCache)
+	if dimCache != nil {
+		if dims, ok := dimCache.Get(srcHash); ok {
+			return dims[0], dims[1], nil
+		}
+	}
+
+	if err := validateSvgSource(svgSrc); err != nil {
+		return 0, 0, err
+	}
+	if err := checkSvgSourceSize(svgSrc); err != nil {
+		return 0, 0, err
+	}
+
+	if w.svgParser == nil {
+		return 0, 0, fmt.Errorf("no SVG parser configured")
+	}
+
+	var content string
+	if strings.HasPrefix(svgSrc, "<") {
+		content = svgSrc
+	} else {
+		data, err := os.ReadFile(svgSrc)
+		if err != nil {
+			return 0, 0, fmt.Errorf("SVG not found: %s", svgSrc)
+		}
+		content = string(data)
+	}
+
+	svgW, svgH, err := w.svgParser.ParseSvgDimensions(content)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	dc := StateMap[uint64, [2]float32](w, nsSvgDimCache, capModerate)
+	dc.Set(srcHash, [2]float32{svgW, svgH})
+	return svgW, svgH, nil
+}
+
+// RemoveSvgFromCache removes all cached variants of an SVG.
+func (w *Window) RemoveSvgFromCache(svgSrc string) {
+	srcHash := hashString(svgSrc)
+	prefix := fmt.Sprintf("%x:", srcHash)
+
+	svgCache := StateMapRead[string, *CachedSvg](w, nsSvgCache)
+	if svgCache != nil {
+		var keysToDelete []string
+		for _, key := range svgCache.Keys() {
+			if strings.HasPrefix(key, prefix) {
+				keysToDelete = append(keysToDelete, key)
+			}
+		}
+		for _, key := range keysToDelete {
+			svgCache.Delete(key)
+		}
+	}
+
+	dimCache := StateMapRead[uint64, [2]float32](w, nsSvgDimCache)
+	if dimCache != nil {
+		dimCache.Delete(srcHash)
+	}
+}
+
+// ClearSvgCache removes all cached SVGs.
+func (w *Window) ClearSvgCache() {
+	svgCache := StateMapRead[string, *CachedSvg](w, nsSvgCache)
+	if svgCache != nil {
+		svgCache.Clear()
+	}
+	dimCache := StateMapRead[uint64, [2]float32](w, nsSvgDimCache)
+	if dimCache != nil {
+		dimCache.Clear()
+	}
+}
+
+// computeTriangleBBox computes bounding box from tessellated paths.
+// Returns [x, y, width, height].
+func computeTriangleBBox(tpaths []TessellatedPath) [4]float32 {
+	minX := float32(1e30)
+	minY := float32(1e30)
+	maxX := float32(-1e30)
+	maxY := float32(-1e30)
+	hasData := false
+
+	for _, tp := range tpaths {
+		for i := 0; i+1 < len(tp.Triangles); i += 2 {
+			x := tp.Triangles[i]
+			y := tp.Triangles[i+1]
+			if x < minX {
+				minX = x
+			}
+			if x > maxX {
+				maxX = x
+			}
+			if y < minY {
+				minY = y
+			}
+			if y > maxY {
+				maxY = y
+			}
+			hasData = true
+		}
+	}
+
+	if !hasData {
+		return [4]float32{0, 0, 0, 0}
+	}
+	return [4]float32{minX, minY, maxX - minX, maxY - minY}
+}
+

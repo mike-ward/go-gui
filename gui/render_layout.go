@@ -98,13 +98,14 @@ func renderShape(shape *Shape, parentColor Color, clip DrawClip, w *Window) {
 func renderShapeInner(shape *Shape, parentColor Color, clip DrawClip, w *Window) {
 	hasBorder := shape.SizeBorder > 0 && shape.ColorBorder != ColorTransparent
 	hasText := shape.ShapeType == ShapeText && shape.TC != nil
+	isImage := shape.ShapeType == ShapeImage
 	isSvg := shape.ShapeType == ShapeSVG
 	isCanvas := shape.ShapeType == ShapeDrawCanvas
 	hasFX := shape.FX != nil && (shape.FX.Gradient != nil ||
 		shape.FX.BorderGradient != nil)
 
 	if shape.Color == ColorTransparent && !hasFX && !hasBorder &&
-		!hasText && !isSvg && !isCanvas {
+		!hasText && !isImage && !isSvg && !isCanvas {
 		return
 	}
 
@@ -114,13 +115,13 @@ func renderShapeInner(shape *Shape, parentColor Color, clip DrawClip, w *Window)
 	case ShapeText:
 		renderText(shape, clip, w)
 	case ShapeImage:
-		// TODO: renderImage — Phase 3
+		renderImage(shape, clip, w)
 	case ShapeCircle:
 		renderCircle(shape, clip, w)
 	case ShapeRTF:
 		// TODO: renderRtf — Phase 7
 	case ShapeSVG:
-		// TODO: renderSvg — Phase 7
+		renderSvg(shape, clip, w)
 	case ShapeDrawCanvas:
 		renderDrawCanvas(shape, clip, w)
 	case ShapeNone:

@@ -62,6 +62,7 @@ type RenderCmd struct {
 	Text     string  // Text
 	FontName string  // Text font family
 	FontSize float32 // Text font size (points)
+	Resource string  // Image file path
 
 	// Slice data (Svg).
 	Triangles    []float32
