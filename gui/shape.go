@@ -1,6 +1,10 @@
 package gui
 
-import "math/rand/v2"
+import (
+	"math/rand/v2"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 // Shape is the only data structure used to draw to the screen.
 type Shape struct {
@@ -214,6 +218,14 @@ type ShapeTextConfig struct {
 	TextIsPassword    bool
 	TextIsPlaceholder bool
 	HangingIndent     float32
+	RtfRuns           *RichText
+	RtfLayout         *glyph.Layout
+	RtfBaseStyle      glyph.TextStyle
+}
+
+// HasRtfLayout returns true if the shape has an RTF layout.
+func (s *Shape) HasRtfLayout() bool {
+	return s.TC != nil && s.TC.RtfLayout != nil
 }
 
 // TextMode controls how a text view renders text.

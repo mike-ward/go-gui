@@ -3,6 +3,8 @@ package gui
 import (
 	"errors"
 	"time"
+
+	"github.com/mike-ward/go-glyph"
 )
 
 // guiTheme is the package-level active theme.
@@ -53,19 +55,24 @@ type Theme struct {
 	DatePickerStyle      DatePickerStyle
 	ColorPickerStyle     ColorPickerStyle
 
-	// Text size shortcuts (N = normal, B = bold).
-	N1 TextStyle
-	N2 TextStyle
-	N3 TextStyle
-	N4 TextStyle
-	N5 TextStyle
-	N6 TextStyle
-	B1 TextStyle
-	B2 TextStyle
-	B3 TextStyle
-	B4 TextStyle
-	B5 TextStyle
-	B6 TextStyle
+	// Text size shortcuts (N = normal, B = bold,
+	// I = italic, M = mono, BI = bold+italic).
+	N1  TextStyle
+	N2  TextStyle
+	N3  TextStyle
+	N4  TextStyle
+	N5  TextStyle
+	N6  TextStyle
+	B1  TextStyle
+	B2  TextStyle
+	B3  TextStyle
+	B4  TextStyle
+	B5  TextStyle
+	B6  TextStyle
+	I3  TextStyle // italic, medium size
+	M3  TextStyle // mono, medium size (code font)
+	BI3 TextStyle // bold+italic, medium size
+	M5  TextStyle // mono, xsmall size
 
 	// Layout constants.
 	PaddingSmall  Padding
@@ -138,6 +145,8 @@ type ThemeCfg struct {
 	ScrollMultiplier float32
 	ScrollDeltaLine  float32
 	ScrollDeltaPage  float32
+
+	MonoFontFamily string // font family for code/mono text
 
 	SizeSwitchWidth      float32
 	SizeSwitchHeight     float32
@@ -632,6 +641,20 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 	theme.B4 = makeStyle(bold, theme.SizeTextSmall)
 	theme.B5 = makeStyle(bold, theme.SizeTextXSmall)
 	theme.B6 = makeStyle(bold, theme.SizeTextTiny)
+
+	// Italic, mono, bold+italic shortcuts.
+	italic := ts
+	italic.Typeface = glyph.TypefaceItalic
+	theme.I3 = makeStyle(italic, theme.SizeTextMedium)
+
+	boldItalic := ts
+	boldItalic.Typeface = glyph.TypefaceBoldItalic
+	theme.BI3 = makeStyle(boldItalic, theme.SizeTextMedium)
+
+	mono := ts
+	mono.Family = cfg.MonoFontFamily
+	theme.M3 = makeStyle(mono, theme.SizeTextMedium)
+	theme.M5 = makeStyle(mono, theme.SizeTextXSmall)
 
 	return theme
 }

@@ -1,0 +1,241 @@
+package gui
+
+// md_extensions.go provides custom goldmark inline parsers for
+// math ($...$, $$...$$), highlight (==text==), superscript
+// (^text^), and subscript (~text~).
+
+import (
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
+)
+
+// --- AST node types ---
+
+// NodeKindMathInline is an inline math span ($...$).
+var NodeKindMathInline = ast.NewNodeKind("MathInline")
+
+type nodeMathInline struct {
+	ast.BaseInline
+	Latex string
+}
+
+func (*nodeMathInline) Kind() ast.NodeKind { return NodeKindMathInline }
+func (n *nodeMathInline) Dump(src []byte, level int) {
+	ast.DumpHelper(n, src, level, nil, nil)
+}
+
+// NodeKindMathDisplay is a display math span ($$...$$).
+var NodeKindMathDisplay = ast.NewNodeKind("MathDisplay")
+
+type nodeMathDisplay struct {
+	ast.BaseInline
+	Latex string
+}
+
+func (*nodeMathDisplay) Kind() ast.NodeKind { return NodeKindMathDisplay }
+func (n *nodeMathDisplay) Dump(src []byte, level int) {
+	ast.DumpHelper(n, src, level, nil, nil)
+}
+
+// NodeKindHighlight is a highlighted span (==text==).
+var NodeKindHighlight = ast.NewNodeKind("Highlight")
+
+type nodeHighlight struct {
+	ast.BaseInline
+}
+
+func (*nodeHighlight) Kind() ast.NodeKind { return NodeKindHighlight }
+func (n *nodeHighlight) Dump(src []byte, level int) {
+	ast.DumpHelper(n, src, level, nil, nil)
+}
+
+// NodeKindSuperscript is a superscript span (^text^).
+var NodeKindSuperscript = ast.NewNodeKind("Superscript")
+
+type nodeSuperscript struct {
+	ast.BaseInline
+}
+
+func (*nodeSuperscript) Kind() ast.NodeKind { return NodeKindSuperscript }
+func (n *nodeSuperscript) Dump(src []byte, level int) {
+	ast.DumpHelper(n, src, level, nil, nil)
+}
+
+// NodeKindSubscript is a subscript span (~text~).
+var NodeKindSubscript = ast.NewNodeKind("Subscript")
+
+type nodeSubscript struct {
+	ast.BaseInline
+}
+
+func (*nodeSubscript) Kind() ast.NodeKind { return NodeKindSubscript }
+func (n *nodeSubscript) Dump(src []byte, level int) {
+	ast.DumpHelper(n, src, level, nil, nil)
+}
+
+// --- Inline parsers ---
+
+// mathInlineParser parses $...$  and $$...$$.
+type mathInlineParser struct{}
+
+func (p *mathInlineParser) Trigger() []byte { return []byte{'$'} }
+
+func (p *mathInlineParser) Parse(
+	_ ast.Node, block text.Reader, _ parser.Context,
+) ast.Node {
+	line, seg := block.PeekLine()
+	if len(line) == 0 || line[0] != '$' {
+		return nil
+	}
+
+	// $$...$$ display math (inline span node).
+	if len(line) > 1 && line[1] == '$' {
+		end := findDoubleDollar(line, 2)
+		if end < 0 {
+			return nil
+		}
+		latex := string(line[2:end])
+		node := &nodeMathDisplay{Latex: latex}
+		block.Advance(end + 2)
+		_ = seg // suppress unused
+		return node
+	}
+
+	// $...$ inline math.
+	// Not math: digit before $, space after opening $,
+	// digit after closing $.
+	pos := seg.Start
+	src := block.Source()
+	if pos > 0 && src[pos-1] >= '0' && src[pos-1] <= '9' {
+		return nil
+	}
+	if len(line) < 2 || line[1] == ' ' {
+		return nil
+	}
+	end := 2
+	for end < len(line) {
+		if line[end] == '$' {
+			if line[end-1] == ' ' {
+				end++
+				continue
+			}
+			// Digit after closing $ → not math.
+			if end+1 < len(line) &&
+				line[end+1] >= '0' && line[end+1] <= '9' {
+				end++
+				continue
+			}
+			latex := string(line[1:end])
+			node := &nodeMathInline{Latex: latex}
+			block.Advance(end + 1)
+			return node
+		}
+		end++
+	}
+	return nil
+}
+
+func findDoubleDollar(line []byte, start int) int {
+	for i := start; i < len(line)-1; i++ {
+		if line[i] == '$' && line[i+1] == '$' {
+			return i
+		}
+	}
+	return -1
+}
+
+// highlightParser parses ==text==.
+type highlightParser struct{}
+
+func (p *highlightParser) Trigger() []byte { return []byte{'='} }
+
+func (p *highlightParser) Parse(
+	_ ast.Node, block text.Reader, _ parser.Context,
+) ast.Node {
+	line, _ := block.PeekLine()
+	if len(line) < 2 || line[0] != '=' || line[1] != '=' {
+		return nil
+	}
+	end := findDoubleChar(line, 2, '=')
+	if end < 0 {
+		return nil
+	}
+	node := &nodeHighlight{}
+	inner := line[2:end]
+	node.AppendChild(node, ast.NewString(inner))
+	block.Advance(end + 2)
+	return node
+}
+
+// superscriptParser parses ^text^.
+type superscriptParser struct{}
+
+func (p *superscriptParser) Trigger() []byte { return []byte{'^'} }
+
+func (p *superscriptParser) Parse(
+	_ ast.Node, block text.Reader, _ parser.Context,
+) ast.Node {
+	line, _ := block.PeekLine()
+	if len(line) < 2 || line[0] != '^' {
+		return nil
+	}
+	end := findSingleChar(line, 1, '^')
+	if end < 0 {
+		return nil
+	}
+	node := &nodeSuperscript{}
+	inner := line[1:end]
+	node.AppendChild(node, ast.NewString(inner))
+	block.Advance(end + 1)
+	return node
+}
+
+// subscriptParser parses ~text~ (single tilde, not ~~).
+type subscriptParser struct{}
+
+func (p *subscriptParser) Trigger() []byte { return []byte{'~'} }
+
+func (p *subscriptParser) Parse(
+	_ ast.Node, block text.Reader, _ parser.Context,
+) ast.Node {
+	line, _ := block.PeekLine()
+	if len(line) < 2 || line[0] != '~' {
+		return nil
+	}
+	// Double tilde = strikethrough, not subscript.
+	if line[1] == '~' {
+		return nil
+	}
+	end := findSingleChar(line, 1, '~')
+	if end < 0 {
+		return nil
+	}
+	// Ensure closing ~ is not followed by ~ (strikethrough).
+	if end+1 < len(line) && line[end+1] == '~' {
+		return nil
+	}
+	node := &nodeSubscript{}
+	inner := line[1:end]
+	node.AppendChild(node, ast.NewString(inner))
+	block.Advance(end + 1)
+	return node
+}
+
+func findDoubleChar(line []byte, start int, ch byte) int {
+	for i := start; i < len(line)-1; i++ {
+		if line[i] == ch && line[i+1] == ch {
+			return i
+		}
+	}
+	return -1
+}
+
+func findSingleChar(line []byte, start int, ch byte) int {
+	for i := start; i < len(line); i++ {
+		if line[i] == ch {
+			return i
+		}
+	}
+	return -1
+}

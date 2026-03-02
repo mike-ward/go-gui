@@ -1,0 +1,93 @@
+package gui
+
+import "testing"
+
+func TestMarkdownMermaid(t *testing.T) {
+	style := DefaultMarkdownStyle()
+	blocks := markdownToBlocks(
+		"```mermaid\ngraph TD\n  A-->B\n```\n", style)
+	if len(blocks) == 0 {
+		t.Fatal("expected at least one block")
+	}
+	found := false
+	for _, b := range blocks {
+		if b.IsCode && b.CodeLanguage == "mermaid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected mermaid code block")
+	}
+}
+
+func TestMarkdownMermaidAltFence(t *testing.T) {
+	style := DefaultMarkdownStyle()
+	blocks := markdownToBlocks(
+		"~~~mermaid\ngraph TD\n  A-->B\n~~~\n", style)
+	found := false
+	for _, b := range blocks {
+		if b.IsCode && b.CodeLanguage == "mermaid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected mermaid code block with tilde fence")
+	}
+}
+
+func TestDiagramCacheBasicOps(t *testing.T) {
+	cache := NewBoundedDiagramCache(10)
+	entry := DiagramCacheEntry{
+		State:     DiagramLoading,
+		RequestID: 42,
+	}
+	cache.Set(100, entry)
+	got, ok := cache.Get(100)
+	if !ok {
+		t.Fatal("expected cache hit")
+	}
+	if got.RequestID != 42 {
+		t.Fatalf("requestID: got %d", got.RequestID)
+	}
+	if cache.LoadingCount() != 1 {
+		t.Fatalf("loading count: got %d", cache.LoadingCount())
+	}
+}
+
+func TestDiagramCacheReplacesOldEntry(t *testing.T) {
+	cache := NewBoundedDiagramCache(10)
+	cache.Set(100, DiagramCacheEntry{
+		State:     DiagramLoading,
+		RequestID: 1,
+	})
+	cache.Set(100, DiagramCacheEntry{
+		State:     DiagramReady,
+		RequestID: 2,
+		Width:     100,
+		Height:    50,
+	})
+	got, ok := cache.Get(100)
+	if !ok {
+		t.Fatal("expected cache hit")
+	}
+	if got.State != DiagramReady || got.RequestID != 2 {
+		t.Fatalf("expected ready/2, got %v/%d",
+			got.State, got.RequestID)
+	}
+}
+
+func TestDiagramCacheEviction(t *testing.T) {
+	cache := NewBoundedDiagramCache(3)
+	for i := range 5 {
+		cache.Set(int64(i), DiagramCacheEntry{
+			State:     DiagramReady,
+			RequestID: uint64(i),
+		})
+	}
+	if cache.Len() > 3 {
+		t.Fatalf("cache should not exceed capacity: len=%d",
+			cache.Len())
+	}
+}

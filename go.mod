@@ -8,6 +8,11 @@ require (
 	github.com/veandco/go-sdl2 v0.4.40
 )
 
+require (
+	github.com/yuin/goldmark v1.7.16 // indirect
+	github.com/yuin/goldmark-emoji v1.0.6 // indirect
+)
+
 replace (
 	github.com/mike-ward/go-glyph => ../go_glyph
 	github.com/mike-ward/go-glyph/backend/sdl2 => ../go_glyph/backend/sdl2

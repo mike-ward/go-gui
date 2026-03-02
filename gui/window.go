@@ -93,6 +93,12 @@ type ViewState struct {
 	mousePosY      float32
 	menuKeyNav     bool
 	tooltip        tooltipState
+
+	// Markdown caches (lazy-init: nil until first use).
+	markdownCache            *BoundedMap[int64, []MarkdownBlock]
+	diagramCache             *BoundedDiagramCache
+	diagramRequestSeq        uint64
+	externalAPIWarningLogged bool
 }
 
 // State returns a typed pointer to the user-supplied state.

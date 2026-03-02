@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/mike-ward/go-glyph"
+
 // Theme default colors (dark theme).
 var (
 	colorBackgroundDark = RGB(48, 48, 48)
@@ -50,6 +52,22 @@ type TextStyle struct {
 	Align         TextAlignment
 	Underline     bool
 	Strikethrough bool
+	Typeface      glyph.Typeface
+	Features      *glyph.FontFeatures
+}
+
+// ToGlyphStyle converts a gui TextStyle to a glyph.TextStyle.
+func (ts TextStyle) ToGlyphStyle() glyph.TextStyle {
+	return glyph.TextStyle{
+		FontName:      ts.Family,
+		Color:         glyph.Color(ts.Color),
+		BgColor:       glyph.Color(ts.BgColor),
+		Size:          ts.Size,
+		Features:      ts.Features,
+		Underline:     ts.Underline,
+		Strikethrough: ts.Strikethrough,
+		Typeface:      ts.Typeface,
+	}
 }
 
 // ButtonStyle defines button visual properties.
