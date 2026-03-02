@@ -146,4 +146,29 @@ var (
 		Radius:      RadiusMedium,
 		SizeBorder:  SizeBorderDef,
 	}
+
+	DefaultDataGridStyle DataGridStyle
 )
+
+// DataGridStyle defines data grid visual properties.
+type DataGridStyle struct {
+	ColorBackground   Color
+	ColorHeader       Color
+	ColorHeaderHover  Color
+	ColorFilter       Color
+	ColorQuickFilter  Color
+	ColorRowHover     Color
+	ColorRowAlt       Color
+	ColorRowSelected  Color
+	ColorBorder       Color
+	ColorResizeHandle Color
+	ColorResizeActive Color
+	PaddingCell       Padding
+	PaddingHeader     Padding
+	PaddingFilter     Padding
+	SizeBorder        float32
+	Radius            float32
+	TextStyle         TextStyle
+	TextStyleHeader   TextStyle
+	TextStyleFilter   TextStyle
+}

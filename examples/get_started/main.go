@@ -45,7 +45,7 @@ func mainView(w *gui.Window) gui.View {
 		Spacing: 10,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      "Hello go-gui!",
+				Text:      "Hello go-gui! 😀🚀🎉👍",
 				TextStyle: gui.CurrentTheme().B1,
 			}),
 			gui.Button(gui.ButtonCfg{

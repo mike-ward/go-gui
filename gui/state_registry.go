@@ -134,6 +134,17 @@ const (
 	nsDatePicker          = "gui.date_picker"
 	nsColorPicker         = "gui.color_picker"
 	nsInputDate           = "gui.input_date"
+	nsDgColWidths         = "gui.dg.col_widths"
+	nsDgPresentation      = "gui.dg.presentation"
+	nsDgResize            = "gui.dg.resize"
+	nsDgHeaderHover       = "gui.dg.header_hover"
+	nsDgRange             = "gui.dg.range"
+	nsDgChooserOpen       = "gui.dg.chooser_open"
+	nsDgEdit              = "gui.dg.edit"
+	nsDgCrud              = "gui.dg.crud"
+	nsDgJump              = "gui.dg.jump"
+	nsDgPendingJump       = "gui.dg.pending_jump"
+	nsDgSource            = "gui.dg.source"
 )
 
 // Capacity tiers.

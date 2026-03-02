@@ -54,6 +54,7 @@ type Theme struct {
 	MenubarStyle         MenubarStyle
 	DatePickerStyle      DatePickerStyle
 	ColorPickerStyle     ColorPickerStyle
+	DataGridStyle        DataGridStyle
 
 	// Text size shortcuts (N = normal, B = bold,
 	// I = italic, M = mono, BI = bold+italic).
@@ -599,6 +600,31 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			IndicatorSize:    16,
 			TextStyle:        ts,
 		},
+		DataGridStyle: DataGridStyle{
+			ColorBackground:   cfg.ColorInterior,
+			ColorHeader:       cfg.ColorPanel,
+			ColorHeaderHover:  cfg.ColorHover,
+			ColorFilter:       cfg.ColorInterior,
+			ColorQuickFilter:  cfg.ColorPanel,
+			ColorRowHover:     cfg.ColorHover,
+			ColorRowAlt:       ColorTransparent,
+			ColorRowSelected:  cfg.ColorSelect,
+			ColorBorder:       cfg.ColorBorder,
+			ColorResizeHandle: cfg.ColorBorder,
+			ColorResizeActive: cfg.ColorSelect,
+			PaddingCell:       PaddingTwoFive,
+			PaddingHeader:     PaddingTwoFive,
+			PaddingFilter:     PaddingNone,
+			SizeBorder:        cfg.SizeBorder,
+			Radius:            cfg.RadiusSmall,
+			TextStyle:         ts,
+			TextStyleHeader: TextStyle{
+				Color:    ts.Color,
+				Size:     ts.Size,
+				Typeface: glyph.TypefaceBold,
+			},
+			TextStyleFilter: ts,
+		},
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,
@@ -694,6 +720,7 @@ func SetTheme(t Theme) {
 	DefaultMenubarStyle = t.MenubarStyle
 	DefaultDatePickerStyle = t.DatePickerStyle
 	DefaultColorPickerStyle = t.ColorPickerStyle
+	DefaultDataGridStyle = t.DataGridStyle
 }
 
 // With*Style methods for selective overrides.
@@ -830,6 +857,11 @@ func (t Theme) WithDatePickerStyle(s DatePickerStyle) Theme {
 
 func (t Theme) WithColorPickerStyle(s ColorPickerStyle) Theme {
 	t.ColorPickerStyle = s
+	return t
+}
+
+func (t Theme) WithDataGridStyle(s DataGridStyle) Theme {
+	t.DataGridStyle = s
 	return t
 }
 
@@ -1025,6 +1057,17 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.ColorPickerStyle.ColorHover = hover
 	t.ColorPickerStyle.ColorBorder = border
 	t.ColorPickerStyle.ColorBorderFocus = borderFocus
+
+	t.DataGridStyle.ColorBackground = interior
+	t.DataGridStyle.ColorHeader = panel
+	t.DataGridStyle.ColorHeaderHover = hover
+	t.DataGridStyle.ColorFilter = interior
+	t.DataGridStyle.ColorQuickFilter = panel
+	t.DataGridStyle.ColorRowHover = hover
+	t.DataGridStyle.ColorRowSelected = sel
+	t.DataGridStyle.ColorBorder = border
+	t.DataGridStyle.ColorResizeHandle = border
+	t.DataGridStyle.ColorResizeActive = sel
 
 	return t
 }

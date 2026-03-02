@@ -800,14 +800,7 @@ func gridDeduplicateRowIDs(
 	return seen
 }
 
-// dataGridRowID returns row.ID if non-empty, else the index
-// as a string.
-func dataGridRowID(row GridRow, idx int) string {
-	if row.ID != "" {
-		return row.ID
-	}
-	return strconv.Itoa(idx)
-}
+// dataGridRowID is in view_data_grid.go (auto-hash fallback).
 
 func dataGridSourceNextCreateRowID(
 	rows []GridRow, existing map[string]bool, preferredID string,
