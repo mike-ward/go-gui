@@ -55,9 +55,6 @@ func ProgressBar(cfg ProgressBarCfg) View {
 	if cfg.Radius == 0 {
 		cfg.Radius = guiTheme.ProgressBarStyle.Radius
 	}
-	if !cfg.TextShow && !cfg.Indefinite {
-		cfg.TextShow = guiTheme.ProgressBarStyle.TextShow
-	}
 
 	content := make([]View, 0, 2)
 	content = append(content, Row(ContainerCfg{
