@@ -83,7 +83,7 @@ func Button(cfg ButtonCfg) View {
 		BlurRadius:       cfg.BlurRadius,
 		Shadow:           cfg.Shadow,
 		Gradient:         cfg.Gradient,
-		Padding:          cfg.Padding,
+		Padding:          Some(cfg.Padding),
 		Radius:           Some(radius),
 		Width:            cfg.Width,
 		Height:           cfg.Height,

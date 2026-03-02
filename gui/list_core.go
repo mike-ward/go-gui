@@ -304,7 +304,7 @@ func listCoreItemView(item ListCoreItem, index int, isHighlighted, isSelected bo
 		content = append(content,
 			Row(ContainerCfg{
 				Sizing:  FillFill,
-				Padding: PaddingNone,
+				Padding: Some(PaddingNone),
 			}),
 			Text(TextCfg{
 				Text:      item.Detail,
@@ -324,7 +324,7 @@ func listCoreItemView(item ListCoreItem, index int, isHighlighted, isSelected bo
 
 	return Row(ContainerCfg{
 		Color:   bg,
-		Padding: cfg.PaddingItem,
+		Padding: Some(cfg.PaddingItem),
 		Sizing:  FillFit,
 		Content: content,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -350,7 +350,7 @@ func listCoreItemView(item ListCoreItem, index int, isHighlighted, isSelected bo
 func listCoreSubheadingView(item ListCoreItem, cfg ListCoreCfg) View {
 	return Column(ContainerCfg{
 		Spacing: Some(float32(1)),
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Sizing:  FillFit,
 		Content: []View{
 			Text(TextCfg{
@@ -358,7 +358,7 @@ func listCoreSubheadingView(item ListCoreItem, cfg ListCoreCfg) View {
 				TextStyle: cfg.SubheadingStyle,
 			}),
 			Row(ContainerCfg{
-				Padding: PaddingNone,
+				Padding: Some(PaddingNone),
 				Sizing:  FillFit,
 				Content: []View{
 					Rectangle(RectangleCfg{

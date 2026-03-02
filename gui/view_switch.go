@@ -66,7 +66,7 @@ func Switch(cfg SwitchCfg) View {
 		Radius:      Some(radius),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
-		Padding:     cfg.Padding,
+		Padding:     Some(cfg.Padding),
 		HAlign:      hAlign,
 		VAlign:      VAlignMiddle,
 		Content: []View{
@@ -90,7 +90,7 @@ func Switch(cfg SwitchCfg) View {
 
 	return Row(ContainerCfg{
 		IDFocus:         cfg.IDFocus,
-		Padding:         PaddingNone,
+		Padding:         Some(PaddingNone),
 		A11YRole:        AccessRoleSwitchToggle,
 		A11YState:       a11yState,
 		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.Label),

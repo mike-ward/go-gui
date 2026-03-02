@@ -19,7 +19,7 @@ type ContainerCfg struct {
 
 	// Layout
 	Spacing  Opt[float32]
-	Padding  Padding
+	Padding  Opt[Padding]
 	HAlign   HorizontalAlign
 	VAlign   VerticalAlign
 	TextDir  TextDirection
@@ -91,11 +91,12 @@ type ContainerCfg struct {
 	scrollbarOrientation ScrollbarOrientation
 }
 
-func applyContainerDefaults(cfg *ContainerCfg) (spacing, sizeBorder, radius float32) {
+func applyContainerDefaults(cfg *ContainerCfg) (spacing, sizeBorder, radius float32, padding Padding) {
 	d := &DefaultContainerStyle
 	return cfg.Spacing.Get(d.Spacing),
 		cfg.SizeBorder.Get(d.SizeBorder),
-		cfg.Radius.Get(d.Radius)
+		cfg.Radius.Get(d.Radius),
+		cfg.Padding.Get(d.Padding)
 }
 
 // containerView implements View for container-based layouts.
@@ -109,7 +110,7 @@ func (cv *containerView) Content() []View { return cv.content }
 
 func (cv *containerView) GenerateLayout(w *Window) Layout {
 	c := &cv.cfg
-	spacing, sizeBorder, radius := applyContainerDefaults(c)
+	spacing, sizeBorder, radius, padding := applyContainerDefaults(c)
 	layout := Layout{
 		Shape: &Shape{
 			ShapeType:            cv.shapeType,
@@ -129,7 +130,7 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 			FocusSkip:            c.FocusSkip,
 			Spacing:              spacing,
 			Sizing:               c.Sizing,
-			Padding:              c.Padding,
+			Padding:              padding,
 			HAlign:               c.HAlign,
 			VAlign:               c.VAlign,
 			TextDir:              c.TextDir,
@@ -310,7 +311,7 @@ func invisibleContainerView() *containerView {
 		cfg: ContainerCfg{
 			Disabled: true,
 			OverDraw: true,
-			Padding:  PaddingNone,
+			Padding:  Some(PaddingNone),
 		},
 		shapeType: ShapeRectangle,
 	}

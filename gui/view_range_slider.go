@@ -153,7 +153,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 		Height:    wrapperHeight,
 		Disabled:  cfg.Disabled,
 		Invisible: cfg.Invisible,
-		Padding:   PaddingNone,
+		Padding:   Some(PaddingNone),
 		Sizing:    cfg.Sizing,
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
@@ -210,7 +210,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 				ColorBorder: cfg.ColorBorder,
 				SizeBorder:  Some(cfg.SizeBorder),
 				Radius:      Some(cfg.RadiusBorder),
-				Padding:     PaddingNone,
+				Padding:     Some(PaddingNone),
 				axis:        trackAxis,
 				Content: []View{
 					Rectangle(RectangleCfg{
@@ -224,7 +224,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 						Color:       cfg.ColorThumb,
 						ColorBorder: cfg.ColorBorder,
 						SizeBorder:  Some[float32](1.5),
-						Padding:     PaddingNone,
+						Padding:     Some(PaddingNone),
 						AmendLayout: func(
 							layout *Layout, w *Window,
 						) {

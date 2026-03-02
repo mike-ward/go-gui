@@ -108,7 +108,7 @@ func ListBox(cfg ListBoxCfg) View {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
 		Radius:      Some(radius),
-		Padding:     cfg.Padding,
+		Padding:     Some(cfg.Padding),
 		Sizing:      cfg.Sizing,
 		Spacing:     Some(float32(0)),
 		Disabled:    cfg.Disabled,
@@ -142,7 +142,7 @@ func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg) View {
 		A11YLabel: dat.Name,
 		A11YState: a11yState,
 		Color:     color,
-		Padding:   PaddingTwoFive,
+		Padding:   Some(PaddingTwoFive),
 		Sizing:    FillFit,
 		Content:   []View{content},
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -167,7 +167,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 	if dat.IsSubheading {
 		return Column(ContainerCfg{
 			Spacing: Some[float32](1),
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Sizing:  FillFit,
 			Content: []View{
 				Text(TextCfg{
@@ -175,7 +175,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 					TextStyle: cfg.SubheadingStyle,
 				}),
 				Row(ContainerCfg{
-					Padding: PaddingNone,
+					Padding: Some(PaddingNone),
 					Sizing:  FillFit,
 					Content: []View{
 						Rectangle(RectangleCfg{

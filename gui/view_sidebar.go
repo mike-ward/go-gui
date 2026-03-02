@@ -70,7 +70,7 @@ func (w *Window) Sidebar(cfg SidebarCfg) View {
 		ID:              cfg.ID,
 		Sizing:          cfg.Sizing,
 		Width:           animW,
-		Padding:         pad,
+		Padding:         Some(pad),
 		Color:           cfg.Color,
 		Shadow:          cfg.Shadow,
 		Radius:          Some(cfg.Radius),

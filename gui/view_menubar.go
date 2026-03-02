@@ -69,7 +69,7 @@ func Menubar(w *Window, cfg MenubarCfg) View {
 		SizeBorder:  cfg.SizeBorder,
 		Radius:      cfg.RadiusBorder,
 		Spacing:     cfg.Spacing,
-		Padding:     cfg.Padding,
+		Padding:     Some(cfg.Padding),
 		Sizing:      cfg.Sizing,
 		Float:       cfg.Float,
 		FloatAnchor: cfg.FloatAnchor,

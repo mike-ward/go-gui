@@ -96,7 +96,7 @@ func dialogViewGenerator(cfg DialogCfg) View {
 		ColorBorder:  cfg.ColorBorder,
 		SizeBorder:   Some(sizeBorder),
 		Radius:       Some(radius),
-		Padding:      cfg.Padding,
+		Padding:      Some(cfg.Padding),
 		Width:        cfg.Width,
 		Height:       cfg.Height,
 		MinWidth:     cfg.MinWidth,
@@ -119,8 +119,9 @@ func messageView(cfg DialogCfg) View {
 	onOkYes := cfg.OnOkYes
 	oldFocus := cfg.oldIDFocus
 	return Row(ContainerCfg{
-		Sizing: FillFit,
-		HAlign: cfg.AlignButtons,
+		Sizing:  FillFit,
+		HAlign:  cfg.AlignButtons,
+		Padding: Some(PaddingNone),
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus: cfg.IDFocus,
@@ -145,6 +146,7 @@ func confirmView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
+		Padding: Some(PaddingNone),
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
@@ -193,6 +195,7 @@ func promptView(cfg DialogCfg) []View {
 	views = append(views, Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
+		Padding: Some(PaddingNone),
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{

@@ -83,6 +83,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	content = append(content,
 		Row(ContainerCfg{
 			Sizing:  FillFit,
+			Padding: Some(PaddingNone),
 			Spacing: Some(SpacingSmall),
 			VAlign:  VAlignMiddle,
 			Content: []View{
@@ -111,6 +112,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 			Float:        true,
 			FloatAnchor:  FloatBottomLeft,
 			FloatTieOff:  FloatTopLeft,
+			Padding:      Some(PaddingNone),
 			FloatOffsetY: -cfg.SizeBorder.Get(0),
 			Content: []View{
 				DatePicker(DatePickerCfg{
@@ -157,7 +159,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 			ColorBorder: cfg.ColorBorder,
 			SizeBorder:  cfg.SizeBorder,
 			Radius:      cfg.RadiusBorder,
-			Padding:     cfg.Padding,
+			Padding:     Some(cfg.Padding),
 			Sizing:      cfg.Sizing,
 			Width:       cfg.Width,
 			Height:      cfg.Height,

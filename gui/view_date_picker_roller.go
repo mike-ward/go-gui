@@ -96,7 +96,7 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 		Color:    cfg.Color,
 		MinWidth: cfg.MinWidth,
 		MaxWidth: cfg.MaxWidth,
-		Padding:  PaddingSmall,
+		Padding:  Some(PaddingSmall),
 		Spacing:  Some(SpacingSmall),
 		HAlign:   HAlignCenter,
 		VAlign:   VAlignMiddle,
@@ -152,10 +152,11 @@ func rollerDrum(
 		centeredTS := itemTS
 		centeredTS.Align = TextAlignCenter
 		items = append(items, Row(ContainerCfg{
-			Width:  drumWidth,
-			Height: cfg.ItemHeight,
-			HAlign: HAlignCenter,
-			VAlign: VAlignMiddle,
+			Width:   drumWidth,
+			Height:  cfg.ItemHeight,
+			Padding: Some(PaddingNone),
+			HAlign:  HAlignCenter,
+			VAlign:  VAlignMiddle,
 			Content: []View{
 				Text(TextCfg{
 					Text:      label,
@@ -173,7 +174,7 @@ func rollerDrum(
 
 	return Column(ContainerCfg{
 		Width:   drumWidth,
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Content: items,
 		OnScroll: func(_ *Layout, w *Window) {
 			// Scroll dispatches via the view's scroll events,

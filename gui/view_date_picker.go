@@ -123,7 +123,7 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 			ColorBorder: cfg.ColorBorder,
 			SizeBorder:  Some(sizeBorder),
 			Radius:      Some(radiusBorder),
-			Padding:     cfg.Padding,
+			Padding:     Some(cfg.Padding),
 			Spacing:     Some(cellSpacing),
 			Disabled:    cfg.Disabled,
 			Invisible:   cfg.Invisible,
@@ -196,7 +196,7 @@ func datePickerControls(
 	}
 
 	return Row(ContainerCfg{
-		Padding: PaddingSmall,
+		Padding: Some(PaddingSmall),
 		Spacing: Some(cellSpacing),
 		Content: []View{
 			Button(ButtonCfg{
@@ -229,7 +229,7 @@ func datePickerCalendar(
 	content = append(content, datePickerMonth(cfg, state, w)...)
 	return Column(ContainerCfg{
 		Spacing: Some(cellSpacing),
-		Padding: PaddingSmall,
+		Padding: Some(PaddingSmall),
 		Content: content,
 	})
 }
@@ -245,8 +245,9 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 		centeredTS := cfg.TextStyle
 		centeredTS.Align = TextAlignCenter
 		labels = append(labels, Row(ContainerCfg{
-			Width:  40,
-			HAlign: HAlignCenter,
+			Width:   40,
+			HAlign:  HAlignCenter,
+			Padding: Some(PaddingNone),
 			Content: []View{
 				Text(TextCfg{
 					Text:      label,
@@ -258,6 +259,7 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 	}
 	return Row(ContainerCfg{
 		Spacing: Some(cellSpacing),
+		Padding: Some(PaddingNone),
 		Content: labels,
 	})
 }
@@ -295,8 +297,9 @@ func datePickerMonth(
 						cfg, state, d, daysInMonth))
 				} else {
 					cells = append(cells, Row(ContainerCfg{
-						Width:  40,
-						Height: 40,
+						Width:   40,
+						Height:  40,
+						Padding: Some(PaddingNone),
 					}))
 				}
 				continue
@@ -346,6 +349,7 @@ func datePickerMonth(
 		}
 		rows = append(rows, Row(ContainerCfg{
 			Spacing: Some(cellSpacing),
+			Padding: Some(PaddingNone),
 			Content: cells,
 		}))
 		// Stop generating rows if all days rendered.
@@ -379,10 +383,11 @@ func datePickerAdjacentCell(
 	ts.Color = RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 80)
 	ts.Align = TextAlignCenter
 	return Row(ContainerCfg{
-		Width:  40,
-		Height: 40,
-		HAlign: HAlignCenter,
-		VAlign: VAlignMiddle,
+		Width:   40,
+		Height:  40,
+		HAlign:  HAlignCenter,
+		VAlign:  VAlignMiddle,
+		Padding: Some(PaddingNone),
 		Content: []View{
 			Text(TextCfg{
 				Text:      fmt.Sprintf("%d", adjDay),

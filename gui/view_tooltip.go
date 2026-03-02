@@ -41,7 +41,7 @@ func Tooltip(cfg TooltipCfg) View {
 		ColorBorder:  cfg.ColorBorder,
 		SizeBorder:   Some(cfg.SizeBorder),
 		Radius:       Some(cfg.Radius),
-		Padding:      cfg.Padding,
+		Padding:      Some(cfg.Padding),
 		Content:      cfg.Content,
 	})
 }

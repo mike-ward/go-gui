@@ -99,7 +99,7 @@ func Table(cfg TableCfg) View {
 	if len(cfg.Data) == 0 {
 		return Column(ContainerCfg{
 			ID:      cfg.ID,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 		})
 	}
 
@@ -184,7 +184,7 @@ func Table(cfg TableCfg) View {
 				Color:       ColorTransparent,
 				ColorBorder: cfg.ColorBorder,
 				SizeBorder:  Some(cellBorder),
-				Padding:     cfg.CellPadding,
+				Padding:     Some(cfg.CellPadding),
 				HAlign:      hAlign,
 				Sizing:      FixedFill,
 				Width:       colWidth + cfg.CellPadding.Width(),
@@ -209,7 +209,7 @@ func Table(cfg TableCfg) View {
 		rows = append(rows, Row(ContainerCfg{
 			Color:   rowColor,
 			Spacing: Some(-cellBorder),
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Content: cells,
 			OnClick: func(layout *Layout, e *Event, w *Window) {
 				if rowOnClick != nil {
@@ -266,7 +266,7 @@ func Table(cfg TableCfg) View {
 	return Column(ContainerCfg{
 		ID:        cfg.ID,
 		Color:     ColorTransparent,
-		Padding:   PaddingNone,
+		Padding:   Some(PaddingNone),
 		Spacing:   Some(rowSpacing),
 		Sizing:    cfg.Sizing,
 		Width:     cfg.Width,

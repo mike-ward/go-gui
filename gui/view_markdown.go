@@ -186,7 +186,7 @@ func renderMdMath(
 ) View {
 	codeFallback := Column(ContainerCfg{
 		Color:      cfg.Style.CodeBlockBG,
-		Padding:    cfg.Style.CodeBlockPadding,
+		Padding:    Some(cfg.Style.CodeBlockPadding),
 		Radius:     Some(cfg.Style.CodeBlockRadius),
 		Sizing:     FillFit,
 		Content: []View{
@@ -254,7 +254,7 @@ func renderMdMermaid(
 	source := richTextPlain(block.Content)
 	codeFallback := Column(ContainerCfg{
 		Color:   cfg.Style.CodeBlockBG,
-		Padding: cfg.Style.CodeBlockPadding,
+		Padding: Some(cfg.Style.CodeBlockPadding),
 		Radius:  Some(cfg.Style.CodeBlockRadius),
 		Sizing:  FillFit,
 		Content: []View{
@@ -327,7 +327,7 @@ func renderMdCode(
 ) View {
 	return Column(ContainerCfg{
 		Color:   cfg.Style.CodeBlockBG,
-		Padding: cfg.Style.CodeBlockPadding,
+		Padding: Some(cfg.Style.CodeBlockPadding),
 		Radius:  Some(cfg.Style.CodeBlockRadius),
 		Sizing:  FillFit,
 		Clip:    true,
@@ -412,6 +412,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		if !block.IsList && len(listItems) > 0 {
 			content = append(content, Column(ContainerCfg{
 				Sizing:  FillFit,
+				Padding: Some(PaddingNone),
 				Spacing: Some(cfg.Style.BlockSpacing / 2),
 				Content: listItems,
 			}))
@@ -440,8 +441,9 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			if block.TableData != nil {
 				content = append(content,
 					Column(ContainerCfg{
-						Sizing: FillFit,
-						Clip:   true,
+						Sizing:  FillFit,
+						Padding: Some(PaddingNone),
+						Clip:    true,
 						Content: []View{
 							Table(TableCfg{
 								BorderStyle:      cfg.Style.TableBorderStyle,
@@ -470,7 +472,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				block.BlockquoteDepth-1) * cfg.Style.NestIndent
 			content = append(content, Row(ContainerCfg{
 				Sizing:  FillFit,
-				Padding: NewPadding(0, 0, 0, leftMargin),
+				Padding: Some(NewPadding(0, 0, 0, leftMargin)),
 				Content: []View{
 					Rectangle(RectangleCfg{
 						Sizing: FixedFill,
@@ -478,8 +480,9 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 						Color:  cfg.Style.BlockquoteBorder,
 					}),
 					Column(ContainerCfg{
-						Color:  cfg.Style.BlockquoteBG,
-						Sizing: FillFit,
+						Color:   cfg.Style.BlockquoteBG,
+						Sizing:  FillFit,
+						Padding: Some(PaddingNone),
 						Content: []View{
 							RTF(RtfCfg{
 								RichText:      block.Content,
@@ -520,6 +523,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			}
 			content = append(content, Column(ContainerCfg{
 				Sizing:   FillFit,
+				Padding:  Some(PaddingNone),
 				A11YRole: AccessRoleHeading,
 				A11Y:     &AccessInfo{},
 				Content:  headingContent,
@@ -535,8 +539,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		case block.IsDefValue:
 			content = append(content, Row(ContainerCfg{
 				Sizing: FillFit,
-				Padding: NewPadding(
-					0, 0, 0, cfg.Style.NestIndent),
+				Padding: Some(NewPadding(
+					0, 0, 0, cfg.Style.NestIndent)),
 				Content: []View{
 					RTF(RtfCfg{
 						RichText:      block.Content,
@@ -559,11 +563,12 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			}
 			listItems = append(listItems, Row(ContainerCfg{
 				Sizing:  FillFit,
-				Padding: NewPadding(0, 0, 0, indentW),
+				Padding: Some(NewPadding(0, 0, 0, indentW)),
 				Content: []View{
 					Column(ContainerCfg{
-						Sizing: FixedFit,
-						Width:  prefixW,
+						Sizing:  FixedFit,
+						Padding: Some(PaddingNone),
+						Width:   prefixW,
 						Content: []View{
 							Text(TextCfg{
 								Text:      block.ListPrefix,
@@ -572,7 +577,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 						},
 					}),
 					Column(ContainerCfg{
-						Sizing: FillFit,
+						Sizing:  FillFit,
+						Padding: Some(PaddingNone),
 						Content: []View{
 							RTF(RtfCfg{
 								RichText:      block.Content,
@@ -587,6 +593,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			if i == len(blocks)-1 && len(listItems) > 0 {
 				content = append(content, Column(ContainerCfg{
 					Sizing:  FillFit,
+					Padding: Some(PaddingNone),
 					Spacing: Some(cfg.Style.BlockSpacing / 2),
 					Content: listItems,
 				}))
@@ -620,7 +627,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(cfg.SizeBorder),
 		Radius:      Some(cfg.Radius),
-		Padding:     cfg.Padding,
+		Padding:     Some(cfg.Padding),
 		Spacing:     Some(cfg.Style.BlockSpacing),
 		Sizing:      sizing,
 		Content:     content,

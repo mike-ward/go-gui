@@ -189,7 +189,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 		trailItems = append(trailItems, Row(ContainerCfg{
 			ID:      bcCrumbID(cfg.ID, item.ID),
 			Color:   crumbColor,
-			Padding: cfg.PaddingCrumb,
+			Padding: Some(cfg.PaddingCrumb),
 			Radius:  Some(radiusCrumb),
 			Spacing: Some(spacingTrail),
 			OnClick: onClick,
@@ -201,7 +201,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 	outerContent := make([]View, 0, 2)
 	outerContent = append(outerContent, Row(ContainerCfg{
 		Color:   cfg.ColorTrail,
-		Padding: cfg.PaddingTrail,
+		Padding: Some(cfg.PaddingTrail),
 		Spacing: Some(spacingTrail),
 		Sizing:  FillFit,
 		VAlign:  VAlignMiddle,
@@ -216,7 +216,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 			ColorBorder: cfg.ColorContentBorder,
 			SizeBorder:  Some(sizeContentBorder),
 			Radius:      Some(radiusContent),
-			Padding:     cfg.PaddingContent,
+			Padding:     Some(cfg.PaddingContent),
 			Sizing:      FillFill,
 			Content:     activeContent,
 		}))
@@ -240,7 +240,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
 		Radius:          Some(radius),
-		Padding:         cfg.Padding,
+		Padding:         Some(cfg.Padding),
 		Spacing:         Some(spacing),
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,

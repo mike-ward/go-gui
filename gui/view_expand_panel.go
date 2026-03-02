@@ -69,7 +69,7 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 		Color:           cfg.Color,
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
-		Padding:         cfg.Padding,
+		Padding:         Some(cfg.Padding),
 		Radius:          Some(radius),
 		Sizing:          cfg.Sizing,
 		MinWidth:        cfg.MinWidth,
@@ -79,13 +79,13 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 		Spacing:         Some[float32](0),
 		Content: []View{
 			Row(ContainerCfg{
-				Padding: PaddingNone,
+				Padding: Some(PaddingNone),
 				Sizing:  FillFit,
 				VAlign:  VAlignMiddle,
 				Content: []View{
 					cfg.Head,
 					Row(ContainerCfg{
-						Padding: NewPadding(0, PadMedium, 0, 0),
+						Padding: Some(NewPadding(0, PadMedium, 0, 0)),
 						Content: []View{
 							Text(TextCfg{
 								Text:      arrowText,
@@ -117,7 +117,7 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 			}),
 			Column(ContainerCfg{
 				Invisible: !cfg.Open,
-				Padding:   PaddingNone,
+				Padding:   Some(PaddingNone),
 				Sizing:    FillFit,
 				Spacing:   Some[float32](0),
 				Content: []View{

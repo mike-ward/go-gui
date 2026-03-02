@@ -29,7 +29,7 @@ func dataGridQuickFilterRow(cfg *DataGridCfg) View {
 		Color:       cfg.ColorQuickFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     NewPadding(0, cfg.PaddingCell.Right, 0, cfg.PaddingCell.Left),
+		Padding:     Some(NewPadding(0, cfg.PaddingCell.Right, 0, cfg.PaddingCell.Left)),
 		Spacing:     Some(float32(6)),
 		VAlign:      VAlignMiddle,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -140,7 +140,7 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 	content = append(content, Row(ContainerCfg{
 		Height:  rowH,
 		Sizing:  FillFixed,
-		Padding: cfg.PaddingFilter,
+		Padding: Some(cfg.PaddingFilter),
 		Spacing: Some(float32(6)),
 		VAlign:  VAlignMiddle,
 		Content: []View{
@@ -174,7 +174,7 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 		content = append(content, Row(ContainerCfg{
 			Height:      rowH,
 			Sizing:      FillFixed,
-			Padding:     cfg.PaddingFilter,
+			Padding:     Some(cfg.PaddingFilter),
 			Spacing:     Some(float32(8)),
 			Color:       ColorTransparent,
 			ColorBorder: cfg.ColorBorder,
@@ -188,7 +188,7 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		Spacing:     Some(float32(0)),
 		Content:     content,
 	})
@@ -250,7 +250,7 @@ func dataGridBuildPagerRow(pctx dataGridPagerContext) View {
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     dataGridPagerPadding(cfg),
+		Padding:     Some(dataGridPagerPadding(cfg)),
 		Spacing:     Some(float32(6)),
 		VAlign:      VAlignMiddle,
 		Content:     content,
@@ -334,13 +334,13 @@ func dataGridPagerNextButton(cfg *DataGridCfg, onPageChange func(int, *Event, *W
 }
 
 func dataGridPagerSpacer() View {
-	return Row(ContainerCfg{Sizing: FillFill, Padding: PaddingNone})
+	return Row(ContainerCfg{Sizing: FillFill, Padding: Some(PaddingNone)})
 }
 
 func dataGridPagerRowsStatus(cfg *DataGridCfg, rowsText string) View {
 	return Row(ContainerCfg{
 		Sizing:  FitFill,
-		Padding: NewPadding(0, 6, 0, 0),
+		Padding: Some(NewPadding(0, 6, 0, 0)),
 		VAlign:  VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{

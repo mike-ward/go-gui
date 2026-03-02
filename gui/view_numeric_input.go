@@ -99,7 +99,7 @@ func NumericInput(cfg NumericInputCfg) View {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
 		Radius:      Some(radius),
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		Invisible:   cfg.Invisible,
 		Disabled:    cfg.Disabled,
 		VAlign:      VAlignMiddle,
@@ -196,7 +196,7 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 		Sizing:    FitFill,
 		Disabled:  cfg.Disabled,
 		Invisible: cfg.Invisible,
-		Padding:   NewPadding(0, PadSmall, 0, 0),
+		Padding:   Some(NewPadding(0, PadSmall, 0, 0)),
 		Content: []View{
 			Button(ButtonCfg{
 				ID:          cfg.ID + "_step_up",

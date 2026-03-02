@@ -119,7 +119,7 @@ func Input(cfg InputCfg) View {
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
 		Invisible:       cfg.Invisible,
-		Padding:         cfg.Padding,
+		Padding:         Some(cfg.Padding),
 		Radius:          Some(radius),
 		Sizing:          cfg.Sizing,
 		IDScroll:        cfg.IDScroll,
@@ -143,7 +143,7 @@ func Input(cfg InputCfg) View {
 		},
 		Content: []View{
 			Row(ContainerCfg{
-				Padding: PaddingNone,
+				Padding: Some(PaddingNone),
 				Sizing:  FillFill,
 				VAlign:  vAlign,
 				OnClick: func(layout *Layout, _ *Event, w *Window) {

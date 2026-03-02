@@ -67,7 +67,7 @@ func Badge(cfg BadgeCfg) View {
 			Width:     sz,
 			Height:    sz,
 			Sizing:    FixedFixed,
-			Padding:   PaddingNone,
+			Padding:   Some(PaddingNone),
 		})
 	}
 
@@ -77,7 +77,7 @@ func Badge(cfg BadgeCfg) View {
 		Color:     bg,
 		Radius:    Some(radius),
 		Sizing:    FitFit,
-		Padding:   cfg.Padding,
+		Padding:   Some(cfg.Padding),
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
 		Content: []View{
