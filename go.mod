@@ -9,8 +9,8 @@ require (
 )
 
 require (
-	github.com/yuin/goldmark v1.7.16 // indirect
-	github.com/yuin/goldmark-emoji v1.0.6 // indirect
+	github.com/yuin/goldmark v1.7.16
+	github.com/yuin/goldmark-emoji v1.0.6
 )
 
 replace (
