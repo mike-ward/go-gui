@@ -50,6 +50,10 @@ func mainView(w *gui.Window) gui.View {
 			}),
 			gui.Button(gui.ButtonCfg{
 				IDFocus: 1,
+				Shadow: &gui.BoxShadow{
+					Color:      gui.Color{B: 64, A: 64},
+					BlurRadius: 3,
+				},
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
 						Text: fmt.Sprintf("%d Clicks", app.Clicks),

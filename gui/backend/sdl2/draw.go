@@ -179,14 +179,17 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	for i := range 3 {
 		off := float32(i+1) * r.BlurRadius * 0.5 * s
 		a := r.Color.A / uint8(i+2)
-		b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
-		rect := sdl.FRect{
-			X: (r.X+r.OffsetX)*s - off,
-			Y: (r.Y+r.OffsetY)*s - off,
-			W: r.W*s + 2*off,
-			H: r.H*s + 2*off,
+		x := (r.X+r.OffsetX)*s - off
+		y := (r.Y+r.OffsetY)*s - off
+		w := r.W*s + 2*off
+		h := r.H*s + 2*off
+		if r.Radius > 0 {
+			c := gui.Color{R: r.Color.R, G: r.Color.G, B: r.Color.B, A: a}
+			b.fillRoundedRect(x, y, w, h, r.Radius*s+off, c)
+		} else {
+			b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
+			b.renderer.FillRectF(&sdl.FRect{X: x, Y: y, W: w, H: h})
 		}
-		b.renderer.FillRectF(&rect)
 	}
 }
 
