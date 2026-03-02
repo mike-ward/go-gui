@@ -80,3 +80,5 @@ Backend injects at startup; nil in tests:
   the per-window typed key-value store used by widgets for internal state
 - `AmendLayout` hook on shapes runs after sizing to reposition overlay elements
   (color picker circles, splitter handles, etc.)
+- Event callbacks must set `e.IsHandled = true` when the event is consumed to
+  prevent further propagation
