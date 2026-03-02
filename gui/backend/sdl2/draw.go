@@ -36,8 +36,9 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.drawGradientBorder(r)
 		case gui.RenderImage:
 			b.drawImagePlaceholder(r)
-		case gui.RenderSvg,
-			gui.RenderFilterBegin, gui.RenderFilterEnd,
+		case gui.RenderSvg:
+			b.drawSvg(r)
+		case gui.RenderFilterBegin, gui.RenderFilterEnd,
 			gui.RenderFilterComposite,
 			gui.RenderLayout, gui.RenderLayoutTransformed,
 			gui.RenderLayoutPlaced,

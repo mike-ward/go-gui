@@ -11,6 +11,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/svg"
 )
 
 // Backend is the SDL2 backend for go-gui.
@@ -104,6 +105,9 @@ func New(w *gui.Window) (*Backend, error) {
 
 	// Set text measurer on gui Window.
 	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
+
+	// Set SVG parser on gui Window.
+	w.SetSvgParser(svg.New())
 
 	return b, nil
 }
