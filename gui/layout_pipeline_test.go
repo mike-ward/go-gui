@@ -261,3 +261,103 @@ func TestLayoutWrapTextNoop(t *testing.T) {
 	// Should not panic.
 	layoutWrapText(nil, nil)
 }
+
+func TestFixedColumnCentering(t *testing.T) {
+	w := &Window{}
+	w.windowWidth = 300
+	w.windowHeight = 300
+
+	// Simulate the get_started Column with centered content
+	col := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			Axis:      AxisTopToBottom,
+			Width:     300,
+			Height:    300,
+			Sizing:    FixedFixed,
+			MinWidth:  300, MaxWidth: 300,
+			MinHeight: 300, MaxHeight: 300,
+			HAlign:  HAlignCenter,
+			VAlign:  VAlignMiddle,
+			Spacing: 10,
+			Opacity: 1,
+		},
+		Children: []Layout{
+			{Shape: &Shape{ShapeType: ShapeText, Width: 150, Height: 20, Opacity: 1}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 80, Height: 30, Opacity: 1}},
+		},
+	}
+
+	layoutPipeline(&col, w)
+
+	// Children should be vertically centered
+	// remaining = 300 - 10 (spacing) - 20 - 30 = 240, offset = 120
+	text := col.Children[0].Shape
+	btn := col.Children[1].Shape
+
+	t.Logf("Text: X=%.1f Y=%.1f W=%.1f H=%.1f", text.X, text.Y, text.Width, text.Height)
+	t.Logf("Button: X=%.1f Y=%.1f W=%.1f H=%.1f", btn.X, btn.Y, btn.Width, btn.Height)
+
+	// Vertical: VAlignMiddle
+	expectedTextY := float32(120)
+	if abs32(text.Y-expectedTextY) > 1 {
+		t.Errorf("text Y = %.1f, want ~%.1f", text.Y, expectedTextY)
+	}
+
+	// Horizontal: HAlignCenter
+	expectedTextX := float32((300 - 150) / 2)
+	if abs32(text.X-expectedTextX) > 1 {
+		t.Errorf("text X = %.1f, want ~%.1f", text.X, expectedTextX)
+	}
+
+	// Now "resize" to 500x500
+	w.windowWidth = 500
+	w.windowHeight = 500
+
+	col2 := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			Axis:      AxisTopToBottom,
+			Width:     500,
+			Height:    500,
+			Sizing:    FixedFixed,
+			MinWidth:  500, MaxWidth: 500,
+			MinHeight: 500, MaxHeight: 500,
+			HAlign:  HAlignCenter,
+			VAlign:  VAlignMiddle,
+			Spacing: 10,
+			Opacity: 1,
+		},
+		Children: []Layout{
+			{Shape: &Shape{ShapeType: ShapeText, Width: 150, Height: 20, Opacity: 1}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 80, Height: 30, Opacity: 1}},
+		},
+	}
+
+	layoutPipeline(&col2, w)
+
+	text2 := col2.Children[0].Shape
+	btn2 := col2.Children[1].Shape
+
+	t.Logf("After resize - Text: X=%.1f Y=%.1f W=%.1f H=%.1f", text2.X, text2.Y, text2.Width, text2.Height)
+	t.Logf("After resize - Button: X=%.1f Y=%.1f W=%.1f H=%.1f", btn2.X, btn2.Y, btn2.Width, btn2.Height)
+
+	// Vertical: remaining = 500 - 10 - 20 - 30 = 440, offset = 220
+	expectedTextY2 := float32(220)
+	if abs32(text2.Y-expectedTextY2) > 1 {
+		t.Errorf("resized text Y = %.1f, want ~%.1f", text2.Y, expectedTextY2)
+	}
+
+	// Horizontal: (500 - 150) / 2 = 175
+	expectedTextX2 := float32(175)
+	if abs32(text2.X-expectedTextX2) > 1 {
+		t.Errorf("resized text X = %.1f, want ~%.1f", text2.X, expectedTextX2)
+	}
+}
+
+func abs32(x float32) float32 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}

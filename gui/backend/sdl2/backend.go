@@ -126,8 +126,8 @@ func (b *Backend) Run(w *gui.Window) {
 			}
 			e := gui.Event{
 				Type:         gui.EventResized,
-				WindowWidth:  int(float32(we.Data1) / b.dpiScale),
-				WindowHeight: int(float32(we.Data2) / b.dpiScale),
+				WindowWidth:  int(we.Data1),
+				WindowHeight: int(we.Data2),
 			}
 			w.EventFn(&e)
 			w.FrameFn()

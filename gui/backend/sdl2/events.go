@@ -17,16 +17,16 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 		if e.Type == sdl.MOUSEBUTTONDOWN {
 			return gui.Event{
 				Type:        gui.EventMouseDown,
-				MouseX:      float32(e.X) / b.dpiScale,
-				MouseY:      float32(e.Y) / b.dpiScale,
+				MouseX:      float32(e.X),
+				MouseY:      float32(e.Y),
 				MouseButton: btn,
 				Modifiers:   mapKeyMod(sdl.GetModState()),
 			}, true
 		}
 		return gui.Event{
 			Type:        gui.EventMouseUp,
-			MouseX:      float32(e.X) / b.dpiScale,
-			MouseY:      float32(e.Y) / b.dpiScale,
+			MouseX:      float32(e.X),
+			MouseY:      float32(e.Y),
 			MouseButton: btn,
 			Modifiers:   mapKeyMod(sdl.GetModState()),
 		}, true
@@ -34,10 +34,10 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 	case *sdl.MouseMotionEvent:
 		return gui.Event{
 			Type:      gui.EventMouseMove,
-			MouseX:    float32(e.X) / b.dpiScale,
-			MouseY:    float32(e.Y) / b.dpiScale,
-			MouseDX:   float32(e.XRel) / b.dpiScale,
-			MouseDY:   float32(e.YRel) / b.dpiScale,
+			MouseX:    float32(e.X),
+			MouseY:    float32(e.Y),
+			MouseDX:   float32(e.XRel),
+			MouseDY:   float32(e.YRel),
 			Modifiers: mapKeyMod(sdl.GetModState()),
 		}, true
 
@@ -47,8 +47,8 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 			Type:      gui.EventMouseScroll,
 			ScrollX:   float32(e.X),
 			ScrollY:   float32(e.Y),
-			MouseX:    float32(mx) / b.dpiScale,
-			MouseY:    float32(my) / b.dpiScale,
+			MouseX:    float32(mx),
+			MouseY:    float32(my),
 			Modifiers: mapKeyMod(sdl.GetModState()),
 		}, true
 
@@ -85,8 +85,8 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 			sdl.WINDOWEVENT_SIZE_CHANGED:
 			return gui.Event{
 				Type:         gui.EventResized,
-				WindowWidth:  int(float32(e.Data1) / b.dpiScale),
-				WindowHeight: int(float32(e.Data2) / b.dpiScale),
+				WindowWidth:  int(e.Data1),
+				WindowHeight: int(e.Data2),
 			}, true
 		case sdl.WINDOWEVENT_FOCUS_GAINED:
 			return gui.Event{Type: gui.EventFocused}, true
