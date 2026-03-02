@@ -1,5 +1,7 @@
 package gui
 
+import "strings"
+
 // renderLayout walks the layout tree and emits RenderCmd entries
 // into window.renderers. Clip rectangles bracket clipped children.
 func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
@@ -335,7 +337,11 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 
 	text := tc.Text
 	if tc.TextIsPassword {
-		text = passwordMask(tc.Text)
+		if strings.Contains(tc.Text, "\n") {
+			text = passwordMaskKeepNewlines(tc.Text)
+		} else {
+			text = passwordMask(tc.Text)
+		}
 	}
 
 	emitRenderer(RenderCmd{

@@ -24,6 +24,25 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.drawText(r)
 		case gui.RenderCircle:
 			b.drawCircle(r)
+		case gui.RenderLine:
+			b.drawLine(r)
+		case gui.RenderShadow:
+			b.drawShadow(r)
+		case gui.RenderBlur:
+			b.drawBlur(r)
+		case gui.RenderGradient:
+			b.drawGradient(r)
+		case gui.RenderGradientBorder:
+			b.drawGradientBorder(r)
+		case gui.RenderImage:
+			b.drawImagePlaceholder(r)
+		case gui.RenderSvg,
+			gui.RenderFilterBegin, gui.RenderFilterEnd,
+			gui.RenderFilterComposite,
+			gui.RenderLayout, gui.RenderLayoutTransformed,
+			gui.RenderLayoutPlaced,
+			gui.RenderCustomShader:
+			// Skip — requires GPU pipeline or unsupported in SDL2.
 		default:
 			// Unimplemented render kinds are silently skipped.
 		}
@@ -146,6 +165,109 @@ func (b *Backend) fillRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 		// Bottom-right.
 		b.renderer.DrawLineF(x+w-rad, y+h-rad+fy, x+w-rad+fx, y+h-rad+fy)
 	}
+}
+
+func (b *Backend) drawLine(r *gui.RenderCmd) {
+	s := b.dpiScale
+	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+	b.renderer.DrawLineF(r.X*s, r.Y*s, r.OffsetX*s, r.OffsetY*s)
+}
+
+func (b *Backend) drawShadow(r *gui.RenderCmd) {
+	s := b.dpiScale
+	// 3 concentric offset rects at decreasing alpha.
+	for i := range 3 {
+		off := float32(i+1) * r.BlurRadius * 0.5 * s
+		a := r.Color.A / uint8(i+2)
+		b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
+		rect := sdl.FRect{
+			X: (r.X+r.OffsetX)*s - off,
+			Y: (r.Y+r.OffsetY)*s - off,
+			W: r.W*s + 2*off,
+			H: r.H*s + 2*off,
+		}
+		b.renderer.FillRectF(&rect)
+	}
+}
+
+func (b *Backend) drawBlur(r *gui.RenderCmd) {
+	// Placeholder: single rect at reduced alpha.
+	s := b.dpiScale
+	a := r.Color.A / 2
+	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
+	rect := sdl.FRect{
+		X: r.X * s, Y: r.Y * s,
+		W: r.W * s, H: r.H * s,
+	}
+	b.renderer.FillRectF(&rect)
+}
+
+func (b *Backend) drawGradient(r *gui.RenderCmd) {
+	if r.Gradient == nil || len(r.Gradient.Stops) == 0 || r.W <= 0 || r.H <= 0 {
+		return
+	}
+	s := b.dpiScale
+	dx, dy := gui.GradientDir(r.Gradient, r.W, r.H)
+
+	const bands = 32
+	// Determine if gradient is more horizontal or vertical.
+	horizontal := math.Abs(float64(dx)) >= math.Abs(float64(dy))
+
+	for i := range bands {
+		t := float32(i) / float32(bands)
+		t2 := float32(i+1) / float32(bands)
+		c := gui.SampleGradientStopColor(r.Gradient.Stops, (t+t2)/2)
+		b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
+		var rect sdl.FRect
+		if horizontal {
+			rect = sdl.FRect{
+				X: (r.X + t*r.W) * s,
+				Y: r.Y * s,
+				W: (t2 - t) * r.W * s,
+				H: r.H * s,
+			}
+		} else {
+			rect = sdl.FRect{
+				X: r.X * s,
+				Y: (r.Y + t*r.H) * s,
+				W: r.W * s,
+				H: (t2 - t) * r.H * s,
+			}
+		}
+		b.renderer.FillRectF(&rect)
+	}
+}
+
+func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
+	if r.Gradient == nil || len(r.Gradient.Stops) == 0 {
+		return
+	}
+	s := b.dpiScale
+	th := r.Thickness * s
+	// 4 border rects with sampled colors at 0.0, 0.25, 0.5, 0.75.
+	positions := [4]float32{0.0, 0.25, 0.5, 0.75}
+	rects := [4]sdl.FRect{
+		{X: r.X * s, Y: r.Y * s, W: r.W * s, H: th},                         // top
+		{X: r.X * s, Y: (r.Y+r.H)*s - th, W: r.W * s, H: th},               // bottom
+		{X: r.X * s, Y: r.Y * s, W: th, H: r.H * s},                         // left
+		{X: (r.X+r.W)*s - th, Y: r.Y * s, W: th, H: r.H * s},               // right
+	}
+	for i := range 4 {
+		c := gui.SampleGradientStopColor(r.Gradient.Stops, positions[i])
+		b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
+		b.renderer.FillRectF(&rects[i])
+	}
+}
+
+func (b *Backend) drawImagePlaceholder(r *gui.RenderCmd) {
+	// Placeholder: colored rect until texture cache is implemented.
+	s := b.dpiScale
+	b.renderer.SetDrawColor(200, 200, 200, 255)
+	rect := sdl.FRect{
+		X: r.X * s, Y: r.Y * s,
+		W: r.W * s, H: r.H * s,
+	}
+	b.renderer.FillRectF(&rect)
 }
 
 // strokeRoundedRect draws a stroked rectangle with rounded corners

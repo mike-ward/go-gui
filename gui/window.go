@@ -72,6 +72,9 @@ type Window struct {
 
 	// Config stores the WindowCfg for backend access.
 	Config WindowCfg
+
+	// Reusable per-frame scratch buffers.
+	scratch scratchPools
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a
