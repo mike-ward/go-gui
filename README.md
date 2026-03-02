@@ -4,11 +4,11 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![CI](https://github.com/mike-ward/go-gui/actions/workflows/ci.yml/badge.svg)
 
-Cross-platform GUI framework for Go with a stateless View → Layout → RenderCmd pipeline.
+Cross-platform immediate mode GUI framework for Go.
 
 ## Overview
 
-go-gui is a immediate-mode GUI framework ported from the
+go-gui is an immediate-mode GUI framework ported from the
 [V-language gui library](https://github.com/mike-ward/gui). Every frame, a
 View function returns a tree of Layout nodes. The layout engine sizes and
 positions them. The backend converts the result into draw commands and
@@ -211,7 +211,8 @@ gui.Input(gui.InputCfg{
 | ExpandPanel   | `ExpandPanel(ExpandPanelCfg)`     | Collapsible section        |
 | Splitter      | `Split(SplitterCfg)`              | Resizable two-pane split   |
 | DockLayout    | `DockLayout(DockCfg)`             | Drag-and-drop dock areas   |
-| OverflowPanel | `OverflowPanel(OverflowPanelCfg)` | Clips overflowing children |
+| OverflowPanel | `OverflowPanel(OverflowPanelCfg)` | Wraps overflowing children |
+
 #### Input
 
 | Widget           | Factory                                 | Description                  |
@@ -226,6 +227,7 @@ gui.Input(gui.InputCfg{
 | InputDate        | `InputDate(InputDateCfg)`               | Date field with picker       |
 | ColorPicker      | `ColorPicker(ColorPickerCfg)`           | RGBA color picker            |
 | CommandPalette   | `CommandPalette(CommandPaletteCfg)`     | Fuzzy-search command palette |
+
 #### Display
 
 | Widget       | Factory                         | Description                   |
@@ -239,6 +241,7 @@ gui.Input(gui.InputCfg{
 | SvgView      | `SvgView(SvgViewCfg)`           | SVG vector image view         |
 | MarkdownView | `MarkdownView(MarkdownViewCfg)` | Rendered Markdown             |
 | RtfView      | `RtfView(RtfViewCfg)`           | Rendered RTF                  |
+
 #### Data
 
 | Widget           | Factory                                 | Description                     |
@@ -248,6 +251,7 @@ gui.Input(gui.InputCfg{
 | DataGrid         | `DataGrid(DataGridCfg)`                 | Virtualized grid with full CRUD |
 | DatePicker       | `DatePicker(DatePickerCfg)`             | Calendar date picker            |
 | DatePickerRoller | `DatePickerRoller(DatePickerRollerCfg)` | Drum-style date roller          |
+
 #### Navigation
 
 | Widget     | Factory                     | Description                   |
@@ -256,6 +260,7 @@ gui.Input(gui.InputCfg{
 | Breadcrumb | `Breadcrumb(BreadcrumbCfg)` | Navigational breadcrumb trail |
 | Menu       | `Menu(MenuCfg)`             | Pull-down menu bar            |
 | Sidebar    | `Sidebar(SidebarCfg)`       | Collapsible side navigation   |
+
 #### Overlay
 
 | Widget  | Factory               | Description            |
@@ -263,6 +268,7 @@ gui.Input(gui.InputCfg{
 | Dialog  | `Dialog(DialogCfg)`   | Modal dialog           |
 | Toast   | `Toast(ToastCfg)`     | Transient notification |
 | Tooltip | `Tooltip(TooltipCfg)` | Hover tooltip          |
+
 ## Backend
 
 go-gui separates rendering concerns into injectable interfaces:
@@ -272,6 +278,7 @@ go-gui separates rendering concerns into injectable interfaces:
 | `TextMeasurer`   | Measure glyph extents for layout           |
 | `SvgParser`      | Parse and tessellate SVG files             |
 | `NativePlatform` | Native dialogs, notifications, print, a11y |
+
 The SDL2 backend (`gui/backend/sdl2`) implements all three and wires itself
 into the window on `sdl2.New(w)`. Custom backends implement the interfaces
 and call the corresponding `w.Set*` methods.
