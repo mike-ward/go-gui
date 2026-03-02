@@ -53,6 +53,8 @@ type TextStyle struct {
 	Underline     bool
 	Strikethrough bool
 	Typeface      glyph.Typeface
+	StrokeWidth   float32
+	StrokeColor   Color
 	Features      *glyph.FontFeatures
 }
 
@@ -67,6 +69,8 @@ func (ts TextStyle) ToGlyphStyle() glyph.TextStyle {
 		Underline:     ts.Underline,
 		Strikethrough: ts.Strikethrough,
 		Typeface:      ts.Typeface,
+		StrokeWidth:   ts.StrokeWidth,
+		StrokeColor:   glyph.Color(ts.StrokeColor),
 	}
 }
 

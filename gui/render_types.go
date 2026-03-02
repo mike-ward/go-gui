@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/mike-ward/go-glyph"
+
 // RenderKind identifies the type of drawing command stored in a
 // RenderCmd. The renderer pipeline emits a flat []RenderCmd slice;
 // the dispatch loop switches on Kind to draw each command.
@@ -64,12 +66,19 @@ type RenderCmd struct {
 	FontSize float32 // Text font size (points)
 	Resource string  // Image file path
 
+	// SVG animation rotation (degrees, center in SVG space).
+	RotAngle float32
+	RotCX    float32
+	RotCY    float32
+
 	// Slice data (Svg).
 	Triangles    []float32
 	VertexColors []Color
 
 	// Pointer fields.
-	Gradient *GradientDef
+	Gradient     *GradientDef
+	TextStylePtr *TextStyle             // SVG text: full style
+	TextGradient *glyph.GradientConfig  // SVG gradient text
 }
 
 const passwordChar = '*'

@@ -38,8 +38,11 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.drawImagePlaceholder(r)
 		case gui.RenderSvg:
 			b.drawSvg(r)
-		case gui.RenderFilterBegin, gui.RenderFilterEnd,
-			gui.RenderFilterComposite,
+		case gui.RenderFilterBegin:
+			b.beginFilter(r)
+		case gui.RenderFilterEnd:
+			b.endFilter()
+		case gui.RenderFilterComposite,
 			gui.RenderLayout, gui.RenderLayoutTransformed,
 			gui.RenderLayoutPlaced,
 			gui.RenderCustomShader:
@@ -100,18 +103,24 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 	if b.textSys == nil || len(r.Text) == 0 {
 		return
 	}
-	cfg := glyph.TextConfig{
-		Style: glyph.TextStyle{
-			FontName: r.FontName,
-			Size:     r.FontSize,
-			Color: glyph.Color{
-				R: r.Color.R,
-				G: r.Color.G,
-				B: r.Color.B,
-				A: r.Color.A,
+	var cfg glyph.TextConfig
+	if r.TextStylePtr != nil {
+		cfg = guiStyleToGlyphConfig(*r.TextStylePtr)
+		cfg.Gradient = r.TextGradient
+	} else {
+		cfg = glyph.TextConfig{
+			Style: glyph.TextStyle{
+				FontName: r.FontName,
+				Size:     r.FontSize,
+				Color: glyph.Color{
+					R: r.Color.R,
+					G: r.Color.G,
+					B: r.Color.B,
+					A: r.Color.A,
+				},
 			},
-		},
-		Block: glyph.DefaultBlockStyle(),
+			Block: glyph.DefaultBlockStyle(),
+		}
 	}
 	b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
 }

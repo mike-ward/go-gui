@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	glyph "github.com/mike-ward/go-glyph"
 )
@@ -28,6 +29,7 @@ type CachedSvgTextDraw struct {
 	Text      string
 	TextStyle TextStyle
 	X, Y      float32
+	Gradient  *glyph.GradientConfig
 }
 
 // CachedFilteredGroup holds tessellated geometry for a filter group.
@@ -52,6 +54,8 @@ type CachedSvg struct {
 	Gradients      map[string]SvgGradientDef
 	Animations     []SvgAnimation
 	HasAnimations  bool
+	AnimStartNs    int64
+	AnimHash       string
 	Width          float32
 	Height         float32
 	Scale          float32
@@ -81,31 +85,50 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 }
 
 // cachedSvgTextDraws converts SvgText elements to CachedSvgTextDraw.
-func cachedSvgTextDraws(texts []SvgText, scale float32, w *Window) []CachedSvgTextDraw {
+func cachedSvgTextDraws(texts []SvgText, scale float32,
+	gradients map[string]SvgGradientDef, w *Window) []CachedSvgTextDraw {
 	draws := make([]CachedSvgTextDraw, 0, len(texts))
 	for _, t := range texts {
 		if len(t.Text) == 0 {
 			continue
 		}
+		// Build Pango-style font name with weight/style.
+		fontName := t.FontFamily
+		if wn := pangoWeightName(t.FontWeight); wn != "" {
+			fontName += " " + wn
+		}
 		typeface := glyph.TypefaceRegular
-		if t.IsBold && t.IsItalic {
-			typeface = glyph.TypefaceBoldItalic
-		} else if t.IsBold {
-			typeface = glyph.TypefaceBold
-		} else if t.IsItalic {
+		if t.IsItalic {
 			typeface = glyph.TypefaceItalic
 		}
 		ts := TextStyle{
-			Family:        t.FontFamily,
+			Family:        fontName,
 			Size:          t.FontSize * scale,
 			LetterSpacing: t.LetterSpacing * scale,
 			Typeface:      typeface,
+			Underline:     t.Underline,
+			Strikethrough: t.Strikethrough,
+			StrokeWidth:   t.StrokeWidth * scale,
+			StrokeColor:   svgToColor(t.StrokeColor),
 		}
 		if t.Opacity < 1.0 {
 			ts.Color = Color{t.Color.R, t.Color.G, t.Color.B,
 				uint8(float32(t.Color.A) * t.Opacity)}
 		} else {
 			ts.Color = svgToColor(t.Color)
+		}
+
+		// Stroke-only text: fill=none + stroke set → transparent fill.
+		if ts.StrokeWidth > 0 && ts.Color.A == 0 {
+			ts.Color = Color{0, 0, 0, 0}
+		}
+
+		// Build gradient config from SVG gradient def.
+		var grad *glyph.GradientConfig
+		if t.FillGradientID != "" && gradients != nil {
+			if gdef, ok := gradients[t.FillGradientID]; ok {
+				grad = svgGradientToGlyph(gdef)
+			}
 		}
 
 		// Measure text width for anchor adjustment.
@@ -130,9 +153,61 @@ func cachedSvgTextDraws(texts []SvgText, scale float32, w *Window) []CachedSvgTe
 			TextStyle: ts,
 			X:         x,
 			Y:         y,
+			Gradient:  grad,
 		})
 	}
 	return draws
+}
+
+// pangoWeightName maps CSS font-weight (100-900) to a Pango
+// weight descriptor. Returns "" for regular (400) or unset (0).
+func pangoWeightName(w int) string {
+	switch w {
+	case 100:
+		return "Thin"
+	case 200:
+		return "Ultra-Light"
+	case 300:
+		return "Light"
+	case 500:
+		return "Medium"
+	case 600:
+		return "Semi-Bold"
+	case 700:
+		return "Bold"
+	case 800:
+		return "Ultra-Bold"
+	case 900:
+		return "Heavy"
+	default:
+		return ""
+	}
+}
+
+// svgGradientToGlyph converts an SvgGradientDef to a glyph
+// GradientConfig.
+func svgGradientToGlyph(g SvgGradientDef) *glyph.GradientConfig {
+	if len(g.Stops) == 0 {
+		return nil
+	}
+	stops := make([]glyph.GradientStop, len(g.Stops))
+	for i, s := range g.Stops {
+		stops[i] = glyph.GradientStop{
+			Color:    glyph.Color{R: s.Color.R, G: s.Color.G, B: s.Color.B, A: s.Color.A},
+			Position: s.Offset,
+		}
+	}
+	dir := glyph.GradientHorizontal
+	// Determine direction from gradient vector.
+	dx := g.X2 - g.X1
+	dy := g.Y2 - g.Y1
+	if dy*dy > dx*dx {
+		dir = glyph.GradientVertical
+	}
+	return &glyph.GradientConfig{
+		Stops:     stops,
+		Direction: dir,
+	}
 }
 
 // validateSvgSource rejects file paths containing '..'.
@@ -235,20 +310,39 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 
 	triangles := w.svgParser.Tessellate(parsed, scale)
 	renderPaths := cachedSvgPaths(triangles)
-	textDraws := cachedSvgTextDraws(parsed.Texts, scale, w)
+	textDraws := cachedSvgTextDraws(parsed.Texts, scale, parsed.Gradients, w)
+
+	// Build filtered groups.
+	var filteredGroups []CachedFilteredGroup
+	for _, fg := range parsed.FilteredGroups {
+		fgPaths := cachedSvgPaths(fg.Paths)
+		fgTextDraws := cachedSvgTextDraws(fg.Texts, scale, parsed.Gradients, w)
+		filteredGroups = append(filteredGroups, CachedFilteredGroup{
+			Filter:      fg.Filter,
+			RenderPaths: fgPaths,
+			Texts:       fg.Texts,
+			TextDraws:   fgTextDraws,
+			TextPaths:   fg.TextPaths,
+			Gradients:   parsed.Gradients,
+			BBox:        computeTriangleBBox(fg.Paths),
+		})
+	}
 
 	cached := &CachedSvg{
-		RenderPaths:   renderPaths,
-		Texts:         parsed.Texts,
-		TextDraws:     textDraws,
-		TextPaths:     parsed.TextPaths,
-		DefsPaths:     parsed.DefsPaths,
-		Gradients:     parsed.Gradients,
-		Animations:    parsed.Animations,
-		HasAnimations: len(parsed.Animations) > 0,
-		Width:         parsed.Width,
-		Height:        parsed.Height,
-		Scale:         scale,
+		RenderPaths:    renderPaths,
+		Texts:          parsed.Texts,
+		TextDraws:      textDraws,
+		TextPaths:      parsed.TextPaths,
+		DefsPaths:      parsed.DefsPaths,
+		FilteredGroups: filteredGroups,
+		Gradients:      parsed.Gradients,
+		Animations:     parsed.Animations,
+		HasAnimations:  len(parsed.Animations) > 0,
+		AnimStartNs:    time.Now().UnixNano(),
+		AnimHash:       fmt.Sprintf("%x", hashString(svgSrc)),
+		Width:          parsed.Width,
+		Height:         parsed.Height,
+		Scale:          scale,
 	}
 
 	// Cache if vertex count is reasonable.

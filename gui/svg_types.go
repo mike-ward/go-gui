@@ -24,10 +24,12 @@ type SvgText struct {
 	Opacity        float32
 	IsBold         bool
 	IsItalic       bool
+	FontWeight     int // CSS numeric weight (100-900); 0 = default (400)
 	Color          SvgColor
 	StrokeColor    SvgColor
 	StrokeWidth    float32
 	FillGradientID string
+	FilterID       string
 	Anchor         int // 0=start, 1=middle, 2=end
 	Underline      bool
 	Strikethrough  bool
@@ -48,14 +50,29 @@ type SvgTextPath struct {
 	Color         SvgColor
 	StrokeColor   SvgColor
 	StrokeWidth   float32
+	FilterID      string
 	Anchor        int // 0=start, 1=middle, 2=end
 	Method        int // 0=align, 1=stretch
 	Side          int // 0=left, 1=right
 	IsPercent     bool
 }
 
-// SvgFilter is a stub for SVG filter definitions.
-type SvgFilter struct{}
+// SvgFilter holds a parsed SVG filter definition.
+type SvgFilter struct {
+	ID         string
+	StdDev     float32
+	BlurLayers int
+	KeepSource bool
+}
+
+// SvgParsedFilteredGroup holds parsed+tessellated geometry for a
+// filter group (paths that share a common filter="url(#id)").
+type SvgParsedFilteredGroup struct {
+	Filter    SvgFilter
+	Paths     []TessellatedPath
+	Texts     []SvgText
+	TextPaths []SvgTextPath
+}
 
 // SvgGradientStop defines a color stop in an SVG gradient.
 type SvgGradientStop struct {
@@ -74,8 +91,24 @@ type SvgGradientDef struct {
 	GradientUnits string
 }
 
-// SvgAnimation is a stub for SVG SMIL animation data.
-type SvgAnimation struct{}
+// SvgAnimKind identifies the type of SMIL animation.
+type SvgAnimKind uint8
+
+const (
+	SvgAnimOpacity SvgAnimKind = iota
+	SvgAnimRotate
+)
+
+// SvgAnimation holds parsed SMIL animation data.
+type SvgAnimation struct {
+	Kind     SvgAnimKind
+	GroupID  string
+	Values   []float32 // opacity: keyframes; rotate: [from, to]
+	CenterX  float32   // rotation center (SVG coords)
+	CenterY  float32
+	DurSec   float32
+	BeginSec float32
+}
 
 // StrokeCap defines SVG stroke line cap styles.
 type StrokeCap uint8

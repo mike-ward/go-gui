@@ -40,17 +40,15 @@ func (tm *textMeasurer) FontHeight(style gui.TextStyle) float32 {
 func guiStyleToGlyphConfig(s gui.TextStyle) glyph.TextConfig {
 	return glyph.TextConfig{
 		Style: glyph.TextStyle{
-			FontName: s.Family,
-			Size:     s.Size,
-			Color: glyph.Color{
-				R: s.Color.R,
-				G: s.Color.G,
-				B: s.Color.B,
-				A: s.Color.A,
-			},
+			FontName:      s.Family,
+			Size:          s.Size,
+			Color:         glyph.Color(s.Color),
+			Typeface:      s.Typeface,
 			Underline:     s.Underline,
 			Strikethrough: s.Strikethrough,
 			LetterSpacing: s.LetterSpacing,
+			StrokeWidth:   s.StrokeWidth,
+			StrokeColor:   glyph.Color(s.StrokeColor),
 		},
 		Block: glyph.DefaultBlockStyle(),
 	}

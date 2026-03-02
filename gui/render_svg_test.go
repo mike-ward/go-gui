@@ -83,7 +83,7 @@ func TestEmitSvgPathRendererTint(t *testing.T) {
 		Color:     Color{0, 0, 0, 255},
 	}
 	tint := Color{255, 0, 0, 200}
-	emitSvgPathRenderer(path, tint, 0, 0, 1.0, w)
+	emitSvgPathRenderer(path, tint, 0, 0, 1.0, nil, w)
 
 	if len(w.renderers) != 1 {
 		t.Fatalf("expected 1 renderer, got %d",
@@ -111,7 +111,7 @@ func TestEmitSvgPathRendererVertexColors(t *testing.T) {
 		},
 	}
 	// No tint (A=0) → vertex colors used.
-	emitSvgPathRenderer(path, Color{}, 0, 0, 1.0, w)
+	emitSvgPathRenderer(path, Color{}, 0, 0, 1.0, nil, w)
 
 	if len(w.renderers[0].VertexColors) != 6 {
 		t.Fatalf("expected 6 vertex colors, got %d",
@@ -131,7 +131,7 @@ func TestEmitCachedSvgTextDraw(t *testing.T) {
 		X: 5,
 		Y: 10,
 	}
-	emitCachedSvgTextDraw(draw, 100, 200, w)
+	emitCachedSvgTextDraw(&draw, 100, 200, w)
 
 	if len(w.renderers) != 1 {
 		t.Fatalf("expected 1 renderer, got %d",
@@ -146,6 +146,48 @@ func TestEmitCachedSvgTextDraw(t *testing.T) {
 	}
 	if r.Text != "hello" {
 		t.Fatalf("expected 'hello', got %q", r.Text)
+	}
+	if r.TextStylePtr == nil {
+		t.Fatal("expected TextStylePtr to be set")
+	}
+	if r.TextStylePtr.Family != "sans" {
+		t.Fatalf("expected family 'sans', got %q",
+			r.TextStylePtr.Family)
+	}
+}
+
+func TestEmitCachedSvgTextDrawWithStyle(t *testing.T) {
+	w := &Window{}
+	draw := CachedSvgTextDraw{
+		Text: "styled",
+		TextStyle: TextStyle{
+			Family:        "serif",
+			Size:          24,
+			Color:         Color{255, 0, 0, 255},
+			Underline:     true,
+			Strikethrough: true,
+			StrokeWidth:   2,
+			StrokeColor:   Color{0, 0, 255, 255},
+		},
+		X: 10,
+		Y: 20,
+	}
+	emitCachedSvgTextDraw(&draw, 0, 0, w)
+
+	r := w.renderers[0]
+	if r.TextStylePtr == nil {
+		t.Fatal("expected TextStylePtr")
+	}
+	ts := r.TextStylePtr
+	if !ts.Underline {
+		t.Fatal("expected underline")
+	}
+	if !ts.Strikethrough {
+		t.Fatal("expected strikethrough")
+	}
+	if ts.StrokeWidth != 2 {
+		t.Fatalf("expected stroke width 2, got %f",
+			ts.StrokeWidth)
 	}
 }
 

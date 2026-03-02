@@ -179,7 +179,7 @@ func TestRemoveSvgFromCacheNoOp(t *testing.T) {
 }
 
 func TestCachedSvgTextDrawsEmpty(t *testing.T) {
-	result := cachedSvgTextDraws(nil, 1.0, &Window{})
+	result := cachedSvgTextDraws(nil, 1.0, nil, &Window{})
 	if len(result) != 0 {
 		t.Fatal("expected empty result")
 	}
@@ -187,7 +187,7 @@ func TestCachedSvgTextDrawsEmpty(t *testing.T) {
 
 func TestCachedSvgTextDrawsSkipsEmpty(t *testing.T) {
 	texts := []SvgText{{Text: ""}}
-	result := cachedSvgTextDraws(texts, 1.0, &Window{})
+	result := cachedSvgTextDraws(texts, 1.0, nil, &Window{})
 	if len(result) != 0 {
 		t.Fatal("expected empty for blank text")
 	}
@@ -200,7 +200,7 @@ func TestCachedSvgTextDrawsOpacity(t *testing.T) {
 		Color:    SvgColor{255, 255, 255, 255},
 		Opacity:  0.5,
 	}}
-	result := cachedSvgTextDraws(texts, 1.0, &Window{})
+	result := cachedSvgTextDraws(texts, 1.0, nil, &Window{})
 	if len(result) != 1 {
 		t.Fatalf("expected 1 draw, got %d", len(result))
 	}
@@ -222,7 +222,7 @@ func TestCachedSvgTextDrawsAnchorMiddle(t *testing.T) {
 	}}
 	// No textMeasurer → tw=0, anchor shift is zero.
 	// Just verify the draw is created with correct base X.
-	result := cachedSvgTextDraws(texts, 1.0, &Window{})
+	result := cachedSvgTextDraws(texts, 1.0, nil, &Window{})
 	if len(result) != 1 {
 		t.Fatalf("expected 1 draw, got %d", len(result))
 	}
@@ -243,7 +243,7 @@ func TestCachedSvgTextDrawsAnchorEnd(t *testing.T) {
 		Color:    SvgColor{0, 0, 0, 255},
 		Opacity:  1.0,
 	}}
-	result := cachedSvgTextDraws(texts, 1.0, &Window{})
+	result := cachedSvgTextDraws(texts, 1.0, nil, &Window{})
 	if len(result) != 1 {
 		t.Fatalf("expected 1 draw, got %d", len(result))
 	}

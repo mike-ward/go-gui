@@ -1,6 +1,10 @@
 package gui
 
-import "log"
+import (
+	"log"
+	"math"
+	"time"
+)
 
 // renderSvg renders an SVG shape by loading cached tessellation
 // and emitting RenderSvg commands.
@@ -41,14 +45,31 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		H:    cached.Height * cached.Scale,
 	}, w)
 
+	// Compute animation state for SMIL animations.
+	var animState map[string]svgAnimState
+	if cached.HasAnimations && cached.AnimStartNs != 0 {
+		nowNs := time.Now().UnixNano()
+		// Keep animation alive while SVG is being rendered.
+		if cached.AnimHash != "" {
+			animSeen := StateMap[string, int64](
+				w, nsSvgAnimSeen, capModerate)
+			animSeen.Set(cached.AnimHash, nowNs)
+		}
+		elapsed := float32(nowNs-cached.AnimStartNs) /
+			float32(time.Second)
+		animState = computeSvgAnimations(
+			cached.Animations, elapsed)
+	}
+
 	// Emit tessellated paths.
 	for _, path := range cached.RenderPaths {
-		emitSvgPathRenderer(path, color, sx, sy, cached.Scale, w)
+		emitSvgPathRenderer(path, color, sx, sy,
+			cached.Scale, animState, w)
 	}
 
 	// Emit text elements.
-	for _, draw := range cached.TextDraws {
-		emitCachedSvgTextDraw(draw, sx, sy, w)
+	for i := range cached.TextDraws {
+		emitCachedSvgTextDraw(&cached.TextDraws[i], sx, sy, w)
 	}
 
 	// Emit textPath elements.
@@ -60,18 +81,22 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	// Emit filtered groups.
 	for i, fg := range cached.FilteredGroups {
 		emitRenderer(RenderCmd{
-			Kind:     RenderFilterBegin,
-			GroupIdx: i,
-			X:        sx,
-			Y:        sy,
-			Scale:    cached.Scale,
+			Kind:       RenderFilterBegin,
+			GroupIdx:   i,
+			X:          sx,
+			Y:          sy,
+			W:          fg.BBox[2] * cached.Scale,
+			H:          fg.BBox[3] * cached.Scale,
+			Scale:      cached.Scale,
+			BlurRadius: fg.Filter.StdDev * cached.Scale,
+			Layers:     fg.Filter.BlurLayers,
 		}, w)
 		for _, path := range fg.RenderPaths {
 			emitSvgPathRenderer(path, color,
-				sx, sy, cached.Scale, w)
+				sx, sy, cached.Scale, animState, w)
 		}
-		for _, draw := range fg.TextDraws {
-			emitCachedSvgTextDraw(draw, sx, sy, w)
+		for j := range fg.TextDraws {
+			emitCachedSvgTextDraw(&fg.TextDraws[j], sx, sy, w)
 		}
 		for _, tp := range fg.TextPaths {
 			renderSvgTextPath(tp, cached.DefsPaths,
@@ -94,9 +119,11 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 
 // emitSvgPathRenderer emits a single SVG path as a RenderSvg
 // command. If tint has alpha>0 and path has no vertex colors,
-// the tint overrides the path color.
+// the tint overrides the path color. animState applies SMIL
+// rotation/opacity per GroupID.
 func emitSvgPathRenderer(path CachedSvgPath, tint Color,
-	x, y, scale float32, w *Window) {
+	x, y, scale float32,
+	animState map[string]svgAnimState, w *Window) {
 	hasVCols := len(path.VertexColors) > 0
 	c := path.Color
 	if tint.A > 0 && !hasVCols {
@@ -106,6 +133,29 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	if hasVCols && tint.A == 0 {
 		vcols = path.VertexColors
 	}
+
+	var rotAngle, rotCX, rotCY float32
+	if animState != nil && path.GroupID != "" {
+		if st, ok := animState[path.GroupID]; ok {
+			rotAngle = st.RotAngle
+			rotCX = st.RotCX
+			rotCY = st.RotCY
+			if st.Opacity < 1 {
+				c.A = uint8(float32(c.A) * st.Opacity)
+				// Also scale vertex colors.
+				if len(vcols) > 0 {
+					scaled := make([]Color, len(vcols))
+					copy(scaled, vcols)
+					for i := range scaled {
+						scaled[i].A = uint8(
+							float32(scaled[i].A) * st.Opacity)
+					}
+					vcols = scaled
+				}
+			}
+		}
+	}
+
 	emitRenderer(RenderCmd{
 		Kind:         RenderSvg,
 		Triangles:    path.Triangles,
@@ -116,22 +166,103 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 		Scale:        scale,
 		IsClipMask:   path.IsClipMask,
 		ClipGroup:    path.ClipGroup,
+		RotAngle:     rotAngle,
+		RotCX:        rotCX,
+		RotCY:        rotCY,
 	}, w)
 }
 
 // emitCachedSvgTextDraw emits a cached SVG text draw as a
-// RenderText command.
-func emitCachedSvgTextDraw(draw CachedSvgTextDraw,
+// RenderText command. Takes pointer into CachedSvg.TextDraws
+// slice so TextStylePtr remains stable.
+func emitCachedSvgTextDraw(draw *CachedSvgTextDraw,
 	shapeX, shapeY float32, w *Window) {
 	emitRenderer(RenderCmd{
-		Kind:     RenderText,
-		Text:     draw.Text,
-		X:        shapeX + draw.X,
-		Y:        shapeY + draw.Y,
-		Color:    draw.TextStyle.Color,
-		FontName: draw.TextStyle.Family,
-		FontSize: draw.TextStyle.Size,
+		Kind:         RenderText,
+		Text:         draw.Text,
+		X:            shapeX + draw.X,
+		Y:            shapeY + draw.Y,
+		Color:        draw.TextStyle.Color,
+		FontName:     draw.TextStyle.Family,
+		FontSize:     draw.TextStyle.Size,
+		TextStylePtr: &draw.TextStyle,
+		TextGradient: draw.Gradient,
 	}, w)
+}
+
+// svgAnimState holds computed per-group animation state.
+type svgAnimState struct {
+	RotAngle float32 // rotation degrees
+	RotCX    float32 // rotation center X (SVG space)
+	RotCY    float32 // rotation center Y (SVG space)
+	Opacity  float32 // 0..1
+}
+
+// computeSvgAnimations builds a map of per-group animation
+// state from parsed SMIL animations and elapsed time.
+func computeSvgAnimations(
+	anims []SvgAnimation, elapsedSec float32,
+) map[string]svgAnimState {
+	states := make(map[string]svgAnimState, len(anims))
+	for _, a := range anims {
+		if a.GroupID == "" || a.DurSec <= 0 {
+			continue
+		}
+		st := states[a.GroupID]
+		if st.Opacity == 0 {
+			st.Opacity = 1 // init
+		}
+		adj := elapsedSec - a.BeginSec
+		if adj < 0 {
+			adj = 0
+		}
+		frac := fmod(adj, a.DurSec) / a.DurSec
+
+		switch a.Kind {
+		case SvgAnimRotate:
+			if len(a.Values) >= 2 {
+				from, to := a.Values[0], a.Values[1]
+				st.RotAngle = from + (to-from)*frac
+				st.RotCX = a.CenterX
+				st.RotCY = a.CenterY
+			}
+		case SvgAnimOpacity:
+			if len(a.Values) >= 2 {
+				st.Opacity *= lerpKeyframes(a.Values, frac)
+			}
+		}
+		states[a.GroupID] = st
+	}
+	return states
+}
+
+// lerpKeyframes interpolates evenly-spaced keyframe values at
+// the given fraction (0..1).
+func lerpKeyframes(vals []float32, frac float32) float32 {
+	n := len(vals)
+	if n == 0 {
+		return 1
+	}
+	if n == 1 {
+		return vals[0]
+	}
+	// Scale fraction to segment index.
+	seg := frac * float32(n-1)
+	idx := int(seg)
+	if idx >= n-1 {
+		return vals[n-1]
+	}
+	t := seg - float32(idx)
+	return vals[idx] + (vals[idx+1]-vals[idx])*t
+}
+
+// fmod returns x mod y, always positive.
+func fmod(x, y float32) float32 {
+	r := float32(math.Mod(float64(x), float64(y)))
+	if r < 0 {
+		r += y
+	}
+	return r
 }
 
 // emitErrorPlaceholder draws a magenta rectangle placeholder.
