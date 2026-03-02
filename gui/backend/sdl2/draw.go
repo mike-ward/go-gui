@@ -38,6 +38,8 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.drawImagePlaceholder(r)
 		case gui.RenderSvg:
 			b.drawSvg(r)
+		case gui.RenderTextPath:
+			b.drawTextPath(r)
 		case gui.RenderFilterBegin:
 			b.beginFilter(r)
 		case gui.RenderFilterEnd:
@@ -318,4 +320,75 @@ func (b *Backend) strokeRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 			d += 2*(py-px) + 1
 		}
 	}
+}
+
+// drawTextPath renders text along an SVG path using per-glyph
+// placement with rotation following the path tangent.
+func (b *Backend) drawTextPath(r *gui.RenderCmd) {
+	if b.textSys == nil || r.TextPath == nil || r.TextStylePtr == nil {
+		return
+	}
+	tp := r.TextPath
+
+	cfg := guiStyleToGlyphConfig(*r.TextStylePtr)
+	layout, err := b.textSys.LayoutTextCached(r.Text, cfg)
+	if err != nil {
+		return
+	}
+	positions := layout.GlyphPositions()
+	if len(positions) == 0 {
+		return
+	}
+
+	// Compute total advance from real glyph metrics.
+	var totalAdvance float32
+	for _, p := range positions {
+		totalAdvance += p.Advance
+	}
+
+	// Apply text-anchor adjustment.
+	offset := tp.Offset
+	if tp.Anchor == 1 {
+		offset -= totalAdvance / 2
+	} else if tp.Anchor == 2 {
+		offset -= totalAdvance
+	}
+
+	// method=stretch: scale advances to fill remaining path.
+	advScale := float32(1)
+	if tp.Method == 1 && totalAdvance > 0 {
+		remaining := tp.TotalLen - offset
+		if remaining > 0 {
+			advScale = remaining / totalAdvance
+		}
+	}
+
+	// Build per-glyph placements along the path.
+	placements := make([]glyph.GlyphPlacement, len(layout.Glyphs))
+	for i := range placements {
+		placements[i] = glyph.GlyphPlacement{X: -9999, Y: -9999}
+	}
+
+	cumAdv := float32(0)
+	for _, p := range positions {
+		advance := p.Advance * advScale
+		centerDist := offset + cumAdv + advance/2
+		px, py, angle := gui.SamplePathAt(
+			tp.Polyline, tp.Table, centerDist)
+
+		// Offset glyph origin back along tangent by half
+		// advance so glyph center sits on the path point.
+		halfAdv := advance / 2
+		cosA := float32(math.Cos(float64(angle)))
+		sinA := float32(math.Sin(float64(angle)))
+		gx := px + r.X - halfAdv*cosA
+		gy := py + r.Y - halfAdv*sinA
+
+		placements[p.Index] = glyph.GlyphPlacement{
+			X: gx, Y: gy, Angle: angle,
+		}
+		cumAdv += advance
+	}
+
+	b.textSys.DrawLayoutPlaced(layout, placements)
 }

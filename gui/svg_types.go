@@ -47,6 +47,7 @@ type SvgTextPath struct {
 	LetterSpacing float32
 	IsBold        bool
 	IsItalic      bool
+	FontWeight    int // CSS numeric weight (100-900); 0 = default (400)
 	Color         SvgColor
 	StrokeColor   SvgColor
 	StrokeWidth   float32

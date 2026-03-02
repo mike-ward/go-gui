@@ -28,6 +28,7 @@ const (
 	RenderFilterEnd
 	RenderFilterComposite
 	RenderCustomShader
+	RenderTextPath
 )
 
 // RenderCmd is a flat discriminated struct holding all draw
@@ -79,6 +80,17 @@ type RenderCmd struct {
 	Gradient     *GradientDef
 	TextStylePtr *TextStyle             // SVG text: full style
 	TextGradient *glyph.GradientConfig  // SVG gradient text
+	TextPath     *TextPathData          // SVG textPath placement data
+}
+
+// TextPathData holds pre-computed path data for RenderTextPath.
+type TextPathData struct {
+	Polyline []float32 // flattened path [x0,y0, x1,y1, ...]
+	Table    []float32 // cumulative arc-length table
+	TotalLen float32
+	Offset   float32 // resolved start offset (screen coords)
+	Anchor   int     // 0=start, 1=middle, 2=end
+	Method   int     // 0=align, 1=stretch
 }
 
 const passwordChar = '*'
@@ -126,6 +138,8 @@ func renderCmdKindName(k RenderKind) string {
 		return "RenderFilterComposite"
 	case RenderCustomShader:
 		return "RenderCustomShader"
+	case RenderTextPath:
+		return "RenderTextPath"
 	default:
 		return "Unknown"
 	}

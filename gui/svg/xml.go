@@ -731,6 +731,17 @@ func parseTextPathChild(elem, body string, p textParentAttrs, state *parseState)
 		}
 	}
 
+	// text-anchor on <textPath> overrides parent <text>.
+	anchor := p.anchor
+	if anc, ok := findAttr(elem, "text-anchor"); ok {
+		switch anc {
+		case "middle":
+			anchor = 1
+		case "end":
+			anchor = 2
+		}
+	}
+
 	state.textPaths = append(state.textPaths, gui.SvgTextPath{
 		Text:          text,
 		PathID:        pathID,
@@ -738,11 +749,12 @@ func parseTextPathChild(elem, body string, p textParentAttrs, state *parseState)
 		FontSize:      p.fontSize,
 		IsBold:        p.bold,
 		IsItalic:      p.italic,
+		FontWeight:    p.fontWeight,
 		Color:         p.color,
 		StrokeColor:   p.strokeColor,
 		StrokeWidth:   p.strokeWidth,
 		FilterID:      p.filterID,
-		Anchor:        int(p.anchor),
+		Anchor:        int(anchor),
 		Opacity:       p.opacity,
 		LetterSpacing: p.letterSpacing,
 		StartOffset:   startOffset,

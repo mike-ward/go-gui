@@ -5,11 +5,13 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/mike-ward/go-glyph"
 )
 
-// renderSvgTextPath places text along a referenced SVG path and
-// emits RenderText commands for each glyph. Pure geometry — no
-// external SVG module dependency.
+// renderSvgTextPath emits a RenderTextPath command for text along
+// a referenced SVG path. The backend handles glyph layout and
+// placement using the glyph system's DrawLayoutPlaced API.
 func renderSvgTextPath(tp SvgTextPath, defsPaths map[string]string,
 	shapeX, shapeY, scale float32, w *Window) {
 	d, ok := defsPaths[tp.PathID]
@@ -25,11 +27,27 @@ func renderSvgTextPath(tp SvgTextPath, defsPaths map[string]string,
 		return
 	}
 
-	// Build text style.
+	text := tp.Text
+	if len(text) == 0 {
+		return
+	}
+
+	// Build text style (matches svg_load.go pattern).
+	fontName := tp.FontFamily
+	if wn := pangoWeightName(tp.FontWeight); wn != "" {
+		fontName += " " + wn
+	}
+	typeface := glyph.TypefaceRegular
+	if tp.IsItalic {
+		typeface = glyph.TypefaceItalic
+	}
 	ts := TextStyle{
-		Family:        tp.FontFamily,
+		Family:        fontName,
 		Size:          tp.FontSize * scale,
 		LetterSpacing: tp.LetterSpacing * scale,
+		Typeface:      typeface,
+		StrokeWidth:   tp.StrokeWidth * scale,
+		StrokeColor:   svgToColor(tp.StrokeColor),
 	}
 	if tp.Opacity < 1.0 {
 		ts.Color = Color{tp.Color.R, tp.Color.G, tp.Color.B,
@@ -38,63 +56,27 @@ func renderSvgTextPath(tp SvgTextPath, defsPaths map[string]string,
 		ts.Color = svgToColor(tp.Color)
 	}
 
-	// Measure text to compute advances per character.
-	text := tp.Text
-	if len(text) == 0 {
-		return
-	}
-	// Approximate per-character advance.
-	charWidth := ts.Size * 0.6
-	if w.textMeasurer != nil {
-		totalW := w.textMeasurer.TextWidth(text, ts)
-		if len(text) > 0 {
-			charWidth = totalW / float32(len([]rune(text)))
-		}
-	}
-	runes := []rune(text)
-	totalAdvance := float32(len(runes)) * charWidth
-
 	// Resolve startOffset.
 	offset := tp.StartOffset * scale
 	if tp.IsPercent {
-		offset = tp.StartOffset * totalLen
-	}
-	// text-anchor adjustment.
-	if tp.Anchor == 1 {
-		offset -= totalAdvance / 2
-	} else if tp.Anchor == 2 {
-		offset -= totalAdvance
+		offset = (tp.StartOffset / 100) * totalLen
 	}
 
-	// method=stretch: scale advances.
-	advanceScale := float32(1)
-	if tp.Method == 1 && totalAdvance > 0 {
-		remaining := totalLen - offset
-		if remaining > 0 {
-			advanceScale = remaining / totalAdvance
-		}
-	}
-
-	// Place glyphs along the path.
-	curAdvance := float32(0)
-	for _, r := range runes {
-		advance := charWidth * advanceScale
-		centerDist := offset + curAdvance + advance/2
-		px, py, angle := samplePathAt(polyline, table, centerDist)
-		_ = angle // rotation not directly supported in RenderText
-		gx := px + shapeX
-		gy := py + shapeY
-		emitRenderer(RenderCmd{
-			Kind:     RenderText,
-			Text:     string(r),
-			X:        gx,
-			Y:        gy,
-			Color:    ts.Color,
-			FontName: ts.Family,
-			FontSize: ts.Size,
-		}, w)
-		curAdvance += advance
-	}
+	emitRenderer(RenderCmd{
+		Kind:         RenderTextPath,
+		Text:         text,
+		X:            shapeX,
+		Y:            shapeY,
+		TextStylePtr: &ts,
+		TextPath: &TextPathData{
+			Polyline: polyline,
+			Table:    table,
+			TotalLen: totalLen,
+			Offset:   offset,
+			Anchor:   tp.Anchor,
+			Method:   tp.Method,
+		},
+	}, w)
 }
 
 // flattenDefsPath parses an SVG path d attribute and flattens it
@@ -454,9 +436,9 @@ func buildArcLengthTable(polyline []float32) ([]float32, float32) {
 	return table, table[n-1]
 }
 
-// samplePathAt returns (x, y, angle) at distance dist along the
+// SamplePathAt returns (x, y, angle) at distance dist along the
 // polyline. Uses binary search on the arc-length table.
-func samplePathAt(polyline, table []float32,
+func SamplePathAt(polyline, table []float32,
 	dist float32) (float32, float32, float32) {
 	n := len(table)
 	if n < 2 {

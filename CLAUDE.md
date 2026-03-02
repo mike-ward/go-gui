@@ -62,6 +62,11 @@ All widgets accept a `*Cfg` struct (zero-initializable). Event callbacks share
 the signature `func(*Layout, *Event, *Window)`. `IDFocus uint32 > 0` opts a
 widget into tab-order focus.
 
+### External Dependencies
+
+- `glyph` — text shaping/rendering library; local replace directive
+  points to `../go_glyph` (`~/Documents/github/go_glyph`)
+
 ### Injected Interfaces
 
 Backend injects at startup; nil in tests:
