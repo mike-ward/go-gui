@@ -58,13 +58,19 @@ type Animate struct {
 	Callback  func(*Animate, *Window)
 	Delay     time.Duration
 	Repeat    bool
+	Refresh   AnimationRefreshKind // 0 defaults to layout
 	start     time.Time
 	stopped   bool
 }
 
 const animationDelay = 500 * time.Millisecond
 
-func (a *Animate) ID() string                    { return a.AnimateID }
-func (a *Animate) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (a *Animate) IsStopped() bool               { return a.stopped }
-func (a *Animate) SetStart(t time.Time)          { a.start = t }
+func (a *Animate) ID() string { return a.AnimateID }
+func (a *Animate) RefreshKind() AnimationRefreshKind {
+	if a.Refresh != 0 {
+		return a.Refresh
+	}
+	return AnimationRefreshLayout
+}
+func (a *Animate) IsStopped() bool      { return a.stopped }
+func (a *Animate) SetStart(t time.Time) { a.start = t }

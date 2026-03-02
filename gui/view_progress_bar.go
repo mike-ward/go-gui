@@ -170,7 +170,7 @@ func progressBarAmendLayout(
 					pm.Set(id, v)
 				},
 			}
-			w.AnimationAdd(kf)
+			w.animationAdd(kf)
 		}
 		pm := StateMap[string, float32](w, nsProgress, capModerate)
 		if progress, ok := pm.Get(id); ok {

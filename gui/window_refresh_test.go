@@ -65,3 +65,14 @@ func TestAnimateRefreshKindIsLayout(t *testing.T) {
 		t.Errorf("got %d, want layout", a.RefreshKind())
 	}
 }
+
+func TestAnimateRefreshKindOverride(t *testing.T) {
+	a := &Animate{
+		AnimateID: "test",
+		Callback:  func(*Animate, *Window) {},
+		Refresh:   AnimationRefreshRenderOnly,
+	}
+	if a.RefreshKind() != AnimationRefreshRenderOnly {
+		t.Errorf("got %d, want render_only", a.RefreshKind())
+	}
+}

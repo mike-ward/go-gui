@@ -14,7 +14,7 @@ type SvgCfg struct {
 	Width    float32 // display width
 	Height   float32 // display height
 	Color    Color   // override fill (for monochrome icons)
-	Animated bool    // enable SMIL animation (default true)
+	NoAnimate bool   // disable SMIL animation (default: animated)
 	Sizing   Sizing
 	Padding  Padding
 	OnClick  func(*Layout, *Event, *Window)
@@ -31,8 +31,6 @@ type svgView struct {
 
 // Svg creates an SVG view from file or inline data.
 func Svg(cfg SvgCfg) View {
-	// Default: animated = true (Go zero value is false).
-	// Callers must explicitly set Animated=false to disable.
 	return &svgView{cfg: cfg}
 }
 
@@ -69,23 +67,18 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 	}
 
 	// Register animation loop for animated SVGs.
-	if cached.HasAnimations && c.Animated {
-		animHash := fmt.Sprintf("%x", hashString(svgSrc))
-		nowNs := time.Now().UnixNano()
+	if cached.HasAnimations && !c.NoAnimate {
+		animHash := cached.AnimHash
 		animSeen := StateMap[string, int64](
 			w, nsSvgAnimSeen, capModerate)
-		animStart := StateMap[string, int64](
-			w, nsSvgAnimStart, capModerate)
-		animSeen.Set(animHash, nowNs)
-		if !animStart.Contains(animHash) {
-			animStart.Set(animHash, nowNs)
-		}
+		animSeen.Set(animHash, time.Now().UnixNano())
 		animID := "svg_anim:" + animHash
 		if !w.HasAnimation(animID) {
-			w.AnimationAdd(&Animate{
+			w.animationAdd(&Animate{
 				AnimateID: animID,
 				Delay:     animationCycle,
 				Repeat:    true,
+				Refresh:   AnimationRefreshRenderOnly,
 				Callback: func(an *Animate, w *Window) {
 					seenMap := StateMap[string, int64](
 						w, nsSvgAnimSeen, capModerate)
@@ -99,7 +92,7 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 						an.stopped = true
 						return
 					}
-					w.UpdateWindow()
+					w.RequestRenderOnly()
 				},
 			})
 		}

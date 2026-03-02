@@ -9,6 +9,12 @@ const animationCycle = 16 * time.Millisecond
 func (w *Window) AnimationAdd(a Animation) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.animationAdd(a)
+}
+
+// animationAdd is the lock-free core of AnimationAdd. Callers
+// must already hold w.mu (e.g. during Update/GenerateLayout).
+func (w *Window) animationAdd(a Animation) {
 	a.SetStart(time.Now())
 	if w.animations == nil {
 		w.animations = make(map[string]Animation)

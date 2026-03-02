@@ -22,5 +22,6 @@ func NewWindow(cfg WindowCfg) *Window {
 		OnEvent:       cfg.OnEvent,
 		Config:        cfg,
 	}
+	go w.animationLoop()
 	return w
 }
