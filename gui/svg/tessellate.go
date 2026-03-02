@@ -10,7 +10,13 @@ import (
 // getTriangles tessellates all paths in the graphic into GPU-ready
 // triangle geometry. Returns triangles in viewBox coordinate space.
 func (vg *VectorGraphic) getTriangles(scale float32) []gui.TessellatedPath {
-	result := make([]gui.TessellatedPath, 0, len(vg.Paths)*2)
+	return vg.tessellatePaths(vg.Paths, scale)
+}
+
+// tessellatePaths tessellates an arbitrary set of VectorPaths,
+// using the VectorGraphic's clip paths and gradients.
+func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gui.TessellatedPath {
+	result := make([]gui.TessellatedPath, 0, len(paths)*2)
 
 	baseTol := 0.5 / scale
 	tolerance := baseTol
@@ -20,8 +26,8 @@ func (vg *VectorGraphic) getTriangles(scale float32) []gui.TessellatedPath {
 
 	clipGroupCounter := 0
 
-	for i := range vg.Paths {
-		path := &vg.Paths[i]
+	for i := range paths {
+		path := &paths[i]
 
 		// Clip group
 		clipGroup := 0

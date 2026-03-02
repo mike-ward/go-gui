@@ -16,11 +16,14 @@ import (
 
 // Backend is the SDL2 backend for go-gui.
 type Backend struct {
-	window   *sdl.Window
-	renderer *sdl.Renderer
-	textSys  *glyph.TextSystem
-	dpiScale float32
-	cursors  [11]*sdl.Cursor
+	window       *sdl.Window
+	renderer     *sdl.Renderer
+	textSys      *glyph.TextSystem
+	dpiScale     float32
+	cursors      [11]*sdl.Cursor
+	filterTex    *sdl.Texture // temporary render target for filter groups
+	filterBlur   float32      // blur radius in pixels
+	filterLayers int          // number of blur layers
 }
 
 // New creates an SDL2 backend and initializes the window.

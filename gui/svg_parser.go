@@ -7,9 +7,10 @@ type SvgParsed struct {
 	TextPaths  []SvgTextPath
 	DefsPaths  map[string]string // id → raw SVG path d attribute
 	Gradients  map[string]SvgGradientDef
-	Animations []SvgAnimation
-	Width      float32
-	Height     float32
+	FilteredGroups []SvgParsedFilteredGroup
+	Animations     []SvgAnimation
+	Width          float32
+	Height         float32
 }
 
 // SvgParser parses and tessellates SVG documents. Set by the

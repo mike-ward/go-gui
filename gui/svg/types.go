@@ -61,6 +61,14 @@ type VectorPath struct {
 	GroupID          string
 }
 
+// svgFilteredGroup holds paths/texts belonging to a filtered <g>.
+type svgFilteredGroup struct {
+	FilterID  string
+	Paths     []VectorPath
+	Texts     []gui.SvgText
+	TextPaths []gui.SvgTextPath
+}
+
 // VectorGraphic holds the full parsed SVG before tessellation.
 type VectorGraphic struct {
 	Width, Height      float32
@@ -71,6 +79,8 @@ type VectorGraphic struct {
 	DefsPaths          map[string]string
 	ClipPaths          map[string][]VectorPath
 	Gradients          map[string]gui.SvgGradientDef
+	Filters            map[string]gui.SvgFilter
+	FilteredGroups     []svgFilteredGroup
 	Animations         []gui.SvgAnimation
 }
 
