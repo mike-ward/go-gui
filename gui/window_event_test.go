@@ -235,13 +235,13 @@ func TestEventFnFiresOnEvent(t *testing.T) {
 	}
 }
 
-func TestEventFnClearsTooltipID(t *testing.T) {
+func TestEventFnPreservesTooltipID(t *testing.T) {
 	w := newEventTestWindow()
 	w.layout = Layout{Shape: &Shape{}}
 	w.viewState.tooltip.id = "tip1"
 	e := &Event{Type: EventKeyDown, KeyCode: KeyA}
 	w.EventFn(e)
-	if w.viewState.tooltip.id != "" {
-		t.Error("tooltip ID should be cleared")
+	if w.viewState.tooltip.id != "tip1" {
+		t.Error("tooltip ID should be preserved")
 	}
 }

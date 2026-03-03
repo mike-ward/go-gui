@@ -79,6 +79,5 @@ func (w *Window) EventFn(e *Event) {
 	if !e.IsHandled && w.OnEvent != nil {
 		w.OnEvent(e, w)
 	}
-	w.viewState.tooltip.id = ""
 	w.UpdateWindow()
 }

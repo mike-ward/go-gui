@@ -4,8 +4,10 @@ import "time"
 
 // tooltipState tracks active tooltip bounds and ID.
 type tooltipState struct {
-	bounds DrawClip
-	id     string
+	bounds     DrawClip
+	id         string
+	hoverID    string    // trigger currently hovered
+	hoverStart time.Time // when hover began
 }
 
 // TooltipCfg configures a tooltip popup.
@@ -107,5 +109,99 @@ func applyTooltipDefaults(cfg *TooltipCfg) {
 	}
 	if cfg.Anchor == FloatTopLeft {
 		cfg.Anchor = FloatBottomCenter
+	}
+}
+
+// WithTooltipCfg configures a tooltip wrapper.
+type WithTooltipCfg struct {
+	ID      string
+	Text    string
+	Delay   time.Duration
+	Anchor  FloatAttach
+	TieOff  FloatAttach
+	Content []View
+}
+
+// WithTooltip wraps content and shows a tooltip on hover after
+// a delay. Tooltip state is managed via AmendLayout.
+func WithTooltip(w *Window, cfg WithTooltipCfg) View {
+	tipID := cfg.ID
+	if tipID == "" {
+		tipID = cfg.Text
+	}
+
+	delay := cfg.Delay
+	if delay == 0 {
+		delay = DefaultTooltipStyle.Delay
+	}
+
+	anchor := cfg.Anchor
+	if anchor == FloatTopLeft {
+		anchor = FloatBottomCenter
+	}
+	tieOff := cfg.TieOff
+	if tieOff == FloatTopLeft {
+		tieOff = FloatTopCenter
+	}
+
+	content := make([]View, 0, len(cfg.Content)+1)
+	content = append(content, cfg.Content...)
+
+	if w.viewState.tooltip.id == tipID {
+		content = append(content, Tooltip(TooltipCfg{
+			ID:     tipID + "_popup",
+			Anchor: anchor,
+			TieOff: tieOff,
+			Content: []View{
+				Text(TextCfg{
+					Text:      cfg.Text,
+					TextStyle: DefaultTooltipStyle.TextStyle,
+				}),
+			},
+		}))
+	}
+
+	return Column(ContainerCfg{
+		Content: content,
+		AmendLayout: withTooltipAmend(tipID, delay),
+	})
+}
+
+// withTooltipAmend returns the AmendLayout callback for a
+// WithTooltip wrapper.
+func withTooltipAmend(
+	tipID string, delay time.Duration,
+) func(*Layout, *Window) {
+	return func(l *Layout, w *Window) {
+		ts := &w.viewState.tooltip
+		mx := w.viewState.mousePosX
+		my := w.viewState.mousePosY
+		inside := mx >= l.Shape.X && my >= l.Shape.Y &&
+			mx < l.Shape.X+l.Shape.Width &&
+			my < l.Shape.Y+l.Shape.Height
+
+		switch {
+		case inside && ts.hoverID == "":
+			ts.hoverID = tipID
+			ts.hoverStart = time.Now()
+			w.animationAdd(&Animate{
+				AnimateID: "___tooltip___",
+				Delay:     delay,
+				Callback: func(_ *Animate, w *Window) {
+					if w.viewState.tooltip.hoverID == tipID {
+						w.viewState.tooltip.id = tipID
+					}
+				},
+			})
+
+		case inside && ts.hoverID == tipID &&
+			time.Since(ts.hoverStart) >= delay:
+			ts.id = tipID
+
+		case !inside && ts.hoverID == tipID:
+			ts.hoverID = ""
+			ts.hoverStart = time.Time{}
+			ts.id = ""
+		}
 	}
 }

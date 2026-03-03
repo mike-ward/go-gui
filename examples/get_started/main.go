@@ -42,20 +42,26 @@ func mainView(w *gui.Window) gui.View {
 				Text:      "Hello GUI! 😀🚀🎉👍",
 				TextStyle: gui.CurrentTheme().B1,
 			}),
-			gui.Button(gui.ButtonCfg{
-				IDFocus: 1,
-				Shadow: &gui.BoxShadow{
-					Color:      gui.Color{B: 64, A: 64},
-					BlurRadius: 3,
-				},
+			gui.WithTooltip(w, gui.WithTooltipCfg{
+				ID:   "btn_tip",
+				Text: "Click to increment counter",
 				Content: []gui.View{
-					gui.Text(gui.TextCfg{
-						Text: fmt.Sprintf("%d Clicks", app.Clicks),
+					gui.Button(gui.ButtonCfg{
+						IDFocus: 1,
+						Shadow: &gui.BoxShadow{
+							Color:      gui.Color{B: 64, A: 64},
+							BlurRadius: 3,
+						},
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text: fmt.Sprintf("%d Clicks", app.Clicks),
+							}),
+						},
+						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+							gui.State[App](w).Clicks++
+							e.IsHandled = true
+						},
 					}),
-				},
-				OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-					gui.State[App](w).Clicks++
-					e.IsHandled = true
 				},
 			}),
 		},
