@@ -69,7 +69,7 @@ func DefaultMarkdownStyle() MarkdownStyle {
 		Bold:              guiTheme.B3,
 		Italic:            guiTheme.I3,
 		BoldItalic:        guiTheme.BI3,
-		Code:              guiTheme.M5,
+		Code:              guiTheme.M3,
 		CodeBlockBG:       RGBA(0, 0, 0, 50),
 		CodeKeywordColor:  guiTheme.ColorSelect,
 		CodeStringColor:   RGB(75, 125, 75),

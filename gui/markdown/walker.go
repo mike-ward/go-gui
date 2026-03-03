@@ -55,6 +55,9 @@ func Parse(source string, hardLineBreaks bool) []Block {
 	for i := range w.blocks {
 		w.blocks[i].Runs = mergeAdjacentRuns(
 			w.blocks[i].Runs)
+		if !w.blocks[i].IsCode {
+			applyTypography(w.blocks[i].Runs)
+		}
 		if len(footnoteDefs) > 0 {
 			w.blocks[i].Runs = applyFootnoteRefs(
 				w.blocks[i].Runs, footnoteDefs)
@@ -992,6 +995,22 @@ func canMergeRuns(a, b Run) bool {
 		a.MathID == "" && b.MathID == "" &&
 		a.CodeToken == b.CodeToken &&
 		a.Underline == b.Underline
+}
+
+// applyTypography replaces --- with em dash, -- with en dash,
+// and ... with ellipsis in non-code runs.
+// Must replace --- before --.
+func applyTypography(runs []Run) {
+	for i := range runs {
+		if runs[i].Format == FormatCode || runs[i].MathID != "" {
+			continue
+		}
+		t := runs[i].Text
+		t = strings.ReplaceAll(t, "---", "\u2014")
+		t = strings.ReplaceAll(t, "--", "\u2013")
+		t = strings.ReplaceAll(t, "...", "\u2026")
+		runs[i].Text = t
+	}
 }
 
 func trimTrailingBreaks(runs []Run) []Run {
