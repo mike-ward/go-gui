@@ -34,6 +34,9 @@ var sampleLandscape string
 //go:embed assets/tiger.svg
 var tiger string
 
+//go:embed assets/red_green.svg
+var redGreen string
+
 type SvgViewerApp struct {
 	Selected int
 }
@@ -54,6 +57,7 @@ func svgEntries() []svgEntry {
 		{"Flower with BG", sampleWithBg},
 		{"Landscape no BG", sampleLandscape},
 		{"Tiger", tiger},
+		{"Red Green", redGreen},
 	}
 }
 

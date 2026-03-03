@@ -311,7 +311,7 @@ func flattenPath(path *VectorPath, tolerance float32) [][]float32 {
 		}
 	}
 
-	if len(current) >= 6 {
+	if len(current) >= 4 {
 		polylines = append(polylines, current)
 	}
 	return polylines
