@@ -18,8 +18,8 @@ func layoutPipeline(layout *Layout, w *Window) {
 
 	// Position passes.
 	layoutAdjustScrollOffsets(layout, w)
-	floatAttachLayout(layout)
-	layoutPositions(layout, 0, 0, w)
+	fx, fy := floatAttachLayout(layout)
+	layoutPositions(layout, fx, fy, w)
 	layoutDisables(layout, false)
 	layoutScrollContainers(layout, 0)
 
