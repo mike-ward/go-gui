@@ -5,6 +5,7 @@ package markdown
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -638,9 +639,18 @@ func mergeFormat(parent, child Format) Format {
 
 // --- Pre-processing ---
 
-// preprocessSource strips metadata definitions and converts
-// multi-line $$...$$ to ```math code fences.
+// reImageDims matches image links with dimension syntax:
+// ](url =WxH) → ](url#dim=WxH)
+// Goldmark splits on the space, so encode dims as a fragment.
+var reImageDims = regexp.MustCompile(
+	`(\]\([^\s)]+) (=\d+x\d+\))`)
+
+// preprocessSource strips metadata definitions, converts
+// multi-line $$...$$ to ```math code fences, and encodes
+// image dimension syntax into URL fragments.
 func preprocessSource(source string) string {
+	source = reImageDims.ReplaceAllString(
+		source, "${1}#dim${2}")
 	lines := strings.Split(source, "\n")
 	result := make([]string, 0, len(lines))
 	i := 0
@@ -1043,25 +1053,37 @@ func RunsToText(runs []Run) string {
 	return sb.String()
 }
 
-// parseImageSrc parses "path.png =200x100" → (src, w, h).
+// parseImageSrc parses dimension suffixes from image URLs.
+// Handles both "path.png =WxH" (original) and
+// "path.png#dim=WxH" (preprocessed for goldmark).
 func parseImageSrc(raw string) (string, float32, float32) {
 	raw = strings.TrimSpace(raw)
-	idx := strings.LastIndex(raw, " =")
-	if idx < 0 {
-		return raw, 0, 0
+	// Check preprocessed fragment form first.
+	if idx := strings.LastIndex(raw, "#dim="); idx >= 0 {
+		src := raw[:idx]
+		dims := raw[idx+5:]
+		if w, h, ok := parseDims(dims); ok {
+			return src, w, h
+		}
 	}
-	src := strings.TrimSpace(raw[:idx])
-	dims := raw[idx+2:]
-	xIdx := strings.IndexByte(dims, 'x')
-	if xIdx < 0 {
-		return raw, 0, 0
-	}
-	w := parseFloat32(dims[:xIdx])
-	h := parseFloat32(dims[xIdx+1:])
-	if w > 0 || h > 0 {
-		return src, w, h
+	// Original space-separated form.
+	if idx := strings.LastIndex(raw, " ="); idx >= 0 {
+		dims := raw[idx+2:]
+		if w, h, ok := parseDims(dims); ok {
+			return strings.TrimSpace(raw[:idx]), w, h
+		}
 	}
 	return raw, 0, 0
+}
+
+func parseDims(s string) (float32, float32, bool) {
+	xIdx := strings.IndexByte(s, 'x')
+	if xIdx < 0 {
+		return 0, 0, false
+	}
+	w := parseFloat32(s[:xIdx])
+	h := parseFloat32(s[xIdx+1:])
+	return w, h, w > 0 || h > 0
 }
 
 func parseFloat32(s string) float32 {

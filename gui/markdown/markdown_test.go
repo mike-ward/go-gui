@@ -310,6 +310,32 @@ func TestMarkdownImage(t *testing.T) {
 	}
 }
 
+func TestMarkdownImageRemoteWithDims(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{"with dims", "![Veasal](https://vlang.io/img/veasel.png =250x200)"},
+		{"no dims", "![Veasal](https://vlang.io/img/veasel.png)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blocks := parse(tt.src)
+			found := false
+			for _, b := range blocks {
+				t.Logf("block: IsImage=%v Src=%q W=%v H=%v runs=%v",
+					b.IsImage, b.ImageSrc, b.ImageWidth, b.ImageHeight, len(b.Runs))
+				if b.IsImage {
+					found = true
+				}
+			}
+			if !found {
+				t.Error("expected image block")
+			}
+		})
+	}
+}
+
 func TestMarkdownImageTraversal(t *testing.T) {
 	blocks := parse("![alt](../../../etc/passwd.png)")
 	for _, b := range blocks {

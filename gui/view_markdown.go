@@ -421,10 +421,6 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				Content: listItems,
 			}))
 			listItems = nil
-			content = append(content, Rectangle(RectangleCfg{
-				Sizing: FillFixed,
-				Height: cfg.Style.BlockSpacing,
-			}))
 		}
 
 		switch {
@@ -515,6 +511,12 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			}))
 
 		case block.HeaderLevel > 0:
+			if block.HeaderLevel == 1 {
+				content = append(content, Rectangle(RectangleCfg{
+					Sizing: FillFixed,
+					Height: 3,
+				}))
+			}
 			headingContent := []View{
 				RTF(RtfCfg{
 					ID:            block.AnchorSlug,

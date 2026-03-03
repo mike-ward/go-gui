@@ -151,10 +151,7 @@ Autolinks work for URLs: <https://www.github.com> and email addresses:
 
 ### Images
 
-![Veasal](https://vlang.io/img/veasel.png =250x200)
-
-*Caption: Images can have alt text for accessibility and optional
-titles.*
+![gopher](https://raw.githubusercontent.com/avelino/awesome-go/main/tmpl/assets/logo.png)
 
 ## Tables
 
