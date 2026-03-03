@@ -6,6 +6,7 @@ package gui
 
 import (
 	"math"
+	"time"
 
 	"github.com/mike-ward/go-glyph"
 
@@ -82,6 +83,7 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 		Events: &EventHandlers{
 			OnClick:     rtfOnClick,
 			OnMouseMove: rtfMouseMove,
+			AmendLayout: rtfAmendTooltip,
 		},
 		TC: &ShapeTextConfig{
 			TextMode:       v.Mode,
@@ -91,7 +93,16 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 			RtfRuns:        &v.RichText,
 		},
 	}
-	return Layout{Shape: shape}
+	l := Layout{Shape: shape}
+	if ts := &w.viewState.tooltip; ts.id != "" &&
+		ts.text != "" && ts.blockKey != 0 &&
+		shape.TC != nil && shape.TC.RtfRuns != nil &&
+		rtfRunsKey(shape.TC.RtfRuns) == ts.blockKey {
+		l.Children = []Layout{
+			GenerateViewLayout(rtfTooltipView(ts), w),
+		}
+	}
+	return l
 }
 
 // RTF creates a rich text view.
@@ -178,6 +189,7 @@ func rtfMouseMove(l *Layout, e *Event, w *Window) {
 	if !l.Shape.HasRtfLayout() {
 		return
 	}
+	ts := &w.viewState.tooltip
 	layout := l.Shape.TC.RtfLayout
 	for _, run := range layout.Items {
 		if run.IsObject {
@@ -186,6 +198,26 @@ func rtfMouseMove(l *Layout, e *Event, w *Window) {
 		if rtfHitTest(run, e.MouseX, e.MouseY, nil) {
 			found := rtfFindRunAtIndex(l, run.StartIndex)
 			if found.Tooltip != "" {
+				tipID := found.Tooltip
+				if ts.hoverID == tipID {
+					e.IsHandled = true
+					return
+				}
+				r := rtfRunRect(run)
+				ts.hoverID = tipID
+				ts.text = found.Tooltip
+				ts.bounds = DrawClip{
+					X:      l.Shape.X + r.X,
+					Y:      l.Shape.Y + r.Y,
+					Width:  r.Width,
+					Height: r.Height,
+				}
+				ts.floatOffsetX = r.X + r.Width/2
+				ts.floatOffsetY = r.Y - 3
+				ts.blockKey = rtfRunsKey(
+					l.Shape.TC.RtfRuns)
+				ts.hoverStart = time.Now()
+				w.AnimationAdd(rtfTooltipAnimation(tipID))
 				e.IsHandled = true
 				return
 			}
@@ -196,6 +228,76 @@ func rtfMouseMove(l *Layout, e *Event, w *Window) {
 			}
 		}
 	}
+	ts.clearText()
+}
+
+// rtfTooltipAnimation returns an Animate that activates
+// the RTF tooltip after the configured delay.
+func rtfTooltipAnimation(tipID string) *Animate {
+	return &Animate{
+		AnimateID: "___tooltip___",
+		Delay:     DefaultTooltipStyle.Delay,
+		Callback: func(_ *Animate, w *Window) {
+			ts := &w.viewState.tooltip
+			if ts.hoverID == tipID && ts.text != "" {
+				ts.id = tipID
+			}
+		},
+	}
+}
+
+// rtfAmendTooltip clears RTF tooltip state when the mouse
+// leaves the stored bounds. No-op for WithTooltip-managed
+// tooltips (text == "").
+func rtfAmendTooltip(l *Layout, w *Window) {
+	ts := &w.viewState.tooltip
+	if ts.text == "" {
+		return
+	}
+	mx := w.viewState.mousePosX
+	my := w.viewState.mousePosY
+	b := ts.bounds
+	if mx < b.X || my < b.Y ||
+		mx >= b.X+b.Width || my >= b.Y+b.Height {
+		ts.clearText()
+	}
+}
+
+// rtfRunsKey computes an FNV-1a hash of RichText content
+// for tooltip block matching across frames.
+func rtfRunsKey(rt *RichText) uint64 {
+	h := uint64(14695981039346656037)
+	for _, r := range rt.Runs {
+		for i := 0; i < len(r.Text); i++ {
+			h ^= uint64(r.Text[i])
+			h *= 1099511628211
+		}
+	}
+	return h
+}
+
+// rtfTooltipView builds a floating tooltip popup positioned
+// relative to the owning RTF shape via the float system.
+func rtfTooltipView(ts *tooltipState) View {
+	d := &DefaultTooltipStyle
+	return Row(ContainerCfg{
+		ID:           ts.id + "_rtf_popup",
+		Float:        true,
+		FloatTieOff:  FloatBottomCenter,
+		FloatOffsetX: ts.floatOffsetX,
+		FloatOffsetY: ts.floatOffsetY,
+		Color:        d.Color,
+		ColorBorder:  d.ColorBorder,
+		SizeBorder:   Some(d.SizeBorder),
+		Radius:       Some(d.Radius),
+		Padding:      Some(d.Padding),
+		Content: []View{
+			Text(TextCfg{
+				Text:      ts.text,
+				TextStyle: d.TextStyle,
+			}),
+		},
+	})
 }
 
 func rtfOnClick(l *Layout, e *Event, w *Window) {

@@ -647,3 +647,4 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		Content:     content,
 	})
 }
+

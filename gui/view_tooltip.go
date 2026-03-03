@@ -4,10 +4,30 @@ import "time"
 
 // tooltipState tracks active tooltip bounds and ID.
 type tooltipState struct {
-	bounds     DrawClip
-	id         string
-	hoverID    string    // trigger currently hovered
-	hoverStart time.Time // when hover began
+	bounds       DrawClip  // absolute run bounds (mouse check)
+	floatOffsetX float32   // run-relative X for float popup
+	floatOffsetY float32   // run-relative Y for float popup
+	blockKey     uint64    // FNV hash of owning RichText
+	id           string
+	hoverID      string    // trigger currently hovered
+	hoverStart   time.Time // when hover began
+	text         string    // RTF tooltip content
+}
+
+// clearText resets RTF-sourced tooltip state. No-op when
+// text is empty so WithTooltip-managed state is preserved.
+func (ts *tooltipState) clearText() {
+	if ts.text == "" {
+		return
+	}
+	ts.hoverID = ""
+	ts.hoverStart = time.Time{}
+	ts.id = ""
+	ts.text = ""
+	ts.bounds = DrawClip{}
+	ts.floatOffsetX = 0
+	ts.floatOffsetY = 0
+	ts.blockKey = 0
 }
 
 // TooltipCfg configures a tooltip popup.

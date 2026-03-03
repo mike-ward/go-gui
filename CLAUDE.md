@@ -84,6 +84,9 @@ Backend injects at startup; nil in tests:
 - `StateMap` (keyed by namespace constants like `nsOverflow`, `nsSvgCache`) is
   the per-window typed key-value store used by widgets for internal state
 - `AmendLayout` hook on shapes runs after sizing to reposition overlay elements
-  (color picker circles, splitter handles, etc.)
+  (color picker circles, splitter handles, etc.) or manage hover state.
+  Layout uses absolute coordinates — moving a parent in `AmendLayout` does NOT
+  move children. Use the float system (`FloatAnchor`/`FloatTieOff`/`FloatOffset`)
+  for positioning elements that have children.
 - Event callbacks must set `e.IsHandled = true` when the event is consumed to
   prevent further propagation
