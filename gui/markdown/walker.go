@@ -410,7 +410,8 @@ func (w *mdWalker) walkDefList(node ast.Node) {
 		case east.KindDefinitionDescription:
 			var runs []Run
 			for dc := c.FirstChild(); dc != nil; dc = dc.NextSibling() {
-				if dc.Kind() == ast.KindParagraph {
+				if dc.Kind() == ast.KindTextBlock ||
+				dc.Kind() == ast.KindParagraph {
 					runs = append(runs,
 						w.collectRuns(dc, inlineState{})...)
 				}
