@@ -82,7 +82,7 @@ func DefaultMarkdownStyle() MarkdownStyle {
 		BlockquoteBG:      RGBA(128, 128, 128, 20),
 		BlockSpacing:      8,
 		NestIndent:        16,
-		PrefixCharWidth:   8,
+		PrefixCharWidth:   4,
 		CodeBlockPadding:  PadAll(10),
 		CodeBlockRadius:   3.5,
 		TableBorderStyle:  TableBorderHeaderOnly,
@@ -570,6 +570,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				cfg.Style.PrefixCharWidth
 			if block.ListPrefix == "• " {
 				prefixW /= 2
+			} else if block.ListIndent > 0 {
+				indentW += 4
 			}
 			listItems = append(listItems, Row(ContainerCfg{
 				Sizing:  FillFit,
