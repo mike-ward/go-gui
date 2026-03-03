@@ -346,7 +346,7 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		}
 	}
 
-	emitRenderer(RenderCmd{
+	cmd := RenderCmd{
 		Kind:     RenderText,
 		X:        shape.X + shape.PaddingLeft(),
 		Y:        shape.Y + shape.PaddingTop(),
@@ -354,7 +354,12 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		Text:     text,
 		FontName: tc.TextStyle.Family,
 		FontSize: tc.TextStyle.Size,
-	}, w)
+	}
+	if tc.TextMode == TextModeWrap ||
+		tc.TextMode == TextModeWrapKeepSpaces {
+		cmd.W = shape.Width
+	}
+	emitRenderer(cmd, w)
 }
 
 // renderRtf emits a RenderRTF command for pre-shaped rich text.

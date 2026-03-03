@@ -236,6 +236,73 @@ func TestPasswordMaskInRenderText(t *testing.T) {
 	}
 }
 
+func TestRenderTextWrapSetsWidth(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State:  new(int),
+		Width:  200,
+		Height: 200,
+	})
+	shape := &Shape{
+		ShapeType: ShapeText,
+		Width:     250,
+		Height:    20,
+		Opacity:   1.0,
+		TC: &ShapeTextConfig{
+			Text:     "wrap me",
+			TextMode: TextModeWrap,
+			TextStyle: &TextStyle{
+				Color: RGB(255, 255, 255), Size: 16,
+			},
+		},
+	}
+	clip := DrawClip{X: 0, Y: 0, Width: 400, Height: 400}
+	renderText(shape, clip, w)
+
+	found := false
+	for _, r := range w.renderers {
+		if r.Kind == RenderText && r.Text == "wrap me" {
+			found = true
+			if r.W != 250 {
+				t.Errorf("W = %f, want 250", r.W)
+			}
+		}
+	}
+	if !found {
+		t.Error("no RenderText command emitted")
+	}
+}
+
+func TestRenderTextNoWrapOmitsWidth(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State:  new(int),
+		Width:  200,
+		Height: 200,
+	})
+	shape := &Shape{
+		ShapeType: ShapeText,
+		Width:     250,
+		Height:    20,
+		Opacity:   1.0,
+		TC: &ShapeTextConfig{
+			Text: "no wrap",
+			TextStyle: &TextStyle{
+				Color: RGB(255, 255, 255), Size: 16,
+			},
+		},
+	}
+	clip := DrawClip{X: 0, Y: 0, Width: 400, Height: 400}
+	renderText(shape, clip, w)
+
+	for _, r := range w.renderers {
+		if r.Kind == RenderText && r.Text == "no wrap" {
+			if r.W != 0 {
+				t.Errorf("W = %f, want 0 for non-wrap text",
+					r.W)
+			}
+		}
+	}
+}
+
 func TestSetClipboard(t *testing.T) {
 	w := &Window{}
 	var got string

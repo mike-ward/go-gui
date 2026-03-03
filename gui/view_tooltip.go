@@ -52,7 +52,7 @@ type TooltipCfg struct {
 // Tooltip creates a floating tooltip view.
 func Tooltip(cfg TooltipCfg) View {
 	applyTooltipDefaults(&cfg)
-	return Row(ContainerCfg{
+	return Column(ContainerCfg{
 		ID:            cfg.ID,
 		Float:         true,
 		FloatAutoFlip: true,
@@ -65,6 +65,7 @@ func Tooltip(cfg TooltipCfg) View {
 		SizeBorder:   Some(cfg.SizeBorder),
 		Radius:       Some(cfg.Radius),
 		Padding:      Some(cfg.Padding),
+		MaxWidth:     300,
 		Content:      cfg.Content,
 	})
 }
@@ -180,6 +181,7 @@ func WithTooltip(w *Window, cfg WithTooltipCfg) View {
 				Text(TextCfg{
 					Text:      cfg.Text,
 					TextStyle: DefaultTooltipStyle.TextStyle,
+					Mode:      TextModeWrap,
 				}),
 			},
 		}))

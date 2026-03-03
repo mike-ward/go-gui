@@ -280,7 +280,7 @@ func rtfRunsKey(rt *RichText) uint64 {
 // relative to the owning RTF shape via the float system.
 func rtfTooltipView(ts *tooltipState) View {
 	d := &DefaultTooltipStyle
-	return Row(ContainerCfg{
+	return Column(ContainerCfg{
 		ID:            ts.id + "_rtf_popup",
 		Float:         true,
 		FloatAutoFlip: true,
@@ -292,10 +292,12 @@ func rtfTooltipView(ts *tooltipState) View {
 		SizeBorder:   Some(d.SizeBorder),
 		Radius:       Some(d.Radius),
 		Padding:      Some(d.Padding),
+		MaxWidth:     300,
 		Content: []View{
 			Text(TextCfg{
 				Text:      ts.text,
 				TextStyle: d.TextStyle,
+				Mode:      TextModeWrap,
 			}),
 		},
 	})

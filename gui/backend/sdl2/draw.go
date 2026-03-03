@@ -126,6 +126,10 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 			Block: glyph.DefaultBlockStyle(),
 		}
 	}
+	if r.W > 0 {
+		cfg.Block.Wrap = glyph.WrapWord
+		cfg.Block.Width = r.W
+	}
 	b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
 }
 

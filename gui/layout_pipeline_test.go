@@ -395,6 +395,59 @@ func TestFixedColumnCentering(t *testing.T) {
 	}
 }
 
+func TestTooltipColumnMaxWidthConstrainsText(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &stubTextMeasurer{charWidth: 10, fontHeight: 20}
+	w.windowWidth = 800
+	w.windowHeight = 600
+
+	longText := "This is a very long tooltip text that should definitely wrap when constrained to max width"
+	style := TextStyle{Size: 16}
+
+	// Simulate the tooltip Column with MaxWidth=300 and a
+	// FillFit text child (TextModeWrap).
+	textShape := &Shape{
+		ShapeType: ShapeText,
+		Width:     float32(len(longText)) * 10, // ~900px
+		Height:    20,
+		Sizing:    FillFit,
+		Opacity:   1,
+		TC: &ShapeTextConfig{
+			Text:      longText,
+			TextStyle: &style,
+			TextMode:  TextModeWrap,
+		},
+	}
+	col := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			Axis:      AxisTopToBottom,
+			MaxWidth:  300,
+			Opacity:   1,
+		},
+		Children: []Layout{
+			{Shape: textShape},
+		},
+	}
+	col.Children[0].Parent = &col
+
+	layoutPipeline(&col, w)
+
+	if col.Shape.Width > 300 {
+		t.Errorf("column width %f exceeds MaxWidth 300",
+			col.Shape.Width)
+	}
+	if textShape.Width > 300 {
+		t.Errorf("text width %f exceeds 300", textShape.Width)
+	}
+	if textShape.Height <= 20 {
+		t.Errorf("text height %f not wrapped (expected > 20)",
+			textShape.Height)
+	}
+	t.Logf("col.Width=%.1f text.Width=%.1f text.Height=%.1f",
+		col.Shape.Width, textShape.Width, textShape.Height)
+}
+
 func abs32(x float32) float32 {
 	if x < 0 {
 		return -x
