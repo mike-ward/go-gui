@@ -68,6 +68,54 @@ func TestRenderImageOutOfClip(t *testing.T) {
 	}
 }
 
+func TestRenderImageBgColorPassedThrough(t *testing.T) {
+	w := &Window{}
+	shape := &Shape{
+		ShapeType: ShapeImage,
+		X:         10,
+		Y:         20,
+		Width:     100,
+		Height:    80,
+		Resource:  "test.png",
+		Color:     White,
+		Opacity:   1.0,
+	}
+	clip := DrawClip{X: 0, Y: 0, Width: 500, Height: 500}
+	renderImage(shape, clip, w)
+
+	for _, r := range w.renderers {
+		if r.Kind == RenderImage {
+			if r.Color != White {
+				t.Fatalf("expected Color White, got %v", r.Color)
+			}
+			return
+		}
+	}
+	t.Fatal("no RenderImage emitted")
+}
+
+func TestRenderImageBgColorNoContainerRect(t *testing.T) {
+	w := &Window{}
+	shape := &Shape{
+		ShapeType: ShapeImage,
+		X:         10,
+		Y:         20,
+		Width:     100,
+		Height:    80,
+		Resource:  "test.png",
+		Color:     White,
+		Opacity:   1.0,
+	}
+	clip := DrawClip{X: 0, Y: 0, Width: 500, Height: 500}
+	renderImage(shape, clip, w)
+
+	for _, r := range w.renderers {
+		if r.Kind == RenderRect {
+			t.Fatal("renderContainer should not emit RenderRect for image bg")
+		}
+	}
+}
+
 func TestRenderImageIntegration(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.png")

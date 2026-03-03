@@ -24,6 +24,7 @@ type Backend struct {
 	filterTex    *sdl.Texture // temporary render target for filter groups
 	filterBlur   float32      // blur radius in pixels
 	filterLayers int          // number of blur layers
+	texCache     texCache     // image texture cache
 }
 
 // New creates an SDL2 backend and initializes the window.
@@ -91,6 +92,7 @@ func New(w *gui.Window) (*Backend, error) {
 		renderer: ren,
 		textSys:  textSys,
 		dpiScale: dpiScale,
+		texCache: newTexCache(128),
 	}
 
 	// Create system cursors.
@@ -210,6 +212,7 @@ func Run(w *gui.Window) {
 
 // Destroy releases all backend resources.
 func (b *Backend) Destroy() {
+	b.texCache.destroyAll()
 	if b.textSys != nil {
 		b.textSys.Free()
 	}

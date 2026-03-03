@@ -214,9 +214,10 @@ func renderMdMath(
 				return codeFallback
 			case DiagramReady:
 				return Image(ImageCfg{
-					Src:    entry.PNGPath,
-					Width:  entry.Width,
-					Height: entry.Height,
+					Src:     entry.PNGPath,
+					Width:   entry.Width,
+					Height:  entry.Height,
+					BgColor: White,
 				})
 			case DiagramError:
 				errStyle := cfg.Style.Code
@@ -285,9 +286,10 @@ func renderMdMermaid(
 				})
 			case DiagramReady:
 				return Image(ImageCfg{
-					Src:    entry.PNGPath,
-					Width:  entry.Width,
-					Height: entry.Height,
+					Src:     entry.PNGPath,
+					Width:   entry.Width,
+					Height:  entry.Height,
+					BgColor: White,
 				})
 			case DiagramError:
 				errStyle := cfg.Style.Code

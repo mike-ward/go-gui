@@ -11,8 +11,13 @@ func renderImage(shape *Shape, clip DrawClip, w *Window) {
 		shape.Disabled = true
 		return
 	}
-	// Background, border, effects.
+
+	// Hide Color from renderContainer so it doesn't draw a
+	// redundant bg rect; the backend handles the fill itself.
+	bgColor := shape.Color
+	shape.Color = ColorTransparent
 	renderContainer(shape, ColorTransparent, clip, w)
+	shape.Color = bgColor
 
 	emitRenderer(RenderCmd{
 		Kind:       RenderImage,
@@ -20,6 +25,7 @@ func renderImage(shape *Shape, clip DrawClip, w *Window) {
 		Y:          shape.Y,
 		W:          shape.Width,
 		H:          shape.Height,
+		Color:      bgColor,
 		Resource:   shape.Resource,
 		ClipRadius: w.clipRadius,
 	}, w)

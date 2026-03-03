@@ -35,7 +35,7 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderGradientBorder:
 			b.drawGradientBorder(r)
 		case gui.RenderImage:
-			b.drawImagePlaceholder(r)
+			b.drawImage(r)
 		case gui.RenderSvg:
 			b.drawSvg(r)
 		case gui.RenderTextPath:
@@ -274,17 +274,6 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 		b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
 		b.renderer.FillRectF(&rects[i])
 	}
-}
-
-func (b *Backend) drawImagePlaceholder(r *gui.RenderCmd) {
-	// Placeholder: colored rect until texture cache is implemented.
-	s := b.dpiScale
-	b.renderer.SetDrawColor(200, 200, 200, 255)
-	rect := sdl.FRect{
-		X: r.X * s, Y: r.Y * s,
-		W: r.W * s, H: r.H * s,
-	}
-	b.renderer.FillRectF(&rect)
 }
 
 // strokeRoundedRect draws a stroked rectangle with rounded corners

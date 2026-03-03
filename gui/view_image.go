@@ -26,6 +26,8 @@ type ImageCfg struct {
 	OnHover   func(*Layout, *Event, *Window)
 	Invisible bool
 
+	BgColor Color // opaque fill drawn behind image (e.g. white for mermaid PNGs)
+
 	// Accessibility
 	A11YLabel       string
 	A11YDescription string
@@ -142,6 +144,8 @@ func (iv *imageView) GenerateLayout(w *Window) Layout {
 				c.A11YDescription,
 			),
 			Resource:  imagePath,
+			Color:     c.BgColor,
+			Opacity:   1.0,
 			Width:     width,
 			MinWidth:  c.MinWidth,
 			MaxWidth:  c.MaxWidth,

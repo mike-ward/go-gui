@@ -18,7 +18,7 @@ import (
 
 const (
 	maxConcurrentDiagramFetches = 8
-	diagramFetchTimeout         = 15 * time.Second
+	diagramFetchTimeout         = 30 * time.Second
 )
 
 // DiagramState represents the loading state of a diagram.

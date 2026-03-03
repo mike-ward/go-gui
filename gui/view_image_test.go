@@ -76,6 +76,35 @@ func TestImageGenerateLayoutLocalExists(t *testing.T) {
 	}
 }
 
+func TestImageOpacityDefault(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.png")
+	os.WriteFile(path, []byte("fake"), 0o644)
+	w := &Window{}
+	v := Image(ImageCfg{Src: path, Width: 100, Height: 100})
+	layout := v.GenerateLayout(w)
+	if layout.Shape.Opacity != 1.0 {
+		t.Fatalf("expected Opacity 1.0, got %f",
+			layout.Shape.Opacity)
+	}
+}
+
+func TestImageBgColor(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.png")
+	os.WriteFile(path, []byte("fake"), 0o644)
+	w := &Window{}
+	v := Image(ImageCfg{
+		Src: path, Width: 100, Height: 100,
+		BgColor: White,
+	})
+	layout := v.GenerateLayout(w)
+	if layout.Shape.Color != White {
+		t.Fatalf("expected Color White, got %v",
+			layout.Shape.Color)
+	}
+}
+
 func TestImageGenerateLayoutSVGFallback(t *testing.T) {
 	// Create a temp .svg file + cached.
 	dir := t.TempDir()
