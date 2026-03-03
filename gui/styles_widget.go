@@ -842,7 +842,7 @@ var (
 		RadiusSubmenu:   RadiusSmall,
 		RadiusMenuItem:  RadiusSmall,
 		Spacing:         SpacingMedium,
-		SpacingSubmenu:  1,
+		SpacingSubmenu:  0,
 		TextStyle:       DefaultTextStyle,
 		TextStyleSubtitle: TextStyle{
 			Color: colorTextDark,

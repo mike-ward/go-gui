@@ -8,13 +8,8 @@ import (
 )
 
 type App struct {
-	MenuOpen bool
-	MenuX    float32
-	MenuY    float32
-	Status   string
+	Status string
 }
-
-const idContextMenu uint32 = 100
 
 func main() {
 	gui.SetTheme(gui.ThemeDarkBordered)
@@ -36,47 +31,13 @@ func mainView(w *gui.Window) gui.View {
 	ww, wh := w.WindowSize()
 	app := gui.State[App](w)
 
-	content := []gui.View{
-		gui.Text(gui.TextCfg{
-			Text:      "Right-click anywhere for a context menu",
-			TextStyle: gui.CurrentTheme().B1,
-		}),
-		gui.Text(gui.TextCfg{
-			Text: app.Status,
-		}),
-	}
-
-	if app.MenuOpen {
-		content = append(content,
-			contextMenu(w, app.MenuX, app.MenuY))
-	}
-
-	return gui.Column(gui.ContainerCfg{
+	return gui.ContextMenu(w, gui.ContextMenuCfg{
+		ID:     "ctx",
 		Width:  float32(ww),
 		Height: float32(wh),
 		Sizing: gui.FixedFixed,
 		HAlign: gui.HAlignCenter,
 		VAlign: gui.VAlignMiddle,
-		OnAnyClick: func(l *gui.Layout, e *gui.Event, w *gui.Window) {
-			app := gui.State[App](w)
-			if e.MouseButton == gui.MouseRight {
-				app.MenuOpen = true
-				app.MenuX = e.MouseX + l.Shape.X
-				app.MenuY = e.MouseY + l.Shape.Y
-				w.SetIDFocus(idContextMenu)
-			} else {
-				app.MenuOpen = false
-			}
-			e.IsHandled = true
-		},
-		Content: content,
-	})
-}
-
-func contextMenu(w *gui.Window, mx, my float32) gui.View {
-	return gui.Menu(w, gui.MenubarCfg{
-		ID:      "ctx",
-		IDFocus: idContextMenu,
 		Items: []gui.MenuItemCfg{
 			gui.MenuSubtitle("Actions"),
 			{ID: "cut", Text: "Cut"},
@@ -93,13 +54,16 @@ func contextMenu(w *gui.Window, mx, my float32) gui.View {
 		Action: func(id string, e *gui.Event, w *gui.Window) {
 			app := gui.State[App](w)
 			app.Status = fmt.Sprintf("Selected: %s", id)
-			app.MenuOpen = false
 			e.IsHandled = true
 		},
-		Float:       true,
-		FloatAnchor: gui.FloatTopLeft,
-		FloatTieOff: gui.FloatTopLeft,
-		FloatOffsetX: mx,
-		FloatOffsetY: my,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{
+				Text:      "Right-click anywhere for a context menu",
+				TextStyle: gui.CurrentTheme().B1,
+			}),
+			gui.Text(gui.TextCfg{
+				Text: app.Status,
+			}),
+		},
 	})
 }
