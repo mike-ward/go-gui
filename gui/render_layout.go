@@ -369,10 +369,38 @@ func renderRtf(shape *Shape, clip DrawClip, w *Window) {
 	if !rectsOverlap(dr, clip) {
 		return
 	}
+	baseX := shape.X + shape.PaddingLeft()
+	baseY := shape.Y + shape.PaddingTop()
 	emitRenderer(RenderCmd{
 		Kind:      RenderRTF,
-		X:         shape.X + shape.PaddingLeft(),
-		Y:         shape.Y + shape.PaddingTop(),
+		X:         baseX,
+		Y:         baseY,
 		LayoutPtr: shape.TC.RtfLayout,
 	}, w)
+
+	// Emit RenderImage for inline math objects.
+	cache := w.viewState.diagramCache
+	if cache == nil {
+		return
+	}
+	for i := range shape.TC.RtfLayout.Items {
+		item := &shape.TC.RtfLayout.Items[i]
+		if !item.IsObject {
+			continue
+		}
+		hash := mathCacheHash(item.ObjectID)
+		entry, ok := cache.Get(hash)
+		if !ok || entry.State != DiagramReady {
+			continue
+		}
+		h := float32(item.Ascent + item.Descent)
+		emitRenderer(RenderCmd{
+			Kind:     RenderImage,
+			X:        baseX + float32(item.X),
+			Y:        baseY + float32(item.Y-item.Ascent),
+			W:        float32(item.Width),
+			H:        h,
+			Resource: entry.PNGPath,
+		}, w)
+	}
 }

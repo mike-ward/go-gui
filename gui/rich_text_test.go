@@ -72,6 +72,82 @@ func TestRichTextToGlyphConversion(t *testing.T) {
 	}
 }
 
+func TestMathRunEmitsInlineObject(t *testing.T) {
+	cache := NewBoundedDiagramCache(10)
+	hash := mathCacheHash("x^2")
+	cache.Set(hash, DiagramCacheEntry{
+		State:  DiagramReady,
+		Width:  120,
+		Height: 40,
+		DPI:    150,
+	})
+	rt := RichText{
+		Runs: []RichTextRun{
+			{Text: "before ", Style: TextStyle{Size: 12}},
+			{
+				MathID:    "x^2",
+				MathLatex: "x^2",
+				Style:     TextStyle{Size: 12},
+			},
+			{Text: " after", Style: TextStyle{Size: 12}},
+		},
+	}
+	grt := rt.toGlyphRichTextWithMath(cache)
+	if len(grt.Runs) != 3 {
+		t.Fatalf("expected 3 runs, got %d", len(grt.Runs))
+	}
+	mid := grt.Runs[1]
+	if mid.Text != "\uFFFC" {
+		t.Fatalf("expected ORC placeholder, got %q", mid.Text)
+	}
+	if mid.Style.Object == nil {
+		t.Fatal("expected InlineObject, got nil")
+	}
+	if mid.Style.Object.ID != "x^2" {
+		t.Fatalf("object ID: got %q", mid.Style.Object.ID)
+	}
+	// 120 * (72/150) * (12/12) = 57.6
+	if mid.Style.Object.Width < 57 || mid.Style.Object.Width > 58 {
+		t.Fatalf("width: got %f", mid.Style.Object.Width)
+	}
+}
+
+func TestMathRunFallbackWhenLoading(t *testing.T) {
+	cache := NewBoundedDiagramCache(10)
+	hash := mathCacheHash("y^2")
+	cache.Set(hash, DiagramCacheEntry{
+		State: DiagramLoading,
+	})
+	rt := RichText{
+		Runs: []RichTextRun{{
+			MathID:    "y^2",
+			MathLatex: "y^2",
+			Style:     TextStyle{Size: 12},
+		}},
+	}
+	grt := rt.toGlyphRichTextWithMath(cache)
+	if grt.Runs[0].Text != "y^2" {
+		t.Fatalf("expected fallback text, got %q", grt.Runs[0].Text)
+	}
+	if grt.Runs[0].Style.Object != nil {
+		t.Fatal("should not create InlineObject for loading entry")
+	}
+}
+
+func TestMathRunFallbackNilCache(t *testing.T) {
+	rt := RichText{
+		Runs: []RichTextRun{{
+			MathID:    "z",
+			MathLatex: "z",
+			Style:     TextStyle{Size: 14},
+		}},
+	}
+	grt := rt.toGlyphRichTextWithMath(nil)
+	if grt.Runs[0].Text != "z" {
+		t.Fatalf("expected fallback, got %q", grt.Runs[0].Text)
+	}
+}
+
 func TestRichTextPlain(t *testing.T) {
 	rt := RichText{
 		Runs: []RichTextRun{

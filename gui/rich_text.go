@@ -79,31 +79,28 @@ func (rt RichText) toGlyphRichTextWithMath(
 ) glyph.RichText {
 	runs := make([]glyph.StyleRun, 0, len(rt.Runs))
 	for _, run := range rt.Runs {
-		if run.MathID != "" && cache != nil {
+		if run.MathID != "" {
 			hash := mathCacheHash(run.MathID)
-			if entry, ok := cache.Get(hash); ok {
-				if entry.State == DiagramReady &&
-					entry.Width > 0 {
-					edpi := entry.DPI
-					if edpi <= 0 {
-						edpi = 200
-					}
-					scale := (72.0 / edpi) *
+			if cache != nil {
+				if entry, ok := cache.Get(hash); ok &&
+					entry.State == DiagramReady &&
+					entry.DPI > 0 {
+					scale := (72.0 / entry.DPI) *
 						(run.Style.Size / 12.0)
-					gs := run.Style.ToGlyphStyle()
-					gs.Object = &glyph.InlineObject{
+					s := run.Style.ToGlyphStyle()
+					s.Object = &glyph.InlineObject{
 						ID:     run.MathID,
 						Width:  entry.Width * scale,
 						Height: entry.Height * scale,
 					}
 					runs = append(runs, glyph.StyleRun{
-						Text:  run.Text,
-						Style: gs,
+						Text:  "\uFFFC",
+						Style: s,
 					})
 					continue
 				}
 			}
-			// Loading/error: show raw LaTeX as fallback.
+			// Fallback: show raw LaTeX source.
 			runs = append(runs, glyph.StyleRun{
 				Text:  run.MathLatex,
 				Style: run.Style.ToGlyphStyle(),
