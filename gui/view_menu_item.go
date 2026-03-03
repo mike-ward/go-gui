@@ -121,6 +121,7 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 	}
 
 	return Column(ContainerCfg{
+		ID:      itemCfg.ID,
 		Color:   itemColor,
 		Sizing:  itemCfg.sizing,
 		Padding: Some(itemCfg.Padding),

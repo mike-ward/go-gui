@@ -136,6 +136,25 @@ func TestFindMenuItemCfg(t *testing.T) {
 	}
 }
 
+func TestMenuItemHasID(t *testing.T) {
+	cfg := MenubarCfg{
+		ID:      "mb",
+		IDFocus: 100,
+		Items: []MenuItemCfg{
+			MenuItemText("file", "File"),
+			MenuItemText("edit", "Edit"),
+		},
+	}
+	applyMenubarDefaults(&cfg)
+	views := menuBuild(cfg, 0, cfg.Items, &Window{})
+	for _, v := range views {
+		layout := GenerateViewLayout(v, &Window{})
+		if layout.Shape.ID == "" {
+			t.Error("menu item should have ID set")
+		}
+	}
+}
+
 func TestIsMenuIDInTree(t *testing.T) {
 	items := []MenuItemCfg{
 		MenuSubmenu("a", "A", []MenuItemCfg{

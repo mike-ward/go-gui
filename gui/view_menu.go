@@ -101,7 +101,6 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 				Float:       true,
 				FloatAnchor: anchor,
 				FloatTieOff: tieOff,
-				OnHover:     makeSubmenuOnHover(cfg),
 				Content:     subViews,
 			})
 			views = append(views, menuItem(cfg, configured, submenu))
@@ -125,43 +124,6 @@ func makeMenuAmendLayout(idFocus uint32) func(*Layout, *Window) {
 	}
 }
 
-// makeSubmenuOnHover creates a hover handler that resets
-// selection when mouse leaves a submenu and no descendant
-// is selected.
-func makeSubmenuOnHover(cfg MenubarCfg) func(*Layout, *Event, *Window) {
-	return func(layout *Layout, _ *Event, w *Window) {
-		sm := StateMapRead[uint32, string](w, nsMenu)
-		if sm == nil {
-			return
-		}
-		sel, ok := sm.Get(cfg.IDFocus)
-		if !ok || sel == "" {
-			return
-		}
-		// If current selection is a leaf (not in layout subtree),
-		// clear it so parent re-highlights.
-		if !descendantHasMenuID(layout, sel) {
-			item, found := findMenuItemCfg(cfg.Items, sel)
-			if found && len(item.Submenu) == 0 {
-				sm.Delete(cfg.IDFocus)
-			}
-		}
-	}
-}
-
-// descendantHasMenuID checks if any layout node has the
-// given menu ID.
-func descendantHasMenuID(layout *Layout, id string) bool {
-	if layout.Shape != nil && layout.Shape.ID == id {
-		return true
-	}
-	for i := range layout.Children {
-		if descendantHasMenuID(&layout.Children[i], id) {
-			return true
-		}
-	}
-	return false
-}
 
 // findMenuItemCfg recursively searches for a menu item by ID.
 func findMenuItemCfg(items []MenuItemCfg, id string) (MenuItemCfg, bool) {

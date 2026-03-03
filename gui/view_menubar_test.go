@@ -108,6 +108,19 @@ func TestMenubarAmendLayoutClearOnDefocus(t *testing.T) {
 	}
 }
 
+func TestApplyMenubarDefaultsSpacingSubmenu(t *testing.T) {
+	cfg := MenubarCfg{}
+	applyMenubarDefaults(&cfg)
+	if !cfg.SpacingSubmenu.IsSet() {
+		t.Fatal("SpacingSubmenu should be set after defaults")
+	}
+	got := cfg.SpacingSubmenu.Get(0)
+	want := DefaultMenubarStyle.SpacingSubmenu
+	if got != want {
+		t.Errorf("SpacingSubmenu = %v, want %v", got, want)
+	}
+}
+
 func TestFindMenuByID(t *testing.T) {
 	items := []MenuItemCfg{
 		MenuSubmenu("a", "A", []MenuItemCfg{

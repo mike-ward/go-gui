@@ -117,6 +117,9 @@ func applyMenubarDefaults(cfg *MenubarCfg) {
 	if cfg.PaddingSubtitle == (Padding{}) {
 		cfg.PaddingSubtitle = d.PaddingSubtitle
 	}
+	if !cfg.SpacingSubmenu.IsSet() {
+		cfg.SpacingSubmenu = Some(d.SpacingSubmenu)
+	}
 	if cfg.Action == nil {
 		cfg.Action = func(_ string, e *Event, _ *Window) {
 			e.IsHandled = true

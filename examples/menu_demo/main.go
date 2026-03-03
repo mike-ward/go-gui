@@ -59,8 +59,6 @@ func menu(w *gui.Window) gui.View {
 		FloatAnchor: gui.FloatTopCenter,
 		FloatTieOff: gui.FloatTopCenter,
 		IDFocus:     idFocusMenu,
-		Radius:      gui.Some[float32](0),
-		SizeBorder:  gui.Some[float32](0),
 		Action: func(id string, _ *gui.Event, w *gui.Window) {
 			gui.State[MenuApp](w).SelectedID = id
 		},
