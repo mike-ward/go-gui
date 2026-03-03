@@ -214,10 +214,9 @@ func renderMdMath(
 				return codeFallback
 			case DiagramReady:
 				return Image(ImageCfg{
-					Src:     entry.PNGPath,
-					Width:   entry.Width,
-					Height:  entry.Height,
-					BgColor: White,
+					Src:    entry.PNGPath,
+					Width:  entry.Width,
+					Height: entry.Height,
 				})
 			case DiagramError:
 				errStyle := cfg.Style.Code
@@ -430,13 +429,23 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 
 		switch {
 		case block.IsMath:
-			content = append(content,
-				renderMdMath(block, cfg, w))
+			content = append(content, Column(ContainerCfg{
+				Sizing: FillFit,
+				HAlign: HAlignCenter,
+				Content: []View{
+					renderMdMath(block, cfg, w),
+				},
+			}))
 
 		case block.IsCode:
 			if block.CodeLanguage == "mermaid" {
-				content = append(content,
-					renderMdMermaid(block, cfg, w))
+				content = append(content, Column(ContainerCfg{
+					Sizing: FillFit,
+					HAlign: HAlignCenter,
+					Content: []View{
+						renderMdMermaid(block, cfg, w),
+					},
+				}))
 			} else {
 				content = append(content,
 					renderMdCode(block, cfg))
