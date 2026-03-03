@@ -29,6 +29,7 @@ const (
 	RenderFilterComposite
 	RenderCustomShader
 	RenderTextPath
+	RenderRTF
 )
 
 // RenderCmd is a flat discriminated struct holding all draw
@@ -81,6 +82,7 @@ type RenderCmd struct {
 	TextStylePtr *TextStyle             // SVG text: full style
 	TextGradient *glyph.GradientConfig  // SVG gradient text
 	TextPath     *TextPathData          // SVG textPath placement data
+	LayoutPtr    *glyph.Layout          // RTF pre-shaped layout
 }
 
 // TextPathData holds pre-computed path data for RenderTextPath.
@@ -140,6 +142,8 @@ func renderCmdKindName(k RenderKind) string {
 		return "RenderCustomShader"
 	case RenderTextPath:
 		return "RenderTextPath"
+	case RenderRTF:
+		return "RenderRTF"
 	default:
 		return "Unknown"
 	}

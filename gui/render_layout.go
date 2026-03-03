@@ -106,8 +106,10 @@ func renderShapeInner(shape *Shape, parentColor Color, clip DrawClip, w *Window)
 	hasFX := shape.FX != nil && (shape.FX.Gradient != nil ||
 		shape.FX.BorderGradient != nil)
 
+	isRTF := shape.ShapeType == ShapeRTF
+
 	if shape.Color == ColorTransparent && !hasFX && !hasBorder &&
-		!hasText && !isImage && !isSvg && !isCanvas {
+		!hasText && !isImage && !isSvg && !isCanvas && !isRTF {
 		return
 	}
 
@@ -121,7 +123,7 @@ func renderShapeInner(shape *Shape, parentColor Color, clip DrawClip, w *Window)
 	case ShapeCircle:
 		renderCircle(shape, clip, w)
 	case ShapeRTF:
-		// TODO: renderRtf — Phase 7
+		renderRtf(shape, clip, w)
 	case ShapeSVG:
 		renderSvg(shape, clip, w)
 	case ShapeDrawCanvas:
@@ -355,3 +357,22 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	}, w)
 }
 
+// renderRtf emits a RenderRTF command for pre-shaped rich text.
+func renderRtf(shape *Shape, clip DrawClip, w *Window) {
+	if !shape.HasRtfLayout() {
+		return
+	}
+	dr := DrawClip{
+		X: shape.X, Y: shape.Y,
+		Width: shape.Width, Height: shape.Height,
+	}
+	if !rectsOverlap(dr, clip) {
+		return
+	}
+	emitRenderer(RenderCmd{
+		Kind:      RenderRTF,
+		X:         shape.X + shape.PaddingLeft(),
+		Y:         shape.Y + shape.PaddingTop(),
+		LayoutPtr: shape.TC.RtfLayout,
+	}, w)
+}

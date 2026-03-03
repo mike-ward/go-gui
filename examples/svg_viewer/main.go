@@ -74,9 +74,7 @@ func main() {
 		},
 	})
 
-	if err := sdl2.Run(w); err != nil {
-		panic(err)
-	}
+	sdl2.Run(w)
 }
 
 func mainView(w *gui.Window) gui.View {

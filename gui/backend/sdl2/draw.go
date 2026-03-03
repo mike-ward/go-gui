@@ -40,6 +40,8 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.drawSvg(r)
 		case gui.RenderTextPath:
 			b.drawTextPath(r)
+		case gui.RenderRTF:
+			b.drawRtf(r)
 		case gui.RenderFilterBegin:
 			b.beginFilter(r)
 		case gui.RenderFilterEnd:
@@ -391,4 +393,11 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	}
 
 	b.textSys.DrawLayoutPlaced(layout, placements)
+}
+
+func (b *Backend) drawRtf(r *gui.RenderCmd) {
+	if b.textSys == nil || r.LayoutPtr == nil {
+		return
+	}
+	b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
 }
