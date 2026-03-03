@@ -36,6 +36,7 @@ func Parse(source string, hardLineBreaks bool) []Block {
 			parser.WithInlineParsers(
 				util.Prioritized(&mathInlineParser{}, 100),
 				util.Prioritized(&highlightParser{}, 100),
+				util.Prioritized(&underlineParser{}, 100),
 				util.Prioritized(&superscriptParser{}, 100),
 				util.Prioritized(&subscriptParser{}, 100),
 			),
@@ -81,6 +82,7 @@ type inlineState struct {
 	format        Format
 	strikethrough bool
 	highlight     bool
+	underline     bool
 	superscript   bool
 	subscript     bool
 	link          string
@@ -540,6 +542,10 @@ func (w *mdWalker) walkInlineExt(
 		ns := state
 		ns.highlight = true
 		return w.collectRuns(node, ns)
+	case kind == NodeKindUnderline:
+		ns := state
+		ns.underline = true
+		return w.collectRuns(node, ns)
 	case kind == NodeKindSuperscript:
 		ns := state
 		ns.superscript = true
@@ -561,6 +567,7 @@ func (w *mdWalker) makeRun(
 		Format:        s.format,
 		Strikethrough: s.strikethrough,
 		Highlight:     s.highlight,
+		Underline:     s.underline,
 		Superscript:   s.superscript,
 		Subscript:     s.subscript,
 		Link:          s.link,

@@ -199,6 +199,37 @@ func TestMarkdownSuperscript(t *testing.T) {
 	}
 }
 
+func TestMarkdownUnderline(t *testing.T) {
+	blocks := parse("++underlined++")
+	found := false
+	for _, b := range blocks {
+		for _, r := range b.Runs {
+			if r.Underline &&
+				strings.TrimSpace(r.Text) == "underlined" {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected underline run")
+	}
+}
+
+func TestMarkdownUnderlineBold(t *testing.T) {
+	blocks := parse("++**bold underline**++")
+	found := false
+	for _, b := range blocks {
+		for _, r := range b.Runs {
+			if r.Underline && r.Format == FormatBold {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected bold+underline run")
+	}
+}
+
 func TestMarkdownSubscript(t *testing.T) {
 	blocks := parse("H~2~O")
 	found := false

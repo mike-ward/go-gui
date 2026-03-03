@@ -19,9 +19,10 @@ terms or commands.
 
 ### Alternative Emphasis Syntax
 
-You can also use underscores: *italic with underscores* and **bold with
-underscores**. Most people prefer asterisks, but both work identically
-in standard Markdown parsers.
+You can also use underscores: ++*italic with underscores*++ and ++**bold with
+underscores**_++. Most people prefer asterisks, but both work identically
+in standard Markdown parsers. Use double plus signs for ++underlined text++
+or combine with bold: ++**bold underline**++.
 
 ## Lists
 

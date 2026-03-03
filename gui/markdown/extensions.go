@@ -1,8 +1,8 @@
 package markdown
 
 // extensions.go provides custom goldmark inline parsers for
-// math ($...$, $$...$$), highlight (==text==), superscript
-// (^text^), and subscript (~text~).
+// math ($...$, $$...$$), highlight (==text==), underline
+// (++text++), superscript (^text^), and subscript (~text~).
 
 import (
 	"github.com/yuin/goldmark/ast"
@@ -47,6 +47,18 @@ type nodeHighlight struct {
 
 func (*nodeHighlight) Kind() ast.NodeKind { return NodeKindHighlight }
 func (n *nodeHighlight) Dump(src []byte, level int) {
+	ast.DumpHelper(n, src, level, nil, nil)
+}
+
+// NodeKindUnderline is an underlined span (++text++).
+var NodeKindUnderline = ast.NewNodeKind("Underline")
+
+type nodeUnderline struct {
+	ast.BaseInline
+}
+
+func (*nodeUnderline) Kind() ast.NodeKind { return NodeKindUnderline }
+func (n *nodeUnderline) Dump(src []byte, level int) {
 	ast.DumpHelper(n, src, level, nil, nil)
 }
 
@@ -145,27 +157,102 @@ func findDoubleDollar(line []byte, start int) int {
 	return -1
 }
 
-// highlightParser parses ==text==.
+// highlightDelimiterProcessor handles == delimiter matching.
+type highlightDelimiterProcessor struct{}
+
+func (p *highlightDelimiterProcessor) IsDelimiter(b byte) bool {
+	return b == '='
+}
+
+func (p *highlightDelimiterProcessor) CanOpenCloser(
+	opener, closer *parser.Delimiter,
+) bool {
+	return opener.Char == closer.Char
+}
+
+func (p *highlightDelimiterProcessor) OnMatch(
+	_ int,
+) ast.Node {
+	return &nodeHighlight{}
+}
+
+var defaultHighlightDelimiterProcessor = &highlightDelimiterProcessor{}
+
+// highlightParser parses ==text== using delimiter matching,
+// allowing nested inline formatting.
 type highlightParser struct{}
 
 func (p *highlightParser) Trigger() []byte { return []byte{'='} }
 
 func (p *highlightParser) Parse(
-	_ ast.Node, block text.Reader, _ parser.Context,
+	_ ast.Node, block text.Reader, pc parser.Context,
 ) ast.Node {
-	line, _ := block.PeekLine()
-	if len(line) < 2 || line[0] != '=' || line[1] != '=' {
+	before := block.PrecendingCharacter()
+	line, segment := block.PeekLine()
+	node := parser.ScanDelimiter(
+		line, before, 2, defaultHighlightDelimiterProcessor)
+	if node == nil || node.OriginalLength > 2 || before == '=' {
 		return nil
 	}
-	end := findDoubleChar(line, 2, '=')
-	if end < 0 {
-		return nil
-	}
-	node := &nodeHighlight{}
-	inner := line[2:end]
-	node.AppendChild(node, ast.NewString(inner))
-	block.Advance(end + 2)
+	node.Segment = segment.WithStop(
+		segment.Start + node.OriginalLength)
+	block.Advance(node.OriginalLength)
+	pc.PushDelimiter(node)
 	return node
+}
+
+func (p *highlightParser) CloseBlock(
+	_ ast.Node, _ parser.Context,
+) {
+}
+
+// underlineDelimiterProcessor handles ++ delimiter matching.
+type underlineDelimiterProcessor struct{}
+
+func (p *underlineDelimiterProcessor) IsDelimiter(b byte) bool {
+	return b == '+'
+}
+
+func (p *underlineDelimiterProcessor) CanOpenCloser(
+	opener, closer *parser.Delimiter,
+) bool {
+	return opener.Char == closer.Char
+}
+
+func (p *underlineDelimiterProcessor) OnMatch(
+	_ int,
+) ast.Node {
+	return &nodeUnderline{}
+}
+
+var defaultUnderlineDelimiterProcessor = &underlineDelimiterProcessor{}
+
+// underlineParser parses ++text++ using delimiter matching,
+// allowing nested inline formatting.
+type underlineParser struct{}
+
+func (p *underlineParser) Trigger() []byte { return []byte{'+'} }
+
+func (p *underlineParser) Parse(
+	_ ast.Node, block text.Reader, pc parser.Context,
+) ast.Node {
+	before := block.PrecendingCharacter()
+	line, segment := block.PeekLine()
+	node := parser.ScanDelimiter(
+		line, before, 2, defaultUnderlineDelimiterProcessor)
+	if node == nil || node.OriginalLength > 2 || before == '+' {
+		return nil
+	}
+	node.Segment = segment.WithStop(
+		segment.Start + node.OriginalLength)
+	block.Advance(node.OriginalLength)
+	pc.PushDelimiter(node)
+	return node
+}
+
+func (p *underlineParser) CloseBlock(
+	_ ast.Node, _ parser.Context,
+) {
 }
 
 // superscriptParser parses ^text^.
