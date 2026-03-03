@@ -230,6 +230,7 @@ func (w *mdWalker) walkBlockquote(bq *ast.Blockquote) {
 	w.bqDepth++
 	depth := w.bqDepth
 	var runs []Run
+	var nested []*ast.Blockquote
 	for c := bq.FirstChild(); c != nil; c = c.NextSibling() {
 		if c.Kind() == ast.KindParagraph {
 			cr := w.collectRuns(c, inlineState{})
@@ -238,12 +239,11 @@ func (w *mdWalker) walkBlockquote(bq *ast.Blockquote) {
 			}
 			runs = append(runs, cr...)
 		} else if c.Kind() == ast.KindBlockquote {
-			w.walkBlockquote(c.(*ast.Blockquote))
+			nested = append(nested, c.(*ast.Blockquote))
 		} else {
 			w.walkBlock(c)
 		}
 	}
-	w.bqDepth--
 	runs = trimTrailingBreaks(runs)
 	if len(runs) > 0 {
 		w.blocks = append(w.blocks, Block{
@@ -252,6 +252,12 @@ func (w *mdWalker) walkBlockquote(bq *ast.Blockquote) {
 			Runs:            runs,
 		})
 	}
+	// Recurse after emitting parent; bqDepth still at
+	// current level so nested depths are correct.
+	for _, nbq := range nested {
+		w.walkBlockquote(nbq)
+	}
+	w.bqDepth--
 }
 
 func (w *mdWalker) walkList(list *ast.List) {
@@ -287,17 +293,18 @@ func (w *mdWalker) walkList(list *ast.List) {
 			}
 		}
 
-		// Collect runs from list item children.
+		// Collect runs from inline children; defer nested
+		// lists so the parent block is emitted first.
 		var runs []Run
+		var nested []*ast.List
 		for ic := li.FirstChild(); ic != nil; ic = ic.NextSibling() {
 			switch ic.Kind() {
 			case ast.KindParagraph, ast.KindTextBlock:
 				runs = append(runs,
 					w.collectRuns(ic, inlineState{})...)
 			case ast.KindList:
-				w.listDepth++
-				w.walkList(ic.(*ast.List))
-				w.listDepth--
+				nested = append(nested,
+					ic.(*ast.List))
 			default:
 				w.walkBlock(ic)
 			}
@@ -309,6 +316,11 @@ func (w *mdWalker) walkList(list *ast.List) {
 			ListIndent: w.listDepth,
 			Runs:       runs,
 		})
+		for _, nl := range nested {
+			w.listDepth++
+			w.walkList(nl)
+			w.listDepth--
+		}
 	}
 }
 

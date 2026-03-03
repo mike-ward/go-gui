@@ -360,6 +360,22 @@ func TestMarkdownNestedList(t *testing.T) {
 	}
 }
 
+func TestMarkdownNestedListOrder(t *testing.T) {
+	blocks := parse("1. parent\n   1. child")
+	if len(blocks) < 2 {
+		t.Fatalf("expected 2 list blocks, got %d",
+			len(blocks))
+	}
+	if blocks[0].ListIndent != 0 {
+		t.Errorf("first block indent=%d, want 0",
+			blocks[0].ListIndent)
+	}
+	if blocks[1].ListIndent != 1 {
+		t.Errorf("second block indent=%d, want 1",
+			blocks[1].ListIndent)
+	}
+}
+
 func TestMarkdownTaskList(t *testing.T) {
 	blocks := parse("- [x] done\n- [ ] todo")
 	if len(blocks) < 2 {

@@ -564,11 +564,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			}))
 
 		case block.IsList:
-			indentW := float32(0)
-			if block.ListIndent > 0 {
-				indentW = float32(block.ListIndent-1) *
-					cfg.Style.NestIndent
-			}
+			indentW := float32(block.ListIndent) *
+				cfg.Style.NestIndent
 			prefixW := float32(len(block.ListPrefix)) *
 				cfg.Style.PrefixCharWidth
 			if block.ListPrefix == "• " {
