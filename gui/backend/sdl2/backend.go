@@ -112,6 +112,14 @@ func New(w *gui.Window) (*Backend, error) {
 	// Set SVG parser on gui Window.
 	w.SetSvgParser(svg.New())
 
+	// Set clipboard function.
+	w.SetClipboardFn(func(text string) {
+		sdl.SetClipboardText(text)
+	})
+
+	// Set native platform.
+	w.SetNativePlatform(&nativePlatform{})
+
 	return b, nil
 }
 
@@ -191,14 +199,13 @@ func (b *Backend) renderFrame(w *gui.Window) {
 
 // Run initializes the SDL2 backend, runs the event loop,
 // and cleans up on exit.
-func Run(w *gui.Window) error {
+func Run(w *gui.Window) {
 	b, err := New(w)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer b.Destroy()
 	b.Run(w)
-	return nil
 }
 
 // Destroy releases all backend resources.

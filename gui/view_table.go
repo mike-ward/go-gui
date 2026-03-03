@@ -50,8 +50,12 @@ type TableCfg struct {
 	OnSelect           func(map[int]bool, int, *Event, *Window)
 	Data               []TableRowCfg
 
+	// Text measurement — set by caller if *Window available.
+	// When non-nil, column widths auto-size to content.
+	TextMeasurer TextMeasurer
+
 	// Sizing
-	Sizing    Sizing
+	Sizing Sizing
 	Width     float32
 	Height    float32
 	MinWidth  float32
@@ -92,7 +96,7 @@ func applyTableDefaults(cfg *TableCfg) {
 }
 
 // Table generates a table from the given TableCfg.
-// Column widths use ColumnWidthDefault (text measurement deferred).
+// When TextMeasurer is set, column widths auto-size to content.
 func Table(cfg TableCfg) View {
 	applyTableDefaults(&cfg)
 
@@ -115,7 +119,7 @@ func Table(cfg TableCfg) View {
 		rowSpacing = -cfg.SizeBorder
 	}
 
-	// Compute column widths (placeholder: use default).
+	// Compute column widths.
 	numCols := 0
 	for _, r := range cfg.Data {
 		if len(r.Cells) > numCols {
@@ -123,8 +127,33 @@ func Table(cfg TableCfg) View {
 		}
 	}
 	columnWidths := make([]float32, numCols)
-	for i := range columnWidths {
-		columnWidths[i] = cfg.ColumnWidthDefault
+	if cfg.TextMeasurer != nil {
+		pad := cfg.CellPadding.Width()
+		for _, r := range cfg.Data {
+			for ci, cell := range r.Cells {
+				style := cfg.TextStyle
+				if cell.TextStyle != nil {
+					style = *cell.TextStyle
+				} else if cell.HeadCell {
+					style = cfg.TextStyleHead
+				}
+				tw := cfg.TextMeasurer.TextWidth(
+					cell.Value, style) + pad
+				if tw > columnWidths[ci] {
+					columnWidths[ci] = tw
+				}
+			}
+		}
+		for i := range columnWidths {
+			if columnWidths[i] < cfg.ColumnWidthMin {
+				columnWidths[i] = cfg.ColumnWidthMin
+			}
+		}
+	} else {
+		w := cfg.ColumnWidthDefault + cfg.CellPadding.Width()
+		for i := range columnWidths {
+			columnWidths[i] = w
+		}
 	}
 
 	// Hoist loop-invariant values.
@@ -145,7 +174,7 @@ func Table(cfg TableCfg) View {
 				cellTextStyle = cfg.TextStyleHead
 			}
 
-			colWidth := cfg.ColumnWidthDefault
+			var colWidth float32
 			if colIdx < len(columnWidths) {
 				colWidth = columnWidths[colIdx]
 			}
@@ -187,7 +216,7 @@ func Table(cfg TableCfg) View {
 				Padding:     Some(cfg.CellPadding),
 				HAlign:      hAlign,
 				Sizing:      FixedFill,
-				Width:       colWidth + cfg.CellPadding.Width(),
+				Width:       colWidth,
 				OnClick:     cellOnClick,
 				OnHover:     cellOnHover,
 				Content:     cellContent,

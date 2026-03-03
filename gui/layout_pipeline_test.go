@@ -262,6 +262,46 @@ func TestLayoutWrapTextNoop(t *testing.T) {
 	layoutWrapText(nil, nil)
 }
 
+type stubTextMeasurer struct {
+	charWidth  float32
+	fontHeight float32
+}
+
+func (m *stubTextMeasurer) TextWidth(text string, _ TextStyle) float32 {
+	return float32(len(text)) * m.charWidth
+}
+func (m *stubTextMeasurer) TextHeight(_ string, _ TextStyle) float32 {
+	return m.fontHeight
+}
+func (m *stubTextMeasurer) FontHeight(_ TextStyle) float32 {
+	return m.fontHeight
+}
+
+func TestLayoutWrapPlainText(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &stubTextMeasurer{charWidth: 10, fontHeight: 20}
+
+	style := TextStyle{Size: 16}
+	shape := &Shape{
+		ShapeType: ShapeText,
+		Width:     100, // fits ~10 chars per line
+		TC: &ShapeTextConfig{
+			Text:      "hello world this wraps",
+			TextStyle: &style,
+			TextMode:  TextModeWrap,
+		},
+	}
+	layout := Layout{Shape: shape}
+	layoutWrapText(&layout, w)
+
+	// "hello" (50) + " " (10) + "world" (50) = 110 > 100 → 2nd line
+	// Each word measured separately; expect multiple lines.
+	if shape.Height <= 20 {
+		t.Errorf("expected Height > 20 (wrapped), got %f",
+			shape.Height)
+	}
+}
+
 func TestFixedColumnCentering(t *testing.T) {
 	w := &Window{}
 	w.windowWidth = 300

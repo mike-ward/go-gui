@@ -213,9 +213,8 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 				if len(found.Link) > 0 &&
 					found.Link[0] == '#' {
 					w.ScrollToView(found.Link[1:])
-				} else {
-					// openURI stub — no-op until backend wired.
-					toClipboard(found.Link)
+				} else if w.nativePlatform != nil {
+					w.nativePlatform.OpenURI(found.Link)
 				}
 				e.IsHandled = true
 			}
@@ -223,9 +222,6 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 		}
 	}
 }
-
-// toClipboard is a stub — no-op until backend wired.
-func toClipboard(_ string) {}
 
 // showLinkContextMenu is a stub — deferred.
 func showLinkContextMenu(

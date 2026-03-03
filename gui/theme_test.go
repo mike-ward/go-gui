@@ -1,6 +1,10 @@
 package gui
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 func TestThemeMaker(t *testing.T) {
 	cfg := ThemeCfg{
@@ -164,6 +168,36 @@ func TestWithColorsBadge(t *testing.T) {
 	})
 	if updated.BadgeStyle.ColorInfo != sel {
 		t.Error("badge info not propagated from select")
+	}
+}
+
+func TestThemeBoldTypeface(t *testing.T) {
+	theme := ThemeMaker(baseDarkCfg())
+	bold := []struct {
+		name  string
+		style TextStyle
+	}{
+		{"B1", theme.B1}, {"B2", theme.B2}, {"B3", theme.B3},
+		{"B4", theme.B4}, {"B5", theme.B5}, {"B6", theme.B6},
+	}
+	for _, s := range bold {
+		if s.style.Typeface != glyph.TypefaceBold {
+			t.Errorf("%s.Typeface = %d, want TypefaceBold(%d)",
+				s.name, s.style.Typeface, glyph.TypefaceBold)
+		}
+	}
+	normal := []struct {
+		name  string
+		style TextStyle
+	}{
+		{"N1", theme.N1}, {"N2", theme.N2}, {"N3", theme.N3},
+		{"N4", theme.N4}, {"N5", theme.N5}, {"N6", theme.N6},
+	}
+	for _, s := range normal {
+		if s.style.Typeface != 0 {
+			t.Errorf("%s.Typeface = %d, want 0 (regular)",
+				s.name, s.style.Typeface)
+		}
 	}
 }
 

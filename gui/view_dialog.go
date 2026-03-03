@@ -183,13 +183,13 @@ func promptView(cfg DialogCfg) []View {
 
 	var views []View
 
-	// Input field placeholder — full Input widget needs
-	// integration; use a simple text view for now.
-	views = append(views, Text(TextCfg{
-		ID:        "dialog_prompt_input",
-		Text:      cfg.Reply,
-		TextStyle: cfg.TextStyle,
-		IDFocus:   cfg.IDFocus,
+	views = append(views, Input(InputCfg{
+		ID:      "dialog_prompt_input",
+		Text:    cfg.Reply,
+		IDFocus: cfg.IDFocus,
+		OnTextChanged: func(_ *Layout, text string, w *Window) {
+			w.dialogCfg.Reply = text
+		},
 	}))
 
 	views = append(views, Row(ContainerCfg{

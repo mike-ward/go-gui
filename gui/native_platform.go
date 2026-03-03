@@ -27,6 +27,9 @@ type NativePlatform interface {
 	A11yDestroy()
 	A11yAnnounce(text string)
 
+	// URI — opens in default handler.
+	OpenURI(uri string) error
+
 	// Window appearance.
 	TitlebarDark(dark bool)
 }

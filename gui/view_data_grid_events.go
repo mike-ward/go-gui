@@ -453,7 +453,7 @@ func dataGridMakeOnChar(cfg *DataGridCfg, columns []GridColumnCfg) func(*Layout,
 		if payload == "" {
 			return
 		}
-		toClipboard(payload)
+		w.SetClipboard(payload)
 		e.IsHandled = true
 	}
 }

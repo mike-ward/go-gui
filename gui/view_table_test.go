@@ -146,6 +146,38 @@ func TestTableSelection(t *testing.T) {
 	}
 }
 
+type tableTestMeasurer struct{}
+
+func (m *tableTestMeasurer) TextWidth(text string, _ TextStyle) float32 {
+	return float32(len(text)) * 8
+}
+func (m *tableTestMeasurer) TextHeight(_ string, _ TextStyle) float32 { return 16 }
+func (m *tableTestMeasurer) FontHeight(_ TextStyle) float32            { return 16 }
+
+func TestTableColumnAutoWidth(t *testing.T) {
+	v := Table(TableCfg{
+		TextMeasurer: &tableTestMeasurer{},
+		CellPadding:  NewPadding(4, 4, 4, 4),
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{TH("Name"), TH("Age")}),
+			TR([]TableCellCfg{TD("Alexander"), TD("30")}),
+		},
+	})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	// First column cell should be wider than second.
+	row0 := layout.Children[0]
+	if len(row0.Children) < 2 {
+		t.Fatal("expected 2 cells")
+	}
+	col0W := row0.Children[0].Shape.Width
+	col1W := row0.Children[1].Shape.Width
+	if col0W <= col1W {
+		t.Errorf("col0 width (%.1f) should be > col1 (%.1f)",
+			col0W, col1W)
+	}
+}
+
 func TestTableRowAltColor(t *testing.T) {
 	alt := RGB(50, 50, 50)
 	v := Table(TableCfg{

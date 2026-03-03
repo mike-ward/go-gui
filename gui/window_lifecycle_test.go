@@ -235,3 +235,19 @@ func TestPasswordMaskInRenderText(t *testing.T) {
 		t.Error("no RenderText command emitted")
 	}
 }
+
+func TestSetClipboard(t *testing.T) {
+	w := &Window{}
+	var got string
+	w.SetClipboardFn(func(s string) { got = s })
+	w.SetClipboard("hello")
+	if got != "hello" {
+		t.Errorf("clipboard = %q, want hello", got)
+	}
+}
+
+func TestSetClipboardNilSafe(t *testing.T) {
+	w := &Window{}
+	// Should not panic when no fn set.
+	w.SetClipboard("ignored")
+}

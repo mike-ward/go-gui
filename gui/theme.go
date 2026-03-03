@@ -654,7 +654,8 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 
 	// Text size shortcuts.
 	normal := ts
-	bold := ts // font variant resolution deferred
+	bold := ts
+	bold.Typeface = glyph.TypefaceBold
 	theme.N1 = makeStyle(normal, theme.SizeTextXLarge)
 	theme.N2 = makeStyle(normal, theme.SizeTextLarge)
 	theme.N3 = ts

@@ -213,10 +213,10 @@ func renderMdMath(
 			case DiagramLoading:
 				return codeFallback
 			case DiagramReady:
-				// Placeholder — image view not yet available.
-				return Text(TextCfg{
-					Text:      "[math: rendered]",
-					TextStyle: cfg.Style.Code,
+				return Image(ImageCfg{
+					Src:    entry.PNGPath,
+					Width:  entry.Width,
+					Height: entry.Height,
 				})
 			case DiagramError:
 				errStyle := cfg.Style.Code
@@ -284,9 +284,10 @@ func renderMdMermaid(
 					TextStyle: cfg.Style.Text,
 				})
 			case DiagramReady:
-				return Text(TextCfg{
-					Text:      "[diagram: rendered]",
-					TextStyle: cfg.Style.Code,
+				return Image(ImageCfg{
+					Src:    entry.PNGPath,
+					Width:  entry.Width,
+					Height: entry.Height,
 				})
 			case DiagramError:
 				errStyle := cfg.Style.Code
@@ -456,6 +457,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 								CellPadding:      cfg.Style.TableCellPadding,
 								ColorRowAlt:      cfg.Style.TableRowAlt,
 								ColumnAlignments: block.TableData.Alignments,
+								TextMeasurer:     w.textMeasurer,
 								Data:             buildMarkdownTableData(*block.TableData, cfg.Style),
 							}),
 						},
@@ -497,10 +499,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			}))
 
 		case block.IsImage:
-			// Placeholder — image view Phase 18.
-			content = append(content, Text(TextCfg{
-				Text: "[image: " + block.ImageSrc + "]",
-				TextStyle: cfg.Style.Text,
+			content = append(content, Image(ImageCfg{
+				Src: block.ImageSrc,
 			}))
 
 		case block.HeaderLevel > 0:

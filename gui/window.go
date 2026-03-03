@@ -76,6 +76,9 @@ type Window struct {
 	// Accessibility backend state.
 	a11y a11y
 
+	// Clipboard — set by backend, nil in tests.
+	clipboardSetFn func(string)
+
 	// Input Method Editor state.
 	ime ime
 
@@ -256,6 +259,18 @@ func (w *Window) MouseUnlock() {
 // SetTextMeasurer sets the text measurement backend.
 func (w *Window) SetTextMeasurer(tm TextMeasurer) {
 	w.textMeasurer = tm
+}
+
+// SetClipboardFn sets the function used to copy text to the clipboard.
+func (w *Window) SetClipboardFn(fn func(string)) {
+	w.clipboardSetFn = fn
+}
+
+// SetClipboard copies text to the system clipboard.
+func (w *Window) SetClipboard(text string) {
+	if w.clipboardSetFn != nil {
+		w.clipboardSetFn(text)
+	}
 }
 
 // Renderers returns the current render command slice.
