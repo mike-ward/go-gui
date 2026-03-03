@@ -49,8 +49,9 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 		}
 		content = append(content, Column(ContainerCfg{
 			ID:           cfg.ID + "dropdown",
-			Float:        true,
-			FloatAnchor:  cfg.FloatAnchor,
+			Float:         true,
+			FloatAutoFlip: true,
+			FloatAnchor:   cfg.FloatAnchor,
 			FloatTieOff:  cfg.FloatTieOff,
 			FloatOffsetX: cfg.FloatOffsetX,
 			FloatOffsetY: cfg.FloatOffsetY,

@@ -136,6 +136,7 @@ func contextMenuPopup(w *Window, cfg ContextMenuCfg, mx, my float32) View {
 		WidthSubmenuMin:   cfg.WidthSubmenuMin,
 		WidthSubmenuMax:   cfg.WidthSubmenuMax,
 		Float:             true,
+		FloatAutoFlip:     true,
 		FloatAnchor:       FloatTopLeft,
 		FloatTieOff:       FloatTopLeft,
 		FloatOffsetX:      mx,

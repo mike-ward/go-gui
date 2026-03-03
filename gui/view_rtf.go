@@ -281,9 +281,10 @@ func rtfRunsKey(rt *RichText) uint64 {
 func rtfTooltipView(ts *tooltipState) View {
 	d := &DefaultTooltipStyle
 	return Row(ContainerCfg{
-		ID:           ts.id + "_rtf_popup",
-		Float:        true,
-		FloatTieOff:  FloatBottomCenter,
+		ID:            ts.id + "_rtf_popup",
+		Float:         true,
+		FloatAutoFlip: true,
+		FloatTieOff:   FloatBottomCenter,
 		FloatOffsetX: ts.floatOffsetX,
 		FloatOffsetY: ts.floatOffsetY,
 		Color:        d.Color,

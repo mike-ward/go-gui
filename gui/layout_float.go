@@ -20,9 +20,72 @@ func mirrorFloatAttach(a FloatAttach) FloatAttach {
 	}
 }
 
+// flipVerticalAttach swaps top/bottom anchors, preserving the
+// horizontal component (Left/Center/Right).
+func flipVerticalAttach(a FloatAttach) FloatAttach {
+	switch a {
+	case FloatTopLeft:
+		return FloatBottomLeft
+	case FloatTopCenter:
+		return FloatBottomCenter
+	case FloatTopRight:
+		return FloatBottomRight
+	case FloatBottomLeft:
+		return FloatTopLeft
+	case FloatBottomCenter:
+		return FloatTopCenter
+	case FloatBottomRight:
+		return FloatTopRight
+	default:
+		return a
+	}
+}
+
+// attachOffset returns the (dx, dy) offset for a FloatAttach
+// point given element dimensions w and h.
+func attachOffset(a FloatAttach, w, h float32) (float32, float32) {
+	switch a {
+	case FloatTopCenter:
+		return w / 2, 0
+	case FloatTopRight:
+		return w, 0
+	case FloatMiddleLeft:
+		return 0, h / 2
+	case FloatMiddleCenter:
+		return w / 2, h / 2
+	case FloatMiddleRight:
+		return w, h / 2
+	case FloatBottomLeft:
+		return 0, h
+	case FloatBottomCenter:
+		return w / 2, h
+	case FloatBottomRight:
+		return w, h
+	default:
+		return 0, 0
+	}
+}
+
+// overflowAxis returns the total overflow of an element positioned
+// at pos with the given size within [min, max] bounds.
+func overflowAxis(pos, size, min, max float32) float32 {
+	var overflow float32
+	if pos < min {
+		overflow += min - pos
+	}
+	if pos+size > max {
+		overflow += pos + size - max
+	}
+	return overflow
+}
+
 // floatAttachLayout computes the position of float layouts relative
-// to their parent.
-func floatAttachLayout(layout *Layout) (float32, float32) {
+// to their parent. When FloatAutoFlip is set, overflowing floats
+// are flipped to the opposite side of the anchor if it reduces
+// overflow, then clamped to window bounds.
+func floatAttachLayout(
+	layout *Layout, winRect DrawClip,
+) (float32, float32) {
 	if layout.Parent == nil {
 		return 0, 0
 	}
@@ -32,63 +95,68 @@ func floatAttachLayout(layout *Layout) (float32, float32) {
 	anchor := layout.Shape.FloatAnchor
 	tieOff := layout.Shape.FloatTieOff
 	offsetX := layout.Shape.FloatOffsetX
+	offsetY := layout.Shape.FloatOffsetY
 	if isRTL {
 		anchor = mirrorFloatAttach(anchor)
 		tieOff = mirrorFloatAttach(tieOff)
 		offsetX = -offsetX
 	}
 
-	x, y := parent.X, parent.Y
-	switch anchor {
-	case FloatTopLeft:
-	case FloatTopCenter:
-		x += parent.Width / 2
-	case FloatTopRight:
-		x += parent.Width
-	case FloatMiddleLeft:
-		y += parent.Height / 2
-	case FloatMiddleCenter:
-		x += parent.Width / 2
-		y += parent.Height / 2
-	case FloatMiddleRight:
-		x += parent.Width
-		y += parent.Height / 2
-	case FloatBottomLeft:
-		y += parent.Height
-	case FloatBottomCenter:
-		x += parent.Width / 2
-		y += parent.Height
-	case FloatBottomRight:
-		x += parent.Width
-		y += parent.Height
+	shape := layout.Shape
+	ax, ay := attachOffset(anchor, parent.Width, parent.Height)
+	tx, ty := attachOffset(tieOff, shape.Width, shape.Height)
+	x := parent.X + ax - tx + offsetX
+	y := parent.Y + ay - ty + offsetY
+
+	if !shape.FloatAutoFlip {
+		return x, y
 	}
 
-	shape := layout.Shape
-	switch tieOff {
-	case FloatTopLeft:
-	case FloatTopCenter:
-		x -= shape.Width / 2
-	case FloatTopRight:
-		x -= shape.Width
-	case FloatMiddleLeft:
-		y -= shape.Height / 2
-	case FloatMiddleCenter:
-		x -= shape.Width / 2
-		y -= shape.Height / 2
-	case FloatMiddleRight:
-		x -= shape.Width
-		y -= shape.Height / 2
-	case FloatBottomLeft:
-		y -= shape.Height
-	case FloatBottomCenter:
-		x -= shape.Width / 2
-		y -= shape.Height
-	case FloatBottomRight:
-		x -= shape.Width
-		y -= shape.Height
+	fw, fh := shape.Width, shape.Height
+	winW, winH := winRect.Width, winRect.Height
+
+	// Vertical flip: try opposite if current overflows.
+	curOverY := overflowAxis(y, fh, 0, winH)
+	if curOverY > 0 {
+		fa := flipVerticalAttach(anchor)
+		ft := flipVerticalAttach(tieOff)
+		_, fay := attachOffset(fa, parent.Width, parent.Height)
+		_, fty := attachOffset(ft, fw, fh)
+		newY := parent.Y + fay - fty + offsetY
+		if overflowAxis(newY, fh, 0, winH) < curOverY {
+			y = newY
+			anchor = fa
+			tieOff = ft
+		}
 	}
-	x += offsetX
-	y += layout.Shape.FloatOffsetY
+
+	// Horizontal flip: try mirrored if current overflows.
+	curOverX := overflowAxis(x, fw, 0, winW)
+	if curOverX > 0 {
+		fa := mirrorFloatAttach(anchor)
+		ft := mirrorFloatAttach(tieOff)
+		fax, _ := attachOffset(fa, parent.Width, parent.Height)
+		ftx, _ := attachOffset(ft, fw, fh)
+		newX := parent.X + fax - ftx + offsetX
+		if overflowAxis(newX, fw, 0, winW) < curOverX {
+			x = newX
+		}
+	}
+
+	// Clamp to window bounds as safety net.
+	if x+fw > winW {
+		x = winW - fw
+	}
+	if y+fh > winH {
+		y = winH - fh
+	}
+	if x < 0 {
+		x = 0
+	}
+	if y < 0 {
+		y = 0
+	}
+
 	return x, y
 }
 

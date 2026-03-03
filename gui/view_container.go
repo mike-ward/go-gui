@@ -49,9 +49,10 @@ type ContainerCfg struct {
 	Hero       bool
 
 	// Floating
-	Float        bool
-	FloatAnchor  FloatAttach
-	FloatTieOff  FloatAttach
+	Float         bool
+	FloatAutoFlip bool
+	FloatAnchor   FloatAttach
+	FloatTieOff   FloatAttach
 	FloatOffsetX float32
 	FloatOffsetY float32
 
@@ -141,6 +142,7 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 			ColorBorder:          c.ColorBorder,
 			Disabled:             c.Disabled,
 			Float:                c.Float,
+			FloatAutoFlip:        c.FloatAutoFlip,
 			FloatAnchor:          c.FloatAnchor,
 			FloatTieOff:          c.FloatTieOff,
 			FloatOffsetX:         c.FloatOffsetX,

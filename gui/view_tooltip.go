@@ -53,9 +53,10 @@ type TooltipCfg struct {
 func Tooltip(cfg TooltipCfg) View {
 	applyTooltipDefaults(&cfg)
 	return Row(ContainerCfg{
-		ID:           cfg.ID,
-		Float:        true,
-		FloatAnchor:  cfg.Anchor,
+		ID:            cfg.ID,
+		Float:         true,
+		FloatAutoFlip: true,
+		FloatAnchor:   cfg.Anchor,
 		FloatTieOff:  cfg.TieOff,
 		FloatOffsetX: cfg.OffsetX,
 		FloatOffsetY: cfg.OffsetY,
@@ -129,6 +130,9 @@ func applyTooltipDefaults(cfg *TooltipCfg) {
 	}
 	if cfg.Anchor == FloatTopLeft {
 		cfg.Anchor = FloatBottomCenter
+	}
+	if cfg.TieOff == FloatTopLeft {
+		cfg.TieOff = FloatTopCenter
 	}
 }
 

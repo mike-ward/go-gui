@@ -64,8 +64,9 @@ type Shape struct {
 
 	Clip      bool
 	Disabled  bool
-	Float     bool
-	FocusSkip bool
+	Float         bool
+	FloatAutoFlip bool // flip float position to stay in window
+	FocusSkip     bool
 	OverDraw  bool
 	Hero      bool
 	Wrap      bool

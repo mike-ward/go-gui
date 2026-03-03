@@ -519,7 +519,7 @@ func TestFloatAttachRTLMirror(t *testing.T) {
 	}
 	layoutParents(parent, nil)
 
-	x, y := floatAttachLayout(&parent.Children[0])
+	x, y := floatAttachLayout(&parent.Children[0], DrawClip{Width: 1000, Height: 1000})
 	if !f32AreClose(x, 150.0) {
 		t.Errorf("float X: got %f, want 150", x)
 	}

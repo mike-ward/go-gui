@@ -32,9 +32,10 @@ type MenubarCfg struct {
 	FloatTieOff     FloatAttach
 	FloatOffsetX    float32
 	FloatOffsetY    float32
-	Disabled        bool
-	Invisible       bool
-	Float           bool
+	Disabled      bool
+	Invisible     bool
+	Float         bool
+	FloatAutoFlip bool
 }
 
 // Menubar creates a horizontal menubar with keyboard
@@ -71,8 +72,9 @@ func Menubar(w *Window, cfg MenubarCfg) View {
 		Spacing:     cfg.Spacing,
 		Padding:     Some(cfg.Padding),
 		Sizing:      cfg.Sizing,
-		Float:       cfg.Float,
-		FloatAnchor: cfg.FloatAnchor,
+		Float:         cfg.Float,
+		FloatAutoFlip: cfg.FloatAutoFlip,
+		FloatAnchor:   cfg.FloatAnchor,
 		FloatTieOff: cfg.FloatTieOff,
 		FloatOffsetX: cfg.FloatOffsetX,
 		FloatOffsetY: cfg.FloatOffsetY,
