@@ -22,6 +22,7 @@ const (
 	strokeRoundCapSegs    = 8
 	curveDegenThreshold   = float32(0.0001)
 	closedPathEpsilon     = float32(0.0001)
+	maxSplitTriDepth      = 8
 )
 
 // PathCmd identifies a path segment type.

@@ -306,6 +306,13 @@ func parseLength(s string) float32 {
 		c := s[end]
 		if (c >= '0' && c <= '9') || c == '.' || c == '-' || c == '+' {
 			end++
+		} else if end > 0 && (c == 'e' || c == 'E') {
+			// Scientific notation: accept 'e'/'E' optionally
+			// followed by '+'/'-'.
+			end++
+			if end < len(s) && (s[end] == '+' || s[end] == '-') {
+				end++
+			}
 		} else {
 			break
 		}
@@ -705,6 +712,14 @@ func getStrokeDasharray(elem string) []float32 {
 	}
 	if len(result) > 0 && len(result)%2 != 0 {
 		result = append(result, result...)
+	}
+	// Zero-sum dasharray = solid line (SVG spec).
+	var sum float32
+	for _, v := range result {
+		sum += v
+	}
+	if sum <= 0 {
+		return nil
 	}
 	return result
 }

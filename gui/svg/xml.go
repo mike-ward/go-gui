@@ -226,7 +226,8 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 			}
 			closeEnd := strings.IndexByte(content[groupEnd:], '>')
 			if closeEnd < 0 {
-				break
+				pos = len(content)
+				continue
 			}
 			pos = groupEnd + closeEnd + 1
 
@@ -285,13 +286,13 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 				textStart := elemEnd + 1
 				textEnd := findClosingTag(content, "text", textStart)
 				if textEnd > textStart {
-					// Basic text extraction
 					textBody := content[textStart:textEnd]
 					parseTextElement(elem, textBody, inherited, state)
 				}
 				closeIdx := strings.IndexByte(content[textEnd:], '>')
 				if closeIdx < 0 {
-					break
+					pos = len(content)
+					continue
 				}
 				pos = textEnd + closeIdx + 1
 			} else {
@@ -803,7 +804,12 @@ func extractPlainText(body string) string {
 func parseDefsClipPaths(content string) map[string][]VectorPath {
 	clipPaths := make(map[string][]VectorPath)
 	pos := 0
+	iterations := 0
 	for pos < len(content) {
+		iterations++
+		if iterations > maxElements {
+			break
+		}
 		cpStart := strings.Index(content[pos:], "<clipPath")
 		if cpStart < 0 {
 			break
@@ -854,7 +860,12 @@ func parseDefsClipPaths(content string) map[string][]VectorPath {
 func parseDefsGradients(content string) map[string]gui.SvgGradientDef {
 	gradients := make(map[string]gui.SvgGradientDef)
 	pos := 0
+	iterations := 0
 	for pos < len(content) {
+		iterations++
+		if iterations > maxElements {
+			break
+		}
 		lgStart := strings.Index(content[pos:], "<linearGradient")
 		if lgStart < 0 {
 			break
@@ -935,7 +946,12 @@ func parseGradientCoord(s string, isOBB bool) float32 {
 func parseGradientStops(content string) []gui.SvgGradientStop {
 	var stops []gui.SvgGradientStop
 	pos := 0
+	iterations := 0
 	for pos < len(content) {
+		iterations++
+		if iterations > maxElements {
+			break
+		}
 		stopStart := strings.Index(content[pos:], "<stop")
 		if stopStart < 0 {
 			break
@@ -988,7 +1004,12 @@ func parseGradientStops(content string) []gui.SvgGradientStop {
 func parseDefsPaths(content string) map[string]string {
 	paths := make(map[string]string)
 	pos := 0
+	iterations := 0
 	for pos < len(content) {
+		iterations++
+		if iterations > maxElements {
+			break
+		}
 		defsStart := strings.Index(content[pos:], "<defs")
 		if defsStart < 0 {
 			break
@@ -1013,7 +1034,12 @@ func parseDefsPaths(content string) map[string]string {
 		defsBody := content[defsContentStart:defsEnd]
 
 		ppos := 0
+		pIterations := 0
 		for ppos < len(defsBody) {
+			pIterations++
+			if pIterations > maxElements {
+				break
+			}
 			pStart := strings.Index(defsBody[ppos:], "<path")
 			if pStart < 0 {
 				break
@@ -1052,7 +1078,12 @@ func parseDefsPaths(content string) map[string]string {
 func parseDefsFilters(content string) map[string]gui.SvgFilter {
 	filters := make(map[string]gui.SvgFilter)
 	pos := 0
+	iterations := 0
 	for pos < len(content) {
+		iterations++
+		if iterations > maxElements {
+			break
+		}
 		fStart := strings.Index(content[pos:], "<filter")
 		if fStart < 0 {
 			break
@@ -1110,7 +1141,12 @@ func parseDefsFilters(content string) map[string]gui.SvgFilter {
 		blurLayers := 0
 		keepSource := false
 		mPos := 0
+		mIterations := 0
 		for mPos < len(fContent) {
+			mIterations++
+			if mIterations > maxElements {
+				break
+			}
 			mnStart := strings.Index(fContent[mPos:], "<feMergeNode")
 			if mnStart < 0 {
 				break

@@ -788,12 +788,16 @@ func subdivideGradientTris(tris []float32, grad gui.SvgGradientDef) []float32 {
 	result := make([]float32, 0, len(tris)*2)
 	for i := 0; i < len(tris)-5; i += 6 {
 		splitTriAtStops(tris[i], tris[i+1], tris[i+2], tris[i+3],
-			tris[i+4], tris[i+5], grad, stopTs, &result)
+			tris[i+4], tris[i+5], grad, stopTs, 0, &result)
 	}
 	return result
 }
 
-func splitTriAtStops(ax, ay, bx, by, cx, cy float32, grad gui.SvgGradientDef, stopTs []float32, result *[]float32) {
+func splitTriAtStops(ax, ay, bx, by, cx, cy float32, grad gui.SvgGradientDef, stopTs []float32, depth int, result *[]float32) {
+	if depth >= maxSplitTriDepth {
+		*result = append(*result, ax, ay, bx, by, cx, cy)
+		return
+	}
 	ta := projectOntoGradient(ax, ay, grad)
 	tb := projectOntoGradient(bx, by, grad)
 	tc := projectOntoGradient(cx, cy, grad)
@@ -843,9 +847,9 @@ func splitTriAtStops(ax, ay, bx, by, cx, cy float32, grad gui.SvgGradientDef, st
 				}
 				i2x := p0x + f01*(p1x-p0x)
 				i2y := p0y + f01*(p1y-p0y)
-				splitTriAtStops(p0x, p0y, i2x, i2y, i1x, i1y, grad, stopTs, result)
-				splitTriAtStops(i2x, i2y, p1x, p1y, i1x, i1y, grad, stopTs, result)
-				splitTriAtStops(p1x, p1y, p2x, p2y, i1x, i1y, grad, stopTs, result)
+				splitTriAtStops(p0x, p0y, i2x, i2y, i1x, i1y, grad, stopTs, depth+1, result)
+				splitTriAtStops(i2x, i2y, p1x, p1y, i1x, i1y, grad, stopTs, depth+1, result)
+				splitTriAtStops(p1x, p1y, p2x, p2y, i1x, i1y, grad, stopTs, depth+1, result)
 			} else if tS > t1+1e-4 {
 				f12 := float32(0.5)
 				if t2-t1 > 1e-6 {
@@ -853,12 +857,12 @@ func splitTriAtStops(ax, ay, bx, by, cx, cy float32, grad gui.SvgGradientDef, st
 				}
 				i2x := p1x + f12*(p2x-p1x)
 				i2y := p1y + f12*(p2y-p1y)
-				splitTriAtStops(p0x, p0y, p1x, p1y, i1x, i1y, grad, stopTs, result)
-				splitTriAtStops(p1x, p1y, i2x, i2y, i1x, i1y, grad, stopTs, result)
-				splitTriAtStops(i1x, i1y, i2x, i2y, p2x, p2y, grad, stopTs, result)
+				splitTriAtStops(p0x, p0y, p1x, p1y, i1x, i1y, grad, stopTs, depth+1, result)
+				splitTriAtStops(p1x, p1y, i2x, i2y, i1x, i1y, grad, stopTs, depth+1, result)
+				splitTriAtStops(i1x, i1y, i2x, i2y, p2x, p2y, grad, stopTs, depth+1, result)
 			} else {
-				splitTriAtStops(p0x, p0y, p1x, p1y, i1x, i1y, grad, stopTs, result)
-				splitTriAtStops(p1x, p1y, p2x, p2y, i1x, i1y, grad, stopTs, result)
+				splitTriAtStops(p0x, p0y, p1x, p1y, i1x, i1y, grad, stopTs, depth+1, result)
+				splitTriAtStops(p1x, p1y, p2x, p2y, i1x, i1y, grad, stopTs, depth+1, result)
 			}
 			return
 		}
