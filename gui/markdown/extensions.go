@@ -255,58 +255,103 @@ func (p *underlineParser) CloseBlock(
 ) {
 }
 
-// superscriptParser parses ^text^.
+// superscriptDelimiterProcessor handles ^ delimiter matching.
+type superscriptDelimiterProcessor struct{}
+
+func (p *superscriptDelimiterProcessor) IsDelimiter(b byte) bool {
+	return b == '^'
+}
+
+func (p *superscriptDelimiterProcessor) CanOpenCloser(
+	opener, closer *parser.Delimiter,
+) bool {
+	return opener.Char == closer.Char
+}
+
+func (p *superscriptDelimiterProcessor) OnMatch(
+	_ int,
+) ast.Node {
+	return &nodeSuperscript{}
+}
+
+var defaultSuperscriptDelimiterProcessor = &superscriptDelimiterProcessor{}
+
+// superscriptParser parses ^text^ using delimiter matching,
+// allowing nested inline formatting.
 type superscriptParser struct{}
 
 func (p *superscriptParser) Trigger() []byte { return []byte{'^'} }
 
 func (p *superscriptParser) Parse(
-	_ ast.Node, block text.Reader, _ parser.Context,
+	_ ast.Node, block text.Reader, pc parser.Context,
 ) ast.Node {
-	line, _ := block.PeekLine()
-	if len(line) < 2 || line[0] != '^' {
+	before := block.PrecendingCharacter()
+	line, segment := block.PeekLine()
+	node := parser.ScanDelimiter(
+		line, before, 1, defaultSuperscriptDelimiterProcessor)
+	if node == nil || node.OriginalLength > 1 || before == '^' {
 		return nil
 	}
-	end := findSingleChar(line, 1, '^')
-	if end < 0 {
-		return nil
-	}
-	node := &nodeSuperscript{}
-	inner := line[1:end]
-	node.AppendChild(node, ast.NewString(inner))
-	block.Advance(end + 1)
+	node.Segment = segment.WithStop(
+		segment.Start + node.OriginalLength)
+	block.Advance(node.OriginalLength)
+	pc.PushDelimiter(node)
 	return node
 }
 
-// subscriptParser parses ~text~ (single tilde, not ~~).
+func (p *superscriptParser) CloseBlock(
+	_ ast.Node, _ parser.Context,
+) {
+}
+
+// subscriptDelimiterProcessor handles ~ delimiter matching.
+type subscriptDelimiterProcessor struct{}
+
+func (p *subscriptDelimiterProcessor) IsDelimiter(b byte) bool {
+	return b == '~'
+}
+
+func (p *subscriptDelimiterProcessor) CanOpenCloser(
+	opener, closer *parser.Delimiter,
+) bool {
+	return opener.Char == closer.Char
+}
+
+func (p *subscriptDelimiterProcessor) OnMatch(
+	_ int,
+) ast.Node {
+	return &nodeSubscript{}
+}
+
+var defaultSubscriptDelimiterProcessor = &subscriptDelimiterProcessor{}
+
+// subscriptParser parses ~text~ using delimiter matching.
+// Rejects ~~ (length > 1) to avoid conflict with
+// strikethrough.
 type subscriptParser struct{}
 
 func (p *subscriptParser) Trigger() []byte { return []byte{'~'} }
 
 func (p *subscriptParser) Parse(
-	_ ast.Node, block text.Reader, _ parser.Context,
+	_ ast.Node, block text.Reader, pc parser.Context,
 ) ast.Node {
-	line, _ := block.PeekLine()
-	if len(line) < 2 || line[0] != '~' {
+	before := block.PrecendingCharacter()
+	line, segment := block.PeekLine()
+	node := parser.ScanDelimiter(
+		line, before, 1, defaultSubscriptDelimiterProcessor)
+	if node == nil || node.OriginalLength > 1 || before == '~' {
 		return nil
 	}
-	// Double tilde = strikethrough, not subscript.
-	if line[1] == '~' {
-		return nil
-	}
-	end := findSingleChar(line, 1, '~')
-	if end < 0 {
-		return nil
-	}
-	// Ensure closing ~ is not followed by ~ (strikethrough).
-	if end+1 < len(line) && line[end+1] == '~' {
-		return nil
-	}
-	node := &nodeSubscript{}
-	inner := line[1:end]
-	node.AppendChild(node, ast.NewString(inner))
-	block.Advance(end + 1)
+	node.Segment = segment.WithStop(
+		segment.Start + node.OriginalLength)
+	block.Advance(node.OriginalLength)
+	pc.PushDelimiter(node)
 	return node
+}
+
+func (p *subscriptParser) CloseBlock(
+	_ ast.Node, _ parser.Context,
+) {
 }
 
 func findDoubleChar(line []byte, start int, ch byte) int {
