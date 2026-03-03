@@ -189,6 +189,18 @@ func (b *Backend) renderFrame(w *gui.Window) {
 	b.renderer.Present()
 }
 
+// Run initializes the SDL2 backend, runs the event loop,
+// and cleans up on exit.
+func Run(w *gui.Window) error {
+	b, err := New(w)
+	if err != nil {
+		return err
+	}
+	defer b.Destroy()
+	b.Run(w)
+	return nil
+}
+
 // Destroy releases all backend resources.
 func (b *Backend) Destroy() {
 	if b.textSys != nil {

@@ -74,12 +74,9 @@ func main() {
 		},
 	})
 
-	b, err := sdl2.New(w)
-	if err != nil {
+	if err := sdl2.Run(w); err != nil {
 		panic(err)
 	}
-	defer b.Destroy()
-	b.Run(w)
 }
 
 func mainView(w *gui.Window) gui.View {
@@ -91,13 +88,13 @@ func mainView(w *gui.Window) gui.View {
 		Height: float32(wh),
 		Sizing: gui.FixedFixed,
 		Content: []gui.View{
-			navPanel(w, app.Selected),
+			navPanel(app.Selected),
 			contentPanel(app.Selected),
 		},
 	})
 }
 
-func navPanel(w *gui.Window, selected int) gui.View {
+func navPanel(selected int) gui.View {
 	entries := svgEntries()
 	items := make([]gui.View, len(entries))
 
@@ -136,11 +133,11 @@ func navPanel(w *gui.Window, selected int) gui.View {
 func contentPanel(selected int) gui.View {
 	entry := svgEntries()[selected]
 	return gui.Column(gui.ContainerCfg{
-		ID:      "content",
-		Color:   gui.CurrentTheme().ColorPanel,
-		Sizing:  gui.FillFill,
-		HAlign:  gui.HAlignCenter,
-		VAlign:  gui.VAlignMiddle,
+		ID:     "content",
+		Color:  gui.CurrentTheme().ColorPanel,
+		Sizing: gui.FillFill,
+		HAlign: gui.HAlignCenter,
+		VAlign: gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Svg(gui.SvgCfg{SvgData: entry.Data, Sizing: gui.FillFill}),
 		},

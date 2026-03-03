@@ -24,12 +24,9 @@ func main() {
 		},
 	})
 
-	b, err := sdl2.New(w)
-	if err != nil {
+	if err := sdl2.Run(w); err != nil {
 		panic(err)
 	}
-	defer b.Destroy()
-	b.Run(w)
 }
 
 func mainView(w *gui.Window) gui.View {
