@@ -73,9 +73,8 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 		configured.spacing = cfg.SpacingSubmenu.Get(DefaultMenubarStyle.SpacingSubmenu)
 		configured.textStyle = ts
 
-		views = append(views, menuItem(cfg, configured))
-
-		// Attach submenu if selected or ancestor of selection.
+		// Attach submenu as child of menu item so float
+		// positioning is relative to the item, not the bar.
 		if len(item.Submenu) > 0 &&
 			(selectedID == item.ID ||
 				isMenuIDInTree(item.Submenu, selectedID)) {
@@ -90,7 +89,7 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 			subViews := menuBuild(cfg, level+1,
 				item.Submenu, w)
 
-			views = append(views, Column(ContainerCfg{
+			submenu := Column(ContainerCfg{
 				Color:       cfg.Color,
 				ColorBorder: cfg.ColorBorder,
 				SizeBorder:  cfg.SizeBorder,
@@ -104,7 +103,10 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 				FloatTieOff: tieOff,
 				OnHover:     makeSubmenuOnHover(cfg),
 				Content:     subViews,
-			}))
+			})
+			views = append(views, menuItem(cfg, configured, submenu))
+		} else {
+			views = append(views, menuItem(cfg, configured))
 		}
 	}
 	return views

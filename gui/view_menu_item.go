@@ -64,7 +64,7 @@ func MenuSubmenu(id, text string, submenu []MenuItemCfg) MenuItemCfg {
 }
 
 // menuItem builds the View for a single menu item.
-func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg) View {
+func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 	if itemCfg.Separator {
 		return Column(ContainerCfg{
 			Sizing:  FillFit,
@@ -127,7 +127,7 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg) View {
 		Radius:  Some(itemCfg.radius),
 		OnClick: menuItemClick(menubarCfg, itemCfg),
 		OnHover: onHover,
-		Content: []View{content},
+		Content: append([]View{content}, extra...),
 	})
 }
 
