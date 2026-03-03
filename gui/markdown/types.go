@@ -1,19 +1,19 @@
-package gui
+package markdown
 
-// md_types.go defines parser output types for the markdown
+// types.go defines parser output types for the markdown
 // pipeline. These are the intermediate types between the
 // goldmark AST and the gui styling layer.
 
 // Limits for multi-line constructs.
 const (
-	maxBlockquoteLines          = 100
-	maxTableLines               = 500
-	maxTableColumns             = 100
-	maxListContinuationLines    = 50
+	maxBlockquoteLines           = 100
+	maxTableLines                = 500
+	maxTableColumns              = 100
+	maxListContinuationLines     = 50
 	maxFootnoteContinuationLines = 20
 	maxParagraphContinuationLines = 100
-	maxCodeBlockLines           = 10000
-	maxMathBlockLines           = 200
+	maxCodeBlockLines            = 10000
+	maxMathBlockLines            = 200
 )
 
 // Inline parsing limits.
@@ -21,8 +21,8 @@ const maxInlineNestingDepth = 16
 
 // Source length caps for external API submissions.
 const (
-	maxLatexSourceLen   = 2000
-	maxMermaidSourceLen = 10000
+	MaxLatexSourceLen   = 2000
+	MaxMermaidSourceLen = 10000
 )
 
 // Metadata collection limits.
@@ -44,69 +44,69 @@ const (
 	maxHighlightNumberBytes     = 128
 )
 
-// MdAlign represents column alignment in tables.
-type MdAlign uint8
+// Align represents column alignment in tables.
+type Align uint8
 
 const (
-	MdAlignStart  MdAlign = iota
-	MdAlignEnd
-	MdAlignCenter
-	MdAlignLeft
-	MdAlignRight
+	AlignStart  Align = iota
+	AlignEnd
+	AlignCenter
+	AlignLeft
+	AlignRight
 )
 
-// MdFormat represents inline text formatting.
-type MdFormat uint8
+// Format represents inline text formatting.
+type Format uint8
 
 const (
-	MdFormatPlain MdFormat = iota
-	MdFormatBold
-	MdFormatItalic
-	MdFormatBoldItalic
-	MdFormatCode
+	FormatPlain Format = iota
+	FormatBold
+	FormatItalic
+	FormatBoldItalic
+	FormatCode
 )
 
-// MdCodeTokenKind classifies syntax highlighting tokens.
-type MdCodeTokenKind uint8
+// CodeTokenKind classifies syntax highlighting tokens.
+type CodeTokenKind uint8
 
 const (
-	MdTokenPlain MdCodeTokenKind = iota
-	MdTokenKeyword
-	MdTokenString
-	MdTokenNumber
-	MdTokenComment
-	MdTokenOperator
+	TokenPlain CodeTokenKind = iota
+	TokenKeyword
+	TokenString
+	TokenNumber
+	TokenComment
+	TokenOperator
 )
 
-// MdCodeLanguage identifies a programming language for
+// CodeLanguage identifies a programming language for
 // syntax highlighting.
-type MdCodeLanguage uint8
+type CodeLanguage uint8
 
 const (
-	MdLangGeneric MdCodeLanguage = iota
-	MdLangV
-	MdLangJavaScript
-	MdLangTypeScript
-	MdLangPython
-	MdLangJSON
-	MdLangGo
-	MdLangRust
-	MdLangC
-	MdLangShell
-	MdLangHTML
+	LangGeneric CodeLanguage = iota
+	LangV
+	LangJavaScript
+	LangTypeScript
+	LangPython
+	LangJSON
+	LangGo
+	LangRust
+	LangC
+	LangShell
+	LangHTML
 )
 
-// MdCodeToken represents a highlighted token span.
-type MdCodeToken struct {
-	Kind  MdCodeTokenKind
+// CodeToken represents a highlighted token span.
+type CodeToken struct {
+	Kind  CodeTokenKind
 	Start int
 	End   int
 }
 
-// MdRun is a single inline text segment with format and flags.
-type MdRun struct {
+// Run is a single inline text segment with format and flags.
+type Run struct {
 	Text          string
-	Format        MdFormat
+	Format        Format
 	Strikethrough bool
 	Underline     bool
 	Highlight     bool // ==text==
@@ -116,11 +116,11 @@ type MdRun struct {
 	Tooltip       string // abbreviation or footnote
 	MathID        string
 	MathLatex     string
-	CodeToken     MdCodeTokenKind
+	CodeToken     CodeTokenKind
 }
 
-// MdBlock is a parsed block of markdown content.
-type MdBlock struct {
+// Block is a parsed block of markdown content.
+type Block struct {
 	HeaderLevel     int
 	IsCode          bool
 	IsHR            bool
@@ -141,14 +141,14 @@ type MdBlock struct {
 	CodeLanguage    string
 	MathLatex       string
 	AnchorSlug      string
-	Runs            []MdRun
-	TableData       *MdTable
+	Runs            []Run
+	TableData       *Table
 }
 
-// MdTable holds parsed table data.
-type MdTable struct {
-	Headers    [][]MdRun
-	Alignments []MdAlign
-	Rows       [][][]MdRun
+// Table holds parsed table data.
+type Table struct {
+	Headers    [][]Run
+	Alignments []Align
+	Rows       [][][]Run
 	ColCount   int
 }

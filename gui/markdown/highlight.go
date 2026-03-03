@@ -1,6 +1,6 @@
-package gui
+package markdown
 
-// md_highlight.go provides syntax tokenization for code blocks.
+// highlight.go provides syntax tokenization for code blocks.
 // Returns token spans only — palette application is done by the
 // gui styling bridge.
 
@@ -48,42 +48,43 @@ func normalizeLanguageHint(language string) string {
 	}
 }
 
-func langFromHint(language string) MdCodeLanguage {
+// LangFromHint maps a language hint string to a CodeLanguage.
+func LangFromHint(language string) CodeLanguage {
 	switch normalizeLanguageHint(language) {
 	case "v":
-		return MdLangV
+		return LangV
 	case "js":
-		return MdLangJavaScript
+		return LangJavaScript
 	case "ts":
-		return MdLangTypeScript
+		return LangTypeScript
 	case "py":
-		return MdLangPython
+		return LangPython
 	case "json":
-		return MdLangJSON
+		return LangJSON
 	case "go":
-		return MdLangGo
+		return LangGo
 	case "rust":
-		return MdLangRust
+		return LangRust
 	case "c":
-		return MdLangC
+		return LangC
 	case "shell":
-		return MdLangShell
+		return LangShell
 	case "html":
-		return MdLangHTML
+		return LangHTML
 	default:
-		return MdLangGeneric
+		return LangGeneric
 	}
 }
 
 // tokenizeCode tokenizes source code and returns token spans.
 // Returns nil if code exceeds maxBytes.
 func tokenizeCode(
-	code string, lang MdCodeLanguage, maxBytes int,
-) []MdCodeToken {
+	code string, lang CodeLanguage, maxBytes int,
+) []CodeToken {
 	if len(code) == 0 || len(code) > maxBytes {
 		return nil
 	}
-	tokens := make([]MdCodeToken, 0, 128)
+	tokens := make([]CodeToken, 0, 128)
 	pos := 0
 	for pos < len(code) {
 		if len(tokens) >= maxHighlightTokensPerBlock {
@@ -103,7 +104,7 @@ func tokenizeCode(
 				}
 				end++
 			}
-			appendToken(&tokens, MdTokenPlain, pos, end)
+			appendToken(&tokens, TokenPlain, pos, end)
 			pos = end
 
 		case hasLineCommentStart(code, pos, lang):
@@ -115,11 +116,11 @@ func tokenizeCode(
 				}
 				end++
 			}
-			appendToken(&tokens, MdTokenComment, pos, end)
+			appendToken(&tokens, TokenComment, pos, end)
 			pos = end
 
 		case hasBlockCommentStart(code, pos, lang):
-			if lang == MdLangHTML {
+			if lang == LangHTML {
 				end := pos + 4
 				for end+2 < len(code) {
 					if end-pos >= maxHighlightStringScanBytes ||
@@ -137,7 +138,7 @@ func tokenizeCode(
 				if end > len(code) {
 					end = len(code)
 				}
-				appendToken(&tokens, MdTokenComment, pos, end)
+				appendToken(&tokens, TokenComment, pos, end)
 				pos = end
 			} else {
 				end := pos + 2
@@ -173,7 +174,7 @@ func tokenizeCode(
 				if end > len(code) {
 					end = len(code)
 				}
-				appendToken(&tokens, MdTokenComment, pos, end)
+				appendToken(&tokens, TokenComment, pos, end)
 				pos = end
 			}
 
@@ -183,7 +184,7 @@ func tokenizeCode(
 				appendTailToken(&tokens, code, pos)
 				return tokens
 			}
-			appendToken(&tokens, MdTokenString, pos, end)
+			appendToken(&tokens, TokenString, pos, end)
 			pos = end
 
 		case isNumberStart(code, pos):
@@ -192,7 +193,7 @@ func tokenizeCode(
 				appendTailToken(&tokens, code, pos)
 				return tokens
 			}
-			appendToken(&tokens, MdTokenNumber, pos, end)
+			appendToken(&tokens, TokenNumber, pos, end)
 			pos = end
 
 		case isIdentifierStart(ch, lang):
@@ -202,9 +203,9 @@ func tokenizeCode(
 				return tokens
 			}
 			ident := code[pos:end]
-			kind := MdTokenPlain
+			kind := TokenPlain
 			if isKeyword(ident, lang) {
-				kind = MdTokenKeyword
+				kind = TokenKeyword
 			}
 			appendToken(&tokens, kind, pos, end)
 			pos = end
@@ -218,16 +219,16 @@ func tokenizeCode(
 				}
 				end++
 			}
-			appendToken(&tokens, MdTokenOperator, pos, end)
+			appendToken(&tokens, TokenOperator, pos, end)
 			pos = end
 
 		default:
-			appendToken(&tokens, MdTokenPlain, pos, pos+1)
+			appendToken(&tokens, TokenPlain, pos, pos+1)
 			pos++
 		}
 
 		if pos <= startPos {
-			appendToken(&tokens, MdTokenPlain,
+			appendToken(&tokens, TokenPlain,
 				startPos, startPos+1)
 			pos = startPos + 1
 		}
@@ -236,16 +237,16 @@ func tokenizeCode(
 }
 
 func appendTailToken(
-	tokens *[]MdCodeToken, code string, pos int,
+	tokens *[]CodeToken, code string, pos int,
 ) {
 	if pos < len(code) {
-		appendToken(tokens, MdTokenPlain, pos, len(code))
+		appendToken(tokens, TokenPlain, pos, len(code))
 	}
 }
 
 func appendToken(
-	tokens *[]MdCodeToken,
-	kind MdCodeTokenKind, start, end int,
+	tokens *[]CodeToken,
+	kind CodeTokenKind, start, end int,
 ) {
 	if start == end {
 		return
@@ -256,36 +257,36 @@ func appendToken(
 		(*tokens)[n-1].End = end
 		return
 	}
-	*tokens = append(*tokens, MdCodeToken{
+	*tokens = append(*tokens, CodeToken{
 		Kind: kind, Start: start, End: end,
 	})
 }
 
-func isIdentifierStart(ch byte, lang MdCodeLanguage) bool {
+func isIdentifierStart(ch byte, lang CodeLanguage) bool {
 	if (ch >= 'a' && ch <= 'z') ||
 		(ch >= 'A' && ch <= 'Z') || ch == '_' {
 		return true
 	}
-	if (lang == MdLangJavaScript ||
-		lang == MdLangTypeScript ||
-		lang == MdLangGeneric) && ch == '$' {
+	if (lang == LangJavaScript ||
+		lang == LangTypeScript ||
+		lang == LangGeneric) && ch == '$' {
 		return true
 	}
-	return lang == MdLangHTML && ch == '-'
+	return lang == LangHTML && ch == '-'
 }
 
-func isIdentifierContinue(ch byte, lang MdCodeLanguage) bool {
+func isIdentifierContinue(ch byte, lang CodeLanguage) bool {
 	if isIdentifierStart(ch, lang) {
 		return true
 	}
 	if ch >= '0' && ch <= '9' {
 		return true
 	}
-	return lang == MdLangHTML && ch == '-'
+	return lang == LangHTML && ch == '-'
 }
 
 func scanIdentifier(
-	code string, pos int, lang MdCodeLanguage,
+	code string, pos int, lang CodeLanguage,
 ) (int, bool) {
 	end := pos + 1
 	for end < len(code) && isIdentifierContinue(code[end], lang) {
@@ -345,21 +346,21 @@ func scanNumber(code string, pos int) (int, bool) {
 	return end, true
 }
 
-func isStringDelim(ch byte, lang MdCodeLanguage) bool {
+func isStringDelim(ch byte, lang CodeLanguage) bool {
 	switch lang {
-	case MdLangJSON:
+	case LangJSON:
 		return ch == '"'
-	case MdLangPython:
+	case LangPython:
 		return ch == '"' || ch == '\''
-	case MdLangJavaScript, MdLangTypeScript:
+	case LangJavaScript, LangTypeScript:
 		return ch == '"' || ch == '\'' || ch == '`'
-	case MdLangGo:
+	case LangGo:
 		return ch == '"' || ch == '\'' || ch == '`'
-	case MdLangRust, MdLangC:
+	case LangRust, LangC:
 		return ch == '"' || ch == '\''
-	case MdLangShell:
+	case LangShell:
 		return ch == '"' || ch == '\''
-	case MdLangHTML:
+	case LangHTML:
 		return ch == '"' || ch == '\''
 	default:
 		return ch == '"' || ch == '\'' || ch == '`'
@@ -367,11 +368,11 @@ func isStringDelim(ch byte, lang MdCodeLanguage) bool {
 }
 
 func scanString(
-	code string, pos int, lang MdCodeLanguage,
+	code string, pos int, lang CodeLanguage,
 ) (int, bool) {
 	quote := code[pos]
 	// Python triple-quote.
-	if lang == MdLangPython && pos+2 < len(code) &&
+	if lang == LangPython && pos+2 < len(code) &&
 		code[pos+1] == quote && code[pos+2] == quote {
 		end := pos + 3
 		for end+2 < len(code) {
@@ -413,19 +414,19 @@ func scanString(
 }
 
 func hasLineCommentStart(
-	code string, pos int, lang MdCodeLanguage,
+	code string, pos int, lang CodeLanguage,
 ) bool {
 	if pos+1 < len(code) && code[pos] == '/' &&
 		code[pos+1] == '/' {
 		switch lang {
-		case MdLangGeneric, MdLangV, MdLangJavaScript,
-			MdLangTypeScript, MdLangGo, MdLangRust, MdLangC:
+		case LangGeneric, LangV, LangJavaScript,
+			LangTypeScript, LangGo, LangRust, LangC:
 			return true
 		}
 	}
 	if code[pos] == '#' {
 		switch lang {
-		case MdLangGeneric, MdLangPython, MdLangShell:
+		case LangGeneric, LangPython, LangShell:
 			return true
 		}
 	}
@@ -433,13 +434,13 @@ func hasLineCommentStart(
 }
 
 func lineCommentPrefixLen(
-	code string, pos int, lang MdCodeLanguage,
+	code string, pos int, lang CodeLanguage,
 ) int {
 	if pos+1 < len(code) && code[pos] == '/' &&
 		code[pos+1] == '/' {
 		switch lang {
-		case MdLangGeneric, MdLangV, MdLangJavaScript,
-			MdLangTypeScript, MdLangGo, MdLangRust, MdLangC:
+		case LangGeneric, LangV, LangJavaScript,
+			LangTypeScript, LangGo, LangRust, LangC:
 			return 2
 		}
 	}
@@ -447,27 +448,27 @@ func lineCommentPrefixLen(
 }
 
 func hasBlockCommentStart(
-	code string, pos int, lang MdCodeLanguage,
+	code string, pos int, lang CodeLanguage,
 ) bool {
 	if pos+1 < len(code) && code[pos] == '/' &&
 		code[pos+1] == '*' {
 		switch lang {
-		case MdLangGeneric, MdLangV, MdLangJavaScript,
-			MdLangTypeScript, MdLangGo, MdLangRust, MdLangC:
+		case LangGeneric, LangV, LangJavaScript,
+			LangTypeScript, LangGo, LangRust, LangC:
 			return true
 		}
 	}
 	if pos+3 < len(code) && code[pos] == '<' &&
 		code[pos+1] == '!' && code[pos+2] == '-' &&
-		code[pos+3] == '-' && lang == MdLangHTML {
+		code[pos+3] == '-' && lang == LangHTML {
 		return true
 	}
 	return false
 }
 
-func blockCommentsNested(lang MdCodeLanguage) bool {
-	return lang == MdLangV || lang == MdLangRust ||
-		lang == MdLangGeneric
+func blockCommentsNested(lang CodeLanguage) bool {
+	return lang == LangV || lang == LangRust ||
+		lang == LangGeneric
 }
 
 // Keyword sets per language.
@@ -609,27 +610,27 @@ func toSet(words []string) map[string]bool {
 	return m
 }
 
-func isKeyword(ident string, lang MdCodeLanguage) bool {
+func isKeyword(ident string, lang CodeLanguage) bool {
 	switch lang {
-	case MdLangV:
+	case LangV:
 		return kwV[ident]
-	case MdLangJavaScript:
+	case LangJavaScript:
 		return kwJS[ident]
-	case MdLangTypeScript:
+	case LangTypeScript:
 		return kwTS[ident]
-	case MdLangPython:
+	case LangPython:
 		return kwPy[ident]
-	case MdLangGo:
+	case LangGo:
 		return kwGo[ident]
-	case MdLangRust:
+	case LangRust:
 		return kwRust[ident]
-	case MdLangC:
+	case LangC:
 		return kwC[ident]
-	case MdLangShell:
+	case LangShell:
 		return kwShell[ident]
-	case MdLangHTML:
+	case LangHTML:
 		return kwHTML[ident]
-	case MdLangJSON:
+	case LangJSON:
 		return kwJSON[ident]
 	}
 	return false

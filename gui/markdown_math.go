@@ -11,18 +11,20 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
 // mathCacheHash computes a cache key for a math expression.
 func mathCacheHash(mathID string) int64 {
-	h := mathHash(mathID)
+	h := markdown.MathHash(mathID)
 	return int64((h << 32) | uint64(len(mathID)))
 }
 
 // sanitizeLatex strips dangerous TeX commands that could
 // enable shell escape or file access on the remote renderer.
 func sanitizeLatex(s string) string {
-	if len(s) > maxLatexSourceLen {
+	if len(s) > markdown.MaxLatexSourceLen {
 		return ""
 	}
 	blocked := []string{

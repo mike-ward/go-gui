@@ -1,6 +1,6 @@
-package gui
+package markdown
 
-// md_walker.go converts markdown source to []MdBlock using
+// walker.go converts markdown source to []Block using
 // goldmark as the parser backend.
 
 import (
@@ -19,8 +19,8 @@ import (
 	emast "github.com/yuin/goldmark-emoji/ast"
 )
 
-// mdParse converts markdown source to []MdBlock.
-func mdParse(source string, hardLineBreaks bool) []MdBlock {
+// Parse converts markdown source to []Block.
+func Parse(source string, hardLineBreaks bool) []Block {
 	abbrDefs := collectAbbrDefs(source)
 	footnoteDefs := collectFootnoteDefs(source)
 	source = preprocessSource(source)
@@ -66,19 +66,19 @@ func mdParse(source string, hardLineBreaks bool) []MdBlock {
 	return w.blocks
 }
 
-// mdWalker walks a goldmark AST producing MdBlocks.
+// mdWalker walks a goldmark AST producing Blocks.
 type mdWalker struct {
 	source       []byte
 	footnoteDefs map[string]string
 	hardBreaks   bool
-	blocks       []MdBlock
+	blocks       []Block
 	bqDepth      int
 	listDepth    int
 }
 
 // inlineState tracks formatting context during inline walking.
 type inlineState struct {
-	format        MdFormat
+	format        Format
 	strikethrough bool
 	highlight     bool
 	superscript   bool
@@ -100,7 +100,7 @@ func (w *mdWalker) walkBlock(node ast.Node) {
 	case ast.KindHeading:
 		w.walkHeading(node.(*ast.Heading))
 	case ast.KindThematicBreak:
-		w.blocks = append(w.blocks, MdBlock{IsHR: true})
+		w.blocks = append(w.blocks, Block{IsHR: true})
 	case ast.KindFencedCodeBlock:
 		w.walkFencedCode(node.(*ast.FencedCodeBlock))
 	case ast.KindCodeBlock:
@@ -136,7 +136,7 @@ func (w *mdWalker) walkParagraph(node ast.Node) {
 	if node.ChildCount() == 1 &&
 		node.FirstChild().Kind() == NodeKindMathDisplay {
 		dm := node.FirstChild().(*nodeMathDisplay)
-		w.blocks = append(w.blocks, MdBlock{
+		w.blocks = append(w.blocks, Block{
 			IsMath:    true,
 			MathLatex: dm.Latex,
 		})
@@ -145,15 +145,15 @@ func (w *mdWalker) walkParagraph(node ast.Node) {
 	runs := w.collectRuns(node, inlineState{})
 	runs = trimTrailingBreaks(runs)
 	if len(runs) > 0 {
-		w.blocks = append(w.blocks, MdBlock{Runs: runs})
+		w.blocks = append(w.blocks, Block{Runs: runs})
 	}
 }
 
 func (w *mdWalker) walkHeading(h *ast.Heading) {
 	runs := w.collectRuns(h, inlineState{})
 	runs = trimTrailingBreaks(runs)
-	slug := headingSlug(runsToText(runs))
-	w.blocks = append(w.blocks, MdBlock{
+	slug := HeadingSlug(RunsToText(runs))
+	w.blocks = append(w.blocks, Block{
 		HeaderLevel: h.Level,
 		AnchorSlug:  slug,
 		Runs:        runs,
@@ -166,7 +166,7 @@ func (w *mdWalker) walkFencedCode(fcb *ast.FencedCodeBlock) {
 	codeText := w.collectLines(fcb)
 
 	if langHint == "math" {
-		w.blocks = append(w.blocks, MdBlock{
+		w.blocks = append(w.blocks, Block{
 			IsMath:    true,
 			MathLatex: codeText,
 		})
@@ -180,23 +180,23 @@ func (w *mdWalker) walkCodeBlock(cb *ast.CodeBlock) {
 }
 
 func (w *mdWalker) emitCodeBlock(code, langHint string) {
-	lang := langFromHint(langHint)
+	lang := LangFromHint(langHint)
 	tokens := tokenizeCode(code, lang,
 		maxCodeBlockHighlightBytes)
-	var runs []MdRun
+	var runs []Run
 	if len(tokens) == 0 {
-		runs = []MdRun{{Text: code, Format: MdFormatCode}}
+		runs = []Run{{Text: code, Format: FormatCode}}
 	} else {
-		runs = make([]MdRun, len(tokens))
+		runs = make([]Run, len(tokens))
 		for i, tok := range tokens {
-			runs[i] = MdRun{
+			runs[i] = Run{
 				Text:      code[tok.Start:tok.End],
-				Format:    MdFormatCode,
+				Format:    FormatCode,
 				CodeToken: tok.Kind,
 			}
 		}
 	}
-	w.blocks = append(w.blocks, MdBlock{
+	w.blocks = append(w.blocks, Block{
 		IsCode:       true,
 		CodeLanguage: langHint,
 		Runs:         runs,
@@ -224,12 +224,12 @@ func (w *mdWalker) collectLines(node ast.Node) string {
 func (w *mdWalker) walkBlockquote(bq *ast.Blockquote) {
 	w.bqDepth++
 	depth := w.bqDepth
-	var runs []MdRun
+	var runs []Run
 	for c := bq.FirstChild(); c != nil; c = c.NextSibling() {
 		if c.Kind() == ast.KindParagraph {
 			cr := w.collectRuns(c, inlineState{})
 			if len(runs) > 0 && len(cr) > 0 {
-				runs = append(runs, MdRun{Text: "\n"})
+				runs = append(runs, Run{Text: "\n"})
 			}
 			runs = append(runs, cr...)
 		} else if c.Kind() == ast.KindBlockquote {
@@ -241,7 +241,7 @@ func (w *mdWalker) walkBlockquote(bq *ast.Blockquote) {
 	w.bqDepth--
 	runs = trimTrailingBreaks(runs)
 	if len(runs) > 0 {
-		w.blocks = append(w.blocks, MdBlock{
+		w.blocks = append(w.blocks, Block{
 			IsBlockquote:    true,
 			BlockquoteDepth: depth,
 			Runs:            runs,
@@ -283,7 +283,7 @@ func (w *mdWalker) walkList(list *ast.List) {
 		}
 
 		// Collect runs from list item children.
-		var runs []MdRun
+		var runs []Run
 		for ic := li.FirstChild(); ic != nil; ic = ic.NextSibling() {
 			switch ic.Kind() {
 			case ast.KindParagraph, ast.KindTextBlock:
@@ -298,7 +298,7 @@ func (w *mdWalker) walkList(list *ast.List) {
 			}
 		}
 		runs = trimTrailingBreaks(runs)
-		w.blocks = append(w.blocks, MdBlock{
+		w.blocks = append(w.blocks, Block{
 			IsList:     true,
 			ListPrefix: prefix,
 			ListIndent: w.listDepth,
@@ -314,7 +314,7 @@ func (w *mdWalker) walkImage(img *ast.Image) {
 	if !isSafeImagePath(src) {
 		src = ""
 	}
-	w.blocks = append(w.blocks, MdBlock{
+	w.blocks = append(w.blocks, Block{
 		IsImage:     true,
 		ImageSrc:    src,
 		ImageAlt:    alt,
@@ -324,12 +324,12 @@ func (w *mdWalker) walkImage(img *ast.Image) {
 }
 
 func (w *mdWalker) walkTable(tbl *east.Table) {
-	var aligns []MdAlign
+	var aligns []Align
 	for _, a := range tbl.Alignments {
 		aligns = append(aligns, convertAlign(a))
 	}
-	var headers [][]MdRun
-	var rows [][][]MdRun
+	var headers [][]Run
+	var rows [][][]Run
 	for c := tbl.FirstChild(); c != nil; c = c.NextSibling() {
 		switch c.Kind() {
 		case east.KindTableHeader:
@@ -340,7 +340,7 @@ func (w *mdWalker) walkTable(tbl *east.Table) {
 				}
 			}
 		case east.KindTableRow:
-			var row [][]MdRun
+			var row [][]Run
 			for cell := c.FirstChild(); cell != nil; cell = cell.NextSibling() {
 				if cell.Kind() == east.KindTableCell {
 					row = append(row,
@@ -354,9 +354,9 @@ func (w *mdWalker) walkTable(tbl *east.Table) {
 	if colCount == 0 && len(rows) > 0 {
 		colCount = len(rows[0])
 	}
-	w.blocks = append(w.blocks, MdBlock{
+	w.blocks = append(w.blocks, Block{
 		IsTable: true,
-		TableData: &MdTable{
+		TableData: &Table{
 			Headers:    headers,
 			Alignments: aligns,
 			Rows:       rows,
@@ -365,16 +365,16 @@ func (w *mdWalker) walkTable(tbl *east.Table) {
 	})
 }
 
-func convertAlign(a east.Alignment) MdAlign {
+func convertAlign(a east.Alignment) Align {
 	switch a {
 	case east.AlignLeft:
-		return MdAlignLeft
+		return AlignLeft
 	case east.AlignRight:
-		return MdAlignRight
+		return AlignRight
 	case east.AlignCenter:
-		return MdAlignCenter
+		return AlignCenter
 	default:
-		return MdAlignStart
+		return AlignStart
 	}
 }
 
@@ -383,14 +383,14 @@ func (w *mdWalker) walkDefList(node ast.Node) {
 		switch c.Kind() {
 		case east.KindDefinitionTerm:
 			runs := w.collectRuns(c,
-				inlineState{format: MdFormatBold})
+				inlineState{format: FormatBold})
 			runs = trimTrailingBreaks(runs)
-			w.blocks = append(w.blocks, MdBlock{
+			w.blocks = append(w.blocks, Block{
 				IsDefTerm: true,
 				Runs:      runs,
 			})
 		case east.KindDefinitionDescription:
-			var runs []MdRun
+			var runs []Run
 			for dc := c.FirstChild(); dc != nil; dc = dc.NextSibling() {
 				if dc.Kind() == ast.KindParagraph {
 					runs = append(runs,
@@ -398,7 +398,7 @@ func (w *mdWalker) walkDefList(node ast.Node) {
 				}
 			}
 			runs = trimTrailingBreaks(runs)
-			w.blocks = append(w.blocks, MdBlock{
+			w.blocks = append(w.blocks, Block{
 				IsDefValue: true,
 				Runs:       runs,
 			})
@@ -408,11 +408,11 @@ func (w *mdWalker) walkDefList(node ast.Node) {
 
 // --- Inline walking ---
 
-// collectRuns walks inline children producing flat MdRun slices.
+// collectRuns walks inline children producing flat Run slices.
 func (w *mdWalker) collectRuns(
 	node ast.Node, state inlineState,
-) []MdRun {
-	var runs []MdRun
+) []Run {
+	var runs []Run
 	for c := node.FirstChild(); c != nil; c = c.NextSibling() {
 		runs = append(runs, w.walkInline(c, state)...)
 	}
@@ -421,7 +421,7 @@ func (w *mdWalker) collectRuns(
 
 func (w *mdWalker) walkInline(
 	node ast.Node, state inlineState,
-) []MdRun {
+) []Run {
 	switch node.Kind() {
 	case ast.KindText:
 		return w.walkText(node.(*ast.Text), state)
@@ -431,12 +431,12 @@ func (w *mdWalker) walkInline(
 		if len(v) == 0 {
 			return nil
 		}
-		return []MdRun{w.makeRun(v, state)}
+		return []Run{w.makeRun(v, state)}
 	case ast.KindEmphasis:
 		return w.walkEmphasis(node.(*ast.Emphasis), state)
 	case ast.KindCodeSpan:
 		t := w.collectText(node)
-		return []MdRun{{Text: t, Format: MdFormatCode,
+		return []Run{{Text: t, Format: FormatCode,
 			Link: state.link}}
 	case ast.KindLink:
 		return w.walkLink(node.(*ast.Link), state)
@@ -444,16 +444,16 @@ func (w *mdWalker) walkInline(
 		return w.walkAutoLink(node.(*ast.AutoLink), state)
 	case ast.KindImage:
 		alt := w.collectText(node)
-		return []MdRun{{Text: alt, Format: state.format}}
+		return []Run{{Text: alt, Format: state.format}}
 	case ast.KindRawHTML:
 		return nil
 	case emast.KindEmoji:
 		e := node.(*emast.Emoji)
 		if len(e.Value.Unicode) > 0 {
-			return []MdRun{w.makeRun(
+			return []Run{w.makeRun(
 				string(e.Value.Unicode[0]), state)}
 		}
-		return []MdRun{w.makeRun(
+		return []Run{w.makeRun(
 			":"+string(e.ShortName)+":", state)}
 	default:
 		return w.walkInlineExt(node, state)
@@ -462,40 +462,40 @@ func (w *mdWalker) walkInline(
 
 func (w *mdWalker) walkText(
 	t *ast.Text, state inlineState,
-) []MdRun {
+) []Run {
 	seg := t.Segment
 	v := string(seg.Value(w.source))
-	var runs []MdRun
+	var runs []Run
 	if len(v) > 0 {
 		runs = append(runs, w.makeRun(v, state))
 	}
 	if t.HardLineBreak() ||
 		(w.hardBreaks && t.SoftLineBreak()) {
-		runs = append(runs, MdRun{Text: "\n"})
+		runs = append(runs, Run{Text: "\n"})
 	} else if t.SoftLineBreak() {
 		runs = append(runs,
-			MdRun{Text: " ", Format: state.format})
+			Run{Text: " ", Format: state.format})
 	}
 	return runs
 }
 
 func (w *mdWalker) walkEmphasis(
 	em *ast.Emphasis, state inlineState,
-) []MdRun {
+) []Run {
 	ns := state
 	if em.Level == 1 {
-		ns.format = mergeFormat(ns.format, MdFormatItalic)
+		ns.format = mergeFormat(ns.format, FormatItalic)
 	} else {
-		ns.format = mergeFormat(ns.format, MdFormatBold)
+		ns.format = mergeFormat(ns.format, FormatBold)
 	}
 	return w.collectRuns(em, ns)
 }
 
 func (w *mdWalker) walkLink(
 	link *ast.Link, state inlineState,
-) []MdRun {
+) []Run {
 	url := string(link.Destination)
-	if !isSafeURL(url) {
+	if !IsSafeURL(url) {
 		url = ""
 	}
 	ns := state
@@ -505,19 +505,19 @@ func (w *mdWalker) walkLink(
 
 func (w *mdWalker) walkAutoLink(
 	al *ast.AutoLink, state inlineState,
-) []MdRun {
+) []Run {
 	url := string(al.URL(w.source))
 	label := string(al.Label(w.source))
-	if !isSafeURL(url) {
-		return []MdRun{{Text: label, Format: state.format}}
+	if !IsSafeURL(url) {
+		return []Run{{Text: label, Format: state.format}}
 	}
-	return []MdRun{{Text: label, Format: state.format,
+	return []Run{{Text: label, Format: state.format,
 		Link: url}}
 }
 
 func (w *mdWalker) walkInlineExt(
 	node ast.Node, state inlineState,
-) []MdRun {
+) []Run {
 	kind := node.Kind()
 	switch {
 	case kind == east.KindStrikethrough:
@@ -528,13 +528,13 @@ func (w *mdWalker) walkInlineExt(
 		return nil
 	case kind == NodeKindMathInline:
 		mi := node.(*nodeMathInline)
-		id := fmt.Sprintf("math_%x", mathHash(mi.Latex))
-		return []MdRun{{MathID: id, MathLatex: mi.Latex,
+		id := fmt.Sprintf("math_%x", MathHash(mi.Latex))
+		return []Run{{MathID: id, MathLatex: mi.Latex,
 			Format: state.format}}
 	case kind == NodeKindMathDisplay:
 		md := node.(*nodeMathDisplay)
-		id := fmt.Sprintf("math_%x", mathHash(md.Latex))
-		return []MdRun{{MathID: id, MathLatex: md.Latex,
+		id := fmt.Sprintf("math_%x", MathHash(md.Latex))
+		return []Run{{MathID: id, MathLatex: md.Latex,
 			Format: state.format}}
 	case kind == NodeKindHighlight:
 		ns := state
@@ -555,8 +555,8 @@ func (w *mdWalker) walkInlineExt(
 
 func (w *mdWalker) makeRun(
 	text string, s inlineState,
-) MdRun {
-	return MdRun{
+) Run {
+	return Run{
 		Text:          text,
 		Format:        s.format,
 		Strikethrough: s.strikethrough,
@@ -589,27 +589,27 @@ func (w *mdWalker) collectText(node ast.Node) string {
 }
 
 // mergeFormat combines formatting levels.
-func mergeFormat(parent, child MdFormat) MdFormat {
-	if parent == MdFormatCode || child == MdFormatCode {
-		return MdFormatCode
+func mergeFormat(parent, child Format) Format {
+	if parent == FormatCode || child == FormatCode {
+		return FormatCode
 	}
 	switch parent {
-	case MdFormatPlain:
+	case FormatPlain:
 		return child
-	case MdFormatBold:
-		if child == MdFormatItalic ||
-			child == MdFormatBoldItalic {
-			return MdFormatBoldItalic
+	case FormatBold:
+		if child == FormatItalic ||
+			child == FormatBoldItalic {
+			return FormatBoldItalic
 		}
 		return parent
-	case MdFormatItalic:
-		if child == MdFormatBold ||
-			child == MdFormatBoldItalic {
-			return MdFormatBoldItalic
+	case FormatItalic:
+		if child == FormatBold ||
+			child == FormatBoldItalic {
+			return FormatBoldItalic
 		}
 		return parent
-	case MdFormatBoldItalic:
-		return MdFormatBoldItalic
+	case FormatBoldItalic:
+		return FormatBoldItalic
 	}
 	return parent
 }
@@ -772,12 +772,12 @@ func isFootnoteDef(line string) bool {
 // applyFootnoteRefs replaces [^id] patterns in run text
 // with superscript tooltip runs.
 func applyFootnoteRefs(
-	runs []MdRun, defs map[string]string,
-) []MdRun {
+	runs []Run, defs map[string]string,
+) []Run {
 	if len(defs) == 0 {
 		return runs
 	}
-	var result []MdRun
+	var result []Run
 	changed := false
 	for _, run := range runs {
 		if run.Link != "" || run.Tooltip != "" ||
@@ -798,10 +798,10 @@ func applyFootnoteRefs(
 }
 
 func splitRunForFootnotes(
-	run MdRun, defs map[string]string,
-) []MdRun {
+	run Run, defs map[string]string,
+) []Run {
 	t := run.Text
-	var result []MdRun
+	var result []Run
 	pos := 0
 	lastPos := 0
 	for pos < len(t) {
@@ -827,7 +827,7 @@ func splitRunForFootnotes(
 			r.Text = t[lastPos:start]
 			result = append(result, r)
 		}
-		result = append(result, MdRun{
+		result = append(result, Run{
 			Text:        id,
 			Format:      run.Format,
 			Superscript: true,
@@ -837,7 +837,7 @@ func splitRunForFootnotes(
 		pos = lastPos
 	}
 	if lastPos == 0 {
-		return []MdRun{run}
+		return []Run{run}
 	}
 	if lastPos < len(t) {
 		r := run
@@ -850,8 +850,8 @@ func splitRunForFootnotes(
 // replaceAbbreviations scans runs for abbreviation occurrences
 // and splits/marks them with tooltips.
 func replaceAbbreviations(
-	runs []MdRun, defs map[string]string,
-) []MdRun {
+	runs []Run, defs map[string]string,
+) []Run {
 	if len(defs) == 0 {
 		return runs
 	}
@@ -862,7 +862,7 @@ func replaceAbbreviations(
 	sort.Slice(abbrs, func(i, j int) bool {
 		return len(abbrs[i]) > len(abbrs[j])
 	})
-	var result []MdRun
+	var result []Run
 	for _, run := range runs {
 		if run.Link != "" || run.Tooltip != "" ||
 			run.MathID != "" {
@@ -876,11 +876,11 @@ func replaceAbbreviations(
 }
 
 func splitRunForAbbrs(
-	run MdRun, abbrs []string, defs map[string]string,
-) []MdRun {
+	run Run, abbrs []string, defs map[string]string,
+) []Run {
 	t := run.Text
 	if len(t) == 0 {
-		return []MdRun{run}
+		return []Run{run}
 	}
 	var firstChars [256]bool
 	for _, a := range abbrs {
@@ -888,7 +888,7 @@ func splitRunForAbbrs(
 			firstChars[a[0]] = true
 		}
 	}
-	var result []MdRun
+	var result []Run
 	pos := 0
 	lastPos := 0
 	for pos < len(t) {
@@ -911,7 +911,7 @@ func splitRunForAbbrs(
 				r.Text = t[lastPos:pos]
 				result = append(result, r)
 			}
-			result = append(result, MdRun{
+			result = append(result, Run{
 				Text:          abbr,
 				Format:        run.Format,
 				Strikethrough: run.Strikethrough,
@@ -930,7 +930,7 @@ func splitRunForAbbrs(
 		}
 	}
 	if lastPos == 0 {
-		return []MdRun{run}
+		return []Run{run}
 	}
 	if lastPos < len(t) {
 		r := run
@@ -956,11 +956,11 @@ func isWordBoundary(text string, pos int) bool {
 // formatting into single runs. Needed because goldmark may
 // split text across multiple Text nodes (e.g. [^1] becomes
 // "[" and "^1]" separately).
-func mergeAdjacentRuns(runs []MdRun) []MdRun {
+func mergeAdjacentRuns(runs []Run) []Run {
 	if len(runs) <= 1 {
 		return runs
 	}
-	result := make([]MdRun, 0, len(runs))
+	result := make([]Run, 0, len(runs))
 	cur := runs[0]
 	for _, r := range runs[1:] {
 		if canMergeRuns(cur, r) {
@@ -974,7 +974,7 @@ func mergeAdjacentRuns(runs []MdRun) []MdRun {
 	return result
 }
 
-func canMergeRuns(a, b MdRun) bool {
+func canMergeRuns(a, b Run) bool {
 	return a.Format == b.Format &&
 		a.Strikethrough == b.Strikethrough &&
 		a.Highlight == b.Highlight &&
@@ -987,7 +987,7 @@ func canMergeRuns(a, b MdRun) bool {
 		a.Underline == b.Underline
 }
 
-func trimTrailingBreaks(runs []MdRun) []MdRun {
+func trimTrailingBreaks(runs []Run) []Run {
 	for len(runs) > 0 &&
 		runs[len(runs)-1].Text == "\n" &&
 		runs[len(runs)-1].Link == "" {
@@ -996,7 +996,8 @@ func trimTrailingBreaks(runs []MdRun) []MdRun {
 	return runs
 }
 
-func runsToText(runs []MdRun) string {
+// RunsToText concatenates run text into a single string.
+func RunsToText(runs []Run) string {
 	var sb strings.Builder
 	for _, r := range runs {
 		sb.WriteString(r.Text)
@@ -1037,7 +1038,8 @@ func parseFloat32(s string) float32 {
 	return v
 }
 
-func mathHash(s string) uint64 {
+// MathHash computes a simple hash of a string.
+func MathHash(s string) uint64 {
 	var h uint64
 	for i := 0; i < len(s); i++ {
 		h = h*31 + uint64(s[i])

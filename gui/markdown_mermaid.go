@@ -12,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
 const (
@@ -153,7 +155,7 @@ func fetchMermaidAsync(
 	requestID uint64, bgR, bgG, bgB uint8,
 ) {
 	go func() {
-		if len(source) > maxMermaidSourceLen {
+		if len(source) > markdown.MaxMermaidSourceLen {
 			w.QueueCommand(func(w *Window) {
 				if !diagramCacheShouldApplyResult(
 					w.viewState.diagramCache,

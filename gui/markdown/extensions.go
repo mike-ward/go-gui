@@ -1,6 +1,6 @@
-package gui
+package markdown
 
-// md_extensions.go provides custom goldmark inline parsers for
+// extensions.go provides custom goldmark inline parsers for
 // math ($...$, $$...$$), highlight (==text==), superscript
 // (^text^), and subscript (~text~).
 

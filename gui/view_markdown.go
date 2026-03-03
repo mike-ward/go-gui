@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
 // MarkdownStyle controls rendered markdown appearance.
@@ -202,7 +204,7 @@ func renderMdMath(
 	}
 
 	diagramHash := mathCacheHash(
-		fmt.Sprintf("display_%d", mathHash(block.MathLatex)))
+		fmt.Sprintf("display_%d", markdown.MathHash(block.MathLatex)))
 
 	if w.viewState.diagramCache != nil {
 		if entry, ok := w.viewState.diagramCache.Get(
@@ -270,7 +272,7 @@ func renderMdMermaid(
 	}
 
 	diagramHash := int64(
-		(mathHash(source) << 32) | uint64(len(source)))
+		(markdown.MathHash(source) << 32) | uint64(len(source)))
 
 	if w.viewState.diagramCache != nil {
 		if entry, ok := w.viewState.diagramCache.Get(
@@ -348,7 +350,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 	}
 
 	// Cache lookup.
-	hash := int64(mathHash(cfg.Source))
+	hash := int64(markdown.MathHash(cfg.Source))
 	if w.viewState.markdownCache == nil {
 		w.viewState.markdownCache =
 			NewBoundedMap[int64, []MarkdownBlock](100)

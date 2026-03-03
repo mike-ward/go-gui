@@ -8,6 +8,8 @@ import (
 	"math"
 
 	"github.com/mike-ward/go-glyph"
+
+	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
 // RtfCfg configures a Rich Text View.
@@ -207,7 +209,7 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 		}
 		if rtfHitTest(run, e.MouseX, e.MouseY, nil) {
 			found := rtfFindRunAtIndex(l, run.StartIndex)
-			if found.Link != "" && isSafeURL(found.Link) {
+			if found.Link != "" && markdown.IsSafeURL(found.Link) {
 				if len(found.Link) > 0 &&
 					found.Link[0] == '#' {
 					w.ScrollToView(found.Link[1:])

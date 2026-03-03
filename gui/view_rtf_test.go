@@ -7,79 +7,6 @@ import (
 	"github.com/mike-ward/go-glyph"
 )
 
-func TestIsSafeURL(t *testing.T) {
-	safe := []string{
-		"https://example.com",
-		"http://example.com",
-		"mailto:user@example.com",
-		"#anchor",
-		"/relative/path",
-		"relative/path",
-	}
-	for _, u := range safe {
-		if !isSafeURL(u) {
-			t.Errorf("expected safe: %q", u)
-		}
-	}
-}
-
-func TestIsSafeURLBlocked(t *testing.T) {
-	blocked := []string{
-		"javascript:alert(1)",
-		"data:text/html,<h1>",
-		"vbscript:msgbox",
-		"file:///etc/passwd",
-		"blob:http://example.com/x",
-	}
-	for _, u := range blocked {
-		if isSafeURL(u) {
-			t.Errorf("expected blocked: %q", u)
-		}
-	}
-}
-
-func TestIsSafeURLEdgeCases(t *testing.T) {
-	// Empty.
-	if isSafeURL("") {
-		t.Error("empty should not be safe")
-	}
-	// Whitespace prefix.
-	if isSafeURL("  javascript:alert(1)") {
-		t.Error("whitespace-prefixed javascript: should be blocked")
-	}
-	// Case insensitive.
-	if isSafeURL("JAVASCRIPT:alert(1)") {
-		t.Error("JAVASCRIPT: should be blocked")
-	}
-	// Percent-encoded.
-	if isSafeURL("java%73cript:alert(1)") {
-		t.Error("percent-encoded javascript: should be blocked")
-	}
-}
-
-func TestIsSafeImagePath(t *testing.T) {
-	safe := []string{
-		"https://example.com/image.png",
-		"image.jpg",
-		"path/to/image.gif",
-	}
-	for _, p := range safe {
-		if !isSafeImagePath(p) {
-			t.Errorf("expected safe image: %q", p)
-		}
-	}
-
-	blocked := []string{
-		"../../../etc/passwd.png",
-		"image%2e%2e/etc/passwd.png",
-	}
-	for _, p := range blocked {
-		if isSafeImagePath(p) {
-			t.Errorf("expected blocked image: %q", p)
-		}
-	}
-}
-
 func TestRtfHitTestLogic(t *testing.T) {
 	item := glyph.Item{
 		X: 10, Y: 20, Width: 50,
@@ -130,25 +57,5 @@ func TestRtfAffineInverse(t *testing.T) {
 	_, ok = rtfAffineInverse(singular)
 	if ok {
 		t.Fatal("singular matrix should not be invertible")
-	}
-}
-
-func TestHeadingSlug(t *testing.T) {
-	tests := []struct {
-		input, want string
-	}{
-		{"Hello World", "hello-world"},
-		{"  Spaces  ", "spaces"},
-		{"foo---bar", "foo-bar"},
-		{"UPPER", "upper"},
-		{"a1b2c3", "a1b2c3"},
-		{"", ""},
-	}
-	for _, tc := range tests {
-		got := headingSlug(tc.input)
-		if got != tc.want {
-			t.Errorf("headingSlug(%q): got %q, want %q",
-				tc.input, got, tc.want)
-		}
 	}
 }

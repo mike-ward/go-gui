@@ -1,16 +1,16 @@
-package gui
+package markdown
 
 import "strings"
 
-// md_inline.go provides URL safety, image path validation,
+// inline.go provides URL safety, image path validation,
 // and heading slug generation for the markdown pipeline.
 
 var validImageExts = []string{
 	".png", ".jpg", ".jpeg", ".gif", ".svg", ".bmp", ".webp",
 }
 
-// isSafeURL checks that a URL does not use dangerous schemes.
-func isSafeURL(url string) bool {
+// IsSafeURL checks that a URL does not use dangerous schemes.
+func IsSafeURL(url string) bool {
 	lower := strings.ToLower(strings.TrimSpace(
 		decodePercentPrefix(url)))
 	if len(lower) == 0 {
@@ -88,7 +88,7 @@ func isSafeImagePath(path string) bool {
 		strings.HasPrefix(p, "https://") {
 		return true
 	}
-	if !isSafeURL(path) {
+	if !IsSafeURL(path) {
 		return false
 	}
 	for _, ext := range validImageExts {
@@ -99,9 +99,9 @@ func isSafeImagePath(path string) bool {
 	return false
 }
 
-// headingSlug converts heading text to a URL-safe slug.
+// HeadingSlug converts heading text to a URL-safe slug.
 // Lowercase alphanumeric + dashes, no trailing dashes.
-func headingSlug(text string) string {
+func HeadingSlug(text string) string {
 	var buf []byte
 	prevDash := false
 	for i := 0; i < len(text); i++ {

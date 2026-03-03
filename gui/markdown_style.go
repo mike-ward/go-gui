@@ -1,12 +1,14 @@
 package gui
 
-// markdown_style.go bridges the parser MdBlock/MdRun types
+// markdown_style.go bridges the parser Block/Run types
 // to gui-styled MarkdownBlock/RichText types.
 
 import (
 	"strings"
 
 	"github.com/mike-ward/go-glyph"
+
+	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
 var mdSuperscriptFeatures = &glyph.FontFeatures{
@@ -25,7 +27,7 @@ var mdSubscriptFeatures = &glyph.FontFeatures{
 func markdownToBlocks(
 	source string, style MarkdownStyle,
 ) []MarkdownBlock {
-	blocks := mdParse(source, style.HardLineBreaks)
+	blocks := markdown.Parse(source, style.HardLineBreaks)
 	return styleMdBlocks(blocks, style)
 }
 
@@ -46,7 +48,7 @@ func MarkdownToRichText(
 }
 
 func styleMdBlocks(
-	blocks []MdBlock, style MarkdownStyle,
+	blocks []markdown.Block, style MarkdownStyle,
 ) []MarkdownBlock {
 	result := make([]MarkdownBlock, 0, len(blocks))
 	for _, b := range blocks {
@@ -56,7 +58,7 @@ func styleMdBlocks(
 }
 
 func styleMdBlock(
-	block MdBlock, style MarkdownStyle,
+	block markdown.Block, style MarkdownStyle,
 ) MarkdownBlock {
 	var baseStyle TextStyle
 	switch {
@@ -120,7 +122,7 @@ func mdHeaderStyle(
 }
 
 func styleMdRuns(
-	runs []MdRun, base TextStyle, style MarkdownStyle,
+	runs []markdown.Run, base TextStyle, style MarkdownStyle,
 ) RichText {
 	styled := make([]RichTextRun, 0, len(runs))
 	for _, r := range runs {
@@ -131,13 +133,13 @@ func styleMdRuns(
 }
 
 func styleMdRun(
-	run MdRun, base TextStyle, style MarkdownStyle,
+	run markdown.Run, base TextStyle, style MarkdownStyle,
 ) RichTextRun {
 	s := mdFormatToStyle(run.Format, base, style)
 
 	// Code token coloring.
-	if run.Format == MdFormatCode &&
-		run.CodeToken != MdTokenPlain {
+	if run.Format == markdown.FormatCode &&
+		run.CodeToken != markdown.TokenPlain {
 		s = mdCodeTokenStyle(run.CodeToken, style)
 	}
 
@@ -186,25 +188,25 @@ func styleMdRun(
 }
 
 func mdFormatToStyle(
-	f MdFormat, base TextStyle, style MarkdownStyle,
+	f markdown.Format, base TextStyle, style MarkdownStyle,
 ) TextStyle {
 	switch f {
-	case MdFormatBold:
+	case markdown.FormatBold:
 		s := style.Bold
 		s.Size = base.Size
 		s.BgColor = base.BgColor
 		return s
-	case MdFormatItalic:
+	case markdown.FormatItalic:
 		s := style.Italic
 		s.Size = base.Size
 		s.BgColor = base.BgColor
 		return s
-	case MdFormatBoldItalic:
+	case markdown.FormatBoldItalic:
 		s := style.BoldItalic
 		s.Size = base.Size
 		s.BgColor = base.BgColor
 		return s
-	case MdFormatCode:
+	case markdown.FormatCode:
 		s := style.Code
 		s.Typeface = glyph.TypefaceBold
 		return s
@@ -214,26 +216,26 @@ func mdFormatToStyle(
 }
 
 func mdCodeTokenStyle(
-	kind MdCodeTokenKind, style MarkdownStyle,
+	kind markdown.CodeTokenKind, style MarkdownStyle,
 ) TextStyle {
 	switch kind {
-	case MdTokenKeyword:
+	case markdown.TokenKeyword:
 		s := style.Code
 		s.Color = style.CodeKeywordColor
 		return s
-	case MdTokenString:
+	case markdown.TokenString:
 		s := style.Code
 		s.Color = style.CodeStringColor
 		return s
-	case MdTokenNumber:
+	case markdown.TokenNumber:
 		s := style.Code
 		s.Color = style.CodeNumberColor
 		return s
-	case MdTokenComment:
+	case markdown.TokenComment:
 		s := style.Code
 		s.Color = style.CodeCommentColor
 		return s
-	case MdTokenOperator:
+	case markdown.TokenOperator:
 		s := style.Code
 		s.Color = style.CodeOperatorColor
 		return s
@@ -243,7 +245,7 @@ func mdCodeTokenStyle(
 }
 
 func styleMdTable(
-	table MdTable, style MarkdownStyle,
+	table markdown.Table, style MarkdownStyle,
 ) ParsedTable {
 	headers := make([]RichText, 0, len(table.Headers))
 	for _, h := range table.Headers {
@@ -269,7 +271,7 @@ func styleMdTable(
 	}
 }
 
-func mdAlignsToHAligns(aligns []MdAlign) []HorizontalAlign {
+func mdAlignsToHAligns(aligns []markdown.Align) []HorizontalAlign {
 	result := make([]HorizontalAlign, len(aligns))
 	for i, a := range aligns {
 		result[i] = mdAlignToHAlign(a)
@@ -277,15 +279,15 @@ func mdAlignsToHAligns(aligns []MdAlign) []HorizontalAlign {
 	return result
 }
 
-func mdAlignToHAlign(a MdAlign) HorizontalAlign {
+func mdAlignToHAlign(a markdown.Align) HorizontalAlign {
 	switch a {
-	case MdAlignEnd:
+	case markdown.AlignEnd:
 		return HAlignEnd
-	case MdAlignCenter:
+	case markdown.AlignCenter:
 		return HAlignCenter
-	case MdAlignLeft:
+	case markdown.AlignLeft:
 		return HAlignLeft
-	case MdAlignRight:
+	case markdown.AlignRight:
 		return HAlignRight
 	default:
 		return HAlignStart
