@@ -1,6 +1,6 @@
 # go-gui
 
-![Go version](https://img.shields.io/badge/go-1.25%2B-blue)
+![Go version](https://img.shields.io/badge/go-1.26%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![CI](https://github.com/mike-ward/go-gui/actions/workflows/ci.yml/badge.svg)
 
@@ -43,7 +43,7 @@ between layout and rendering.
 
 ## Requirements
 
-- Go 1.25+
+- Go 1.26+
 - SDL2 development libraries (see below)
 - [go-glyph](https://github.com/mike-ward/go-glyph) — auto-fetched via
   `go get`
@@ -93,13 +93,7 @@ func main() {
         },
     })
 
-    // Wire up the SDL2 backend.
-    b, err := sdl2.New(w)
-    if err != nil {
-        panic(err)
-    }
-    defer b.Destroy()
-    b.Run(w) // blocks until the window is closed
+    sdl2.Run(w) // blocks until the window is closed
 }
 
 // mainView is called every frame. It returns a layout tree.
@@ -311,7 +305,7 @@ Backend dispatch loop ── Metal / OpenGL / SDL2 renderer
 
 ## Contributing
 
-1. Install Go 1.25+ and SDL2 development libraries (see above).
+1. Install Go 1.26+ and SDL2 development libraries (see above).
 2. Clone the repo.
 3. Run tests:
 
