@@ -703,23 +703,21 @@ func getStrokeDasharray(elem string) []float32 {
 	}
 	parts := strings.Fields(strings.ReplaceAll(val, ",", " "))
 	result := make([]float32, 0, len(parts))
+	var sum float32
 	for _, p := range parts {
 		n := parseFloatTrimmed(p)
 		if n < 0 {
 			return nil
 		}
 		result = append(result, n)
+		sum += n
+	}
+	// Zero-sum dasharray = solid line (SVG spec).
+	if sum <= 0 {
+		return nil
 	}
 	if len(result) > 0 && len(result)%2 != 0 {
 		result = append(result, result...)
-	}
-	// Zero-sum dasharray = solid line (SVG spec).
-	var sum float32
-	for _, v := range result {
-		sum += v
-	}
-	if sum <= 0 {
-		return nil
 	}
 	return result
 }
