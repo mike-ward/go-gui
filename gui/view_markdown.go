@@ -6,7 +6,9 @@ package gui
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mike-ward/go-gui/gui/markdown"
 )
@@ -333,10 +335,54 @@ func renderMdMermaid(
 	return codeFallback
 }
 
-// renderMdCode renders a fenced code block.
+// renderMdCode renders a fenced code block with a copy-to-clipboard button.
 func renderMdCode(
-	block MarkdownBlock, cfg MarkdownCfg,
+	block MarkdownBlock, cfg MarkdownCfg, w *Window, blockIdx int,
 ) View {
+	animID := "md_cp_" + strconv.Itoa(blockIdx)
+	copied := w.hasAnimationLocked(animID)
+
+	iconStyle := guiTheme.Icon5
+	iconStyle.Color = Gray
+
+	var btnContent []View
+	if copied {
+		checkStyle := iconStyle
+		checkStyle.Color = Color{80, 200, 80, 255}
+		btnContent = []View{
+			Text(TextCfg{Text: IconCheck, TextStyle: checkStyle}),
+		}
+	} else {
+		btnContent = []View{
+			Text(TextCfg{Text: IconFile, TextStyle: iconStyle}),
+		}
+	}
+
+	btnColor := cfg.Style.CodeBlockBG
+	btnColor.A = 200
+
+	copyBtn := Button(ButtonCfg{
+		Float:        true,
+		FloatAnchor:  FloatTopRight,
+		FloatTieOff:  FloatTopRight,
+		FloatOffsetX: -4,
+		FloatOffsetY: 4,
+		Radius:       Some[float32](4),
+		Color:        btnColor,
+		Padding:      Padding{Top: 2, Bottom: 2, Left: 4, Right: 4},
+		Content:      btnContent,
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			plain := richTextPlain(block.Content)
+			w.SetClipboard(plain)
+			w.AnimationAdd(&Animate{
+				AnimateID: animID,
+				Delay:     2 * time.Second,
+				Callback:  func(*Animate, *Window) {},
+			})
+			e.IsHandled = true
+		},
+	})
+
 	return Column(ContainerCfg{
 		Color:   cfg.Style.CodeBlockBG,
 		Padding: Some(cfg.Style.CodeBlockPadding),
@@ -348,6 +394,7 @@ func renderMdCode(
 				RichText: block.Content,
 				Mode:     TextModeSingleLine,
 			}),
+			copyBtn,
 		},
 	})
 }
@@ -455,7 +502,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				}))
 			} else {
 				content = append(content,
-					renderMdCode(block, cfg))
+					renderMdCode(block, cfg, w, i))
 			}
 
 		case block.IsTable:
@@ -645,6 +692,49 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		cfg.Mode == TextModeWrapKeepSpaces {
 		sizing = FillFit
 	}
+
+	// Document-level copy button.
+	docAnimID := "md_cp_doc"
+	docCopied := w.hasAnimationLocked(docAnimID)
+
+	docIconStyle := guiTheme.Icon5
+	docIconStyle.Color = Gray
+
+	var docBtnContent []View
+	if docCopied {
+		cs := docIconStyle
+		cs.Color = Color{80, 200, 80, 255}
+		docBtnContent = []View{
+			Text(TextCfg{Text: IconCheck, TextStyle: cs}),
+		}
+	} else {
+		docBtnContent = []View{
+			Text(TextCfg{Text: IconFile, TextStyle: docIconStyle}),
+		}
+	}
+
+	source := cfg.Source
+	docCopyBtn := Button(ButtonCfg{
+		Float:        true,
+		FloatAnchor:  FloatTopRight,
+		FloatTieOff:  FloatTopRight,
+		FloatOffsetX: -4,
+		FloatOffsetY: 4,
+		Radius:       Some[float32](4),
+		Color:        cfg.Color,
+		Padding:      Padding{Top: 2, Bottom: 2, Left: 4, Right: 4},
+		Content:      docBtnContent,
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			w.SetClipboard(source)
+			w.AnimationAdd(&Animate{
+				AnimateID: docAnimID,
+				Delay:     2 * time.Second,
+				Callback:  func(*Animate, *Window) {},
+			})
+			e.IsHandled = true
+		},
+	})
+	content = append(content, docCopyBtn)
 
 	return Column(ContainerCfg{
 		A11YRole:    AccessRoleGroup,
