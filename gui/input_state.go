@@ -6,12 +6,13 @@ const inputMaxInsertRunes = 65_536
 // InputState manages cursor, selection, and undo/redo for
 // an input field. Stored in StateRegistry keyed by IDFocus.
 type InputState struct {
-	CursorPos    int
-	SelectBeg    uint32
-	SelectEnd    uint32
-	Undo         *BoundedStack[InputMemento]
-	Redo         *BoundedStack[InputMemento]
-	CursorOffset float32
+	CursorPos      int
+	SelectBeg      uint32
+	SelectEnd      uint32
+	Undo           *BoundedStack[InputMemento]
+	Redo           *BoundedStack[InputMemento]
+	CursorOffset   float32
+	LastClickTime int64
 }
 
 // InputMemento stores a snapshot for undo/redo.
@@ -338,6 +339,31 @@ func moveCursorWordRight(runes []rune, pos int) int {
 
 func isWordSep(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
+}
+
+// wordBoundsAt returns the start and end rune indices of the word
+// surrounding pos. If pos is on a separator, selects the separator run.
+func wordBoundsAt(runes []rune, pos int) (int, int) {
+	n := len(runes)
+	if n == 0 {
+		return 0, 0
+	}
+	if pos >= n {
+		pos = n - 1
+	}
+	if pos < 0 {
+		pos = 0
+	}
+	sep := isWordSep(runes[pos])
+	beg := pos
+	for beg > 0 && isWordSep(runes[beg-1]) == sep {
+		beg--
+	}
+	end := pos + 1
+	for end < n && isWordSep(runes[end]) == sep {
+		end++
+	}
+	return beg, end
 }
 
 // moveCursorUp moves cursor up one line in multiline text.

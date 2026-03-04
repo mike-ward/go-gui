@@ -165,9 +165,24 @@ func Input(cfg InputCfg) View {
 				w, nsInput, capMany,
 			)
 			is, _ := imap.Get(ly.Shape.IDFocus)
-			is.CursorPos = runePos
-			is.SelectBeg = uint32(runePos)
-			is.SelectEnd = uint32(runePos)
+
+			// Double-click selects word.
+			now := time.Now().UnixMilli()
+			doubleClick := is.LastClickTime > 0 &&
+				now-is.LastClickTime <= 400
+			is.LastClickTime = now
+
+			runes := []rune(displayText)
+			if doubleClick {
+				beg, end := wordBoundsAt(runes, runePos)
+				is.CursorPos = end
+				is.SelectBeg = uint32(beg)
+				is.SelectEnd = uint32(end)
+			} else {
+				is.CursorPos = runePos
+				is.SelectBeg = uint32(runePos)
+				is.SelectEnd = uint32(runePos)
+			}
 			is.CursorOffset = -1
 			imap.Set(ly.Shape.IDFocus, is)
 			resetBlinkCursorVisible(w)
@@ -179,7 +194,8 @@ func Input(cfg InputCfg) View {
 			e.IsHandled = true
 
 			// Drag-to-select via MouseLock.
-			anchorPos := uint32(runePos)
+			anchorPos := is.SelectBeg
+			anchorEnd := is.SelectEnd
 			dragGL := gl
 			dragDisplayText := displayText
 			dragTxtOffX := ly.Shape.X - layout.Shape.X
@@ -217,6 +233,31 @@ func Input(cfg InputCfg) View {
 				return byteToRuneIndex(dragDisplayText, byteIdx)
 			}
 
+			updateDragSelection := func(rp int, w *Window) {
+				imap := StateMap[uint32, InputState](
+					w, nsInput, capMany)
+				is, _ := imap.Get(dragIDFocus)
+				if doubleClick {
+					wb, we := wordBoundsAt(runes, rp)
+					if rp < int(anchorPos) {
+						is.SelectBeg = anchorEnd
+						is.SelectEnd = uint32(wb)
+						is.CursorPos = wb
+					} else {
+						is.SelectBeg = anchorPos
+						is.SelectEnd = uint32(we)
+						is.CursorPos = we
+					}
+				} else {
+					is.CursorPos = rp
+					is.SelectBeg = anchorPos
+					is.SelectEnd = uint32(rp)
+				}
+				is.CursorOffset = -1
+				imap.Set(dragIDFocus, is)
+				resetBlinkCursorVisible(w)
+			}
+
 			dragScrollCB := func(_ *Animate, w *Window) {
 				var delta float32
 				if lastMouseY < viewTop {
@@ -236,15 +277,7 @@ func Input(cfg InputCfg) View {
 				}
 				sy.Set(idScroll, newScroll)
 				rp := computeRunePos(lastMouseX, lastMouseY, w)
-				imap := StateMap[uint32, InputState](
-					w, nsInput, capMany)
-				is, _ := imap.Get(dragIDFocus)
-				is.CursorPos = rp
-				is.SelectBeg = anchorPos
-				is.SelectEnd = uint32(rp)
-				is.CursorOffset = -1
-				imap.Set(dragIDFocus, is)
-				resetBlinkCursorVisible(w)
+				updateDragSelection(rp, w)
 			}
 
 			w.MouseLock(MouseLockCfg{
@@ -252,15 +285,7 @@ func Input(cfg InputCfg) View {
 					lastMouseX = e.MouseX
 					lastMouseY = e.MouseY
 					rp := computeRunePos(e.MouseX, e.MouseY, w)
-					imap := StateMap[uint32, InputState](
-						w, nsInput, capMany)
-					is, _ := imap.Get(dragIDFocus)
-					is.CursorPos = rp
-					is.SelectBeg = anchorPos
-					is.SelectEnd = uint32(rp)
-					is.CursorOffset = -1
-					imap.Set(dragIDFocus, is)
-					resetBlinkCursorVisible(w)
+					updateDragSelection(rp, w)
 					if idScroll > 0 {
 						outside := e.MouseY < viewTop ||
 							e.MouseY > viewBot

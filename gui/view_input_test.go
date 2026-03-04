@@ -1,6 +1,9 @@
 package gui
 
-import "testing"
+import (
+	"testing"
+	"unicode/utf8"
+)
 
 func TestInputGeneratesLayout(t *testing.T) {
 	w := newTestWindow()
@@ -111,5 +114,560 @@ func TestInputA11YLabelFallback(t *testing.T) {
 	}
 	if layout.Shape.A11Y.Label != "Search..." {
 		t.Fatalf("got %q, want Search...", layout.Shape.A11Y.Label)
+	}
+}
+
+// --- Test helpers for OnChar/OnKeyDown ---
+
+// inputTestSetup creates a window and input layout, sets focus and
+// cursor, and returns everything needed to simulate events.
+type inputTestCtx struct {
+	w       *Window
+	layout  Layout
+	lastText string
+}
+
+func newInputTest(text string, idFocus uint32, cursorPos int) *inputTestCtx {
+	ctx := &inputTestCtx{}
+	ctx.w = newTestWindow()
+	ctx.lastText = text
+	ctx.w.SetIDFocus(idFocus)
+	setInputState(ctx.w, idFocus, InputState{CursorPos: cursorPos})
+	ctx.layout = GenerateViewLayout(Input(InputCfg{
+		Text:    text,
+		IDFocus: idFocus,
+		OnTextChanged: func(_ *Layout, newText string, _ *Window) {
+			ctx.lastText = newText
+		},
+	}), ctx.w)
+	return ctx
+}
+
+func newInputTestMultiline(text string, idFocus uint32, cursorPos int) *inputTestCtx {
+	ctx := &inputTestCtx{}
+	ctx.w = newTestWindow()
+	ctx.lastText = text
+	ctx.w.SetIDFocus(idFocus)
+	setInputState(ctx.w, idFocus, InputState{CursorPos: cursorPos})
+	ctx.layout = GenerateViewLayout(Input(InputCfg{
+		Text:    text,
+		IDFocus: idFocus,
+		Mode:    InputMultiline,
+		OnTextChanged: func(_ *Layout, newText string, _ *Window) {
+			ctx.lastText = newText
+		},
+	}), ctx.w)
+	return ctx
+}
+
+func (c *inputTestCtx) fireChar(charCode uint32) {
+	e := &Event{Type: EventChar, CharCode: charCode}
+	if c.layout.Shape.Events != nil && c.layout.Shape.Events.OnChar != nil {
+		c.layout.Shape.Events.OnChar(&c.layout, e, c.w)
+	}
+}
+
+func (c *inputTestCtx) fireCharMod(charCode uint32, mod Modifier) {
+	e := &Event{Type: EventChar, CharCode: charCode, Modifiers: mod}
+	if c.layout.Shape.Events != nil && c.layout.Shape.Events.OnChar != nil {
+		c.layout.Shape.Events.OnChar(&c.layout, e, c.w)
+	}
+}
+
+func (c *inputTestCtx) fireKeyDown(key KeyCode, mod Modifier) {
+	e := &Event{Type: EventKeyDown, KeyCode: key, Modifiers: mod}
+	if c.layout.Shape.Events != nil && c.layout.Shape.Events.OnKeyDown != nil {
+		c.layout.Shape.Events.OnKeyDown(&c.layout, e, c.w)
+	}
+}
+
+func (c *inputTestCtx) state() InputState {
+	return getInputState(c.w, c.layout.Shape.IDFocus)
+}
+
+// --- OnChar tests ---
+
+func TestInputOnCharInsert(t *testing.T) {
+	ctx := newInputTest("hello", 500, 5)
+	ctx.fireChar('!')
+	if ctx.lastText != "hello!" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "hello!")
+	}
+}
+
+func TestInputOnCharInsertAtMiddle(t *testing.T) {
+	ctx := newInputTest("ab", 501, 1)
+	ctx.fireChar('X')
+	if ctx.lastText != "aXb" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "aXb")
+	}
+}
+
+func TestInputOnCharBackspace(t *testing.T) {
+	ctx := newInputTest("abc", 502, 3)
+	ctx.fireChar(CharBSP)
+	if ctx.lastText != "ab" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "ab")
+	}
+}
+
+func TestInputOnCharDelete(t *testing.T) {
+	ctx := newInputTest("abc", 503, 0)
+	ctx.fireChar(CharDel)
+	if ctx.lastText != "bc" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "bc")
+	}
+}
+
+func TestInputOnCharEnterSingleLine(t *testing.T) {
+	committed := false
+	w := newTestWindow()
+	w.SetIDFocus(504)
+	setInputState(w, 504, InputState{CursorPos: 2})
+	layout := GenerateViewLayout(Input(InputCfg{
+		Text:    "hi",
+		IDFocus: 504,
+		OnTextCommit: func(_ *Layout, text string, reason InputCommitReason, _ *Window) {
+			committed = true
+			if reason != CommitEnter {
+				t.Fatalf("got reason %d, want CommitEnter", reason)
+			}
+		},
+	}), w)
+	e := &Event{Type: EventChar, CharCode: CharLF}
+	layout.Shape.Events.OnChar(&layout, e, w)
+	if !committed {
+		t.Fatal("OnTextCommit not called")
+	}
+}
+
+func TestInputOnCharEnterMultiline(t *testing.T) {
+	ctx := newInputTestMultiline("ab", 505, 2)
+	ctx.fireChar(CharLF)
+	if ctx.lastText != "ab\n" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "ab\n")
+	}
+}
+
+func TestInputOnCharUndo(t *testing.T) {
+	ctx := newInputTest("hello", 506, 5)
+	ctx.fireChar('!')
+	if ctx.lastText != "hello!" {
+		t.Fatalf("insert: got %q", ctx.lastText)
+	}
+	// Rebuild layout with new text for undo.
+	ctx.layout = GenerateViewLayout(Input(InputCfg{
+		Text:    ctx.lastText,
+		IDFocus: 506,
+		OnTextChanged: func(_ *Layout, newText string, _ *Window) {
+			ctx.lastText = newText
+		},
+	}), ctx.w)
+	ctx.fireChar(CharCtrlZ)
+	if ctx.lastText != "hello" {
+		t.Fatalf("undo: got %q, want %q", ctx.lastText, "hello")
+	}
+}
+
+func TestInputOnCharRedo(t *testing.T) {
+	ctx := newInputTest("hello", 507, 5)
+	ctx.fireChar('!')
+	// Rebuild with new text.
+	ctx.layout = GenerateViewLayout(Input(InputCfg{
+		Text:    ctx.lastText,
+		IDFocus: 507,
+		OnTextChanged: func(_ *Layout, newText string, _ *Window) {
+			ctx.lastText = newText
+		},
+	}), ctx.w)
+	ctx.fireChar(CharCtrlZ) // undo
+	ctx.layout = GenerateViewLayout(Input(InputCfg{
+		Text:    ctx.lastText,
+		IDFocus: 507,
+		OnTextChanged: func(_ *Layout, newText string, _ *Window) {
+			ctx.lastText = newText
+		},
+	}), ctx.w)
+	ctx.fireCharMod(CharCtrlZ, ModShift) // redo
+	if ctx.lastText != "hello!" {
+		t.Fatalf("redo: got %q, want %q", ctx.lastText, "hello!")
+	}
+}
+
+func TestInputOnCharSelectAll(t *testing.T) {
+	ctx := newInputTest("abc", 508, 1)
+	ctx.fireChar(CharCtrlA)
+	is := ctx.state()
+	if is.SelectBeg != 0 || is.SelectEnd != 3 {
+		t.Fatalf("select all: got %d-%d, want 0-3",
+			is.SelectBeg, is.SelectEnd)
+	}
+}
+
+func TestInputOnCharCopyPaste(t *testing.T) {
+	var clipboard string
+	ctx := newInputTest("hello", 509, 0)
+	ctx.w.SetClipboardFn(func(s string) { clipboard = s })
+	ctx.w.SetClipboardGetFn(func() string { return clipboard })
+	// Select all, copy.
+	setInputState(ctx.w, 509, InputState{
+		CursorPos: 5, SelectBeg: 0, SelectEnd: 5,
+	})
+	ctx.fireChar(CharCtrlC)
+	if clipboard != "hello" {
+		t.Fatalf("copy: clipboard=%q, want hello", clipboard)
+	}
+	// Move cursor to end, paste.
+	setInputState(ctx.w, 509, InputState{CursorPos: 5})
+	ctx.layout = GenerateViewLayout(Input(InputCfg{
+		Text:    "hello",
+		IDFocus: 509,
+		OnTextChanged: func(_ *Layout, newText string, _ *Window) {
+			ctx.lastText = newText
+		},
+	}), ctx.w)
+	ctx.fireChar(CharCtrlV)
+	if ctx.lastText != "hellohello" {
+		t.Fatalf("paste: got %q, want %q", ctx.lastText, "hellohello")
+	}
+}
+
+func TestInputOnCharCut(t *testing.T) {
+	var clipboard string
+	ctx := newInputTest("abcd", 510, 2)
+	ctx.w.SetClipboardFn(func(s string) { clipboard = s })
+	setInputState(ctx.w, 510, InputState{
+		CursorPos: 2, SelectBeg: 1, SelectEnd: 3,
+	})
+	ctx.fireChar(CharCtrlX)
+	if clipboard != "bc" {
+		t.Fatalf("cut clipboard=%q, want bc", clipboard)
+	}
+	if ctx.lastText != "ad" {
+		t.Fatalf("cut text=%q, want ad", ctx.lastText)
+	}
+}
+
+// --- OnKeyDown tests ---
+
+func TestInputOnKeyDownLeft(t *testing.T) {
+	ctx := newInputTest("abc", 600, 2)
+	ctx.fireKeyDown(KeyLeft, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 1 {
+		t.Fatalf("cursor=%d, want 1", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownRight(t *testing.T) {
+	ctx := newInputTest("abc", 601, 1)
+	ctx.fireKeyDown(KeyRight, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 2 {
+		t.Fatalf("cursor=%d, want 2", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownShiftLeft(t *testing.T) {
+	ctx := newInputTest("abc", 602, 2)
+	ctx.fireKeyDown(KeyLeft, ModShift)
+	is := ctx.state()
+	if is.CursorPos != 1 {
+		t.Fatalf("cursor=%d, want 1", is.CursorPos)
+	}
+	if is.SelectBeg != 2 || is.SelectEnd != 1 {
+		t.Fatalf("sel=%d-%d, want 2-1", is.SelectBeg, is.SelectEnd)
+	}
+}
+
+func TestInputOnKeyDownHome(t *testing.T) {
+	ctx := newInputTest("hello", 603, 3)
+	ctx.fireKeyDown(KeyHome, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 0 {
+		t.Fatalf("cursor=%d, want 0", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownEnd(t *testing.T) {
+	ctx := newInputTest("hello", 604, 1)
+	ctx.fireKeyDown(KeyEnd, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 5 {
+		t.Fatalf("cursor=%d, want 5", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownEscape(t *testing.T) {
+	ctx := newInputTest("abc", 605, 2)
+	setInputState(ctx.w, 605, InputState{
+		CursorPos: 2, SelectBeg: 0, SelectEnd: 3,
+	})
+	ctx.fireKeyDown(KeyEscape, ModNone)
+	is := ctx.state()
+	if is.SelectBeg != 0 || is.SelectEnd != 0 {
+		t.Fatalf("sel=%d-%d, want 0-0", is.SelectBeg, is.SelectEnd)
+	}
+}
+
+func TestInputOnKeyDownWordLeft(t *testing.T) {
+	ctx := newInputTest("hello world", 606, 11)
+	ctx.fireKeyDown(KeyLeft, ModCtrl)
+	is := ctx.state()
+	if is.CursorPos != 6 {
+		t.Fatalf("cursor=%d, want 6", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownWordRight(t *testing.T) {
+	ctx := newInputTest("hello world", 607, 0)
+	ctx.fireKeyDown(KeyRight, ModCtrl)
+	is := ctx.state()
+	if is.CursorPos != 6 {
+		t.Fatalf("cursor=%d, want 6", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownUpDown(t *testing.T) {
+	ctx := newInputTestMultiline("abc\ndef\nghi", 608, 5)
+	// Cursor at "ef" (line 1, col 1). Move up.
+	ctx.fireKeyDown(KeyUp, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 1 {
+		t.Fatalf("up: cursor=%d, want 1", is.CursorPos)
+	}
+	// Move down twice to get to last line.
+	ctx.fireKeyDown(KeyDown, ModNone)
+	ctx.fireKeyDown(KeyDown, ModNone)
+	is = ctx.state()
+	if is.CursorPos != 9 {
+		t.Fatalf("down: cursor=%d, want 9", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownLeftCollapsesSelection(t *testing.T) {
+	ctx := newInputTest("abcdef", 609, 3)
+	setInputState(ctx.w, 609, InputState{
+		CursorPos: 3, SelectBeg: 1, SelectEnd: 4,
+	})
+	ctx.fireKeyDown(KeyLeft, ModNone)
+	is := ctx.state()
+	// Should collapse to selection start (beg=1).
+	if is.CursorPos != 1 {
+		t.Fatalf("cursor=%d, want 1", is.CursorPos)
+	}
+	if is.SelectBeg != 0 || is.SelectEnd != 0 {
+		t.Fatalf("sel not cleared: %d-%d", is.SelectBeg, is.SelectEnd)
+	}
+}
+
+// --- Cursor movement helpers ---
+
+func TestMoveCursorWordLeft(t *testing.T) {
+	runes := []rune("hello world test")
+	assertEqual(t, moveCursorWordLeft(runes, 16), 12)
+	assertEqual(t, moveCursorWordLeft(runes, 12), 6)
+	assertEqual(t, moveCursorWordLeft(runes, 6), 0)
+	assertEqual(t, moveCursorWordLeft(runes, 0), 0)
+}
+
+func TestMoveCursorWordRight(t *testing.T) {
+	runes := []rune("hello world test")
+	assertEqual(t, moveCursorWordRight(runes, 0), 6)
+	assertEqual(t, moveCursorWordRight(runes, 6), 12)
+	assertEqual(t, moveCursorWordRight(runes, 12), 16)
+}
+
+func TestWordBoundsAt(t *testing.T) {
+	runes := []rune("hello world test")
+	// Middle of first word.
+	b, e := wordBoundsAt(runes, 2)
+	if b != 0 || e != 5 {
+		t.Fatalf("got %d-%d, want 0-5", b, e)
+	}
+	// On space between words.
+	b, e = wordBoundsAt(runes, 5)
+	if b != 5 || e != 6 {
+		t.Fatalf("got %d-%d, want 5-6", b, e)
+	}
+	// Last word.
+	b, e = wordBoundsAt(runes, 14)
+	if b != 12 || e != 16 {
+		t.Fatalf("got %d-%d, want 12-16", b, e)
+	}
+	// Empty string.
+	b, e = wordBoundsAt(nil, 0)
+	if b != 0 || e != 0 {
+		t.Fatalf("empty: got %d-%d, want 0-0", b, e)
+	}
+}
+
+func TestMoveCursorUpDown(t *testing.T) {
+	runes := []rune("abc\ndef\nghi")
+	// From middle of line 1 → line 0.
+	assertEqual(t, moveCursorUp(runes, 5), 1)
+	// From line 0 → stays at 0.
+	assertEqual(t, moveCursorUp(runes, 1), 0)
+	// From line 0 → line 1.
+	assertEqual(t, moveCursorDown(runes, 1), 5)
+	// From line 1 → line 2.
+	assertEqual(t, moveCursorDown(runes, 5), 9)
+	// From last line → end.
+	assertEqual(t, moveCursorDown(runes, 9), 11)
+}
+
+func TestMoveCursorLineStartEnd(t *testing.T) {
+	runes := []rune("abc\ndef")
+	assertEqual(t, moveCursorLineStart(runes, 5), 4)
+	assertEqual(t, moveCursorLineEnd(runes, 0), 3)
+	assertEqual(t, moveCursorLineEnd(runes, 4), 7)
+}
+
+// --- Cursor render tests ---
+
+func TestInputCursorRenderedWhenFocused(t *testing.T) {
+	w := newTestWindow()
+	w.viewState.inputCursorOn = true
+	w.SetIDFocus(700)
+	setInputState(w, 700, InputState{CursorPos: 2})
+	style := DefaultTextStyle
+	shape := &Shape{
+		IDFocus:   700,
+		ShapeType: ShapeText,
+		Width:     200,
+		Height:    20,
+		TC: &ShapeTextConfig{
+			Text:      "hello",
+			TextStyle: &style,
+		},
+	}
+	w.renderers = w.renderers[:0]
+	renderInputCursor(shape, "hello", 0, 0, w)
+	found := false
+	for _, r := range w.renderers {
+		if r.Kind == RenderRect && r.Fill && r.W < 2 {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("cursor RenderRect not emitted")
+	}
+}
+
+func TestInputCursorNotRenderedWhenUnfocused(t *testing.T) {
+	w := newTestWindow()
+	w.viewState.inputCursorOn = true
+	style := DefaultTextStyle
+	shape := &Shape{
+		IDFocus:   700,
+		ShapeType: ShapeText,
+		TC: &ShapeTextConfig{
+			Text:      "hello",
+			TextStyle: &style,
+		},
+	}
+	w.renderers = w.renderers[:0]
+	renderInputCursor(shape, "hello", 0, 0, w)
+	if len(w.renderers) != 0 {
+		t.Fatal("cursor should not render when unfocused")
+	}
+}
+
+func TestInputCursorNotRenderedWhenBlinkOff(t *testing.T) {
+	w := newTestWindow()
+	w.SetIDFocus(701)
+	w.viewState.inputCursorOn = false
+	style := DefaultTextStyle
+	shape := &Shape{
+		IDFocus:   701,
+		ShapeType: ShapeText,
+		TC: &ShapeTextConfig{
+			Text:      "hello",
+			TextStyle: &style,
+		},
+	}
+	w.renderers = w.renderers[:0]
+	renderInputCursor(shape, "hello", 0, 0, w)
+	if len(w.renderers) != 0 {
+		t.Fatal("cursor should not render when blink off")
+	}
+}
+
+// --- Selection render tests ---
+
+func TestInputSelectionRendered(t *testing.T) {
+	w := newTestWindow()
+	style := DefaultTextStyle
+	shape := &Shape{
+		ShapeType: ShapeText,
+		Width:     200,
+		Height:    20,
+		TC: &ShapeTextConfig{
+			Text:       "hello",
+			TextStyle:  &style,
+			TextSelBeg: 1,
+			TextSelEnd: 4,
+		},
+	}
+	w.renderers = w.renderers[:0]
+	renderInputSelection(shape, "hello", 0, 0, w)
+	found := false
+	for _, r := range w.renderers {
+		if r.Kind == RenderRect && r.Fill && r.Color.A > 0 {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("selection RenderRect not emitted")
+	}
+}
+
+func TestInputSelectionNotRenderedWhenNoSelection(t *testing.T) {
+	w := newTestWindow()
+	style := DefaultTextStyle
+	shape := &Shape{
+		ShapeType: ShapeText,
+		TC: &ShapeTextConfig{
+			Text:       "hello",
+			TextStyle:  &style,
+			TextSelBeg: 0,
+			TextSelEnd: 0,
+		},
+	}
+	w.renderers = w.renderers[:0]
+	renderInputSelection(shape, "hello", 0, 0, w)
+	if len(w.renderers) != 0 {
+		t.Fatal("selection should not render with no selection")
+	}
+}
+
+func TestInputSelectionMultiline(t *testing.T) {
+	w := newTestWindow()
+	style := DefaultTextStyle
+	text := "abc\ndef\nghi"
+	shape := &Shape{
+		ShapeType: ShapeText,
+		Width:     200,
+		Height:    60,
+		TC: &ShapeTextConfig{
+			Text:       text,
+			TextStyle:  &style,
+			TextMode:   TextModeWrapKeepSpaces,
+			TextSelBeg: 2,
+			TextSelEnd: uint32(utf8.RuneCountInString("abc\nde")),
+		},
+	}
+	w.renderers = w.renderers[:0]
+	renderInputSelection(shape, text, 0, 0, w)
+	count := 0
+	for _, r := range w.renderers {
+		if r.Kind == RenderRect && r.Fill {
+			count++
+		}
+	}
+	// Fallback (no textMeasurer) emits a single approximation rect.
+	// With a real glyph backend, GetSelectionRects returns per-line rects.
+	if count < 1 {
+		t.Fatalf("expected >=1 selection rects, got %d", count)
 	}
 }
