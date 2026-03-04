@@ -19,13 +19,13 @@ type MenuItemCfg struct {
 	selected    bool
 
 	// Public configuration.
-	ID        string
-	Text      string
-	Padding   Padding
-	Action    func(*MenuItemCfg, *Event, *Window)
-	Submenu   []MenuItemCfg
+	ID         string
+	Text       string
+	Padding    Padding
+	Action     func(*MenuItemCfg, *Event, *Window)
+	Submenu    []MenuItemCfg
 	CustomView View
-	Separator bool
+	Separator  bool
 }
 
 // MenuItemText creates a simple text menu item.
@@ -120,6 +120,10 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 		}
 	}
 
+	itemContent := make([]View, 0, 1+len(extra))
+	itemContent = append(itemContent, content)
+	itemContent = append(itemContent, extra...)
+
 	return Column(ContainerCfg{
 		ID:      itemCfg.ID,
 		Color:   itemColor,
@@ -128,7 +132,7 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 		Radius:  Some(itemCfg.radius),
 		OnClick: menuItemClick(menubarCfg, itemCfg),
 		OnHover: onHover,
-		Content: append([]View{content}, extra...),
+		Content: itemContent,
 	})
 }
 

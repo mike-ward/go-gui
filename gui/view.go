@@ -28,7 +28,16 @@ func ensureLayoutShape(layout *Layout) {
 func GenerateViewLayout(view View, w *Window) Layout {
 	layout := view.GenerateLayout(w)
 	ensureLayoutShape(&layout)
-	for _, child := range view.Content() {
+	children := view.Content()
+	if len(children) > 0 && cap(layout.Children)-len(layout.Children) < len(children) {
+		grown := make([]Layout, len(layout.Children), len(layout.Children)+len(children))
+		copy(grown, layout.Children)
+		layout.Children = grown
+	}
+	for _, child := range children {
+		if child == nil {
+			continue
+		}
 		layout.Children = append(
 			layout.Children,
 			GenerateViewLayout(child, w),

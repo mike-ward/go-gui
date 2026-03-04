@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -54,34 +54,34 @@ type datePickerState struct {
 
 // DatePickerCfg configures a date picker calendar view.
 type DatePickerCfg struct {
-	ID               string
-	Dates            []time.Time
-	AllowedWeekdays  []DatePickerWeekdays
-	AllowedMonths    []DatePickerMonths
-	AllowedYears     []int
-	AllowedDates     []time.Time
-	OnSelect         func([]time.Time, *Event, *Window)
-	WeekdaysLen      DatePickerWeekdayLen
-	TextStyle        TextStyle
-	Color            Color
-	ColorHover       Color
-	ColorFocus       Color
-	ColorClick       Color
-	ColorBorder      Color
-	ColorBorderFocus Color
-	ColorSelect      Color
-	Padding          Padding
-	SizeBorder       Opt[float32]
-	CellSpacing      Opt[float32]
-	Radius           Opt[float32]
-	RadiusBorder     Opt[float32]
-	IDFocus          uint32
-	Disabled         bool
-	Invisible        bool
-	SelectMultiple   bool
-	HideTodayIndicator     bool
-	MondayFirstDayOfWeek   bool
-	ShowAdjacentMonths     bool
+	ID                   string
+	Dates                []time.Time
+	AllowedWeekdays      []DatePickerWeekdays
+	AllowedMonths        []DatePickerMonths
+	AllowedYears         []int
+	AllowedDates         []time.Time
+	OnSelect             func([]time.Time, *Event, *Window)
+	WeekdaysLen          DatePickerWeekdayLen
+	TextStyle            TextStyle
+	Color                Color
+	ColorHover           Color
+	ColorFocus           Color
+	ColorClick           Color
+	ColorBorder          Color
+	ColorBorderFocus     Color
+	ColorSelect          Color
+	Padding              Padding
+	SizeBorder           Opt[float32]
+	CellSpacing          Opt[float32]
+	Radius               Opt[float32]
+	RadiusBorder         Opt[float32]
+	IDFocus              uint32
+	Disabled             bool
+	Invisible            bool
+	SelectMultiple       bool
+	HideTodayIndicator   bool
+	MondayFirstDayOfWeek bool
+	ShowAdjacentMonths   bool
 }
 
 type datePickerView struct {
@@ -107,7 +107,7 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 	state := datePickerGetState(w, cfg)
 
 	// Build view tree: controls + body.
-	var content []View
+	content := make([]View, 0, 2)
 	content = append(content, datePickerControls(cfg, state, w))
 	if state.ShowYearMonthPicker {
 		content = append(content, datePickerYearMonthPicker(cfg, state))
@@ -224,7 +224,7 @@ func datePickerCalendar(
 ) View {
 	dn := &DefaultDatePickerStyle
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
-	var content []View
+	content := make([]View, 0, 7)
 	content = append(content, datePickerWeekdays(cfg))
 	content = append(content, datePickerMonth(cfg, state, w)...)
 	return Column(ContainerCfg{
@@ -238,7 +238,7 @@ func datePickerCalendar(
 func datePickerWeekdays(cfg *DatePickerCfg) View {
 	dn := &DefaultDatePickerStyle
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
-	var labels []View
+	labels := make([]View, 0, 7)
 	for i := range 7 {
 		dow := datePickerWeekdayIndex(i, cfg.MondayFirstDayOfWeek)
 		label := datePickerWeekdayLabel(dow, cfg.WeekdaysLen)
@@ -285,10 +285,10 @@ func datePickerMonth(
 	onSelect := cfg.OnSelect
 	selectMultiple := cfg.SelectMultiple
 
-	var rows []View
+	rows := make([]View, 0, 6)
 	day := 1 - startDOW
 	for row := range 6 {
-		var cells []View
+		cells := make([]View, 0, 7)
 		for col := range 7 {
 			d := day + row*7 + col
 			if d < 1 || d > daysInMonth {
@@ -308,7 +308,7 @@ func datePickerMonth(
 			isToday := isSameDay(cellDate, today)
 			selected := datePickerIsSelected(cellDate, cfg.Dates)
 			disabled := datePickerIsDisabled(cellDate, cfg)
-			dayStr := fmt.Sprintf("%d", d)
+			dayStr := strconv.Itoa(d)
 
 			cellColor := cfg.Color
 			if selected {
@@ -390,7 +390,7 @@ func datePickerAdjacentCell(
 		Padding: Some(PaddingNone),
 		Content: []View{
 			Text(TextCfg{
-				Text:      fmt.Sprintf("%d", adjDay),
+				Text:      strconv.Itoa(adjDay),
 				TextStyle: ts,
 			}),
 		},

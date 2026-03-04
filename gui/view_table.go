@@ -55,7 +55,7 @@ type TableCfg struct {
 	TextMeasurer TextMeasurer
 
 	// Sizing
-	Sizing Sizing
+	Sizing    Sizing
 	Width     float32
 	Height    float32
 	MinWidth  float32
@@ -233,7 +233,6 @@ func Table(cfg TableCfg) View {
 
 		rowOnClick := r.OnClick
 		ri := rowIdx
-		selCopy := copySelected(selected)
 
 		rows = append(rows, Row(ContainerCfg{
 			Color:   rowColor,
@@ -247,7 +246,7 @@ func Table(cfg TableCfg) View {
 				if onSelect != nil {
 					var newSel map[int]bool
 					if multiSelect {
-						newSel = copySelected(selCopy)
+						newSel = copySelected(selected)
 					} else {
 						newSel = make(map[int]bool)
 					}

@@ -119,6 +119,14 @@ type MarkdownCfg struct {
 	DisableExternalAPIs bool
 }
 
+var markdownExternalAPIsEnabled bool
+
+// SetMarkdownExternalAPIsEnabled toggles external markdown API usage
+// (CodeCogs/Kroki). Default is disabled.
+func SetMarkdownExternalAPIsEnabled(enabled bool) {
+	markdownExternalAPIsEnabled = enabled
+}
+
 func richTextPlain(rt RichText) string {
 	if len(rt.Runs) == 0 {
 		return ""
@@ -187,10 +195,10 @@ func renderMdMath(
 	block MarkdownBlock, cfg MarkdownCfg, w *Window,
 ) View {
 	codeFallback := Column(ContainerCfg{
-		Color:      cfg.Style.CodeBlockBG,
-		Padding:    Some(cfg.Style.CodeBlockPadding),
-		Radius:     Some(cfg.Style.CodeBlockRadius),
-		Sizing:     FillFit,
+		Color:   cfg.Style.CodeBlockBG,
+		Padding: Some(cfg.Style.CodeBlockPadding),
+		Radius:  Some(cfg.Style.CodeBlockRadius),
+		Sizing:  FillFit,
 		Content: []View{
 			Text(TextCfg{
 				Text:      block.MathLatex,
@@ -199,7 +207,7 @@ func renderMdMath(
 		},
 	})
 
-	if cfg.DisableExternalAPIs {
+	if cfg.DisableExternalAPIs || !markdownExternalAPIsEnabled {
 		return codeFallback
 	}
 
@@ -267,7 +275,7 @@ func renderMdMermaid(
 		},
 	})
 
-	if cfg.DisableExternalAPIs {
+	if cfg.DisableExternalAPIs || !markdownExternalAPIsEnabled {
 		return codeFallback
 	}
 
@@ -363,8 +371,11 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		w.viewState.markdownCache.Set(hash, blocks)
 	}
 
+	allowExternalAPIs := markdownExternalAPIsEnabled &&
+		!cfg.DisableExternalAPIs
+
 	// Trigger inline math fetches.
-	if !cfg.DisableExternalAPIs {
+	if allowExternalAPIs {
 		markdownWarnExternalAPIOnce(w)
 		if w.viewState.diagramCache == nil {
 			w.viewState.diagramCache =
@@ -647,4 +658,3 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		Content:     content,
 	})
 }
-

@@ -5,12 +5,12 @@ package gui
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"image/png"
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/mike-ward/go-gui/gui/markdown"
@@ -33,7 +33,7 @@ const (
 // DiagramCacheEntry stores cached diagram data.
 type DiagramCacheEntry struct {
 	State     DiagramState
-	PNGPath   string  // temp file path
+	PNGPath   string // temp file path
 	Error     string
 	Width     float32
 	Height    float32
@@ -256,19 +256,18 @@ func fetchMermaidAsync(
 }
 
 func mermaidHTTPFetch(source string) ([]byte, error) {
-	escaped := strings.ReplaceAll(source, `\`, `\\`)
-	escaped = strings.ReplaceAll(escaped, `"`, `\"`)
-	escaped = strings.ReplaceAll(escaped, "\n", `\n`)
-	escaped = strings.ReplaceAll(escaped, "\r", `\r`)
-	escaped = strings.ReplaceAll(escaped, "\t", `\t`)
-
-	jsonData := `{"diagram_source": "` + escaped + `"}`
+	payload, err := json.Marshal(map[string]string{
+		"diagram_source": source,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	client := &http.Client{Timeout: diagramFetchTimeout}
 	resp, err := client.Post(
 		"https://kroki.io/mermaid/png",
 		"application/json",
-		strings.NewReader(jsonData),
+		bytes.NewReader(payload),
 	)
 	if err != nil {
 		return nil, err

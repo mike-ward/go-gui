@@ -355,7 +355,7 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	needLayout := tc.TextSelBeg != tc.TextSelEnd ||
 		(shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() && w.InputCursorOn())
 	if needLayout {
-		preLayout, hasPreLayout = inputGlyphLayout(text, shape, style, w)
+		preLayout, hasPreLayout = inputGlyphLayoutResolved(text, shape, style, w, tc.TextIsPassword)
 	}
 
 	// Selection highlight (drawn before text so text overlays).
@@ -405,7 +405,7 @@ func renderInputCursor(shape *Shape, text string, baseX, baseY float32,
 	layout := preLayout
 	ok := hasPreLayout
 	if !ok {
-		layout, ok = inputGlyphLayout(text, shape, style, w)
+		layout, ok = inputGlyphLayoutResolved(text, shape, style, w, shape.TC != nil && shape.TC.TextIsPassword)
 	}
 	if ok {
 		cp, cpOK := layout.GetCursorPos(byteIdx)
@@ -483,7 +483,7 @@ func renderInputSelection(shape *Shape, text string, baseX, baseY float32,
 	layout := preLayout
 	ok := hasPreLayout
 	if !ok {
-		layout, ok = inputGlyphLayout(text, shape, style, w)
+		layout, ok = inputGlyphLayoutResolved(text, shape, style, w, tc != nil && tc.TextIsPassword)
 	}
 	if ok {
 		rects := layout.GetSelectionRects(startByte, endByte)
@@ -519,11 +519,15 @@ func renderInputSelection(shape *Shape, text string, baseX, baseY float32,
 // inputGlyphLayout creates a glyph layout for the input text,
 // applying password masking and wrap width as needed.
 func inputGlyphLayout(text string, shape *Shape, style TextStyle, w *Window) (glyph.Layout, bool) {
+	return inputGlyphLayoutResolved(text, shape, style, w, false)
+}
+
+func inputGlyphLayoutResolved(text string, shape *Shape, style TextStyle, w *Window, textAlreadyMasked bool) (glyph.Layout, bool) {
 	if w.textMeasurer == nil {
 		return glyph.Layout{}, false
 	}
 	displayText := text
-	if shape.TC != nil && shape.TC.TextIsPassword {
+	if shape.TC != nil && shape.TC.TextIsPassword && !textAlreadyMasked {
 		if strings.Contains(text, "\n") {
 			displayText = passwordMaskKeepNewlines(text)
 		} else {

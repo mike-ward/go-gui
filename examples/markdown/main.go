@@ -14,6 +14,7 @@ type App struct{}
 
 func main() {
 	gui.SetTheme(gui.ThemeDarkBordered)
+	gui.SetMarkdownExternalAPIsEnabled(true)
 
 	w := gui.NewWindow(gui.WindowCfg{
 		State:  &App{},
