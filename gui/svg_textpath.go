@@ -3,7 +3,6 @@ package gui
 import (
 	"math"
 	"strconv"
-	"strings"
 	"unicode"
 
 	"github.com/mike-ward/go-glyph"
@@ -244,48 +243,55 @@ func flattenDefsPath(d string, scale float32) []float32 {
 // tokenizeSvgPath splits an SVG path d attribute into command
 // letters and numeric tokens.
 func tokenizeSvgPath(d string) []string {
-	var tokens []string
-	r := strings.NewReader(d)
-	for {
-		ch, _, err := r.ReadRune()
-		if err != nil {
-			break
-		}
-		if unicode.IsSpace(ch) || ch == ',' {
+	tokens := make([]string, 0, len(d)/4+1)
+	for i := 0; i < len(d); {
+		c := d[i]
+		if unicode.IsSpace(rune(c)) || c == ',' {
+			i++
 			continue
 		}
-		if isSvgCommandRune(ch) {
-			tokens = append(tokens, string(ch))
+		if isSvgCommandRune(rune(c)) {
+			tokens = append(tokens, d[i:i+1])
+			i++
 			continue
 		}
-		// Numeric token.
-		var sb strings.Builder
-		sb.WriteRune(ch)
-		for {
-			ch, _, err := r.ReadRune()
-			if err != nil {
+		start := i
+		hasDot := false
+		for i < len(d) {
+			ch := d[i]
+			if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == ',' {
 				break
 			}
-			if ch == '-' && sb.Len() > 0 {
-				// Negative sign starts new number (unless
-				// after 'e'/'E' for scientific notation).
-				last := sb.String()
-				if last[len(last)-1] != 'e' &&
-					last[len(last)-1] != 'E' {
-					r.UnreadRune()
+			if isSvgCommandRune(rune(ch)) {
+				break
+			}
+			if ch == '.' {
+				if hasDot {
+					break
+				}
+				hasDot = true
+				i++
+				continue
+			}
+			if (ch == '-' || ch == '+') && i > start {
+				prev := d[i-1]
+				if prev != 'e' && prev != 'E' {
 					break
 				}
 			}
-			if unicode.IsDigit(ch) || ch == '.' ||
+			if (ch >= '0' && ch <= '9') ||
 				ch == '-' || ch == '+' ||
 				ch == 'e' || ch == 'E' {
-				sb.WriteRune(ch)
-			} else {
-				r.UnreadRune()
-				break
+				i++
+				continue
 			}
+			break
 		}
-		tokens = append(tokens, sb.String())
+		if i > start {
+			tokens = append(tokens, d[start:i])
+			continue
+		}
+		i++
 	}
 	return tokens
 }
