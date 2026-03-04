@@ -463,6 +463,8 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		id := hcfg.IDFocus
 		imap := StateMap[uint32, InputState](w, nsInput, capMany)
 		is, _ := imap.Get(id)
+		savedOffset := is.CursorOffset
+		is.CursorOffset = -1
 		text := inputTextFromLayout(layout)
 		runeLen := utf8RuneCount(text)
 		pos := is.CursorPos
@@ -548,7 +550,15 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				var newPos int
 				if glOK {
 					byteIdx := runeToByteIndex(text, pos)
-					newPos = byteToRuneIndex(text, gl.MoveCursorUp(byteIdx, -1))
+					preferredX := savedOffset
+					if preferredX < 0 {
+						if cp, ok := gl.GetCursorPos(byteIdx); ok {
+							preferredX = cp.X
+						}
+					}
+					is.CursorOffset = preferredX
+					newPos = byteToRuneIndex(text,
+						gl.MoveCursorUp(byteIdx, preferredX))
 				} else {
 					newPos = moveCursorUp([]rune(text), pos)
 				}
@@ -560,7 +570,15 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				var newPos int
 				if glOK {
 					byteIdx := runeToByteIndex(text, pos)
-					newPos = byteToRuneIndex(text, gl.MoveCursorDown(byteIdx, -1))
+					preferredX := savedOffset
+					if preferredX < 0 {
+						if cp, ok := gl.GetCursorPos(byteIdx); ok {
+							preferredX = cp.X
+						}
+					}
+					is.CursorOffset = preferredX
+					newPos = byteToRuneIndex(text,
+						gl.MoveCursorDown(byteIdx, preferredX))
 				} else {
 					newPos = moveCursorDown([]rune(text), pos)
 				}
