@@ -12,7 +12,8 @@ type InputState struct {
 	Undo           *BoundedStack[InputMemento]
 	Redo           *BoundedStack[InputMemento]
 	CursorOffset   float32
-	LastClickTime int64
+	LastClickTime  int64
+	CursorTrailing bool // prefer end-of-previous-line at wrap boundaries
 }
 
 // InputMemento stores a snapshot for undo/redo.

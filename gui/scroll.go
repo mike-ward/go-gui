@@ -39,6 +39,17 @@ func inputScrollCursorIntoView(
 	if !ok {
 		return
 	}
+	if is.CursorTrailing {
+		for i, line := range gl.Lines {
+			if i > 0 && byteIdx == line.StartIndex {
+				prev := gl.Lines[i-1]
+				cp.X = prev.Rect.X + prev.Rect.Width
+				cp.Y = prev.Rect.Y
+				cp.Height = prev.Rect.Height
+				break
+			}
+		}
+	}
 
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 	scrollOffset, _ := sy.Get(idScroll)

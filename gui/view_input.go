@@ -459,56 +459,11 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		changed := false
 
 		switch {
-		// Ctrl/Cmd+Z — undo.
-		case ch == CharCtrlZ || ch == CharCmdZ:
-			if e.Modifiers.Has(ModShift) {
-				newText := inputRedo(text, id, w)
-				if newText != text {
-					text = newText
-					changed = true
-				}
-			} else {
-				newText := inputUndo(text, id, w)
-				if newText != text {
-					text = newText
-					changed = true
-				}
-			}
-		// Ctrl/Cmd+X — cut.
-		case ch == CharCtrlX || ch == CharCmdX:
-			newText, copied, ok := inputCut(text, id, hcfg.IsPassword, w)
-			if ok {
-				w.SetClipboard(copied)
-				text = newText
-				changed = true
-			}
-		// Ctrl/Cmd+C — copy.
-		case ch == CharCtrlC || ch == CharCmdC:
-			if copied, ok := inputCopy(text, id, hcfg.IsPassword, w); ok {
-				w.SetClipboard(copied)
-			}
-		// Ctrl/Cmd+V — paste.
-		case ch == CharCtrlV || ch == CharCmdV:
-			clip := w.GetClipboard()
-			if len(clip) > 0 {
-				if mask != nil {
-					is := inputStateOrDefault(id, w)
-					res := InputMaskInsert(text, is.CursorPos, is.SelectBeg, is.SelectEnd, clip, mask)
-					if res.Changed {
-						text = res.Text
-						StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
-							CursorPos: res.CursorPos, Undo: is.Undo,
-						})
-						changed = true
-					}
-				} else {
-					text = inputInsert(text, clip, id, w)
-					changed = true
-				}
-			}
-		// Ctrl/Cmd+A — select all.
-		case ch == CharCtrlA || ch == CharCmdA:
-			inputSelectAll(text, id, w)
+		// Skip control characters handled by OnKeyDown.
+		case ch < CharSpace && ch != CharBSP && ch != CharDel &&
+			ch != CharLF && ch != CharCR:
+			e.IsHandled = true
+			return
 		// Backspace.
 		case ch == CharBSP:
 			if mask != nil {
@@ -601,7 +556,9 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		imap := StateMap[uint32, InputState](w, nsInput, capMany)
 		is, _ := imap.Get(id)
 		savedOffset := is.CursorOffset
+		savedTrailing := is.CursorTrailing
 		is.CursorOffset = -1
+		is.CursorTrailing = false
 		text := inputTextFromLayout(layout)
 		runeLen := utf8RuneCount(text)
 		pos := is.CursorPos
@@ -611,6 +568,7 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		isShift := e.Modifiers.Has(ModShift)
 		isWordMod := e.Modifiers.HasAny(ModCtrl, ModAlt, ModSuper)
 		handled := true
+		textChanged := false
 
 		// Use glyph layout for cursor navigation when available.
 		gl, glOK := inputGlyphLayoutFor(layout, w)
@@ -666,7 +624,12 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			var newPos int
 			if glOK {
 				byteIdx := runeToByteIndex(text, pos)
-				newPos = byteToRuneIndex(text, gl.MoveCursorLineStart(byteIdx))
+				startByte := gl.MoveCursorLineStart(byteIdx)
+				// Trailing: cursor is visually on previous line.
+				if savedTrailing {
+					startByte = trailingLineStart(gl.Lines, byteIdx, startByte)
+				}
+				newPos = byteToRuneIndex(text, startByte)
 			} else {
 				newPos = moveCursorLineStart([]rune(text), pos)
 			}
@@ -676,10 +639,17 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			var newPos int
 			if glOK {
 				byteIdx := runeToByteIndex(text, pos)
-				newPos = byteToRuneIndex(text, gl.MoveCursorLineEnd(byteIdx))
+				endByte := gl.MoveCursorLineEnd(byteIdx)
+				// Trailing: cursor is visually on previous line;
+				// End should stay on that line.
+				if savedTrailing {
+					endByte = trailingLineEnd(gl.Lines, byteIdx, endByte)
+				}
+				newPos = byteToRuneIndex(text, endByte)
 			} else {
 				newPos = moveCursorLineEnd([]rune(text), pos)
 			}
+			is.CursorTrailing = true
 			updateCursorAndSelection(imap, id, is,
 				newPos, isShift)
 		case KeyUp:
@@ -726,12 +696,87 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			is.SelectBeg = 0
 			is.SelectEnd = 0
 			imap.Set(id, is)
+		case KeyA:
+			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
+				inputSelectAll(text, id, w)
+			} else {
+				handled = false
+			}
+		case KeyC:
+			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
+				if copied, ok := inputCopy(text, id,
+					hcfg.IsPassword, w); ok {
+					w.SetClipboard(copied)
+				}
+			} else {
+				handled = false
+			}
+		case KeyV:
+			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
+				clip := w.GetClipboard()
+				if len(clip) > 0 {
+					mask := hcfg.compiledMask()
+					if mask != nil {
+						cis := inputStateOrDefault(id, w)
+						res := InputMaskInsert(text,
+							cis.CursorPos,
+							cis.SelectBeg,
+							cis.SelectEnd, clip, mask)
+						if res.Changed {
+							text = res.Text
+							StateMap[uint32, InputState](
+								w, nsInput, capMany,
+							).Set(id, InputState{
+								CursorPos: res.CursorPos,
+								Undo:      cis.Undo,
+							})
+							textChanged = true
+						}
+					} else {
+						text = inputInsert(text, clip, id, w)
+						textChanged = true
+					}
+				}
+			} else {
+				handled = false
+			}
+		case KeyX:
+			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
+				newText, copied, ok := inputCut(text, id,
+					hcfg.IsPassword, w)
+				if ok {
+					w.SetClipboard(copied)
+					text = newText
+					textChanged = true
+				}
+			} else {
+				handled = false
+			}
+		case KeyZ:
+			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
+				if e.Modifiers.Has(ModShift) {
+					if nt := inputRedo(text, id, w); nt != text {
+						text = nt
+						textChanged = true
+					}
+				} else {
+					if nt := inputUndo(text, id, w); nt != text {
+						text = nt
+						textChanged = true
+					}
+				}
+			} else {
+				handled = false
+			}
 		default:
 			handled = false
 		}
 
 		if handled {
 			resetBlinkCursorVisible(w)
+			if textChanged && hcfg.OnTextChanged != nil {
+				hcfg.OnTextChanged(layout, text, w)
+			}
 			inputScrollCursorIntoView(
 				hcfg.IDScroll, text, layout, w,
 			)
@@ -783,6 +828,30 @@ func inputGlyphLayoutFor(layout *Layout, w *Window) (glyph.Layout, bool) {
 	return inputGlyphLayout(
 		inputTextFromLayout(layout), txt.Shape, style, w,
 	)
+}
+
+// trailingLineStart returns the start of the previous visual line
+// when byteIdx is at a soft-wrap boundary and CursorTrailing is set.
+// Falls back to fallback if no boundary match is found.
+func trailingLineStart(lines []glyph.Line, byteIdx, fallback int) int {
+	for i, line := range lines {
+		if i > 0 && byteIdx == line.StartIndex {
+			return lines[i-1].StartIndex
+		}
+	}
+	return fallback
+}
+
+// trailingLineEnd returns the end of the previous visual line
+// when byteIdx is at a soft-wrap boundary and CursorTrailing is set.
+// Falls back to fallback if no boundary match is found.
+func trailingLineEnd(lines []glyph.Line, byteIdx, fallback int) int {
+	for i, line := range lines {
+		if i > 0 && byteIdx == line.StartIndex {
+			return lines[i-1].StartIndex + lines[i-1].Length
+		}
+	}
+	return fallback
 }
 
 // passwordMask replaces each rune with a bullet character.
