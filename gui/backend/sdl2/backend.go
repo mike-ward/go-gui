@@ -31,6 +31,7 @@ type Backend struct {
 	textPathPlacements []glyph.GlyphPlacement
 	texCache           texCache // image texture cache
 	allowedImageRoots  []string
+	imagePathCache     map[string]string
 	maxImageBytes      int64
 	maxImagePixels     int64
 }
@@ -101,7 +102,8 @@ func New(w *gui.Window) (*Backend, error) {
 		textSys:           textSys,
 		dpiScale:          dpiScale,
 		texCache:          newTexCache(128),
-		allowedImageRoots: cfg.AllowedImageRoots,
+		allowedImageRoots: normalizeAllowedRoots(cfg.AllowedImageRoots),
+		imagePathCache:    make(map[string]string, 64),
 		maxImageBytes:     cfg.MaxImageBytes,
 		maxImagePixels:    cfg.MaxImagePixels,
 	}

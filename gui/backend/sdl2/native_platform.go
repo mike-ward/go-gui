@@ -1,6 +1,7 @@
 package sdl2
 
 import (
+	"fmt"
 	"os/exec"
 	"runtime"
 
@@ -12,18 +13,19 @@ import (
 type nativePlatform struct{}
 
 func (n *nativePlatform) OpenURI(uri string) error {
-	var cmd string
+	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = "open"
+		cmd = exec.Command("open", uri)
 	case "linux":
-		cmd = "xdg-open"
+		cmd = exec.Command("xdg-open", uri)
 	case "windows":
-		cmd = "start"
+		// "start" is a shell built-in; invoke via cmd.exe.
+		cmd = exec.Command("cmd", "/c", "start", "", uri)
 	default:
-		return nil
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
-	return exec.Command(cmd, uri).Start()
+	return cmd.Start()
 }
 
 func (n *nativePlatform) ShowOpenDialog(_, _ string, _ []string, _ bool) gui.PlatformDialogResult {
@@ -58,7 +60,7 @@ func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return 
 func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
-func (n *nativePlatform) A11yInit(_ func(action, index int)) {}
+func (n *nativePlatform) A11yInit(_ func(action, index int))  {}
 func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int) {}
 func (n *nativePlatform) A11yDestroy()                        {}
 func (n *nativePlatform) A11yAnnounce(_ string)               {}

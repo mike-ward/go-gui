@@ -1,8 +1,10 @@
 package sdl2
 
 import (
-	"github.com/veandco/go-sdl2/sdl"
+	"unicode/utf8"
+
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 // mapEvent converts an SDL2 event to a gui.Event.
@@ -72,10 +74,13 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 		if len(text) == 0 {
 			return gui.Event{}, true
 		}
-		r := []rune(text)
+		r, sz := utf8.DecodeRuneInString(text)
+		if r == utf8.RuneError && sz == 1 {
+			return gui.Event{}, true
+		}
 		return gui.Event{
 			Type:      gui.EventChar,
-			CharCode:  uint32(r[0]),
+			CharCode:  uint32(r),
 			Modifiers: mapKeyMod(sdl.GetModState()),
 		}, true
 
