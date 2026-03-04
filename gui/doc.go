@@ -10,6 +10,8 @@
 //	package main
 //
 //	import (
+//		"fmt"
+//
 //		"github.com/mike-ward/go-gui/gui"
 //		sdl2 "github.com/mike-ward/go-gui/gui/backend/sdl2"
 //	)
@@ -25,12 +27,7 @@
 //			Height: 300,
 //			OnInit: func(w *gui.Window) { w.UpdateView(view) },
 //		})
-//		b, err := sdl2.New(w)
-//		if err != nil {
-//			panic(err)
-//		}
-//		defer b.Destroy()
-//		b.Run(w)
+//		sdl2.Run(w)
 //	}
 //
 //	func view(w *gui.Window) gui.View {
