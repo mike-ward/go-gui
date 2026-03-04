@@ -2,6 +2,8 @@ package gui
 
 import "time"
 
+const animIDTextDragScroll = "text-drag-scroll"
+
 // makeTextOnClick returns a click handler for text selection.
 // Single-click places cursor, double-click (400ms) selects word,
 // drag-to-select via MouseLock.
@@ -79,53 +81,137 @@ func makeTextOnClick() func(*Layout, *Event, *Window) {
 		dragShapeX := shape.X
 		dragShapeY := shape.Y
 
+		// Find nearest scroll ancestor.
+		var lastMouseX, lastMouseY float32
+		scrollID := uint32(0)
+		dragScrollY0 := float32(0)
+		viewTop := float32(0)
+		viewBot := float32(0)
+		maxScrollNeg := float32(0)
+		for p := layout.Parent; p != nil; p = p.Parent {
+			if p.Shape != nil && p.Shape.IDScroll > 0 {
+				scrollID = p.Shape.IDScroll
+				sy := StateMap[uint32, float32](
+					w, nsScrollY, capScroll)
+				dragScrollY0, _ = sy.Get(scrollID)
+				sp := p.Shape
+				viewTop = sp.Y + sp.Padding.Top
+				viewH := sp.Height - sp.PaddingHeight()
+				viewBot = viewTop + viewH
+				maxScrollNeg = f32Min(0,
+					viewH-contentHeight(p))
+				break
+			}
+		}
+
+		computeRunePos := func(mx, my float32,
+			w *Window,
+		) int {
+			if dragGLOK {
+				scrollDelta := float32(0)
+				if scrollID > 0 {
+					sy := StateMap[uint32, float32](
+						w, nsScrollY, capScroll)
+					sNow, _ := sy.Get(scrollID)
+					scrollDelta = sNow - dragScrollY0
+				}
+				rx := mx - dragShapeX
+				ry := my - (dragShapeY + scrollDelta)
+				bi := dragGL.GetClosestOffset(rx, ry)
+				return byteToRuneIndex(text, bi)
+			}
+			cw := style.Size * 0.6
+			if cw <= 0 {
+				cw = 14 * 0.6
+			}
+			rp := int((mx - dragShapeX) / cw)
+			rl := utf8RuneCount(text)
+			if rp < 0 {
+				rp = 0
+			}
+			if rp > rl {
+				rp = rl
+			}
+			return rp
+		}
+
+		updateDragSelection := func(rp int, w *Window) {
+			dim := StateMap[uint32, InputState](
+				w, nsInput, capMany,
+			)
+			dis, _ := dim.Get(dragIDFocus)
+			if doubleClick {
+				wb, we := wordBoundsAt(runes, rp)
+				if rp < int(anchorPos) {
+					dis.SelectBeg = anchorEnd
+					dis.SelectEnd = uint32(wb)
+					dis.CursorPos = wb
+				} else {
+					dis.SelectBeg = anchorPos
+					dis.SelectEnd = uint32(we)
+					dis.CursorPos = we
+				}
+			} else {
+				dis.CursorPos = rp
+				dis.SelectBeg = anchorPos
+				dis.SelectEnd = uint32(rp)
+			}
+			dis.CursorOffset = -1
+			dim.Set(dragIDFocus, dis)
+			resetBlinkCursorVisible(w)
+		}
+
+		dragScrollCB := func(_ *Animate, w *Window) {
+			var delta float32
+			if lastMouseY < viewTop {
+				delta = (viewTop - lastMouseY) * 0.3
+			} else if lastMouseY > viewBot {
+				delta = -((lastMouseY - viewBot) * 0.3)
+			} else {
+				w.AnimationRemove(animIDTextDragScroll)
+				return
+			}
+			sy := StateMap[uint32, float32](
+				w, nsScrollY, capScroll)
+			cur, _ := sy.Get(scrollID)
+			newScroll := f32Clamp(
+				cur+delta, maxScrollNeg, 0)
+			if newScroll == cur {
+				return
+			}
+			sy.Set(scrollID, newScroll)
+			rp := computeRunePos(
+				lastMouseX, lastMouseY, w)
+			updateDragSelection(rp, w)
+		}
+
 		w.MouseLock(MouseLockCfg{
 			MouseMove: func(_ *Layout, e *Event, w *Window) {
-				var rp int
-				if dragGLOK {
-					rx := e.MouseX - dragShapeX
-					ry := e.MouseY - dragShapeY
-					bi := dragGL.GetClosestOffset(rx, ry)
-					rp = byteToRuneIndex(text, bi)
-				} else {
-					cw := style.Size * 0.6
-					if cw <= 0 {
-						cw = 14 * 0.6
-					}
-					rp = int((e.MouseX - dragShapeX) / cw)
-					rl := utf8RuneCount(text)
-					if rp < 0 {
-						rp = 0
-					}
-					if rp > rl {
-						rp = rl
+				lastMouseX = e.MouseX
+				lastMouseY = e.MouseY
+				rp := computeRunePos(
+					e.MouseX, e.MouseY, w)
+				updateDragSelection(rp, w)
+				if scrollID > 0 {
+					outside := e.MouseY < viewTop ||
+						e.MouseY > viewBot
+					if outside && !w.HasAnimation(
+						animIDTextDragScroll) {
+						w.AnimationAdd(&Animate{
+							AnimateID: animIDTextDragScroll,
+							Delay:     32 * time.Millisecond,
+							Repeat:    true,
+							Refresh:   AnimationRefreshLayout,
+							Callback:  dragScrollCB,
+						})
+					} else if !outside {
+						w.AnimationRemove(
+							animIDTextDragScroll)
 					}
 				}
-				dim := StateMap[uint32, InputState](
-					w, nsInput, capMany,
-				)
-				dis, _ := dim.Get(dragIDFocus)
-				if doubleClick {
-					wb, we := wordBoundsAt(runes, rp)
-					if rp < int(anchorPos) {
-						dis.SelectBeg = anchorEnd
-						dis.SelectEnd = uint32(wb)
-						dis.CursorPos = wb
-					} else {
-						dis.SelectBeg = anchorPos
-						dis.SelectEnd = uint32(we)
-						dis.CursorPos = we
-					}
-				} else {
-					dis.CursorPos = rp
-					dis.SelectBeg = anchorPos
-					dis.SelectEnd = uint32(rp)
-				}
-				dis.CursorOffset = -1
-				dim.Set(dragIDFocus, dis)
-				resetBlinkCursorVisible(w)
 			},
 			MouseUp: func(_ *Layout, _ *Event, w *Window) {
+				w.AnimationRemove(animIDTextDragScroll)
 				w.MouseUnlock()
 			},
 		})
@@ -354,6 +440,7 @@ func makeTextOnKeyDown() func(*Layout, *Event, *Window) {
 
 		if handled {
 			resetBlinkCursorVisible(w)
+			textScrollCursorIntoView(layout, w)
 			e.IsHandled = true
 		}
 	}

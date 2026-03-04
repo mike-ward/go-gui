@@ -67,6 +67,86 @@ func inputScrollCursorIntoView(
 	}
 }
 
+// textScrollCursorIntoView adjusts the vertical scroll of the
+// nearest scroll ancestor so the text cursor stays visible.
+// Used by the read-only text widget's keyboard handler.
+func textScrollCursorIntoView(layout *Layout, w *Window) {
+	shape := layout.Shape
+	if shape == nil || shape.TC == nil ||
+		shape.IDFocus == 0 || w.textMeasurer == nil {
+		return
+	}
+
+	// Find nearest scroll ancestor.
+	var scrollParent *Layout
+	for p := layout.Parent; p != nil; p = p.Parent {
+		if p.Shape != nil && p.Shape.IDScroll > 0 {
+			scrollParent = p
+			break
+		}
+	}
+	if scrollParent == nil {
+		return
+	}
+	scrollID := scrollParent.Shape.IDScroll
+
+	text := shape.TC.Text
+	style := textStyleOrDefault(shape)
+	gl, ok := inputGlyphLayout(text, shape, style, w)
+	if !ok {
+		return
+	}
+
+	is := StateReadOr(
+		w, nsInput, shape.IDFocus, InputState{})
+	runeLen := utf8RuneCount(text)
+	pos := is.CursorPos
+	if pos > runeLen {
+		pos = runeLen
+	}
+	byteIdx := runeToByteIndex(text, pos)
+
+	cp, ok := gl.GetCursorPos(byteIdx)
+	if !ok {
+		return
+	}
+	if is.CursorTrailing {
+		for i, line := range gl.Lines {
+			if i > 0 && byteIdx == line.StartIndex {
+				prev := gl.Lines[i-1]
+				cp.X = prev.Rect.X + prev.Rect.Width
+				cp.Y = prev.Rect.Y
+				cp.Height = prev.Rect.Height
+				break
+			}
+		}
+	}
+
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	scrollOffset, _ := sy.Get(scrollID)
+	sp := scrollParent.Shape
+	viewportH := sp.Height - sp.PaddingHeight()
+	viewTop := sp.Y + sp.Padding.Top
+	viewBot := viewTop + viewportH
+
+	cursorAbsTop := shape.Y + cp.Y
+	cursorAbsBot := cursorAbsTop + cp.Height
+
+	maxScrollNeg := f32Min(0,
+		viewportH-contentHeight(scrollParent))
+	if cursorAbsTop < viewTop {
+		newScroll := scrollOffset +
+			(viewTop - cursorAbsTop)
+		sy.Set(scrollID,
+			f32Clamp(newScroll, maxScrollNeg, 0))
+	} else if cursorAbsBot > viewBot {
+		newScroll := scrollOffset -
+			(cursorAbsBot - viewBot)
+		sy.Set(scrollID,
+			f32Clamp(newScroll, maxScrollNeg, 0))
+	}
+}
+
 // scrollHorizontal adjusts the horizontal scroll offset of a
 // scrollable layout. Returns true if offset was adjusted.
 func scrollHorizontal(layout *Layout, delta float32, w *Window) bool {
