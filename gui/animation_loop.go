@@ -116,7 +116,7 @@ func updateBlinkCursor(b *BlinkCursorAnimation, w *Window) bool {
 		return false
 	}
 	if time.Since(b.start) > b.delay {
-		// Toggle cursor visibility handled by view state.
+		w.viewState.inputCursorOn = !w.viewState.inputCursorOn
 		b.start = time.Now()
 		return true
 	}
