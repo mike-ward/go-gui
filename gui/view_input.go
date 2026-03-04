@@ -4,16 +4,16 @@ import "github.com/mike-ward/go-glyph"
 
 // InputCfg configures a text input field.
 type InputCfg struct {
-	ID            string
-	Text          string
-	Placeholder   string
-	Mask          string
-	MaskPreset    InputMaskPreset
-	MaskTokens    []MaskTokenDef
-	Mode          InputMode
-	IsPassword    bool
-	Disabled      bool
-	Invisible     bool
+	ID          string
+	Text        string
+	Placeholder string
+	Mask        string
+	MaskPreset  InputMaskPreset
+	MaskTokens  []MaskTokenDef
+	Mode        InputMode
+	IsPassword  bool
+	Disabled    bool
+	Invisible   bool
 
 	// Sizing
 	Sizing    Sizing
@@ -78,6 +78,7 @@ func Input(cfg InputCfg) View {
 
 	hcfg := inputHandlerCfg{
 		IDFocus:       cfg.IDFocus,
+		IDScroll:      cfg.IDScroll,
 		IsPassword:    cfg.IsPassword,
 		Mode:          cfg.Mode,
 		Mask:          cfg.Mask,
@@ -89,10 +90,17 @@ func Input(cfg InputCfg) View {
 		OnKeyDown:     cfg.OnKeyDown,
 	}
 
+	txtSizing := Sizing(FillFill)
+	innerSizing := Sizing(FillFill)
+	if cfg.Mode == InputMultiline && cfg.IDScroll > 0 {
+		txtSizing = FillFit
+		innerSizing = FillFit
+	}
+
 	txtContent := []View{
 		Text(TextCfg{
 			IDFocus:           cfg.IDFocus,
-			Sizing:            FillFill,
+			Sizing:            txtSizing,
 			Text:              txt,
 			TextStyle:         txtStyle,
 			Mode:              mode,
@@ -113,6 +121,64 @@ func Input(cfg InputCfg) View {
 	vAlign := VAlignMiddle
 	if cfg.Mode == InputMultiline {
 		vAlign = VAlignTop
+	}
+
+	idScroll := cfg.IDScroll
+	innerCfg := ContainerCfg{
+		Padding: Some(PaddingNone),
+		Sizing:  innerSizing,
+		VAlign:  vAlign,
+		OnClick: func(layout *Layout, e *Event, w *Window) {
+			if len(layout.Children) < 1 {
+				return
+			}
+			ly := layout.Children[0]
+			if ly.Shape.IDFocus > 0 {
+				w.SetIDFocus(ly.Shape.IDFocus)
+			}
+			if ly.Shape.TC == nil || ly.Shape.TC.TextIsPlaceholder {
+				return
+			}
+			text := ly.Shape.TC.Text
+			style := textStyleOrDefault(ly.Shape)
+			gl, ok := inputGlyphLayout(
+				text, ly.Shape, style, w,
+			)
+			if !ok {
+				return
+			}
+			relX := e.MouseX - (ly.Shape.X - layout.Shape.X)
+			relY := e.MouseY - (ly.Shape.Y - layout.Shape.Y)
+			byteIdx := gl.GetClosestOffset(relX, relY)
+			displayText := text
+			if ly.Shape.TC.TextIsPassword {
+				displayText = passwordMask(text)
+			}
+			runePos := byteToRuneIndex(displayText, byteIdx)
+			imap := StateMap[uint32, InputState](
+				w, nsInput, capMany,
+			)
+			is, _ := imap.Get(ly.Shape.IDFocus)
+			is.CursorPos = runePos
+			is.SelectBeg = 0
+			is.SelectEnd = 0
+			is.CursorOffset = -1
+			imap.Set(ly.Shape.IDFocus, is)
+			resetBlinkCursorVisible(w)
+			if idScroll > 0 && layout.Parent != nil {
+				inputScrollCursorIntoView(
+					idScroll, text, layout.Parent, w,
+				)
+			}
+			e.IsHandled = true
+		},
+		Content: txtContent,
+	}
+	var inner View
+	if cfg.Mode == InputMultiline {
+		inner = Column(innerCfg)
+	} else {
+		inner = Row(innerCfg)
 	}
 
 	return Column(ContainerCfg{
@@ -159,9 +225,9 @@ func Input(cfg InputCfg) View {
 			}
 			// Propagate selection to inner text shape.
 			if len(layout.Children) > 0 {
-				row := &layout.Children[0]
-				if len(row.Children) > 0 {
-					txt := &row.Children[0]
+				inner := &layout.Children[0]
+				if len(inner.Children) > 0 {
+					txt := &inner.Children[0]
 					if txt.Shape.TC != nil {
 						is := StateReadOr(w, nsInput,
 							layout.Shape.IDFocus,
@@ -172,53 +238,7 @@ func Input(cfg InputCfg) View {
 				}
 			}
 		},
-		Content: []View{
-			Row(ContainerCfg{
-				Padding: Some(PaddingNone),
-				Sizing:  FillFill,
-				VAlign:  vAlign,
-				OnClick: func(layout *Layout, e *Event, w *Window) {
-					if len(layout.Children) < 1 {
-						return
-					}
-					ly := layout.Children[0]
-					if ly.Shape.IDFocus > 0 {
-						w.SetIDFocus(ly.Shape.IDFocus)
-					}
-					if ly.Shape.TC == nil || ly.Shape.TC.TextIsPlaceholder {
-						return
-					}
-					text := ly.Shape.TC.Text
-					style := textStyleOrDefault(ly.Shape)
-					gl, ok := inputGlyphLayout(
-						text, ly.Shape, style, w,
-					)
-					if !ok {
-						return
-					}
-					relX := e.MouseX - (ly.Shape.X - layout.Shape.X)
-					relY := e.MouseY - (ly.Shape.Y - layout.Shape.Y)
-					byteIdx := gl.GetClosestOffset(relX, relY)
-					displayText := text
-					if ly.Shape.TC.TextIsPassword {
-						displayText = passwordMask(text)
-					}
-					runePos := byteToRuneIndex(displayText, byteIdx)
-					imap := StateMap[uint32, InputState](
-						w, nsInput, capMany,
-					)
-					is, _ := imap.Get(ly.Shape.IDFocus)
-					is.CursorPos = runePos
-					is.SelectBeg = 0
-					is.SelectEnd = 0
-					is.CursorOffset = -1
-					imap.Set(ly.Shape.IDFocus, is)
-					resetBlinkCursorVisible(w)
-					e.IsHandled = true
-				},
-				Content: txtContent,
-			}),
-		},
+		Content: []View{inner},
 	})
 }
 
@@ -260,6 +280,7 @@ func applyInputDefaults(cfg *InputCfg) {
 // OnKeyDown handler factories.
 type inputHandlerCfg struct {
 	IDFocus       uint32
+	IDScroll      uint32
 	IsPassword    bool
 	Mode          InputMode
 	Mask          string
@@ -426,6 +447,9 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			if hcfg.OnTextChanged != nil {
 				hcfg.OnTextChanged(layout, text, w)
 			}
+			inputScrollCursorIntoView(
+				hcfg.IDScroll, text, layout, w,
+			)
 		}
 		e.IsHandled = true
 	}
@@ -553,6 +577,9 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 
 		if handled {
 			resetBlinkCursorVisible(w)
+			inputScrollCursorIntoView(
+				hcfg.IDScroll, text, layout, w,
+			)
 			e.IsHandled = true
 		} else if hcfg.OnKeyDown != nil {
 			hcfg.OnKeyDown(layout, e, w)

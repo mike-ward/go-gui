@@ -1,5 +1,61 @@
 package gui
 
+// inputScrollCursorIntoView adjusts the vertical scroll of a
+// multiline input so the cursor remains visible.
+// layout must be the outer scroll container (Column with IDScroll).
+func inputScrollCursorIntoView(
+	idScroll uint32, text string, layout *Layout, w *Window,
+) {
+	if idScroll == 0 || w.textMeasurer == nil {
+		return
+	}
+	if len(layout.Children) == 0 {
+		return
+	}
+	inner := &layout.Children[0]
+	if len(inner.Children) == 0 {
+		return
+	}
+	txtShape := inner.Children[0].Shape
+	if txtShape == nil || txtShape.TC == nil {
+		return
+	}
+	style := textStyleOrDefault(txtShape)
+	gl, ok := inputGlyphLayout(text, txtShape, style, w)
+	if !ok {
+		return
+	}
+
+	is := StateReadOr(w, nsInput,
+		layout.Shape.IDFocus, InputState{})
+	runeLen := utf8RuneCount(text)
+	pos := is.CursorPos
+	if pos > runeLen {
+		pos = runeLen
+	}
+	byteIdx := runeToByteIndex(text, pos)
+
+	cp, ok := gl.GetCursorPos(byteIdx)
+	if !ok {
+		return
+	}
+
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	scrollOffset, _ := sy.Get(idScroll)
+	viewportH := layout.Shape.Height - layout.Shape.PaddingHeight()
+
+	cursorTop := cp.Y
+	cursorBot := cp.Y + cp.Height
+	visibleTop := -scrollOffset
+	visibleBot := visibleTop + viewportH
+
+	if cursorTop < visibleTop {
+		sy.Set(idScroll, -cursorTop)
+	} else if cursorBot > visibleBot {
+		sy.Set(idScroll, -(cursorBot - viewportH))
+	}
+}
+
 // scrollHorizontal adjusts the horizontal scroll offset of a
 // scrollable layout. Returns true if offset was adjusted.
 func scrollHorizontal(layout *Layout, delta float32, w *Window) bool {
