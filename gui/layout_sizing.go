@@ -6,7 +6,7 @@ import "math"
 type distributeMode uint8
 
 const (
-	distributeGrow   distributeMode = iota
+	distributeGrow distributeMode = iota
 	distributeShrink
 )
 
@@ -356,10 +356,10 @@ const spacingSmall = 5
 // layoutFillWidths manages horizontal growth/shrinkage.
 func layoutFillWidths(layout *Layout) {
 	var candidates, fixedIndices []int
-	layoutFillWidthsImpl(layout, &candidates, &fixedIndices, true)
+	layoutFillWidthsImpl(layout, &candidates, &fixedIndices)
 }
 
-func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int, isRoot bool) {
+func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 	remainingWidth := layout.Shape.Width - layout.Shape.PaddingWidth()
 
 	if layout.Shape.Axis == AxisLeftToRight {
@@ -406,17 +406,17 @@ func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int, isRoo
 	}
 
 	for i := range layout.Children {
-		layoutFillWidthsImpl(&layout.Children[i], candidates, fixedIndices, false)
+		layoutFillWidthsImpl(&layout.Children[i], candidates, fixedIndices)
 	}
 }
 
 // layoutFillHeights manages vertical growth/shrinkage.
 func layoutFillHeights(layout *Layout) {
 	var candidates, fixedIndices []int
-	layoutFillHeightsImpl(layout, &candidates, &fixedIndices, true)
+	layoutFillHeightsImpl(layout, &candidates, &fixedIndices)
 }
 
-func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int, isRoot bool) {
+func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 	remainingHeight := layout.Shape.Height - layout.Shape.PaddingHeight()
 
 	if layout.Shape.Axis == AxisTopToBottom {
@@ -463,6 +463,6 @@ func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int, isRo
 	}
 
 	for i := range layout.Children {
-		layoutFillHeightsImpl(&layout.Children[i], candidates, fixedIndices, false)
+		layoutFillHeightsImpl(&layout.Children[i], candidates, fixedIndices)
 	}
 }

@@ -251,7 +251,7 @@ func TestLayoutRemoveFloatingLayoutsDistinctPlaceholders(t *testing.T) {
 		},
 	}
 	var floating []*Layout
-	layoutRemoveFloatingLayouts(root, &floating)
+	layoutRemoveFloatingLayouts(root, &Window{}, &floating)
 	if len(floating) != 2 {
 		t.Fatalf("floating len: got %d", len(floating))
 	}
@@ -508,10 +508,10 @@ func TestFloatAttachRTLMirror(t *testing.T) {
 		},
 		Children: []Layout{
 			{Shape: &Shape{
-				ShapeType:  ShapeRectangle,
-				Width:      50,
-				Height:     30,
-				Float:      true,
+				ShapeType:   ShapeRectangle,
+				Width:       50,
+				Height:      30,
+				Float:       true,
 				FloatAnchor: FloatBottomLeft,
 				FloatTieOff: FloatTopLeft,
 			}},

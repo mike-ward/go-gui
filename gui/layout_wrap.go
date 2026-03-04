@@ -6,9 +6,9 @@ type wrapRowRange struct {
 }
 
 // layoutWrapContainers restructures wrap containers into column-of-rows.
-func layoutWrapContainers(layout *Layout) {
+func layoutWrapContainers(layout *Layout, w *Window) {
 	for i := range layout.Children {
-		layoutWrapContainers(&layout.Children[i])
+		layoutWrapContainers(&layout.Children[i], w)
 	}
 
 	if !layout.Shape.Wrap || layout.Shape.Axis != AxisLeftToRight || len(layout.Children) == 0 {
@@ -23,6 +23,12 @@ func layoutWrapContainers(layout *Layout) {
 	spacing := layout.Shape.Spacing
 
 	var rows []wrapRowRange
+	if w != nil {
+		rows = w.scratch.takeWrapRows(len(layout.Children))
+		defer func() {
+			w.scratch.putWrapRows(rows)
+		}()
+	}
 	rowStart := 0
 	var rowWidth float32
 
@@ -57,9 +63,9 @@ func layoutWrapContainers(layout *Layout) {
 	layout.Shape.Axis = AxisTopToBottom
 
 	newChildren := make([]Layout, 0, len(rows))
-	for _, row := range rows {
-		rowChildren := make([]Layout, row.end-row.start)
-		copy(rowChildren, layout.Children[row.start:row.end])
+	for i := range rows {
+		row := rows[i]
+		rowChildren := layout.Children[row.start:row.end:row.end]
 		newChildren = append(newChildren, Layout{
 			Shape: &Shape{
 				ShapeType: ShapeRectangle,
@@ -78,6 +84,9 @@ func layoutWrapContainers(layout *Layout) {
 
 	layout.Children = newChildren
 	for i := range layout.Children {
-		layoutParents(&layout.Children[i], layout)
+		layout.Children[i].Parent = layout
+		for j := range layout.Children[i].Children {
+			layout.Children[i].Children[j].Parent = &layout.Children[i]
+		}
 	}
 }

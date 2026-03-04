@@ -5,20 +5,24 @@ package gui
 // the pipeline on each layer, and processes hover in reverse
 // layer order.
 func layoutArrange(layout *Layout, w *Window) []Layout {
+	ensureLayoutShape(layout)
+
 	// Set parent pointers.
 	layoutParents(layout, nil)
 
 	// Extract floating layouts from main tree.
-	var floatingLayouts []*Layout
-	layoutRemoveFloatingLayouts(layout, &floatingLayouts)
+	floatingLayouts := w.scratch.takeFloatingLayouts(len(layout.Children))
+	defer func() {
+		w.scratch.putFloatingLayouts(floatingLayouts)
+	}()
+	layoutRemoveFloatingLayouts(layout, w, &floatingLayouts)
 
 	// Inject toast container as floating layer.
 	if len(w.toasts) > 0 {
 		tv := toastContainerView(w)
 		if tv != nil {
 			tl := GenerateViewLayout(tv, w)
-			heapLayout := new(Layout)
-			*heapLayout = tl
+			heapLayout := w.scratch.allocFloatingLayout(tl)
 			layoutParents(heapLayout, nil)
 			floatingLayouts = append(floatingLayouts, heapLayout)
 		}
@@ -29,8 +33,7 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 		dv := dialogViewGenerator(w.dialogCfg)
 		if dv != nil {
 			dl := GenerateViewLayout(dv, w)
-			heapLayout := new(Layout)
-			*heapLayout = dl
+			heapLayout := w.scratch.allocFloatingLayout(dl)
 			layoutParents(heapLayout, nil)
 			floatingLayouts = append(floatingLayouts, heapLayout)
 		}

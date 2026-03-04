@@ -11,7 +11,7 @@ func TestLayoutPipelineNoPanic(t *testing.T) {
 	shape := &Shape{
 		ShapeType: ShapeRectangle,
 		Width:     100, Height: 100,
-		Sizing: FillFill,
+		Sizing:  FillFill,
 		Opacity: 1,
 	}
 	layout := Layout{
@@ -207,6 +207,23 @@ func TestLayoutArrangeReturnsLayers(t *testing.T) {
 
 	if len(layouts) < 1 {
 		t.Fatal("expected at least main layout")
+	}
+}
+
+func TestLayoutArrangeNormalizesNilShape(t *testing.T) {
+	w := &Window{}
+	w.windowWidth = 400
+	w.windowHeight = 400
+	layout := Layout{}
+	layouts := layoutArrange(&layout, w)
+	if len(layouts) != 1 {
+		t.Fatalf("layers: got %d, want 1", len(layouts))
+	}
+	if layouts[0].Shape == nil {
+		t.Fatal("shape should be normalized")
+	}
+	if layouts[0].Shape.ShapeType != ShapeNone {
+		t.Fatalf("shape type: got %v, want ShapeNone", layouts[0].Shape.ShapeType)
 	}
 }
 

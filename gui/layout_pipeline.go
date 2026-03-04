@@ -8,7 +8,7 @@ func layoutPipeline(layout *Layout, w *Window) {
 	// Width passes.
 	layoutWidths(layout)
 	layoutFillWidths(layout)
-	layoutWrapContainers(layout)
+	layoutWrapContainers(layout, w)
 	layoutOverflow(layout, w)
 	layoutWrapText(layout, w)
 
@@ -71,9 +71,9 @@ func layoutHover(layout *Layout, w *Window) bool {
 		return false
 	}
 	e := Event{
-		MouseX:    w.viewState.mousePosX,
-		MouseY:    w.viewState.mousePosY,
-		Type:      EventMouseMove,
+		MouseX:      w.viewState.mousePosX,
+		MouseY:      w.viewState.mousePosY,
+		Type:        EventMouseMove,
 		MouseButton: MouseInvalid,
 	}
 	shape.Events.OnHover(layout, &e, w)

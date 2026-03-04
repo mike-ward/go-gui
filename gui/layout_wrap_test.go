@@ -14,7 +14,7 @@ func TestWrapBasic(t *testing.T) {
 		},
 	}
 
-	layoutWrapContainers(root)
+	layoutWrapContainers(root, &Window{})
 
 	if root.Shape.Axis != AxisTopToBottom {
 		t.Error("axis should flip to TTB")
@@ -48,7 +48,7 @@ func TestWrapSingleRow(t *testing.T) {
 		},
 	}
 
-	layoutWrapContainers(root)
+	layoutWrapContainers(root, &Window{})
 
 	if root.Shape.Axis != AxisLeftToRight {
 		t.Error("axis should stay LTR")
@@ -70,7 +70,7 @@ func TestWrapHeights(t *testing.T) {
 		},
 	}
 
-	layoutWrapContainers(root)
+	layoutWrapContainers(root, &Window{})
 	layoutHeights(root)
 
 	if len(root.Children) != 2 {
@@ -100,7 +100,7 @@ func TestWrapPositions(t *testing.T) {
 		},
 	}
 
-	layoutWrapContainers(root)
+	layoutWrapContainers(root, &Window{})
 	layoutHeights(root)
 	layoutFillHeights(root)
 	w := &Window{}
@@ -133,7 +133,7 @@ func TestWrapNonFlow(t *testing.T) {
 		},
 	}
 
-	layoutWrapContainers(root)
+	layoutWrapContainers(root, &Window{})
 
 	if len(root.Children) != 2 {
 		t.Fatalf("rows: got %d, want 2", len(root.Children))
@@ -178,7 +178,7 @@ func TestWrapFillInColumn(t *testing.T) {
 		t.Errorf("wrap width: got %f, want 400", wrapLayout.Shape.Width)
 	}
 
-	layoutWrapContainers(root)
+	layoutWrapContainers(root, &Window{})
 
 	if root.Children[0].Shape.Axis != AxisTopToBottom {
 		t.Error("wrap axis should flip to TTB")

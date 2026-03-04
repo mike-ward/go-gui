@@ -146,6 +146,15 @@ func (sv *stubView) GenerateLayout(w *Window) Layout {
 	return Layout{Shape: &Shape{ID: sv.id}}
 }
 
+type nilShapeStubView struct {
+	children []View
+}
+
+func (v *nilShapeStubView) Content() []View { return v.children }
+func (v *nilShapeStubView) GenerateLayout(_ *Window) Layout {
+	return Layout{}
+}
+
 func TestGenerateViewLayoutFlat(t *testing.T) {
 	v := &stubView{id: "root"}
 	layout := GenerateViewLayout(v, &Window{})
@@ -208,6 +217,30 @@ func TestGenerateViewLayoutNested(t *testing.T) {
 	}
 	if mid.Children[0].Shape.ID != "leaf" {
 		t.Error("leaf ID mismatch")
+	}
+}
+
+func TestGenerateViewLayoutNormalizesNilShape(t *testing.T) {
+	v := &nilShapeStubView{
+		children: []View{
+			&nilShapeStubView{},
+		},
+	}
+	layout := GenerateViewLayout(v, &Window{})
+	if layout.Shape == nil {
+		t.Fatal("root shape should be normalized")
+	}
+	if layout.Shape.ShapeType != ShapeNone {
+		t.Fatalf("root shape type: got %v, want ShapeNone", layout.Shape.ShapeType)
+	}
+	if len(layout.Children) != 1 {
+		t.Fatalf("children: got %d, want 1", len(layout.Children))
+	}
+	if layout.Children[0].Shape == nil {
+		t.Fatal("child shape should be normalized")
+	}
+	if layout.Children[0].Shape.ShapeType != ShapeNone {
+		t.Fatalf("child shape type: got %v, want ShapeNone", layout.Children[0].Shape.ShapeType)
 	}
 }
 

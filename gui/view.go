@@ -11,11 +11,23 @@ type View interface {
 	GenerateLayout(w *Window) Layout
 }
 
+// ensureLayoutShape normalizes layout nodes so pipeline passes can
+// safely dereference Shape fields.
+func ensureLayoutShape(layout *Layout) {
+	if layout == nil {
+		return
+	}
+	if layout.Shape == nil {
+		layout.Shape = &Shape{ShapeType: ShapeNone}
+	}
+}
+
 // GenerateViewLayout recursively builds a Layout tree from a
 // View tree. Each View produces its own layout, then child
 // Views are appended.
 func GenerateViewLayout(view View, w *Window) Layout {
 	layout := view.GenerateLayout(w)
+	ensureLayoutShape(&layout)
 	for _, child := range view.Content() {
 		layout.Children = append(
 			layout.Children,

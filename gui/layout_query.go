@@ -138,6 +138,12 @@ func focusFindPrevious(candidates []focusCandidate, idFocus uint32) (*Shape, boo
 // current focus. Wraps to first if at end.
 func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
 	var candidates []focusCandidate
+	if w != nil {
+		candidates = w.scratch.takeFocusCandidates()
+		defer func() {
+			w.scratch.putFocusCandidates(candidates)
+		}()
+	}
 	seen := make(map[uint32]bool)
 	collectFocusCandidates(layout, &candidates, seen)
 	if len(candidates) == 0 {
@@ -150,6 +156,12 @@ func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
 // the current focus. Wraps to last if at beginning.
 func (layout *Layout) PreviousFocusable(w *Window) (*Shape, bool) {
 	var candidates []focusCandidate
+	if w != nil {
+		candidates = w.scratch.takeFocusCandidates()
+		defer func() {
+			w.scratch.putFocusCandidates(candidates)
+		}()
+	}
 	seen := make(map[uint32]bool)
 	collectFocusCandidates(layout, &candidates, seen)
 	if len(candidates) == 0 {

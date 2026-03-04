@@ -162,19 +162,24 @@ func floatAttachLayout(
 
 // layoutRemoveFloatingLayouts extracts floating elements from the
 // main layout tree, replacing them with placeholders.
-func layoutRemoveFloatingLayouts(layout *Layout, layouts *[]*Layout) {
+func layoutRemoveFloatingLayouts(layout *Layout, w *Window, layouts *[]*Layout) {
 	for i := range layout.Children {
 		if layout.Children[i].Shape.Float {
-			heapLayout := new(Layout)
-			*heapLayout = layout.Children[i]
+			var heapLayout *Layout
+			if w != nil {
+				heapLayout = w.scratch.allocFloatingLayout(layout.Children[i])
+			} else {
+				cp := layout.Children[i]
+				heapLayout = &cp
+			}
 			for j := range heapLayout.Children {
 				heapLayout.Children[j].Parent = heapLayout
 			}
 			*layouts = append(*layouts, heapLayout)
-			layoutRemoveFloatingLayouts(heapLayout, layouts)
+			layoutRemoveFloatingLayouts(heapLayout, w, layouts)
 			layout.Children[i] = layoutPlaceholder()
 		} else {
-			layoutRemoveFloatingLayouts(&layout.Children[i], layouts)
+			layoutRemoveFloatingLayouts(&layout.Children[i], w, layouts)
 		}
 	}
 }
