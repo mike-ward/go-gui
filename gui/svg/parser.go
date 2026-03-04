@@ -9,7 +9,11 @@ import (
 // Parser implements gui.SvgParser.
 type Parser struct {
 	parsed sync.Map // *gui.SvgParsed → *VectorGraphic
+	mu     sync.Mutex
+	order  []*gui.SvgParsed
 }
+
+const maxParsedRetained = 512
 
 // New returns a new SVG parser.
 func New() *Parser {
@@ -52,6 +56,40 @@ func (p *Parser) Tessellate(parsed *gui.SvgParsed, scale float32) []gui.Tessella
 	return vg.getTriangles(scale)
 }
 
+// ReleaseParsed drops parser-side references for a parsed SVG once
+// callers are done tessellating it.
+func (p *Parser) ReleaseParsed(parsed *gui.SvgParsed) {
+	if parsed == nil {
+		return
+	}
+	p.parsed.Delete(parsed)
+	p.mu.Lock()
+	for i := range p.order {
+		if p.order[i] == parsed {
+			p.order = append(p.order[:i], p.order[i+1:]...)
+			break
+		}
+	}
+	p.mu.Unlock()
+}
+
+// InvalidateSvgSource invalidates parser cache for a source. The parser
+// cache is pointer-keyed, so this clears all retained entries.
+func (p *Parser) InvalidateSvgSource(_ string) {
+	p.ClearSvgParserCache()
+}
+
+// ClearSvgParserCache removes all retained parsed entries.
+func (p *Parser) ClearSvgParserCache() {
+	p.parsed.Range(func(key, _ any) bool {
+		p.parsed.Delete(key)
+		return true
+	})
+	p.mu.Lock()
+	p.order = nil
+	p.mu.Unlock()
+}
+
 func (p *Parser) buildParsed(vg *VectorGraphic, scale float32) *gui.SvgParsed {
 	tpaths := vg.getTriangles(scale)
 	result := &gui.SvgParsed{
@@ -66,6 +104,14 @@ func (p *Parser) buildParsed(vg *VectorGraphic, scale float32) *gui.SvgParsed {
 		Height:         vg.Height,
 	}
 	p.parsed.Store(result, vg)
+	p.mu.Lock()
+	p.order = append(p.order, result)
+	if len(p.order) > maxParsedRetained {
+		evict := p.order[0]
+		p.order = p.order[1:]
+		p.parsed.Delete(evict)
+	}
+	p.mu.Unlock()
 	return result
 }
 

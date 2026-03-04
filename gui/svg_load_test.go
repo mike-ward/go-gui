@@ -150,7 +150,7 @@ func TestBuildDefsPathDataCache(t *testing.T) {
 		{PathID: "p1"},
 		{PathID: "missing"},
 	}
-	cache := buildDefsPathDataCache(textPaths, defs, 2.0)
+	cache := buildDefsPathDataCache(textPaths, nil, defs, 2.0)
 	if len(cache) != 1 {
 		t.Fatalf("expected 1 cached path, got %d", len(cache))
 	}
@@ -160,6 +160,56 @@ func TestBuildDefsPathDataCache(t *testing.T) {
 	}
 	if len(entry.polyline) < 4 || len(entry.table) < 2 || entry.totalLen <= 0 {
 		t.Fatal("expected non-empty cached polyline/table/length")
+	}
+}
+
+func TestBuildDefsPathDataCacheIncludesFilteredTextPaths(t *testing.T) {
+	defs := map[string]string{
+		"fg1": "M 0 0 L 20 0",
+	}
+	filtered := []SvgParsedFilteredGroup{
+		{
+			TextPaths: []SvgTextPath{
+				{PathID: "fg1"},
+			},
+		},
+	}
+	cache := buildDefsPathDataCache(nil, filtered, defs, 1.0)
+	if len(cache) != 1 {
+		t.Fatalf("expected 1 cached path from filtered group, got %d", len(cache))
+	}
+}
+
+func TestValidateSvgSourceWithRootsAcceptsWithinRoot(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "icon.svg")
+	if err := validateSvgSourceWithRoots(path, []string{root}); err != nil {
+		t.Fatalf("expected path in root to be allowed: %v", err)
+	}
+}
+
+func TestValidateSvgSourceWithRootsRejectsOutsideRoot(t *testing.T) {
+	root := t.TempDir()
+	other := t.TempDir()
+	path := filepath.Join(other, "icon.svg")
+	if err := validateSvgSourceWithRoots(path, []string{root}); err == nil {
+		t.Fatal("expected path outside root to be rejected")
+	}
+}
+
+func TestValidateSvgSourceWithRootsRejectsSymlinkEscape(t *testing.T) {
+	root := t.TempDir()
+	other := t.TempDir()
+	target := filepath.Join(other, "outside.svg")
+	if err := os.WriteFile(target, []byte("<svg/>"), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	link := filepath.Join(root, "link.svg")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	if err := validateSvgSourceWithRoots(link, []string{root}); err == nil {
+		t.Fatal("expected symlink escape to be rejected")
 	}
 }
 
@@ -191,6 +241,27 @@ func TestGetSvgDimensionsNoParser(t *testing.T) {
 	_, _, err := w.GetSvgDimensions("<svg></svg>")
 	if err == nil {
 		t.Fatal("expected error with no parser")
+	}
+}
+
+func TestLoadSvgRespectsAllowedRoots(t *testing.T) {
+	root := t.TempDir()
+	inside := filepath.Join(root, "ok.svg")
+	if err := os.WriteFile(inside, []byte("<svg viewBox=\"0 0 10 10\"></svg>"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	w := NewWindow(WindowCfg{AllowedSvgRoots: []string{root}})
+	w.SetSvgParser(&mockSvgParser{width: 10, height: 10})
+	if _, err := w.LoadSvg(inside, 10, 10); err != nil {
+		t.Fatalf("expected in-root load to pass: %v", err)
+	}
+	outsideDir := t.TempDir()
+	outside := filepath.Join(outsideDir, "nope.svg")
+	if err := os.WriteFile(outside, []byte("<svg viewBox=\"0 0 10 10\"></svg>"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if _, err := w.LoadSvg(outside, 10, 10); err == nil {
+		t.Fatal("expected out-of-root load to fail")
 	}
 }
 

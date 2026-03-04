@@ -4,44 +4,45 @@ package gui
 
 // Retain/shrink thresholds matching V's scratch_pools.v.
 const (
-	scratchFilterRenderersRetainMax = 131_072
-	scratchFilterRenderersShrinkTo  = 8192
-	scratchFloatingLayoutsRetainMax = 4096
-	scratchFloatingLayoutsShrinkTo  = 256
-	scratchFloatingPoolRetainMax    = 512
-	scratchFloatingPoolShrinkTo     = 64
-	scratchFocusCandidatesRetainMax = 4096
-	scratchFocusCandidatesShrinkTo  = 512
-	scratchGradientNormRetainMax    = 64
-	scratchGradientNormShrinkTo     = 8
-	scratchSvgAnimValsRetainMax     = 32
-	scratchSvgAnimValsShrinkTo      = 8
-	scratchSvgTrisRetainMax         = 1_048_576
-	scratchSvgTrisShrinkTo          = 8192
-	scratchSvgGroupMatricesRetainMax       = 4096
-	scratchSvgGroupOpacitiesRetainMax      = 4096
-	scratchSvgTransformBatchesRetainMax    = 128
-	scratchSvgTransformBatchesShrinkTo     = 16
-	scratchWrapRowsRetainMax               = 4096
-	scratchWrapRowsShrinkTo                = 256
+	scratchFilterRenderersRetainMax     = 131_072
+	scratchFilterRenderersShrinkTo      = 8192
+	scratchFloatingLayoutsRetainMax     = 4096
+	scratchFloatingLayoutsShrinkTo      = 256
+	scratchFloatingPoolRetainMax        = 512
+	scratchFloatingPoolShrinkTo         = 64
+	scratchFocusCandidatesRetainMax     = 4096
+	scratchFocusCandidatesShrinkTo      = 512
+	scratchGradientNormRetainMax        = 64
+	scratchGradientNormShrinkTo         = 8
+	scratchSvgAnimValsRetainMax         = 32
+	scratchSvgAnimValsShrinkTo          = 8
+	scratchSvgTrisRetainMax             = 1_048_576
+	scratchSvgTrisShrinkTo              = 8192
+	scratchSvgGroupMatricesRetainMax    = 4096
+	scratchSvgGroupOpacitiesRetainMax   = 4096
+	scratchSvgTransformBatchesRetainMax = 128
+	scratchSvgTransformBatchesShrinkTo  = 16
+	scratchWrapRowsRetainMax            = 4096
+	scratchWrapRowsShrinkTo             = 256
 )
 
 // scratchPools holds reusable per-frame buffers.
 type scratchPools struct {
-	filterRenderers        []RenderCmd
-	floatingLayouts        []*Layout
-	floatingLayoutPool     []*Layout
-	floatingPoolUsed       int
-	focusCandidates        []focusCandidate
-	gradientNormStops      []GradientStop
-	gradientSampleStops    []GradientStop
-	svgAnimVals            []float32
-	svgGroupMatrices       map[string][6]float32
-	svgGroupOpacities      map[string]float32
-	svgTransformTris       []float32
-	svgTransformBatches    [][]float32
+	filterRenderers         []RenderCmd
+	floatingLayouts         []*Layout
+	floatingLayoutPool      []*Layout
+	floatingPoolUsed        int
+	focusCandidates         []focusCandidate
+	gradientNormStops       []GradientStop
+	gradientSampleStops     []GradientStop
+	svgAnimVals             []float32
+	svgAnimStates           map[string]svgAnimState
+	svgGroupMatrices        map[string][6]float32
+	svgGroupOpacities       map[string]float32
+	svgTransformTris        []float32
+	svgTransformBatches     [][]float32
 	svgTransformBatchesUsed int
-	wrapRows               []wrapRowRange
+	wrapRows                []wrapRowRange
 }
 
 func (p *scratchPools) takeFilterRenderers(requiredCap int) []RenderCmd {
@@ -153,6 +154,26 @@ func (p *scratchPools) putSvgAnimVals(s []float32) {
 		s = make([]float32, 0, scratchSvgAnimValsShrinkTo)
 	}
 	p.svgAnimVals = s[:0]
+}
+
+func (p *scratchPools) takeSvgAnimStates(requiredCap int) map[string]svgAnimState {
+	m := p.svgAnimStates
+	if m == nil {
+		if requiredCap < 8 {
+			requiredCap = 8
+		}
+		m = make(map[string]svgAnimState, requiredCap)
+	}
+	clear(m)
+	return m
+}
+
+func (p *scratchPools) putSvgAnimStates(m map[string]svgAnimState) {
+	if len(m) > scratchSvgGroupOpacitiesRetainMax {
+		p.svgAnimStates = nil
+		return
+	}
+	p.svgAnimStates = m
 }
 
 func (p *scratchPools) takeSvgTransformTris(requiredCap int) []float32 {

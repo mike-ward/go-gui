@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,15 @@ import (
 const maxSvgSourceBytes = int64(4 * 1024 * 1024)
 
 var validSvgExtensions = []string{".svg"}
+
+type svgParsedReleaser interface {
+	ReleaseParsed(parsed *SvgParsed)
+}
+
+type svgParserCacheInvalidator interface {
+	InvalidateSvgSource(svgSrc string)
+	ClearSvgParserCache()
+}
 
 // CachedSvgPath holds tessellated geometry with vertex colors.
 type CachedSvgPath struct {
@@ -215,6 +225,10 @@ func svgGradientToGlyph(g SvgGradientDef) *glyph.GradientConfig {
 
 // validateSvgSource rejects file paths containing '..'.
 func validateSvgSource(svgSrc string) error {
+	return validateSvgSourceWithRoots(svgSrc, nil)
+}
+
+func validateSvgSourceWithRoots(svgSrc string, allowedRoots []string) error {
 	if strings.HasPrefix(svgSrc, "<") {
 		return nil
 	}
@@ -241,7 +255,55 @@ func validateSvgSource(svgSrc string) error {
 	if !valid {
 		return fmt.Errorf("unsupported svg format: %s", ext)
 	}
+	if len(allowedRoots) > 0 {
+		if err := validateSvgPathAllowed(cleanPath, allowedRoots); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func validateSvgPathAllowed(cleanPath string, allowedRoots []string) error {
+	pathAbs, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return fmt.Errorf("invalid svg path: %w", err)
+	}
+	resolvedPath := resolvePathWithParentFallback(pathAbs)
+	for i := range allowedRoots {
+		root := strings.TrimSpace(allowedRoots[i])
+		if root == "" {
+			continue
+		}
+		rootAbs, err := filepath.Abs(root)
+		if err != nil {
+			continue
+		}
+		resolvedRoot := resolvePathWithParentFallback(rootAbs)
+		if pathWithinRoot(resolvedPath, resolvedRoot) {
+			return nil
+		}
+	}
+	return fmt.Errorf("svg path not allowed: %s", cleanPath)
+}
+
+func resolvePathWithParentFallback(path string) string {
+	if p, err := filepath.EvalSymlinks(path); err == nil {
+		return p
+	}
+	dir := filepath.Dir(path)
+	if d, err := filepath.EvalSymlinks(dir); err == nil {
+		return filepath.Join(d, filepath.Base(path))
+	}
+	return path
+}
+
+func pathWithinRoot(path, root string) bool {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." &&
+		!strings.HasPrefix(rel, ".."+string(filepath.Separator)))
 }
 
 // checkSvgSourceSize validates SVG source size.
@@ -264,10 +326,11 @@ func checkSvgSourceSize(svgSrc string) error {
 
 func buildDefsPathDataCache(
 	textPaths []SvgTextPath,
+	filtered []SvgParsedFilteredGroup,
 	defsPaths map[string]string,
 	scale float32,
 ) map[string]cachedDefsPathData {
-	if len(textPaths) == 0 || len(defsPaths) == 0 {
+	if (len(textPaths) == 0 && len(filtered) == 0) || len(defsPaths) == 0 {
 		return nil
 	}
 	pathIDs := make(map[string]struct{}, len(textPaths))
@@ -275,6 +338,14 @@ func buildDefsPathDataCache(
 		id := textPaths[i].PathID
 		if id != "" {
 			pathIDs[id] = struct{}{}
+		}
+	}
+	for i := range filtered {
+		for j := range filtered[i].TextPaths {
+			id := filtered[i].TextPaths[j].PathID
+			if id != "" {
+				pathIDs[id] = struct{}{}
+			}
 		}
 	}
 	if len(pathIDs) == 0 {
@@ -306,12 +377,21 @@ func buildDefsPathDataCache(
 	return cached
 }
 
+func svgHashHex(h uint64) string {
+	return strconv.FormatUint(h, 16)
+}
+
+func buildSvgCacheKey(srcHash uint64, width, height float32) string {
+	w := strconv.Itoa(int(width * 10))
+	h := strconv.Itoa(int(height * 10))
+	return svgHashHex(srcHash) + ":" + w + "x" + h
+}
+
 // LoadSvg loads and tessellates an SVG, caching the result.
 // svgSrc can be a file path or inline SVG data (starting with '<').
 func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, error) {
 	srcHash := hashString(svgSrc)
-	cacheKey := fmt.Sprintf("%x:%dx%d", srcHash,
-		int(width*10), int(height*10))
+	cacheKey := buildSvgCacheKey(srcHash, width, height)
 
 	sm := StateMapRead[string, *CachedSvg](w, nsSvgCache)
 	if sm != nil {
@@ -320,7 +400,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		}
 	}
 
-	if err := validateSvgSource(svgSrc); err != nil {
+	if err := validateSvgSourceWithRoots(svgSrc, w.Config.AllowedSvgRoots); err != nil {
 		return nil, err
 	}
 	if err := checkSvgSourceSize(svgSrc); err != nil {
@@ -340,6 +420,9 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 	}
 	if err != nil {
 		return nil, err
+	}
+	if releaser, ok := w.svgParser.(svgParsedReleaser); ok {
+		defer releaser.ReleaseParsed(parsed)
 	}
 
 	// Cache dimensions.
@@ -367,7 +450,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 	triangles := w.svgParser.Tessellate(parsed, scale)
 	renderPaths := cachedSvgPaths(triangles)
 	textDraws := cachedSvgTextDraws(parsed.Texts, scale, parsed.Gradients, w)
-	defsPathData := buildDefsPathDataCache(parsed.TextPaths, parsed.DefsPaths, scale)
+	defsPathData := buildDefsPathDataCache(parsed.TextPaths, parsed.FilteredGroups, parsed.DefsPaths, scale)
 
 	// Build filtered groups.
 	var filteredGroups []CachedFilteredGroup
@@ -396,7 +479,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		Animations:     parsed.Animations,
 		HasAnimations:  len(parsed.Animations) > 0,
 		AnimStartNs:    time.Now().UnixNano(),
-		AnimHash:       fmt.Sprintf("%x", hashString(svgSrc)),
+		AnimHash:       svgHashHex(srcHash),
 		Width:          parsed.Width,
 		Height:         parsed.Height,
 		Scale:          scale,
@@ -427,7 +510,7 @@ func (w *Window) GetSvgDimensions(svgSrc string) (float32, float32, error) {
 		}
 	}
 
-	if err := validateSvgSource(svgSrc); err != nil {
+	if err := validateSvgSourceWithRoots(svgSrc, w.Config.AllowedSvgRoots); err != nil {
 		return 0, 0, err
 	}
 	if err := checkSvgSourceSize(svgSrc); err != nil {
@@ -462,7 +545,7 @@ func (w *Window) GetSvgDimensions(svgSrc string) (float32, float32, error) {
 // RemoveSvgFromCache removes all cached variants of an SVG.
 func (w *Window) RemoveSvgFromCache(svgSrc string) {
 	srcHash := hashString(svgSrc)
-	prefix := fmt.Sprintf("%x:", srcHash)
+	prefix := svgHashHex(srcHash) + ":"
 
 	svgCache := StateMapRead[string, *CachedSvg](w, nsSvgCache)
 	if svgCache != nil {
@@ -481,6 +564,9 @@ func (w *Window) RemoveSvgFromCache(svgSrc string) {
 	if dimCache != nil {
 		dimCache.Delete(srcHash)
 	}
+	if inv, ok := w.svgParser.(svgParserCacheInvalidator); ok {
+		inv.InvalidateSvgSource(svgSrc)
+	}
 }
 
 // ClearSvgCache removes all cached SVGs.
@@ -492,6 +578,9 @@ func (w *Window) ClearSvgCache() {
 	dimCache := StateMapRead[uint64, [2]float32](w, nsSvgDimCache)
 	if dimCache != nil {
 		dimCache.Clear()
+	}
+	if inv, ok := w.svgParser.(svgParserCacheInvalidator); ok {
+		inv.ClearSvgParserCache()
 	}
 }
 

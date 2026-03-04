@@ -48,6 +48,8 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	// Compute animation state for SMIL animations.
 	var animState map[string]svgAnimState
 	if cached.HasAnimations && cached.AnimStartNs != 0 {
+		animState = w.scratch.takeSvgAnimStates(len(cached.Animations))
+		defer w.scratch.putSvgAnimStates(animState)
 		nowNs := time.Now().UnixNano()
 		// Keep animation alive while SVG is being rendered.
 		if cached.AnimHash != "" {
@@ -58,7 +60,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		elapsed := float32(nowNs-cached.AnimStartNs) /
 			float32(time.Second)
 		animState = computeSvgAnimations(
-			cached.Animations, elapsed)
+			cached.Animations, elapsed, animState)
 	}
 
 	// Emit tessellated paths.
@@ -200,8 +202,13 @@ type svgAnimState struct {
 // state from parsed SMIL animations and elapsed time.
 func computeSvgAnimations(
 	anims []SvgAnimation, elapsedSec float32,
+	states map[string]svgAnimState,
 ) map[string]svgAnimState {
-	states := make(map[string]svgAnimState, len(anims))
+	if states == nil {
+		states = make(map[string]svgAnimState, len(anims))
+	} else {
+		clear(states)
+	}
 	for _, a := range anims {
 		if a.GroupID == "" || a.DurSec <= 0 {
 			continue
