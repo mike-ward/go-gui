@@ -119,6 +119,38 @@ func TestEmitSvgPathRendererVertexColors(t *testing.T) {
 	}
 }
 
+func TestEmitSvgPathRendererAnimatedVertexAlphaNoCopy(t *testing.T) {
+	w := &Window{}
+	path := CachedSvgPath{
+		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
+		Color:     Color{0, 0, 0, 255},
+		VertexColors: []Color{
+			{255, 0, 0, 255},
+			{0, 255, 0, 255},
+			{0, 0, 255, 255},
+			{255, 255, 0, 255},
+			{0, 255, 255, 255},
+			{255, 0, 255, 255},
+		},
+		GroupID: "g1",
+	}
+	animState := map[string]svgAnimState{
+		"g1": {Opacity: 0.5},
+	}
+	emitSvgPathRenderer(path, Color{}, 0, 0, 1.0, animState, w)
+
+	r := w.renderers[0]
+	if !r.HasVertexAlpha {
+		t.Fatal("expected vertex alpha scaling flag")
+	}
+	if r.VertexAlphaScale != 0.5 {
+		t.Fatalf("expected alpha scale 0.5, got %f", r.VertexAlphaScale)
+	}
+	if &r.VertexColors[0] != &path.VertexColors[0] {
+		t.Fatal("expected vertex colors slice to be reused without copy")
+	}
+}
+
 func TestEmitCachedSvgTextDraw(t *testing.T) {
 	w := &Window{}
 	draw := CachedSvgTextDraw{

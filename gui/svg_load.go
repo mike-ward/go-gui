@@ -59,27 +59,30 @@ type CachedSvg struct {
 	Width          float32
 	Height         float32
 	Scale          float32
+	defsPathData   map[string]cachedDefsPathData
 }
 
 // cachedSvgPaths converts TessellatedPath slices to CachedSvgPath.
 func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
-	out := make([]CachedSvgPath, 0, len(paths))
-	for _, p := range paths {
+	out := make([]CachedSvgPath, len(paths))
+	for i := range paths {
+		p := &paths[i]
 		var vcols []Color
-		if len(p.VertexColors) > 0 {
-			vcols = make([]Color, 0, len(p.VertexColors))
-			for _, vc := range p.VertexColors {
-				vcols = append(vcols, Color{vc.R, vc.G, vc.B, vc.A})
+		if len(p.VertexColors) != 0 {
+			vcols = make([]Color, len(p.VertexColors))
+			for j := range p.VertexColors {
+				vc := p.VertexColors[j]
+				vcols[j] = Color{vc.R, vc.G, vc.B, vc.A}
 			}
 		}
-		out = append(out, CachedSvgPath{
+		out[i] = CachedSvgPath{
 			Triangles:    p.Triangles,
 			Color:        Color{p.Color.R, p.Color.G, p.Color.B, p.Color.A},
 			VertexColors: vcols,
 			IsClipMask:   p.IsClipMask,
 			ClipGroup:    p.ClipGroup,
 			GroupID:      p.GroupID,
-		})
+		}
 	}
 	return out
 }
@@ -215,10 +218,19 @@ func validateSvgSource(svgSrc string) error {
 	if strings.HasPrefix(svgSrc, "<") {
 		return nil
 	}
-	if strings.Contains(svgSrc, "..") {
-		return fmt.Errorf("invalid svg path: contains ..")
+	if strings.ContainsRune(svgSrc, 0) {
+		return fmt.Errorf("invalid svg path: contains NUL")
 	}
-	ext := strings.ToLower(filepath.Ext(svgSrc))
+	cleanPath := filepath.Clean(svgSrc)
+	if cleanPath == "." {
+		return fmt.Errorf("invalid svg path")
+	}
+	for _, part := range strings.Split(filepath.ToSlash(cleanPath), "/") {
+		if part == ".." {
+			return fmt.Errorf("invalid svg path: contains ..")
+		}
+	}
+	ext := strings.ToLower(filepath.Ext(cleanPath))
 	valid := false
 	for _, e := range validSvgExtensions {
 		if ext == e {
@@ -248,6 +260,50 @@ func checkSvgSourceSize(svgSrc string) error {
 		return fmt.Errorf("SVG file too large")
 	}
 	return nil
+}
+
+func buildDefsPathDataCache(
+	textPaths []SvgTextPath,
+	defsPaths map[string]string,
+	scale float32,
+) map[string]cachedDefsPathData {
+	if len(textPaths) == 0 || len(defsPaths) == 0 {
+		return nil
+	}
+	pathIDs := make(map[string]struct{}, len(textPaths))
+	for i := range textPaths {
+		id := textPaths[i].PathID
+		if id != "" {
+			pathIDs[id] = struct{}{}
+		}
+	}
+	if len(pathIDs) == 0 {
+		return nil
+	}
+	cached := make(map[string]cachedDefsPathData, len(pathIDs))
+	for pathID := range pathIDs {
+		d, ok := defsPaths[pathID]
+		if !ok {
+			continue
+		}
+		polyline := flattenDefsPath(d, scale)
+		if len(polyline) < 4 {
+			continue
+		}
+		table, totalLen := buildArcLengthTable(polyline)
+		if totalLen <= 0 {
+			continue
+		}
+		cached[pathID] = cachedDefsPathData{
+			polyline: polyline,
+			table:    table,
+			totalLen: totalLen,
+		}
+	}
+	if len(cached) == 0 {
+		return nil
+	}
+	return cached
 }
 
 // LoadSvg loads and tessellates an SVG, caching the result.
@@ -311,6 +367,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 	triangles := w.svgParser.Tessellate(parsed, scale)
 	renderPaths := cachedSvgPaths(triangles)
 	textDraws := cachedSvgTextDraws(parsed.Texts, scale, parsed.Gradients, w)
+	defsPathData := buildDefsPathDataCache(parsed.TextPaths, parsed.DefsPaths, scale)
 
 	// Build filtered groups.
 	var filteredGroups []CachedFilteredGroup
@@ -343,6 +400,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		Width:          parsed.Width,
 		Height:         parsed.Height,
 		Scale:          scale,
+		defsPathData:   defsPathData,
 	}
 
 	// Cache if vertex count is reasonable.
@@ -471,4 +529,3 @@ func computeTriangleBBox(tpaths []TessellatedPath) [4]float32 {
 	}
 	return [4]float32{minX, minY, maxX - minX, maxY - minY}
 }
-

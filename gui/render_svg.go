@@ -74,7 +74,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 
 	// Emit textPath elements.
 	for _, tp := range cached.TextPaths {
-		renderSvgTextPath(tp, cached.DefsPaths,
+		renderSvgTextPath(tp, cached.DefsPaths, cached.defsPathData,
 			sx, sy, cached.Scale, w)
 	}
 
@@ -99,7 +99,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			emitCachedSvgTextDraw(&fg.TextDraws[j], sx, sy, w)
 		}
 		for _, tp := range fg.TextPaths {
-			renderSvgTextPath(tp, cached.DefsPaths,
+			renderSvgTextPath(tp, cached.DefsPaths, cached.defsPathData,
 				sx, sy, cached.Scale, w)
 		}
 		emitRenderer(RenderCmd{
@@ -135,6 +135,8 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	}
 
 	var rotAngle, rotCX, rotCY float32
+	var vAlphaScale float32
+	hasVAlpha := false
 	if animState != nil && path.GroupID != "" {
 		if st, ok := animState[path.GroupID]; ok {
 			rotAngle = st.RotAngle
@@ -142,33 +144,29 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 			rotCY = st.RotCY
 			if st.Opacity < 1 {
 				c.A = uint8(float32(c.A) * st.Opacity)
-				// Also scale vertex colors.
 				if len(vcols) > 0 {
-					scaled := make([]Color, len(vcols))
-					copy(scaled, vcols)
-					for i := range scaled {
-						scaled[i].A = uint8(
-							float32(scaled[i].A) * st.Opacity)
-					}
-					vcols = scaled
+					vAlphaScale = st.Opacity
+					hasVAlpha = true
 				}
 			}
 		}
 	}
 
 	emitRenderer(RenderCmd{
-		Kind:         RenderSvg,
-		Triangles:    path.Triangles,
-		Color:        c,
-		VertexColors: vcols,
-		X:            x,
-		Y:            y,
-		Scale:        scale,
-		IsClipMask:   path.IsClipMask,
-		ClipGroup:    path.ClipGroup,
-		RotAngle:     rotAngle,
-		RotCX:        rotCX,
-		RotCY:        rotCY,
+		Kind:             RenderSvg,
+		Triangles:        path.Triangles,
+		Color:            c,
+		VertexColors:     vcols,
+		VertexAlphaScale: vAlphaScale,
+		HasVertexAlpha:   hasVAlpha,
+		X:                x,
+		Y:                y,
+		Scale:            scale,
+		IsClipMask:       path.IsClipMask,
+		ClipGroup:        path.ClipGroup,
+		RotAngle:         rotAngle,
+		RotCX:            rotCX,
+		RotCY:            rotCY,
 	}, w)
 }
 

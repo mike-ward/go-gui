@@ -13,8 +13,21 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 	}
 	s := b.dpiScale
 	numVerts := len(r.Triangles) / 2
-	verts := make([]sdl.Vertex, numVerts)
+	if cap(b.svgVerts) < numVerts {
+		b.svgVerts = make([]sdl.Vertex, numVerts)
+	}
+	verts := b.svgVerts[:numVerts]
 	hasVCols := len(r.VertexColors) == numVerts
+	vAlpha := float32(1)
+	if r.HasVertexAlpha {
+		vAlpha = r.VertexAlphaScale
+		if vAlpha < 0 {
+			vAlpha = 0
+		}
+		if vAlpha > 1 {
+			vAlpha = 1
+		}
+	}
 
 	// Precompute rotation if needed.
 	hasRot := r.RotAngle != 0
@@ -40,7 +53,12 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 		}
 		if hasVCols {
 			vc := r.VertexColors[i]
+			alpha := vc.A
+			if r.HasVertexAlpha {
+				alpha = uint8(float32(alpha) * vAlpha)
+			}
 			verts[i].Color = sdl.Color{R: vc.R, G: vc.G, B: vc.B, A: vc.A}
+			verts[i].Color.A = alpha
 		} else {
 			verts[i].Color = sdl.Color{
 				R: r.Color.R, G: r.Color.G, B: r.Color.B, A: r.Color.A,
@@ -48,6 +66,7 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 		}
 	}
 	b.renderer.RenderGeometry(nil, verts, nil)
+	b.svgVerts = verts[:0]
 }
 
 // beginFilter starts rendering to a temporary texture for filter

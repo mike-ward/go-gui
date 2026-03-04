@@ -410,9 +410,9 @@ func TestRenderShapeTextWithoutTextConfigDegradesSafe(t *testing.T) {
 
 func TestRendererGuardValidDrawRect(t *testing.T) {
 	r := RenderCmd{
-		Kind:  RenderRect,
-		X:     1, Y: 2,
-		W:     20, H: 10,
+		Kind: RenderRect,
+		X:    1, Y: 2,
+		W: 20, H: 10,
 		Color: White,
 		Fill:  true,
 	}
@@ -423,9 +423,9 @@ func TestRendererGuardValidDrawRect(t *testing.T) {
 
 func TestRendererGuardDrawGradientAllowsZeroSizeNoop(t *testing.T) {
 	r := RenderCmd{
-		Kind:     RenderGradient,
-		X:        21, Y: 66,
-		W:        0, H: 0,
+		Kind: RenderGradient,
+		X:    21, Y: 66,
+		W: 0, H: 0,
 		Radius:   5.5,
 		Gradient: &GradientDef{},
 	}
@@ -436,9 +436,9 @@ func TestRendererGuardDrawGradientAllowsZeroSizeNoop(t *testing.T) {
 
 func TestRendererGuardDrawStrokeRectAllowsZeroSizeNoop(t *testing.T) {
 	r := RenderCmd{
-		Kind:      RenderStrokeRect,
-		X:         106, Y: 29,
-		W:         241.5, H: 0,
+		Kind: RenderStrokeRect,
+		X:    106, Y: 29,
+		W: 241.5, H: 0,
 		Radius:    5.5,
 		Color:     White,
 		Thickness: 1.5,
@@ -450,9 +450,9 @@ func TestRendererGuardDrawStrokeRectAllowsZeroSizeNoop(t *testing.T) {
 
 func TestRendererGuardDrawRectAllowsZeroSizeNoop(t *testing.T) {
 	r := RenderCmd{
-		Kind:   RenderRect,
-		X:      244.75, Y: 312.1875,
-		W:      0, H: 29.09375,
+		Kind: RenderRect,
+		X:    244.75, Y: 312.1875,
+		W: 0, H: 29.09375,
 		Radius: 5.5,
 		Color:  White,
 		Fill:   true,
@@ -487,6 +487,20 @@ func TestRendererGuardInvalidDrawSvgVertexColorsCountMismatch(t *testing.T) {
 	}
 	if rendererValidForDraw(r) {
 		t.Error("vertex color count mismatch should be invalid")
+	}
+}
+
+func TestRendererGuardInvalidDrawSvgVertexAlphaScale(t *testing.T) {
+	r := RenderCmd{
+		Kind:             RenderSvg,
+		Triangles:        []float32{0, 0, 10, 0, 0, 10},
+		Color:            White,
+		Scale:            1,
+		HasVertexAlpha:   true,
+		VertexAlphaScale: 1.5,
+	}
+	if rendererValidForDraw(r) {
+		t.Error("vertex alpha scale > 1 should be invalid")
 	}
 }
 
@@ -538,9 +552,9 @@ func TestInvalidClipIsSkippedAndNextDrawKept(t *testing.T) {
 		W: -5, H: 10,
 	}
 	validRect := RenderCmd{
-		Kind:  RenderRect,
-		X:     1, Y: 2,
-		W:     20, H: 10,
+		Kind: RenderRect,
+		X:    1, Y: 2,
+		W: 20, H: 10,
 		Color: White,
 		Fill:  true,
 	}

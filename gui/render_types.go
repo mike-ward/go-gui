@@ -76,13 +76,17 @@ type RenderCmd struct {
 	// Slice data (Svg).
 	Triangles    []float32
 	VertexColors []Color
+	// Optional multiplier for SVG vertex alpha (0..1) to avoid
+	// per-frame vertex color copies when animating opacity.
+	VertexAlphaScale float32
+	HasVertexAlpha   bool
 
 	// Pointer fields.
 	Gradient     *GradientDef
-	TextStylePtr *TextStyle             // SVG text: full style
-	TextGradient *glyph.GradientConfig  // SVG gradient text
-	TextPath     *TextPathData          // SVG textPath placement data
-	LayoutPtr    *glyph.Layout          // RTF pre-shaped layout
+	TextStylePtr *TextStyle            // SVG text: full style
+	TextGradient *glyph.GradientConfig // SVG gradient text
+	TextPath     *TextPathData         // SVG textPath placement data
+	LayoutPtr    *glyph.Layout         // RTF pre-shaped layout
 }
 
 // TextPathData holds pre-computed path data for RenderTextPath.

@@ -123,6 +123,12 @@ func TestValidateSvgSourceRejectsBadExtension(t *testing.T) {
 	}
 }
 
+func TestValidateSvgSourceRejectsNul(t *testing.T) {
+	if err := validateSvgSource("file.svg\x00"); err == nil {
+		t.Fatal("expected error for NUL byte")
+	}
+}
+
 func TestValidateSvgSourceAcceptsGoodPath(t *testing.T) {
 	if err := validateSvgSource("/images/icon.svg"); err != nil {
 		t.Fatalf("expected valid: %v", err)
@@ -132,6 +138,28 @@ func TestValidateSvgSourceAcceptsGoodPath(t *testing.T) {
 func TestCheckSvgSourceSizeInline(t *testing.T) {
 	if err := checkSvgSourceSize("<svg></svg>"); err != nil {
 		t.Fatalf("small inline should pass: %v", err)
+	}
+}
+
+func TestBuildDefsPathDataCache(t *testing.T) {
+	defs := map[string]string{
+		"p1": "M 0 0 L 10 0",
+		"p2": "M 0 0 L 0 0",
+	}
+	textPaths := []SvgTextPath{
+		{PathID: "p1"},
+		{PathID: "missing"},
+	}
+	cache := buildDefsPathDataCache(textPaths, defs, 2.0)
+	if len(cache) != 1 {
+		t.Fatalf("expected 1 cached path, got %d", len(cache))
+	}
+	entry, ok := cache["p1"]
+	if !ok {
+		t.Fatal("expected p1 in cache")
+	}
+	if len(entry.polyline) < 4 || len(entry.table) < 2 || entry.totalLen <= 0 {
+		t.Fatal("expected non-empty cached polyline/table/length")
 	}
 }
 

@@ -9,22 +9,41 @@ import (
 	"github.com/mike-ward/go-glyph"
 )
 
+type cachedDefsPathData struct {
+	polyline []float32
+	table    []float32
+	totalLen float32
+}
+
 // renderSvgTextPath emits a RenderTextPath command for text along
 // a referenced SVG path. The backend handles glyph layout and
 // placement using the glyph system's DrawLayoutPlaced API.
 func renderSvgTextPath(tp SvgTextPath, defsPaths map[string]string,
+	defsPathCache map[string]cachedDefsPathData,
 	shapeX, shapeY, scale float32, w *Window) {
-	d, ok := defsPaths[tp.PathID]
-	if !ok {
-		return
+	var polyline []float32
+	var table []float32
+	var totalLen float32
+	if defsPathCache != nil {
+		if cached, ok := defsPathCache[tp.PathID]; ok {
+			polyline = cached.polyline
+			table = cached.table
+			totalLen = cached.totalLen
+		}
 	}
-	polyline := flattenDefsPath(d, scale)
-	if len(polyline) < 4 {
-		return
-	}
-	table, totalLen := buildArcLengthTable(polyline)
-	if totalLen <= 0 {
-		return
+	if len(polyline) < 4 || totalLen <= 0 {
+		d, ok := defsPaths[tp.PathID]
+		if !ok {
+			return
+		}
+		polyline = flattenDefsPath(d, scale)
+		if len(polyline) < 4 {
+			return
+		}
+		table, totalLen = buildArcLengthTable(polyline)
+		if totalLen <= 0 {
+			return
+		}
 	}
 
 	text := tp.Text
@@ -392,8 +411,8 @@ func flattenArc(out *[]float32,
 	}
 	for i := 1; i <= steps; i++ {
 		t := theta1 + dtheta*float64(i)/float64(steps)
-		xr := rx*math.Cos(t)
-		yr := ry*math.Sin(t)
+		xr := rx * math.Cos(t)
+		yr := ry * math.Sin(t)
 		px := cosPhi*xr - sinPhi*yr + cxArc
 		py := sinPhi*xr + cosPhi*yr + cyArc
 		*out = append(*out, float32(px)*scale, float32(py)*scale)

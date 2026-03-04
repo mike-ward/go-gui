@@ -24,6 +24,7 @@ type Backend struct {
 	filterTex    *sdl.Texture // temporary render target for filter groups
 	filterBlur   float32      // blur radius in pixels
 	filterLayers int          // number of blur layers
+	svgVerts     []sdl.Vertex // reusable vertex buffer for SVG geometry
 	texCache     texCache     // image texture cache
 }
 

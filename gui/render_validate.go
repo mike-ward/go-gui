@@ -28,6 +28,12 @@ func rendererValidForDraw(r RenderCmd) bool {
 		if !f32AllFinite3(r.X, r.Y, r.Scale) || r.Scale <= 0 {
 			return false
 		}
+		if r.HasVertexAlpha &&
+			(!f32IsFinite(r.VertexAlphaScale) ||
+				r.VertexAlphaScale < 0 ||
+				r.VertexAlphaScale > 1) {
+			return false
+		}
 		if len(r.Triangles) == 0 || len(r.Triangles)%6 != 0 {
 			return false
 		}
