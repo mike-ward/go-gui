@@ -15,7 +15,7 @@ type Shape struct {
 	Resource string // image path or SVG source
 
 	// Optional sub-structs (nil when unused)
-	Events *EventHandlers // event handlers
+	Events *EventHandlers   // event handlers
 	TC     *ShapeTextConfig // text/RTF fields
 	FX     *ShapeEffects    // visual effects
 	A11Y   *AccessInfo      // accessibility metadata
@@ -26,21 +26,21 @@ type Shape struct {
 	Sizing    Sizing   // sizing logic
 
 	// Numeric fields
-	X          float32 // final calculated X position (absolute)
-	Y          float32 // final calculated Y position (absolute)
-	Width      float32
-	MinWidth   float32
-	MaxWidth   float32
-	Height     float32
-	MinHeight  float32
-	MaxHeight  float32
-	Radius     float32 // corner radius
-	Spacing    float32 // spacing between children
+	X            float32 // final calculated X position (absolute)
+	Y            float32 // final calculated Y position (absolute)
+	Width        float32
+	MinWidth     float32
+	MaxWidth     float32
+	Height       float32
+	MinHeight    float32
+	MaxHeight    float32
+	Radius       float32 // corner radius
+	Spacing      float32 // spacing between children
 	FloatOffsetX float32
 	FloatOffsetY float32
 
-	IDFocus          uint32 // >0 means focusable; value = tab order
-	IDScroll         uint32 // >0 means receives scroll events
+	IDFocus           uint32 // >0 means focusable; value = tab order
+	IDScroll          uint32 // >0 means receives scroll events
 	IDScrollContainer uint32
 
 	Color       Color
@@ -62,16 +62,16 @@ type Shape struct {
 	FloatAnchor          FloatAttach
 	FloatTieOff          FloatAttach
 
-	Clip      bool
-	Disabled  bool
+	Clip          bool
+	Disabled      bool
 	Float         bool
 	FloatAutoFlip bool // flip float position to stay in window
 	FocusSkip     bool
-	OverDraw  bool
-	Hero      bool
-	Wrap      bool
-	Overflow  bool
-	Opacity   float32
+	OverDraw      bool
+	Hero          bool
+	Wrap          bool
+	Overflow      bool
+	Opacity       float32
 }
 
 // NewShape returns a Shape with default field values.
@@ -222,6 +222,11 @@ type ShapeTextConfig struct {
 	RtfRuns           *RichText
 	RtfLayout         *glyph.Layout
 	RtfBaseStyle      glyph.TextStyle
+	wrapCacheWidth    float32
+	wrapCacheValid    bool
+	wrapCacheText     string
+	wrapCacheStyle    TextStyle
+	wrapCacheHeight   float32
 }
 
 // HasRtfLayout returns true if the shape has an RTF layout.
@@ -241,16 +246,16 @@ const (
 
 // EventHandlers holds optional event callback fields.
 type EventHandlers struct {
-	OnChar       func(*Layout, *Event, *Window)
-	OnKeyDown    func(*Layout, *Event, *Window)
-	OnClick      func(*Layout, *Event, *Window)
-	OnMouseMove  func(*Layout, *Event, *Window)
-	OnMouseUp    func(*Layout, *Event, *Window)
+	OnChar        func(*Layout, *Event, *Window)
+	OnKeyDown     func(*Layout, *Event, *Window)
+	OnClick       func(*Layout, *Event, *Window)
+	OnMouseMove   func(*Layout, *Event, *Window)
+	OnMouseUp     func(*Layout, *Event, *Window)
 	OnMouseScroll func(*Layout, *Event, *Window)
-	OnScroll     func(*Layout, *Window)
-	AmendLayout  func(*Layout, *Window)
-	OnHover      func(*Layout, *Event, *Window)
-	OnIMECommit  func(*Layout, string, *Window)
+	OnScroll      func(*Layout, *Window)
+	AmendLayout   func(*Layout, *Window)
+	OnHover       func(*Layout, *Event, *Window)
+	OnIMECommit   func(*Layout, string, *Window)
 }
 
 // ShapeEffects holds optional visual effect fields.

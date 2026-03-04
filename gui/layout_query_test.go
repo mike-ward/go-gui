@@ -13,7 +13,7 @@ func TestCollectFocusCandidatesDedupes(t *testing.T) {
 		},
 	}
 	var candidates []focusCandidate
-	seen := make(map[uint32]bool)
+	seen := make(map[uint32]struct{})
 	collectFocusCandidates(root, &candidates, seen)
 	if len(candidates) != 1 {
 		t.Fatalf("candidates: got %d, want 1", len(candidates))
@@ -151,5 +151,26 @@ func TestFocusFindPreviousByID(t *testing.T) {
 	}
 	if fallback.IDFocus != 40 {
 		t.Errorf("fallback: got %d, want 40", fallback.IDFocus)
+	}
+}
+
+func TestNextPreviousFocusableNilWindow(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{},
+		Children: []Layout{
+			{Shape: &Shape{IDFocus: 10}},
+			{Shape: &Shape{IDFocus: 20}},
+			{Shape: &Shape{IDFocus: 30}},
+		},
+	}
+
+	next, ok := root.NextFocusable(nil)
+	if !ok || next.IDFocus != 10 {
+		t.Fatalf("next nil window: got %v, want IDFocus 10", next)
+	}
+
+	prev, ok := root.PreviousFocusable(nil)
+	if !ok || prev.IDFocus != 30 {
+		t.Fatalf("prev nil window: got %v, want IDFocus 30", prev)
 	}
 }

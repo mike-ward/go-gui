@@ -187,3 +187,32 @@ func TestWrapFillInColumn(t *testing.T) {
 		t.Errorf("expected 2+ rows, got %d", len(root.Children[0].Children))
 	}
 }
+
+func TestWrapLeadingSkippedChildren(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{
+			Axis: AxisLeftToRight, Wrap: true, Width: 80, Spacing: 5,
+		},
+		Children: []Layout{
+			{Shape: &Shape{Width: 10, ShapeType: ShapeRectangle, Float: true}},
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+		},
+	}
+
+	layoutWrapContainers(root, &Window{})
+
+	if len(root.Children) != 2 {
+		t.Fatalf("rows: got %d, want 2", len(root.Children))
+	}
+	if len(root.Children[0].Children) != 2 {
+		t.Fatalf("row 0 children: got %d, want 2", len(root.Children[0].Children))
+	}
+	if len(root.Children[1].Children) != 1 {
+		t.Fatalf("row 1 children: got %d, want 1", len(root.Children[1].Children))
+	}
+	if root.Children[0].Children[0].Shape.Float {
+		t.Fatalf("expected first flow child in row 0, got float")
+	}
+}

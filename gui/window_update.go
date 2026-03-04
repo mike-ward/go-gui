@@ -83,6 +83,10 @@ func (w *Window) Update() {
 		return
 	}
 
+	if len(w.layout.Children) > 0 {
+		w.scratch.putLayerLayouts(w.layout.Children)
+	}
+
 	view := w.viewGenerator(w)
 	rootLayout := GenerateViewLayout(view, w)
 	layers := layoutArrange(&rootLayout, w)

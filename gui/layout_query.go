@@ -70,14 +70,16 @@ type focusCandidate struct {
 	shape *Shape
 }
 
-func collectFocusCandidates(layout *Layout, candidates *[]focusCandidate, seen map[uint32]bool) {
+func collectFocusCandidates(layout *Layout, candidates *[]focusCandidate, seen map[uint32]struct{}) {
 	if layout.Shape.IDFocus > 0 && !layout.Shape.FocusSkip {
-		if !layout.Shape.Disabled && !seen[layout.Shape.IDFocus] {
-			seen[layout.Shape.IDFocus] = true
-			*candidates = append(*candidates, focusCandidate{
-				id:    layout.Shape.IDFocus,
-				shape: layout.Shape,
-			})
+		if !layout.Shape.Disabled {
+			if _, ok := seen[layout.Shape.IDFocus]; !ok {
+				seen[layout.Shape.IDFocus] = struct{}{}
+				*candidates = append(*candidates, focusCandidate{
+					id:    layout.Shape.IDFocus,
+					shape: layout.Shape,
+				})
+			}
 		}
 	}
 	for i := range layout.Children {
@@ -138,36 +140,52 @@ func focusFindPrevious(candidates []focusCandidate, idFocus uint32) (*Shape, boo
 // current focus. Wraps to first if at end.
 func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
 	var candidates []focusCandidate
+	var seen map[uint32]struct{}
+	var idFocus uint32
 	if w != nil {
 		candidates = w.scratch.takeFocusCandidates()
 		defer func() {
 			w.scratch.putFocusCandidates(candidates)
 		}()
+		seen = w.scratch.takeFocusSeen(len(candidates))
+		defer func() {
+			w.scratch.putFocusSeen(seen)
+		}()
+		idFocus = w.viewState.idFocus
+	} else {
+		seen = make(map[uint32]struct{})
 	}
-	seen := make(map[uint32]bool)
 	collectFocusCandidates(layout, &candidates, seen)
 	if len(candidates) == 0 {
 		return nil, false
 	}
-	return focusFindNext(candidates, w.viewState.idFocus)
+	return focusFindNext(candidates, idFocus)
 }
 
 // PreviousFocusable returns the previous focusable shape before
 // the current focus. Wraps to last if at beginning.
 func (layout *Layout) PreviousFocusable(w *Window) (*Shape, bool) {
 	var candidates []focusCandidate
+	var seen map[uint32]struct{}
+	var idFocus uint32
 	if w != nil {
 		candidates = w.scratch.takeFocusCandidates()
 		defer func() {
 			w.scratch.putFocusCandidates(candidates)
 		}()
+		seen = w.scratch.takeFocusSeen(len(candidates))
+		defer func() {
+			w.scratch.putFocusSeen(seen)
+		}()
+		idFocus = w.viewState.idFocus
+	} else {
+		seen = make(map[uint32]struct{})
 	}
-	seen := make(map[uint32]bool)
 	collectFocusCandidates(layout, &candidates, seen)
 	if len(candidates) == 0 {
 		return nil, false
 	}
-	return focusFindPrevious(candidates, w.viewState.idFocus)
+	return focusFindPrevious(candidates, idFocus)
 }
 
 // rectIntersection returns the intersection of two rectangles.

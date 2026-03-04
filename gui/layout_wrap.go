@@ -31,28 +31,34 @@ func layoutWrapContainers(layout *Layout, w *Window) {
 	}
 	rowStart := 0
 	var rowWidth float32
+	rowHasFlowChild := false
 
 	for idx := range layout.Children {
 		child := &layout.Children[idx]
 		if child.Shape.Float || child.Shape.ShapeType == ShapeNone || child.Shape.OverDraw {
 			continue
 		}
+		if !rowHasFlowChild {
+			rowStart = idx
+		}
 		childW := child.Shape.Width
 		var gap float32
-		if rowWidth > 0 {
+		if rowHasFlowChild {
 			gap = spacing
 		}
-		if rowWidth+gap+childW > available && idx > rowStart {
+		if rowHasFlowChild && rowWidth+gap+childW > available && idx > rowStart {
 			rows = append(rows, wrapRowRange{start: rowStart, end: idx})
 			rowStart = idx
 			rowWidth = 0
+			rowHasFlowChild = false
 		}
-		if rowWidth > 0 {
+		if rowHasFlowChild {
 			rowWidth += spacing
 		}
 		rowWidth += childW
+		rowHasFlowChild = true
 	}
-	if rowStart < len(layout.Children) {
+	if rowHasFlowChild && rowStart < len(layout.Children) {
 		rows = append(rows, wrapRowRange{start: rowStart, end: len(layout.Children)})
 	}
 

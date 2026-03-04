@@ -24,6 +24,9 @@ const (
 	scratchSvgTransformBatchesShrinkTo  = 16
 	scratchWrapRowsRetainMax            = 4096
 	scratchWrapRowsShrinkTo             = 256
+	scratchLayerLayoutsRetainMax        = 4096
+	scratchLayerLayoutsShrinkTo         = 256
+	scratchFocusSeenRetainMax           = 4096
 )
 
 // scratchPools holds reusable per-frame buffers.
@@ -33,6 +36,7 @@ type scratchPools struct {
 	floatingLayoutPool      []*Layout
 	floatingPoolUsed        int
 	focusCandidates         []focusCandidate
+	focusSeen               map[uint32]struct{}
 	gradientNormStops       []GradientStop
 	gradientSampleStops     []GradientStop
 	svgAnimVals             []float32
@@ -43,6 +47,7 @@ type scratchPools struct {
 	svgTransformBatches     [][]float32
 	svgTransformBatchesUsed int
 	wrapRows                []wrapRowRange
+	layerLayouts            []Layout
 }
 
 func (p *scratchPools) takeFilterRenderers(requiredCap int) []RenderCmd {
@@ -106,6 +111,26 @@ func (p *scratchPools) putFocusCandidates(s []focusCandidate) {
 		s = make([]focusCandidate, 0, scratchFocusCandidatesShrinkTo)
 	}
 	p.focusCandidates = s[:0]
+}
+
+func (p *scratchPools) takeFocusSeen(requiredCap int) map[uint32]struct{} {
+	m := p.focusSeen
+	if m == nil {
+		if requiredCap < 8 {
+			requiredCap = 8
+		}
+		m = make(map[uint32]struct{}, requiredCap)
+	}
+	clear(m)
+	return m
+}
+
+func (p *scratchPools) putFocusSeen(m map[uint32]struct{}) {
+	if len(m) > scratchFocusSeenRetainMax {
+		p.focusSeen = nil
+		return
+	}
+	p.focusSeen = m
 }
 
 func (p *scratchPools) takeGradientNormStops(requiredCap int) []GradientStop {
@@ -206,6 +231,22 @@ func (p *scratchPools) putWrapRows(s []wrapRowRange) {
 		s = make([]wrapRowRange, 0, scratchWrapRowsShrinkTo)
 	}
 	p.wrapRows = s[:0]
+}
+
+func (p *scratchPools) takeLayerLayouts(requiredCap int) []Layout {
+	s := p.layerLayouts
+	s = s[:0]
+	if cap(s) < requiredCap {
+		s = make([]Layout, 0, requiredCap)
+	}
+	return s
+}
+
+func (p *scratchPools) putLayerLayouts(s []Layout) {
+	if cap(s) > scratchLayerLayoutsRetainMax {
+		s = make([]Layout, 0, scratchLayerLayoutsShrinkTo)
+	}
+	p.layerLayouts = s[:0]
 }
 
 func (p *scratchPools) transformSvgTriangles(tris []float32, m [6]float32) []float32 {

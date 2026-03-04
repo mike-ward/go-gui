@@ -128,6 +128,12 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	if tc.RtfRuns == nil {
 		return
 	}
+	if tc.wrapCacheValid &&
+		f32AreClose(tc.wrapCacheWidth, shape.Width) &&
+		tc.RtfLayout != nil {
+		shape.Height = tc.wrapCacheHeight
+		return
+	}
 	tm, ok := w.textMeasurer.(interface {
 		LayoutRichText(glyph.RichText, glyph.TextConfig) (glyph.Layout, error)
 	})
@@ -150,6 +156,9 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	}
 	tc.RtfLayout = &l
 	shape.Height = l.Height
+	tc.wrapCacheWidth = shape.Width
+	tc.wrapCacheHeight = l.Height
+	tc.wrapCacheValid = true
 }
 
 func layoutWrapPlainText(shape *Shape, tc *ShapeTextConfig,
@@ -161,10 +170,22 @@ func layoutWrapPlainText(shape *Shape, tc *ShapeTextConfig,
 	if len(tc.Text) == 0 {
 		return
 	}
+	if tc.wrapCacheValid &&
+		f32AreClose(tc.wrapCacheWidth, shape.Width) &&
+		tc.wrapCacheText == tc.Text &&
+		tc.wrapCacheStyle == *tc.TextStyle {
+		shape.Height = tc.wrapCacheHeight
+		return
+	}
 	l, err := w.textMeasurer.LayoutText(
 		tc.Text, *tc.TextStyle, shape.Width)
 	if err != nil {
 		return
 	}
 	shape.Height = l.Height
+	tc.wrapCacheWidth = shape.Width
+	tc.wrapCacheText = tc.Text
+	tc.wrapCacheStyle = *tc.TextStyle
+	tc.wrapCacheHeight = l.Height
+	tc.wrapCacheValid = true
 }
