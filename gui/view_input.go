@@ -160,8 +160,8 @@ func Input(cfg InputCfg) View {
 			)
 			is, _ := imap.Get(ly.Shape.IDFocus)
 			is.CursorPos = runePos
-			is.SelectBeg = 0
-			is.SelectEnd = 0
+			is.SelectBeg = uint32(runePos)
+			is.SelectEnd = uint32(runePos)
 			is.CursorOffset = -1
 			imap.Set(ly.Shape.IDFocus, is)
 			resetBlinkCursorVisible(w)
@@ -171,6 +171,43 @@ func Input(cfg InputCfg) View {
 				)
 			}
 			e.IsHandled = true
+
+			// Drag-to-select via MouseLock.
+			anchorPos := uint32(runePos)
+			dragGL := gl
+			dragDisplayText := displayText
+			dragTxtOffX := ly.Shape.X - layout.Shape.X
+			dragTxtOffY := ly.Shape.Y - layout.Shape.Y
+			dragIDFocus := ly.Shape.IDFocus
+			w.MouseLock(MouseLockCfg{
+				MouseMove: func(_ *Layout, e *Event, w *Window) {
+					relX := e.MouseX - dragTxtOffX
+					relY := e.MouseY - dragTxtOffY
+					byteIdx := dragGL.GetClosestOffset(
+						relX, relY)
+					rp := byteToRuneIndex(
+						dragDisplayText, byteIdx)
+					imap := StateMap[uint32, InputState](
+						w, nsInput, capMany,
+					)
+					is, _ := imap.Get(dragIDFocus)
+					is.CursorPos = rp
+					is.SelectBeg = anchorPos
+					is.SelectEnd = uint32(rp)
+					is.CursorOffset = -1
+					imap.Set(dragIDFocus, is)
+					resetBlinkCursorVisible(w)
+					if idScroll > 0 && layout.Parent != nil {
+						inputScrollCursorIntoView(
+							idScroll, text,
+							layout.Parent, w,
+						)
+					}
+				},
+				MouseUp: func(_ *Layout, _ *Event, w *Window) {
+					w.MouseUnlock()
+				},
+			})
 		},
 		Content: txtContent,
 	}
