@@ -1,20 +1,26 @@
 package gui
 
-
 // ShapeCallback is the type for shape event callbacks.
 type ShapeCallback = func(*Layout, *Event, *Window)
 
 // executeFocusCallback executes a callback if the layout has
 // focus. Returns true if handled.
-func executeFocusCallback(
-	layout *Layout, e *Event, w *Window,
-	callback ShapeCallback, name string,
-) bool {
+func isFocusedTarget(layout *Layout, w *Window) bool {
 	if layout.Shape.IDFocus == 0 {
 		return false
 	}
 	if !w.IsFocus(layout.Shape.IDFocus) &&
 		layout.Shape.ID != reservedDialogID {
+		return false
+	}
+	return true
+}
+
+func executeFocusCallback(
+	layout *Layout, e *Event, w *Window,
+	callback ShapeCallback, name string,
+) bool {
+	if !isFocusedTarget(layout, w) {
 		return false
 	}
 	if callback == nil {
@@ -37,9 +43,13 @@ func executeMouseCallback(
 	if callback == nil {
 		return false
 	}
-	ev := eventRelativeTo(layout.Shape, e)
-	callback(layout, &ev, w)
-	if ev.IsHandled {
+	saved := *e
+	e.MouseX = saved.MouseX - layout.Shape.X
+	e.MouseY = saved.MouseY - layout.Shape.Y
+	callback(layout, e, w)
+	handled := e.IsHandled
+	*e = saved
+	if handled {
 		e.IsHandled = true
 		return true
 	}

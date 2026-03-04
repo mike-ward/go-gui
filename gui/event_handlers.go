@@ -1,6 +1,5 @@
 package gui
 
-
 // charHandler handles character input events (typing).
 // Traverses forward (depth-first) and delivers to focused element.
 func charHandler(layout *Layout, e *Event, w *Window) {
@@ -33,11 +32,7 @@ func keydownHandler(layout *Layout, e *Event, w *Window) {
 			return
 		}
 	}
-	if layout.Shape.IDFocus == 0 {
-		return
-	}
-	if !w.IsFocus(layout.Shape.IDFocus) &&
-		layout.Shape.ID != reservedDialogID {
+	if !isFocusedTarget(layout, w) {
 		return
 	}
 	var onKeyDown ShapeCallback
@@ -172,31 +167,41 @@ func mouseUpHandler(layout *Layout, e *Event, w *Window) {
 		"mouseUpHandler")
 }
 
+func focusedScrollTarget(layout *Layout, w *Window) *Layout {
+	if w == nil {
+		return nil
+	}
+	idFocus := w.IDFocus()
+	if idFocus == 0 {
+		return nil
+	}
+	ly, ok := FindLayoutByIDFocus(layout, idFocus)
+	if !ok || !ly.Shape.HasEvents() || ly.Shape.Events.OnMouseScroll == nil {
+		return nil
+	}
+	return ly
+}
+
 // mouseScrollHandler handles mouse wheel scroll events.
-// Traverses reverse (topmost first). Delivers to focused
-// element's scroll handler first, then falls back to scroll
-// container under cursor.
+// Delivers to the focused element's OnMouseScroll handler first.
+// If no focused handler exists, traverses reverse (topmost first)
+// and falls back to the scroll container under cursor.
 func mouseScrollHandler(layout *Layout, e *Event, w *Window) {
+	if ly := focusedScrollTarget(layout, w); ly != nil {
+		ly.Shape.Events.OnMouseScroll(ly, e, w)
+		return
+	}
+	mouseScrollFallbackHandler(layout, e, w)
+}
+
+func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 	for i := len(layout.Children) - 1; i >= 0; i-- {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
-		mouseScrollHandler(&layout.Children[i], e, w)
+		mouseScrollFallbackHandler(&layout.Children[i], e, w)
 		if e.IsHandled {
 			return
-		}
-	}
-	// Check if focused element has a scroll handler.
-	idFocus := w.IDFocus()
-	if idFocus != 0 {
-		if ly, ok := layout.FindLayout(func(l Layout) bool {
-			return l.Shape.IDFocus == idFocus
-		}); ok {
-			if ly.Shape.HasEvents() &&
-				ly.Shape.Events.OnMouseScroll != nil {
-				ly.Shape.Events.OnMouseScroll(ly, e, w)
-				return
-			}
 		}
 	}
 	// Handle scroll on scroll container under cursor.

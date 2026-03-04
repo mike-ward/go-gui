@@ -1,9 +1,12 @@
 package gui
 
-
 // EventFn handles user events, dispatching to child views.
 // Called by the backend event loop.
 func (w *Window) EventFn(e *Event) {
+	if e == nil {
+		return
+	}
+
 	// Focus gate: block events when unfocused except right-click,
 	// focused, and scroll.
 	if !w.focused && e.Type == EventMouseDown &&
@@ -17,14 +20,14 @@ func (w *Window) EventFn(e *Event) {
 
 	// Top-level layout children represent z-axis layers.
 	// Dialogs are modal: route events to last child (dialog layer).
-	layout := w.layout
+	layout := &w.layout
 	if w.dialogCfg.visible && len(w.layout.Children) > 0 {
-		layout = w.layout.Children[len(w.layout.Children)-1]
+		layout = &w.layout.Children[len(w.layout.Children)-1]
 	}
 
 	switch e.Type {
 	case EventChar:
-		charHandler(&layout, e, w)
+		charHandler(layout, e, w)
 
 	case EventFocused:
 		w.focused = true
@@ -33,7 +36,7 @@ func (w *Window) EventFn(e *Event) {
 		w.focused = false
 
 	case EventKeyDown:
-		keydownHandler(&layout, e, w)
+		keydownHandler(layout, e, w)
 		if !e.IsHandled && e.KeyCode == KeyTab &&
 			e.Modifiers == ModShift {
 			if shape, ok := layout.PreviousFocusable(w); ok {
@@ -47,7 +50,7 @@ func (w *Window) EventFn(e *Event) {
 
 	case EventMouseDown:
 		w.SetMouseCursor(CursorArrow)
-		mouseDownHandler(&layout, false, e, w)
+		mouseDownHandler(layout, false, e, w)
 		if !e.IsHandled {
 			ss := StateMap[string, bool](w, nsSelect, capModerate)
 			ss.Clear()
@@ -60,13 +63,13 @@ func (w *Window) EventFn(e *Event) {
 		w.viewState.menuKeyNav = false
 		w.viewState.mousePosX = e.MouseX
 		w.viewState.mousePosY = e.MouseY
-		mouseMoveHandler(&layout, e, w)
+		mouseMoveHandler(layout, e, w)
 
 	case EventMouseUp:
-		mouseUpHandler(&layout, e, w)
+		mouseUpHandler(layout, e, w)
 
 	case EventMouseScroll:
-		mouseScrollHandler(&layout, e, w)
+		mouseScrollHandler(layout, e, w)
 
 	case EventResized:
 		w.windowWidth = e.WindowWidth

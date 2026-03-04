@@ -245,3 +245,53 @@ func TestEventFnPreservesTooltipID(t *testing.T) {
 		t.Error("tooltip ID should be preserved")
 	}
 }
+
+func TestEventFnNilEventNoPanic(t *testing.T) {
+	w := newEventTestWindow()
+	w.layout = Layout{Shape: &Shape{}}
+	w.EventFn(nil)
+}
+
+func TestEventFnMouseScrollFocusedHandlerPrecedence(t *testing.T) {
+	w := newEventTestWindow()
+	focusedCalled := false
+	w.layout = Layout{
+		Shape: &Shape{},
+		Children: []Layout{
+			{Shape: &Shape{
+				IDFocus: 11,
+				Events: &EventHandlers{
+					OnMouseScroll: func(_ *Layout, _ *Event, _ *Window) {
+						focusedCalled = true
+					},
+				},
+			}},
+			{Shape: &Shape{
+				IDScroll: 1,
+				Width:    100,
+				Height:   50,
+				ShapeClip: DrawClip{
+					X: 0, Y: 0, Width: 100, Height: 50,
+				},
+			}, Children: []Layout{
+				{Shape: &Shape{Height: 200}},
+			}},
+		},
+	}
+	w.SetIDFocus(11)
+	guiTheme.ScrollMultiplier = 1
+	e := &Event{
+		Type:      EventMouseScroll,
+		MouseX:    25,
+		MouseY:    20,
+		ScrollY:   -10,
+		Modifiers: ModNone,
+	}
+	w.EventFn(e)
+	if !focusedCalled {
+		t.Error("focused OnMouseScroll should be called")
+	}
+	if e.IsHandled {
+		t.Error("fallback scroll should not run when focused handler exists")
+	}
+}

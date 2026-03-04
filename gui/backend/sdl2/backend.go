@@ -153,18 +153,16 @@ func (b *Backend) Run(w *gui.Window) {
 	// During window drag-resize, macOS enters a modal loop that
 	// blocks PollEvent. This callback fires from within that loop,
 	// allowing re-layout and re-render at the new size.
+	resizeEvent := &gui.Event{Type: gui.EventResized}
 	watchHandle := sdl.AddEventWatchFunc(
 		func(ev sdl.Event, _ interface{}) bool {
 			we, ok := ev.(*sdl.WindowEvent)
 			if !ok || we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
 				return true
 			}
-			e := gui.Event{
-				Type:         gui.EventResized,
-				WindowWidth:  int(we.Data1),
-				WindowHeight: int(we.Data2),
-			}
-			w.EventFn(&e)
+			resizeEvent.WindowWidth = int(we.Data1)
+			resizeEvent.WindowHeight = int(we.Data2)
+			w.EventFn(resizeEvent)
 			w.FrameFn()
 			b.renderFrame(w)
 			return true
@@ -172,15 +170,17 @@ func (b *Backend) Run(w *gui.Window) {
 	defer sdl.DelEventWatch(watchHandle)
 
 	running := true
+	evt := new(gui.Event)
 	for running {
 		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
-			e, cont := mapEvent(ev, b)
+			mapped, cont := mapEvent(ev, b)
+			*evt = mapped
 			if !cont {
 				running = false
 				break
 			}
-			if e.Type != gui.EventInvalid {
-				w.EventFn(&e)
+			if evt.Type != gui.EventInvalid {
+				w.EventFn(evt)
 			}
 		}
 		if !running {
