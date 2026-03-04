@@ -158,45 +158,13 @@ func layoutWrapPlainText(shape *Shape, tc *ShapeTextConfig,
 	if w.textMeasurer == nil || tc.TextStyle == nil {
 		return
 	}
-	text := tc.Text
-	if len(text) == 0 {
+	if len(tc.Text) == 0 {
 		return
 	}
-	style := *tc.TextStyle
-	lineHeight := w.textMeasurer.FontHeight(style)
-	if lineHeight <= 0 {
+	l, err := w.textMeasurer.LayoutText(
+		tc.Text, *tc.TextStyle, shape.Width)
+	if err != nil {
 		return
 	}
-	maxW := shape.Width
-	lines := 1
-	var lineW float32
-	// Word-wrap: split on spaces, accumulate widths.
-	start := 0
-	for i := 0; i <= len(text); i++ {
-		if i < len(text) && text[i] != ' ' && text[i] != '\n' {
-			continue
-		}
-		word := text[start:i]
-		if len(word) > 0 {
-			wordW := w.textMeasurer.TextWidth(word, style)
-			if lineW > 0 && lineW+wordW > maxW {
-				lines++
-				lineW = wordW
-			} else {
-				lineW += wordW
-			}
-		}
-		if i < len(text) && text[i] == '\n' {
-			lines++
-			lineW = 0
-		} else if i < len(text) {
-			// Space.
-			spW := w.textMeasurer.TextWidth(" ", style)
-			if lineW > 0 {
-				lineW += spW
-			}
-		}
-		start = i + 1
-	}
-	shape.Height = float32(lines) * lineHeight
+	shape.Height = l.Height
 }

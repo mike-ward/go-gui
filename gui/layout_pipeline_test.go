@@ -1,6 +1,10 @@
 package gui
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 func TestLayoutPipelineNoPanic(t *testing.T) {
 	w := &Window{}
@@ -275,6 +279,37 @@ func (m *stubTextMeasurer) TextHeight(_ string, _ TextStyle) float32 {
 }
 func (m *stubTextMeasurer) FontHeight(_ TextStyle) float32 {
 	return m.fontHeight
+}
+func (m *stubTextMeasurer) LayoutText(text string, _ TextStyle, wrapWidth float32) (glyph.Layout, error) {
+	if wrapWidth <= 0 || len(text) == 0 {
+		return glyph.Layout{Height: m.fontHeight}, nil
+	}
+	// Simulate word wrapping using charWidth.
+	lines := 1
+	var lineW float32
+	start := 0
+	for i := 0; i <= len(text); i++ {
+		if i < len(text) && text[i] != ' ' && text[i] != '\n' {
+			continue
+		}
+		wordW := float32(i-start) * m.charWidth
+		if lineW > 0 && lineW+wordW > wrapWidth {
+			lines++
+			lineW = wordW
+		} else {
+			lineW += wordW
+		}
+		if i < len(text) && text[i] == '\n' {
+			lines++
+			lineW = 0
+		} else if i < len(text) {
+			if lineW > 0 {
+				lineW += m.charWidth
+			}
+		}
+		start = i + 1
+	}
+	return glyph.Layout{Height: float32(lines) * m.fontHeight}, nil
 }
 
 func TestLayoutWrapPlainText(t *testing.T) {

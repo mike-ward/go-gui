@@ -1,6 +1,10 @@
 package gui
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 func TestTableBasic(t *testing.T) {
 	v := Table(TableCfg{
@@ -153,6 +157,9 @@ func (m *tableTestMeasurer) TextWidth(text string, _ TextStyle) float32 {
 }
 func (m *tableTestMeasurer) TextHeight(_ string, _ TextStyle) float32 { return 16 }
 func (m *tableTestMeasurer) FontHeight(_ TextStyle) float32            { return 16 }
+func (m *tableTestMeasurer) LayoutText(_ string, _ TextStyle, _ float32) (glyph.Layout, error) {
+	return glyph.Layout{Height: 16}, nil
+}
 
 func TestTableColumnAutoWidth(t *testing.T) {
 	v := Table(TableCfg{

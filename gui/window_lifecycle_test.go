@@ -1,6 +1,10 @@
 package gui
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 func TestNewWindowSetsFields(t *testing.T) {
 	type S struct{ X int }
@@ -158,6 +162,9 @@ func (m *mockTextMeasurer) TextHeight(_ string, _ TextStyle) float32 {
 }
 func (m *mockTextMeasurer) FontHeight(_ TextStyle) float32 {
 	return 22
+}
+func (m *mockTextMeasurer) LayoutText(_ string, _ TextStyle, _ float32) (glyph.Layout, error) {
+	return glyph.Layout{Height: 22}, nil
 }
 
 func TestTextWithMeasurer(t *testing.T) {

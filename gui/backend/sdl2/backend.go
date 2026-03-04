@@ -114,9 +114,13 @@ func New(w *gui.Window) (*Backend, error) {
 	// Set SVG parser on gui Window.
 	w.SetSvgParser(svg.New())
 
-	// Set clipboard function.
+	// Set clipboard functions.
 	w.SetClipboardFn(func(text string) {
 		sdl.SetClipboardText(text)
+	})
+	w.SetClipboardGetFn(func() string {
+		text, _ := sdl.GetClipboardText()
+		return text
 	})
 
 	// Set native platform.

@@ -37,6 +37,16 @@ func (tm *textMeasurer) FontHeight(style gui.TextStyle) float32 {
 	return h
 }
 
+func (tm *textMeasurer) LayoutText(
+	text string, style gui.TextStyle, wrapWidth float32,
+) (glyph.Layout, error) {
+	cfg := guiStyleToGlyphConfig(style)
+	if wrapWidth > 0 {
+		cfg.Block.Width = wrapWidth
+	}
+	return tm.textSys.LayoutText(text, cfg)
+}
+
 func (tm *textMeasurer) LayoutRichText(
 	rt glyph.RichText, cfg glyph.TextConfig,
 ) (glyph.Layout, error) {

@@ -1,6 +1,11 @@
 package gui
 
-import "sync"
+import (
+	"sync"
+	"time"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 // TextMeasurer measures text dimensions. Set by the backend
 // after initialization; nil in tests (placeholder fallback).
@@ -8,6 +13,7 @@ type TextMeasurer interface {
 	TextWidth(text string, style TextStyle) float32
 	TextHeight(text string, style TextStyle) float32
 	FontHeight(style TextStyle) float32
+	LayoutText(text string, style TextStyle, wrapWidth float32) (glyph.Layout, error)
 }
 
 // Window is the main application window.
@@ -78,6 +84,7 @@ type Window struct {
 
 	// Clipboard — set by backend, nil in tests.
 	clipboardSetFn func(string)
+	clipboardGetFn func() string
 
 	// Input Method Editor state.
 	ime ime
@@ -176,6 +183,21 @@ func (w *Window) IDFocus() uint32 {
 func (w *Window) SetIDFocus(id uint32) {
 	w.clearInputSelections()
 	w.viewState.idFocus = id
+	if id > 0 {
+		w.viewState.inputCursorOn = true
+		if !w.HasAnimation(blinkCursorAnimationID) {
+			w.animationAdd(NewBlinkCursorAnimation())
+		}
+	}
+}
+
+// resetBlinkCursorVisible resets the blink timer so the cursor
+// stays visible during typing and cursor movement.
+func resetBlinkCursorVisible(w *Window) {
+	w.viewState.inputCursorOn = true
+	if a, ok := w.animations[blinkCursorAnimationID]; ok {
+		a.SetStart(time.Now())
+	}
 }
 
 // PointerOverApp returns true if the mouse pointer is within
@@ -271,6 +293,19 @@ func (w *Window) SetClipboard(text string) {
 	if w.clipboardSetFn != nil {
 		w.clipboardSetFn(text)
 	}
+}
+
+// SetClipboardGetFn sets the function used to read from the clipboard.
+func (w *Window) SetClipboardGetFn(fn func() string) {
+	w.clipboardGetFn = fn
+}
+
+// GetClipboard returns text from the system clipboard.
+func (w *Window) GetClipboard() string {
+	if w.clipboardGetFn != nil {
+		return w.clipboardGetFn()
+	}
+	return ""
 }
 
 // Renderers returns the current render command slice.
