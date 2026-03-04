@@ -96,6 +96,15 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 		layout.Shape.Opacity = 1.0
 	}
 	ApplyFixedSizingConstraints(layout.Shape)
+
+	if c.IDFocus > 0 {
+		layout.Shape.Events = &EventHandlers{
+			OnClick:     makeTextOnClick(),
+			OnKeyDown:   makeTextOnKeyDown(),
+			AmendLayout: textAmendLayout,
+		}
+	}
+
 	return layout
 }
 

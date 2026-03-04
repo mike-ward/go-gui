@@ -65,7 +65,6 @@ func scrollColumn(id uint32, text string, w *gui.Window) gui.View {
 	pad.Right = theme.ScrollbarStyle.Size + 4
 
 	return gui.Column(gui.ContainerCfg{
-		IDFocus:  id,
 		IDScroll: id,
 		ScrollbarCfgY: &gui.ScrollbarCfg{
 			Overflow: overflow,
@@ -75,8 +74,9 @@ func scrollColumn(id uint32, text string, w *gui.Window) gui.View {
 		Sizing:      gui.FillFill,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text: text,
-				Mode: gui.TextModeWrap,
+				IDFocus: id,
+				Text:    text,
+				Mode:    gui.TextModeWrap,
 			}),
 		},
 	})
