@@ -4,12 +4,59 @@ package gui
 // Commands execute on the main thread during the next frame update.
 // Preferred way to update UI state from other threads.
 func (w *Window) QueueCommand(cb func(*Window)) {
+	if cb == nil {
+		return
+	}
+	w.queueCommand(queuedCommand{
+		kind:     queuedCommandWindowFn,
+		windowFn: cb,
+	})
+}
+
+// QueueValueCommand queues a value callback for execution on the main thread.
+func (w *Window) QueueValueCommand(cb func(float32, *Window), value float32) {
+	if cb == nil {
+		return
+	}
+	w.queueCommand(queuedCommand{
+		kind:    queuedCommandValueFn,
+		valueFn: cb,
+		value:   value,
+	})
+}
+
+// QueueAnimateCommand queues an Animate callback for execution on the main thread.
+func (w *Window) QueueAnimateCommand(cb func(*Animate, *Window), a *Animate) {
+	if cb == nil {
+		return
+	}
+	w.queueCommand(queuedCommand{
+		kind:      queuedCommandAnimateFn,
+		animateFn: cb,
+		animate:   a,
+	})
+}
+
+func (w *Window) queueCommand(cmd queuedCommand) {
 	w.commandsMu.Lock()
 	if w.commands == nil && cap(w.commandScratch) > 0 {
 		w.commands = w.commandScratch[:0]
 		w.commandScratch = nil
 	}
-	w.commands = append(w.commands, cb)
+	w.commands = append(w.commands, cmd)
+	w.commandsMu.Unlock()
+}
+
+func (w *Window) queueCommandsBatch(cmds []queuedCommand) {
+	if len(cmds) == 0 {
+		return
+	}
+	w.commandsMu.Lock()
+	if w.commands == nil && cap(w.commandScratch) > 0 {
+		w.commands = w.commandScratch[:0]
+		w.commandScratch = nil
+	}
+	w.commands = append(w.commands, cmds...)
 	w.commandsMu.Unlock()
 }
 
@@ -27,8 +74,16 @@ func (w *Window) flushCommands() {
 	w.commandScratch = toRun[:0]
 	w.commandsMu.Unlock()
 
-	for _, cb := range toRun {
-		cb(w)
+	for i := range toRun {
+		cmd := toRun[i]
+		switch cmd.kind {
+		case queuedCommandWindowFn:
+			cmd.windowFn(w)
+		case queuedCommandValueFn:
+			cmd.valueFn(cmd.value, w)
+		case queuedCommandAnimateFn:
+			cmd.animateFn(cmd.animate, w)
+		}
 	}
 }
 

@@ -46,14 +46,12 @@ func TestUpdateAnimate(t *testing.T) {
 		Delay: 0,
 		start: time.Now().Add(-time.Second),
 	}
-	deferred := make([]func(*Window), 0, 4)
-	ok := updateAnimate(a, nil, &deferred)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := updateAnimate(a, &deferred)
 	if !ok {
 		t.Error("should return true")
 	}
-	for _, cb := range deferred {
-		cb(nil)
-	}
+	runQueuedCommands(deferred)
 	if !called {
 		t.Error("callback not called")
 	}

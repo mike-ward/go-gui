@@ -478,6 +478,9 @@ func isNumberToken(s string) bool {
 
 func parseF32(s string) float32 {
 	v, _ := strconv.ParseFloat(s, 32)
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0
+	}
 	return float32(v)
 }
 

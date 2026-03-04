@@ -29,10 +29,13 @@ type HeroTransition struct {
 	progress float32
 }
 
-func (h *HeroTransition) ID() string                    { return heroTransitionID }
+func (h *HeroTransition) ID() string                        { return heroTransitionID }
 func (h *HeroTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (h *HeroTransition) IsStopped() bool               { return h.stopped }
-func (h *HeroTransition) SetStart(now time.Time)        { h.start = now }
+func (h *HeroTransition) IsStopped() bool                   { return h.stopped }
+func (h *HeroTransition) SetStart(now time.Time)            { h.start = now }
+func (h *HeroTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
+	return updateHeroTransition(h, deferred)
+}
 
 // NewHeroTransition creates a HeroTransition with defaults.
 func NewHeroTransition(cfg HeroTransitionCfg) *HeroTransition {
@@ -50,7 +53,7 @@ func NewHeroTransition(cfg HeroTransitionCfg) *HeroTransition {
 	}
 }
 
-func updateHeroTransition(ht *HeroTransition, w *Window, deferred *[]func(*Window)) bool {
+func updateHeroTransition(ht *HeroTransition, deferred *[]queuedCommand) bool {
 	if ht.stopped {
 		return false
 	}
@@ -63,23 +66,30 @@ func updateHeroTransition(ht *HeroTransition, w *Window, deferred *[]func(*Windo
 		ht.progress = 1.0
 		ht.stopped = true
 		if ht.OnDone != nil {
-			*deferred = append(*deferred, ht.OnDone)
+			*deferred = append(*deferred, queuedCommand{
+				kind:     queuedCommandWindowFn,
+				windowFn: ht.OnDone,
+			})
 		}
 		return true
 	}
 	progress := float32(animElapsed) / float32(ht.duration)
-	ht.progress = ht.easing(progress)
+	easing := ht.easing
+	if easing == nil {
+		easing = EaseOutCubic
+	}
+	ht.progress = easing(progress)
 	return true
 }
 
 // captureHeroSnapshots finds all hero-marked elements.
 func captureHeroSnapshots(layout Layout) map[string]heroSnapshot {
 	snapshots := make(map[string]heroSnapshot)
-	captureHeroesRecursive(layout, snapshots)
+	captureHeroesRecursive(&layout, snapshots)
 	return snapshots
 }
 
-func captureHeroesRecursive(layout Layout, snapshots map[string]heroSnapshot) {
+func captureHeroesRecursive(layout *Layout, snapshots map[string]heroSnapshot) {
 	if layout.Shape.Hero && layout.Shape.ID != "" {
 		snapshots[layout.Shape.ID] = heroSnapshot{
 			x:      layout.Shape.X,
@@ -88,8 +98,8 @@ func captureHeroesRecursive(layout Layout, snapshots map[string]heroSnapshot) {
 			height: layout.Shape.Height,
 		}
 	}
-	for _, child := range layout.Children {
-		captureHeroesRecursive(child, snapshots)
+	for i := range layout.Children {
+		captureHeroesRecursive(&layout.Children[i], snapshots)
 	}
 }
 

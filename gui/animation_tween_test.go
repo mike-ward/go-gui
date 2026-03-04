@@ -19,11 +19,9 @@ func TestTweenCompletesAtTo(t *testing.T) {
 	var got float32
 	tw := NewTweenAnimation("t", 10, 50, func(v float32, _ *Window) { got = v })
 	tw.start = time.Now().Add(-time.Second)
-	deferred := make([]func(*Window), 0, 4)
-	updateTween(tw, nil, &deferred)
-	for _, cb := range deferred {
-		cb(nil)
-	}
+	deferred := make([]queuedCommand, 0, 4)
+	updateTween(tw, &deferred)
+	runQueuedCommands(deferred)
 	if got != 50 {
 		t.Errorf("final value = %f, want 50", got)
 	}
@@ -37,11 +35,9 @@ func TestTweenOnDoneCalled(t *testing.T) {
 	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
 	tw.OnDone = func(*Window) { done = true }
 	tw.start = time.Now().Add(-time.Second)
-	deferred := make([]func(*Window), 0, 4)
-	updateTween(tw, nil, &deferred)
-	for _, cb := range deferred {
-		cb(nil)
-	}
+	deferred := make([]queuedCommand, 0, 4)
+	updateTween(tw, &deferred)
+	runQueuedCommands(deferred)
 	if !done {
 		t.Error("OnDone not called")
 	}
@@ -51,8 +47,8 @@ func TestTweenDelaySkips(t *testing.T) {
 	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
 	tw.delay = time.Hour
 	tw.start = time.Now()
-	deferred := make([]func(*Window), 0, 4)
-	ok := updateTween(tw, nil, &deferred)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := updateTween(tw, &deferred)
 	if ok {
 		t.Error("should not update during delay")
 	}
@@ -61,8 +57,8 @@ func TestTweenDelaySkips(t *testing.T) {
 func TestTweenStopped(t *testing.T) {
 	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
 	tw.stopped = true
-	deferred := make([]func(*Window), 0, 4)
-	ok := updateTween(tw, nil, &deferred)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := updateTween(tw, &deferred)
 	if ok {
 		t.Error("stopped tween should return false")
 	}

@@ -11,11 +11,17 @@ func TestFlushCommandsRunsAllAndClears(t *testing.T) {
 	w := &Window{}
 	w.state = state
 	w.commandsMu.Lock()
-	w.commands = append(w.commands, func(win *Window) {
-		State[queueTestState](win).count++
+	w.commands = append(w.commands, queuedCommand{
+		kind: queuedCommandWindowFn,
+		windowFn: func(win *Window) {
+			State[queueTestState](win).count++
+		},
 	})
-	w.commands = append(w.commands, func(win *Window) {
-		State[queueTestState](win).count++
+	w.commands = append(w.commands, queuedCommand{
+		kind: queuedCommandWindowFn,
+		windowFn: func(win *Window) {
+			State[queueTestState](win).count++
+		},
 	})
 	w.commandsMu.Unlock()
 

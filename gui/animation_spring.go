@@ -38,10 +38,13 @@ type SpringAnimation struct {
 	state   springState
 }
 
-func (s *SpringAnimation) ID() string                    { return s.AnimID }
+func (s *SpringAnimation) ID() string                        { return s.AnimID }
 func (s *SpringAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (s *SpringAnimation) IsStopped() bool               { return s.stopped }
-func (s *SpringAnimation) SetStart(now time.Time)        { s.start = now }
+func (s *SpringAnimation) IsStopped() bool                   { return s.stopped }
+func (s *SpringAnimation) SetStart(now time.Time)            { s.start = now }
+func (s *SpringAnimation) Update(_ *Window, dt float32, deferred *[]queuedCommand) bool {
+	return updateSpring(s, dt, deferred)
+}
 
 // NewSpringAnimation creates a SpringAnimation with defaults.
 func NewSpringAnimation(id string, onValue func(float32, *Window)) *SpringAnimation {
@@ -68,8 +71,12 @@ func (s *SpringAnimation) Retarget(to float32) {
 	s.stopped = false
 }
 
-func updateSpring(sp *SpringAnimation, w *Window, dt float32, deferred *[]func(*Window)) bool {
+func updateSpring(sp *SpringAnimation, dt float32, deferred *[]queuedCommand) bool {
 	if sp.stopped || sp.state.atRest {
+		return false
+	}
+	if sp.OnValue == nil {
+		sp.stopped = true
 		return false
 	}
 	elapsed := time.Since(sp.start)
@@ -78,6 +85,12 @@ func updateSpring(sp *SpringAnimation, w *Window, dt float32, deferred *[]func(*
 	}
 
 	cfg := sp.Config
+	if cfg.Mass <= 0 {
+		cfg.Mass = SpringDefault.Mass
+	}
+	if cfg.Threshold <= 0 {
+		cfg.Threshold = SpringDefault.Threshold
+	}
 	displacement := sp.state.position - sp.state.target
 	springForce := -cfg.Stiffness * displacement
 	dampingForce := -cfg.Damping * sp.state.velocity
@@ -91,21 +104,26 @@ func updateSpring(sp *SpringAnimation, w *Window, dt float32, deferred *[]func(*
 		sp.state.velocity = 0
 		sp.state.atRest = true
 		target := sp.state.target
-		onValue := sp.OnValue
-		*deferred = append(*deferred, func(w *Window) {
-			onValue(target, w)
+		*deferred = append(*deferred, queuedCommand{
+			kind:    queuedCommandValueFn,
+			valueFn: sp.OnValue,
+			value:   target,
 		})
 		if sp.OnDone != nil {
-			*deferred = append(*deferred, sp.OnDone)
+			*deferred = append(*deferred, queuedCommand{
+				kind:     queuedCommandWindowFn,
+				windowFn: sp.OnDone,
+			})
 		}
 		sp.stopped = true
 		return true
 	}
 
 	pos := sp.state.position
-	onValue := sp.OnValue
-	*deferred = append(*deferred, func(w *Window) {
-		onValue(pos, w)
+	*deferred = append(*deferred, queuedCommand{
+		kind:    queuedCommandValueFn,
+		valueFn: sp.OnValue,
+		value:   pos,
 	})
 	return true
 }

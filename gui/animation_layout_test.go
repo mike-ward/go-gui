@@ -29,8 +29,8 @@ func TestLayoutTransitionUpdate(t *testing.T) {
 		snapshots: make(map[string]layoutSnapshot),
 	}
 	lt.start = time.Now().Add(-time.Second)
-	deferred := make([]func(*Window), 0, 4)
-	ok := updateLayoutTransition(lt, nil, &deferred)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := updateLayoutTransition(lt, &deferred)
 	if !ok {
 		t.Error("should update")
 	}

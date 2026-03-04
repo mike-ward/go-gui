@@ -28,10 +28,13 @@ type LayoutTransition struct {
 	progress  float32
 }
 
-func (l *LayoutTransition) ID() string                    { return layoutTransitionID }
+func (l *LayoutTransition) ID() string                        { return layoutTransitionID }
 func (l *LayoutTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (l *LayoutTransition) IsStopped() bool               { return l.stopped }
-func (l *LayoutTransition) SetStart(now time.Time)        { l.start = now }
+func (l *LayoutTransition) IsStopped() bool                   { return l.stopped }
+func (l *LayoutTransition) SetStart(now time.Time)            { l.start = now }
+func (l *LayoutTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
+	return updateLayoutTransition(l, deferred)
+}
 
 // AnimateLayout triggers layout transition animation. Call BEFORE
 // making layout changes to capture current positions.
@@ -52,7 +55,7 @@ func (w *Window) AnimateLayout(cfg LayoutTransitionCfg) {
 	w.AnimationAdd(lt)
 }
 
-func updateLayoutTransition(lt *LayoutTransition, w *Window, deferred *[]func(*Window)) bool {
+func updateLayoutTransition(lt *LayoutTransition, deferred *[]queuedCommand) bool {
 	if lt.stopped {
 		return false
 	}
@@ -65,23 +68,30 @@ func updateLayoutTransition(lt *LayoutTransition, w *Window, deferred *[]func(*W
 		lt.progress = 1.0
 		lt.stopped = true
 		if lt.OnDone != nil {
-			*deferred = append(*deferred, lt.OnDone)
+			*deferred = append(*deferred, queuedCommand{
+				kind:     queuedCommandWindowFn,
+				windowFn: lt.OnDone,
+			})
 		}
 		return true
 	}
 	progress := float32(animElapsed) / float32(lt.duration)
-	lt.progress = lt.easing(progress)
+	easing := lt.easing
+	if easing == nil {
+		easing = EaseOutCubic
+	}
+	lt.progress = easing(progress)
 	return true
 }
 
 // captureLayoutSnapshots recursively captures all element positions.
 func captureLayoutSnapshots(layout Layout) map[string]layoutSnapshot {
 	snapshots := make(map[string]layoutSnapshot)
-	captureRecursive(layout, snapshots)
+	captureRecursive(&layout, snapshots)
 	return snapshots
 }
 
-func captureRecursive(layout Layout, snapshots map[string]layoutSnapshot) {
+func captureRecursive(layout *Layout, snapshots map[string]layoutSnapshot) {
 	if layout.Shape.ID != "" {
 		snapshots[layout.Shape.ID] = layoutSnapshot{
 			x:      layout.Shape.X,
@@ -90,8 +100,8 @@ func captureRecursive(layout Layout, snapshots map[string]layoutSnapshot) {
 			height: layout.Shape.Height,
 		}
 	}
-	for _, child := range layout.Children {
-		captureRecursive(child, snapshots)
+	for i := range layout.Children {
+		captureRecursive(&layout.Children[i], snapshots)
 	}
 }
 

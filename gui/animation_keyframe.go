@@ -4,7 +4,7 @@ import "time"
 
 // Keyframe represents a single animation waypoint.
 type Keyframe struct {
-	At     float32  // position 0.0-1.0
+	At     float32 // position 0.0-1.0
 	Value  float32
 	Easing EasingFn // easing TO this keyframe
 }
@@ -25,10 +25,13 @@ type KeyframeAnimation struct {
 
 const keyframeDefaultDuration = 500 * time.Millisecond
 
-func (k *KeyframeAnimation) ID() string                    { return k.AnimID }
+func (k *KeyframeAnimation) ID() string                        { return k.AnimID }
 func (k *KeyframeAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (k *KeyframeAnimation) IsStopped() bool               { return k.stopped }
-func (k *KeyframeAnimation) SetStart(now time.Time)        { k.start = now }
+func (k *KeyframeAnimation) IsStopped() bool                   { return k.stopped }
+func (k *KeyframeAnimation) SetStart(now time.Time)            { k.start = now }
+func (k *KeyframeAnimation) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
+	return updateKeyframe(k, deferred)
+}
 
 // NewKeyframeAnimation creates a KeyframeAnimation with defaults.
 func NewKeyframeAnimation(id string, keyframes []Keyframe, onValue func(float32, *Window)) *KeyframeAnimation {
@@ -40,8 +43,12 @@ func NewKeyframeAnimation(id string, keyframes []Keyframe, onValue func(float32,
 	}
 }
 
-func updateKeyframe(kf *KeyframeAnimation, w *Window, deferred *[]func(*Window)) bool {
+func updateKeyframe(kf *KeyframeAnimation, deferred *[]queuedCommand) bool {
 	if kf.stopped {
+		return false
+	}
+	if kf.OnValue == nil {
+		kf.stopped = true
 		return false
 	}
 	elapsed := time.Since(kf.start)
@@ -49,12 +56,16 @@ func updateKeyframe(kf *KeyframeAnimation, w *Window, deferred *[]func(*Window))
 		return false
 	}
 	animElapsed := elapsed - kf.delay
+	if kf.Duration <= 0 {
+		animElapsed = kf.Duration
+	}
 	if animElapsed >= kf.Duration {
 		if len(kf.Keyframes) > 0 {
 			val := kf.Keyframes[len(kf.Keyframes)-1].Value
-			onValue := kf.OnValue
-			*deferred = append(*deferred, func(w *Window) {
-				onValue(val, w)
+			*deferred = append(*deferred, queuedCommand{
+				kind:    queuedCommandValueFn,
+				valueFn: kf.OnValue,
+				value:   val,
 			})
 		}
 		if kf.Repeat {
@@ -62,16 +73,20 @@ func updateKeyframe(kf *KeyframeAnimation, w *Window, deferred *[]func(*Window))
 			return true
 		}
 		if kf.OnDone != nil {
-			*deferred = append(*deferred, kf.OnDone)
+			*deferred = append(*deferred, queuedCommand{
+				kind:     queuedCommandWindowFn,
+				windowFn: kf.OnDone,
+			})
 		}
 		kf.stopped = true
 		return true
 	}
 	progress := float32(animElapsed) / float32(kf.Duration)
 	value := interpolateKeyframes(kf.Keyframes, progress)
-	onValue := kf.OnValue
-	*deferred = append(*deferred, func(w *Window) {
-		onValue(value, w)
+	*deferred = append(*deferred, queuedCommand{
+		kind:    queuedCommandValueFn,
+		valueFn: kf.OnValue,
+		value:   value,
 	})
 	return true
 }

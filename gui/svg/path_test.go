@@ -55,6 +55,15 @@ func TestPathParseF32Invalid(t *testing.T) {
 	}
 }
 
+func TestPathParseF32NonFinite(t *testing.T) {
+	if parseF32("NaN") != 0 {
+		t.Fatalf("NaN should return 0")
+	}
+	if parseF32("Inf") != 0 {
+		t.Fatalf("Inf should return 0")
+	}
+}
+
 func TestPathParseNumberList(t *testing.T) {
 	nums := parseNumberList("1 2,3 4")
 	if len(nums) != 4 {

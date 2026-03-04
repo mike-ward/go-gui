@@ -40,11 +40,9 @@ func TestKeyframeCompletes(t *testing.T) {
 		func(v float32, _ *Window) { got = v },
 	)
 	kf.start = time.Now().Add(-time.Second)
-	deferred := make([]func(*Window), 0, 4)
-	updateKeyframe(kf, nil, &deferred)
-	for _, cb := range deferred {
-		cb(nil)
-	}
+	deferred := make([]queuedCommand, 0, 4)
+	updateKeyframe(kf, &deferred)
+	runQueuedCommands(deferred)
 	if got != 100 {
 		t.Errorf("got %f, want 100", got)
 	}
@@ -63,8 +61,8 @@ func TestKeyframeRepeat(t *testing.T) {
 	)
 	kf.Repeat = true
 	kf.start = time.Now().Add(-time.Second)
-	deferred := make([]func(*Window), 0, 4)
-	updateKeyframe(kf, nil, &deferred)
+	deferred := make([]queuedCommand, 0, 4)
+	updateKeyframe(kf, &deferred)
 	if kf.stopped {
 		t.Error("should not stop when repeating")
 	}
@@ -82,8 +80,8 @@ func TestInterpolateEmptyKeyframes(t *testing.T) {
 func TestKeyframeStopped(t *testing.T) {
 	kf := NewKeyframeAnimation("k", nil, func(float32, *Window) {})
 	kf.stopped = true
-	deferred := make([]func(*Window), 0, 4)
-	ok := updateKeyframe(kf, nil, &deferred)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := updateKeyframe(kf, &deferred)
 	if ok {
 		t.Error("stopped keyframe should return false")
 	}

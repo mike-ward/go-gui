@@ -26,8 +26,8 @@ func TestCaptureHeroSnapshots(t *testing.T) {
 func TestHeroTransitionUpdate(t *testing.T) {
 	ht := NewHeroTransition(HeroTransitionCfg{})
 	ht.start = time.Now().Add(-time.Second)
-	deferred := make([]func(*Window), 0, 4)
-	ok := updateHeroTransition(ht, nil, &deferred)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := updateHeroTransition(ht, &deferred)
 	if !ok {
 		t.Error("should update")
 	}

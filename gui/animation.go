@@ -26,6 +26,7 @@ type Animation interface {
 	RefreshKind() AnimationRefreshKind
 	IsStopped() bool
 	SetStart(t time.Time)
+	Update(*Window, float32, *[]queuedCommand) bool
 }
 
 // BlinkCursorAnimation toggles cursor visibility on a timer.
@@ -47,10 +48,13 @@ func NewBlinkCursorAnimation() *BlinkCursorAnimation {
 	}
 }
 
-func (a *BlinkCursorAnimation) ID() string                    { return a.id }
+func (a *BlinkCursorAnimation) ID() string                        { return a.id }
 func (a *BlinkCursorAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshRenderOnly }
-func (a *BlinkCursorAnimation) IsStopped() bool               { return a.stopped }
-func (a *BlinkCursorAnimation) SetStart(t time.Time)          { a.start = t }
+func (a *BlinkCursorAnimation) IsStopped() bool                   { return a.stopped }
+func (a *BlinkCursorAnimation) SetStart(t time.Time)              { a.start = t }
+func (a *BlinkCursorAnimation) Update(w *Window, _ float32, _ *[]queuedCommand) bool {
+	return updateBlinkCursor(a, w)
+}
 
 // Animate waits the specified delay then executes the callback.
 type Animate struct {
@@ -74,3 +78,6 @@ func (a *Animate) RefreshKind() AnimationRefreshKind {
 }
 func (a *Animate) IsStopped() bool      { return a.stopped }
 func (a *Animate) SetStart(t time.Time) { a.start = t }
+func (a *Animate) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
+	return updateAnimate(a, deferred)
+}

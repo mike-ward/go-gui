@@ -29,9 +29,9 @@ type Window struct {
 	viewState ViewState
 
 	// Command queue — flushed at frame start.
-	commands []func(*Window)
+	commands []queuedCommand
 	// Scratch queue used to avoid reallocating command storage each frame.
-	commandScratch []func(*Window)
+	commandScratch []queuedCommand
 
 	// Layout tree — current frame.
 	layout Layout

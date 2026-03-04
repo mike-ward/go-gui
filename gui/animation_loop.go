@@ -52,7 +52,7 @@ func (w *Window) animationLoop() {
 	defer ticker.Stop()
 
 	dt := float32(animationCycle) / float32(time.Second)
-	deferred := make([]func(*Window), 0, 4)
+	deferred := make([]queuedCommand, 0, 8)
 	stoppedIDs := make([]string, 0, 4)
 
 	for {
@@ -67,23 +67,7 @@ func (w *Window) animationLoop() {
 
 		w.mu.Lock()
 		for _, a := range w.animations {
-			var updated bool
-			switch v := a.(type) {
-			case *Animate:
-				updated = updateAnimate(v, w, &deferred)
-			case *BlinkCursorAnimation:
-				updated = updateBlinkCursor(v, w)
-			case *TweenAnimation:
-				updated = updateTween(v, w, &deferred)
-			case *SpringAnimation:
-				updated = updateSpring(v, w, dt, &deferred)
-			case *KeyframeAnimation:
-				updated = updateKeyframe(v, w, &deferred)
-			case *HeroTransition:
-				updated = updateHeroTransition(v, w, &deferred)
-			case *LayoutTransition:
-				updated = updateLayoutTransition(v, w, &deferred)
-			}
+			updated := a.Update(w, dt, &deferred)
 			if updated {
 				refreshKind = maxAnimationRefreshKind(refreshKind, a.RefreshKind())
 			}
@@ -96,15 +80,19 @@ func (w *Window) animationLoop() {
 		}
 		w.mu.Unlock()
 
-		for _, cb := range deferred {
-			w.QueueCommand(cb)
-		}
 		switch refreshKind {
 		case AnimationRefreshRenderOnly:
-			w.RequestRenderOnly()
+			deferred = append(deferred, queuedCommand{
+				kind:     queuedCommandWindowFn,
+				windowFn: commandMarkRenderOnlyRefresh,
+			})
 		case AnimationRefreshLayout:
-			w.UpdateWindow()
+			deferred = append(deferred, queuedCommand{
+				kind:     queuedCommandWindowFn,
+				windowFn: commandMarkLayoutRefresh,
+			})
 		}
+		w.queueCommandsBatch(deferred)
 	}
 }
 
@@ -120,14 +108,19 @@ func (w *Window) stopAnimationLoop() {
 	})
 }
 
-func updateAnimate(a *Animate, w *Window, deferred *[]func(*Window)) bool {
+func updateAnimate(a *Animate, deferred *[]queuedCommand) bool {
 	if a.stopped {
 		return false
 	}
+	if a.Callback == nil {
+		a.stopped = true
+		return false
+	}
 	if time.Since(a.start) > a.Delay {
-		cb := a.Callback
-		*deferred = append(*deferred, func(w *Window) {
-			cb(a, w)
+		*deferred = append(*deferred, queuedCommand{
+			kind:      queuedCommandAnimateFn,
+			animateFn: a.Callback,
+			animate:   a,
 		})
 		if a.Repeat {
 			a.start = time.Now()
