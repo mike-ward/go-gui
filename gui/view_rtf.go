@@ -102,10 +102,11 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 			GenerateViewLayout(rtfTooltipView(ts), w),
 		}
 	}
-	// Link context menu popup.
+	// Link context menu popup — only on the owning RTF block.
 	if st := StateReadOr[string, rtfLinkMenuState](
 		w, nsRtfLinkMenu, nsRtfLinkMenu,
-		rtfLinkMenuState{}); st.Open {
+		rtfLinkMenuState{}); st.Open &&
+		st.BlockKey == rtfRunsKey(shape.TC.RtfRuns) {
 		l.Children = append(l.Children,
 			GenerateViewLayout(rtfLinkMenuView(w, st), w))
 	}
@@ -331,8 +332,9 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 			if found.Link != "" && markdown.IsSafeURL(found.Link) {
 				if e.MouseButton == MouseRight {
 					showLinkContextMenu(w, found.Link,
-						l.Shape.X+e.MouseX,
-						l.Shape.Y+e.MouseY)
+						e.MouseX,
+						e.MouseY,
+						rtfRunsKey(l.Shape.TC.RtfRuns))
 					e.IsHandled = true
 					return
 				}
@@ -351,10 +353,11 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 
 // rtfLinkMenuState holds state for the RTF link context menu.
 type rtfLinkMenuState struct {
-	Open bool
-	Link string
-	X    float32
-	Y    float32
+	Open     bool
+	Link     string
+	X        float32
+	Y        float32
+	BlockKey uint64 // identifies the owning RTF block
 }
 
 const rtfLinkMenuIDFocus uint32 = 8492137
@@ -362,14 +365,16 @@ const rtfLinkMenuIDFocus uint32 = 8492137
 // showLinkContextMenu opens a context menu for an RTF link.
 func showLinkContextMenu(
 	w *Window, link string, mx, my float32,
+	blockKey uint64,
 ) {
 	sm := StateMap[string, rtfLinkMenuState](
 		w, nsRtfLinkMenu, capFew)
 	sm.Set(nsRtfLinkMenu, rtfLinkMenuState{
-		Open: true,
-		Link: link,
-		X:    mx,
-		Y:    my,
+		Open:     true,
+		Link:     link,
+		X:        mx,
+		Y:        my,
+		BlockKey: blockKey,
 	})
 	w.SetIDFocus(rtfLinkMenuIDFocus)
 }

@@ -5,6 +5,7 @@ import "log"
 // Menu creates a standalone columnar menu (used by
 // OverflowPanel and context menus).
 func Menu(w *Window, cfg MenubarCfg) View {
+	applyMenubarDefaults(&cfg)
 	if cfg.IDFocus == 0 {
 		cfg.IDFocus = fnvSum32("menu_" + cfg.ID)
 		log.Printf("menu: auto-generated IDFocus=%d for %q",

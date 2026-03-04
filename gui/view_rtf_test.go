@@ -259,7 +259,7 @@ func TestRtfRunsKeyStable(t *testing.T) {
 
 func TestShowLinkContextMenuSetsState(t *testing.T) {
 	w := newTestWindow()
-	showLinkContextMenu(w, "https://example.com", 50, 100)
+	showLinkContextMenu(w, "https://example.com", 50, 100, 42)
 
 	st := StateReadOr[string, rtfLinkMenuState](
 		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
@@ -274,6 +274,9 @@ func TestShowLinkContextMenuSetsState(t *testing.T) {
 		t.Fatalf("expected pos=(50,100) got (%g,%g)",
 			st.X, st.Y)
 	}
+	if st.BlockKey != 42 {
+		t.Fatalf("expected BlockKey=42 got %d", st.BlockKey)
+	}
 	if w.IDFocus() != rtfLinkMenuIDFocus {
 		t.Fatalf("expected focus=%d got %d",
 			rtfLinkMenuIDFocus, w.IDFocus())
@@ -282,7 +285,7 @@ func TestShowLinkContextMenuSetsState(t *testing.T) {
 
 func TestRtfLinkMenuDismissClearsState(t *testing.T) {
 	w := newTestWindow()
-	showLinkContextMenu(w, "https://example.com", 50, 100)
+	showLinkContextMenu(w, "https://example.com", 50, 100, 0)
 	rtfLinkMenuDismiss(w)
 
 	st := StateReadOr[string, rtfLinkMenuState](
@@ -346,7 +349,7 @@ func TestRtfOnClickRightClickShowsMenu(t *testing.T) {
 
 func TestRtfAmendTooltipDismissesMenuOnFocusLoss(t *testing.T) {
 	w := newTestWindow()
-	showLinkContextMenu(w, "https://example.com", 50, 100)
+	showLinkContextMenu(w, "https://example.com", 50, 100, 0)
 	// Simulate focus moving away.
 	w.SetIDFocus(0)
 
