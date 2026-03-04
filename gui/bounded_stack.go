@@ -3,48 +3,75 @@ package gui
 // BoundedStack is a stack with maximum size. When full, oldest
 // entries are dropped (FIFO eviction).
 type BoundedStack[T any] struct {
-	elements []T
+	buf      []T
+	head     int
+	size     int
 	maxSize  int
 }
 
 // NewBoundedStack creates a BoundedStack with the given max size.
 func NewBoundedStack[T any](maxSize int) *BoundedStack[T] {
-	return &BoundedStack[T]{maxSize: maxSize}
+	s := &BoundedStack[T]{maxSize: maxSize}
+	if maxSize > 0 {
+		s.buf = make([]T, maxSize)
+	}
+	return s
 }
 
 // Push adds element to stack. Drops oldest if at capacity.
 func (s *BoundedStack[T]) Push(elem T) {
-	if len(s.elements) >= s.maxSize {
-		// Drop oldest (index 0)
-		copy(s.elements, s.elements[1:])
-		s.elements[len(s.elements)-1] = elem
+	if s.maxSize < 1 {
 		return
 	}
-	s.elements = append(s.elements, elem)
+	if s.size < s.maxSize {
+		idx := (s.head + s.size) % s.maxSize
+		s.buf[idx] = elem
+		s.size++
+		return
+	}
+	// Full: overwrite oldest entry and advance head.
+	s.buf[s.head] = elem
+	s.head = (s.head + 1) % s.maxSize
 }
 
 // Pop removes and returns top element. Returns (zero, false) if empty.
 func (s *BoundedStack[T]) Pop() (T, bool) {
-	if len(s.elements) == 0 {
+	if s.size == 0 {
 		var zero T
 		return zero, false
 	}
-	elem := s.elements[len(s.elements)-1]
-	s.elements = s.elements[:len(s.elements)-1]
+	idx := (s.head + s.size - 1) % s.maxSize
+	elem := s.buf[idx]
+	var zero T
+	s.buf[idx] = zero
+	s.size--
+	if s.size == 0 {
+		s.head = 0
+	}
 	return elem, true
 }
 
 // Len returns number of elements.
 func (s *BoundedStack[T]) Len() int {
-	return len(s.elements)
+	return s.size
 }
 
 // IsEmpty returns true if stack has no elements.
 func (s *BoundedStack[T]) IsEmpty() bool {
-	return len(s.elements) == 0
+	return s.size == 0
 }
 
 // Clear removes all elements.
 func (s *BoundedStack[T]) Clear() {
-	s.elements = s.elements[:0]
+	if s.size == 0 {
+		s.head = 0
+		return
+	}
+	var zero T
+	for i := 0; i < s.size; i++ {
+		idx := (s.head + i) % s.maxSize
+		s.buf[idx] = zero
+	}
+	s.size = 0
+	s.head = 0
 }

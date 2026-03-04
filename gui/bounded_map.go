@@ -13,8 +13,15 @@ type BoundedMap[K comparable, V any] struct {
 
 // NewBoundedMap creates a BoundedMap with the given max size.
 func NewBoundedMap[K comparable, V any](maxSize int) *BoundedMap[K, V] {
+	dataCap := 0
+	orderCap := 0
+	if maxSize > 0 {
+		dataCap = maxSize
+		orderCap = maxSize
+	}
 	return &BoundedMap[K, V]{
-		data:    make(map[K]V),
+		data:    make(map[K]V, dataCap),
+		order:   make([]K, 0, orderCap),
 		maxSize: maxSize,
 	}
 }
@@ -40,7 +47,7 @@ func (m *BoundedMap[K, V]) Set(key K, value V) {
 	}
 	m.order = append(m.order, key)
 	m.data[key] = value
-	m.compactOrder()
+	m.compactOrder(false)
 }
 
 // Get returns value for key. Second return is false if not found.
@@ -60,7 +67,14 @@ func (m *BoundedMap[K, V]) Delete(key K) {
 		m.head = 0
 		return
 	}
-	m.compactOrder()
+	if m.head > 0 {
+		m.compactOrder(false)
+		return
+	}
+	if len(m.order) >= boundedOrderCompactMin &&
+		len(m.order) > len(m.data)*2 {
+		m.compactOrder(true)
+	}
 }
 
 // Contains returns true if key exists.
@@ -95,6 +109,22 @@ func (m *BoundedMap[K, V]) Keys() []K {
 	return out
 }
 
+// RangeKeys iterates active keys in insertion order.
+// If fn returns false, iteration stops.
+func (m *BoundedMap[K, V]) RangeKeys(fn func(K) bool) {
+	if len(m.data) == 0 || m.head >= len(m.order) {
+		return
+	}
+	for _, k := range m.order[m.head:] {
+		if _, exists := m.data[k]; !exists {
+			continue
+		}
+		if !fn(k) {
+			return
+		}
+	}
+}
+
 // Range iterates keys in insertion order and calls fn for each
 // active entry. If fn returns false, iteration stops.
 func (m *BoundedMap[K, V]) Range(fn func(K, V) bool) {
@@ -112,19 +142,33 @@ func (m *BoundedMap[K, V]) Range(fn func(K, V) bool) {
 	}
 }
 
-func (m *BoundedMap[K, V]) compactOrder() {
-	if m.head <= 0 {
+func (m *BoundedMap[K, V]) compactOrder(force bool) {
+	if m.head <= 0 && !force {
 		return
 	}
-	if m.head < boundedOrderCompactMin && m.head*2 < len(m.order) {
+	if !force &&
+		m.head < boundedOrderCompactMin &&
+		m.head*2 < len(m.order) {
 		return
 	}
-	compact := make([]K, 0, len(m.data))
-	for _, k := range m.order[m.head:] {
+	start := m.head
+	if start < 0 {
+		start = 0
+	}
+	if start > len(m.order) {
+		start = len(m.order)
+	}
+	dst := 0
+	for _, k := range m.order[start:] {
 		if _, exists := m.data[k]; exists {
-			compact = append(compact, k)
+			m.order[dst] = k
+			dst++
 		}
 	}
-	m.order = compact
+	var zero K
+	for i := dst; i < len(m.order); i++ {
+		m.order[i] = zero
+	}
+	m.order = m.order[:dst]
 	m.head = 0
 }

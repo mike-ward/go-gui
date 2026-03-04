@@ -104,3 +104,61 @@ func TestBoundedStackManyPushes(t *testing.T) {
 		t.Errorf("pop: got %d, %v", v, ok)
 	}
 }
+
+func TestBoundedStackMaxSizeZeroNoPanicNoStore(t *testing.T) {
+	s := NewBoundedStack[int](0)
+	s.Push(1)
+	s.Push(2)
+	if s.Len() != 0 {
+		t.Errorf("len: got %d", s.Len())
+	}
+	if _, ok := s.Pop(); ok {
+		t.Error("pop should return false")
+	}
+}
+
+func TestBoundedStackMaxSizeNegativeNoPanicNoStore(t *testing.T) {
+	s := NewBoundedStack[int](-5)
+	s.Push(1)
+	if s.Len() != 0 {
+		t.Errorf("len: got %d", s.Len())
+	}
+	if _, ok := s.Pop(); ok {
+		t.Error("pop should return false")
+	}
+}
+
+func TestBoundedStackOverflowMaintainsOrderRing(t *testing.T) {
+	s := NewBoundedStack[int](3)
+	for i := 1; i <= 8; i++ {
+		s.Push(i)
+	}
+	want := []int{8, 7, 6}
+	for i, exp := range want {
+		v, ok := s.Pop()
+		if !ok || v != exp {
+			t.Fatalf("pop %d: got %d, %v want %d, true", i, v, ok, exp)
+		}
+	}
+	if _, ok := s.Pop(); ok {
+		t.Error("stack should be empty")
+	}
+}
+
+func TestBoundedStackClearThenReuse(t *testing.T) {
+	s := NewBoundedStack[int](3)
+	s.Push(1)
+	s.Push(2)
+	s.Clear()
+	s.Push(10)
+	s.Push(11)
+	if s.Len() != 2 {
+		t.Fatalf("len: got %d, want 2", s.Len())
+	}
+	if v, ok := s.Pop(); !ok || v != 11 {
+		t.Fatalf("pop: got %d, %v want 11, true", v, ok)
+	}
+	if v, ok := s.Pop(); !ok || v != 10 {
+		t.Fatalf("pop: got %d, %v want 10, true", v, ok)
+	}
+}
