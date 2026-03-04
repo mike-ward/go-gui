@@ -38,15 +38,23 @@ type CachedSvgTextDraw struct {
 	Gradient  *glyph.GradientConfig
 }
 
+// CachedSvgTextPathDraw holds precomputed textPath render data.
+type CachedSvgTextPathDraw struct {
+	Text      string
+	TextStyle TextStyle
+	Path      TextPathData
+}
+
 // CachedFilteredGroup holds tessellated geometry for a filter group.
 type CachedFilteredGroup struct {
-	Filter      SvgFilter
-	RenderPaths []CachedSvgPath
-	Texts       []SvgText
-	TextDraws   []CachedSvgTextDraw
-	TextPaths   []SvgTextPath
-	Gradients   map[string]SvgGradientDef
-	BBox        [4]float32 // x, y, width, height
+	Filter        SvgFilter
+	RenderPaths   []CachedSvgPath
+	Texts         []SvgText
+	TextDraws     []CachedSvgTextDraw
+	TextPaths     []SvgTextPath
+	TextPathDraws []CachedSvgTextPathDraw
+	Gradients     map[string]SvgGradientDef
+	BBox          [4]float32 // x, y, width, height
 }
 
 // CachedSvg holds pre-tessellated SVG data for efficient rendering.
@@ -55,6 +63,7 @@ type CachedSvg struct {
 	Texts          []SvgText
 	TextDraws      []CachedSvgTextDraw
 	TextPaths      []SvgTextPath
+	TextPathDraws  []CachedSvgTextPathDraw
 	DefsPaths      map[string]string
 	FilteredGroups []CachedFilteredGroup
 	Gradients      map[string]SvgGradientDef
@@ -166,6 +175,74 @@ func cachedSvgTextDraws(texts []SvgText, scale float32,
 		})
 	}
 	return draws
+}
+
+func cachedSvgTextPathDraws(textPaths []SvgTextPath,
+	defsPathData map[string]cachedDefsPathData,
+	scale float32,
+) []CachedSvgTextPathDraw {
+	if len(textPaths) == 0 {
+		return nil
+	}
+	out := make([]CachedSvgTextPathDraw, 0, len(textPaths))
+	for i := range textPaths {
+		tp := textPaths[i]
+		if tp.Text == "" {
+			continue
+		}
+		cached, ok := defsPathData[tp.PathID]
+		if !ok || len(cached.polyline) < 4 || cached.totalLen <= 0 {
+			continue
+		}
+
+		fontName := tp.FontFamily
+		if wn := pangoWeightName(tp.FontWeight); wn != "" {
+			fontName += " " + wn
+		}
+		typeface := glyph.TypefaceRegular
+		if tp.IsItalic {
+			typeface = glyph.TypefaceItalic
+		}
+		ts := TextStyle{
+			Family:        fontName,
+			Size:          tp.FontSize * scale,
+			LetterSpacing: tp.LetterSpacing * scale,
+			Typeface:      typeface,
+			StrokeWidth:   tp.StrokeWidth * scale,
+			StrokeColor:   svgToColor(tp.StrokeColor),
+		}
+		if tp.Opacity < 1.0 {
+			ts.Color = Color{
+				tp.Color.R,
+				tp.Color.G,
+				tp.Color.B,
+				uint8(float32(tp.Color.A) * tp.Opacity),
+			}
+		} else {
+			ts.Color = svgToColor(tp.Color)
+		}
+
+		offset := tp.StartOffset * scale
+		if tp.IsPercent {
+			offset = (tp.StartOffset / 100) * cached.totalLen
+		}
+		out = append(out, CachedSvgTextPathDraw{
+			Text:      tp.Text,
+			TextStyle: ts,
+			Path: TextPathData{
+				Polyline: cached.polyline,
+				Table:    cached.table,
+				TotalLen: cached.totalLen,
+				Offset:   offset,
+				Anchor:   tp.Anchor,
+				Method:   tp.Method,
+			},
+		})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // pangoWeightName maps CSS font-weight (100-900) to a Pango
@@ -476,20 +553,23 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 	renderPaths := cachedSvgPaths(triangles)
 	textDraws := cachedSvgTextDraws(parsed.Texts, scale, parsed.Gradients, w)
 	defsPathData := buildDefsPathDataCache(parsed.TextPaths, parsed.FilteredGroups, parsed.DefsPaths, scale)
+	textPathDraws := cachedSvgTextPathDraws(parsed.TextPaths, defsPathData, scale)
 
 	// Build filtered groups.
 	var filteredGroups []CachedFilteredGroup
 	for _, fg := range parsed.FilteredGroups {
 		fgPaths := cachedSvgPaths(fg.Paths)
 		fgTextDraws := cachedSvgTextDraws(fg.Texts, scale, parsed.Gradients, w)
+		fgTextPathDraws := cachedSvgTextPathDraws(fg.TextPaths, defsPathData, scale)
 		filteredGroups = append(filteredGroups, CachedFilteredGroup{
-			Filter:      fg.Filter,
-			RenderPaths: fgPaths,
-			Texts:       fg.Texts,
-			TextDraws:   fgTextDraws,
-			TextPaths:   fg.TextPaths,
-			Gradients:   parsed.Gradients,
-			BBox:        computeTriangleBBox(fg.Paths),
+			Filter:        fg.Filter,
+			RenderPaths:   fgPaths,
+			Texts:         fg.Texts,
+			TextDraws:     fgTextDraws,
+			TextPaths:     fg.TextPaths,
+			TextPathDraws: fgTextPathDraws,
+			Gradients:     parsed.Gradients,
+			BBox:          computeTriangleBBox(fg.Paths),
 		})
 	}
 
@@ -498,6 +578,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		Texts:          parsed.Texts,
 		TextDraws:      textDraws,
 		TextPaths:      parsed.TextPaths,
+		TextPathDraws:  textPathDraws,
 		DefsPaths:      parsed.DefsPaths,
 		FilteredGroups: filteredGroups,
 		Gradients:      parsed.Gradients,

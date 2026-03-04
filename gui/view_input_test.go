@@ -3,6 +3,8 @@ package gui
 import (
 	"testing"
 	"unicode/utf8"
+
+	"github.com/mike-ward/go-glyph"
 )
 
 func TestInputGeneratesLayout(t *testing.T) {
@@ -122,8 +124,8 @@ func TestInputA11YLabelFallback(t *testing.T) {
 // inputTestSetup creates a window and input layout, sets focus and
 // cursor, and returns everything needed to simulate events.
 type inputTestCtx struct {
-	w       *Window
-	layout  Layout
+	w        *Window
+	layout   Layout
 	lastText string
 }
 
@@ -542,7 +544,7 @@ func TestInputCursorRenderedWhenFocused(t *testing.T) {
 		},
 	}
 	w.renderers = w.renderers[:0]
-	renderInputCursor(shape, "hello", 0, 0, w)
+	renderInputCursor(shape, "hello", 0, 0, glyph.Layout{}, false, w)
 	found := false
 	for _, r := range w.renderers {
 		if r.Kind == RenderRect && r.Fill && r.W < 2 {
@@ -567,7 +569,7 @@ func TestInputCursorNotRenderedWhenUnfocused(t *testing.T) {
 		},
 	}
 	w.renderers = w.renderers[:0]
-	renderInputCursor(shape, "hello", 0, 0, w)
+	renderInputCursor(shape, "hello", 0, 0, glyph.Layout{}, false, w)
 	if len(w.renderers) != 0 {
 		t.Fatal("cursor should not render when unfocused")
 	}
@@ -587,7 +589,7 @@ func TestInputCursorNotRenderedWhenBlinkOff(t *testing.T) {
 		},
 	}
 	w.renderers = w.renderers[:0]
-	renderInputCursor(shape, "hello", 0, 0, w)
+	renderInputCursor(shape, "hello", 0, 0, glyph.Layout{}, false, w)
 	if len(w.renderers) != 0 {
 		t.Fatal("cursor should not render when blink off")
 	}
@@ -610,7 +612,7 @@ func TestInputSelectionRendered(t *testing.T) {
 		},
 	}
 	w.renderers = w.renderers[:0]
-	renderInputSelection(shape, "hello", 0, 0, w)
+	renderInputSelection(shape, "hello", 0, 0, glyph.Layout{}, false, w)
 	found := false
 	for _, r := range w.renderers {
 		if r.Kind == RenderRect && r.Fill && r.Color.A > 0 {
@@ -635,7 +637,7 @@ func TestInputSelectionNotRenderedWhenNoSelection(t *testing.T) {
 		},
 	}
 	w.renderers = w.renderers[:0]
-	renderInputSelection(shape, "hello", 0, 0, w)
+	renderInputSelection(shape, "hello", 0, 0, glyph.Layout{}, false, w)
 	if len(w.renderers) != 0 {
 		t.Fatal("selection should not render with no selection")
 	}
@@ -658,7 +660,7 @@ func TestInputSelectionMultiline(t *testing.T) {
 		},
 	}
 	w.renderers = w.renderers[:0]
-	renderInputSelection(shape, text, 0, 0, w)
+	renderInputSelection(shape, text, 0, 0, glyph.Layout{}, false, w)
 	count := 0
 	for _, r := range w.renderers {
 		if r.Kind == RenderRect && r.Fill {

@@ -74,19 +74,28 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 // until endFilter is called.
 func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	outW, outH, _ := b.renderer.GetOutputSize()
-	tex, err := b.renderer.CreateTexture(
-		sdl.PIXELFORMAT_RGBA8888,
-		sdl.TEXTUREACCESS_TARGET,
-		outW, outH,
-	)
-	if err != nil {
-		return
+	if b.filterPool == nil || b.filterPoolW != outW || b.filterPoolH != outH {
+		if b.filterPool != nil {
+			b.filterPool.Destroy()
+			b.filterPool = nil
+		}
+		tex, err := b.renderer.CreateTexture(
+			sdl.PIXELFORMAT_RGBA8888,
+			sdl.TEXTUREACCESS_TARGET,
+			outW, outH,
+		)
+		if err != nil {
+			return
+		}
+		tex.SetBlendMode(sdl.BLENDMODE_BLEND)
+		b.filterPool = tex
+		b.filterPoolW = outW
+		b.filterPoolH = outH
 	}
-	tex.SetBlendMode(sdl.BLENDMODE_BLEND)
-	b.filterTex = tex
+	b.filterTex = b.filterPool
 	b.filterBlur = r.BlurRadius * b.dpiScale
 	b.filterLayers = r.Layers
-	b.renderer.SetRenderTarget(tex)
+	b.renderer.SetRenderTarget(b.filterTex)
 	b.renderer.SetDrawColor(0, 0, 0, 0)
 	b.renderer.Clear()
 }
@@ -100,7 +109,6 @@ func (b *Backend) endFilter() {
 		return
 	}
 	b.filterTex = nil
-	defer tex.Destroy()
 
 	b.renderer.SetRenderTarget(nil)
 

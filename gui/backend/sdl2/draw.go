@@ -268,10 +268,10 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 	// 4 border rects with sampled colors at 0.0, 0.25, 0.5, 0.75.
 	positions := [4]float32{0.0, 0.25, 0.5, 0.75}
 	rects := [4]sdl.FRect{
-		{X: r.X * s, Y: r.Y * s, W: r.W * s, H: th},                         // top
-		{X: r.X * s, Y: (r.Y+r.H)*s - th, W: r.W * s, H: th},               // bottom
-		{X: r.X * s, Y: r.Y * s, W: th, H: r.H * s},                         // left
-		{X: (r.X+r.W)*s - th, Y: r.Y * s, W: th, H: r.H * s},               // right
+		{X: r.X * s, Y: r.Y * s, W: r.W * s, H: th},          // top
+		{X: r.X * s, Y: (r.Y+r.H)*s - th, W: r.W * s, H: th}, // bottom
+		{X: r.X * s, Y: r.Y * s, W: th, H: r.H * s},          // left
+		{X: (r.X+r.W)*s - th, Y: r.Y * s, W: th, H: r.H * s}, // right
 	}
 	for i := range 4 {
 		c := gui.SampleGradientStopColor(r.Gradient.Stops, positions[i])
@@ -287,10 +287,10 @@ func (b *Backend) strokeRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 	b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
 
 	// Straight edges.
-	b.renderer.DrawLineF(x+rad, y, x+w-rad, y)             // top
-	b.renderer.DrawLineF(x+rad, y+h, x+w-rad, y+h)         // bottom
-	b.renderer.DrawLineF(x, y+rad, x, y+h-rad)             // left
-	b.renderer.DrawLineF(x+w, y+rad, x+w, y+h-rad)         // right
+	b.renderer.DrawLineF(x+rad, y, x+w-rad, y)     // top
+	b.renderer.DrawLineF(x+rad, y+h, x+w-rad, y+h) // bottom
+	b.renderer.DrawLineF(x, y+rad, x, y+h-rad)     // left
+	b.renderer.DrawLineF(x+w, y+rad, x+w, y+h-rad) // right
 
 	// Quarter-circle arcs at each corner (midpoint algorithm).
 	cx := [4]float32{x + rad, x + w - rad, x + w - rad, x + rad}
@@ -359,7 +359,11 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	}
 
 	// Build per-glyph placements along the path.
-	placements := make([]glyph.GlyphPlacement, len(layout.Glyphs))
+	n := len(layout.Glyphs)
+	if cap(b.textPathPlacements) < n {
+		b.textPathPlacements = make([]glyph.GlyphPlacement, n)
+	}
+	placements := b.textPathPlacements[:n]
 	for i := range placements {
 		placements[i] = glyph.GlyphPlacement{X: -9999, Y: -9999}
 	}

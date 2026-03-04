@@ -14,7 +14,6 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		Width: shape.Width, Height: shape.Height,
 	}
 	if !rectsOverlap(dr, clip) {
-		shape.Disabled = true
 		return
 	}
 
@@ -75,9 +74,8 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	}
 
 	// Emit textPath elements.
-	for _, tp := range cached.TextPaths {
-		renderSvgTextPath(tp, cached.DefsPaths, cached.defsPathData,
-			sx, sy, cached.Scale, w)
+	for i := range cached.TextPathDraws {
+		emitCachedSvgTextPathDraw(&cached.TextPathDraws[i], sx, sy, w)
 	}
 
 	// Emit filtered groups.
@@ -100,9 +98,8 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		for j := range fg.TextDraws {
 			emitCachedSvgTextDraw(&fg.TextDraws[j], sx, sy, w)
 		}
-		for _, tp := range fg.TextPaths {
-			renderSvgTextPath(tp, cached.DefsPaths, cached.defsPathData,
-				sx, sy, cached.Scale, w)
+		for j := range fg.TextPathDraws {
+			emitCachedSvgTextPathDraw(&fg.TextPathDraws[j], sx, sy, w)
 		}
 		emitRenderer(RenderCmd{
 			Kind: RenderFilterEnd,
@@ -187,6 +184,18 @@ func emitCachedSvgTextDraw(draw *CachedSvgTextDraw,
 		FontSize:     draw.TextStyle.Size,
 		TextStylePtr: &draw.TextStyle,
 		TextGradient: draw.Gradient,
+	}, w)
+}
+
+func emitCachedSvgTextPathDraw(draw *CachedSvgTextPathDraw,
+	shapeX, shapeY float32, w *Window) {
+	emitRenderer(RenderCmd{
+		Kind:         RenderTextPath,
+		Text:         draw.Text,
+		X:            shapeX,
+		Y:            shapeY,
+		TextStylePtr: &draw.TextStyle,
+		TextPath:     &draw.Path,
 	}, w)
 }
 

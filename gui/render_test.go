@@ -191,7 +191,7 @@ func TestRenderRectangleInsideClip(t *testing.T) {
 	}
 }
 
-func TestRenderRectangleOutsideClipDisablesShape(t *testing.T) {
+func TestRenderRectangleOutsideClipSkipsDraw(t *testing.T) {
 	w := makeWindow()
 	s := &Shape{
 		ShapeType: ShapeRectangle,
@@ -206,9 +206,6 @@ func TestRenderRectangleOutsideClipDisablesShape(t *testing.T) {
 
 	if len(w.renderers) != 0 {
 		t.Errorf("renderers: got %d, want 0", len(w.renderers))
-	}
-	if !s.Disabled {
-		t.Error("shape should be disabled")
 	}
 }
 

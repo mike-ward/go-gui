@@ -16,16 +16,23 @@ import (
 
 // Backend is the SDL2 backend for go-gui.
 type Backend struct {
-	window       *sdl.Window
-	renderer     *sdl.Renderer
-	textSys      *glyph.TextSystem
-	dpiScale     float32
-	cursors      [11]*sdl.Cursor
-	filterTex    *sdl.Texture // temporary render target for filter groups
-	filterBlur   float32      // blur radius in pixels
-	filterLayers int          // number of blur layers
-	svgVerts     []sdl.Vertex // reusable vertex buffer for SVG geometry
-	texCache     texCache     // image texture cache
+	window             *sdl.Window
+	renderer           *sdl.Renderer
+	textSys            *glyph.TextSystem
+	dpiScale           float32
+	cursors            [11]*sdl.Cursor
+	filterTex          *sdl.Texture // temporary render target for filter groups
+	filterPool         *sdl.Texture // reusable filter render target
+	filterPoolW        int32
+	filterPoolH        int32
+	filterBlur         float32      // blur radius in pixels
+	filterLayers       int          // number of blur layers
+	svgVerts           []sdl.Vertex // reusable vertex buffer for SVG geometry
+	textPathPlacements []glyph.GlyphPlacement
+	texCache           texCache // image texture cache
+	allowedImageRoots  []string
+	maxImageBytes      int64
+	maxImagePixels     int64
 }
 
 // New creates an SDL2 backend and initializes the window.
@@ -89,11 +96,14 @@ func New(w *gui.Window) (*Backend, error) {
 	}
 
 	b := &Backend{
-		window:   win,
-		renderer: ren,
-		textSys:  textSys,
-		dpiScale: dpiScale,
-		texCache: newTexCache(128),
+		window:            win,
+		renderer:          ren,
+		textSys:           textSys,
+		dpiScale:          dpiScale,
+		texCache:          newTexCache(128),
+		allowedImageRoots: cfg.AllowedImageRoots,
+		maxImageBytes:     cfg.MaxImageBytes,
+		maxImagePixels:    cfg.MaxImagePixels,
 	}
 
 	// Create system cursors.
@@ -218,6 +228,10 @@ func Run(w *gui.Window) {
 // Destroy releases all backend resources.
 func (b *Backend) Destroy() {
 	b.texCache.destroyAll()
+	if b.filterPool != nil {
+		b.filterPool.Destroy()
+		b.filterPool = nil
+	}
 	if b.textSys != nil {
 		b.textSys.Free()
 	}

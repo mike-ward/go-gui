@@ -1,16 +1,24 @@
 package sdl2
 
 import (
+	"fmt"
 	"image"
 	"image/draw"
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 	"unsafe"
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/veandco/go-sdl2/sdl"
+)
+
+const (
+	defaultMaxImageBytes  = int64(16 * 1024 * 1024)
+	defaultMaxImagePixels = int64(40_000_000)
 )
 
 // texCacheEntry holds a cached SDL texture. A nil tex indicates a
@@ -77,6 +85,14 @@ func (b *Backend) loadTexture(path string) (texCacheEntry, error) {
 	}
 	defer f.Close()
 
+	if err := b.validateImageFile(path, f); err != nil {
+		return texCacheEntry{}, err
+	}
+
+	if _, err := f.Seek(0, 0); err != nil {
+		return texCacheEntry{}, err
+	}
+
 	src, _, err := image.Decode(f)
 	if err != nil {
 		return texCacheEntry{}, err
@@ -112,14 +128,17 @@ func (b *Backend) loadTexture(path string) (texCacheEntry, error) {
 
 // drawImage renders an image from a file path, using a texture cache.
 func (b *Backend) drawImage(r *gui.RenderCmd) {
-	path := r.Resource
+	path, err := b.resolveValidatedImagePath(r.Resource)
 	if path == "" {
+		return
+	}
+	if err != nil {
+		log.Printf("sdl2: drawImage: %v", err)
 		return
 	}
 
 	entry, ok := b.texCache.get(path)
 	if !ok {
-		var err error
 		entry, err = b.loadTexture(path)
 		if err != nil {
 			log.Printf("sdl2: drawImage: %v", err)
@@ -151,4 +170,93 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 	}
 
 	b.renderer.Copy(entry.tex, nil, &dst)
+}
+
+func (b *Backend) resolveValidatedImagePath(src string) (string, error) {
+	if strings.ContainsRune(src, 0) {
+		return "", fmt.Errorf("invalid image path: contains NUL")
+	}
+	cleanPath := filepath.Clean(src)
+	if cleanPath == "." || cleanPath == "" {
+		return "", fmt.Errorf("invalid image path")
+	}
+	pathAbs, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return "", fmt.Errorf("invalid image path: %w", err)
+	}
+	resolvedPath := resolvePathWithParentFallback(pathAbs)
+	if len(b.allowedImageRoots) > 0 {
+		if err := validatePathAllowed(resolvedPath, b.allowedImageRoots); err != nil {
+			return "", err
+		}
+	}
+	return resolvedPath, nil
+}
+
+func (b *Backend) validateImageFile(path string, f *os.File) error {
+	maxBytes := b.maxImageBytes
+	if maxBytes <= 0 {
+		maxBytes = defaultMaxImageBytes
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	if info.Size() > maxBytes {
+		return fmt.Errorf("image file too large: %s", path)
+	}
+
+	maxPixels := b.maxImagePixels
+	if maxPixels <= 0 {
+		maxPixels = defaultMaxImagePixels
+	}
+	cfg, _, err := image.DecodeConfig(f)
+	if err != nil {
+		return err
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 {
+		return fmt.Errorf("invalid image dimensions: %s", path)
+	}
+	if int64(cfg.Width)*int64(cfg.Height) > maxPixels {
+		return fmt.Errorf("image dimensions too large: %s", path)
+	}
+	return nil
+}
+
+func resolvePathWithParentFallback(path string) string {
+	if p, err := filepath.EvalSymlinks(path); err == nil {
+		return p
+	}
+	dir := filepath.Dir(path)
+	if d, err := filepath.EvalSymlinks(dir); err == nil {
+		return filepath.Join(d, filepath.Base(path))
+	}
+	return path
+}
+
+func validatePathAllowed(path string, allowedRoots []string) error {
+	for i := range allowedRoots {
+		root := strings.TrimSpace(allowedRoots[i])
+		if root == "" {
+			continue
+		}
+		rootAbs, err := filepath.Abs(root)
+		if err != nil {
+			continue
+		}
+		resolvedRoot := resolvePathWithParentFallback(rootAbs)
+		if pathWithinRoot(path, resolvedRoot) {
+			return nil
+		}
+	}
+	return fmt.Errorf("image path not allowed: %s", path)
+}
+
+func pathWithinRoot(path, root string) bool {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." &&
+		!strings.HasPrefix(rel, ".."+string(filepath.Separator)))
 }

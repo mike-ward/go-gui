@@ -7,7 +7,6 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 		Width: shape.Width, Height: shape.Height,
 	}
 	if !rectsOverlap(dr, clip) {
-		shape.Disabled = true
 		return
 	}
 	// Background, border, effects.

@@ -9,9 +9,18 @@ type WindowCfg struct {
 	// AllowedSvgRoots restricts file-based SVG loads to these paths.
 	// Empty means allow any local SVG path.
 	AllowedSvgRoots []string
-	OnInit          func(*Window)
-	OnEvent         func(*Event, *Window)
-	BgColor         Color
+	// AllowedImageRoots restricts file-based image loads to these
+	// paths. Empty means allow any local image path.
+	AllowedImageRoots []string
+	// MaxImageBytes caps source image file size for decoded image
+	// loads. Zero or negative selects backend defaults.
+	MaxImageBytes int64
+	// MaxImagePixels caps decoded image dimensions (width*height).
+	// Zero or negative selects backend defaults.
+	MaxImagePixels int64
+	OnInit         func(*Window)
+	OnEvent        func(*Event, *Window)
+	BgColor        Color
 }
 
 // NewWindow creates a Window from the given configuration.

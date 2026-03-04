@@ -38,8 +38,8 @@ func TestRenderSvgOutOfClip(t *testing.T) {
 	}
 	clip := DrawClip{X: 0, Y: 0, Width: 100, Height: 100}
 	renderSvg(shape, clip, w)
-	if !shape.Disabled {
-		t.Fatal("expected disabled when out of clip")
+	if len(w.renderers) != 0 {
+		t.Fatal("expected no render commands when out of clip")
 	}
 }
 
@@ -220,6 +220,41 @@ func TestEmitCachedSvgTextDrawWithStyle(t *testing.T) {
 	if ts.StrokeWidth != 2 {
 		t.Fatalf("expected stroke width 2, got %f",
 			ts.StrokeWidth)
+	}
+}
+
+func TestEmitCachedSvgTextPathDraw(t *testing.T) {
+	w := &Window{}
+	draw := CachedSvgTextPathDraw{
+		Text: "path text",
+		TextStyle: TextStyle{
+			Family: "sans",
+			Size:   12,
+			Color:  Color{10, 20, 30, 255},
+		},
+		Path: TextPathData{
+			Polyline: []float32{0, 0, 10, 0},
+			Table:    []float32{0, 10},
+			TotalLen: 10,
+		},
+	}
+	emitCachedSvgTextPathDraw(&draw, 7, 9, w)
+	if len(w.renderers) != 1 {
+		t.Fatalf("expected 1 renderer, got %d",
+			len(w.renderers))
+	}
+	r := w.renderers[0]
+	if r.Kind != RenderTextPath {
+		t.Fatalf("expected RenderTextPath, got %d", r.Kind)
+	}
+	if r.TextStylePtr == nil || r.TextPath == nil {
+		t.Fatal("expected text path pointers")
+	}
+	if r.TextStylePtr.Family != "sans" {
+		t.Fatalf("unexpected family: %q", r.TextStylePtr.Family)
+	}
+	if r.TextPath.TotalLen != 10 {
+		t.Fatalf("unexpected total len: %f", r.TextPath.TotalLen)
 	}
 }
 

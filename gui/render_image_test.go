@@ -58,8 +58,8 @@ func TestRenderImageOutOfClip(t *testing.T) {
 	}
 	clip := DrawClip{X: 0, Y: 0, Width: 100, Height: 100}
 	renderImage(shape, clip, w)
-	if !shape.Disabled {
-		t.Fatal("expected shape disabled when out of clip")
+	if len(w.renderers) != 0 {
+		t.Fatal("expected no render commands when out of clip")
 	}
 	for _, r := range w.renderers {
 		if r.Kind == RenderImage {

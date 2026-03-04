@@ -251,8 +251,6 @@ func renderRectangle(shape *Shape, clip DrawClip, w *Window) {
 				}, w)
 			}
 		}
-	} else {
-		shape.Disabled = true
 	}
 }
 
@@ -315,8 +313,6 @@ func renderCircle(shape *Shape, clip DrawClip, w *Window) {
 				}, w)
 			}
 		}
-	} else {
-		shape.Disabled = true
 	}
 }
 
@@ -352,9 +348,18 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 
 	baseX := shape.X + shape.PaddingLeft()
 	baseY := shape.Y + shape.PaddingTop()
+	style := textStyleOrDefault(shape)
+
+	var preLayout glyph.Layout
+	hasPreLayout := false
+	needLayout := tc.TextSelBeg != tc.TextSelEnd ||
+		(shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() && w.InputCursorOn())
+	if needLayout {
+		preLayout, hasPreLayout = inputGlyphLayout(text, shape, style, w)
+	}
 
 	// Selection highlight (drawn before text so text overlays).
-	renderInputSelection(shape, text, baseX, baseY, w)
+	renderInputSelection(shape, text, baseX, baseY, preLayout, hasPreLayout, w)
 
 	cmd := RenderCmd{
 		Kind:     RenderText,
@@ -372,13 +377,14 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	emitRenderer(cmd, w)
 
 	// Cursor (drawn after text).
-	renderInputCursor(shape, text, baseX, baseY, w)
+	renderInputCursor(shape, text, baseX, baseY, preLayout, hasPreLayout, w)
 }
 
 // renderInputCursor emits a thin rect for the text cursor when
 // the shape is focused and the blink state is on. Uses the glyph
 // layout engine for precise character-boundary positioning.
-func renderInputCursor(shape *Shape, text string, baseX, baseY float32, w *Window) {
+func renderInputCursor(shape *Shape, text string, baseX, baseY float32,
+	preLayout glyph.Layout, hasPreLayout bool, w *Window) {
 	if shape.IDFocus == 0 || shape.IDFocus != w.IDFocus() {
 		return
 	}
@@ -396,7 +402,11 @@ func renderInputCursor(shape *Shape, text string, baseX, baseY float32, w *Windo
 	byteIdx := runeToByteIndex(text, pos)
 	cursorW := float32(1.5)
 
-	layout, ok := inputGlyphLayout(text, shape, style, w)
+	layout := preLayout
+	ok := hasPreLayout
+	if !ok {
+		layout, ok = inputGlyphLayout(text, shape, style, w)
+	}
 	if ok {
 		cp, cpOK := layout.GetCursorPos(byteIdx)
 		if !cpOK {
@@ -453,7 +463,8 @@ func renderInputCursor(shape *Shape, text string, baseX, baseY float32, w *Windo
 
 // renderInputSelection emits highlight rectangles for the selected
 // text range. Uses glyph layout for precise boundaries.
-func renderInputSelection(shape *Shape, text string, baseX, baseY float32, w *Window) {
+func renderInputSelection(shape *Shape, text string, baseX, baseY float32,
+	preLayout glyph.Layout, hasPreLayout bool, w *Window) {
 	tc := shape.TC
 	if tc == nil || tc.TextSelBeg == tc.TextSelEnd {
 		return
@@ -469,7 +480,11 @@ func renderInputSelection(shape *Shape, text string, baseX, baseY float32, w *Wi
 	startByte := runeToByteIndex(text, int(beg))
 	endByte := runeToByteIndex(text, int(end))
 
-	layout, ok := inputGlyphLayout(text, shape, style, w)
+	layout := preLayout
+	ok := hasPreLayout
+	if !ok {
+		layout, ok = inputGlyphLayout(text, shape, style, w)
+	}
 	if ok {
 		rects := layout.GetSelectionRects(startByte, endByte)
 		for _, r := range rects {
