@@ -238,8 +238,14 @@ func dialogKeyDown(cfg DialogCfg) func(*Layout, *Event, *Window) {
 				onCancelNo(w)
 			}
 			e.IsHandled = true
+			return
 		}
-		// Ctrl/Cmd+C clipboard copy — stub (needs backend).
+		if e.KeyCode == KeyC &&
+			e.Modifiers.HasAny(ModCtrl, ModSuper) &&
+			cfg.Body != "" {
+			w.SetClipboard(cfg.Body)
+			e.IsHandled = true
+		}
 	}
 }
 

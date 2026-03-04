@@ -199,13 +199,76 @@ func shapeA11yLabel(s *Shape) string {
 }
 
 // a11yActionCallback routes native accessibility actions to
-// the focused layout node's event handlers.
+// the layout node at the given index in the a11y node array.
 func a11yActionCallback(w *Window, action, index int) {
-	// Action dispatch is a stub — the full implementation
-	// routes actions to event handlers on the focused shape.
-	_ = w
-	_ = action
-	_ = index
+	if index < 0 || index >= len(w.a11y.nodes) {
+		return
+	}
+	l := a11yFindLayout(&w.layout, index)
+	if l == nil || l.Shape == nil || l.Shape.Events == nil {
+		return
+	}
+	ev := l.Shape.Events
+	switch action {
+	case A11yActionPress:
+		if ev.OnClick != nil {
+			e := &Event{Type: EventMouseDown}
+			ev.OnClick(l, e, w)
+		}
+	case A11yActionIncrement:
+		if ev.OnKeyDown != nil {
+			e := &Event{Type: EventKeyDown, KeyCode: KeyUp}
+			ev.OnKeyDown(l, e, w)
+		}
+	case A11yActionDecrement:
+		if ev.OnKeyDown != nil {
+			e := &Event{Type: EventKeyDown, KeyCode: KeyDown}
+			ev.OnKeyDown(l, e, w)
+		}
+	case A11yActionConfirm:
+		if ev.OnKeyDown != nil {
+			e := &Event{Type: EventKeyDown, KeyCode: KeyEnter}
+			ev.OnKeyDown(l, e, w)
+		}
+	case A11yActionCancel:
+		if ev.OnKeyDown != nil {
+			e := &Event{Type: EventKeyDown, KeyCode: KeyEscape}
+			ev.OnKeyDown(l, e, w)
+		}
+	}
+}
+
+// a11yFindLayout walks the layout tree in the same order as
+// a11yCollect and returns the layout at the given node index.
+func a11yFindLayout(layout *Layout, target int) *Layout {
+	counter := 0
+	return a11yFindLayoutWalk(layout, target, &counter)
+}
+
+func a11yFindLayoutWalk(layout *Layout, target int, counter *int) *Layout {
+	if layout.Shape == nil {
+		return nil
+	}
+	// Skip shapes without a11y role but recurse children
+	// (same logic as a11yCollect).
+	if layout.Shape.A11YRole == AccessRoleNone {
+		for i := range layout.Children {
+			if found := a11yFindLayoutWalk(&layout.Children[i], target, counter); found != nil {
+				return found
+			}
+		}
+		return nil
+	}
+	if *counter == target {
+		return layout
+	}
+	*counter++
+	for i := range layout.Children {
+		if found := a11yFindLayoutWalk(&layout.Children[i], target, counter); found != nil {
+			return found
+		}
+	}
+	return nil
 }
 
 // WindowCleanup releases resources. Called by the backend

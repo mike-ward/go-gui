@@ -249,6 +249,182 @@ func TestA11yDeepNesting(t *testing.T) {
 	}
 }
 
+// --- a11yActionCallback tests ---
+
+func TestA11yActionCallbackPress(t *testing.T) {
+	clicked := false
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole: AccessRoleButton,
+			Events: &EventHandlers{
+				OnClick: func(_ *Layout, _ *Event, _ *Window) {
+					clicked = true
+				},
+			},
+		},
+	}
+	w := newTestWindow()
+	w.layout = layout
+	// Build node array so index is valid.
+	w.a11y.nodes = w.a11y.nodes[:0]
+	var live []liveNode
+	a11yCollect(&w.layout, -1, &w.a11y.nodes, 0, &live)
+
+	a11yActionCallback(w, A11yActionPress, 0)
+	if !clicked {
+		t.Fatal("expected OnClick to fire")
+	}
+}
+
+func TestA11yActionCallbackIncrement(t *testing.T) {
+	var gotKey KeyCode
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole: AccessRoleSlider,
+			Events: &EventHandlers{
+				OnKeyDown: func(_ *Layout, e *Event, _ *Window) {
+					gotKey = e.KeyCode
+				},
+			},
+		},
+	}
+	w := newTestWindow()
+	w.layout = layout
+	w.a11y.nodes = w.a11y.nodes[:0]
+	var live []liveNode
+	a11yCollect(&w.layout, -1, &w.a11y.nodes, 0, &live)
+
+	a11yActionCallback(w, A11yActionIncrement, 0)
+	if gotKey != KeyUp {
+		t.Fatalf("expected KeyUp, got %d", gotKey)
+	}
+}
+
+func TestA11yActionCallbackDecrement(t *testing.T) {
+	var gotKey KeyCode
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole: AccessRoleSlider,
+			Events: &EventHandlers{
+				OnKeyDown: func(_ *Layout, e *Event, _ *Window) {
+					gotKey = e.KeyCode
+				},
+			},
+		},
+	}
+	w := newTestWindow()
+	w.layout = layout
+	w.a11y.nodes = w.a11y.nodes[:0]
+	var live []liveNode
+	a11yCollect(&w.layout, -1, &w.a11y.nodes, 0, &live)
+
+	a11yActionCallback(w, A11yActionDecrement, 0)
+	if gotKey != KeyDown {
+		t.Fatalf("expected KeyDown, got %d", gotKey)
+	}
+}
+
+func TestA11yActionCallbackOutOfBounds(t *testing.T) {
+	w := newTestWindow()
+	w.a11y.nodes = nil
+	// Should not panic.
+	a11yActionCallback(w, A11yActionPress, 5)
+	a11yActionCallback(w, A11yActionPress, -1)
+}
+
+func TestA11yActionCallbackNilEvents(t *testing.T) {
+	layout := Layout{
+		Shape: &Shape{A11YRole: AccessRoleButton},
+	}
+	w := newTestWindow()
+	w.layout = layout
+	w.a11y.nodes = w.a11y.nodes[:0]
+	var live []liveNode
+	a11yCollect(&w.layout, -1, &w.a11y.nodes, 0, &live)
+	// Should not panic — no Events on shape.
+	a11yActionCallback(w, A11yActionPress, 0)
+}
+
+func TestA11yActionCallbackConfirmCancel(t *testing.T) {
+	var keys []KeyCode
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole: AccessRoleButton,
+			Events: &EventHandlers{
+				OnKeyDown: func(_ *Layout, e *Event, _ *Window) {
+					keys = append(keys, e.KeyCode)
+				},
+			},
+		},
+	}
+	w := newTestWindow()
+	w.layout = layout
+	w.a11y.nodes = w.a11y.nodes[:0]
+	var live []liveNode
+	a11yCollect(&w.layout, -1, &w.a11y.nodes, 0, &live)
+
+	a11yActionCallback(w, A11yActionConfirm, 0)
+	a11yActionCallback(w, A11yActionCancel, 0)
+	if len(keys) != 2 {
+		t.Fatalf("expected 2 key events, got %d", len(keys))
+	}
+	if keys[0] != KeyEnter {
+		t.Errorf("confirm: expected KeyEnter, got %d", keys[0])
+	}
+	if keys[1] != KeyEscape {
+		t.Errorf("cancel: expected KeyEscape, got %d", keys[1])
+	}
+}
+
+func TestA11yFindLayoutWithChildren(t *testing.T) {
+	layout := Layout{
+		Shape: &Shape{A11YRole: AccessRoleGroup},
+		Children: []Layout{
+			{Shape: &Shape{
+				A11YRole: AccessRoleButton,
+				A11Y:     &AccessInfo{Label: "A"},
+			}},
+			{Shape: &Shape{
+				A11YRole: AccessRoleButton,
+				A11Y:     &AccessInfo{Label: "B"},
+			}},
+		},
+	}
+	// Index 0 = group, 1 = A, 2 = B.
+	if l := a11yFindLayout(&layout, 0); l == nil ||
+		l.Shape.A11YRole != AccessRoleGroup {
+		t.Error("index 0 should be group")
+	}
+	if l := a11yFindLayout(&layout, 1); l == nil ||
+		l.Shape.A11Y.Label != "A" {
+		t.Error("index 1 should be A")
+	}
+	if l := a11yFindLayout(&layout, 2); l == nil ||
+		l.Shape.A11Y.Label != "B" {
+		t.Error("index 2 should be B")
+	}
+	if l := a11yFindLayout(&layout, 99); l != nil {
+		t.Error("out of range should return nil")
+	}
+}
+
+func TestA11yFindLayoutSkipsNoneRole(t *testing.T) {
+	// Wrapper with no role, child with role.
+	layout := Layout{
+		Shape: &Shape{A11YRole: AccessRoleNone},
+		Children: []Layout{
+			{Shape: &Shape{
+				A11YRole: AccessRoleButton,
+				A11Y:     &AccessInfo{Label: "Inner"},
+			}},
+		},
+	}
+	if l := a11yFindLayout(&layout, 0); l == nil ||
+		l.Shape.A11Y.Label != "Inner" {
+		t.Error("index 0 should skip None and find Inner")
+	}
+}
+
 func TestWindowCleanup(t *testing.T) {
 	w := &Window{}
 	w.storeBookmark("/a", nil)

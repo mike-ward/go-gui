@@ -86,6 +86,58 @@ func TestDialogKeyDownEscape(t *testing.T) {
 	}
 }
 
+func TestDialogKeyDownCtrlCCopiesBody(t *testing.T) {
+	w := newTestWindow()
+	var clipped string
+	w.SetClipboardFn(func(s string) { clipped = s })
+
+	cfg := DialogCfg{Body: "hello world"}
+	handler := dialogKeyDown(cfg)
+	e := &Event{KeyCode: KeyC, Modifiers: ModCtrl}
+	handler(nil, e, w)
+
+	if clipped != "hello world" {
+		t.Fatalf("expected clipboard=%q got %q",
+			"hello world", clipped)
+	}
+	if !e.IsHandled {
+		t.Fatal("expected IsHandled=true")
+	}
+}
+
+func TestDialogKeyDownSuperCCopiesBody(t *testing.T) {
+	w := newTestWindow()
+	var clipped string
+	w.SetClipboardFn(func(s string) { clipped = s })
+
+	cfg := DialogCfg{Body: "mac copy"}
+	handler := dialogKeyDown(cfg)
+	e := &Event{KeyCode: KeyC, Modifiers: ModSuper}
+	handler(nil, e, w)
+
+	if clipped != "mac copy" {
+		t.Fatalf("expected clipboard=%q got %q",
+			"mac copy", clipped)
+	}
+}
+
+func TestDialogKeyDownCtrlCNoOpWhenBodyEmpty(t *testing.T) {
+	w := newTestWindow()
+	called := false
+	w.SetClipboardFn(func(string) { called = true })
+
+	handler := dialogKeyDown(DialogCfg{})
+	e := &Event{KeyCode: KeyC, Modifiers: ModCtrl}
+	handler(nil, e, w)
+
+	if called {
+		t.Fatal("clipboard should not be set when body empty")
+	}
+	if e.IsHandled {
+		t.Fatal("expected IsHandled=false for empty body")
+	}
+}
+
 func TestDialogConfirmView(t *testing.T) {
 	cfg := DialogCfg{
 		Title:      "Confirm?",

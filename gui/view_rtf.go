@@ -102,6 +102,13 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 			GenerateViewLayout(rtfTooltipView(ts), w),
 		}
 	}
+	// Link context menu popup.
+	if st := StateReadOr[string, rtfLinkMenuState](
+		w, nsRtfLinkMenu, nsRtfLinkMenu,
+		rtfLinkMenuState{}); st.Open {
+		l.Children = append(l.Children,
+			GenerateViewLayout(rtfLinkMenuView(w, st), w))
+	}
 	return l
 }
 
@@ -247,19 +254,26 @@ func rtfTooltipAnimation(tipID string) *Animate {
 }
 
 // rtfAmendTooltip clears RTF tooltip state when the mouse
-// leaves the stored bounds. No-op for WithTooltip-managed
-// tooltips (text == "").
+// leaves the stored bounds, and dismisses the link context
+// menu when focus is lost.
 func rtfAmendTooltip(l *Layout, w *Window) {
 	ts := &w.viewState.tooltip
-	if ts.text == "" {
-		return
+	if ts.text != "" {
+		mx := w.viewState.mousePosX
+		my := w.viewState.mousePosY
+		b := ts.bounds
+		if mx < b.X || my < b.Y ||
+			mx >= b.X+b.Width || my >= b.Y+b.Height {
+			ts.clearText()
+		}
 	}
-	mx := w.viewState.mousePosX
-	my := w.viewState.mousePosY
-	b := ts.bounds
-	if mx < b.X || my < b.Y ||
-		mx >= b.X+b.Width || my >= b.Y+b.Height {
-		ts.clearText()
+	// Dismiss link context menu when focus moves away.
+	if !w.IsFocus(rtfLinkMenuIDFocus) {
+		sm := StateMapRead[string, rtfLinkMenuState](
+			w, nsRtfLinkMenu)
+		if sm != nil {
+			sm.Delete(nsRtfLinkMenu)
+		}
 	}
 }
 
@@ -315,6 +329,13 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 		if rtfHitTest(run, e.MouseX, e.MouseY, nil) {
 			found := rtfFindRunAtIndex(l, run.StartIndex)
 			if found.Link != "" && markdown.IsSafeURL(found.Link) {
+				if e.MouseButton == MouseRight {
+					showLinkContextMenu(w, found.Link,
+						l.Shape.X+e.MouseX,
+						l.Shape.Y+e.MouseY)
+					e.IsHandled = true
+					return
+				}
 				if len(found.Link) > 0 &&
 					found.Link[0] == '#' {
 					w.ScrollToView(found.Link[1:])
@@ -328,8 +349,68 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 	}
 }
 
-// showLinkContextMenu is a stub — deferred.
+// rtfLinkMenuState holds state for the RTF link context menu.
+type rtfLinkMenuState struct {
+	Open bool
+	Link string
+	X    float32
+	Y    float32
+}
+
+const rtfLinkMenuIDFocus uint32 = 8492137
+
+// showLinkContextMenu opens a context menu for an RTF link.
 func showLinkContextMenu(
-	_ *Window, _, _ string, _, _ float32,
+	w *Window, link string, mx, my float32,
 ) {
+	sm := StateMap[string, rtfLinkMenuState](
+		w, nsRtfLinkMenu, capFew)
+	sm.Set(nsRtfLinkMenu, rtfLinkMenuState{
+		Open: true,
+		Link: link,
+		X:    mx,
+		Y:    my,
+	})
+	w.SetIDFocus(rtfLinkMenuIDFocus)
+}
+
+// rtfLinkMenuDismiss clears the link context menu state.
+func rtfLinkMenuDismiss(w *Window) {
+	sm := StateMapRead[string, rtfLinkMenuState](
+		w, nsRtfLinkMenu)
+	if sm != nil {
+		sm.Delete(nsRtfLinkMenu)
+	}
+	w.SetIDFocus(0)
+}
+
+// rtfLinkMenuView builds the floating context menu popup
+// for RTF link right-click.
+func rtfLinkMenuView(w *Window, st rtfLinkMenuState) View {
+	link := st.Link
+	return Menu(w, MenubarCfg{
+		ID:      "rtf_link_menu",
+		IDFocus: rtfLinkMenuIDFocus,
+		Items: []MenuItemCfg{
+			{ID: "open_link", Text: "Open Link"},
+			{ID: "copy_link", Text: "Copy Link"},
+		},
+		Action: func(id string, _ *Event, w *Window) {
+			switch id {
+			case "open_link":
+				if w.nativePlatform != nil {
+					w.nativePlatform.OpenURI(link)
+				}
+			case "copy_link":
+				w.SetClipboard(link)
+			}
+			rtfLinkMenuDismiss(w)
+		},
+		Float:         true,
+		FloatAutoFlip: true,
+		FloatAnchor:   FloatTopLeft,
+		FloatTieOff:   FloatTopLeft,
+		FloatOffsetX:  st.X,
+		FloatOffsetY:  st.Y,
+	})
 }

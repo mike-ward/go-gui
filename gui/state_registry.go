@@ -162,6 +162,7 @@ const (
 	nsSvgAnimStart        = "gui.svg_anim_start"
 	nsDockDrag            = "gui.dock_drag"
 	nsContextMenu         = "gui.context_menu"
+	nsRtfLinkMenu         = "gui.rtf_link_menu"
 )
 
 // Capacity tiers.

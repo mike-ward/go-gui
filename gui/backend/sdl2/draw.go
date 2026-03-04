@@ -137,16 +137,17 @@ func (b *Backend) drawCircle(r *gui.RenderCmd) {
 	if !r.Fill || r.Radius <= 0 {
 		return
 	}
-	// Approximate circle as filled rect (MVP).
 	s := b.dpiScale
+	cx := r.X * s
+	cy := r.Y * s
+	rad := r.Radius * s
 	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
-	rect := sdl.FRect{
-		X: (r.X - r.Radius) * s,
-		Y: (r.Y - r.Radius) * s,
-		W: r.Radius * 2 * s,
-		H: r.Radius * 2 * s,
+	ri := int(rad)
+	for dy := -ri; dy <= ri; dy++ {
+		dx := int(math.Sqrt(float64(rad*rad) - float64(dy*dy)))
+		y := cy + float32(dy)
+		b.renderer.DrawLineF(cx-float32(dx), y, cx+float32(dx), y)
 	}
-	b.renderer.FillRectF(&rect)
 }
 
 // fillRoundedRect draws a filled rectangle with rounded corners

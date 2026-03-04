@@ -7,6 +7,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -161,9 +162,6 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		return
 	}
 
-	// TODO: ClipRadius (rounded corners) requires
-	// render-to-texture stencil work; not yet implemented.
-
 	s := b.dpiScale
 	dst := sdl.Rect{
 		X: int32(r.X * s),
@@ -179,6 +177,10 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		b.renderer.FillRect(&dst)
 	}
 
+	if r.ClipRadius > 0 {
+		b.drawImageRounded(entry.tex, r)
+		return
+	}
 	b.renderer.Copy(entry.tex, nil, &dst)
 }
 
@@ -317,4 +319,81 @@ func pathWithinRoot(path, root string) bool {
 	}
 	return rel == "." || (rel != ".." &&
 		!strings.HasPrefix(rel, ".."+string(filepath.Separator)))
+}
+
+// drawImageRounded renders a textured rounded rectangle using
+// RenderGeometry with UV-mapped vertices. Mesh: 3 rectangles
+// (center, left, right strips) + 4 quarter-circle corner fans.
+func (b *Backend) drawImageRounded(tex *sdl.Texture, r *gui.RenderCmd) {
+	s := b.dpiScale
+	x := r.X * s
+	y := r.Y * s
+	w := r.W * s
+	h := r.H * s
+	rad := r.ClipRadius * s
+	rad = min(rad, w/2, h/2)
+
+	white := sdl.Color{R: 255, G: 255, B: 255, A: 255}
+	vert := func(px, py float32) sdl.Vertex {
+		return sdl.Vertex{
+			Position: sdl.FPoint{X: px, Y: py},
+			Color:    white,
+			TexCoord: sdl.FPoint{
+				X: (px - x) / w,
+				Y: (py - y) / h,
+			},
+		}
+	}
+
+	const segments = 8
+	// 3 quads (6 verts each) + 4 corners (segments*3 verts each).
+	numVerts := 18 + 4*segments*3
+	if cap(b.svgVerts) < numVerts {
+		b.svgVerts = make([]sdl.Vertex, 0, numVerts)
+	}
+	verts := b.svgVerts[:0]
+
+	quad := func(x0, y0, x1, y1 float32) {
+		verts = append(verts,
+			vert(x0, y0), vert(x1, y0), vert(x1, y1),
+			vert(x0, y0), vert(x1, y1), vert(x0, y1),
+		)
+	}
+
+	// Center strip.
+	quad(x+rad, y, x+w-rad, y+h)
+	// Left strip.
+	quad(x, y+rad, x+rad, y+h-rad)
+	// Right strip.
+	quad(x+w-rad, y+rad, x+w, y+h-rad)
+
+	// Corner fans. Start angles (screen coords, Y down):
+	// top-left=π, top-right=3π/2, bottom-right=0, bottom-left=π/2.
+	type corner struct {
+		cx, cy float32
+		start  float64
+	}
+	corners := [4]corner{
+		{x + rad, y + rad, math.Pi},
+		{x + w - rad, y + rad, 3 * math.Pi / 2},
+		{x + w - rad, y + h - rad, 0},
+		{x + rad, y + h - rad, math.Pi / 2},
+	}
+	step := (math.Pi / 2) / float64(segments)
+	for _, c := range corners {
+		for j := range segments {
+			a0 := c.start + float64(j)*step
+			a1 := c.start + float64(j+1)*step
+			verts = append(verts,
+				vert(c.cx, c.cy),
+				vert(c.cx+rad*float32(math.Cos(a0)),
+					c.cy+rad*float32(math.Sin(a0))),
+				vert(c.cx+rad*float32(math.Cos(a1)),
+					c.cy+rad*float32(math.Sin(a1))),
+			)
+		}
+	}
+
+	b.renderer.RenderGeometry(tex, verts, nil)
+	b.svgVerts = verts[:0]
 }

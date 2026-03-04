@@ -255,6 +255,111 @@ func TestRtfRunsKeyStable(t *testing.T) {
 	}
 }
 
+// --- RTF link context menu tests ---
+
+func TestShowLinkContextMenuSetsState(t *testing.T) {
+	w := newTestWindow()
+	showLinkContextMenu(w, "https://example.com", 50, 100)
+
+	st := StateReadOr[string, rtfLinkMenuState](
+		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
+	if !st.Open {
+		t.Fatal("expected Open=true")
+	}
+	if st.Link != "https://example.com" {
+		t.Fatalf("expected link=%q got %q",
+			"https://example.com", st.Link)
+	}
+	if st.X != 50 || st.Y != 100 {
+		t.Fatalf("expected pos=(50,100) got (%g,%g)",
+			st.X, st.Y)
+	}
+	if w.IDFocus() != rtfLinkMenuIDFocus {
+		t.Fatalf("expected focus=%d got %d",
+			rtfLinkMenuIDFocus, w.IDFocus())
+	}
+}
+
+func TestRtfLinkMenuDismissClearsState(t *testing.T) {
+	w := newTestWindow()
+	showLinkContextMenu(w, "https://example.com", 50, 100)
+	rtfLinkMenuDismiss(w)
+
+	st := StateReadOr[string, rtfLinkMenuState](
+		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
+	if st.Open {
+		t.Fatal("expected Open=false after dismiss")
+	}
+	if w.IDFocus() != 0 {
+		t.Fatalf("expected focus=0 got %d", w.IDFocus())
+	}
+}
+
+func TestRtfOnClickRightClickShowsMenu(t *testing.T) {
+	w := newTestWindow()
+	rt := RichText{
+		Runs: []RichTextRun{
+			{Text: "click me", Link: "https://safe.example.com"},
+		},
+	}
+	glyphLayout := glyph.Layout{
+		Width: 100, Height: 20,
+		Items: []glyph.Item{
+			{
+				X: 10, Y: 12, Width: 60,
+				Ascent: 12, Descent: 4,
+				StartIndex: 0,
+			},
+		},
+	}
+	l := &Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRTF,
+			X:         100, Y: 200,
+			Width: 100, Height: 20,
+			TC: &ShapeTextConfig{
+				RtfLayout: &glyphLayout,
+				RtfRuns:   &rt,
+			},
+		},
+	}
+	e := &Event{
+		MouseX:      20,
+		MouseY:      5,
+		MouseButton: MouseRight,
+	}
+	rtfOnClick(l, e, w)
+
+	if !e.IsHandled {
+		t.Fatal("expected IsHandled=true")
+	}
+	st := StateReadOr[string, rtfLinkMenuState](
+		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
+	if !st.Open {
+		t.Fatal("expected context menu Open=true")
+	}
+	if st.Link != "https://safe.example.com" {
+		t.Fatalf("expected link=%q got %q",
+			"https://safe.example.com", st.Link)
+	}
+}
+
+func TestRtfAmendTooltipDismissesMenuOnFocusLoss(t *testing.T) {
+	w := newTestWindow()
+	showLinkContextMenu(w, "https://example.com", 50, 100)
+	// Simulate focus moving away.
+	w.SetIDFocus(0)
+
+	l := &Layout{Shape: &Shape{}}
+	rtfAmendTooltip(l, w)
+
+	st := StateReadOr[string, rtfLinkMenuState](
+		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
+	if st.Open {
+		t.Fatal("expected menu dismissed on focus loss")
+	}
+}
+
 func TestRtfGenerateLayoutAddsTooltipChild(t *testing.T) {
 	rt := RichText{Runs: []RichTextRun{
 		{Text: "abbr", Tooltip: "abbreviation"},

@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 // nativePlatform implements gui.NativePlatform for SDL2.
@@ -40,16 +41,73 @@ func (n *nativePlatform) ShowFolderDialog(_, _ string) gui.PlatformDialogResult 
 	return gui.PlatformDialogResult{}
 }
 
-func (n *nativePlatform) ShowMessageDialog(_, _ string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
-	return gui.NativeAlertResult{}
+func (n *nativePlatform) ShowMessageDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {
+	flags := alertLevelToSDLFlags(level)
+	if err := sdl.ShowSimpleMessageBox(flags, title, body, nil); err != nil {
+		return gui.NativeAlertResult{
+			Status:       gui.DialogError,
+			ErrorMessage: err.Error(),
+		}
+	}
+	return gui.NativeAlertResult{Status: gui.DialogOK}
 }
 
-func (n *nativePlatform) ShowConfirmDialog(_, _ string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
-	return gui.NativeAlertResult{}
+func (n *nativePlatform) ShowConfirmDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {
+	data := &sdl.MessageBoxData{
+		Flags:   alertLevelToSDLFlags(level),
+		Title:   title,
+		Message: body,
+		Buttons: []sdl.MessageBoxButtonData{
+			{ButtonID: 1, Text: "OK"},
+			{ButtonID: 0, Text: "Cancel"},
+		},
+	}
+	buttonID, err := sdl.ShowMessageBox(data)
+	if err != nil {
+		return gui.NativeAlertResult{
+			Status:       gui.DialogError,
+			ErrorMessage: err.Error(),
+		}
+	}
+	if buttonID == 1 {
+		return gui.NativeAlertResult{Status: gui.DialogOK}
+	}
+	return gui.NativeAlertResult{Status: gui.DialogCancel}
 }
 
-func (n *nativePlatform) SendNotification(_, _ string) gui.NativeNotificationResult {
-	return gui.NativeNotificationResult{}
+func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotificationResult {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		script := fmt.Sprintf(
+			`display notification %q with title %q`, body, title)
+		cmd = exec.Command("osascript", "-e", script)
+	case "linux":
+		cmd = exec.Command("notify-send", title, body)
+	default:
+		return gui.NativeNotificationResult{
+			Status:       gui.NotificationError,
+			ErrorMessage: "unsupported platform: " + runtime.GOOS,
+		}
+	}
+	if err := cmd.Start(); err != nil {
+		return gui.NativeNotificationResult{
+			Status:       gui.NotificationError,
+			ErrorMessage: err.Error(),
+		}
+	}
+	return gui.NativeNotificationResult{Status: gui.NotificationOK}
+}
+
+func alertLevelToSDLFlags(level gui.NativeAlertLevel) uint32 {
+	switch level {
+	case gui.AlertWarning:
+		return sdl.MESSAGEBOX_WARNING
+	case gui.AlertCritical:
+		return sdl.MESSAGEBOX_ERROR
+	default:
+		return sdl.MESSAGEBOX_INFORMATION
+	}
 }
 
 func (n *nativePlatform) ShowPrintDialog(_ gui.NativePrintParams) gui.PrintRunResult {
