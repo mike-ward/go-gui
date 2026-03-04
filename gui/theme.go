@@ -70,10 +70,30 @@ type Theme struct {
 	B4  TextStyle
 	B5  TextStyle
 	B6  TextStyle
-	I3  TextStyle // italic, medium size
-	M3  TextStyle // mono, medium size (code font)
-	BI3 TextStyle // bold+italic, medium size
-	M5  TextStyle // mono, xsmall size
+	I1  TextStyle
+	I2  TextStyle
+	I3  TextStyle
+	I4  TextStyle
+	I5  TextStyle
+	I6  TextStyle
+	BI1 TextStyle
+	BI2 TextStyle
+	BI3 TextStyle
+	BI4 TextStyle
+	BI5 TextStyle
+	BI6 TextStyle
+	M1  TextStyle
+	M2  TextStyle
+	M3  TextStyle
+	M4  TextStyle
+	M5  TextStyle
+	M6  TextStyle
+	Icon1 TextStyle
+	Icon2 TextStyle
+	Icon3 TextStyle
+	Icon4 TextStyle
+	Icon5 TextStyle
+	Icon6 TextStyle
 
 	// Layout constants.
 	PaddingSmall  Padding
@@ -674,22 +694,46 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 	theme.B5 = makeStyle(bold, theme.SizeTextXSmall)
 	theme.B6 = makeStyle(bold, theme.SizeTextTiny)
 
-	// Italic, mono, bold+italic shortcuts.
+	// Italic shortcuts.
 	italic := ts
 	italic.Typeface = glyph.TypefaceItalic
+	theme.I1 = makeStyle(italic, theme.SizeTextXLarge)
+	theme.I2 = makeStyle(italic, theme.SizeTextLarge)
 	theme.I3 = makeStyle(italic, theme.SizeTextMedium)
+	theme.I4 = makeStyle(italic, theme.SizeTextSmall)
+	theme.I5 = makeStyle(italic, theme.SizeTextXSmall)
+	theme.I6 = makeStyle(italic, theme.SizeTextTiny)
 
+	// Bold+italic shortcuts.
 	boldItalic := ts
 	boldItalic.Typeface = glyph.TypefaceBoldItalic
+	theme.BI1 = makeStyle(boldItalic, theme.SizeTextXLarge)
+	theme.BI2 = makeStyle(boldItalic, theme.SizeTextLarge)
 	theme.BI3 = makeStyle(boldItalic, theme.SizeTextMedium)
+	theme.BI4 = makeStyle(boldItalic, theme.SizeTextSmall)
+	theme.BI5 = makeStyle(boldItalic, theme.SizeTextXSmall)
+	theme.BI6 = makeStyle(boldItalic, theme.SizeTextTiny)
 
+	// Mono shortcuts (+1 size offset).
 	mono := ts
 	mono.Family = cfg.MonoFontFamily
-	theme.M3 = makeStyle(mono, theme.SizeTextMedium)
-	theme.M5 = makeStyle(mono, theme.SizeTextXSmall)
+	theme.M1 = makeStyle(mono, theme.SizeTextXLarge+1)
+	theme.M2 = makeStyle(mono, theme.SizeTextLarge+1)
+	theme.M3 = makeStyle(mono, theme.SizeTextMedium+1)
+	theme.M4 = makeStyle(mono, theme.SizeTextSmall+1)
+	theme.M5 = makeStyle(mono, theme.SizeTextXSmall+1)
+	theme.M6 = makeStyle(mono, theme.SizeTextTiny+1)
 
+	// Icon font shortcuts.
 	icon := ts
 	icon.Family = IconFontName
+	theme.Icon1 = makeStyle(icon, theme.SizeTextXLarge)
+	theme.Icon2 = makeStyle(icon, theme.SizeTextLarge)
+	theme.Icon3 = makeStyle(icon, theme.SizeTextMedium)
+	theme.Icon4 = makeStyle(icon, theme.SizeTextSmall)
+	theme.Icon5 = makeStyle(icon, theme.SizeTextXSmall)
+	theme.Icon6 = makeStyle(icon, theme.SizeTextTiny)
+
 	theme.BreadcrumbStyle.TextStyleIcon = makeStyle(icon, theme.SizeTextMedium)
 
 	return theme
