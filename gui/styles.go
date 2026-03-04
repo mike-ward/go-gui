@@ -58,6 +58,17 @@ type TextStyle struct {
 	Features      *glyph.FontFeatures
 }
 
+// mergeTextStyle fills zero fields in s from fallback.
+func mergeTextStyle(s, fallback TextStyle) TextStyle {
+	if s.Color == (Color{}) {
+		s.Color = fallback.Color
+	}
+	if s.Size == 0 {
+		s.Size = fallback.Size
+	}
+	return s
+}
+
 // ToGlyphStyle converts a gui TextStyle to a glyph.TextStyle.
 func (ts TextStyle) ToGlyphStyle() glyph.TextStyle {
 	return glyph.TextStyle{

@@ -145,6 +145,7 @@ func themeButton(app *App) gui.View {
 		IDFocus:      3,
 		TextSelect:   textSel,
 		TextUnselect: textUnsel,
+		TextStyle:    gui.TextStyle{Family: gui.IconFontName},
 		Padding:      gui.PaddingSmall,
 		Selected:     app.Light,
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {

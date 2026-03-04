@@ -1,5 +1,7 @@
 package gui
 
+import _ "embed"
+
 // FontVariants holds paths of font files used by the GUI.
 type FontVariants struct {
 	Normal string
@@ -13,6 +15,10 @@ const (
 	BaseFontName = ""
 	IconFontName = "feathericon"
 )
+
+//go:embed assets/feathericon.ttf
+// IconFontData is the embedded Feather icon TTF font data.
+var IconFontData []byte
 
 // Icon constants — Feather icon font Unicode mappings.
 const (

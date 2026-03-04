@@ -484,6 +484,11 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 				Color: RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 160),
 				Size:  ts.Size,
 			},
+			TextStyleIcon: TextStyle{
+				Color:  ts.Color,
+				Family: IconFontName,
+				Size:   cfg.SizeTextMedium,
+			},
 		},
 		SplitterStyle: SplitterStyle{
 			HandleSize:        9,
@@ -682,6 +687,10 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 	mono.Family = cfg.MonoFontFamily
 	theme.M3 = makeStyle(mono, theme.SizeTextMedium)
 	theme.M5 = makeStyle(mono, theme.SizeTextXSmall)
+
+	icon := ts
+	icon.Family = IconFontName
+	theme.BreadcrumbStyle.TextStyleIcon = makeStyle(icon, theme.SizeTextMedium)
 
 	return theme
 }

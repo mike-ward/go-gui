@@ -160,8 +160,12 @@ func applyToggleDefaults(cfg *ToggleCfg) {
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle
+	} else {
+		cfg.TextStyle = mergeTextStyle(cfg.TextStyle, DefaultTextStyle)
 	}
 	if cfg.TextStyleLabel == (TextStyle{}) {
 		cfg.TextStyleLabel = DefaultTextStyle
+	} else {
+		cfg.TextStyleLabel = mergeTextStyle(cfg.TextStyleLabel, DefaultTextStyle)
 	}
 }

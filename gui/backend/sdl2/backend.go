@@ -4,6 +4,8 @@ package sdl2
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/mike-ward/go-glyph"
@@ -94,6 +96,16 @@ func New(w *gui.Window) (*Backend, error) {
 		win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("sdl2: NewTextSystem: %w", err)
+	}
+
+	// Load embedded icon font into glyph via temp file.
+	if data := gui.IconFontData; len(data) > 0 {
+		tmp := filepath.Join(os.TempDir(), "go_gui_feathericon.ttf")
+		if err := os.WriteFile(tmp, data, 0o644); err != nil {
+			log.Printf("sdl2: write icon font: %v", err)
+		} else if err := textSys.AddFontFile(tmp); err != nil {
+			log.Printf("sdl2: load icon font: %v", err)
+		}
 	}
 
 	b := &Backend{
