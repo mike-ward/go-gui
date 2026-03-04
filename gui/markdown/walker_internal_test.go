@@ -363,7 +363,7 @@ func TestApplyFootnoteRefsMultiple(t *testing.T) {
 func TestReplaceAbbreviationsBasic(t *testing.T) {
 	defs := map[string]string{"HTML": "HyperText Markup Language"}
 	runs := []Run{{Text: "The HTML spec."}}
-	result := replaceAbbreviations(runs, defs)
+	result := replaceAbbreviations(runs, buildAbbrMatcher(defs))
 	found := false
 	for _, r := range result {
 		if r.Text == "HTML" &&
@@ -387,7 +387,7 @@ func TestReplaceAbbreviationsNoDefs(t *testing.T) {
 func TestReplaceAbbreviationsWordBoundary(t *testing.T) {
 	defs := map[string]string{"HTML": "HyperText Markup Language"}
 	runs := []Run{{Text: "HTMLX is not HTML."}}
-	result := replaceAbbreviations(runs, defs)
+	result := replaceAbbreviations(runs, buildAbbrMatcher(defs))
 	for _, r := range result {
 		if r.Text == "HTMLX" && r.Tooltip != "" {
 			t.Error("HTMLX should not get tooltip")
@@ -408,7 +408,7 @@ func TestReplaceAbbreviationsWordBoundary(t *testing.T) {
 func TestReplaceAbbreviationsSkipsLinks(t *testing.T) {
 	defs := map[string]string{"HTML": "Markup"}
 	runs := []Run{{Text: "HTML spec.", Link: "http://x"}}
-	result := replaceAbbreviations(runs, defs)
+	result := replaceAbbreviations(runs, buildAbbrMatcher(defs))
 	if len(result) != 1 {
 		t.Error("link run should not be split for abbreviations")
 	}
@@ -421,7 +421,7 @@ func TestReplaceAbbreviationsLongerFirst(t *testing.T) {
 		"CSS3": "CSS Level 3",
 	}
 	runs := []Run{{Text: "Use CSS3 today."}}
-	result := replaceAbbreviations(runs, defs)
+	result := replaceAbbreviations(runs, buildAbbrMatcher(defs))
 	for _, r := range result {
 		if r.Tooltip == "CSS Level 3" {
 			return
@@ -433,7 +433,7 @@ func TestReplaceAbbreviationsLongerFirst(t *testing.T) {
 func TestReplaceAbbreviationsMultipleOccurrences(t *testing.T) {
 	defs := map[string]string{"HTML": "Markup"}
 	runs := []Run{{Text: "HTML and HTML."}}
-	result := replaceAbbreviations(runs, defs)
+	result := replaceAbbreviations(runs, buildAbbrMatcher(defs))
 	count := 0
 	for _, r := range result {
 		if r.Tooltip == "Markup" {

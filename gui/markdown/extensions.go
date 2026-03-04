@@ -353,21 +353,3 @@ func (p *subscriptParser) CloseBlock(
 	_ ast.Node, _ parser.Context,
 ) {
 }
-
-func findDoubleChar(line []byte, start int, ch byte) int {
-	for i := start; i < len(line)-1; i++ {
-		if line[i] == ch && line[i+1] == ch {
-			return i
-		}
-	}
-	return -1
-}
-
-func findSingleChar(line []byte, start int, ch byte) int {
-	for i := start; i < len(line); i++ {
-		if line[i] == ch {
-			return i
-		}
-	}
-	return -1
-}

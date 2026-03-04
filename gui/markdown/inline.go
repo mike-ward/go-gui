@@ -11,28 +11,34 @@ var validImageExts = []string{
 
 // IsSafeURL checks that a URL does not use dangerous schemes.
 func IsSafeURL(url string) bool {
-	lower := strings.ToLower(strings.TrimSpace(
-		decodePercentPrefix(url)))
-	if len(lower) == 0 {
+	trimmed := strings.TrimSpace(url)
+	if len(trimmed) == 0 {
 		return false
 	}
+	lower := strings.ToLower(strings.TrimSpace(
+		decodePercentPrefix(trimmed)))
 	if strings.HasPrefix(lower, "http://") ||
 		strings.HasPrefix(lower, "https://") ||
 		strings.HasPrefix(lower, "mailto:") {
 		return true
 	}
-	if !strings.Contains(lower, "://") &&
-		!strings.HasPrefix(lower, "javascript:") &&
-		!strings.HasPrefix(lower, "data:") &&
-		!strings.HasPrefix(lower, "vbscript:") &&
-		!strings.HasPrefix(lower, "file:") &&
-		!strings.HasPrefix(lower, "blob:") &&
-		!strings.HasPrefix(lower, "mhtml:") &&
-		!strings.HasPrefix(lower, "ms-help:") &&
-		!strings.HasPrefix(lower, "disk:") {
+
+	// Safe local references and relative paths.
+	if strings.HasPrefix(lower, "#") ||
+		strings.HasPrefix(lower, "/") ||
+		strings.HasPrefix(lower, "./") ||
+		strings.HasPrefix(lower, "../") ||
+		strings.HasPrefix(lower, "?") {
 		return true
 	}
-	return false
+
+	// Any explicit URI scheme outside the allowlist is blocked.
+	if hasURIScheme(lower) {
+		return false
+	}
+
+	// Plain relative paths without an explicit scheme are safe.
+	return true
 }
 
 // decodePercentPrefix decodes leading percent-encoded bytes
@@ -42,7 +48,7 @@ func decodePercentPrefix(s string) string {
 	if limit > 20 {
 		limit = 20
 	}
-	var buf []byte
+	buf := make([]byte, 0, len(s))
 	i := 0
 	for i < limit {
 		if s[i] == '%' && i+2 < len(s) {
@@ -73,6 +79,31 @@ func hexVal(c byte) int {
 		return int(c-'A') + 10
 	}
 	return -1
+}
+
+func hasURIScheme(s string) bool {
+	colon := strings.IndexByte(s, ':')
+	if colon <= 0 {
+		return false
+	}
+	for i := 0; i < colon; i++ {
+		c := s[i]
+		if c == '/' || c == '?' || c == '#' {
+			return false
+		}
+		if i == 0 {
+			if c < 'a' || c > 'z' {
+				return false
+			}
+			continue
+		}
+		if !((c >= 'a' && c <= 'z') ||
+			(c >= '0' && c <= '9') ||
+			c == '+' || c == '-' || c == '.') {
+			return false
+		}
+	}
+	return true
 }
 
 // isSafeImagePath validates image paths, blocking traversal

@@ -1009,6 +1009,10 @@ func TestIsSafeURLBlocked(t *testing.T) {
 		"vbscript:msgbox",
 		"file:///etc/passwd",
 		"blob:http://example.com/x",
+		"tel:+15555550123",
+		"intent://scan/#Intent;scheme=zxing;end",
+		"vscode://file/test.md",
+		"customscheme:payload",
 	}
 	for _, u := range blocked {
 		if IsSafeURL(u) {

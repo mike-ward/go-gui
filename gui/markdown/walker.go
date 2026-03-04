@@ -10,21 +10,20 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark"
+	emoji "github.com/yuin/goldmark-emoji"
+	emast "github.com/yuin/goldmark-emoji/ast"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	east "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
-	emoji "github.com/yuin/goldmark-emoji"
-	emast "github.com/yuin/goldmark-emoji/ast"
 )
 
 // Parse converts markdown source to []Block.
 func Parse(source string, hardLineBreaks bool) []Block {
-	abbrDefs := collectAbbrDefs(source)
-	footnoteDefs := collectFootnoteDefs(source)
-	source = preprocessSource(source)
+	source, abbrDefs, footnoteDefs := scanSource(source)
+	abbrMatcher := buildAbbrMatcher(abbrDefs)
 	src := []byte(source)
 
 	md := goldmark.New(
@@ -65,7 +64,7 @@ func Parse(source string, hardLineBreaks bool) []Block {
 		}
 		if len(abbrDefs) > 0 {
 			w.blocks[i].Runs = replaceAbbreviations(
-				w.blocks[i].Runs, abbrDefs)
+				w.blocks[i].Runs, abbrMatcher)
 		}
 	}
 	return w.blocks
@@ -91,6 +90,12 @@ type inlineState struct {
 	subscript     bool
 	link          string
 	tooltip       string
+}
+
+type abbrMatcher struct {
+	abbrs      []string
+	firstChars [256]bool
+	defs       map[string]string
 }
 
 func (w *mdWalker) walkDocument(doc ast.Node) {
@@ -411,7 +416,7 @@ func (w *mdWalker) walkDefList(node ast.Node) {
 			var runs []Run
 			for dc := c.FirstChild(); dc != nil; dc = dc.NextSibling() {
 				if dc.Kind() == ast.KindTextBlock ||
-				dc.Kind() == ast.KindParagraph {
+					dc.Kind() == ast.KindParagraph {
 					runs = append(runs,
 						w.collectRuns(dc, inlineState{})...)
 				}
@@ -431,75 +436,80 @@ func (w *mdWalker) walkDefList(node ast.Node) {
 func (w *mdWalker) collectRuns(
 	node ast.Node, state inlineState,
 ) []Run {
-	var runs []Run
+	runs := make([]Run, 0, node.ChildCount())
+	return w.collectRunsInto(runs, node, state)
+}
+
+func (w *mdWalker) collectRunsInto(
+	dst []Run, node ast.Node, state inlineState,
+) []Run {
 	for c := node.FirstChild(); c != nil; c = c.NextSibling() {
-		runs = append(runs, w.walkInline(c, state)...)
+		dst = w.walkInline(dst, c, state)
 	}
-	return runs
+	return dst
 }
 
 func (w *mdWalker) walkInline(
-	node ast.Node, state inlineState,
+	dst []Run, node ast.Node, state inlineState,
 ) []Run {
 	switch node.Kind() {
 	case ast.KindText:
-		return w.walkText(node.(*ast.Text), state)
+		return w.walkText(dst, node.(*ast.Text), state)
 	case ast.KindString:
 		s := node.(*ast.String)
 		v := string(s.Value)
 		if len(v) == 0 {
-			return nil
+			return dst
 		}
-		return []Run{w.makeRun(v, state)}
+		return append(dst, w.makeRun(v, state))
 	case ast.KindEmphasis:
-		return w.walkEmphasis(node.(*ast.Emphasis), state)
+		return w.walkEmphasis(dst, node.(*ast.Emphasis), state)
 	case ast.KindCodeSpan:
 		t := w.collectText(node)
-		return []Run{{Text: t, Format: FormatCode,
-			Link: state.link}}
+		return append(dst, Run{
+			Text: t, Format: FormatCode, Link: state.link,
+		})
 	case ast.KindLink:
-		return w.walkLink(node.(*ast.Link), state)
+		return w.walkLink(dst, node.(*ast.Link), state)
 	case ast.KindAutoLink:
-		return w.walkAutoLink(node.(*ast.AutoLink), state)
+		return w.walkAutoLink(dst, node.(*ast.AutoLink), state)
 	case ast.KindImage:
 		alt := w.collectText(node)
-		return []Run{{Text: alt, Format: state.format}}
+		return append(dst, Run{Text: alt, Format: state.format})
 	case ast.KindRawHTML:
-		return nil
+		return dst
 	case emast.KindEmoji:
 		e := node.(*emast.Emoji)
 		if len(e.Value.Unicode) > 0 {
-			return []Run{w.makeRun(
-				string(e.Value.Unicode[0]), state)}
+			return append(dst, w.makeRun(
+				string(e.Value.Unicode[0]), state))
 		}
-		return []Run{w.makeRun(
-			":"+string(e.ShortName)+":", state)}
+		return append(dst, w.makeRun(
+			":"+string(e.ShortName)+":", state))
 	default:
-		return w.walkInlineExt(node, state)
+		return w.walkInlineExt(dst, node, state)
 	}
 }
 
 func (w *mdWalker) walkText(
-	t *ast.Text, state inlineState,
+	dst []Run, t *ast.Text, state inlineState,
 ) []Run {
 	seg := t.Segment
 	v := string(seg.Value(w.source))
-	var runs []Run
 	if len(v) > 0 {
-		runs = append(runs, w.makeRun(v, state))
+		dst = append(dst, w.makeRun(v, state))
 	}
 	if t.HardLineBreak() ||
 		(w.hardBreaks && t.SoftLineBreak()) {
-		runs = append(runs, Run{Text: "\n"})
+		dst = append(dst, Run{Text: "\n"})
 	} else if t.SoftLineBreak() {
-		runs = append(runs,
-			Run{Text: " ", Format: state.format})
+		dst = append(dst, Run{Text: " ", Format: state.format})
 	}
-	return runs
+	return dst
 }
 
 func (w *mdWalker) walkEmphasis(
-	em *ast.Emphasis, state inlineState,
+	dst []Run, em *ast.Emphasis, state inlineState,
 ) []Run {
 	ns := state
 	if em.Level == 1 {
@@ -507,11 +517,11 @@ func (w *mdWalker) walkEmphasis(
 	} else {
 		ns.format = mergeFormat(ns.format, FormatBold)
 	}
-	return w.collectRuns(em, ns)
+	return w.collectRunsInto(dst, em, ns)
 }
 
 func (w *mdWalker) walkLink(
-	link *ast.Link, state inlineState,
+	dst []Run, link *ast.Link, state inlineState,
 ) []Run {
 	url := string(link.Destination)
 	if !IsSafeURL(url) {
@@ -519,60 +529,65 @@ func (w *mdWalker) walkLink(
 	}
 	ns := state
 	ns.link = url
-	return w.collectRuns(link, ns)
+	return w.collectRunsInto(dst, link, ns)
 }
 
 func (w *mdWalker) walkAutoLink(
-	al *ast.AutoLink, state inlineState,
+	dst []Run, al *ast.AutoLink, state inlineState,
 ) []Run {
 	url := string(al.URL(w.source))
 	label := string(al.Label(w.source))
 	if !IsSafeURL(url) {
-		return []Run{{Text: label, Format: state.format}}
+		return append(dst, Run{
+			Text: label, Format: state.format,
+		})
 	}
-	return []Run{{Text: label, Format: state.format,
-		Link: url}}
+	return append(dst, Run{
+		Text: label, Format: state.format, Link: url,
+	})
 }
 
 func (w *mdWalker) walkInlineExt(
-	node ast.Node, state inlineState,
+	dst []Run, node ast.Node, state inlineState,
 ) []Run {
 	kind := node.Kind()
 	switch {
 	case kind == east.KindStrikethrough:
 		ns := state
 		ns.strikethrough = true
-		return w.collectRuns(node, ns)
+		return w.collectRunsInto(dst, node, ns)
 	case kind == east.KindTaskCheckBox:
-		return nil
+		return dst
 	case kind == NodeKindMathInline:
 		mi := node.(*nodeMathInline)
 		id := fmt.Sprintf("math_%x", MathHash(mi.Latex))
-		return []Run{{MathID: id, MathLatex: mi.Latex,
-			Format: state.format}}
+		return append(dst, Run{
+			MathID: id, MathLatex: mi.Latex, Format: state.format,
+		})
 	case kind == NodeKindMathDisplay:
 		md := node.(*nodeMathDisplay)
 		id := fmt.Sprintf("math_%x", MathHash(md.Latex))
-		return []Run{{MathID: id, MathLatex: md.Latex,
-			Format: state.format}}
+		return append(dst, Run{
+			MathID: id, MathLatex: md.Latex, Format: state.format,
+		})
 	case kind == NodeKindHighlight:
 		ns := state
 		ns.highlight = true
-		return w.collectRuns(node, ns)
+		return w.collectRunsInto(dst, node, ns)
 	case kind == NodeKindUnderline:
 		ns := state
 		ns.underline = true
-		return w.collectRuns(node, ns)
+		return w.collectRunsInto(dst, node, ns)
 	case kind == NodeKindSuperscript:
 		ns := state
 		ns.superscript = true
-		return w.collectRuns(node, ns)
+		return w.collectRunsInto(dst, node, ns)
 	case kind == NodeKindSubscript:
 		ns := state
 		ns.subscript = true
-		return w.collectRuns(node, ns)
+		return w.collectRunsInto(dst, node, ns)
 	default:
-		return w.collectRuns(node, state)
+		return w.collectRunsInto(dst, node, state)
 	}
 }
 
@@ -594,11 +609,18 @@ func (w *mdWalker) makeRun(
 
 // collectText extracts plain text from a node tree.
 func (w *mdWalker) collectText(node ast.Node) string {
+	if node == nil {
+		return ""
+	}
 	var sb strings.Builder
-	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
+	var local [16]ast.Node
+	stack := local[:0]
+	for c := node.LastChild(); c != nil; c = c.PreviousSibling() {
+		stack = append(stack, c)
+	}
+	for len(stack) > 0 {
+		n := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
 		switch n.Kind() {
 		case ast.KindText:
 			t := n.(*ast.Text)
@@ -607,8 +629,10 @@ func (w *mdWalker) collectText(node ast.Node) string {
 		case ast.KindString:
 			sb.Write(n.(*ast.String).Value)
 		}
-		return ast.WalkContinue, nil
-	})
+		for c := n.LastChild(); c != nil; c = c.PreviousSibling() {
+			stack = append(stack, c)
+		}
+	}
 	return sb.String()
 }
 
@@ -650,25 +674,47 @@ var reImageDims = regexp.MustCompile(
 // multi-line $$...$$ to ```math code fences, and encodes
 // image dimension syntax into URL fragments.
 func preprocessSource(source string) string {
-	source = reImageDims.ReplaceAllString(
-		source, "${1}#dim${2}")
+	preprocessed, _, _ := scanSource(source)
+	return preprocessed
+}
+
+func scanSource(source string) (string, map[string]string, map[string]string) {
+	source = reImageDims.ReplaceAllString(source, "${1}#dim${2}")
 	lines := strings.Split(source, "\n")
+	abbrDefs := map[string]string{}
+	footnoteDefs := map[string]string{}
 	result := make([]string, 0, len(lines))
 	i := 0
 	for i < len(lines) {
-		trimmed := strings.TrimSpace(lines[i])
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
 
-		// Strip abbreviation definitions.
 		if isAbbrDef(trimmed) {
+			if len(abbrDefs) < maxAbbreviationDefs {
+				idx := strings.Index(trimmed, "]:")
+				if idx >= 3 {
+					abbr := trimmed[2:idx]
+					expansion := strings.TrimSpace(trimmed[idx+2:])
+					if len(abbr) > 0 && len(expansion) > 0 {
+						abbrDefs[abbr] = expansion
+					}
+				}
+			}
 			result = append(result, "")
 			i++
 			continue
 		}
 
-		// Strip footnote definitions + continuations.
 		if isFootnoteDef(trimmed) {
+			var id, content string
+			idx := strings.Index(trimmed, "]:")
+			if idx >= 3 {
+				id = trimmed[2:idx]
+				content = strings.TrimSpace(trimmed[idx+2:])
+			}
 			result = append(result, "")
 			i++
+			contCount := 0
 			for i < len(lines) {
 				next := lines[i]
 				if len(next) == 0 {
@@ -676,6 +722,9 @@ func preprocessSource(source string) string {
 						len(lines[i+1]) > 0 &&
 						(lines[i+1][0] == ' ' ||
 							lines[i+1][0] == '\t') {
+						if contCount < maxFootnoteContinuationLines {
+							content += "\n\n"
+						}
 						result = append(result, "")
 						i++
 						continue
@@ -685,8 +734,16 @@ func preprocessSource(source string) string {
 				if next[0] != ' ' && next[0] != '\t' {
 					break
 				}
+				if contCount < maxFootnoteContinuationLines {
+					content += " " + strings.TrimSpace(next)
+					contCount++
+				}
 				result = append(result, "")
 				i++
+			}
+			if len(footnoteDefs) < maxFootnoteDefs &&
+				len(id) > 0 && len(content) > 0 {
+				footnoteDefs[id] = content
 			}
 			continue
 		}
@@ -707,84 +764,21 @@ func preprocessSource(source string) string {
 			continue
 		}
 
-		result = append(result, lines[i])
+		result = append(result, line)
 		i++
 	}
-	return strings.Join(result, "\n")
+	return strings.Join(result, "\n"), abbrDefs, footnoteDefs
 }
 
 // --- Metadata pre-scanning ---
 
 func collectAbbrDefs(source string) map[string]string {
-	defs := map[string]string{}
-	for _, line := range strings.Split(source, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, "*[") {
-			continue
-		}
-		idx := strings.Index(trimmed, "]:")
-		if idx < 3 {
-			continue
-		}
-		abbr := trimmed[2:idx]
-		expansion := strings.TrimSpace(trimmed[idx+2:])
-		if len(abbr) > 0 && len(expansion) > 0 {
-			defs[abbr] = expansion
-			if len(defs) >= maxAbbreviationDefs {
-				break
-			}
-		}
-	}
+	_, defs, _ := scanSource(source)
 	return defs
 }
 
 func collectFootnoteDefs(source string) map[string]string {
-	defs := map[string]string{}
-	lines := strings.Split(source, "\n")
-	i := 0
-	for i < len(lines) {
-		trimmed := strings.TrimSpace(lines[i])
-		if !strings.HasPrefix(trimmed, "[^") {
-			i++
-			continue
-		}
-		idx := strings.Index(trimmed, "]:")
-		if idx < 3 {
-			i++
-			continue
-		}
-		id := trimmed[2:idx]
-		content := strings.TrimSpace(trimmed[idx+2:])
-		i++
-		contCount := 0
-		for i < len(lines) &&
-			contCount < maxFootnoteContinuationLines {
-			next := lines[i]
-			if len(next) == 0 {
-				if i+1 < len(lines) &&
-					len(lines[i+1]) > 0 &&
-					(lines[i+1][0] == ' ' ||
-						lines[i+1][0] == '\t') {
-					content += "\n\n"
-					i++
-					continue
-				}
-				break
-			}
-			if next[0] != ' ' && next[0] != '\t' {
-				break
-			}
-			content += " " + strings.TrimSpace(next)
-			contCount++
-			i++
-		}
-		if len(id) > 0 && len(content) > 0 {
-			defs[id] = content
-			if len(defs) >= maxFootnoteDefs {
-				break
-			}
-		}
-	}
+	_, _, defs := scanSource(source)
 	return defs
 }
 
@@ -810,7 +804,7 @@ func applyFootnoteRefs(
 	if len(defs) == 0 {
 		return runs
 	}
-	var result []Run
+	result := make([]Run, 0, len(runs))
 	changed := false
 	for _, run := range runs {
 		if run.Link != "" || run.Tooltip != "" ||
@@ -818,11 +812,13 @@ func applyFootnoteRefs(
 			result = append(result, run)
 			continue
 		}
-		nr := splitRunForFootnotes(run, defs)
-		if len(nr) != 1 || nr[0].Tooltip != "" {
+		nr, split := splitRunForFootnotes(run, defs)
+		if split {
 			changed = true
+			result = append(result, nr...)
+			continue
 		}
-		result = append(result, nr...)
+		result = append(result, run)
 	}
 	if !changed {
 		return runs
@@ -832,11 +828,12 @@ func applyFootnoteRefs(
 
 func splitRunForFootnotes(
 	run Run, defs map[string]string,
-) []Run {
+) ([]Run, bool) {
 	t := run.Text
 	var result []Run
 	pos := 0
 	lastPos := 0
+	split := false
 	for pos < len(t) {
 		idx := strings.Index(t[pos:], "[^")
 		if idx < 0 {
@@ -855,6 +852,10 @@ func splitRunForFootnotes(
 			pos = end + 1
 			continue
 		}
+		if !split {
+			result = make([]Run, 0, 3)
+			split = true
+		}
 		if start > lastPos {
 			r := run
 			r.Text = t[lastPos:start]
@@ -869,68 +870,83 @@ func splitRunForFootnotes(
 		lastPos = end + 1
 		pos = lastPos
 	}
-	if lastPos == 0 {
-		return []Run{run}
+	if !split {
+		return nil, false
 	}
 	if lastPos < len(t) {
 		r := run
 		r.Text = t[lastPos:]
 		result = append(result, r)
 	}
-	return result
+	return result, true
 }
 
 // replaceAbbreviations scans runs for abbreviation occurrences
 // and splits/marks them with tooltips.
 func replaceAbbreviations(
-	runs []Run, defs map[string]string,
+	runs []Run, matcher *abbrMatcher,
 ) []Run {
-	if len(defs) == 0 {
+	if matcher == nil {
 		return runs
 	}
-	abbrs := make([]string, 0, len(defs))
-	for k := range defs {
-		abbrs = append(abbrs, k)
-	}
-	sort.Slice(abbrs, func(i, j int) bool {
-		return len(abbrs[i]) > len(abbrs[j])
-	})
-	var result []Run
+	result := make([]Run, 0, len(runs))
 	for _, run := range runs {
 		if run.Link != "" || run.Tooltip != "" ||
 			run.MathID != "" {
 			result = append(result, run)
 			continue
 		}
-		result = append(result,
-			splitRunForAbbrs(run, abbrs, defs)...)
+		nr, split := splitRunForAbbrs(run, matcher)
+		if split {
+			result = append(result, nr...)
+			continue
+		}
+		result = append(result, run)
 	}
 	return result
 }
 
+func buildAbbrMatcher(defs map[string]string) *abbrMatcher {
+	if len(defs) == 0 {
+		return nil
+	}
+	abbrs := make([]string, 0, len(defs))
+	var firstChars [256]bool
+	for k := range defs {
+		if len(k) == 0 {
+			continue
+		}
+		abbrs = append(abbrs, k)
+		firstChars[k[0]] = true
+	}
+	sort.Slice(abbrs, func(i, j int) bool {
+		return len(abbrs[i]) > len(abbrs[j])
+	})
+	return &abbrMatcher{
+		abbrs:      abbrs,
+		firstChars: firstChars,
+		defs:       defs,
+	}
+}
+
 func splitRunForAbbrs(
-	run Run, abbrs []string, defs map[string]string,
-) []Run {
+	run Run, matcher *abbrMatcher,
+) ([]Run, bool) {
 	t := run.Text
 	if len(t) == 0 {
-		return []Run{run}
-	}
-	var firstChars [256]bool
-	for _, a := range abbrs {
-		if len(a) > 0 {
-			firstChars[a[0]] = true
-		}
+		return nil, false
 	}
 	var result []Run
 	pos := 0
 	lastPos := 0
+	split := false
 	for pos < len(t) {
-		if !firstChars[t[pos]] {
+		if !matcher.firstChars[t[pos]] {
 			pos++
 			continue
 		}
 		matched := false
-		for _, abbr := range abbrs {
+		for _, abbr := range matcher.abbrs {
 			if pos+len(abbr) > len(t) ||
 				t[pos:pos+len(abbr)] != abbr {
 				continue
@@ -938,6 +954,10 @@ func splitRunForAbbrs(
 			if !isWordBoundary(t, pos-1) ||
 				!isWordBoundary(t, pos+len(abbr)) {
 				continue
+			}
+			if !split {
+				result = make([]Run, 0, 3)
+				split = true
 			}
 			if pos > lastPos {
 				r := run
@@ -951,7 +971,7 @@ func splitRunForAbbrs(
 				Highlight:     run.Highlight,
 				Superscript:   run.Superscript,
 				Subscript:     run.Subscript,
-				Tooltip:       defs[abbr],
+				Tooltip:       matcher.defs[abbr],
 			})
 			pos += len(abbr)
 			lastPos = pos
@@ -962,15 +982,15 @@ func splitRunForAbbrs(
 			pos++
 		}
 	}
-	if lastPos == 0 {
-		return []Run{run}
+	if !split {
+		return nil, false
 	}
 	if lastPos < len(t) {
 		r := run
 		r.Text = t[lastPos:]
 		result = append(result, r)
 	}
-	return result
+	return result, true
 }
 
 func isWordBoundary(text string, pos int) bool {
@@ -995,13 +1015,28 @@ func mergeAdjacentRuns(runs []Run) []Run {
 	}
 	result := make([]Run, 0, len(runs))
 	cur := runs[0]
+	var sb strings.Builder
+	merging := false
 	for _, r := range runs[1:] {
 		if canMergeRuns(cur, r) {
-			cur.Text += r.Text
+			if !merging {
+				sb.Grow(len(cur.Text) + len(r.Text))
+				sb.WriteString(cur.Text)
+				merging = true
+			}
+			sb.WriteString(r.Text)
 		} else {
+			if merging {
+				cur.Text = sb.String()
+				sb.Reset()
+				merging = false
+			}
 			result = append(result, cur)
 			cur = r
 		}
+	}
+	if merging {
+		cur.Text = sb.String()
 	}
 	result = append(result, cur)
 	return result
@@ -1029,9 +1064,18 @@ func applyTypography(runs []Run) {
 			continue
 		}
 		t := runs[i].Text
-		t = strings.ReplaceAll(t, "---", "\u2014")
-		t = strings.ReplaceAll(t, "--", "\u2013")
-		t = strings.ReplaceAll(t, "...", "\u2026")
+		if !strings.Contains(t, "--") && !strings.Contains(t, "...") {
+			continue
+		}
+		if strings.Contains(t, "---") {
+			t = strings.ReplaceAll(t, "---", "\u2014")
+		}
+		if strings.Contains(t, "--") {
+			t = strings.ReplaceAll(t, "--", "\u2013")
+		}
+		if strings.Contains(t, "...") {
+			t = strings.ReplaceAll(t, "...", "\u2026")
+		}
 		runs[i].Text = t
 	}
 }
