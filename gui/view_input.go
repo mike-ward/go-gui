@@ -177,7 +177,7 @@ func Input(cfg InputCfg) View {
 				Padding: Some(PaddingNone),
 				Sizing:  FillFill,
 				VAlign:  vAlign,
-				OnClick: func(layout *Layout, _ *Event, w *Window) {
+				OnClick: func(layout *Layout, e *Event, w *Window) {
 					if len(layout.Children) < 1 {
 						return
 					}
@@ -185,6 +185,36 @@ func Input(cfg InputCfg) View {
 					if ly.Shape.IDFocus > 0 {
 						w.SetIDFocus(ly.Shape.IDFocus)
 					}
+					if ly.Shape.TC == nil || ly.Shape.TC.TextIsPlaceholder {
+						return
+					}
+					text := ly.Shape.TC.Text
+					style := textStyleOrDefault(ly.Shape)
+					gl, ok := inputGlyphLayout(
+						text, ly.Shape, style, w,
+					)
+					if !ok {
+						return
+					}
+					relX := e.MouseX - (ly.Shape.X - layout.Shape.X)
+					relY := e.MouseY - (ly.Shape.Y - layout.Shape.Y)
+					byteIdx := gl.GetClosestOffset(relX, relY)
+					displayText := text
+					if ly.Shape.TC.TextIsPassword {
+						displayText = passwordMask(text)
+					}
+					runePos := byteToRuneIndex(displayText, byteIdx)
+					imap := StateMap[uint32, InputState](
+						w, nsInput, capMany,
+					)
+					is, _ := imap.Get(ly.Shape.IDFocus)
+					is.CursorPos = runePos
+					is.SelectBeg = 0
+					is.SelectEnd = 0
+					is.CursorOffset = -1
+					imap.Set(ly.Shape.IDFocus, is)
+					resetBlinkCursorVisible(w)
+					e.IsHandled = true
 				},
 				Content: txtContent,
 			}),
