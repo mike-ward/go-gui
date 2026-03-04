@@ -1,6 +1,12 @@
 package gui
 
-import "github.com/mike-ward/go-glyph"
+import (
+	"time"
+
+	"github.com/mike-ward/go-glyph"
+)
+
+const animIDDragScroll = "input-drag-scroll"
 
 // InputCfg configures a text input field.
 type InputCfg struct {
@@ -179,17 +185,75 @@ func Input(cfg InputCfg) View {
 			dragTxtOffX := ly.Shape.X - layout.Shape.X
 			dragTxtOffY := ly.Shape.Y - layout.Shape.Y
 			dragIDFocus := ly.Shape.IDFocus
+
+			var lastMouseX, lastMouseY float32
+			dragScrollY0 := float32(0)
+			viewTop := float32(0)
+			viewBot := float32(0)
+			maxScrollNeg := float32(0)
+			if idScroll > 0 && layout.Parent != nil {
+				sy := StateMap[uint32, float32](
+					w, nsScrollY, capScroll)
+				dragScrollY0, _ = sy.Get(idScroll)
+				p := layout.Parent.Shape
+				viewTop = p.Y + p.Padding.Top
+				viewH := p.Height - p.PaddingHeight()
+				viewBot = viewTop + viewH
+				maxScrollNeg = f32Min(0,
+					viewH-layout.Shape.Height)
+			}
+
+			computeRunePos := func(mx, my float32, w *Window) int {
+				scrollDelta := float32(0)
+				if idScroll > 0 {
+					sy := StateMap[uint32, float32](
+						w, nsScrollY, capScroll)
+					sNow, _ := sy.Get(idScroll)
+					scrollDelta = sNow - dragScrollY0
+				}
+				relX := mx - dragTxtOffX
+				relY := my - (dragTxtOffY + scrollDelta)
+				byteIdx := dragGL.GetClosestOffset(relX, relY)
+				return byteToRuneIndex(dragDisplayText, byteIdx)
+			}
+
+			dragScrollCB := func(_ *Animate, w *Window) {
+				var delta float32
+				if lastMouseY < viewTop {
+					delta = (viewTop - lastMouseY) * 0.3
+				} else if lastMouseY > viewBot {
+					delta = -((lastMouseY - viewBot) * 0.3)
+				} else {
+					w.AnimationRemove(animIDDragScroll)
+					return
+				}
+				sy := StateMap[uint32, float32](
+					w, nsScrollY, capScroll)
+				cur, _ := sy.Get(idScroll)
+				newScroll := f32Clamp(cur+delta, maxScrollNeg, 0)
+				if newScroll == cur {
+					return
+				}
+				sy.Set(idScroll, newScroll)
+				rp := computeRunePos(lastMouseX, lastMouseY, w)
+				imap := StateMap[uint32, InputState](
+					w, nsInput, capMany)
+				is, _ := imap.Get(dragIDFocus)
+				is.CursorPos = rp
+				is.SelectBeg = anchorPos
+				is.SelectEnd = uint32(rp)
+				is.CursorOffset = -1
+				imap.Set(dragIDFocus, is)
+				resetBlinkCursorVisible(w)
+			}
+
 			w.MouseLock(MouseLockCfg{
 				MouseMove: func(_ *Layout, e *Event, w *Window) {
-					relX := e.MouseX - dragTxtOffX
-					relY := e.MouseY - dragTxtOffY
-					byteIdx := dragGL.GetClosestOffset(
-						relX, relY)
-					rp := byteToRuneIndex(
-						dragDisplayText, byteIdx)
+					lastMouseX = e.MouseX
+					lastMouseY = e.MouseY
+					rp := computeRunePos(e.MouseX, e.MouseY, w)
 					imap := StateMap[uint32, InputState](
-						w, nsInput, capMany,
-					)
+						w, nsInput, capMany)
 					is, _ := imap.Get(dragIDFocus)
 					is.CursorPos = rp
 					is.SelectBeg = anchorPos
@@ -197,14 +261,25 @@ func Input(cfg InputCfg) View {
 					is.CursorOffset = -1
 					imap.Set(dragIDFocus, is)
 					resetBlinkCursorVisible(w)
-					if idScroll > 0 && layout.Parent != nil {
-						inputScrollCursorIntoView(
-							idScroll, text,
-							layout.Parent, w,
-						)
+					if idScroll > 0 {
+						outside := e.MouseY < viewTop ||
+							e.MouseY > viewBot
+						if outside && !w.HasAnimation(
+							animIDDragScroll) {
+							w.AnimationAdd(&Animate{
+								AnimateID: animIDDragScroll,
+								Delay:     32 * time.Millisecond,
+								Repeat:    true,
+								Refresh:   AnimationRefreshLayout,
+								Callback:  dragScrollCB,
+							})
+						} else if !outside {
+							w.AnimationRemove(animIDDragScroll)
+						}
 					}
 				},
 				MouseUp: func(_ *Layout, _ *Event, w *Window) {
+					w.AnimationRemove(animIDDragScroll)
 					w.MouseUnlock()
 				},
 			})
