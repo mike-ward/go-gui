@@ -263,7 +263,7 @@ func TestInputOnCharUndo(t *testing.T) {
 			ctx.lastText = newText
 		},
 	}), ctx.w)
-	ctx.fireChar(CharCtrlZ)
+	ctx.fireKeyDown(KeyZ, ModCtrl)
 	if ctx.lastText != "hello" {
 		t.Fatalf("undo: got %q, want %q", ctx.lastText, "hello")
 	}
@@ -280,7 +280,7 @@ func TestInputOnCharRedo(t *testing.T) {
 			ctx.lastText = newText
 		},
 	}), ctx.w)
-	ctx.fireChar(CharCtrlZ) // undo
+	ctx.fireKeyDown(KeyZ, ModCtrl) // undo
 	ctx.layout = GenerateViewLayout(Input(InputCfg{
 		Text:    ctx.lastText,
 		IDFocus: 507,
@@ -288,15 +288,15 @@ func TestInputOnCharRedo(t *testing.T) {
 			ctx.lastText = newText
 		},
 	}), ctx.w)
-	ctx.fireCharMod(CharCtrlZ, ModShift) // redo
+	ctx.fireKeyDown(KeyZ, ModCtrl|ModShift) // redo
 	if ctx.lastText != "hello!" {
 		t.Fatalf("redo: got %q, want %q", ctx.lastText, "hello!")
 	}
 }
 
-func TestInputOnCharSelectAll(t *testing.T) {
+func TestInputSelectAll(t *testing.T) {
 	ctx := newInputTest("abc", 508, 1)
-	ctx.fireChar(CharCtrlA)
+	ctx.fireKeyDown(KeyA, ModCtrl)
 	is := ctx.state()
 	if is.SelectBeg != 0 || is.SelectEnd != 3 {
 		t.Fatalf("select all: got %d-%d, want 0-3",
@@ -304,7 +304,7 @@ func TestInputOnCharSelectAll(t *testing.T) {
 	}
 }
 
-func TestInputOnCharCopyPaste(t *testing.T) {
+func TestInputCopyPaste(t *testing.T) {
 	var clipboard string
 	ctx := newInputTest("hello", 509, 0)
 	ctx.w.SetClipboardFn(func(s string) { clipboard = s })
@@ -313,7 +313,7 @@ func TestInputOnCharCopyPaste(t *testing.T) {
 	setInputState(ctx.w, 509, InputState{
 		CursorPos: 5, SelectBeg: 0, SelectEnd: 5,
 	})
-	ctx.fireChar(CharCtrlC)
+	ctx.fireKeyDown(KeyC, ModCtrl)
 	if clipboard != "hello" {
 		t.Fatalf("copy: clipboard=%q, want hello", clipboard)
 	}
@@ -326,20 +326,20 @@ func TestInputOnCharCopyPaste(t *testing.T) {
 			ctx.lastText = newText
 		},
 	}), ctx.w)
-	ctx.fireChar(CharCtrlV)
+	ctx.fireKeyDown(KeyV, ModCtrl)
 	if ctx.lastText != "hellohello" {
 		t.Fatalf("paste: got %q, want %q", ctx.lastText, "hellohello")
 	}
 }
 
-func TestInputOnCharCut(t *testing.T) {
+func TestInputCut(t *testing.T) {
 	var clipboard string
 	ctx := newInputTest("abcd", 510, 2)
 	ctx.w.SetClipboardFn(func(s string) { clipboard = s })
 	setInputState(ctx.w, 510, InputState{
 		CursorPos: 2, SelectBeg: 1, SelectEnd: 3,
 	})
-	ctx.fireChar(CharCtrlX)
+	ctx.fireKeyDown(KeyX, ModCtrl)
 	if clipboard != "bc" {
 		t.Fatalf("cut clipboard=%q, want bc", clipboard)
 	}
@@ -669,5 +669,109 @@ func TestInputSelectionMultiline(t *testing.T) {
 	// With a real glyph backend, GetSelectionRects returns per-line rects.
 	if count < 1 {
 		t.Fatalf("expected >=1 selection rects, got %d", count)
+	}
+}
+
+func TestInputOnKeyDownHomeCycleToDocument(t *testing.T) {
+	ctx := newInputTestMultiline("abc\ndef\nghi", 700, 5)
+	ctx.fireKeyDown(KeyHome, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 4 {
+		t.Fatalf("Home 1: cursor=%d, want 4", is.CursorPos)
+	}
+	ctx.fireKeyDown(KeyHome, ModNone)
+	is = ctx.state()
+	if is.CursorPos != 0 {
+		t.Fatalf("Home 2: cursor=%d, want 0", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownEndCycleToDocument(t *testing.T) {
+	ctx := newInputTestMultiline("abc\ndef\nghi", 701, 5)
+	ctx.fireKeyDown(KeyEnd, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 7 {
+		t.Fatalf("End 1: cursor=%d, want 7", is.CursorPos)
+	}
+	ctx.fireKeyDown(KeyEnd, ModNone)
+	is = ctx.state()
+	if is.CursorPos != 11 {
+		t.Fatalf("End 2: cursor=%d, want 11", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownHomeAtDocStart(t *testing.T) {
+	ctx := newInputTestMultiline("abc\ndef", 702, 0)
+	ctx.fireKeyDown(KeyHome, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 0 {
+		t.Fatalf("cursor=%d, want 0", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownEndAtDocEnd(t *testing.T) {
+	ctx := newInputTestMultiline("abc\ndef", 703, 7)
+	ctx.fireKeyDown(KeyEnd, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 7 {
+		t.Fatalf("cursor=%d, want 7", is.CursorPos)
+	}
+}
+
+func TestInputOnKeyDownShiftHomeCycleSelection(t *testing.T) {
+	ctx := newInputTestMultiline("abc\ndef\nghi", 704, 5)
+	ctx.fireKeyDown(KeyHome, ModShift)
+	is := ctx.state()
+	if is.CursorPos != 4 {
+		t.Fatalf("Shift+Home 1: cursor=%d, want 4", is.CursorPos)
+	}
+	if is.SelectBeg != 5 || is.SelectEnd != 4 {
+		t.Fatalf("Shift+Home 1: sel=%d-%d, want 5-4",
+			is.SelectBeg, is.SelectEnd)
+	}
+	ctx.fireKeyDown(KeyHome, ModShift)
+	is = ctx.state()
+	if is.CursorPos != 0 {
+		t.Fatalf("Shift+Home 2: cursor=%d, want 0", is.CursorPos)
+	}
+	if is.SelectBeg != 5 || is.SelectEnd != 0 {
+		t.Fatalf("Shift+Home 2: sel=%d-%d, want 5-0",
+			is.SelectBeg, is.SelectEnd)
+	}
+}
+
+func TestInputOnKeyDownShiftEndCycleSelection(t *testing.T) {
+	ctx := newInputTestMultiline("abc\ndef\nghi", 705, 5)
+	ctx.fireKeyDown(KeyEnd, ModShift)
+	is := ctx.state()
+	if is.CursorPos != 7 {
+		t.Fatalf("Shift+End 1: cursor=%d, want 7", is.CursorPos)
+	}
+	if is.SelectBeg != 5 || is.SelectEnd != 7 {
+		t.Fatalf("Shift+End 1: sel=%d-%d, want 5-7",
+			is.SelectBeg, is.SelectEnd)
+	}
+	ctx.fireKeyDown(KeyEnd, ModShift)
+	is = ctx.state()
+	if is.CursorPos != 11 {
+		t.Fatalf("Shift+End 2: cursor=%d, want 11", is.CursorPos)
+	}
+	if is.SelectBeg != 5 || is.SelectEnd != 11 {
+		t.Fatalf("Shift+End 2: sel=%d-%d, want 5-11",
+			is.SelectBeg, is.SelectEnd)
+	}
+}
+
+func TestInputOnKeyDownHomeSingleLine(t *testing.T) {
+	ctx := newInputTest("hello", 706, 3)
+	ctx.fireKeyDown(KeyHome, ModNone)
+	is := ctx.state()
+	if is.CursorPos != 0 {
+		t.Fatalf("Home 1: cursor=%d, want 0", is.CursorPos)
+	}
+	ctx.fireKeyDown(KeyHome, ModNone)
+	is = ctx.state()
+	if is.CursorPos != 0 {
+		t.Fatalf("Home 2: cursor=%d, want 0", is.CursorPos)
 	}
 }

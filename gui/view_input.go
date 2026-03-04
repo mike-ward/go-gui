@@ -625,31 +625,61 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			if glOK {
 				byteIdx := runeToByteIndex(text, pos)
 				startByte := gl.MoveCursorLineStart(byteIdx)
-				// Trailing: cursor is visually on previous line.
 				if savedTrailing {
 					startByte = trailingLineStart(gl.Lines, byteIdx, startByte)
 				}
-				newPos = byteToRuneIndex(text, startByte)
+				lineStart := byteToRuneIndex(text, startByte)
+				if pos != lineStart {
+					newPos = lineStart
+				} else {
+					paraStart := cursorStartOfParagraph(text, pos)
+					if pos != paraStart {
+						newPos = paraStart
+					} else {
+						newPos = cursorHome()
+					}
+				}
 			} else {
-				newPos = moveCursorLineStart([]rune(text), pos)
+				lineStart := moveCursorLineStart([]rune(text), pos)
+				if pos != lineStart {
+					newPos = lineStart
+				} else {
+					newPos = cursorHome()
+				}
 			}
 			updateCursorAndSelection(imap, id, is,
 				newPos, isShift)
 		case KeyEnd:
 			var newPos int
+			trailingLevel1 := false
 			if glOK {
 				byteIdx := runeToByteIndex(text, pos)
 				endByte := gl.MoveCursorLineEnd(byteIdx)
-				// Trailing: cursor is visually on previous line;
-				// End should stay on that line.
 				if savedTrailing {
 					endByte = trailingLineEnd(gl.Lines, byteIdx, endByte)
 				}
-				newPos = byteToRuneIndex(text, endByte)
+				lineEnd := byteToRuneIndex(text, endByte)
+				if pos != lineEnd {
+					newPos = lineEnd
+					trailingLevel1 = true
+				} else {
+					paraEnd := cursorEndOfParagraph(text, pos)
+					if pos != paraEnd {
+						newPos = paraEnd
+					} else {
+						newPos = cursorEnd(text)
+					}
+				}
 			} else {
-				newPos = moveCursorLineEnd([]rune(text), pos)
+				lineEnd := moveCursorLineEnd([]rune(text), pos)
+				if pos != lineEnd {
+					newPos = lineEnd
+					trailingLevel1 = true
+				} else {
+					newPos = cursorEnd(text)
+				}
 			}
-			is.CursorTrailing = true
+			is.CursorTrailing = trailingLevel1
 			updateCursorAndSelection(imap, id, is,
 				newPos, isShift)
 		case KeyUp:
