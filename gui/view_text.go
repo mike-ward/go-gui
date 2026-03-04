@@ -74,7 +74,7 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 	} else {
 		// Fallback for tests (no backend).
 		charWidth := ts.Size * 0.6
-		layout.Shape.Width = float32(len(c.Text)) * charWidth
+		layout.Shape.Width = float32(utf8RuneCount(c.Text)) * charWidth
 		layout.Shape.Height = ts.Size * 1.4
 	}
 

@@ -134,6 +134,16 @@ func utf8RuneCount(s string) int {
 	return utf8.RuneCountInString(s)
 }
 
+// truncatePreview truncates s to maxRunes runes, appending
+// "..." if truncated. Safe for multi-byte UTF-8.
+func truncatePreview(s string, maxRunes int) string {
+	if utf8.RuneCountInString(s) <= maxRunes {
+		return s
+	}
+	byteIdx := runeToByteIndex(s, maxRunes)
+	return s[:byteIdx] + "..."
+}
+
 // selectionRange returns (beg, end) with beg <= end.
 func selectionRange(a, b int) (uint32, uint32) {
 	if a <= b {

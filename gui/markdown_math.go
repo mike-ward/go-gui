@@ -127,10 +127,7 @@ func fetchMathAsync(
 		}
 
 		if resp.StatusCode != 200 {
-			preview := string(body)
-			if len(preview) > 200 {
-				preview = preview[:200] + "..."
-			}
+			preview := truncatePreview(string(body), 200)
 			errMsg := fmt.Sprintf("HTTP %d: %s",
 				resp.StatusCode, preview)
 			w.QueueCommand(func(w *Window) {

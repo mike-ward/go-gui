@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/mike-ward/go-glyph"
+
 // InputCfg configures a text input field.
 type InputCfg struct {
 	ID            string
@@ -74,6 +76,19 @@ func Input(cfg InputCfg) View {
 	colorBorderFocus := cfg.ColorBorderFocus
 	idFocus := cfg.IDFocus
 
+	hcfg := inputHandlerCfg{
+		IDFocus:       cfg.IDFocus,
+		IsPassword:    cfg.IsPassword,
+		Mode:          cfg.Mode,
+		Mask:          cfg.Mask,
+		MaskPreset:    cfg.MaskPreset,
+		MaskTokens:    cfg.MaskTokens,
+		OnTextChanged: cfg.OnTextChanged,
+		OnTextCommit:  cfg.OnTextCommit,
+		OnEnter:       cfg.OnEnter,
+		OnKeyDown:     cfg.OnKeyDown,
+	}
+
 	txtContent := []View{
 		Text(TextCfg{
 			IDFocus:           cfg.IDFocus,
@@ -124,6 +139,8 @@ func Input(cfg InputCfg) View {
 		Sizing:          cfg.Sizing,
 		IDScroll:        cfg.IDScroll,
 		Spacing:         Some(float32(0)),
+		OnChar:          makeInputOnChar(hcfg),
+		OnKeyDown:       makeInputOnKeyDown(hcfg),
 		OnHover: func(_ *Layout, _ *Event, w *Window) {
 			if w.IsFocus(idFocus) {
 				w.SetMouseCursor(CursorIBeam)
@@ -139,6 +156,20 @@ func Input(cfg InputCfg) View {
 				layout.Shape.IDFocus == w.IDFocus()
 			if focused {
 				layout.Shape.ColorBorder = colorBorderFocus
+			}
+			// Propagate selection to inner text shape.
+			if len(layout.Children) > 0 {
+				row := &layout.Children[0]
+				if len(row.Children) > 0 {
+					txt := &row.Children[0]
+					if txt.Shape.TC != nil {
+						is := StateReadOr(w, nsInput,
+							layout.Shape.IDFocus,
+							InputState{})
+						txt.Shape.TC.TextSelBeg = is.SelectBeg
+						txt.Shape.TC.TextSelEnd = is.SelectEnd
+					}
+				}
 			}
 		},
 		Content: []View{
@@ -193,6 +224,353 @@ func applyInputDefaults(cfg *InputCfg) {
 	if !cfg.SizeBorder.IsSet() {
 		cfg.SizeBorder = Some(d.SizeBorder)
 	}
+}
+
+// inputHandlerCfg captures the fields shared by OnChar and
+// OnKeyDown handler factories.
+type inputHandlerCfg struct {
+	IDFocus       uint32
+	IsPassword    bool
+	Mode          InputMode
+	Mask          string
+	MaskPreset    InputMaskPreset
+	MaskTokens    []MaskTokenDef
+	OnTextChanged func(*Layout, string, *Window)
+	OnTextCommit  func(*Layout, string, InputCommitReason, *Window)
+	OnEnter       func(*Layout, *Event, *Window)
+	OnKeyDown     func(*Layout, *Event, *Window)
+}
+
+// compiledMask returns a non-nil *CompiledInputMask if the
+// handler config specifies a mask pattern.
+func (h *inputHandlerCfg) compiledMask() *CompiledInputMask {
+	pattern := h.Mask
+	if pattern == "" && h.MaskPreset != MaskNone {
+		pattern = InputMaskFromPreset(h.MaskPreset)
+	}
+	if pattern == "" {
+		return nil
+	}
+	c, err := CompileInputMask(pattern, h.MaskTokens)
+	if err != nil {
+		return nil
+	}
+	return &c
+}
+
+func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
+	return func(layout *Layout, e *Event, w *Window) {
+		if hcfg.IDFocus == 0 || !w.IsFocus(hcfg.IDFocus) {
+			return
+		}
+		ch := e.CharCode
+		id := hcfg.IDFocus
+
+		text := inputTextFromLayout(layout)
+		mask := hcfg.compiledMask()
+		changed := false
+
+		switch {
+		// Ctrl/Cmd+Z — undo.
+		case ch == CharCtrlZ || ch == CharCmdZ:
+			if e.Modifiers.Has(ModShift) {
+				newText := inputRedo(text, id, w)
+				if newText != text {
+					text = newText
+					changed = true
+				}
+			} else {
+				newText := inputUndo(text, id, w)
+				if newText != text {
+					text = newText
+					changed = true
+				}
+			}
+		// Ctrl/Cmd+X — cut.
+		case ch == CharCtrlX || ch == CharCmdX:
+			newText, copied, ok := inputCut(text, id, hcfg.IsPassword, w)
+			if ok {
+				w.SetClipboard(copied)
+				text = newText
+				changed = true
+			}
+		// Ctrl/Cmd+C — copy.
+		case ch == CharCtrlC || ch == CharCmdC:
+			if copied, ok := inputCopy(text, id, hcfg.IsPassword, w); ok {
+				w.SetClipboard(copied)
+			}
+		// Ctrl/Cmd+V — paste.
+		case ch == CharCtrlV || ch == CharCmdV:
+			clip := w.GetClipboard()
+			if len(clip) > 0 {
+				if mask != nil {
+					is := inputStateOrDefault(id, w)
+					res := InputMaskInsert(text, is.CursorPos, is.SelectBeg, is.SelectEnd, clip, mask)
+					if res.Changed {
+						text = res.Text
+						StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
+							CursorPos: res.CursorPos, Undo: is.Undo,
+						})
+						changed = true
+					}
+				} else {
+					text = inputInsert(text, clip, id, w)
+					changed = true
+				}
+			}
+		// Ctrl/Cmd+A — select all.
+		case ch == CharCtrlA || ch == CharCmdA:
+			inputSelectAll(text, id, w)
+		// Backspace.
+		case ch == CharBSP:
+			if mask != nil {
+				is := inputStateOrDefault(id, w)
+				res := InputMaskBackspace(text, is.CursorPos, is.SelectBeg, is.SelectEnd, mask)
+				if res.Changed {
+					text = res.Text
+					StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
+						CursorPos: res.CursorPos, Undo: is.Undo,
+					})
+					changed = true
+				}
+			} else {
+				newText, _ := inputDelete(text, id, false, w)
+				if newText != text {
+					text = newText
+					changed = true
+				}
+			}
+		// Delete.
+		case ch == CharDel:
+			if mask != nil {
+				is := inputStateOrDefault(id, w)
+				res := InputMaskDelete(text, is.CursorPos, is.SelectBeg, is.SelectEnd, mask)
+				if res.Changed {
+					text = res.Text
+					StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
+						CursorPos: res.CursorPos, Undo: is.Undo,
+					})
+					changed = true
+				}
+			} else {
+				newText, _ := inputDelete(text, id, true, w)
+				if newText != text {
+					text = newText
+					changed = true
+				}
+			}
+		// Enter / LF.
+		case ch == CharLF || ch == CharCR:
+			if hcfg.Mode == InputMultiline {
+				text = inputInsert(text, "\n", id, w)
+				changed = true
+			} else {
+				if hcfg.OnTextCommit != nil {
+					hcfg.OnTextCommit(layout, text, CommitEnter, w)
+				}
+				if hcfg.OnEnter != nil {
+					hcfg.OnEnter(layout, e, w)
+				}
+			}
+		// Printable characters.
+		case ch >= CharSpace:
+			ins := string(rune(ch))
+			if mask != nil {
+				is := inputStateOrDefault(id, w)
+				res := InputMaskInsert(text, is.CursorPos, is.SelectBeg, is.SelectEnd, ins, mask)
+				if res.Changed {
+					text = res.Text
+					StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
+						CursorPos: res.CursorPos, Undo: is.Undo,
+					})
+					changed = true
+				}
+			} else {
+				text = inputInsert(text, ins, id, w)
+				changed = true
+			}
+		}
+
+		if changed {
+			resetBlinkCursorVisible(w)
+			if hcfg.OnTextChanged != nil {
+				hcfg.OnTextChanged(layout, text, w)
+			}
+		}
+		e.IsHandled = true
+	}
+}
+
+func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
+	return func(layout *Layout, e *Event, w *Window) {
+		if hcfg.IDFocus == 0 || !w.IsFocus(hcfg.IDFocus) {
+			return
+		}
+		id := hcfg.IDFocus
+		imap := StateMap[uint32, InputState](w, nsInput, capMany)
+		is, _ := imap.Get(id)
+		text := inputTextFromLayout(layout)
+		runeLen := utf8RuneCount(text)
+		pos := is.CursorPos
+		if pos > runeLen {
+			pos = runeLen
+		}
+		isShift := e.Modifiers.Has(ModShift)
+		isWordMod := e.Modifiers.HasAny(ModCtrl, ModAlt, ModSuper)
+		handled := true
+
+		// Use glyph layout for cursor navigation when available.
+		gl, glOK := inputGlyphLayoutFor(layout, w)
+
+		switch e.KeyCode {
+		case KeyLeft:
+			if isWordMod {
+				var newPos int
+				if glOK {
+					byteIdx := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text, gl.MoveCursorWordLeft(byteIdx))
+				} else {
+					newPos = moveCursorWordLeft([]rune(text), pos)
+				}
+				updateCursorAndSelection(imap, id, is,
+					newPos, isShift)
+			} else if !isShift && is.SelectBeg != is.SelectEnd {
+				beg, _ := u32Sort(is.SelectBeg, is.SelectEnd)
+				updateCursorAndSelection(imap, id, is,
+					int(beg), false)
+			} else {
+				newPos := pos - 1
+				if newPos < 0 {
+					newPos = 0
+				}
+				updateCursorAndSelection(imap, id, is,
+					newPos, isShift)
+			}
+		case KeyRight:
+			if isWordMod {
+				var newPos int
+				if glOK {
+					byteIdx := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text, gl.MoveCursorWordRight(byteIdx))
+				} else {
+					newPos = moveCursorWordRight([]rune(text), pos)
+				}
+				updateCursorAndSelection(imap, id, is,
+					newPos, isShift)
+			} else if !isShift && is.SelectBeg != is.SelectEnd {
+				_, end := u32Sort(is.SelectBeg, is.SelectEnd)
+				updateCursorAndSelection(imap, id, is,
+					int(end), false)
+			} else {
+				newPos := pos + 1
+				if newPos > runeLen {
+					newPos = runeLen
+				}
+				updateCursorAndSelection(imap, id, is,
+					newPos, isShift)
+			}
+		case KeyHome:
+			var newPos int
+			if glOK {
+				byteIdx := runeToByteIndex(text, pos)
+				newPos = byteToRuneIndex(text, gl.MoveCursorLineStart(byteIdx))
+			} else {
+				newPos = moveCursorLineStart([]rune(text), pos)
+			}
+			updateCursorAndSelection(imap, id, is,
+				newPos, isShift)
+		case KeyEnd:
+			var newPos int
+			if glOK {
+				byteIdx := runeToByteIndex(text, pos)
+				newPos = byteToRuneIndex(text, gl.MoveCursorLineEnd(byteIdx))
+			} else {
+				newPos = moveCursorLineEnd([]rune(text), pos)
+			}
+			updateCursorAndSelection(imap, id, is,
+				newPos, isShift)
+		case KeyUp:
+			if hcfg.Mode == InputMultiline {
+				var newPos int
+				if glOK {
+					byteIdx := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text, gl.MoveCursorUp(byteIdx, -1))
+				} else {
+					newPos = moveCursorUp([]rune(text), pos)
+				}
+				updateCursorAndSelection(imap, id, is,
+					newPos, isShift)
+			}
+		case KeyDown:
+			if hcfg.Mode == InputMultiline {
+				var newPos int
+				if glOK {
+					byteIdx := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text, gl.MoveCursorDown(byteIdx, -1))
+				} else {
+					newPos = moveCursorDown([]rune(text), pos)
+				}
+				updateCursorAndSelection(imap, id, is,
+					newPos, isShift)
+			}
+		case KeyEscape:
+			is.SelectBeg = 0
+			is.SelectEnd = 0
+			imap.Set(id, is)
+		default:
+			handled = false
+		}
+
+		if handled {
+			resetBlinkCursorVisible(w)
+			e.IsHandled = true
+		} else if hcfg.OnKeyDown != nil {
+			hcfg.OnKeyDown(layout, e, w)
+		}
+	}
+}
+
+// inputTextFromLayout extracts the current text from the input's
+// inner layout structure (Column → Row → Text).
+func inputTextFromLayout(layout *Layout) string {
+	if len(layout.Children) == 0 {
+		return ""
+	}
+	row := &layout.Children[0]
+	if len(row.Children) == 0 {
+		return ""
+	}
+	txt := &row.Children[0]
+	if txt.Shape.TC == nil {
+		return ""
+	}
+	if txt.Shape.TC.TextIsPlaceholder {
+		return ""
+	}
+	return txt.Shape.TC.Text
+}
+
+// inputGlyphLayoutFor navigates to the inner text shape of an
+// input layout and returns a glyph Layout for cursor navigation.
+func inputGlyphLayoutFor(layout *Layout, w *Window) (glyph.Layout, bool) {
+	if w.textMeasurer == nil {
+		return glyph.Layout{}, false
+	}
+	if len(layout.Children) == 0 {
+		return glyph.Layout{}, false
+	}
+	row := &layout.Children[0]
+	if len(row.Children) == 0 {
+		return glyph.Layout{}, false
+	}
+	txt := &row.Children[0]
+	if txt.Shape == nil || txt.Shape.TC == nil {
+		return glyph.Layout{}, false
+	}
+	style := textStyleOrDefault(txt.Shape)
+	return inputGlyphLayout(
+		inputTextFromLayout(layout), txt.Shape, style, w,
+	)
 }
 
 // passwordMask replaces each rune with a bullet character.

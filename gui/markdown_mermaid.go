@@ -280,10 +280,7 @@ func mermaidHTTPFetch(source string) ([]byte, error) {
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		preview := string(body)
-		if len(preview) > 200 {
-			preview = preview[:200] + "..."
-		}
+		preview := truncatePreview(string(body), 200)
 		return nil, fmt.Errorf(
 			"HTTP %d: %s", resp.StatusCode, preview)
 	}

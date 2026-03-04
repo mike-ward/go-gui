@@ -1,6 +1,5 @@
 package gui
 
-import "unicode/utf8"
 
 const inputMaxInsertRunes = 65_536
 
@@ -193,12 +192,13 @@ func inputCopy(text string, idFocus uint32, isPassword bool, w *Window) (string,
 		return "", false
 	}
 	beg, end := u32Sort(is.SelectBeg, is.SelectEnd)
-	runeCount := utf8.RuneCountInString(text)
+	runeCount := utf8RuneCount(text)
 	if int(beg) > runeCount || int(end) > runeCount || beg >= end {
 		return "", false
 	}
-	runes := []rune(text)
-	return string(runes[beg:end]), true
+	begByte := runeToByteIndex(text, int(beg))
+	endByte := runeToByteIndex(text, int(end))
+	return text[begByte:endByte], true
 }
 
 // inputCut copies selected text then deletes it.
@@ -256,7 +256,7 @@ func inputRedo(text string, idFocus uint32, w *Window) string {
 
 // inputSelectAll selects all text.
 func inputSelectAll(text string, idFocus uint32, w *Window) {
-	runeCount := utf8.RuneCountInString(text)
+	runeCount := utf8RuneCount(text)
 	imap := StateMap[uint32, InputState](w, nsInput, capMany)
 	is, _ := imap.Get(idFocus)
 	is.SelectBeg = 0
@@ -271,6 +271,146 @@ func inputHasSelection(idFocus uint32, w *Window) bool {
 	return is.SelectBeg != is.SelectEnd
 }
 
+// updateCursorAndSelection moves cursor to newPos, extending
+// or resetting selection based on shift modifier.
+func updateCursorAndSelection(
+	imap *BoundedMap[uint32, InputState],
+	idFocus uint32,
+	is InputState,
+	newPos int,
+	isShift bool,
+) {
+	if isShift {
+		if is.SelectBeg == is.SelectEnd {
+			// Start new selection from current cursor.
+			is.SelectBeg = uint32(is.CursorPos)
+			is.SelectEnd = uint32(newPos)
+		} else {
+			// Extend: move the end that matches current cursor.
+			if uint32(is.CursorPos) == is.SelectEnd {
+				is.SelectEnd = uint32(newPos)
+			} else {
+				is.SelectBeg = uint32(newPos)
+			}
+		}
+	} else {
+		is.SelectBeg = 0
+		is.SelectEnd = 0
+	}
+	is.CursorPos = newPos
+	imap.Set(idFocus, is)
+}
+
+// moveCursorWordLeft scans backwards to the previous word boundary.
+func moveCursorWordLeft(runes []rune, pos int) int {
+	if pos <= 0 {
+		return 0
+	}
+	i := pos - 1
+	// Skip whitespace.
+	for i > 0 && isWordSep(runes[i]) {
+		i--
+	}
+	// Skip word characters.
+	for i > 0 && !isWordSep(runes[i-1]) {
+		i--
+	}
+	return i
+}
+
+// moveCursorWordRight scans forward to the next word boundary.
+func moveCursorWordRight(runes []rune, pos int) int {
+	n := len(runes)
+	if pos >= n {
+		return n
+	}
+	i := pos
+	// Skip word characters.
+	for i < n && !isWordSep(runes[i]) {
+		i++
+	}
+	// Skip whitespace.
+	for i < n && isWordSep(runes[i]) {
+		i++
+	}
+	return i
+}
+
+func isWordSep(r rune) bool {
+	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
+}
+
+// moveCursorUp moves cursor up one line in multiline text.
+func moveCursorUp(runes []rune, pos int) int {
+	// Find start of current line.
+	lineStart := pos
+	for lineStart > 0 && runes[lineStart-1] != '\n' {
+		lineStart--
+	}
+	if lineStart == 0 {
+		return 0 // Already on first line.
+	}
+	col := pos - lineStart
+	// Find start of previous line.
+	prevLineEnd := lineStart - 1
+	prevLineStart := prevLineEnd
+	for prevLineStart > 0 && runes[prevLineStart-1] != '\n' {
+		prevLineStart--
+	}
+	prevLineLen := prevLineEnd - prevLineStart
+	if col > prevLineLen {
+		col = prevLineLen
+	}
+	return prevLineStart + col
+}
+
+// moveCursorDown moves cursor down one line in multiline text.
+func moveCursorDown(runes []rune, pos int) int {
+	n := len(runes)
+	// Find start of current line.
+	lineStart := pos
+	for lineStart > 0 && runes[lineStart-1] != '\n' {
+		lineStart--
+	}
+	col := pos - lineStart
+	// Find end of current line (next \n).
+	lineEnd := pos
+	for lineEnd < n && runes[lineEnd] != '\n' {
+		lineEnd++
+	}
+	if lineEnd >= n {
+		return n // Already on last line.
+	}
+	// Next line starts after \n.
+	nextLineStart := lineEnd + 1
+	nextLineEnd := nextLineStart
+	for nextLineEnd < n && runes[nextLineEnd] != '\n' {
+		nextLineEnd++
+	}
+	nextLineLen := nextLineEnd - nextLineStart
+	if col > nextLineLen {
+		col = nextLineLen
+	}
+	return nextLineStart + col
+}
+
+// moveCursorLineStart returns the start of the current line.
+func moveCursorLineStart(runes []rune, pos int) int {
+	for pos > 0 && runes[pos-1] != '\n' {
+		pos--
+	}
+	return pos
+}
+
+// moveCursorLineEnd returns the end of the current line.
+func moveCursorLineEnd(runes []rune, pos int) int {
+	n := len(runes)
+	for pos < n && runes[pos] != '\n' {
+		pos++
+	}
+	return pos
+}
+
 // inputSelectedText returns the selected text.
 func inputSelectedText(text string, idFocus uint32, w *Window) string {
 	is := StateReadOr(w, nsInput, idFocus, InputState{})
@@ -278,9 +418,11 @@ func inputSelectedText(text string, idFocus uint32, w *Window) string {
 		return ""
 	}
 	beg, end := u32Sort(is.SelectBeg, is.SelectEnd)
-	runes := []rune(text)
-	if int(beg) >= len(runes) || int(end) > len(runes) {
+	runeLen := utf8RuneCount(text)
+	if int(beg) >= runeLen || int(end) > runeLen {
 		return ""
 	}
-	return string(runes[beg:end])
+	begByte := runeToByteIndex(text, int(beg))
+	endByte := runeToByteIndex(text, int(end))
+	return text[begByte:endByte]
 }

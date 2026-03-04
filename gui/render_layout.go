@@ -1,6 +1,10 @@
 package gui
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 // renderLayout walks the layout tree and emits RenderCmd entries
 // into window.renderers. Clip rectangles bracket clipped children.
@@ -346,10 +350,16 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		}
 	}
 
+	baseX := shape.X + shape.PaddingLeft()
+	baseY := shape.Y + shape.PaddingTop()
+
+	// Selection highlight (drawn before text so text overlays).
+	renderInputSelection(shape, text, baseX, baseY, w)
+
 	cmd := RenderCmd{
 		Kind:     RenderText,
-		X:        shape.X + shape.PaddingLeft(),
-		Y:        shape.Y + shape.PaddingTop(),
+		X:        baseX,
+		Y:        baseY,
 		Color:    c,
 		Text:     text,
 		FontName: tc.TextStyle.Family,
@@ -360,6 +370,187 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		cmd.W = shape.Width
 	}
 	emitRenderer(cmd, w)
+
+	// Cursor (drawn after text).
+	renderInputCursor(shape, text, baseX, baseY, w)
+}
+
+// renderInputCursor emits a thin rect for the text cursor when
+// the shape is focused and the blink state is on. Uses the glyph
+// layout engine for precise character-boundary positioning.
+func renderInputCursor(shape *Shape, text string, baseX, baseY float32, w *Window) {
+	if shape.IDFocus == 0 || shape.IDFocus != w.IDFocus() {
+		return
+	}
+	if !w.InputCursorOn() {
+		return
+	}
+	is := StateReadOr(w, nsInput, shape.IDFocus, InputState{})
+	runeLen := utf8RuneCount(text)
+	pos := is.CursorPos
+	if pos > runeLen {
+		pos = runeLen
+	}
+
+	style := textStyleOrDefault(shape)
+	byteIdx := runeToByteIndex(text, pos)
+	cursorW := float32(1.5)
+
+	layout, ok := inputGlyphLayout(text, shape, style, w)
+	if ok {
+		cp, cpOK := layout.GetCursorPos(byteIdx)
+		if !cpOK {
+			// End-of-text fallback: use layout dimensions.
+			cp.X = layout.VisualWidth
+			cp.Y = 0
+			cp.Height = fontHeight(style, w)
+			if len(layout.Lines) > 0 {
+				last := layout.Lines[len(layout.Lines)-1]
+				cp.X = last.Rect.X + last.Rect.Width
+				cp.Y = last.Rect.Y
+				cp.Height = last.Rect.Height
+			}
+		}
+		emitRenderer(RenderCmd{
+			Kind:  RenderRect,
+			X:     baseX + cp.X,
+			Y:     baseY + cp.Y,
+			W:     cursorW,
+			H:     cp.Height,
+			Color: style.Color,
+			Fill:  true,
+		}, w)
+		return
+	}
+
+	// Fallback for nil textMeasurer (tests).
+	fh := fontHeight(style, w)
+	cx := textWidthFallback(text, pos, shape.TC, style, w)
+	emitRenderer(RenderCmd{
+		Kind:  RenderRect,
+		X:     baseX + cx,
+		Y:     baseY,
+		W:     cursorW,
+		H:     fh,
+		Color: style.Color,
+		Fill:  true,
+	}, w)
+}
+
+// renderInputSelection emits highlight rectangles for the selected
+// text range. Uses glyph layout for precise boundaries.
+func renderInputSelection(shape *Shape, text string, baseX, baseY float32, w *Window) {
+	tc := shape.TC
+	if tc == nil || tc.TextSelBeg == tc.TextSelEnd {
+		return
+	}
+	beg, end := u32Sort(tc.TextSelBeg, tc.TextSelEnd)
+	runeLen := utf8RuneCount(text)
+	if int(beg) > runeLen || int(end) > runeLen {
+		return
+	}
+
+	style := textStyleOrDefault(shape)
+	selColor := RGBA(51, 153, 255, 100)
+	startByte := runeToByteIndex(text, int(beg))
+	endByte := runeToByteIndex(text, int(end))
+
+	layout, ok := inputGlyphLayout(text, shape, style, w)
+	if ok {
+		rects := layout.GetSelectionRects(startByte, endByte)
+		for _, r := range rects {
+			emitRenderer(RenderCmd{
+				Kind:  RenderRect,
+				X:     baseX + r.X,
+				Y:     baseY + r.Y,
+				W:     r.Width,
+				H:     r.Height,
+				Color: selColor,
+				Fill:  true,
+			}, w)
+		}
+		return
+	}
+
+	// Fallback for nil textMeasurer (tests).
+	fh := fontHeight(style, w)
+	x0 := textWidthFallback(text, int(beg), tc, style, w)
+	x1 := textWidthFallback(text, int(end), tc, style, w)
+	emitRenderer(RenderCmd{
+		Kind:  RenderRect,
+		X:     baseX + x0,
+		Y:     baseY,
+		W:     x1 - x0,
+		H:     fh,
+		Color: selColor,
+		Fill:  true,
+	}, w)
+}
+
+// inputGlyphLayout creates a glyph layout for the input text,
+// applying password masking and wrap width as needed.
+func inputGlyphLayout(text string, shape *Shape, style TextStyle, w *Window) (glyph.Layout, bool) {
+	if w.textMeasurer == nil {
+		return glyph.Layout{}, false
+	}
+	displayText := text
+	if shape.TC != nil && shape.TC.TextIsPassword {
+		if strings.Contains(text, "\n") {
+			displayText = passwordMaskKeepNewlines(text)
+		} else {
+			displayText = passwordMask(text)
+		}
+	}
+	var wrapWidth float32
+	if shape.TC != nil && (shape.TC.TextMode == TextModeWrap ||
+		shape.TC.TextMode == TextModeWrapKeepSpaces) {
+		wrapWidth = shape.Width
+	}
+	ly, err := w.textMeasurer.LayoutText(displayText, style, wrapWidth)
+	if err != nil {
+		return glyph.Layout{}, false
+	}
+	return ly, true
+}
+
+// textStyleOrDefault returns the TextStyle from shape.TC or a
+// fallback default.
+func textStyleOrDefault(shape *Shape) TextStyle {
+	if shape.TC != nil && shape.TC.TextStyle != nil {
+		return *shape.TC.TextStyle
+	}
+	return DefaultTextStyle
+}
+
+// fontHeight returns the font height, or a fallback.
+func fontHeight(style TextStyle, w *Window) float32 {
+	if w.textMeasurer != nil {
+		return w.textMeasurer.FontHeight(style)
+	}
+	if style.Size > 0 {
+		return style.Size * 1.2
+	}
+	return 16
+}
+
+// textWidthFallback approximates text width for tests (no glyph).
+func textWidthFallback(text string, runePos int, tc *ShapeTextConfig, style TextStyle, w *Window) float32 {
+	runeLen := utf8RuneCount(text)
+	if runePos > runeLen {
+		runePos = runeLen
+	}
+	prefix := text[:runeToByteIndex(text, runePos)]
+	if tc != nil && tc.TextIsPassword {
+		prefix = passwordMask(prefix)
+	}
+	if w.textMeasurer != nil {
+		return w.textMeasurer.TextWidth(prefix, style)
+	}
+	sz := style.Size
+	if sz <= 0 {
+		sz = 14
+	}
+	return float32(utf8RuneCount(prefix)) * sz * 0.6
 }
 
 // renderRtf emits a RenderRTF command for pre-shaped rich text.
