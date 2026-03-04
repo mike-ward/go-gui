@@ -5,6 +5,10 @@ package gui
 // Preferred way to update UI state from other threads.
 func (w *Window) QueueCommand(cb func(*Window)) {
 	w.commandsMu.Lock()
+	if w.commands == nil && cap(w.commandScratch) > 0 {
+		w.commands = w.commandScratch[:0]
+		w.commandScratch = nil
+	}
 	w.commands = append(w.commands, cb)
 	w.commandsMu.Unlock()
 }
@@ -19,7 +23,8 @@ func (w *Window) flushCommands() {
 	}
 	// Swap to avoid holding lock during execution.
 	toRun := w.commands
-	w.commands = nil
+	w.commands = w.commandScratch[:0]
+	w.commandScratch = toRun[:0]
 	w.commandsMu.Unlock()
 
 	for _, cb := range toRun {

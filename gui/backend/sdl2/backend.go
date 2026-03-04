@@ -142,6 +142,7 @@ func New(w *gui.Window) (*Backend, error) {
 
 // Run starts the event loop. Blocks until quit.
 func (b *Backend) Run(w *gui.Window) {
+	defer w.WindowCleanup()
 	if w.Config.OnInit != nil {
 		w.Config.OnInit(w)
 	}

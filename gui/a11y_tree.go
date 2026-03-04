@@ -19,7 +19,7 @@ type A11yNode struct {
 	Label         string
 	Value         string
 	Description   string
-	X, Y, W, H   float32
+	X, Y, W, H    float32
 	ParentIdx     int
 	ChildrenStart int
 	ChildrenCount int
@@ -35,8 +35,8 @@ type a11y struct {
 	initialized    bool
 	prevIDFocus    uint32
 	prevLiveValues map[string]string
-	nodes          []A11yNode  // reused across frames
-	liveNodes      []liveNode  // reused across frames
+	nodes          []A11yNode // reused across frames
+	liveNodes      []liveNode // reused across frames
 }
 
 // initA11y lazily creates the native accessibility container.
@@ -211,8 +211,11 @@ func a11yActionCallback(w *Window, action, index int) {
 // WindowCleanup releases resources. Called by the backend
 // during window destruction.
 func (w *Window) WindowCleanup() {
-	w.ReleaseAllFileAccess()
-	if w.nativePlatform != nil {
-		w.nativePlatform.A11yDestroy()
-	}
+	w.cleanupOnce.Do(func() {
+		w.stopAnimationLoop()
+		w.ReleaseAllFileAccess()
+		if w.nativePlatform != nil {
+			w.nativePlatform.A11yDestroy()
+		}
+	})
 }

@@ -33,6 +33,8 @@ func NewWindow(cfg WindowCfg) *Window {
 		refreshLayout: true,
 		OnEvent:       cfg.OnEvent,
 		Config:        cfg,
+		animationStop: make(chan struct{}),
+		animationDone: make(chan struct{}),
 	}
 	go w.animationLoop()
 	return w

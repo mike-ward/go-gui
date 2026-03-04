@@ -3,6 +3,7 @@ package gui
 import (
 	"fmt"
 	"log"
+	"reflect"
 )
 
 // StateRegistry stores per-widget BoundedMap instances keyed by
@@ -13,14 +14,20 @@ type StateRegistry struct {
 }
 
 type stateMapMeta struct {
-	typeTag string
+	typeTag stateMapTypeTag
 	maxSize int
 }
 
-func stateMapTypeTag[K comparable, V any]() string {
-	var k K
-	var v V
-	return fmt.Sprintf("%T:%T", k, v)
+type stateMapTypeTag struct {
+	keyType   reflect.Type
+	valueType reflect.Type
+}
+
+func stateMapTypeTagOf[K comparable, V any]() stateMapTypeTag {
+	return stateMapTypeTag{
+		keyType:   reflect.TypeFor[K](),
+		valueType: reflect.TypeFor[V](),
+	}
 }
 
 func stateMapTypeCheck[K comparable, V any](r *StateRegistry, ns string) error {
@@ -28,11 +35,14 @@ func stateMapTypeCheck[K comparable, V any](r *StateRegistry, ns string) error {
 		return nil
 	}
 	if m, ok := r.meta[ns]; ok {
-		tag := stateMapTypeTag[K, V]()
+		tag := stateMapTypeTagOf[K, V]()
 		if m.typeTag != tag {
 			return fmt.Errorf(
 				"state_map type mismatch: %s expected %s got %s",
-				ns, m.typeTag, tag)
+				ns,
+				m.typeTag.keyType.String()+":"+m.typeTag.valueType.String(),
+				tag.keyType.String()+":"+tag.valueType.String(),
+			)
 		}
 	}
 	return nil
@@ -60,7 +70,7 @@ func StateMap[K comparable, V any](w *Window, ns string, maxSize int) *BoundedMa
 	}
 	w.viewState.registry.maps[ns] = m
 	w.viewState.registry.meta[ns] = stateMapMeta{
-		typeTag: stateMapTypeTag[K, V](),
+		typeTag: stateMapTypeTagOf[K, V](),
 		maxSize: maxSize,
 	}
 	return m
@@ -113,19 +123,19 @@ func (r *StateRegistry) entryCount(ns string) int {
 
 // Namespace constants for internal gui state maps.
 const (
-	nsOverflow    = "gui.overflow"
-	nsScrollX     = "gui.scroll.x"
-	nsScrollY     = "gui.scroll.y"
-	nsSelect      = "gui.select"
-	nsInput       = "gui.input"
-	nsInputFocus  = "gui.input.focus"
-	nsSelectHL    = "gui.select.highlight"
-	nsListBoxFocus = "gui.listbox.focus"
-	nsProgress     = "gui.progress"
-	nsSidebar      = "gui.sidebar"
-	nsCombobox          = "gui.combobox"
-	nsComboboxQuery     = "gui.combobox.query"
-	nsComboboxHighlight = "gui.combobox.highlight"
+	nsOverflow            = "gui.overflow"
+	nsScrollX             = "gui.scroll.x"
+	nsScrollY             = "gui.scroll.y"
+	nsSelect              = "gui.select"
+	nsInput               = "gui.input"
+	nsInputFocus          = "gui.input.focus"
+	nsSelectHL            = "gui.select.highlight"
+	nsListBoxFocus        = "gui.listbox.focus"
+	nsProgress            = "gui.progress"
+	nsSidebar             = "gui.sidebar"
+	nsCombobox            = "gui.combobox"
+	nsComboboxQuery       = "gui.combobox.query"
+	nsComboboxHighlight   = "gui.combobox.highlight"
 	nsCmdPalette          = "gui.cmd_palette"
 	nsCmdPaletteQuery     = "gui.cmd_palette.query"
 	nsCmdPaletteHighlight = "gui.cmd_palette.highlight"

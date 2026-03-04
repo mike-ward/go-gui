@@ -95,6 +95,23 @@ func (m *BoundedMap[K, V]) Keys() []K {
 	return out
 }
 
+// Range iterates keys in insertion order and calls fn for each
+// active entry. If fn returns false, iteration stops.
+func (m *BoundedMap[K, V]) Range(fn func(K, V) bool) {
+	if len(m.data) == 0 || m.head >= len(m.order) {
+		return
+	}
+	for _, k := range m.order[m.head:] {
+		v, exists := m.data[k]
+		if !exists {
+			continue
+		}
+		if !fn(k, v) {
+			return
+		}
+	}
+}
+
 func (m *BoundedMap[K, V]) compactOrder() {
 	if m.head <= 0 {
 		return

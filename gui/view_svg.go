@@ -8,16 +8,16 @@ import (
 
 // SvgCfg configures an SVG view component.
 type SvgCfg struct {
-	ID       string
-	FileName string  // SVG file path
-	SvgData  string  // OR inline SVG string
-	Width    float32 // display width
-	Height   float32 // display height
-	Color    Color   // override fill (for monochrome icons)
-	NoAnimate bool   // disable SMIL animation (default: animated)
-	Sizing   Sizing
-	Padding  Padding
-	OnClick  func(*Layout, *Event, *Window)
+	ID        string
+	FileName  string  // SVG file path
+	SvgData   string  // OR inline SVG string
+	Width     float32 // display width
+	Height    float32 // display height
+	Color     Color   // override fill (for monochrome icons)
+	NoAnimate bool    // disable SMIL animation (default: animated)
+	Sizing    Sizing
+	Padding   Padding
+	OnClick   func(*Layout, *Event, *Window)
 
 	// Accessibility
 	A11YLabel       string
@@ -73,7 +73,7 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 			w, nsSvgAnimSeen, capModerate)
 		animSeen.Set(animHash, time.Now().UnixNano())
 		animID := "svg_anim:" + animHash
-		if !w.HasAnimation(animID) {
+		if !w.hasAnimationLocked(animID) {
 			w.animationAdd(&Animate{
 				AnimateID: animID,
 				Delay:     animationCycle,

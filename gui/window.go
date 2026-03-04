@@ -30,6 +30,8 @@ type Window struct {
 
 	// Command queue — flushed at frame start.
 	commands []func(*Window)
+	// Scratch queue used to avoid reallocating command storage each frame.
+	commandScratch []func(*Window)
 
 	// Layout tree — current frame.
 	layout Layout
@@ -97,6 +99,12 @@ type Window struct {
 
 	// Reusable per-frame scratch buffers.
 	scratch scratchPools
+
+	// Animation loop lifecycle.
+	animationStop     chan struct{}
+	animationDone     chan struct{}
+	animationStopOnce sync.Once
+	cleanupOnce       sync.Once
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a
@@ -181,11 +189,17 @@ func (w *Window) IDFocus() uint32 {
 
 // SetIDFocus sets the focus id and clears input selections.
 func (w *Window) SetIDFocus(id uint32) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.setIDFocusLocked(id)
+}
+
+func (w *Window) setIDFocusLocked(id uint32) {
 	w.clearInputSelections()
 	w.viewState.idFocus = id
 	if id > 0 {
 		w.viewState.inputCursorOn = true
-		if !w.HasAnimation(blinkCursorAnimationID) {
+		if !w.hasAnimationLocked(blinkCursorAnimationID) {
 			w.animationAdd(NewBlinkCursorAnimation())
 		}
 	}
@@ -194,6 +208,8 @@ func (w *Window) SetIDFocus(id uint32) {
 // resetBlinkCursorVisible resets the blink timer so the cursor
 // stays visible during typing and cursor movement.
 func resetBlinkCursorVisible(w *Window) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	w.viewState.inputCursorOn = true
 	if a, ok := w.animations[blinkCursorAnimationID]; ok {
 		a.SetStart(time.Now())
@@ -220,13 +236,12 @@ func (w *Window) clearInputSelections() {
 	if imap == nil {
 		return
 	}
-	for _, key := range imap.Keys() {
-		if v, ok := imap.Get(key); ok {
-			v.SelectBeg = 0
-			v.SelectEnd = 0
-			imap.Set(key, v)
-		}
-	}
+	imap.Range(func(key uint32, v InputState) bool {
+		v.SelectBeg = 0
+		v.SelectEnd = 0
+		imap.Set(key, v)
+		return true
+	})
 }
 
 // IsFocus tests if the given id_focus equals the window's id_focus.

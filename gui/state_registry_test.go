@@ -87,8 +87,8 @@ func TestStateMapTypeTagPersisted(t *testing.T) {
 	if !ok {
 		t.Fatal("meta entry missing")
 	}
-	if m.typeTag != stateMapTypeTag[string, int]() {
-		t.Errorf("type tag: got %s", m.typeTag)
+	if m.typeTag != stateMapTypeTagOf[string, int]() {
+		t.Errorf("type tag mismatch: got %+v", m.typeTag)
 	}
 }
 

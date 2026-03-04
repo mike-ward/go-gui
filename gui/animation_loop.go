@@ -29,22 +29,38 @@ func (w *Window) AnimationRemove(id string) {
 	delete(w.animations, id)
 }
 
+func (w *Window) hasAnimationLocked(id string) bool {
+	_, ok := w.animations[id]
+	return ok
+}
+
 // HasAnimation returns true if an animation with the given ID is
 // currently active.
 func (w *Window) HasAnimation(id string) bool {
-	_, ok := w.animations[id]
-	return ok
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.hasAnimationLocked(id)
 }
 
 // animationLoop runs in a goroutine, updating all animations each
 // tick and dispatching deferred callbacks via the command queue.
 func (w *Window) animationLoop() {
+	if w.animationDone != nil {
+		defer close(w.animationDone)
+	}
+	ticker := time.NewTicker(animationCycle)
+	defer ticker.Stop()
+
 	dt := float32(animationCycle) / float32(time.Second)
 	deferred := make([]func(*Window), 0, 4)
 	stoppedIDs := make([]string, 0, 4)
 
 	for {
-		time.Sleep(animationCycle)
+		select {
+		case <-ticker.C:
+		case <-w.animationStop:
+			return
+		}
 		refreshKind := AnimationRefreshNone
 		deferred = deferred[:0]
 		stoppedIDs = stoppedIDs[:0]
@@ -90,6 +106,18 @@ func (w *Window) animationLoop() {
 			w.UpdateWindow()
 		}
 	}
+}
+
+func (w *Window) stopAnimationLoop() {
+	if w.animationStop == nil {
+		return
+	}
+	w.animationStopOnce.Do(func() {
+		close(w.animationStop)
+		if w.animationDone != nil {
+			<-w.animationDone
+		}
+	})
 }
 
 func updateAnimate(a *Animate, w *Window, deferred *[]func(*Window)) bool {
