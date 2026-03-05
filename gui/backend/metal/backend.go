@@ -370,6 +370,3 @@ func (b *Backend) useGlyphPipeline() {
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }
 
-func (b *Backend) restoreAfterGlyph() {
-	// No-op — each draw function sets its own pipeline.
-}

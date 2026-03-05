@@ -17,7 +17,6 @@ static id<MTLRenderPipelineState> _pipelines[PIPE_COUNT];
 static id<CAMetalDrawable>          _drawable;
 static id<MTLCommandBuffer>         _cmdBuf;
 static id<MTLRenderCommandEncoder>  _enc;
-static int _mainPassResumed;
 
 // Viewport.
 static int _viewW, _viewH;
@@ -546,6 +545,7 @@ static void beginMainEncoder(float r, float g, float b,
     _enc = [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
     [_enc setViewport:(MTLViewport){
         0, 0, (double)_viewW, (double)_viewH, 0, 1}];
+    [_enc setFragmentSamplerState:_sampler atIndex:0];
 }
 
 // ─── Public API ───────────────────────────────────────────────
@@ -675,7 +675,6 @@ int metalBeginFrame(float r, float g, float b, float a) {
     _triBufCursor[_triBufFrame] = 0;
 
     _cmdBuf = [_queue commandBuffer];
-    _mainPassResumed = 0;
     beginMainEncoder(r, g, b, a, 1);
     return 0;
 }
@@ -697,7 +696,6 @@ void metalEndFrame(void) {
 void metalSetPipeline(int id) {
     if (id < 0 || id >= PIPE_COUNT || !_enc) return;
     [_enc setRenderPipelineState:_pipelines[id]];
-    [_enc setFragmentSamplerState:_sampler atIndex:0];
 }
 
 void metalSetMVP(const float* m) {
@@ -769,11 +767,14 @@ void metalDrawTriangles(const float* verts, int numVerts) {
                 memcpy([buf contents], verts, (size_t)byteLen);
             }
         }
+        if (!buf) {
+            // Pool exhausted — allocate a one-off buffer.
+            buf = [_device newBufferWithBytes:verts
+                                       length:(NSUInteger)byteLen
+                                      options:MTLResourceStorageModeShared];
+        }
         if (buf) {
             [_enc setVertexBuffer:buf offset:0 atIndex:0];
-        } else {
-            // Fallback if frame-local pool is exhausted.
-            [_enc setVertexBytes:verts length:byteLen atIndex:0];
         }
     }
     [_enc drawPrimitives:MTLPrimitiveTypeTriangle
@@ -993,7 +994,6 @@ void metalEndFilter(float blurRadius, int layers) {
     }
 
     // ── Resume main render pass (load, not clear) ──
-    _mainPassResumed = 1;
     beginMainEncoder(0, 0, 0, 0, 0);
 
     // ── Composite: draw filterTexA onto main drawable ──

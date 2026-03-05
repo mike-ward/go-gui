@@ -51,7 +51,23 @@ func newMetalTexCache(maxSize int) metalTexCache {
 func (c *metalTexCache) get(
 	path string) (metalTexCacheEntry, bool) {
 	e, ok := c.data[path]
+	if ok {
+		c.promote(path)
+	}
 	return e, ok
+}
+
+// promote moves path to the end of the order slice (most
+// recently used).
+func (c *metalTexCache) promote(path string) {
+	for i, k := range c.order {
+		if k == path {
+			c.order = append(
+				c.order[:i], c.order[i+1:]...)
+			c.order = append(c.order, path)
+			return
+		}
+	}
 }
 
 func (c *metalTexCache) set(

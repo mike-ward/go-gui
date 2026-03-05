@@ -89,8 +89,7 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 
 	case *sdl.WindowEvent:
 		switch e.Event {
-		case sdl.WINDOWEVENT_RESIZED,
-			sdl.WINDOWEVENT_SIZE_CHANGED:
+		case sdl.WINDOWEVENT_SIZE_CHANGED:
 			// On macOS, live-resize redraw is handled by the
 			// event watcher in backend.Run.
 			if runtime.GOOS != "darwin" {

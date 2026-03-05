@@ -75,10 +75,11 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		script := fmt.Sprintf(
-			`display notification %q with title %q`,
-			body, title)
-		cmd = exec.Command("osascript", "-e", script)
+		cmd = exec.Command("osascript",
+			"-e", "on run argv",
+			"-e", "display notification (item 2 of argv) with title (item 1 of argv)",
+			"-e", "end run",
+			"--", title, body)
 	case "linux":
 		cmd = exec.Command("notify-send", title, body)
 	default:

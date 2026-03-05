@@ -167,9 +167,12 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 
 	var tm [16]float32
-	identity(&tm)
+	tm[0] = 1
+	tm[5] = 1
+	tm[10] = 1
 	tm[12] = r.OffsetX * s
 	tm[13] = r.OffsetY * s
+	tm[15] = 1
 	C.metalSetTM((*C.float)(&tm[0]))
 
 	verts := buildQuad(qx, qy, qw, qh, r.Color, rad, blur)
@@ -185,7 +188,10 @@ func (b *Backend) drawBlur(r *gui.RenderCmd) {
 	C.metalSetPipeline(C.int(pipeBlur))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 	var tm [16]float32
-	identity(&tm)
+	tm[0] = 1
+	tm[5] = 1
+	tm[10] = 1
+	tm[15] = 1
 	C.metalSetTM((*C.float)(&tm[0]))
 
 	verts := buildQuad(
@@ -274,17 +280,14 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 	if path == "" {
 		var err error
 		path, err = b.resolveValidatedImagePath(r.Resource)
-		if path == "" {
-			return
-		}
 		if err != nil {
 			log.Printf("metal: drawImage: %v", err)
 			return
 		}
+		if path == "" {
+			return
+		}
 		b.imagePathCache[r.Resource] = path
-	}
-	if path == "" {
-		return
 	}
 
 	entry, ok := b.textures.get(path)
@@ -354,6 +357,11 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 		b.svgVerts = make([]vertex, numVerts)
 	}
 	verts := b.svgVerts[:numVerts]
+	var flatNC colF
+	if !hasVCols {
+		flatNC = normColor(r.Color.R, r.Color.G,
+			r.Color.B, r.Color.A)
+	}
 	for i := range numVerts {
 		vx := r.Triangles[i*2]
 		vy := r.Triangles[i*2+1]
@@ -380,12 +388,10 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 			v.B = nc.b
 			v.A = nc.a
 		} else {
-			nc := normColor(r.Color.R, r.Color.G,
-				r.Color.B, r.Color.A)
-			v.R = nc.r
-			v.G = nc.g
-			v.B = nc.b
-			v.A = nc.a
+			v.R = flatNC.r
+			v.G = flatNC.g
+			v.B = flatNC.b
+			v.A = flatNC.a
 		}
 	}
 
@@ -428,7 +434,6 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 	if err := b.textSys.DrawText(r.X, r.Y, r.Text, cfg); err != nil {
 		log.Printf("metal: DrawText: %v", err)
 	}
-	b.restoreAfterGlyph()
 }
 
 func (b *Backend) drawTextPath(r *gui.RenderCmd) {
@@ -440,6 +445,7 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	cfg := guiStyleToGlyphConfig(*r.TextStylePtr)
 	layout, err := b.textSys.LayoutTextCached(r.Text, cfg)
 	if err != nil {
+		log.Printf("metal: drawTextPath: %v", err)
 		return
 	}
 	positions := layout.GlyphPositions()
@@ -499,7 +505,6 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 
 	b.useGlyphPipeline()
 	b.textSys.DrawLayoutPlaced(layout, placements)
-	b.restoreAfterGlyph()
 }
 
 func (b *Backend) drawRtf(r *gui.RenderCmd) {
@@ -508,7 +513,6 @@ func (b *Backend) drawRtf(r *gui.RenderCmd) {
 	}
 	b.useGlyphPipeline()
 	b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
-	b.restoreAfterGlyph()
 }
 
 var customOnce sync.Once

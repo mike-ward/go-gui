@@ -70,11 +70,3 @@ func ortho(m *[16]float32, l, r, b, t, n, f float32) {
 	m[15] = 1
 }
 
-func identity(m *[16]float32) {
-	*m = [16]float32{
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1,
-	}
-}
