@@ -44,23 +44,77 @@ between layout and rendering.
 ## Requirements
 
 - Go 1.26+
-- SDL2 development libraries (see below)
+- SDL2 development libraries (see platform setup below)
+- For GL backend: OpenGL 3.3 capable graphics drivers/runtime
 - [go-glyph](https://github.com/mike-ward/go-glyph) — auto-fetched via
   `go get`
 
-### Installing SDL2
+### Platform Setup
 
-| Platform         | Command                            |
-| ---------------- | ---------------------------------- |
-| macOS (Homebrew) | `brew install sdl2`                |
-| Ubuntu / Debian  | `sudo apt-get install libsdl2-dev` |
-| Fedora / RHEL    | `sudo dnf install SDL2-devel`      |
-| Arch Linux       | `sudo pacman -S sdl2`              |
-| Windows (MSYS2)  | `pacman -S mingw-w64-x86_64-SDL2`  |
-| Windows (vcpkg)  | `vcpkg install sdl2`               |
+#### macOS (Homebrew)
+
+```bash
+brew install go sdl2
+```
+
+#### Ubuntu / Debian
+
+```bash
+sudo apt-get update
+sudo apt-get install -y golang build-essential pkg-config libsdl2-dev
+```
+
+#### Fedora / RHEL
+
+```bash
+sudo dnf install -y golang gcc pkgconf-pkg-config SDL2-devel
+```
+
+#### Arch Linux
+
+```bash
+sudo pacman -Syu --noconfirm go base-devel pkgconf sdl2
+```
+
+#### Windows (MSYS2 MinGW x64)
+
+```bash
+pacman -S --needed mingw-w64-x86_64-go mingw-w64-x86_64-gcc \
+  mingw-w64-x86_64-pkgconf mingw-w64-x86_64-SDL2
+```
+
+Then use the `MSYS2 MinGW x64` shell for `go build` / `go run`.
+
+#### Windows (vcpkg toolchain)
+
+```bash
+vcpkg install sdl2:x64-windows
+```
+
+Set `CGO_CFLAGS` and `CGO_LDFLAGS` to your vcpkg include/lib paths before building.
+
 ## Installation
 
     go get github.com/mike-ward/go-gui
+
+## Backend Selection
+
+Use one backend import in your app:
+
+- OpenGL backend:
+  `import glbackend "github.com/mike-ward/go-gui/gui/backend/gl"`
+- SDL2 backend (fallback when shaders/GL are unavailable):
+  `import sdl2 "github.com/mike-ward/go-gui/gui/backend/sdl2"`
+
+Run with the matching backend:
+
+```go
+// Preferred: OpenGL backend
+glbackend.Run(w)
+
+// Fallback: SDL2 backend
+sdl2.Run(w)
+```
 
 ## Quick Start
 
@@ -71,7 +125,7 @@ import (
     "fmt"
 
     "github.com/mike-ward/go-gui/gui"
-    sdl2 "github.com/mike-ward/go-gui/gui/backend/sdl2"
+    glbackend "github.com/mike-ward/go-gui/gui/backend/gl"
 )
 
 // App holds all mutable state for the application.
@@ -93,7 +147,7 @@ func main() {
         },
     })
 
-    sdl2.Run(w) // blocks until the window is closed
+    glbackend.Run(w) // preferred backend; blocks until window closes
 }
 
 // mainView is called every frame. It returns a layout tree.
@@ -131,6 +185,8 @@ func mainView(w *gui.Window) gui.View {
 
 See [`examples/get_started/`](examples/get_started/) for the full runnable
 version.
+
+For an OpenGL backend example, see [`examples/gradient_demo/`](examples/gradient_demo/).
 
 ## Core Concepts
 

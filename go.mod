@@ -13,6 +13,8 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.6
 )
 
+require github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
+
 replace (
 	github.com/mike-ward/go-glyph => ../go_glyph
 	github.com/mike-ward/go-glyph/backend/sdl2 => ../go_glyph/backend/sdl2

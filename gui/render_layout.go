@@ -148,8 +148,8 @@ func renderContainer(shape *Shape, parentColor Color, clip DrawClip, w *Window) 
 		fx.Shadow.Color.A > 0 && fx.Shadow.BlurRadius > 0 {
 		emitRenderer(RenderCmd{
 			Kind:       RenderShadow,
-			X:          shape.X + fx.Shadow.OffsetX,
-			Y:          shape.Y + fx.Shadow.OffsetY,
+			X:          shape.X,
+			Y:          shape.Y,
 			W:          shape.Width,
 			H:          shape.Height,
 			Radius:     shape.Radius,

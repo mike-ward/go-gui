@@ -79,7 +79,7 @@ func TestGradientDirectionAngleOverride(t *testing.T) {
 
 func TestPackRGB(t *testing.T) {
 	c := Color{R: 100, G: 150, B: 200}
-	p := packRGB(c)
+	p := PackRGB(c)
 	// Unpack: R = p mod 256, G = (p/256) mod 256, B = p/65536
 	r := uint8(math.Mod(float64(p), 256))
 	g := uint8(math.Mod(float64(p)/256, 256))
@@ -91,7 +91,7 @@ func TestPackRGB(t *testing.T) {
 
 func TestPackAlphaPos(t *testing.T) {
 	c := Color{A: 128}
-	p := packAlphaPos(c, 0.5)
+	p := PackAlphaPos(c, 0.5)
 	// Alpha = p mod 256 = 128
 	a := uint8(math.Mod(float64(p), 256))
 	if a != 128 {
@@ -223,7 +223,7 @@ func TestNormalizeGradientStopsIntoReuse(t *testing.T) {
 	}
 	norm := make([]GradientStop, 0, 8)
 	sampled := make([]GradientStop, 0, 8)
-	result := normalizeGradientStopsInto(stops, &norm, &sampled)
+	result := NormalizeGradientStopsInto(stops, &norm, &sampled)
 	if len(result) != 2 {
 		t.Fatalf("want 2, got %d", len(result))
 	}

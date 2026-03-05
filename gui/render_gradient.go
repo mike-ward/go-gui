@@ -54,13 +54,13 @@ func GradientDir(g *GradientDef, w, h float32) (dx, dy float32) {
 	return angleToDirection(cssDeg)
 }
 
-// packRGB packs R, G, B into a single float32 for GPU uniforms.
-func packRGB(c Color) float32 {
+// PackRGB packs R, G, B into a single float32 for GPU uniforms.
+func PackRGB(c Color) float32 {
 	return float32(c.R) + float32(c.G)*256.0 + float32(c.B)*65536.0
 }
 
-// packAlphaPos packs Alpha and gradient position into one float32.
-func packAlphaPos(c Color, pos float32) float32 {
+// PackAlphaPos packs Alpha and gradient position into one float32.
+func PackAlphaPos(c Color, pos float32) float32 {
 	return float32(c.A) + float32(math.Floor(float64(pos)*10000.0))*256.0
 }
 
@@ -158,9 +158,9 @@ func normalizeGradientStops(stops []GradientStop) []GradientStop {
 	return sampled
 }
 
-// normalizeGradientStopsInto is the non-allocating variant that
+// NormalizeGradientStopsInto is the non-allocating variant that
 // reuses caller-provided slices.
-func normalizeGradientStopsInto(stops []GradientStop, norm, sampled *[]GradientStop) []GradientStop {
+func NormalizeGradientStopsInto(stops []GradientStop, norm, sampled *[]GradientStop) []GradientStop {
 	if len(stops) == 0 {
 		*norm = (*norm)[:0]
 		*sampled = (*sampled)[:0]

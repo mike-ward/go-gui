@@ -1,0 +1,630 @@
+package gl
+
+import (
+	"log"
+	"math"
+	"unsafe"
+
+	gogl "github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/mike-ward/go-glyph"
+
+	"github.com/mike-ward/go-gui/gui"
+)
+
+// renderersDraw iterates render commands and draws them.
+func (b *Backend) renderersDraw(w *gui.Window) {
+	cmds := w.Renderers()
+	for i := range cmds {
+		r := &cmds[i]
+		switch r.Kind {
+		case gui.RenderClip:
+			b.drawClip(r)
+		case gui.RenderRect:
+			b.drawRect(r)
+		case gui.RenderStrokeRect:
+			b.drawStrokeRect(r)
+		case gui.RenderText:
+			b.drawText(r)
+		case gui.RenderCircle:
+			b.drawCircle(r)
+		case gui.RenderLine:
+			b.drawLine(r)
+		case gui.RenderShadow:
+			b.drawShadow(r)
+		case gui.RenderBlur:
+			b.drawBlur(r)
+		case gui.RenderGradient:
+			b.drawGradient(r)
+		case gui.RenderGradientBorder:
+			b.drawGradientBorder(r)
+		case gui.RenderImage:
+			b.drawImage(r)
+		case gui.RenderSvg:
+			b.drawSvg(r)
+		case gui.RenderTextPath:
+			b.drawTextPath(r)
+		case gui.RenderRTF:
+			b.drawRtf(r)
+		case gui.RenderCustomShader:
+			b.drawCustomShader(r)
+		case gui.RenderFilterBegin:
+			b.beginFilter(r)
+		case gui.RenderFilterEnd:
+			b.endFilter()
+
+		// Not emitted by the GL backend render path.
+		case gui.RenderNone,
+			gui.RenderFilterComposite,
+			gui.RenderLayout,
+			gui.RenderLayoutTransformed,
+			gui.RenderLayoutPlaced:
+		}
+	}
+}
+
+// --- Individual draw commands ---
+
+func (b *Backend) drawClip(r *gui.RenderCmd) {
+	s := b.dpiScale
+	x := int32(r.X * s)
+	y := int32(r.Y * s)
+	w := int32(r.W * s)
+	h := int32(r.H * s)
+	// GL scissor Y is bottom-up.
+	gogl.Enable(gogl.SCISSOR_TEST)
+	gogl.Scissor(x, b.physH-y-h, w, h)
+}
+
+func (b *Backend) drawRect(r *gui.RenderCmd) {
+	if !r.Fill {
+		return
+	}
+	s := b.dpiScale
+	b.usePipeline(&b.pipelines.solid)
+	b.drawQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
+		r.Color, r.Radius*s, 0)
+}
+
+func (b *Backend) drawStrokeRect(r *gui.RenderCmd) {
+	s := b.dpiScale
+	b.usePipeline(&b.pipelines.solid)
+	b.drawQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
+		r.Color, r.Radius*s, r.Thickness*s)
+}
+
+func (b *Backend) drawCircle(r *gui.RenderCmd) {
+	if !r.Fill || r.Radius <= 0 {
+		return
+	}
+	s := b.dpiScale
+	rad := r.Radius * s
+	b.usePipeline(&b.pipelines.solid)
+	b.drawQuad(
+		(r.X-r.Radius)*s,
+		(r.Y-r.Radius)*s,
+		2*rad, 2*rad,
+		r.Color, rad, 0)
+}
+
+func (b *Backend) drawLine(r *gui.RenderCmd) {
+	s := b.dpiScale
+	x0 := r.X * s
+	y0 := r.Y * s
+	x1 := r.OffsetX * s
+	y1 := r.OffsetY * s
+
+	// Compute line quad from two endpoints.
+	dx := x1 - x0
+	dy := y1 - y0
+	length := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+	if length < 0.001 {
+		return
+	}
+	thick := max(1.0*s, 1.0)
+	// Normal perpendicular to line direction.
+	nx := -dy / length * thick * 0.5
+	ny := dx / length * thick * 0.5
+
+	nc := normColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+
+	verts := [4]vertex{
+		{x0 + nx, y0 + ny, 0, -1, -1, nc.r, nc.g, nc.b, nc.a},
+		{x1 + nx, y1 + ny, 0, 1, -1, nc.r, nc.g, nc.b, nc.a},
+		{x1 - nx, y1 - ny, 0, 1, 1, nc.r, nc.g, nc.b, nc.a},
+		{x0 - nx, y0 - ny, 0, -1, 1, nc.r, nc.g, nc.b, nc.a},
+	}
+
+	b.usePipeline(&b.pipelines.solid)
+	gogl.BindVertexArray(b.quadVAO)
+	gogl.BindBuffer(gogl.ARRAY_BUFFER, b.quadVBO)
+	gogl.BufferSubData(gogl.ARRAY_BUFFER, 0,
+		4*vertexStride, vertPtr(&verts[0]))
+	gogl.DrawElements(gogl.TRIANGLES, 6, gogl.UNSIGNED_SHORT, nil)
+	gogl.BindVertexArray(0)
+}
+
+func (b *Backend) drawShadow(r *gui.RenderCmd) {
+	s := b.dpiScale
+	x := (r.X + r.OffsetX) * s
+	y := (r.Y + r.OffsetY) * s
+	w := r.W * s
+	h := r.H * s
+	blur := r.BlurRadius * s
+	rad := r.Radius * s
+
+	// Expand quad by blur radius for SDF falloff.
+	expand := blur * 1.5
+	qx := x - expand
+	qy := y - expand
+	qw := w + 2*expand
+	qh := h + 2*expand
+
+	b.usePipeline(&b.pipelines.shadow)
+
+	// Pack caster offset into tm matrix.
+	var tm [16]float32
+	identity(&tm)
+	// Offset from shadow center to caster center in shadow-local
+	// pixel coordinates. Positive values move the caster clip in
+	// the same direction as the configured shadow offset.
+	tm[12] = r.OffsetX * s // tm[3].x
+	tm[13] = r.OffsetY * s // tm[3].y
+	gogl.UniformMatrix4fv(b.pipelines.shadow.uTM, 1, false,
+		&tm[0])
+
+	b.drawQuad(qx, qy, qw, qh, r.Color, rad, blur)
+}
+
+func (b *Backend) drawBlur(r *gui.RenderCmd) {
+	s := b.dpiScale
+	blur := r.BlurRadius * s
+	rad := r.Radius * s
+	expand := blur * 1.5
+
+	b.usePipeline(&b.pipelines.blur)
+	var tm [16]float32
+	identity(&tm)
+	gogl.UniformMatrix4fv(b.pipelines.blur.uTM, 1, false,
+		&tm[0])
+
+	b.drawQuad(
+		r.X*s-expand, r.Y*s-expand,
+		r.W*s+2*expand, r.H*s+2*expand,
+		r.Color, rad+expand, blur)
+}
+
+func (b *Backend) drawGradient(r *gui.RenderCmd) {
+	if r.Gradient == nil || len(r.Gradient.Stops) == 0 ||
+		r.W <= 0 || r.H <= 0 {
+		return
+	}
+	s := b.dpiScale
+	x := r.X * s
+	y := r.Y * s
+	w := r.W * s
+	h := r.H * s
+	rad := r.Radius * s
+
+	stops := gui.NormalizeGradientStopsInto(
+		r.Gradient.Stops, &b.normBuf, &b.sampledBuf)
+	if len(stops) == 0 {
+		return
+	}
+
+	// Pack gradient data into tm matrix (4 columns).
+	var tm [16]float32
+	// Columns 0-2: packed stop data (rgb + alpha+pos pairs).
+	for i := range min(len(stops), 5) {
+		col := i / 2
+		row := (i % 2) * 2
+		tm[col*4+row] = gui.PackRGB(stops[i].Color)
+		tm[col*4+row+1] = gui.PackAlphaPos(
+			stops[i].Color, stops[i].Pos)
+	}
+
+	// Column 2, rows 2-3: direction or radial metadata.
+	if r.Gradient.Type == gui.GradientRadial {
+		// Radial: store target radius = max(hw, hh).
+		tm[2*4+3] = max(w/2, h/2)
+		// grad_type > 0.5 signals radial.
+		tm[3*4+2] = 1.0
+	} else {
+		dx, dy := gui.GradientDir(r.Gradient, r.W, r.H)
+		tm[2*4+2] = dx
+		tm[2*4+3] = dy
+		tm[3*4+2] = 0.0 // linear
+	}
+
+	// Column 3: metadata.
+	tm[3*4+0] = w / 2 // half-width
+	tm[3*4+1] = h / 2 // half-height
+	tm[3*4+3] = float32(len(stops))
+
+	b.usePipeline(&b.pipelines.gradient)
+	gogl.UniformMatrix4fv(b.pipelines.gradient.uTM, 1, false,
+		&tm[0])
+
+	b.drawQuad(x, y, w, h, gui.White, rad, 0)
+}
+
+func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
+	if r.Gradient == nil || len(r.Gradient.Stops) == 0 {
+		return
+	}
+	s := b.dpiScale
+	th := r.Thickness * s
+	positions := [4]float32{0.0, 0.25, 0.5, 0.75}
+	type rect struct{ x, y, w, h float32 }
+	rects := [4]rect{
+		{r.X * s, r.Y * s, r.W * s, th},
+		{r.X * s, (r.Y+r.H)*s - th, r.W * s, th},
+		{r.X * s, r.Y * s, th, r.H * s},
+		{(r.X+r.W)*s - th, r.Y * s, th, r.H * s},
+	}
+	b.usePipeline(&b.pipelines.solid)
+	for i := range 4 {
+		c := gui.SampleGradientStopColor(
+			r.Gradient.Stops, positions[i])
+		rc := rects[i]
+		b.drawQuad(rc.x, rc.y, rc.w, rc.h, c, 0, 0)
+	}
+}
+
+func (b *Backend) drawImage(r *gui.RenderCmd) {
+	path := b.imagePathCache[r.Resource]
+	if path == "" {
+		var err error
+		path, err = b.resolveValidatedImagePath(r.Resource)
+		if path == "" {
+			return
+		}
+		if err != nil {
+			log.Printf("gl: drawImage: %v", err)
+			return
+		}
+		b.imagePathCache[r.Resource] = path
+	}
+	if path == "" {
+		return
+	}
+
+	entry, ok := b.textures.get(path)
+	if !ok {
+		var err error
+		entry, err = b.loadImageTexture(path)
+		if err != nil {
+			log.Printf("gl: drawImage: %v", err)
+			entry = glTexCacheEntry{}
+		}
+		b.textures.set(path, entry)
+	}
+	if entry.tex.id == 0 {
+		return
+	}
+
+	s := b.dpiScale
+	x := r.X * s
+	y := r.Y * s
+	w := r.W * s
+	h := r.H * s
+
+	// Fill background.
+	if r.Color.A > 0 {
+		b.usePipeline(&b.pipelines.solid)
+		b.drawQuad(x, y, w, h, r.Color, 0, 0)
+	}
+
+	gogl.ActiveTexture(gogl.TEXTURE0)
+	gogl.BindTexture(gogl.TEXTURE_2D, entry.tex.id)
+
+	b.usePipeline(&b.pipelines.imageClip)
+	if b.pipelines.imageClip.uTex >= 0 {
+		gogl.Uniform1i(b.pipelines.imageClip.uTex, 0)
+	}
+	b.drawQuadUV(x, y, w, h, gui.White, r.ClipRadius*s)
+	gogl.BindTexture(gogl.TEXTURE_2D, 0)
+}
+
+func (b *Backend) drawSvg(r *gui.RenderCmd) {
+	if len(r.Triangles) == 0 || len(r.Triangles)%6 != 0 {
+		return
+	}
+	s := b.dpiScale
+	numVerts := len(r.Triangles) / 2
+	hasVCols := len(r.VertexColors) == numVerts
+	vAlpha := float32(1)
+	if r.HasVertexAlpha {
+		vAlpha = max(0, min(r.VertexAlphaScale, 1))
+	}
+
+	hasRot := r.RotAngle != 0
+	var sinA, cosA float32
+	if hasRot {
+		rad := float64(r.RotAngle) * math.Pi / 180
+		sinA = float32(math.Sin(rad))
+		cosA = float32(math.Cos(rad))
+	}
+
+	if cap(b.svgVerts) < numVerts {
+		b.svgVerts = make([]vertex, numVerts)
+	}
+	verts := b.svgVerts[:numVerts]
+	for i := range numVerts {
+		vx := r.Triangles[i*2]
+		vy := r.Triangles[i*2+1]
+		if hasRot {
+			dx := vx - r.RotCX
+			dy := vy - r.RotCY
+			vx = r.RotCX + dx*cosA - dy*sinA
+			vy = r.RotCY + dx*sinA + dy*cosA
+		}
+		v := &verts[i]
+		v.X = (r.X + vx*r.Scale) * s
+		v.Y = (r.Y + vy*r.Scale) * s
+		v.U = 0
+		v.V = 0
+		if hasVCols {
+			vc := r.VertexColors[i]
+			alpha := vc.A
+			if r.HasVertexAlpha {
+				alpha = uint8(float32(alpha) * vAlpha)
+			}
+			nc := normColor(vc.R, vc.G, vc.B, alpha)
+			v.R = nc.r
+			v.G = nc.g
+			v.B = nc.b
+			v.A = nc.a
+		} else {
+			nc := normColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+			v.R = nc.r
+			v.G = nc.g
+			v.B = nc.b
+			v.A = nc.a
+		}
+	}
+
+	b.usePipeline(&b.pipelines.solid)
+	b.uploadSvgVerts(verts)
+}
+
+func (b *Backend) drawText(r *gui.RenderCmd) {
+	if b.textSys == nil || len(r.Text) == 0 {
+		return
+	}
+	var cfg glyph.TextConfig
+	if r.TextStylePtr != nil {
+		cfg = guiStyleToGlyphConfig(*r.TextStylePtr)
+		cfg.Gradient = r.TextGradient
+	} else {
+		cfg = glyph.TextConfig{
+			Style: glyph.TextStyle{
+				FontName: r.FontName,
+				Size:     r.FontSize,
+				Color: glyph.Color{
+					R: r.Color.R,
+					G: r.Color.G,
+					B: r.Color.B,
+					A: r.Color.A,
+				},
+			},
+			Block: glyph.DefaultBlockStyle(),
+		}
+	}
+	if r.W > 0 {
+		cfg.Block.Wrap = glyph.WrapWord
+		cfg.Block.Width = r.W
+	}
+
+	// Glyph renders with its own GL calls through the
+	// glyphBackend. Need to use a simple textured-quad
+	// pipeline for it.
+	b.useGlyphPipeline()
+	b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
+	b.restoreAfterGlyph()
+}
+
+func (b *Backend) drawTextPath(r *gui.RenderCmd) {
+	if b.textSys == nil || r.TextPath == nil ||
+		r.TextStylePtr == nil {
+		return
+	}
+	tp := r.TextPath
+	cfg := guiStyleToGlyphConfig(*r.TextStylePtr)
+	layout, err := b.textSys.LayoutTextCached(r.Text, cfg)
+	if err != nil {
+		return
+	}
+	positions := layout.GlyphPositions()
+	if len(positions) == 0 {
+		return
+	}
+
+	var totalAdvance float32
+	for _, p := range positions {
+		totalAdvance += p.Advance
+	}
+
+	offset := tp.Offset
+	if tp.Anchor == 1 {
+		offset -= totalAdvance / 2
+	} else if tp.Anchor == 2 {
+		offset -= totalAdvance
+	}
+
+	advScale := float32(1)
+	if tp.Method == 1 && totalAdvance > 0 {
+		remaining := tp.TotalLen - offset
+		if remaining > 0 {
+			advScale = remaining / totalAdvance
+		}
+	}
+
+	n := len(layout.Glyphs)
+	if cap(b.textPathPlacements) < n {
+		b.textPathPlacements = make([]glyph.GlyphPlacement, n)
+	}
+	placements := b.textPathPlacements[:n]
+	for i := range placements {
+		placements[i] = glyph.GlyphPlacement{X: -9999, Y: -9999}
+	}
+
+	cumAdv := float32(0)
+	for _, p := range positions {
+		advance := p.Advance * advScale
+		centerDist := offset + cumAdv + advance/2
+		px, py, angle := gui.SamplePathAt(
+			tp.Polyline, tp.Table, centerDist)
+
+		halfAdv := advance / 2
+		cosAngle := float32(math.Cos(float64(angle)))
+		sinAngle := float32(math.Sin(float64(angle)))
+		gx := px + r.X - halfAdv*cosAngle
+		gy := py + r.Y - halfAdv*sinAngle
+
+		placements[p.Index] = glyph.GlyphPlacement{
+			X: gx, Y: gy, Angle: angle,
+		}
+		cumAdv += advance
+	}
+
+	b.useGlyphPipeline()
+	b.textSys.DrawLayoutPlaced(layout, placements)
+	b.restoreAfterGlyph()
+}
+
+func (b *Backend) drawRtf(r *gui.RenderCmd) {
+	if b.textSys == nil || r.LayoutPtr == nil {
+		return
+	}
+	b.useGlyphPipeline()
+	b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
+	b.restoreAfterGlyph()
+}
+
+func (b *Backend) drawCustomShader(_ *gui.RenderCmd) {
+	// Custom shader rendering not yet wired (no emission path).
+	b.customOnce.Do(func() {
+		log.Println("gl: drawCustomShader called but not implemented")
+	})
+}
+
+// --- Filter (glow) ---
+
+func (b *Backend) beginFilter(r *gui.RenderCmd) {
+	if !b.ensureFilterFBO(b.physW, b.physH) {
+		return
+	}
+	b.filterBlur = r.BlurRadius * b.dpiScale
+	b.filterLayer = r.Layers
+
+	b.bindFBO(b.filterTexA)
+	gogl.Viewport(0, 0, b.physW, b.physH)
+	gogl.ClearColor(0, 0, 0, 0)
+	gogl.Clear(gogl.COLOR_BUFFER_BIT)
+}
+
+func (b *Backend) endFilter() {
+	b.unbindFBO()
+	gogl.Viewport(0, 0, b.physW, b.physH)
+
+	blur := b.filterBlur
+	if blur < 1 {
+		blur = 1
+	}
+	layers := b.filterLayer
+	if layers < 1 {
+		layers = 1
+	}
+
+	// Gaussian blur: horizontal pass A→B, vertical pass B→A.
+	stdDev := blur
+
+	// Horizontal pass.
+	b.bindFBO(b.filterTexB)
+	gogl.ClearColor(0, 0, 0, 0)
+	gogl.Clear(gogl.COLOR_BUFFER_BIT)
+	b.usePipeline(&b.pipelines.filterBlurH)
+	var tm [16]float32
+	tm[0] = stdDev
+	gogl.UniformMatrix4fv(b.pipelines.filterBlurH.uTM, 1,
+		false, &tm[0])
+	gogl.ActiveTexture(gogl.TEXTURE0)
+	gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexA)
+	if b.pipelines.filterBlurH.uTex >= 0 {
+		gogl.Uniform1i(b.pipelines.filterBlurH.uTex, 0)
+	}
+	b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
+		gui.White)
+	gogl.BindTexture(gogl.TEXTURE_2D, 0)
+
+	// Vertical pass.
+	b.bindFBO(b.filterTexA)
+	gogl.ClearColor(0, 0, 0, 0)
+	gogl.Clear(gogl.COLOR_BUFFER_BIT)
+	b.usePipeline(&b.pipelines.filterBlurV)
+	gogl.UniformMatrix4fv(b.pipelines.filterBlurV.uTM, 1,
+		false, &tm[0])
+	gogl.ActiveTexture(gogl.TEXTURE0)
+	gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexB)
+	if b.pipelines.filterBlurV.uTex >= 0 {
+		gogl.Uniform1i(b.pipelines.filterBlurV.uTex, 0)
+	}
+	b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
+		gui.White)
+	gogl.BindTexture(gogl.TEXTURE_2D, 0)
+
+	b.unbindFBO()
+	gogl.Viewport(0, 0, b.physW, b.physH)
+
+	// Composite blurred glow + sharp source.
+	// Draw glow at reduced alpha.
+	glowAlpha := min(float32(60*layers), 255) / 255.0
+	b.usePipeline(&b.pipelines.filterTex)
+	gogl.ActiveTexture(gogl.TEXTURE0)
+	gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexA)
+	if b.pipelines.filterTex.uTex >= 0 {
+		gogl.Uniform1i(b.pipelines.filterTex.uTex, 0)
+	}
+	gc := gui.Color{R: 255, G: 255, B: 255,
+		A: uint8(glowAlpha * 255)}
+	b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH), gc)
+	gogl.BindTexture(gogl.TEXTURE_2D, 0)
+}
+
+// --- Glyph pipeline helpers ---
+
+// useGlyphPipeline sets up minimal GL state for glyph's
+// DrawBackend to render textured quads. Glyph uses its own
+// VAO/VBO but needs blend and our projection active.
+func (b *Backend) useGlyphPipeline() {
+	// Glyph draws through its own backend which issues raw GL
+	// calls. We need a simple textured-quad shader active.
+	b.usePipeline(&b.pipelines.filterTex)
+	if b.pipelines.filterTex.uTex >= 0 {
+		gogl.Uniform1i(b.pipelines.filterTex.uTex, 0)
+	}
+	var tm [16]float32
+	identity(&tm)
+	gogl.UniformMatrix4fv(b.pipelines.filterTex.uTM, 1, false,
+		&tm[0])
+}
+
+func (b *Backend) restoreAfterGlyph() {
+	// Re-bind the quad VAO in case glyph changed it.
+	gogl.BindVertexArray(0)
+}
+
+// --- Helpers ---
+
+func identity(m *[16]float32) {
+	*m = [16]float32{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1,
+	}
+}
+
+func vertPtr(v *vertex) unsafe.Pointer {
+	return unsafe.Pointer(v)
+}

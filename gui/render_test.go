@@ -209,6 +209,44 @@ func TestRenderRectangleOutsideClipSkipsDraw(t *testing.T) {
 	}
 }
 
+func TestRenderContainerShadowUsesBasePositionAndSeparateOffset(t *testing.T) {
+	w := makeWindow()
+	s := &Shape{
+		ShapeType: ShapeRectangle,
+		X:         100,
+		Y:         200,
+		Width:     80,
+		Height:    60,
+		Color:     ColorTransparent,
+		Radius:    12,
+		FX: &ShapeEffects{
+			Shadow: &BoxShadow{
+				Color:      RGBA(0, 0, 0, 80),
+				OffsetX:    3,
+				OffsetY:    5,
+				BlurRadius: 20,
+			},
+		},
+	}
+	clip := makeClip(0, 0, 500, 500)
+	renderContainer(s, ColorTransparent, clip, w)
+
+	if len(w.renderers) != 1 {
+		t.Fatalf("renderers: got %d, want 1", len(w.renderers))
+	}
+	r := w.renderers[0]
+	if r.Kind != RenderShadow {
+		t.Fatalf("kind: got %v, want RenderShadow", r.Kind)
+	}
+	if r.X != s.X || r.Y != s.Y {
+		t.Errorf("pos: got (%f,%f), want base (%f,%f)", r.X, r.Y, s.X, s.Y)
+	}
+	if r.OffsetX != s.FX.Shadow.OffsetX || r.OffsetY != s.FX.Shadow.OffsetY {
+		t.Errorf("offset: got (%f,%f), want (%f,%f)",
+			r.OffsetX, r.OffsetY, s.FX.Shadow.OffsetX, s.FX.Shadow.OffsetY)
+	}
+}
+
 // --- renderCircle ---
 
 func TestRenderCircleInsideClip(t *testing.T) {

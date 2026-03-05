@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/mike-ward/go-gui/gui"
-	sdl2 "github.com/mike-ward/go-gui/gui/backend/sdl2"
+	"github.com/mike-ward/go-gui/gui/backend"
 )
 
 const (
@@ -89,7 +89,7 @@ func main() {
 		},
 	})
 
-	sdl2.Run(w)
+	backend.Run(w)
 }
 
 func startAnimation(w *gui.Window) {

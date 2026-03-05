@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/mike-ward/go-gui/gui"
-	sdl2 "github.com/mike-ward/go-gui/gui/backend/sdl2"
+	"github.com/mike-ward/go-gui/gui/backend"
 )
 
 type App struct {
@@ -34,7 +34,7 @@ func main() {
 			w.UpdateView(mainView)
 		},
 	})
-	sdl2.Run(w)
+	backend.Run(w)
 }
 
 func mainView(w *gui.Window) gui.View {
