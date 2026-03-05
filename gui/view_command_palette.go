@@ -1,5 +1,25 @@
 package gui
 
+type cmdPaletteItemsCache struct {
+	sourceHash uint64
+	items      []ListCoreItem
+	filtered   []ListCoreItem
+	ids        []string
+	scored     []listCoreScored
+	viewKey    cmdPaletteViewKey
+	views      []View
+}
+
+type cmdPaletteViewKey struct {
+	sourceHash uint64
+	query      string
+	first      int
+	last       int
+	hl         int
+	filteredN  int
+	rowH       float32
+}
+
 // CommandPaletteItem represents one action in the palette.
 type CommandPaletteItem struct {
 	ID       string
@@ -58,14 +78,36 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 	query := StateReadOr[string, string](w, nsCmdPaletteQuery, cfg.ID, "")
 	highlighted := StateReadOr[string, int](w, nsCmdPaletteHighlight, cfg.ID, 0)
 
-	// Convert to core items.
-	coreItems := make([]ListCoreItem, len(cfg.Items))
-	for i, item := range cfg.Items {
-		coreItems[i] = cmdPaletteItemToCore(item)
+	cacheMap := StateMap[string, *cmdPaletteItemsCache](
+		w, nsCmdPaletteItems, capModerate)
+	cache, ok := cacheMap.Get(cfg.ID)
+	if !ok || cache == nil {
+		cache = &cmdPaletteItemsCache{}
+		cacheMap.Set(cfg.ID, cache)
+	}
+
+	// Convert to core items only when source items changed.
+	itemsHash := commandPaletteItemsHash(cfg.Items)
+	if cache.sourceHash != itemsHash || len(cache.items) != len(cfg.Items) {
+		if cap(cache.items) < len(cfg.Items) {
+			cache.items = make([]ListCoreItem, len(cfg.Items))
+		} else {
+			cache.items = cache.items[:len(cfg.Items)]
+		}
+		for i := range cfg.Items {
+			cache.items[i] = cmdPaletteItemToCore(cfg.Items[i])
+		}
+		cache.sourceHash = itemsHash
 	}
 
 	// Filter + rank.
-	prepared := listCorePrepare(coreItems, query, highlighted)
+	prepared, scored := listCorePrepareInto(
+		cache.items, query, highlighted,
+		cache.filtered, cache.ids, cache.scored,
+	)
+	cache.filtered = prepared.Items
+	cache.ids = prepared.IDs
+	cache.scored = scored
 	filtered := prepared.Items
 	filteredIDs := prepared.IDs
 	hl := prepared.HL
@@ -102,7 +144,21 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 		},
 	}
 
-	resultViews := listCoreViews(filtered, coreCfg, first, last, hl, nil, rowH)
+	viewKey := cmdPaletteViewKey{
+		sourceHash: cache.sourceHash,
+		query:      query,
+		first:      first,
+		last:       last,
+		hl:         hl,
+		filteredN:  len(filtered),
+		rowH:       rowH,
+	}
+	resultViews := cache.views
+	if cache.viewKey != viewKey || resultViews == nil {
+		resultViews = listCoreViews(filtered, coreCfg, first, last, hl, nil, rowH)
+		cache.views = resultViews
+		cache.viewKey = viewKey
+	}
 
 	// Build layout: backdrop column with centered card.
 	return GenerateViewLayout(Column(ContainerCfg{
@@ -224,6 +280,38 @@ func makePaletteOnTextChanged(paletteID string) func(*Layout, string, *Window) {
 		sh.Set(paletteID, 0)
 		w.UpdateWindow()
 	}
+}
+
+func commandPaletteItemsHash(items []CommandPaletteItem) uint64 {
+	const offset uint64 = 1469598103934665603
+	const prime uint64 = 1099511628211
+	h := offset
+	for i := range items {
+		it := items[i]
+		h = hashString64(h, it.ID)
+		h = hashString64(h, it.Label)
+		h = hashString64(h, it.Detail)
+		h = hashString64(h, it.Icon)
+		h = hashString64(h, it.Group)
+		if it.Disabled {
+			h ^= 1
+		} else {
+			h ^= 0
+		}
+		h *= prime
+	}
+	return h
+}
+
+func hashString64(h uint64, s string) uint64 {
+	const prime uint64 = 1099511628211
+	for i := 0; i < len(s); i++ {
+		h ^= uint64(s[i])
+		h *= prime
+	}
+	h ^= 0xff
+	h *= prime
+	return h
 }
 
 func makePaletteOnKeyDown(paletteID string, onAction func(string, *Event, *Window), onDismiss func(*Window), filteredIDs []string) func(*Layout, *Event, *Window) {

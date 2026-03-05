@@ -1,5 +1,25 @@
 package gui
 
+type comboboxItemsCache struct {
+	optionsHash uint64
+	items       []ListCoreItem
+	filtered    []ListCoreItem
+	ids         []string
+	scored      []listCoreScored
+	viewKey     comboboxViewKey
+	views       []View
+}
+
+type comboboxViewKey struct {
+	optionsHash uint64
+	query       string
+	first       int
+	last        int
+	hl          int
+	filteredN   int
+	rowH        float32
+}
+
 // ComboboxCfg configures a combobox view with typeahead filtering.
 type ComboboxCfg struct {
 	ID                string
@@ -52,15 +72,38 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	query := StateReadOr[string, string](w, nsComboboxQuery, cfg.ID, "")
 	highlighted := StateReadOr[string, int](w, nsComboboxHighlight, cfg.ID, 0)
 
-	// Convert options to core items.
-	items := make([]ListCoreItem, len(cfg.Options))
-	for i, opt := range cfg.Options {
-		items[i] = ListCoreItem{ID: opt, Label: opt}
+	cacheMap := StateMap[string, *comboboxItemsCache](
+		w, nsComboboxItems, capModerate)
+	cache, ok := cacheMap.Get(cfg.ID)
+	if !ok || cache == nil {
+		cache = &comboboxItemsCache{}
+		cacheMap.Set(cfg.ID, cache)
+	}
+
+	// Convert options to core items only when options changed.
+	optionsHash := comboboxOptionsHash(cfg.Options)
+	if cache.optionsHash != optionsHash || len(cache.items) != len(cfg.Options) {
+		if cap(cache.items) < len(cfg.Options) {
+			cache.items = make([]ListCoreItem, len(cfg.Options))
+		} else {
+			cache.items = cache.items[:len(cfg.Options)]
+		}
+		for i := range cfg.Options {
+			opt := cfg.Options[i]
+			cache.items[i] = ListCoreItem{ID: opt, Label: opt}
+		}
+		cache.optionsHash = optionsHash
 	}
 
 	// Filter when query is present.
 	filterQuery := query
-	prepared := listCorePrepare(items, filterQuery, highlighted)
+	prepared, scored := listCorePrepareInto(
+		cache.items, filterQuery, highlighted,
+		cache.filtered, cache.ids, cache.scored,
+	)
+	cache.filtered = prepared.Items
+	cache.ids = prepared.IDs
+	cache.scored = scored
 	filtered := prepared.Items
 	filteredIDs := prepared.IDs
 	hl := prepared.HL
@@ -135,8 +178,22 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	}))
 
 	if isOpen {
-		dropdownContent := listCoreViews(filtered, coreCfg,
-			first, last, hl, nil, rowH)
+		viewKey := comboboxViewKey{
+			optionsHash: cache.optionsHash,
+			query:       filterQuery,
+			first:       first,
+			last:        last,
+			hl:          hl,
+			filteredN:   len(filtered),
+			rowH:        rowH,
+		}
+		dropdownContent := cache.views
+		if cache.viewKey != viewKey || dropdownContent == nil {
+			dropdownContent = listCoreViews(filtered, coreCfg,
+				first, last, hl, nil, rowH)
+			cache.views = dropdownContent
+			cache.viewKey = viewKey
+		}
 		content = append(content, Column(ContainerCfg{
 			ID:           cfg.ID + ".dropdown",
 			SizeBorder:   Some(sizeBorder),
@@ -320,4 +377,20 @@ func applyComboboxDefaults(cfg *ComboboxCfg) {
 	if cfg.MaxDropdownHeight == 0 {
 		cfg.MaxDropdownHeight = 200
 	}
+}
+
+func comboboxOptionsHash(options []string) uint64 {
+	const offset uint64 = 1469598103934665603
+	const prime uint64 = 1099511628211
+	h := offset
+	for i := range options {
+		s := options[i]
+		for j := 0; j < len(s); j++ {
+			h ^= uint64(s[j])
+			h *= prime
+		}
+		h ^= 0xff
+		h *= prime
+	}
+	return h
 }

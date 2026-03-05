@@ -380,3 +380,26 @@ func TestListBoxNextSelectedIDs(t *testing.T) {
 		t.Fatalf("multi remove: got %v", got)
 	}
 }
+
+func TestListBoxOnKeyDownHandled(t *testing.T) {
+	w := newTestWindow()
+	itemIDs := []string{"a", "b"}
+	e := &Event{KeyCode: KeyDown}
+	listBoxOnKeyDown("lb", itemIDs, false,
+		func(_ []string, _ *Event, _ *Window) {}, nil, e, w)
+	if !e.IsHandled {
+		t.Fatal("expected key navigation event to be handled")
+	}
+
+	e = &Event{KeyCode: KeyEnter}
+	called := false
+	listBoxOnKeyDown("lb", itemIDs, false,
+		func(_ []string, _ *Event, _ *Window) { called = true },
+		nil, e, w)
+	if !e.IsHandled {
+		t.Fatal("expected key select event to be handled")
+	}
+	if !called {
+		t.Fatal("expected select callback to run")
+	}
+}

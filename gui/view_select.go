@@ -115,21 +115,21 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			}
 		}
 		content = append(content, Column(ContainerCfg{
-			ID:          cfg.ID + "dropdown",
-			SizeBorder:  Some(sizeBorder),
-			Radius:      Some(radius),
-			ColorBorder: cfg.ColorBorder,
-			Color:       cfg.Color,
-			MinHeight:   50,
-			MaxHeight:   200,
-			MinWidth:    cfg.MinWidth,
-			MaxWidth:    cfg.MaxWidth,
+			ID:            cfg.ID + "dropdown",
+			SizeBorder:    Some(sizeBorder),
+			Radius:        Some(radius),
+			ColorBorder:   cfg.ColorBorder,
+			Color:         cfg.Color,
+			MinHeight:     50,
+			MaxHeight:     200,
+			MinWidth:      cfg.MinWidth,
+			MaxWidth:      cfg.MaxWidth,
 			Float:         true,
 			FloatAutoFlip: true,
 			FloatAnchor:   FloatBottomLeft,
-			FloatTieOff: FloatTopLeft,
-			FloatOffsetY: -sizeBorder,
-			IDScroll:    idScroll,
+			FloatTieOff:   FloatTopLeft,
+			FloatOffsetY:  -sizeBorder,
+			IDScroll:      idScroll,
 			Padding: Some(NewPadding(
 				PadSmall, PadMedium, PadSmall, PadSmall)),
 			Spacing: Some(float32(0)),
@@ -169,7 +169,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 					layout.Shape.ColorBorder = colorBorderFocus
 				}
 			},
-			OnKeyDown: makeSelectOnKeyDown(sv.cfg),
+			OnKeyDown: makeSelectOnKeyDown(sv.cfg, idScroll),
 			OnClick: func(_ *Layout, e *Event, w *Window) {
 				ss := StateMap[string, bool](
 					w, nsSelect, capModerate)
@@ -215,8 +215,8 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 		Padding: Some(NewPadding(0, PadSmall, 0, 1)),
 		Sizing:  FillFit,
 		Content: []View{
-				Row(ContainerCfg{
-					Padding: Some(PadTBLR(2, 0)),
+			Row(ContainerCfg{
+				Padding: Some(PadTBLR(2, 0)),
 				Content: []View{
 					Text(TextCfg{
 						Text: "✓",
@@ -275,10 +275,10 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 		Padding: Some(NewPadding(guiTheme.PaddingMedium.Top, 0, 0, 0)),
 		Sizing:  FillFit,
 		Content: []View{
-				Row(ContainerCfg{
-					Padding: Some(PaddingNone),
-					Sizing:  FillFit,
-					Spacing: Some[float32](PadXSmall),
+			Row(ContainerCfg{
+				Padding: Some(PaddingNone),
+				Sizing:  FillFit,
+				Spacing: Some[float32](PadXSmall),
 				Content: []View{
 					Text(TextCfg{
 						Text: "✓",
@@ -309,13 +309,13 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 	})
 }
 
-func makeSelectOnKeyDown(cfg SelectCfg) func(*Layout, *Event, *Window) {
+func makeSelectOnKeyDown(cfg SelectCfg, idScroll uint32) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
-		selectOnKeyDown(cfg, e, w)
+		selectOnKeyDown(cfg, idScroll, e, w)
 	}
 }
 
-func selectOnKeyDown(cfg SelectCfg, e *Event, w *Window) {
+func selectOnKeyDown(cfg SelectCfg, idScroll uint32, e *Event, w *Window) {
 	if len(cfg.Options) == 0 {
 		return
 	}
@@ -337,18 +337,19 @@ func selectOnKeyDown(cfg SelectCfg, e *Event, w *Window) {
 			}
 		}
 		sh.Set(cfg.ID, initialIdx)
+		e.IsHandled = true
 		return
 	}
 
 	// Close on escape.
 	if e.KeyCode == KeyEscape && isOpen {
 		ss.Clear()
+		e.IsHandled = true
 		return
 	}
 
 	if isOpen {
 		currentIdx, _ := sh.Get(cfg.ID)
-		idScroll := fnvSum32(cfg.ID + "dropdown")
 		action := listCoreNavigate(e.KeyCode, len(cfg.Options))
 
 		if action == ListCoreSelectItem {
@@ -372,6 +373,7 @@ func selectOnKeyDown(cfg SelectCfg, e *Event, w *Window) {
 					}
 				}
 			}
+			e.IsHandled = true
 			return
 		}
 
@@ -410,6 +412,7 @@ func selectOnKeyDown(cfg SelectCfg, e *Event, w *Window) {
 					w, nsScrollY, capScroll)
 				scrollSY.Set(idScroll,
 					float32(nextIdx)*rowH)
+				e.IsHandled = true
 			}
 		}
 	}

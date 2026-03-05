@@ -130,10 +130,14 @@ func TestSelectKeyboardNavigation(t *testing.T) {
 		OnSelect: func([]string, *Event, *Window) {},
 	}
 	applySelectDefaults(&cfg)
+	idScroll := fnvSum32(cfg.ID + "dropdown")
 
 	// Open via space.
 	e := &Event{KeyCode: KeySpace}
-	selectOnKeyDown(cfg, e, w)
+	selectOnKeyDown(cfg, idScroll, e, w)
+	if !e.IsHandled {
+		t.Error("expected space open to be handled")
+	}
 	ss := StateMap[string, bool](w, nsSelect, capModerate)
 	isOpen, _ := ss.Get("s6")
 	if !isOpen {
@@ -142,7 +146,10 @@ func TestSelectKeyboardNavigation(t *testing.T) {
 
 	// Navigate down.
 	e = &Event{KeyCode: KeyDown}
-	selectOnKeyDown(cfg, e, w)
+	selectOnKeyDown(cfg, idScroll, e, w)
+	if !e.IsHandled {
+		t.Error("expected down navigation to be handled")
+	}
 	sh := StateMap[string, int](w, nsSelectHL, capModerate)
 	idx, _ := sh.Get("s6")
 	if idx != 1 {
@@ -151,7 +158,10 @@ func TestSelectKeyboardNavigation(t *testing.T) {
 
 	// Close via escape.
 	e = &Event{KeyCode: KeyEscape}
-	selectOnKeyDown(cfg, e, w)
+	selectOnKeyDown(cfg, idScroll, e, w)
+	if !e.IsHandled {
+		t.Error("expected escape close to be handled")
+	}
 	isOpen, _ = ss.Get("s6")
 	if isOpen {
 		t.Error("expected closed after escape")
@@ -169,14 +179,18 @@ func TestSelectKeyboardSelectItem(t *testing.T) {
 		},
 	}
 	applySelectDefaults(&cfg)
+	idScroll := fnvSum32(cfg.ID + "dropdown")
 
 	// Open.
 	e := &Event{KeyCode: KeySpace}
-	selectOnKeyDown(cfg, e, w)
+	selectOnKeyDown(cfg, idScroll, e, w)
 
 	// Select current (A at index 0).
 	e = &Event{KeyCode: KeyEnter}
-	selectOnKeyDown(cfg, e, w)
+	selectOnKeyDown(cfg, idScroll, e, w)
+	if !e.IsHandled {
+		t.Error("expected enter select to be handled")
+	}
 	if len(selected) != 1 || selected[0] != "A" {
 		t.Errorf("expected [A], got %v", selected)
 	}
@@ -190,14 +204,18 @@ func TestSelectSkipsSubHeaders(t *testing.T) {
 		OnSelect: func([]string, *Event, *Window) {},
 	}
 	applySelectDefaults(&cfg)
+	idScroll := fnvSum32(cfg.ID + "dropdown")
 
 	// Open.
 	e := &Event{KeyCode: KeySpace}
-	selectOnKeyDown(cfg, e, w)
+	selectOnKeyDown(cfg, idScroll, e, w)
 
 	// Navigate down past subheader.
 	e = &Event{KeyCode: KeyDown}
-	selectOnKeyDown(cfg, e, w)
+	selectOnKeyDown(cfg, idScroll, e, w)
+	if !e.IsHandled {
+		t.Error("expected navigation to be handled")
+	}
 	sh := StateMap[string, int](w, nsSelectHL, capModerate)
 	idx, _ := sh.Get("s8")
 	// Should skip "---Section" and land on "B" (index 2).

@@ -21,17 +21,17 @@ type ListCoreItem struct {
 
 // ListCoreCfg configures listCoreViews rendering.
 type ListCoreCfg struct {
-	TextStyle      TextStyle
-	DetailStyle    TextStyle
+	TextStyle       TextStyle
+	DetailStyle     TextStyle
 	SubheadingStyle TextStyle
-	ColorHighlight Color
-	ColorHover     Color
-	ColorSelected  Color
-	PaddingItem    Padding
-	ShowDetails    bool
-	ShowIcons      bool
-	OnItemClick    func(string, int, *Event, *Window)
-	OnItemHover    func(int, *Event, *Window)
+	ColorHighlight  Color
+	ColorHover      Color
+	ColorSelected   Color
+	PaddingItem     Padding
+	ShowDetails     bool
+	ShowIcons       bool
+	OnItemClick     func(string, int, *Event, *Window)
+	OnItemHover     func(int, *Event, *Window)
 }
 
 // ListCorePrepared holds pre-computed filter results for a frame.
@@ -51,7 +51,7 @@ type listCoreScored struct {
 type ListCoreAction uint8
 
 const (
-	ListCoreNone       ListCoreAction = iota
+	ListCoreNone ListCoreAction = iota
 	ListCoreMoveUp
 	ListCoreMoveDown
 	ListCoreSelectItem
@@ -210,27 +210,84 @@ func listCoreFilter(items []ListCoreItem, query string) []int {
 	return result
 }
 
-// listCorePrepare filters items by query, clamps highlight, and
-// collects selectable IDs. Skips subheadings from IDs.
-func listCorePrepare(items []ListCoreItem, query string, rawHighlight int) ListCorePrepared {
-	filteredIndices := listCoreFilter(items, query)
-	filtered := make([]ListCoreItem, 0, len(filteredIndices))
-	for _, idx := range filteredIndices {
-		if idx >= 0 && idx < len(items) {
-			filtered = append(filtered, items[idx])
+// listCorePrepareInto filters items by query into caller-provided
+// buffers to reduce per-frame allocations.
+func listCorePrepareInto(
+	items []ListCoreItem,
+	query string,
+	rawHighlight int,
+	filteredDst []ListCoreItem,
+	idsDst []string,
+	scoredDst []listCoreScored,
+) (ListCorePrepared, []listCoreScored) {
+	filtered := filteredDst[:0]
+	if len(query) == 0 {
+		filtered = append(filtered, items...)
+	} else {
+		scored := scoredDst[:0]
+		for i := range items {
+			item := items[i]
+			if item.IsSubheading {
+				continue
+			}
+			s := listCoreFuzzyScore(item.Label, query)
+			if s >= 0 {
+				scored = append(scored, listCoreScored{
+					index: i,
+					score: s,
+				})
+			}
 		}
+		sort.Slice(scored, func(a, b int) bool {
+			return scored[a].score < scored[b].score
+		})
+		for i := range scored {
+			idx := scored[i].index
+			if idx >= 0 && idx < len(items) {
+				filtered = append(filtered, items[idx])
+			}
+		}
+		scoredDst = scored
 	}
+
 	hl := 0
 	if len(filtered) > 0 {
 		hl = intClamp(rawHighlight, 0, len(filtered)-1)
 	}
-	ids := make([]string, 0, len(filtered))
-	for _, item := range filtered {
-		if !item.IsSubheading {
-			ids = append(ids, item.ID)
+
+	ids := idsDst[:0]
+	for i := range filtered {
+		if !filtered[i].IsSubheading {
+			ids = append(ids, filtered[i].ID)
 		}
 	}
-	return ListCorePrepared{Items: filtered, IDs: ids, HL: hl}
+	return ListCorePrepared{Items: filtered, IDs: ids, HL: hl}, scoredDst
+}
+
+// listCorePrepare filters items by query, clamps highlight, and
+// collects selectable IDs. Skips subheadings from IDs.
+func listCorePrepare(items []ListCoreItem, query string, rawHighlight int) ListCorePrepared {
+	prepared, _ := listCorePrepareInto(items, query, rawHighlight, nil, nil, nil)
+	return prepared
+}
+
+func listCoreSelectedSet(selectedIDs []string) map[string]struct{} {
+	if len(selectedIDs) < 2 {
+		return nil
+	}
+	out := make(map[string]struct{}, len(selectedIDs))
+	for i := range selectedIDs {
+		out[selectedIDs[i]] = struct{}{}
+	}
+	return out
+}
+
+func listCoreContainsSelected(selectedSet map[string]struct{}, selectedIDs []string, id string) bool {
+	if selectedSet != nil {
+		_, ok := selectedSet[id]
+		return ok
+	}
+	return containsStr(selectedIDs, id)
 }
 
 // listCoreViews builds visible item views with virtualization
@@ -251,12 +308,13 @@ func listCoreViews(items []ListCoreItem, cfg ListCoreCfg, first, last, highlight
 		}))
 	}
 
+	selectedSet := listCoreSelectedSet(selectedIDs)
 	for idx := first; idx <= last; idx++ {
 		if idx < 0 || idx >= total {
 			continue
 		}
 		isHL := idx == highlighted
-		isSel := containsStr(selectedIDs, items[idx].ID)
+		isSel := listCoreContainsSelected(selectedSet, selectedIDs, items[idx].ID)
 		views = append(views,
 			listCoreItemView(items[idx], idx, isHL, isSel, cfg))
 	}

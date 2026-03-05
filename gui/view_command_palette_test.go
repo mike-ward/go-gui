@@ -92,3 +92,46 @@ func TestPaletteOnKeyDownSelect(t *testing.T) {
 		t.Errorf("selected = %q, want cmd1", selected)
 	}
 }
+
+func TestCommandPaletteItemsCacheInvalidatesOnItemsChange(t *testing.T) {
+	w := &Window{}
+	id := "cp-cache"
+	CommandPaletteShow(id, 1, w)
+
+	v := CommandPalette(CommandPaletteCfg{
+		ID: id,
+		Items: []CommandPaletteItem{
+			{ID: "a", Label: "A"},
+		},
+		OnAction: func(_ string, _ *Event, _ *Window) {},
+		IDFocus:  1,
+	})
+	_ = GenerateViewLayout(v, w)
+
+	cm := StateMapRead[string, *cmdPaletteItemsCache](w, nsCmdPaletteItems)
+	if cm == nil {
+		t.Fatal("expected command palette items cache map")
+	}
+	cache, ok := cm.Get(id)
+	if !ok || cache == nil {
+		t.Fatal("expected command palette cache entry")
+	}
+	if got := len(cache.items); got != 1 {
+		t.Fatalf("cache items len = %d, want 1", got)
+	}
+
+	v = CommandPalette(CommandPaletteCfg{
+		ID: id,
+		Items: []CommandPaletteItem{
+			{ID: "a", Label: "A"},
+			{ID: "b", Label: "B"},
+		},
+		OnAction: func(_ string, _ *Event, _ *Window) {},
+		IDFocus:  1,
+	})
+	_ = GenerateViewLayout(v, w)
+	cache, _ = cm.Get(id)
+	if got := len(cache.items); got != 2 {
+		t.Fatalf("cache items len = %d, want 2", got)
+	}
+}
