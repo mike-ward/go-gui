@@ -92,9 +92,14 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 		if len(itemCfg.Submenu) > 0 {
 			textContent += "  \u203A"
 		}
+		mode := TextModeSingleLine
+		if itemCfg.sizing == FillFit {
+			mode = TextModeWrap
+		}
 		content = Text(TextCfg{
 			Text:      textContent,
 			TextStyle: itemCfg.textStyle,
+			Mode:      mode,
 		})
 	}
 
