@@ -21,6 +21,8 @@ type WindowCfg struct {
 	OnInit         func(*Window)
 	OnEvent        func(*Event, *Window)
 	BgColor        Color
+	// Timings enables per-frame pipeline timing instrumentation.
+	Timings bool
 }
 
 // NewWindow creates a Window from the given configuration.

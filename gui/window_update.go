@@ -1,5 +1,14 @@
 package gui
 
+import "time"
+
+// FrameTimings holds per-frame pipeline stage durations.
+type FrameTimings struct {
+	ViewGen       time.Duration
+	LayoutArrange time.Duration
+	RenderBuild   time.Duration
+}
+
 // QueueCommand adds a command to the window's atomic command queue.
 // Commands execute on the main thread during the next frame update.
 // Preferred way to update UI state from other threads.
@@ -147,11 +156,28 @@ func (w *Window) Update() {
 		w.scratch.putLayerLayouts(w.layout.Children)
 	}
 
-	view := w.viewGenerator(w)
-	rootLayout := GenerateViewLayout(view, w)
-	layers := layoutArrange(&rootLayout, w)
-	w.layout = composeLayout(layers, w)
-	w.buildRenderers(w.Config.BgColor, w.WindowRect())
+	if w.Config.Timings {
+		t0 := time.Now()
+		view := w.viewGenerator(w)
+		rootLayout := GenerateViewLayout(view, w)
+		t1 := time.Now()
+		layers := layoutArrange(&rootLayout, w)
+		t2 := time.Now()
+		w.layout = composeLayout(layers, w)
+		w.buildRenderers(w.Config.BgColor, w.WindowRect())
+		t3 := time.Now()
+		w.frameTimings = FrameTimings{
+			ViewGen:       t1.Sub(t0),
+			LayoutArrange: t2.Sub(t1),
+			RenderBuild:   t3.Sub(t2),
+		}
+	} else {
+		view := w.viewGenerator(w)
+		rootLayout := GenerateViewLayout(view, w)
+		layers := layoutArrange(&rootLayout, w)
+		w.layout = composeLayout(layers, w)
+		w.buildRenderers(w.Config.BgColor, w.WindowRect())
+	}
 }
 
 // UpdateRenderOnly rebuilds renderers from the existing layout.

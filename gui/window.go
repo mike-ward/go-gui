@@ -42,6 +42,9 @@ type Window struct {
 	// Clip radius propagated during render walk.
 	clipRadius float32
 
+	// Per-frame pipeline timings.
+	frameTimings FrameTimings
+
 	// Refresh flags.
 	refreshLayout     bool
 	refreshRenderOnly bool
@@ -327,6 +330,9 @@ func (w *Window) GetClipboard() string {
 func (w *Window) Renderers() []RenderCmd {
 	return w.renderers
 }
+
+// Timings returns the most recent frame's pipeline timings.
+func (w *Window) Timings() FrameTimings { return w.frameTimings }
 
 // MouseCursorState returns the current mouse cursor shape.
 func (w *Window) MouseCursorState() MouseCursor {
