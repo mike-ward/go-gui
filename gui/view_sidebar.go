@@ -41,7 +41,7 @@ func (w *Window) Sidebar(cfg SidebarCfg) View {
 	if cfg.Sizing == (Sizing{}) {
 		cfg.Sizing = FixedFill
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ColorPanel
 	}
 	if cfg.Padding == (Padding{}) {

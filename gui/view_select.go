@@ -426,19 +426,19 @@ func fnvSum32(s string) uint32 {
 
 func applySelectDefaults(cfg *SelectCfg) {
 	d := &DefaultButtonStyle
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.ColorBorderFocus == (Color{}) {
+	if !cfg.ColorBorderFocus.IsSet() {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
-	if cfg.ColorFocus == (Color{}) {
+	if !cfg.ColorFocus.IsSet() {
 		cfg.ColorFocus = d.ColorFocus
 	}
-	if cfg.ColorSelect == (Color{}) {
+	if !cfg.ColorSelect.IsSet() {
 		cfg.ColorSelect = colorSelectDark
 	}
 	if cfg.Padding == (Padding{}) {

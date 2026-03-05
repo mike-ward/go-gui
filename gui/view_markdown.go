@@ -348,7 +348,7 @@ func renderMdCode(
 	var btnContent []View
 	if copied {
 		checkStyle := iconStyle
-		checkStyle.Color = Color{80, 200, 80, 255}
+		checkStyle.Color = Color{80, 200, 80, 255, true}
 		btnContent = []View{
 			Text(TextCfg{Text: IconCheck, TextStyle: checkStyle}),
 		}
@@ -703,7 +703,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 	var docBtnContent []View
 	if docCopied {
 		cs := docIconStyle
-		cs.Color = Color{80, 200, 80, 255}
+		cs.Color = Color{80, 200, 80, 255, true}
 		docBtnContent = []View{
 			Text(TextCfg{Text: IconCheck, TextStyle: cs}),
 		}

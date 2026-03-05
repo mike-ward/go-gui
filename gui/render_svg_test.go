@@ -80,9 +80,9 @@ func TestEmitSvgPathRendererTint(t *testing.T) {
 	w := &Window{}
 	path := CachedSvgPath{
 		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
-		Color:     Color{0, 0, 0, 255},
+		Color:     Color{0, 0, 0, 255, true},
 	}
-	tint := Color{255, 0, 0, 200}
+	tint := Color{255, 0, 0, 200, true}
 	emitSvgPathRenderer(path, tint, 0, 0, 1.0, nil, w)
 
 	if len(w.renderers) != 1 {
@@ -100,14 +100,14 @@ func TestEmitSvgPathRendererVertexColors(t *testing.T) {
 	w := &Window{}
 	path := CachedSvgPath{
 		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
-		Color:     Color{0, 0, 0, 255},
+		Color:     Color{0, 0, 0, 255, true},
 		VertexColors: []Color{
-			{255, 0, 0, 255},
-			{0, 255, 0, 255},
-			{0, 0, 255, 255},
-			{255, 255, 0, 255},
-			{0, 255, 255, 255},
-			{255, 0, 255, 255},
+			{255, 0, 0, 255, true},
+			{0, 255, 0, 255, true},
+			{0, 0, 255, 255, true},
+			{255, 255, 0, 255, true},
+			{0, 255, 255, 255, true},
+			{255, 0, 255, 255, true},
 		},
 	}
 	// No tint (A=0) → vertex colors used.
@@ -123,14 +123,14 @@ func TestEmitSvgPathRendererAnimatedVertexAlphaNoCopy(t *testing.T) {
 	w := &Window{}
 	path := CachedSvgPath{
 		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
-		Color:     Color{0, 0, 0, 255},
+		Color:     Color{0, 0, 0, 255, true},
 		VertexColors: []Color{
-			{255, 0, 0, 255},
-			{0, 255, 0, 255},
-			{0, 0, 255, 255},
-			{255, 255, 0, 255},
-			{0, 255, 255, 255},
-			{255, 0, 255, 255},
+			{255, 0, 0, 255, true},
+			{0, 255, 0, 255, true},
+			{0, 0, 255, 255, true},
+			{255, 255, 0, 255, true},
+			{0, 255, 255, 255, true},
+			{255, 0, 255, 255, true},
 		},
 		GroupID: "g1",
 	}
@@ -158,7 +158,7 @@ func TestEmitCachedSvgTextDraw(t *testing.T) {
 		TextStyle: TextStyle{
 			Family: "sans",
 			Size:   12,
-			Color:  Color{0, 0, 0, 255},
+			Color:  Color{0, 0, 0, 255, true},
 		},
 		X: 5,
 		Y: 10,
@@ -195,11 +195,11 @@ func TestEmitCachedSvgTextDrawWithStyle(t *testing.T) {
 		TextStyle: TextStyle{
 			Family:        "serif",
 			Size:          24,
-			Color:         Color{255, 0, 0, 255},
+			Color:         Color{255, 0, 0, 255, true},
 			Underline:     true,
 			Strikethrough: true,
 			StrokeWidth:   2,
-			StrokeColor:   Color{0, 0, 255, 255},
+			StrokeColor:   Color{0, 0, 255, 255, true},
 		},
 		X: 10,
 		Y: 20,
@@ -230,7 +230,7 @@ func TestEmitCachedSvgTextPathDraw(t *testing.T) {
 		TextStyle: TextStyle{
 			Family: "sans",
 			Size:   12,
-			Color:  Color{10, 20, 30, 255},
+			Color:  Color{10, 20, 30, 255, true},
 		},
 		Path: TextPathData{
 			Polyline: []float32{0, 0, 10, 0},

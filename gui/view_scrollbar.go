@@ -35,10 +35,10 @@ const (
 )
 
 func applyScrollbarDefaults(cfg *ScrollbarCfg) {
-	if cfg.ColorThumb == (Color{}) {
+	if !cfg.ColorThumb.IsSet() {
 		cfg.ColorThumb = RGB(140, 140, 140)
 	}
-	if cfg.ColorBackground == (Color{}) {
+	if !cfg.ColorBackground.IsSet() {
 		cfg.ColorBackground = ColorTransparent
 	}
 	if cfg.Size == 0 {

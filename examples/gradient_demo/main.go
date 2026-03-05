@@ -111,8 +111,8 @@ func gradientBox(w, h, radius float32, grad *gui.GradientDef,
 }
 
 var (
-	magenta = gui.Color{R: 255, G: 0, B: 255, A: 255}
-	cyan    = gui.Color{R: 0, G: 255, B: 255, A: 255}
+	magenta = gui.RGBA(255, 0, 255, 255)
+	cyan    = gui.RGBA(0, 255, 255, 255)
 )
 
 func mainView(w *gui.Window) gui.View {
@@ -185,7 +185,7 @@ func mainView(w *gui.Window) gui.View {
 							linearGradient(dir, gui.Green, gui.Blue),
 							&gui.BoxShadow{
 								BlurRadius: 20,
-								Color:      gui.Color{A: 50},
+								Color:      gui.RGBA(0, 0, 0, 50),
 								OffsetY:    5,
 							},
 							"Gradient + Shadow", gui.White),

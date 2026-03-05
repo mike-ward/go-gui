@@ -33,7 +33,7 @@ func TestColorPickerLayoutWithHSV(t *testing.T) {
 func TestColorPickerDefaults(t *testing.T) {
 	cfg := ColorPickerCfg{}
 	applyColorPickerDefaults(&cfg)
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		t.Error("Color should default to Red")
 	}
 	if cfg.Style.SVSize == 0 {
@@ -173,7 +173,7 @@ func TestCpSVMouseAction(t *testing.T) {
 	if hsv.V < 0.74 || hsv.V > 0.76 {
 		t.Errorf("V = %f, want ~0.75", hsv.V)
 	}
-	if gotColor == (Color{}) {
+	if !gotColor.IsSet() {
 		t.Error("onChange should be called")
 	}
 }
@@ -207,7 +207,7 @@ func TestCpHueMouseAction(t *testing.T) {
 	if hsv.H < 179 || hsv.H > 181 {
 		t.Errorf("H = %f, want ~180", hsv.H)
 	}
-	if gotColor == (Color{}) {
+	if !gotColor.IsSet() {
 		t.Error("onChange should be called")
 	}
 }

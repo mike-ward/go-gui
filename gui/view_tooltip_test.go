@@ -24,7 +24,7 @@ func TestTooltipCfgDefaults(t *testing.T) {
 	cfg := TooltipCfg{ID: "test"}
 	applyTooltipDefaults(&cfg)
 
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		t.Error("expected non-zero Color")
 	}
 	if cfg.Delay == 0 {

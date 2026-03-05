@@ -133,25 +133,25 @@ func applyToggleDefaults(cfg *ToggleCfg) {
 	if cfg.TextUnselect == "" {
 		cfg.TextUnselect = " "
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorFocus == (Color{}) {
+	if !cfg.ColorFocus.IsSet() {
 		cfg.ColorFocus = d.ColorFocus
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = d.ColorHover
 	}
-	if cfg.ColorClick == (Color{}) {
+	if !cfg.ColorClick.IsSet() {
 		cfg.ColorClick = d.ColorClick
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.ColorBorderFocus == (Color{}) {
+	if !cfg.ColorBorderFocus.IsSet() {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
-	if cfg.ColorSelect == (Color{}) {
+	if !cfg.ColorSelect.IsSet() {
 		cfg.ColorSelect = colorSelectDark
 	}
 

@@ -362,13 +362,13 @@ func applyCommandPaletteDefaults(cfg *CommandPaletteCfg) {
 	if cfg.Placeholder == "" {
 		cfg.Placeholder = "Type a command..."
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.ColorHighlight == (Color{}) {
+	if !cfg.ColorHighlight.IsSet() {
 		cfg.ColorHighlight = d.ColorHighlight
 	}
 	if cfg.Width == 0 {
@@ -383,7 +383,7 @@ func applyCommandPaletteDefaults(cfg *CommandPaletteCfg) {
 	if cfg.DetailStyle == (TextStyle{}) {
 		cfg.DetailStyle = d.DetailStyle
 	}
-	if cfg.BackdropColor == (Color{}) {
+	if !cfg.BackdropColor.IsSet() {
 		cfg.BackdropColor = d.BackdropColor
 	}
 }

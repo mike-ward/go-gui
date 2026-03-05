@@ -58,13 +58,13 @@ func guiStyleToGlyphConfig(s gui.TextStyle) glyph.TextConfig {
 		Style: glyph.TextStyle{
 			FontName:      s.Family,
 			Size:          s.Size,
-			Color:         glyph.Color(s.Color),
+			Color:         glyph.Color{R: s.Color.R, G: s.Color.G, B: s.Color.B, A: s.Color.A},
 			Typeface:      s.Typeface,
 			Underline:     s.Underline,
 			Strikethrough: s.Strikethrough,
 			LetterSpacing: s.LetterSpacing,
 			StrokeWidth:   s.StrokeWidth,
-			StrokeColor:   glyph.Color(s.StrokeColor),
+			StrokeColor:   glyph.Color{R: s.StrokeColor.R, G: s.StrokeColor.G, B: s.StrokeColor.B, A: s.StrokeColor.A},
 		},
 		Block: glyph.DefaultBlockStyle(),
 	}

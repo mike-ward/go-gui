@@ -585,8 +585,7 @@ func (b *Backend) endFilter() {
 	if b.pipelines.filterTex.uTex >= 0 {
 		gogl.Uniform1i(b.pipelines.filterTex.uTex, 0)
 	}
-	gc := gui.Color{R: 255, G: 255, B: 255,
-		A: uint8(glowAlpha * 255)}
+	gc := gui.RGBA(255, 255, 255, uint8(glowAlpha*255))
 	b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH), gc)
 	gogl.BindTexture(gogl.TEXTURE_2D, 0)
 }

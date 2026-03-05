@@ -60,7 +60,7 @@ type TextStyle struct {
 
 // mergeTextStyle fills zero fields in s from fallback.
 func mergeTextStyle(s, fallback TextStyle) TextStyle {
-	if s.Color == (Color{}) {
+	if !s.Color.IsSet() {
 		s.Color = fallback.Color
 	}
 	if s.Size == 0 {
@@ -73,15 +73,15 @@ func mergeTextStyle(s, fallback TextStyle) TextStyle {
 func (ts TextStyle) ToGlyphStyle() glyph.TextStyle {
 	return glyph.TextStyle{
 		FontName:      ts.Family,
-		Color:         glyph.Color(ts.Color),
-		BgColor:       glyph.Color(ts.BgColor),
+		Color:         glyph.Color{R: ts.Color.R, G: ts.Color.G, B: ts.Color.B, A: ts.Color.A},
+		BgColor:       glyph.Color{R: ts.BgColor.R, G: ts.BgColor.G, B: ts.BgColor.B, A: ts.BgColor.A},
 		Size:          ts.Size,
 		Features:      ts.Features,
 		Underline:     ts.Underline,
 		Strikethrough: ts.Strikethrough,
 		Typeface:      ts.Typeface,
 		StrokeWidth:   ts.StrokeWidth,
-		StrokeColor:   glyph.Color(ts.StrokeColor),
+		StrokeColor:   glyph.Color{R: ts.StrokeColor.R, G: ts.StrokeColor.G, B: ts.StrokeColor.B, A: ts.StrokeColor.A},
 	}
 }
 

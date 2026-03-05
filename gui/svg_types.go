@@ -131,5 +131,5 @@ const (
 
 // svgToColor converts an SvgColor to a gui Color.
 func svgToColor(c SvgColor) Color {
-	return Color{c.R, c.G, c.B, c.A}
+	return Color{c.R, c.G, c.B, c.A, true}
 }

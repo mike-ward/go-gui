@@ -119,12 +119,7 @@ func fauxEditMenu(theme gui.Theme) gui.View {
 				FloatAnchor: gui.FloatBottomLeft,
 				MinWidth:    75,
 				MaxWidth:    100,
-				Color: gui.Color{
-					R: theme.ColorFocus.R,
-					G: theme.ColorFocus.G,
-					B: theme.ColorFocus.B,
-					A: 210,
-				},
+				Color: gui.RGBA(theme.ColorFocus.R, theme.ColorFocus.G, theme.ColorFocus.B, 210),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Cut"}),
 					gui.Text(gui.TextCfg{Text: "Copy"}),
@@ -139,12 +134,7 @@ func fauxEditMenu(theme gui.Theme) gui.View {
 								FloatOffsetX: 5,
 								MinWidth:     75,
 								MaxWidth:     100,
-								Color: gui.Color{
-									R: theme.ColorFocus.R,
-									G: theme.ColorFocus.G,
-									B: theme.ColorFocus.B,
-									A: 210,
-								},
+								Color: gui.RGBA(theme.ColorFocus.R, theme.ColorFocus.G, theme.ColorFocus.B, 210),
 								Content: []gui.View{
 									gui.Text(gui.TextCfg{Text: "Clean"}),
 									gui.Text(gui.TextCfg{Text: "Selection"}),

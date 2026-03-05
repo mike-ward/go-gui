@@ -118,25 +118,25 @@ func applyDockLayoutDefaults(cfg *DockLayoutCfg) {
 	if cfg.Sizing == (Sizing{}) {
 		cfg.Sizing = FillFill
 	}
-	if cfg.ColorZonePreview == (Color{}) {
-		cfg.ColorZonePreview = Color{70, 130, 220, 80}
+	if !cfg.ColorZonePreview.IsSet() {
+		cfg.ColorZonePreview = Color{70, 130, 220, 80, true}
 	}
-	if cfg.ColorTab == (Color{}) {
+	if !cfg.ColorTab.IsSet() {
 		cfg.ColorTab = guiTheme.ColorPanel
 	}
-	if cfg.ColorTabActive == (Color{}) {
+	if !cfg.ColorTabActive.IsSet() {
 		cfg.ColorTabActive = guiTheme.ColorPanel
 	}
-	if cfg.ColorTabHover == (Color{}) {
+	if !cfg.ColorTabHover.IsSet() {
 		cfg.ColorTabHover = guiTheme.ColorHover
 	}
-	if cfg.ColorTabBar == (Color{}) {
+	if !cfg.ColorTabBar.IsSet() {
 		cfg.ColorTabBar = guiTheme.ColorPanel
 	}
-	if cfg.ColorTabSeparator == (Color{}) {
+	if !cfg.ColorTabSeparator.IsSet() {
 		cfg.ColorTabSeparator = guiTheme.ColorBorder
 	}
-	if cfg.ColorContent == (Color{}) {
+	if !cfg.ColorContent.IsSet() {
 		cfg.ColorContent = guiTheme.ColorBackground
 	}
 }

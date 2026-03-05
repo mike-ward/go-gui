@@ -158,31 +158,31 @@ func applySplitterDefaults(cfg *SplitterCfg) {
 	if cfg.DragStepLarge == 0 {
 		cfg.DragStepLarge = s.DragStepLarge
 	}
-	if cfg.ColorHandle == (Color{}) {
+	if !cfg.ColorHandle.IsSet() {
 		cfg.ColorHandle = s.ColorHandle
 	}
-	if cfg.ColorHandleHover == (Color{}) {
+	if !cfg.ColorHandleHover.IsSet() {
 		cfg.ColorHandleHover = s.ColorHandleHover
 	}
-	if cfg.ColorHandleActive == (Color{}) {
+	if !cfg.ColorHandleActive.IsSet() {
 		cfg.ColorHandleActive = s.ColorHandleActive
 	}
-	if cfg.ColorHandleBorder == (Color{}) {
+	if !cfg.ColorHandleBorder.IsSet() {
 		cfg.ColorHandleBorder = s.ColorHandleBorder
 	}
-	if cfg.ColorGrip == (Color{}) {
+	if !cfg.ColorGrip.IsSet() {
 		cfg.ColorGrip = s.ColorGrip
 	}
-	if cfg.ColorButton == (Color{}) {
+	if !cfg.ColorButton.IsSet() {
 		cfg.ColorButton = s.ColorButton
 	}
-	if cfg.ColorButtonHover == (Color{}) {
+	if !cfg.ColorButtonHover.IsSet() {
 		cfg.ColorButtonHover = s.ColorButtonHover
 	}
-	if cfg.ColorButtonActive == (Color{}) {
+	if !cfg.ColorButtonActive.IsSet() {
 		cfg.ColorButtonActive = s.ColorButtonActive
 	}
-	if cfg.ColorButtonIcon == (Color{}) {
+	if !cfg.ColorButtonIcon.IsSet() {
 		cfg.ColorButtonIcon = s.ColorButtonIcon
 	}
 	if cfg.SizeBorder == 0 {

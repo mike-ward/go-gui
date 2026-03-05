@@ -56,16 +56,16 @@ func TestApplyDockLayoutDefaults(t *testing.T) {
 	if cfg.Sizing != FillFill {
 		t.Fatal("sizing default")
 	}
-	if cfg.ColorZonePreview == (Color{}) {
+	if !cfg.ColorZonePreview.IsSet() {
 		t.Fatal("zone preview color should be set")
 	}
-	if cfg.ColorTab == (Color{}) {
+	if !cfg.ColorTab.IsSet() {
 		t.Fatal("tab color should be set")
 	}
 }
 
 func TestApplyDockLayoutDefaultsPreservesExplicit(t *testing.T) {
-	c := Color{255, 0, 0, 255}
+	c := Color{255, 0, 0, 255, true}
 	cfg := DockLayoutCfg{
 		Sizing:           FixedFixed,
 		ColorZonePreview: c,
@@ -300,7 +300,7 @@ func TestNewDockLayoutCore(t *testing.T) {
 		ID:               "d1",
 		Root:             DockPanelGroup("g", nil, ""),
 		OnLayoutChange:   func(_ *DockNode, _ *Window) { called = true },
-		ColorZonePreview: Color{1, 2, 3, 4},
+		ColorZonePreview: Color{1, 2, 3, 4, true},
 	}
 	core := newDockLayoutCore(cfg)
 	if core.id != "d1" {
@@ -309,7 +309,7 @@ func TestNewDockLayoutCore(t *testing.T) {
 	if core.root != cfg.Root {
 		t.Fatal("wrong root")
 	}
-	if core.colorZonePreview != (Color{1, 2, 3, 4}) {
+	if core.colorZonePreview != (Color{1, 2, 3, 4, true}) {
 		t.Fatal("wrong color")
 	}
 	core.onLayoutChange(nil, nil)

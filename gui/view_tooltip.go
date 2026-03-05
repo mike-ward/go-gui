@@ -96,13 +96,13 @@ func AnimationTooltip(cfg TooltipCfg) *Animate {
 
 func applyTooltipDefaults(cfg *TooltipCfg) {
 	d := &DefaultTooltipStyle
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = d.ColorHover
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
 	if cfg.Padding == (Padding{}) {

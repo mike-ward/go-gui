@@ -203,7 +203,7 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 		w := r.W*s + 2*off
 		h := r.H*s + 2*off
 		if r.Radius > 0 {
-			c := gui.Color{R: r.Color.R, G: r.Color.G, B: r.Color.B, A: a}
+			c := gui.RGBA(r.Color.R, r.Color.G, r.Color.B, a)
 			b.fillRoundedRect(x, y, w, h, r.Radius*s+off, c)
 		} else {
 			b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)

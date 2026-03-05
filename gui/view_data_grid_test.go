@@ -517,7 +517,7 @@ func TestDataGridPagerEnabledZeroPageSize(t *testing.T) {
 
 func TestDataGridIndicatorTextStyleDimsAlpha(t *testing.T) {
 	base := TextStyle{
-		Color: Color{R: 200, G: 100, B: 50, A: 255},
+		Color: Color{R: 200, G: 100, B: 50, A: 255, set: true},
 		Size:  14,
 	}
 	got := dataGridIndicatorTextStyle(base)

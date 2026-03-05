@@ -40,13 +40,13 @@ func ProgressBar(cfg ProgressBarCfg) View {
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = guiTheme.TextStyleDef
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ProgressBarStyle.Color
 	}
-	if cfg.ColorBar == (Color{}) {
+	if !cfg.ColorBar.IsSet() {
 		cfg.ColorBar = guiTheme.ProgressBarStyle.ColorBar
 	}
-	if cfg.TextBackground == (Color{}) {
+	if !cfg.TextBackground.IsSet() {
 		cfg.TextBackground = guiTheme.ProgressBarStyle.TextBackground
 	}
 	if cfg.TextPadding == (Padding{}) {

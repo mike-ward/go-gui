@@ -341,22 +341,22 @@ func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idF
 
 func applyComboboxDefaults(cfg *ComboboxCfg) {
 	d := &DefaultComboboxStyle
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = d.ColorHover
 	}
-	if cfg.ColorFocus == (Color{}) {
+	if !cfg.ColorFocus.IsSet() {
 		cfg.ColorFocus = d.ColorFocus
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.ColorBorderFocus == (Color{}) {
+	if !cfg.ColorBorderFocus.IsSet() {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
-	if cfg.ColorHighlight == (Color{}) {
+	if !cfg.ColorHighlight.IsSet() {
 		cfg.ColorHighlight = d.ColorHighlight
 	}
 	if cfg.Padding == (Padding{}) {

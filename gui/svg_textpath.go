@@ -69,7 +69,7 @@ func renderSvgTextPath(tp SvgTextPath, defsPaths map[string]string,
 	}
 	if tp.Opacity < 1.0 {
 		ts.Color = Color{tp.Color.R, tp.Color.G, tp.Color.B,
-			uint8(float32(tp.Color.A) * tp.Opacity)}
+			uint8(float32(tp.Color.A) * tp.Opacity), true}
 	} else {
 		ts.Color = svgToColor(tp.Color)
 	}

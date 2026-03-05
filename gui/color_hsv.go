@@ -70,10 +70,11 @@ func ColorFromHSVA(h, s, v float32, a uint8) Color {
 	}
 
 	return Color{
-		R: uint8((r + m) * 255.0),
-		G: uint8((g + m) * 255.0),
-		B: uint8((b + m) * 255.0),
-		A: a,
+		R:   uint8((r + m) * 255.0),
+		G:   uint8((g + m) * 255.0),
+		B:   uint8((b + m) * 255.0),
+		A:   a,
+		set: true,
 	}
 }
 
@@ -119,7 +120,7 @@ func ColorFromHexString(s string) (Color, bool) {
 			return Color{}, false
 		}
 	}
-	return Color{R: r, G: g, B: b, A: a}, true
+	return Color{R: r, G: g, B: b, A: a, set: true}, true
 }
 
 func hexPair(hi, lo byte) (uint8, bool) {

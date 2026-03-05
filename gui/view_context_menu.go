@@ -148,13 +148,13 @@ func contextMenuPopup(w *Window, cfg ContextMenuCfg, mx, my float32) View {
 // from DefaultMenubarStyle.
 func applyContextMenuDefaults(cfg *ContextMenuCfg) {
 	d := &DefaultMenubarStyle
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.ColorSelect == (Color{}) {
+	if !cfg.ColorSelect.IsSet() {
 		cfg.ColorSelect = d.ColorSelect
 	}
 	if cfg.TextStyle == (TextStyle{}) {

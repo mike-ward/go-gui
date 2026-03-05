@@ -31,7 +31,7 @@ func DrawCanvas(cfg DrawCanvasCfg) View {
 	if cfg.Sizing == (Sizing{}) {
 		cfg.Sizing = FixedFixed
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = ColorTransparent
 	}
 	return &drawCanvasView{cfg: cfg}

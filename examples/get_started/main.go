@@ -49,7 +49,7 @@ func mainView(w *gui.Window) gui.View {
 					gui.Button(gui.ButtonCfg{
 						IDFocus: 1,
 						Shadow: &gui.BoxShadow{
-							Color:      gui.Color{B: 64, A: 64},
+							Color:      gui.RGBA(0, 0, 64, 64),
 							BlurRadius: 3,
 						},
 						Content: []gui.View{

@@ -42,25 +42,25 @@ type RangeSliderCfg struct {
 
 // RangeSlider creates a range slider view.
 func RangeSlider(cfg RangeSliderCfg) View {
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.RangeSliderStyle.Color
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = guiTheme.RangeSliderStyle.ColorBorder
 	}
-	if cfg.ColorThumb == (Color{}) {
+	if !cfg.ColorThumb.IsSet() {
 		cfg.ColorThumb = guiTheme.RangeSliderStyle.ColorThumb
 	}
-	if cfg.ColorFocus == (Color{}) {
+	if !cfg.ColorFocus.IsSet() {
 		cfg.ColorFocus = guiTheme.RangeSliderStyle.ColorFocus
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = guiTheme.RangeSliderStyle.ColorHover
 	}
-	if cfg.ColorLeft == (Color{}) {
+	if !cfg.ColorLeft.IsSet() {
 		cfg.ColorLeft = guiTheme.RangeSliderStyle.ColorLeft
 	}
-	if cfg.ColorClick == (Color{}) {
+	if !cfg.ColorClick.IsSet() {
 		cfg.ColorClick = guiTheme.RangeSliderStyle.ColorClick
 	}
 	if cfg.SizeBorder == 0 {

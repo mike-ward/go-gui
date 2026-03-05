@@ -28,16 +28,16 @@ type ExpandPanelCfg struct {
 
 // ExpandPanel creates an expandable panel view.
 func ExpandPanel(cfg ExpandPanelCfg) View {
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ExpandPanelStyle.Color
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = guiTheme.ExpandPanelStyle.ColorHover
 	}
-	if cfg.ColorClick == (Color{}) {
+	if !cfg.ColorClick.IsSet() {
 		cfg.ColorClick = guiTheme.ExpandPanelStyle.ColorClick
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = guiTheme.ExpandPanelStyle.ColorBorder
 	}
 	if cfg.Padding == (Padding{}) {

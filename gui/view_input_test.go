@@ -87,7 +87,7 @@ func TestInputPasswordMaskEmoji(t *testing.T) {
 func TestInputDefaults(t *testing.T) {
 	cfg := InputCfg{}
 	applyInputDefaults(&cfg)
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		t.Fatal("Color not defaulted")
 	}
 	if !cfg.Radius.IsSet() {

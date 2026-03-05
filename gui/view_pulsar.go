@@ -22,7 +22,7 @@ func Pulsar(cfg PulsarCfg, w *Window) View {
 	if cfg.Size == 0 {
 		cfg.Size = guiTheme.SizeTextMedium
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.TextStyleDef.Color
 	}
 

@@ -326,7 +326,7 @@ func applyRollerDefaults(cfg *DatePickerRollerCfg) {
 	if cfg.VisibleItems%2 == 0 {
 		cfg.VisibleItems++
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ColorBackground
 	}
 	if cfg.TextStyle == (TextStyle{}) {

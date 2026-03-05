@@ -251,10 +251,10 @@ func dialogKeyDown(cfg DialogCfg) func(*Layout, *Event, *Window) {
 
 func applyDialogDefaults(cfg *DialogCfg) {
 	d := &DefaultDialogStyle
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
 	if cfg.Padding == (Padding{}) {

@@ -12,7 +12,7 @@ const (
 	dockDragGhostShadowOffY  = float32(2.0)
 )
 
-var dockDragGhostShadowColor = Color{0, 0, 0, 60}
+var dockDragGhostShadowColor = Color{0, 0, 0, 60, true}
 
 // DockDropZone identifies where a panel will be inserted on drop.
 type DockDropZone uint8

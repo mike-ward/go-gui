@@ -3,76 +3,89 @@ package gui
 import "fmt"
 
 // Color represents a 32-bit color value in sRGB format.
+// The set field distinguishes "not set" (zero value) from intentionally
+// transparent (RGBA 0,0,0,0). Use RGBA(), RGB(), Hex() constructors
+// to create set colors. Use IsSet() to check.
 type Color struct {
 	R, G, B, A uint8
+	set        bool
 }
 
 // Predefined colors.
 var (
-	Black          = Color{0, 0, 0, 255}
-	Gray           = Color{128, 128, 128, 255}
-	White          = Color{255, 255, 255, 255}
-	Red            = Color{255, 0, 0, 255}
-	Green          = Color{0, 255, 0, 255}
-	Blue           = Color{0, 0, 255, 255}
-	Yellow         = Color{255, 255, 0, 255}
-	Magenta        = Color{255, 0, 255, 255}
-	Cyan           = Color{0, 255, 255, 255}
-	Orange         = Color{255, 165, 0, 255}
-	Purple         = Color{128, 0, 128, 255}
-	Indigo         = Color{75, 0, 130, 255}
-	Pink           = Color{255, 192, 203, 255}
-	Violet         = Color{238, 130, 238, 255}
-	DarkBlue       = Color{0, 0, 139, 255}
-	DarkGray       = Color{169, 169, 169, 255}
-	DarkGreen      = Color{0, 100, 0, 255}
-	DarkRed        = Color{139, 0, 0, 255}
-	LightBlue      = Color{173, 216, 230, 255}
-	LightGray      = Color{211, 211, 211, 255}
-	LightGreen     = Color{144, 238, 144, 255}
-	LightRed       = Color{255, 204, 203, 255}
-	CornflowerBlue = Color{100, 149, 237, 255}
-	RoyalBlue      = Color{65, 105, 225, 255}
-	ColorTransparent = Color{0, 0, 0, 0}
+	Black            = Color{0, 0, 0, 255, true}
+	Gray             = Color{128, 128, 128, 255, true}
+	White            = Color{255, 255, 255, 255, true}
+	Red              = Color{255, 0, 0, 255, true}
+	Green            = Color{0, 255, 0, 255, true}
+	Blue             = Color{0, 0, 255, 255, true}
+	Yellow           = Color{255, 255, 0, 255, true}
+	Magenta          = Color{255, 0, 255, 255, true}
+	Cyan             = Color{0, 255, 255, 255, true}
+	Orange           = Color{255, 165, 0, 255, true}
+	Purple           = Color{128, 0, 128, 255, true}
+	Indigo           = Color{75, 0, 130, 255, true}
+	Pink             = Color{255, 192, 203, 255, true}
+	Violet           = Color{238, 130, 238, 255, true}
+	DarkBlue         = Color{0, 0, 139, 255, true}
+	DarkGray         = Color{169, 169, 169, 255, true}
+	DarkGreen        = Color{0, 100, 0, 255, true}
+	DarkRed          = Color{139, 0, 0, 255, true}
+	LightBlue        = Color{173, 216, 230, 255, true}
+	LightGray        = Color{211, 211, 211, 255, true}
+	LightGreen       = Color{144, 238, 144, 255, true}
+	LightRed         = Color{255, 204, 203, 255, true}
+	CornflowerBlue   = Color{100, 149, 237, 255, true}
+	RoyalBlue        = Color{65, 105, 225, 255, true}
+	ColorTransparent = Color{0, 0, 0, 0, true}
 )
 
 // Hex creates a Color from a hexadecimal integer (0xRRGGBB).
 func Hex(color int) Color {
 	return Color{
-		R: uint8((color >> 16) & 0xFF),
-		G: uint8((color >> 8) & 0xFF),
-		B: uint8(color & 0xFF),
-		A: 255,
+		R:   uint8((color >> 16) & 0xFF),
+		G:   uint8((color >> 8) & 0xFF),
+		B:   uint8(color & 0xFF),
+		A:   255,
+		set: true,
 	}
 }
 
 // RGB builds a Color from r, g, b values. Alpha defaults to 255.
 func RGB(r, g, b uint8) Color {
-	return Color{r, g, b, 255}
+	return Color{r, g, b, 255, true}
 }
 
 // RGBA builds a Color from r, g, b, a values.
 func RGBA(r, g, b, a uint8) Color {
-	return Color{r, g, b, a}
+	return Color{r, g, b, a, true}
+}
+
+// IsSet reports whether the color was explicitly set (via a constructor
+// or predefined var) as opposed to being the zero value.
+func (c Color) IsSet() bool {
+	return c.set
 }
 
 // WithOpacity returns color with alpha multiplied by opacity (0.0–1.0).
 func (c Color) WithOpacity(opacity float32) Color {
 	return Color{
-		R: c.R,
-		G: c.G,
-		B: c.B,
-		A: uint8(float32(c.A) * f32Clamp(opacity, 0, 1)),
+		R:   c.R,
+		G:   c.G,
+		B:   c.B,
+		A:   uint8(float32(c.A) * f32Clamp(opacity, 0, 1)),
+		set: c.set,
 	}
 }
 
 // Add returns a + b, clamping each channel to 255.
 func (a Color) Add(b Color) Color {
 	return Color{
-		R: clampAdd(a.R, b.R),
-		G: clampAdd(a.G, b.G),
-		B: clampAdd(a.B, b.B),
-		A: clampAdd(a.A, b.A),
+		R:   clampAdd(a.R, b.R),
+		G:   clampAdd(a.G, b.G),
+		B:   clampAdd(a.B, b.B),
+		A:   clampAdd(a.A, b.A),
+		set: true,
 	}
 }
 
@@ -83,10 +96,11 @@ func (a Color) Sub(b Color) Color {
 		aa = b.A
 	}
 	return Color{
-		R: clampSub(a.R, b.R),
-		G: clampSub(a.G, b.G),
-		B: clampSub(a.B, b.B),
-		A: aa,
+		R:   clampSub(a.R, b.R),
+		G:   clampSub(a.G, b.G),
+		B:   clampSub(a.B, b.B),
+		A:   aa,
+		set: true,
 	}
 }
 
@@ -102,10 +116,11 @@ func (a Color) Over(b Color) Color {
 	gr := (float32(a.G)*aa + float32(b.G)*ab*(1-aa)) / ar
 	br := (float32(a.B)*aa + float32(b.B)*ab*(1-aa)) / ar
 	return Color{
-		R: uint8(rr),
-		G: uint8(gr),
-		B: uint8(br),
-		A: uint8(ar * 255),
+		R:   uint8(rr),
+		G:   uint8(gr),
+		B:   uint8(br),
+		A:   uint8(ar * 255),
+		set: true,
 	}
 }
 
@@ -172,12 +187,12 @@ func ColorFromString(s string) Color {
 		if ok {
 			return c
 		}
-		return Color{A: 255}
+		return Color{A: 255, set: true}
 	}
 	if c, ok := stringColors[s]; ok {
 		return c
 	}
-	return Color{A: 255}
+	return Color{A: 255, set: true}
 }
 
 func clampAdd(a, b uint8) uint8 {

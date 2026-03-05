@@ -365,16 +365,16 @@ func containsStr(ss []string, s string) bool {
 
 func applyListBoxDefaults(cfg *ListBoxCfg) {
 	d := &DefaultButtonStyle
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = d.ColorHover
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.ColorSelect == (Color{}) {
+	if !cfg.ColorSelect.IsSet() {
 		cfg.ColorSelect = colorSelectDark
 	}
 	if cfg.Padding == (Padding{}) {

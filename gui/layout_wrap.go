@@ -79,7 +79,7 @@ func layoutWrapContainers(layout *Layout, w *Window) {
 				Sizing:    FixedFit,
 				Width:     available,
 				Spacing:   spacing,
-				Color:     Color{A: 0},
+				Color:     Color{},
 				HAlign:    layout.Shape.HAlign,
 				VAlign:    layout.Shape.VAlign,
 				TextDir:   layout.Shape.TextDir,

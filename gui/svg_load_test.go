@@ -28,7 +28,7 @@ func TestCachedSvgPathsConversion(t *testing.T) {
 		t.Fatalf("expected 1 path, got %d", len(result))
 	}
 	p := result[0]
-	if p.Color != (Color{255, 0, 0, 255}) {
+	if p.Color != (Color{255, 0, 0, 255, true}) {
 		t.Fatalf("expected red, got %+v", p.Color)
 	}
 	if !p.IsClipMask {
@@ -59,7 +59,7 @@ func TestCachedSvgPathsVertexColors(t *testing.T) {
 		t.Fatalf("expected 3 vertex colors, got %d",
 			len(result[0].VertexColors))
 	}
-	if result[0].VertexColors[0] != (Color{255, 0, 0, 255}) {
+	if result[0].VertexColors[0] != (Color{255, 0, 0, 255, true}) {
 		t.Fatalf("expected red vertex, got %+v",
 			result[0].VertexColors[0])
 	}

@@ -33,7 +33,7 @@ type BadgeCfg struct {
 // Badge creates a badge view. Dot mode renders a fixed-size
 // circle; labeled mode renders text inside a rounded row.
 func Badge(cfg BadgeCfg) View {
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.BadgeStyle.Color
 	}
 	if cfg.Padding == (Padding{}) {

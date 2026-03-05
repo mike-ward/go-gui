@@ -68,46 +68,46 @@ func applyTabControlDefaults(cfg *TabControlCfg) {
 	if cfg.Sizing == (Sizing{}) {
 		cfg.Sizing = FillFill
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = s.Color
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = s.ColorBorder
 	}
-	if cfg.ColorHeader == (Color{}) {
+	if !cfg.ColorHeader.IsSet() {
 		cfg.ColorHeader = s.ColorHeader
 	}
-	if cfg.ColorHeaderBorder == (Color{}) {
+	if !cfg.ColorHeaderBorder.IsSet() {
 		cfg.ColorHeaderBorder = s.ColorHeaderBorder
 	}
-	if cfg.ColorContent == (Color{}) {
+	if !cfg.ColorContent.IsSet() {
 		cfg.ColorContent = s.ColorContent
 	}
-	if cfg.ColorContentBorder == (Color{}) {
+	if !cfg.ColorContentBorder.IsSet() {
 		cfg.ColorContentBorder = s.ColorContentBorder
 	}
-	if cfg.ColorTab == (Color{}) {
+	if !cfg.ColorTab.IsSet() {
 		cfg.ColorTab = s.ColorTab
 	}
-	if cfg.ColorTabHover == (Color{}) {
+	if !cfg.ColorTabHover.IsSet() {
 		cfg.ColorTabHover = s.ColorTabHover
 	}
-	if cfg.ColorTabFocus == (Color{}) {
+	if !cfg.ColorTabFocus.IsSet() {
 		cfg.ColorTabFocus = s.ColorTabFocus
 	}
-	if cfg.ColorTabClick == (Color{}) {
+	if !cfg.ColorTabClick.IsSet() {
 		cfg.ColorTabClick = s.ColorTabClick
 	}
-	if cfg.ColorTabSelected == (Color{}) {
+	if !cfg.ColorTabSelected.IsSet() {
 		cfg.ColorTabSelected = s.ColorTabSelected
 	}
-	if cfg.ColorTabDisabled == (Color{}) {
+	if !cfg.ColorTabDisabled.IsSet() {
 		cfg.ColorTabDisabled = s.ColorTabDisabled
 	}
-	if cfg.ColorTabBorder == (Color{}) {
+	if !cfg.ColorTabBorder.IsSet() {
 		cfg.ColorTabBorder = s.ColorTabBorder
 	}
-	if cfg.ColorTabBorderFocus == (Color{}) {
+	if !cfg.ColorTabBorderFocus.IsSet() {
 		cfg.ColorTabBorderFocus = s.ColorTabBorderFocus
 	}
 	if cfg.Padding == (Padding{}) {

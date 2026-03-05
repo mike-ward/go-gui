@@ -6,7 +6,7 @@ func TestDialogCfgDefaults(t *testing.T) {
 	cfg := DialogCfg{}
 	applyDialogDefaults(&cfg)
 
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		t.Error("expected non-zero Color")
 	}
 	if cfg.IDFocus != dialogBaseIDFocus {

@@ -66,34 +66,34 @@ func applyBreadcrumbDefaults(cfg *BreadcrumbCfg) {
 	if cfg.Sizing == (Sizing{}) {
 		cfg.Sizing = FillFit
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = s.Color
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = s.ColorBorder
 	}
-	if cfg.ColorTrail == (Color{}) {
+	if !cfg.ColorTrail.IsSet() {
 		cfg.ColorTrail = s.ColorTrail
 	}
-	if cfg.ColorCrumb == (Color{}) {
+	if !cfg.ColorCrumb.IsSet() {
 		cfg.ColorCrumb = s.ColorCrumb
 	}
-	if cfg.ColorCrumbHover == (Color{}) {
+	if !cfg.ColorCrumbHover.IsSet() {
 		cfg.ColorCrumbHover = s.ColorCrumbHover
 	}
-	if cfg.ColorCrumbClick == (Color{}) {
+	if !cfg.ColorCrumbClick.IsSet() {
 		cfg.ColorCrumbClick = s.ColorCrumbClick
 	}
-	if cfg.ColorCrumbSelected == (Color{}) {
+	if !cfg.ColorCrumbSelected.IsSet() {
 		cfg.ColorCrumbSelected = s.ColorCrumbSelected
 	}
-	if cfg.ColorCrumbDisabled == (Color{}) {
+	if !cfg.ColorCrumbDisabled.IsSet() {
 		cfg.ColorCrumbDisabled = s.ColorCrumbDisabled
 	}
-	if cfg.ColorContent == (Color{}) {
+	if !cfg.ColorContent.IsSet() {
 		cfg.ColorContent = s.ColorContent
 	}
-	if cfg.ColorContentBorder == (Color{}) {
+	if !cfg.ColorContentBorder.IsSet() {
 		cfg.ColorContentBorder = s.ColorContentBorder
 	}
 	if cfg.Padding == (Padding{}) {

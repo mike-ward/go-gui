@@ -66,13 +66,13 @@ type TableCfg struct {
 
 func applyTableDefaults(cfg *TableCfg) {
 	s := &DefaultTableStyle
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = s.ColorBorder
 	}
-	if cfg.ColorSelect == (Color{}) {
+	if !cfg.ColorSelect.IsSet() {
 		cfg.ColorSelect = s.ColorSelect
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = s.ColorHover
 	}
 	if cfg.CellPadding == (Padding{}) {

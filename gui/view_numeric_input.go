@@ -295,16 +295,16 @@ func numericModeCfgFromInput(cfg NumericInputCfg) numericModeCfg {
 
 func applyNumericInputDefaults(cfg *NumericInputCfg) {
 	d := &DefaultButtonStyle
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
-	if cfg.ColorHover == (Color{}) {
+	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = d.ColorHover
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.ColorBorderFocus == (Color{}) {
+	if !cfg.ColorBorderFocus.IsSet() {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if cfg.Padding == (Padding{}) {

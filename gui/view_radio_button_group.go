@@ -99,7 +99,7 @@ func buildRadioOptions(cfg RadioButtonGroupCfg) []View {
 }
 
 func applyRadioGroupDefaults(cfg *RadioButtonGroupCfg) {
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = guiTheme.ColorBorder
 	}
 	if cfg.Padding == (Padding{}) {

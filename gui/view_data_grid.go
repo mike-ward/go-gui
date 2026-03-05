@@ -296,37 +296,37 @@ func applyDataGridDefaults(cfg *DataGridCfg) {
 	if cfg.QuickFilterDebounce == 0 {
 		cfg.QuickFilterDebounce = 200 * time.Millisecond
 	}
-	if cfg.ColorBackground == (Color{}) {
+	if !cfg.ColorBackground.IsSet() {
 		cfg.ColorBackground = s.ColorBackground
 	}
-	if cfg.ColorHeader == (Color{}) {
+	if !cfg.ColorHeader.IsSet() {
 		cfg.ColorHeader = s.ColorHeader
 	}
-	if cfg.ColorHeaderHover == (Color{}) {
+	if !cfg.ColorHeaderHover.IsSet() {
 		cfg.ColorHeaderHover = s.ColorHeaderHover
 	}
-	if cfg.ColorFilter == (Color{}) {
+	if !cfg.ColorFilter.IsSet() {
 		cfg.ColorFilter = s.ColorFilter
 	}
-	if cfg.ColorQuickFilter == (Color{}) {
+	if !cfg.ColorQuickFilter.IsSet() {
 		cfg.ColorQuickFilter = s.ColorQuickFilter
 	}
-	if cfg.ColorRowHover == (Color{}) {
+	if !cfg.ColorRowHover.IsSet() {
 		cfg.ColorRowHover = s.ColorRowHover
 	}
-	if cfg.ColorRowAlt == (Color{}) {
+	if !cfg.ColorRowAlt.IsSet() {
 		cfg.ColorRowAlt = s.ColorRowAlt
 	}
-	if cfg.ColorRowSelected == (Color{}) {
+	if !cfg.ColorRowSelected.IsSet() {
 		cfg.ColorRowSelected = s.ColorRowSelected
 	}
-	if cfg.ColorBorder == (Color{}) {
+	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = s.ColorBorder
 	}
-	if cfg.ColorResizeHandle == (Color{}) {
+	if !cfg.ColorResizeHandle.IsSet() {
 		cfg.ColorResizeHandle = s.ColorResizeHandle
 	}
-	if cfg.ColorResizeActive == (Color{}) {
+	if !cfg.ColorResizeActive.IsSet() {
 		cfg.ColorResizeActive = s.ColorResizeActive
 	}
 	if cfg.PaddingCell == (Padding{}) {
@@ -440,7 +440,7 @@ func dataGridIndicatorTextStyle(base TextStyle) TextStyle {
 }
 
 func dataGridDimColor(c Color) Color {
-	return Color{R: c.R, G: c.G, B: c.B, A: dataGridIndicatorAlpha}
+	return Color{R: c.R, G: c.G, B: c.B, A: dataGridIndicatorAlpha, set: true}
 }
 
 func dataGridRowID(row GridRow, idx int) string {

@@ -87,12 +87,12 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 			vcols = make([]Color, len(p.VertexColors))
 			for j := range p.VertexColors {
 				vc := p.VertexColors[j]
-				vcols[j] = Color{vc.R, vc.G, vc.B, vc.A}
+				vcols[j] = Color{vc.R, vc.G, vc.B, vc.A, true}
 			}
 		}
 		out[i] = CachedSvgPath{
 			Triangles:    p.Triangles,
-			Color:        Color{p.Color.R, p.Color.G, p.Color.B, p.Color.A},
+			Color:        Color{p.Color.R, p.Color.G, p.Color.B, p.Color.A, true},
 			VertexColors: vcols,
 			IsClipMask:   p.IsClipMask,
 			ClipGroup:    p.ClipGroup,
@@ -131,14 +131,14 @@ func cachedSvgTextDraws(texts []SvgText, scale float32,
 		}
 		if t.Opacity < 1.0 {
 			ts.Color = Color{t.Color.R, t.Color.G, t.Color.B,
-				uint8(float32(t.Color.A) * t.Opacity)}
+				uint8(float32(t.Color.A) * t.Opacity), true}
 		} else {
 			ts.Color = svgToColor(t.Color)
 		}
 
 		// Stroke-only text: fill=none + stroke set → transparent fill.
 		if ts.StrokeWidth > 0 && ts.Color.A == 0 {
-			ts.Color = Color{0, 0, 0, 0}
+			ts.Color = Color{0, 0, 0, 0, true}
 		}
 
 		// Build gradient config from SVG gradient def.
@@ -217,6 +217,7 @@ func cachedSvgTextPathDraws(textPaths []SvgTextPath,
 				tp.Color.G,
 				tp.Color.B,
 				uint8(float32(tp.Color.A) * tp.Opacity),
+				true,
 			}
 		} else {
 			ts.Color = svgToColor(tp.Color)

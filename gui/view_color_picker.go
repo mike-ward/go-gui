@@ -560,7 +560,7 @@ func applyColorPickerDefaults(cfg *ColorPickerCfg) {
 	if cfg.Style == (ColorPickerStyle{}) {
 		cfg.Style = *d
 	}
-	if cfg.Color == (Color{}) {
+	if !cfg.Color.IsSet() {
 		cfg.Color = Red
 	}
 }
