@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 
@@ -172,23 +173,15 @@ func New(w *gui.Window) (*Backend, error) {
 	}
 	b.textSys = textSys
 
-	// Load embedded icon font.
+	// Load embedded icon font. File must persist because
+	// FontConfig registers the path; FreeType reads it lazily.
 	if data := gui.IconFontData; len(data) > 0 {
-		tmp, err := os.CreateTemp("", "go_gui_feathericon_*.ttf")
-		if err != nil {
-			log.Printf("gl: create icon font temp file: %v", err)
-		} else {
-			tmpPath := tmp.Name()
-			if _, err := tmp.Write(data); err != nil {
-				log.Printf("gl: write icon font: %v", err)
-			} else if err := tmp.Close(); err != nil {
-				log.Printf("gl: close icon font temp file: %v", err)
-			} else if err := textSys.AddFontFile(tmpPath); err != nil {
-				log.Printf("gl: load icon font: %v", err)
-			}
-			if err := os.Remove(tmpPath); err != nil {
-				log.Printf("gl: remove icon font temp file: %v", err)
-			}
+		tmp := filepath.Join(os.TempDir(),
+			"go_gui_feathericon.ttf")
+		if err := os.WriteFile(tmp, data, 0o644); err != nil {
+			log.Printf("gl: write icon font: %v", err)
+		} else if err := textSys.AddFontFile(tmp); err != nil {
+			log.Printf("gl: load icon font: %v", err)
 		}
 	}
 
