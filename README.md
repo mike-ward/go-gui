@@ -33,9 +33,14 @@ between layout and rendering.
 - GPU-accelerated rendering via SDL2 + Metal/OpenGL shaders
 - DataGrid with virtualization, sorting, grouping, inline editing,
   CSV/TSV/XLSX/PDF export, and async data sources
-- Markdown and RTF views with syntax highlighting
+- Rich text input — multiline, click-to-cursor, drag-to-select,
+  double-click word select, autoscroll, Home/End cycling
+- Text selection and copy for read-only Text widgets
+- Markdown and RTF views with syntax highlighting and code-block
+  copy-to-clipboard
 - SVG loading, caching, and tessellation
 - Dock layout with drag-and-drop and tab groups
+- Embedded Feather icon font with themed icon text styles
 - IME support and accessibility tree
 - Native dialogs, notifications, and print/PDF
 - Locale and i18n support
@@ -101,6 +106,8 @@ Set `CGO_CFLAGS` and `CGO_LDFLAGS` to your vcpkg include/lib paths before buildi
 
 Use one backend import in your app:
 
+- Metal backend (macOS, preferred):
+  `import metalbackend "github.com/mike-ward/go-gui/gui/backend/metal"`
 - OpenGL backend:
   `import glbackend "github.com/mike-ward/go-gui/gui/backend/gl"`
 - SDL2 backend (fallback when shaders/GL are unavailable):
@@ -109,7 +116,10 @@ Use one backend import in your app:
 Run with the matching backend:
 
 ```go
-// Preferred: OpenGL backend
+// Preferred on macOS: Metal backend
+metalbackend.Run(w)
+
+// OpenGL backend
 glbackend.Run(w)
 
 // Fallback: SDL2 backend
@@ -125,7 +135,7 @@ import (
     "fmt"
 
     "github.com/mike-ward/go-gui/gui"
-    glbackend "github.com/mike-ward/go-gui/gui/backend/gl"
+    "github.com/mike-ward/go-gui/gui/backend"
 )
 
 // App holds all mutable state for the application.
@@ -147,7 +157,7 @@ func main() {
         },
     })
 
-    glbackend.Run(w) // preferred backend; blocks until window closes
+    backend.Run(w) // blocks until window closes
 }
 
 // mainView is called every frame. It returns a layout tree.
@@ -186,7 +196,23 @@ func mainView(w *gui.Window) gui.View {
 See [`examples/get_started/`](examples/get_started/) for the full runnable
 version.
 
-For an OpenGL backend example, see [`examples/gradient_demo/`](examples/gradient_demo/).
+### More Examples
+
+| Directory                                                      | Description                               |
+| -------------------------------------------------------------- | ----------------------------------------- |
+| [`animations`](examples/animations/)                           | Animation subsystem showcase              |
+| [`benchmark`](examples/benchmark/)                             | Frame timing and allocation benchmarks    |
+| [`context_menu`](examples/context_menu/)                       | Right-click context menus                 |
+| [`data_grid_data_source`](examples/data_grid_data_source/)     | DataGrid with async data source           |
+| [`floating_layout`](examples/floating_layout/)                 | Float-anchored overlay positioning        |
+| [`gradient_demo`](examples/gradient_demo/)                     | OpenGL gradient rendering                 |
+| [`listbox`](examples/listbox/)                                 | ListBox widget demo                       |
+| [`markdown`](examples/markdown/)                               | Markdown rendering with code-block copy   |
+| [`menu_demo`](examples/menu_demo/)                             | Pull-down menu bar                        |
+| [`multiline_input`](examples/multiline_input/)                 | Multiline text input                      |
+| [`rtf`](examples/rtf/)                                         | RTF document viewer                       |
+| [`scroll_demo`](examples/scroll_demo/)                         | Scrollable content layouts                |
+| [`svg`](examples/svg/)                                         | SVG loading and display                   |
 
 ## Core Concepts
 
@@ -273,6 +299,7 @@ gui.Input(gui.InputCfg{
 | RadioButtonGroup | `RadioButtonGroup(RadioButtonGroupCfg)` | Mutually-exclusive options   |
 | Select           | `Select(SelectCfg)`                     | Dropdown selector            |
 | Combobox         | `Combobox(ComboboxCfg)`                 | Editable dropdown            |
+| Switch           | `Switch(SwitchCfg)`                     | On/off toggle switch         |
 | RangeSlider      | `RangeSlider(RangeSliderCfg)`           | Min/max range picker         |
 | InputDate        | `InputDate(InputDateCfg)`               | Date field with picker       |
 | ColorPicker      | `ColorPicker(ColorPickerCfg)`           | RGBA color picker            |
