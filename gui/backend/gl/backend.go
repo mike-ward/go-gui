@@ -226,6 +226,10 @@ func (b *Backend) Run(w *gui.Window) {
 	}
 
 	// Register event watcher for live resize on macOS.
+	// During window drag-resize, macOS enters a modal loop that
+	// blocks PollEvent. This callback fires from within that
+	// loop, allowing re-layout and re-render at the new size.
+	resizeEvent := &gui.Event{Type: gui.EventResized}
 	var watchHandle sdl.EventWatchHandle
 	if runtime.GOOS == "darwin" {
 		watchHandle = sdl.AddEventWatchFunc(
@@ -235,6 +239,9 @@ func (b *Backend) Run(w *gui.Window) {
 					return true
 				}
 				b.handleResize()
+				resizeEvent.WindowWidth = int(we.Data1)
+				resizeEvent.WindowHeight = int(we.Data2)
+				w.EventFn(resizeEvent)
 				w.FrameFn()
 				b.renderFrame(w)
 				return true
