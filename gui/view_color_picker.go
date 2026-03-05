@@ -133,6 +133,7 @@ func cpSVArea(
 		ID:     cfg.ID + ".sv",
 		Width:  size,
 		Height: size,
+		axis:   AxisTopToBottom,
 		Gradient: &GradientDef{
 			Direction: GradientToRight,
 			Stops: []GradientStop{
@@ -140,8 +141,9 @@ func cpSVArea(
 				{Color: pureHue, Pos: 1},
 			},
 		},
-		Padding: PaddingNone,
-		Radius:  Some(cfg.Style.Radius),
+		Padding:    PaddingNone,
+		SizeBorder: Some(float32(0)),
+		Radius:     Some(cfg.Style.Radius),
 		Content: []View{
 			container(ContainerCfg{
 				Sizing: FillFill,
@@ -172,15 +174,23 @@ func cpSVArea(
 				OnClick: func(
 					layout *Layout, e *Event, w *Window,
 				) {
+					ev := *e
+					ev.MouseX += layout.Shape.X
+					ev.MouseY += layout.Shape.Y
 					cpSVMouseAction(cfgID, cfgColor,
-						onChange, layout, e, w)
+						onChange, layout.Shape, &ev, w)
 					w.MouseLock(MouseLockCfg{
 						MouseMove: func(
 							layout *Layout, e *Event,
 							w *Window,
 						) {
+							sv, ok := layout.FindByID(
+								cfgID + ".sv")
+							if !ok {
+								return
+							}
 							cpSVMouseAction(cfgID, cfgColor,
-								onChange, layout, e, w)
+								onChange, sv.Shape, e, w)
 						},
 						MouseUp: func(
 							_ *Layout, _ *Event,
@@ -243,14 +253,22 @@ func cpHueSlider(
 		OnClick: func(
 			layout *Layout, e *Event, w *Window,
 		) {
+			ev := *e
+			ev.MouseX += layout.Shape.X
+			ev.MouseY += layout.Shape.Y
 			cpHueMouseAction(cfgID, cfgColor, onChange,
-				layout, e, w)
+				layout.Shape, &ev, w)
 			w.MouseLock(MouseLockCfg{
 				MouseMove: func(
 					layout *Layout, e *Event, w *Window,
 				) {
+					hue, ok := layout.FindByID(
+						cfgID + ".hue")
+					if !ok {
+						return
+					}
 					cpHueMouseAction(cfgID, cfgColor,
-						onChange, layout, e, w)
+						onChange, hue.Shape, e, w)
 				},
 				MouseUp: func(
 					_ *Layout, _ *Event, w *Window,
@@ -480,12 +498,11 @@ func cpHSVChannelInput(
 func cpSVMouseAction(
 	id string, color Color,
 	onChange func(Color, *Event, *Window),
-	layout *Layout, e *Event, w *Window,
+	shape *Shape, e *Event, w *Window,
 ) {
 	if onChange == nil {
 		return
 	}
-	shape := layout.Shape
 	s := f32Clamp((e.MouseX-shape.X)/shape.Width, 0, 1)
 	v := 1 - f32Clamp((e.MouseY-shape.Y)/shape.Height, 0, 1)
 
@@ -504,12 +521,11 @@ func cpSVMouseAction(
 func cpHueMouseAction(
 	id string, color Color,
 	onChange func(Color, *Event, *Window),
-	layout *Layout, e *Event, w *Window,
+	shape *Shape, e *Event, w *Window,
 ) {
 	if onChange == nil {
 		return
 	}
-	shape := layout.Shape
 	h := f32Clamp(
 		(e.MouseY-shape.Y)/shape.Height, 0, 1) * 360
 

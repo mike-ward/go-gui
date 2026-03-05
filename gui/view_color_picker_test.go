@@ -164,9 +164,34 @@ func TestCpSVMouseAction(t *testing.T) {
 		Shape: &Shape{X: 0, Y: 0, Width: 100, Height: 100},
 	}
 	e := &Event{MouseX: 50, MouseY: 25}
-	cpSVMouseAction("sv-test", RGB(0, 0, 0), onChange, layout, e, w)
+	cpSVMouseAction("sv-test", RGB(0, 0, 0), onChange, layout.Shape, e, w)
 
 	hsv, _ := sm.Get("sv-test")
+	if hsv.S < 0.49 || hsv.S > 0.51 {
+		t.Errorf("S = %f, want ~0.5", hsv.S)
+	}
+	if hsv.V < 0.74 || hsv.V > 0.76 {
+		t.Errorf("V = %f, want ~0.75", hsv.V)
+	}
+	if !gotColor.IsSet() {
+		t.Error("onChange should be called")
+	}
+}
+
+func TestCpSVMouseActionWithOffset(t *testing.T) {
+	w := &Window{}
+	sm := StateMap[string, colorPickerState](
+		w, nsColorPicker, capModerate)
+	sm.Set("sv-off", colorPickerState{H: 120, S: 0, V: 0})
+
+	var gotColor Color
+	onChange := func(c Color, _ *Event, _ *Window) { gotColor = c }
+
+	shape := &Shape{X: 100, Y: 200, Width: 100, Height: 100}
+	e := &Event{MouseX: 150, MouseY: 225}
+	cpSVMouseAction("sv-off", RGB(0, 0, 0), onChange, shape, e, w)
+
+	hsv, _ := sm.Get("sv-off")
 	if hsv.S < 0.49 || hsv.S > 0.51 {
 		t.Errorf("S = %f, want ~0.5", hsv.S)
 	}
@@ -185,7 +210,7 @@ func TestCpSVMouseActionNilOnChange(t *testing.T) {
 	}
 	e := &Event{MouseX: 50, MouseY: 50}
 	// Should not panic.
-	cpSVMouseAction("nil-test", RGB(0, 0, 0), nil, layout, e, w)
+	cpSVMouseAction("nil-test", RGB(0, 0, 0), nil, layout.Shape, e, w)
 }
 
 func TestCpHueMouseAction(t *testing.T) {
@@ -201,7 +226,7 @@ func TestCpHueMouseAction(t *testing.T) {
 		Shape: &Shape{X: 0, Y: 0, Width: 30, Height: 360},
 	}
 	e := &Event{MouseX: 15, MouseY: 180}
-	cpHueMouseAction("hue-test", RGB(255, 0, 0), onChange, layout, e, w)
+	cpHueMouseAction("hue-test", RGB(255, 0, 0), onChange, layout.Shape, e, w)
 
 	hsv, _ := sm.Get("hue-test")
 	if hsv.H < 179 || hsv.H > 181 {
@@ -218,5 +243,5 @@ func TestCpHueMouseActionNilOnChange(t *testing.T) {
 		Shape: &Shape{X: 0, Y: 0, Width: 30, Height: 360},
 	}
 	e := &Event{MouseX: 15, MouseY: 180}
-	cpHueMouseAction("nil-test", RGB(255, 0, 0), nil, layout, e, w)
+	cpHueMouseAction("nil-test", RGB(255, 0, 0), nil, layout.Shape, e, w)
 }
