@@ -18,6 +18,7 @@ type RectangleCfg struct {
 	Radius         float32
 	BlurRadius     float32
 	SizeBorder     float32
+	Shader         *Shader
 	Disabled       bool
 	Invisible      bool
 }
@@ -40,6 +41,7 @@ func Rectangle(cfg RectangleCfg) View {
 		BorderGradient: cfg.BorderGradient,
 		Shadow:         cfg.Shadow,
 		BlurRadius:     cfg.BlurRadius,
+		Shader:         cfg.Shader,
 		Padding:        PaddingNone,
 		Radius:         Some(cfg.Radius),
 		SizeBorder:     Some(cfg.SizeBorder),

@@ -263,6 +263,7 @@ type ShapeEffects struct {
 	Shadow         *BoxShadow
 	Gradient       *GradientDef
 	BorderGradient *GradientDef
+	Shader         *Shader
 	BlurRadius     float32
 }
 

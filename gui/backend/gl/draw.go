@@ -501,11 +501,30 @@ func (b *Backend) drawRtf(r *gui.RenderCmd) {
 	b.restoreAfterGlyph()
 }
 
-func (b *Backend) drawCustomShader(_ *gui.RenderCmd) {
-	// Custom shader rendering not yet wired (no emission path).
-	b.customOnce.Do(func() {
-		log.Println("gl: drawCustomShader called but not implemented")
-	})
+func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
+	if r.Shader == nil || r.Shader.GLSL == "" {
+		return
+	}
+	p, err := b.getOrBuildCustomPipeline(r.Shader)
+	if err != nil {
+		b.customOnce.Do(func() {
+			log.Printf("gl: custom shader compile: %v", err)
+		})
+		return
+	}
+
+	s := b.dpiScale
+	b.usePipeline(&p)
+
+	// Pack params into tm matrix (up to 16 floats → 4 columns).
+	var tm [16]float32
+	for i := range min(len(r.Shader.Params), 16) {
+		tm[i] = r.Shader.Params[i]
+	}
+	gogl.UniformMatrix4fv(p.uTM, 1, false, &tm[0])
+
+	b.drawQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
+		r.Color, r.Radius*s, 0)
 }
 
 // --- Filter (glow) ---

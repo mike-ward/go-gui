@@ -36,6 +36,7 @@ type ContainerCfg struct {
 	Shadow         *BoxShadow
 	Gradient       *GradientDef
 	BorderGradient *GradientDef
+	Shader         *Shader
 
 	// Behavior
 	IDFocus    uint32
@@ -171,13 +172,15 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 func (cv *containerView) makeEffects() *ShapeEffects {
 	c := &cv.cfg
 	if c.Shadow == nil && c.Gradient == nil &&
-		c.BorderGradient == nil && c.BlurRadius == 0 {
+		c.BorderGradient == nil && c.Shader == nil &&
+		c.BlurRadius == 0 {
 		return nil
 	}
 	return &ShapeEffects{
 		Shadow:         c.Shadow,
 		Gradient:       c.Gradient,
 		BorderGradient: c.BorderGradient,
+		Shader:         c.Shader,
 		BlurRadius:     c.BlurRadius,
 	}
 }

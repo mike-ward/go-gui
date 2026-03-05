@@ -160,6 +160,20 @@ func renderContainer(shape *Shape, parentColor Color, clip DrawClip, w *Window) 
 		}, w)
 	}
 
+	// Custom shader
+	if hasFX && fx.Shader != nil {
+		emitRenderer(RenderCmd{
+			Kind:   RenderCustomShader,
+			X:      shape.X,
+			Y:      shape.Y,
+			W:      shape.Width,
+			H:      shape.Height,
+			Radius: shape.Radius,
+			Color:  shape.Color,
+			Shader: fx.Shader,
+		}, w)
+	} else
+
 	// Gradient fill
 	if hasFX && fx.Gradient != nil {
 		emitRenderer(RenderCmd{

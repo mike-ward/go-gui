@@ -65,9 +65,10 @@ type Backend struct {
 	sampledBuf         []gui.GradientStop
 
 	textures    metalTexCache
-	glyphBack   *metalGlyphBackend
-	filterBlur  float32
-	filterLayer int
+	glyphBack    *metalGlyphBackend
+	filterBlur   float32
+	filterLayer  int
+	customCache  map[uint64]C.int
 
 	allowedImageRoots []string
 	imagePathCache    map[string]string
@@ -157,6 +158,7 @@ func New(w *gui.Window) (*Backend, error) {
 		physW:          int32(dw),
 		physH:          int32(dh),
 		textures:       newMetalTexCache(128),
+		customCache:    make(map[uint64]C.int),
 		imagePathCache: make(map[string]string, 64),
 		maxImageBytes:  cfg.MaxImageBytes,
 		maxImagePixels: cfg.MaxImagePixels,

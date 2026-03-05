@@ -82,6 +82,7 @@ type RenderCmd struct {
 	HasVertexAlpha   bool
 
 	// Pointer fields.
+	Shader       *Shader
 	Gradient     *GradientDef
 	TextStylePtr *TextStyle            // SVG text: full style
 	TextGradient *glyph.GradientConfig // SVG gradient text

@@ -634,6 +634,72 @@ int metalInit(void* layerPtr) {
     return 0;
 }
 
+// ─── Custom Shader Pipelines ─────────────────────────────────
+
+#define MAX_CUSTOM_PIPELINES 32
+static id<MTLRenderPipelineState>
+    _customPipelines[MAX_CUSTOM_PIPELINES];
+static int _customPipelineCount = 0;
+
+int metalBuildCustomPipeline(const char* mslSrc) {
+    if (_customPipelineCount >= MAX_CUSTOM_PIPELINES) {
+        for (int i = 0; i < _customPipelineCount; i++)
+            _customPipelines[i] = nil;
+        _customPipelineCount = 0;
+    }
+    NSString *src = [NSString stringWithUTF8String:mslSrc];
+    NSError *err = nil;
+    id<MTLLibrary> lib =
+        [_device newLibraryWithSource:src
+                              options:nil error:&err];
+    if (!lib) {
+        NSLog(@"metal: custom shader compile: %@", err);
+        return -1;
+    }
+
+    MTLRenderPipelineDescriptor *desc =
+        [[MTLRenderPipelineDescriptor alloc] init];
+    desc.vertexFunction =
+        [lib newFunctionWithName:@"vs_main"];
+    desc.fragmentFunction =
+        [lib newFunctionWithName:@"fs_main"];
+    desc.vertexDescriptor = mainVertexDesc();
+    desc.colorAttachments[0].pixelFormat =
+        MTLPixelFormatBGRA8Unorm;
+    desc.colorAttachments[0].blendingEnabled = YES;
+    desc.colorAttachments[0].sourceRGBBlendFactor =
+        MTLBlendFactorSourceAlpha;
+    desc.colorAttachments[0].destinationRGBBlendFactor =
+        MTLBlendFactorOneMinusSourceAlpha;
+    desc.colorAttachments[0].sourceAlphaBlendFactor =
+        MTLBlendFactorSourceAlpha;
+    desc.colorAttachments[0].destinationAlphaBlendFactor =
+        MTLBlendFactorOneMinusSourceAlpha;
+
+    if (!desc.vertexFunction || !desc.fragmentFunction) {
+        NSLog(@"metal: custom shader: function not found");
+        return -1;
+    }
+
+    id<MTLRenderPipelineState> pso =
+        [_device newRenderPipelineStateWithDescriptor:desc
+                                                error:&err];
+    if (!pso) {
+        NSLog(@"metal: custom pipeline: %@", err);
+        return -1;
+    }
+
+    int idx = _customPipelineCount++;
+    _customPipelines[idx] = pso;
+    return idx;
+}
+
+void metalSetCustomPipeline(int idx) {
+    if (!_enc || idx < 0 || idx >= _customPipelineCount)
+        return;
+    [_enc setRenderPipelineState:_customPipelines[idx]];
+}
+
 void metalDestroy(void) {
     for (int i = 0; i < MAX_TEX; i++) {
         _textures[i] = nil;
@@ -652,6 +718,10 @@ void metalDestroy(void) {
     for (int i = 0; i < PIPE_COUNT; i++) {
         _pipelines[i] = nil;
     }
+    for (int i = 0; i < _customPipelineCount; i++) {
+        _customPipelines[i] = nil;
+    }
+    _customPipelineCount = 0;
     _quadIdx = nil;
     _sampler = nil;
     _queue   = nil;
