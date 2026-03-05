@@ -798,6 +798,44 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			} else {
 				handled = false
 			}
+		case KeyBackspace:
+			mask := hcfg.compiledMask()
+			if mask != nil {
+				res := InputMaskBackspace(text, is.CursorPos,
+					is.SelectBeg, is.SelectEnd, mask)
+				if res.Changed {
+					text = res.Text
+					imap.Set(id, InputState{
+						CursorPos: res.CursorPos, Undo: is.Undo,
+					})
+					textChanged = true
+				}
+			} else {
+				newText, _ := inputDelete(text, id, false, w)
+				if newText != text {
+					text = newText
+					textChanged = true
+				}
+			}
+		case KeyDelete:
+			mask := hcfg.compiledMask()
+			if mask != nil {
+				res := InputMaskDelete(text, is.CursorPos,
+					is.SelectBeg, is.SelectEnd, mask)
+				if res.Changed {
+					text = res.Text
+					imap.Set(id, InputState{
+						CursorPos: res.CursorPos, Undo: is.Undo,
+					})
+					textChanged = true
+				}
+			} else {
+				newText, _ := inputDelete(text, id, true, w)
+				if newText != text {
+					text = newText
+					textChanged = true
+				}
+			}
 		default:
 			handled = false
 		}

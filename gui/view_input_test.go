@@ -221,6 +221,22 @@ func TestInputOnCharDelete(t *testing.T) {
 	}
 }
 
+func TestInputKeyDownBackspace(t *testing.T) {
+	ctx := newInputTest("abc", 550, 3)
+	ctx.fireKeyDown(KeyBackspace, 0)
+	if ctx.lastText != "ab" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "ab")
+	}
+}
+
+func TestInputKeyDownDelete(t *testing.T) {
+	ctx := newInputTest("abc", 551, 0)
+	ctx.fireKeyDown(KeyDelete, 0)
+	if ctx.lastText != "bc" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "bc")
+	}
+}
+
 func TestInputOnCharEnterSingleLine(t *testing.T) {
 	committed := false
 	w := newTestWindow()
