@@ -130,7 +130,7 @@ func (b *Backend) drawLine(r *gui.RenderCmd) {
 	if length < 0.001 {
 		return
 	}
-	thick := max(1.0*s, 1.0)
+	thick := max(r.Thickness*s, 1.0)
 	nx := -dy / length * thick * 0.5
 	ny := dx / length * thick * 0.5
 
@@ -287,6 +287,9 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		if path == "" {
 			return
 		}
+		if len(b.imagePathCache) >= 1024 {
+			clear(b.imagePathCache)
+		}
 		b.imagePathCache[r.Resource] = path
 	}
 
@@ -318,9 +321,9 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
 	}
 
-	C.metalBindTexture(C.int(entry.tex.id))
 	C.metalSetPipeline(C.int(pipeImageClip))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalBindTexture(C.int(entry.tex.id))
 
 	z := packParams(r.ClipRadius*s, 0)
 	nc := normColor(255, 255, 255, 255)

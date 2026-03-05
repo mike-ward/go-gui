@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -20,20 +19,7 @@ func (n *nativePlatform) OpenURI(uri string) error {
 	if err := validateOpenURI(uri); err != nil {
 		return err
 	}
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", uri)
-	case "linux":
-		cmd = exec.Command("xdg-open", uri)
-	case "windows":
-		cmd = exec.Command("rundll32",
-			"url.dll,FileProtocolHandler", uri)
-	default:
-		return fmt.Errorf("unsupported platform: %s",
-			runtime.GOOS)
-	}
-	return cmd.Start()
+	return exec.Command("open", uri).Start()
 }
 
 func validateOpenURI(raw string) error {
@@ -72,22 +58,11 @@ func (n *nativePlatform) ShowConfirmDialog(_, _ string, _ gui.NativeAlertLevel) 
 }
 
 func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotificationResult {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("osascript",
-			"-e", "on run argv",
-			"-e", "display notification (item 2 of argv) with title (item 1 of argv)",
-			"-e", "end run",
-			"--", title, body)
-	case "linux":
-		cmd = exec.Command("notify-send", title, body)
-	default:
-		return gui.NativeNotificationResult{
-			Status:       gui.NotificationError,
-			ErrorMessage: "unsupported platform: " + runtime.GOOS,
-		}
-	}
+	cmd := exec.Command("osascript",
+		"-e", "on run argv",
+		"-e", "display notification (item 2 of argv) with title (item 1 of argv)",
+		"-e", "end run",
+		"--", title, body)
 	if err := cmd.Start(); err != nil {
 		return gui.NativeNotificationResult{
 			Status:       gui.NotificationError,

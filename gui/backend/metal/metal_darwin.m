@@ -715,13 +715,13 @@ void metalSetScissor(int x, int y, int w, int h, int viewH) {
     if (y < 0) { h += y; y = 0; }
     if (w <= 0 || h <= 0) {
         // Zero-area scissor: clip everything.
-        [_enc setScissorRect:(MTLScissorRect){0, 0, 0, 0}];
+        [_enc setScissorRect:(MTLScissorRect){0, 0, 1, 1}];
         return;
     }
     if (x + w > _viewW) w = _viewW - x;
     if (y + h > _viewH) h = _viewH - y;
     if (w <= 0 || h <= 0) {
-        [_enc setScissorRect:(MTLScissorRect){0, 0, 0, 0}];
+        [_enc setScissorRect:(MTLScissorRect){0, 0, 1, 1}];
         return;
     }
     [_enc setScissorRect:(MTLScissorRect){
@@ -773,9 +773,8 @@ void metalDrawTriangles(const float* verts, int numVerts) {
                                        length:(NSUInteger)byteLen
                                       options:MTLResourceStorageModeShared];
         }
-        if (buf) {
-            [_enc setVertexBuffer:buf offset:0 atIndex:0];
-        }
+        if (!buf) return;
+        [_enc setVertexBuffer:buf offset:0 atIndex:0];
     }
     [_enc drawPrimitives:MTLPrimitiveTypeTriangle
              vertexStart:0 vertexCount:numVerts];
@@ -879,6 +878,7 @@ int metalBeginFilter(int w, int h) {
     _enc = [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
     [_enc setViewport:(MTLViewport){
         0, 0, (double)w, (double)h, 0, 1}];
+    [_enc setFragmentSamplerState:_sampler atIndex:0];
     return 0;
 }
 
@@ -998,7 +998,6 @@ void metalEndFilter(float blurRadius, int layers) {
 
     // ── Composite: draw filterTexA onto main drawable ──
     [_enc setRenderPipelineState:_pipelines[PIPE_FILTER_TEX]];
-    [_enc setFragmentSamplerState:_sampler atIndex:0];
     [_enc setFragmentTexture:_filterTexA atIndex:0];
 
     float mvp[16] = {0};
