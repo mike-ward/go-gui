@@ -65,7 +65,7 @@ func Switch(cfg SwitchCfg) View {
 		Radius:      Some(radius),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
-		Padding:     Some(cfg.Padding),
+		Padding:     cfg.Padding,
 		HAlign:      hAlign,
 		VAlign:      VAlignMiddle,
 		Content: []View{
@@ -89,7 +89,7 @@ func Switch(cfg SwitchCfg) View {
 
 	return Row(ContainerCfg{
 		IDFocus:         cfg.IDFocus,
-		Padding:         Some(PaddingNone),
+		Padding:         PaddingNone,
 		A11YRole:        AccessRoleSwitchToggle,
 		A11YState:       a11yState,
 		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.Label),
@@ -147,7 +147,7 @@ func applySwitchDefaults(cfg *SwitchCfg) {
 		cfg.ColorUnselect = d.ColorUnselect
 	}
 
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = d.Padding
 	}
 	if cfg.TextStyle == (TextStyle{}) {

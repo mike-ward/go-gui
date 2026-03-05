@@ -83,7 +83,7 @@ func Button(cfg ButtonCfg) View {
 		BlurRadius:       cfg.BlurRadius,
 		Shadow:           cfg.Shadow,
 		Gradient:         cfg.Gradient,
-		Padding:          Some(cfg.Padding),
+		Padding:          cfg.Padding,
 		Radius:           Some(radius),
 		Width:            cfg.Width,
 		Height:           cfg.Height,
@@ -154,7 +154,7 @@ func applyButtonDefaults(cfg *ButtonCfg) {
 	if !cfg.ColorBorderFocus.IsSet() {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = d.Padding
 	}
 	if cfg.HAlign == HAlignStart {

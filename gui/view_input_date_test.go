@@ -56,7 +56,7 @@ func TestInputDateDefaultsPreserve(t *testing.T) {
 func TestInputDateDefaultsPadding(t *testing.T) {
 	cfg := InputDateCfg{}
 	applyInputDateDefaults(&cfg)
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		t.Error("Padding should be set")
 	}
 }

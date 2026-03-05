@@ -69,7 +69,7 @@ func mainView(w *gui.Window) gui.View {
 			}),
 			// Two-panel body
 			gui.Row(gui.ContainerCfg{
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.PaddingNone,
 				Sizing:  gui.FillFill,
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
@@ -111,7 +111,7 @@ func mainView(w *gui.Window) gui.View {
 func fauxEditMenu(theme gui.Theme) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Spacing: gui.Some[float32](0),
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.PaddingNone,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Edit"}),
 			gui.Column(gui.ContainerCfg{
@@ -125,7 +125,7 @@ func fauxEditMenu(theme gui.Theme) gui.View {
 					gui.Text(gui.TextCfg{Text: "Copy"}),
 					gui.Row(gui.ContainerCfg{
 						Sizing:  gui.FillFit,
-						Padding: gui.Some(gui.PaddingNone),
+						Padding: gui.PaddingNone,
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Paste >"}),
 							gui.Column(gui.ContainerCfg{

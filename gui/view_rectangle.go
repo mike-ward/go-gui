@@ -40,7 +40,7 @@ func Rectangle(cfg RectangleCfg) View {
 		BorderGradient: cfg.BorderGradient,
 		Shadow:         cfg.Shadow,
 		BlurRadius:     cfg.BlurRadius,
-		Padding:        Some(PaddingNone),
+		Padding:        PaddingNone,
 		Radius:         Some(cfg.Radius),
 		SizeBorder:     Some(cfg.SizeBorder),
 		Spacing:        Opt[float32]{},

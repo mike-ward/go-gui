@@ -106,7 +106,7 @@ func toastContainerView(w *Window) View {
 		FloatOffsetX: offsetX,
 		FloatOffsetY: offsetY,
 		Sizing:       FitFit,
-		Padding:      Some(PaddingNone),
+		Padding:      PaddingNone,
 		Spacing:      Some(style.Spacing),
 		Color:        ColorTransparent,
 		Content:      items,
@@ -173,7 +173,7 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 	return Row(ContainerCfg{
 		Width:       style.Width,
 		Sizing:      FixedFit,
-		Padding:     Some(PaddingNone),
+		Padding:     PaddingNone,
 		Color:       style.Color,
 		ColorBorder: style.ColorBorder,
 		SizeBorder:  Some(style.SizeBorder),
@@ -202,13 +202,13 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 			// Body.
 			Column(ContainerCfg{
 				Sizing:  FillFit,
-				Padding: Some(style.Padding),
+				Padding: style.Padding,
 				Content: bodyContent,
 			}),
 			// Buttons.
 			Column(ContainerCfg{
 				Sizing:  FitFit,
-				Padding: Some(PaddingNone),
+				Padding: PaddingNone,
 				VAlign:  VAlignTop,
 				Content: buttons,
 			}),

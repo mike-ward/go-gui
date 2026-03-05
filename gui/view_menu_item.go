@@ -68,7 +68,7 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 	if itemCfg.Separator {
 		return Column(ContainerCfg{
 			Sizing:  FillFit,
-			Padding: Some(NewPadding(2, 0, 2, 0)),
+			Padding: NewPadding(2, 0, 2, 0),
 			Content: []View{
 				Rectangle(RectangleCfg{
 					Height: 1,
@@ -133,7 +133,7 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 		ID:      itemCfg.ID,
 		Color:   itemColor,
 		Sizing:  itemCfg.sizing,
-		Padding: Some(itemCfg.Padding),
+		Padding: itemCfg.Padding,
 		Radius:  Some(itemCfg.radius),
 		OnClick: menuItemClick(menubarCfg, itemCfg),
 		OnHover: onHover,

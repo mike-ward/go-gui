@@ -96,16 +96,16 @@ func applyBreadcrumbDefaults(cfg *BreadcrumbCfg) {
 	if !cfg.ColorContentBorder.IsSet() {
 		cfg.ColorContentBorder = s.ColorContentBorder
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = s.Padding
 	}
-	if cfg.PaddingTrail == (Padding{}) {
+	if !cfg.PaddingTrail.IsSet() {
 		cfg.PaddingTrail = s.PaddingTrail
 	}
-	if cfg.PaddingCrumb == (Padding{}) {
+	if !cfg.PaddingCrumb.IsSet() {
 		cfg.PaddingCrumb = s.PaddingCrumb
 	}
-	if cfg.PaddingContent == (Padding{}) {
+	if !cfg.PaddingContent.IsSet() {
 		cfg.PaddingContent = s.PaddingContent
 	}
 	if cfg.TextStyle == (TextStyle{}) {
@@ -189,7 +189,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 		trailItems = append(trailItems, Row(ContainerCfg{
 			ID:      bcCrumbID(cfg.ID, item.ID),
 			Color:   crumbColor,
-			Padding: Some(cfg.PaddingCrumb),
+			Padding: cfg.PaddingCrumb,
 			Radius:  Some(radiusCrumb),
 			Spacing: Some(spacingTrail),
 			OnClick: onClick,
@@ -201,7 +201,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 	outerContent := make([]View, 0, 2)
 	outerContent = append(outerContent, Row(ContainerCfg{
 		Color:   cfg.ColorTrail,
-		Padding: Some(cfg.PaddingTrail),
+		Padding: cfg.PaddingTrail,
 		Spacing: Some(spacingTrail),
 		Sizing:  FillFit,
 		VAlign:  VAlignMiddle,
@@ -216,7 +216,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 			ColorBorder: cfg.ColorContentBorder,
 			SizeBorder:  Some(sizeContentBorder),
 			Radius:      Some(radiusContent),
-			Padding:     Some(cfg.PaddingContent),
+			Padding:     cfg.PaddingContent,
 			Sizing:      FillFill,
 			Content:     activeContent,
 		}))
@@ -240,7 +240,7 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
 		Radius:          Some(radius),
-		Padding:         Some(cfg.Padding),
+		Padding:         cfg.Padding,
 		Spacing:         Some(spacing),
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,

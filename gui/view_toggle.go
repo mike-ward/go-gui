@@ -64,7 +64,7 @@ func Toggle(cfg ToggleCfg) View {
 		Color:       boxColor,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
-		Padding:     Some(cfg.Padding),
+		Padding:     cfg.Padding,
 		Radius:      Some(radius),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
@@ -88,7 +88,7 @@ func Toggle(cfg ToggleCfg) View {
 	return Row(ContainerCfg{
 		ID:              cfg.ID,
 		IDFocus:         cfg.IDFocus,
-		Padding:         Some(PaddingNone),
+		Padding:         PaddingNone,
 		VAlign:          VAlignMiddle,
 		A11YRole:        AccessRoleCheckbox,
 		A11YState:       a11yState,
@@ -155,7 +155,7 @@ func applyToggleDefaults(cfg *ToggleCfg) {
 		cfg.ColorSelect = colorSelectDark
 	}
 
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = PaddingTwoThree
 	}
 	if cfg.TextStyle == (TextStyle{}) {

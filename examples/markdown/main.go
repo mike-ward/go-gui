@@ -40,7 +40,7 @@ func mainView(w *gui.Window) gui.View {
 		Width:    float32(ww),
 		Height:   float32(wh),
 		Sizing:   gui.FixedFixed,
-		Padding:  gui.Some(theme.PaddingLarge),
+		Padding:  theme.PaddingLarge,
 		IDFocus:  1,
 		IDScroll: 1,
 		Content: []gui.View{

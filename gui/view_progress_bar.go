@@ -49,7 +49,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 	if !cfg.TextBackground.IsSet() {
 		cfg.TextBackground = guiTheme.ProgressBarStyle.TextBackground
 	}
-	if cfg.TextPadding == (Padding{}) {
+	if !cfg.TextPadding.IsSet() {
 		cfg.TextPadding = guiTheme.ProgressBarStyle.TextPadding
 	}
 	if cfg.Radius == 0 {
@@ -58,7 +58,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 
 	content := make([]View, 0, 2)
 	content = append(content, Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Radius:  Some(cfg.Radius),
 		Color:   cfg.ColorBar,
 	}))
@@ -68,7 +68,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 		pct = math.Round(pct * 100)
 		content = append(content, Row(ContainerCfg{
 			ColorBorder: cfg.TextBackground,
-			Padding:     Some(cfg.TextPadding),
+			Padding:     cfg.TextPadding,
 			Content: []View{
 				Text(TextCfg{
 					Text:      fmt.Sprintf("%.0f%%", pct),
@@ -122,7 +122,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 		Color:     cfg.Color,
 		Radius:    Some(cfg.Radius),
 		Sizing:    cfg.Sizing,
-		Padding:   Some(PaddingNone),
+		Padding:   PaddingNone,
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
 		AmendLayout: func(layout *Layout, w *Window) {

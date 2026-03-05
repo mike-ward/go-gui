@@ -75,7 +75,7 @@ func applyTableDefaults(cfg *TableCfg) {
 	if !cfg.ColorHover.IsSet() {
 		cfg.ColorHover = s.ColorHover
 	}
-	if cfg.CellPadding == (Padding{}) {
+	if !cfg.CellPadding.IsSet() {
 		cfg.CellPadding = s.CellPadding
 	}
 	if cfg.TextStyle == (TextStyle{}) {
@@ -103,7 +103,7 @@ func Table(cfg TableCfg) View {
 	if len(cfg.Data) == 0 {
 		return Column(ContainerCfg{
 			ID:      cfg.ID,
-			Padding: Some(PaddingNone),
+			Padding: PaddingNone,
 		})
 	}
 
@@ -213,7 +213,7 @@ func Table(cfg TableCfg) View {
 				Color:       ColorTransparent,
 				ColorBorder: cfg.ColorBorder,
 				SizeBorder:  Some(cellBorder),
-				Padding:     Some(cfg.CellPadding),
+				Padding:     cfg.CellPadding,
 				HAlign:      hAlign,
 				Sizing:      FixedFill,
 				Width:       colWidth,
@@ -237,7 +237,7 @@ func Table(cfg TableCfg) View {
 		rows = append(rows, Row(ContainerCfg{
 			Color:   rowColor,
 			Spacing: Some(-cellBorder),
-			Padding: Some(PaddingNone),
+			Padding: PaddingNone,
 			Content: cells,
 			OnClick: func(layout *Layout, e *Event, w *Window) {
 				if rowOnClick != nil {
@@ -294,7 +294,7 @@ func Table(cfg TableCfg) View {
 	return Column(ContainerCfg{
 		ID:        cfg.ID,
 		Color:     ColorTransparent,
-		Padding:   Some(PaddingNone),
+		Padding:   PaddingNone,
 		Spacing:   Some(rowSpacing),
 		Sizing:    cfg.Sizing,
 		Width:     cfg.Width,

@@ -64,7 +64,7 @@ func Tooltip(cfg TooltipCfg) View {
 		ColorBorder:  cfg.ColorBorder,
 		SizeBorder:   Some(cfg.SizeBorder),
 		Radius:       Some(cfg.Radius),
-		Padding:      Some(cfg.Padding),
+		Padding:      cfg.Padding,
 		MaxWidth:     300,
 		Content:      cfg.Content,
 	})
@@ -105,7 +105,7 @@ func applyTooltipDefaults(cfg *TooltipCfg) {
 	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = d.Padding
 	}
 	if cfg.TextStyle == (TextStyle{}) {

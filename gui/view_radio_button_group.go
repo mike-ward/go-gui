@@ -47,7 +47,7 @@ func RadioButtonGroupColumn(cfg RadioButtonGroupCfg) View {
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
-		Padding:         Some(cfg.Padding),
+		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
 		MinHeight:       cfg.MinHeight,
 		Sizing:          cfg.Sizing,
@@ -67,7 +67,7 @@ func RadioButtonGroupRow(cfg RadioButtonGroupCfg) View {
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder2),
-		Padding:         Some(cfg.Padding),
+		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
 		MinHeight:       cfg.MinHeight,
 		Sizing:          cfg.Sizing,
@@ -102,7 +102,7 @@ func applyRadioGroupDefaults(cfg *RadioButtonGroupCfg) {
 	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = guiTheme.ColorBorder
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = guiTheme.PaddingLarge
 	}
 }

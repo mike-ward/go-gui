@@ -56,7 +56,7 @@ func Radio(cfg RadioCfg) View {
 
 	if len(cfg.Label) > 0 {
 		content = append(content, Row(ContainerCfg{
-			Padding: Some(NewPadding(0, PadXSmall, 0, 0)),
+			Padding: NewPadding(0, PadXSmall, 0, 0),
 			Content: []View{
 				Text(TextCfg{Text: cfg.Label, TextStyle: cfg.TextStyle}),
 			},
@@ -71,7 +71,7 @@ func Radio(cfg RadioCfg) View {
 	return Row(ContainerCfg{
 		ID:              cfg.ID,
 		IDFocus:         cfg.IDFocus,
-		Padding:         Some(cfg.Padding),
+		Padding:         cfg.Padding,
 		VAlign:          VAlignMiddle,
 		A11YRole:        AccessRoleRadioButton,
 		A11YState:       a11yState,
@@ -125,7 +125,7 @@ func applyRadioDefaults(cfg *RadioCfg) {
 	if !cfg.ColorUnselect.IsSet() {
 		cfg.ColorUnselect = colorInteriorDark
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = PaddingSmall
 	}
 	if cfg.TextStyle == (TextStyle{}) {

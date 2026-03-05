@@ -100,7 +100,7 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 	return Row(ContainerCfg{
 		ID:       cfg.ID,
 		Sizing:   FillFit,
-		Padding:  Some(PaddingNone),
+		Padding:  PaddingNone,
 		Spacing:  Some(cfg.Spacing),
 		Overflow: true,
 		Disabled: cfg.Disabled,
@@ -109,7 +109,7 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 }
 
 func applyOverflowDefaults(cfg *OverflowPanelCfg) {
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = DefaultButtonStyle.Padding
 	}
 	if cfg.FloatAnchor == 0 {

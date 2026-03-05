@@ -20,7 +20,7 @@ type ContextMenuCfg struct {
 	Height  float32
 	HAlign  HorizontalAlign
 	VAlign  VerticalAlign
-	Padding Opt[Padding]
+	Padding Padding
 
 	// Menu styling — optional, defaults from theme.
 	Color             Color
@@ -163,10 +163,10 @@ func applyContextMenuDefaults(cfg *ContextMenuCfg) {
 	if cfg.TextStyleSubtitle == (TextStyle{}) {
 		cfg.TextStyleSubtitle = d.TextStyleSubtitle
 	}
-	if cfg.PaddingMenuItem == (Padding{}) {
+	if !cfg.PaddingMenuItem.IsSet() {
 		cfg.PaddingMenuItem = d.PaddingMenuItem
 	}
-	if cfg.PaddingSubmenu == (Padding{}) {
+	if !cfg.PaddingSubmenu.IsSet() {
 		cfg.PaddingSubmenu = d.PaddingSubmenu
 	}
 }

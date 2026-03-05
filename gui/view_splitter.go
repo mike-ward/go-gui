@@ -213,7 +213,7 @@ func Splitter(cfg SplitterCfg) View {
 		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.ID),
 		A11YDescription: cfg.A11YDescription,
 		Sizing:          cfg.Sizing,
-		Padding:         Some(PaddingNone),
+		Padding:         PaddingNone,
 		Clip:            true,
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,
@@ -237,7 +237,7 @@ func splitterPane(id string, content []View) View {
 	return Column(ContainerCfg{
 		ID:      id,
 		Sizing:  FixedFixed,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Clip:    true,
 		Content: content,
 	})
@@ -276,7 +276,7 @@ func splitterHandleView(cfg *SplitterCfg, core *splitterCore) View {
 		Sizing:      FixedFixed,
 		Width:       handleWidth,
 		Height:      handleHeight,
-		Padding:     Some(PaddingNone),
+		Padding:     PaddingNone,
 		Spacing:     Some[float32](1),
 		Color:       cfg.ColorHandle,
 		ColorBorder: cfg.ColorHandleBorder,

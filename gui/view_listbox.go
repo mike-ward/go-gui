@@ -108,7 +108,7 @@ func ListBox(cfg ListBoxCfg) View {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
 		Radius:      Some(radius),
-		Padding:     Some(cfg.Padding),
+		Padding:     cfg.Padding,
 		Sizing:      cfg.Sizing,
 		Spacing:     Some(float32(0)),
 		Disabled:    cfg.Disabled,
@@ -225,7 +225,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
 		Radius:      Some(radius),
-		Padding:     Some(cfg.Padding),
+		Padding:     cfg.Padding,
 		Sizing:      cfg.Sizing,
 		Spacing:     Some(float32(0)),
 		Disabled:    cfg.Disabled,
@@ -259,7 +259,7 @@ func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]s
 		A11YLabel: dat.Name,
 		A11YState: a11yState,
 		Color:     color,
-		Padding:   Some(PaddingTwoFive),
+		Padding:   PaddingTwoFive,
 		Sizing:    FillFit,
 		Content:   []View{content},
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -284,7 +284,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 	if dat.IsSubheading {
 		return Column(ContainerCfg{
 			Spacing: Some[float32](1),
-			Padding: Some(PaddingNone),
+			Padding: PaddingNone,
 			Sizing:  FillFit,
 			Content: []View{
 				Text(TextCfg{
@@ -292,7 +292,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 					TextStyle: cfg.SubheadingStyle,
 				}),
 				Row(ContainerCfg{
-					Padding: Some(PaddingNone),
+					Padding: PaddingNone,
 					Sizing:  FillFit,
 					Content: []View{
 						Rectangle(RectangleCfg{
@@ -377,7 +377,7 @@ func applyListBoxDefaults(cfg *ListBoxCfg) {
 	if !cfg.ColorSelect.IsSet() {
 		cfg.ColorSelect = colorSelectDark
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = PaddingTwo
 	}
 

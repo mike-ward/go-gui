@@ -131,7 +131,7 @@ func Input(cfg InputCfg) View {
 
 	idScroll := cfg.IDScroll
 	innerCfg := ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Sizing:  innerSizing,
 		VAlign:  vAlign,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
@@ -337,7 +337,7 @@ func Input(cfg InputCfg) View {
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
 		Invisible:       cfg.Invisible,
-		Padding:         Some(cfg.Padding),
+		Padding:         cfg.Padding,
 		Radius:          Some(radius),
 		Sizing:          cfg.Sizing,
 		IDScroll:        cfg.IDScroll,
@@ -393,7 +393,7 @@ func applyInputDefaults(cfg *InputCfg) {
 	if !cfg.ColorBorderFocus.IsSet() {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = PaddingTwoFour
 	}
 	if cfg.TextStyle == (TextStyle{}) {

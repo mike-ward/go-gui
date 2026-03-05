@@ -329,10 +329,10 @@ func applyDataGridDefaults(cfg *DataGridCfg) {
 	if !cfg.ColorResizeActive.IsSet() {
 		cfg.ColorResizeActive = s.ColorResizeActive
 	}
-	if cfg.PaddingCell == (Padding{}) {
+	if !cfg.PaddingCell.IsSet() {
 		cfg.PaddingCell = s.PaddingCell
 	}
-	if cfg.PaddingHeader == (Padding{}) {
+	if !cfg.PaddingHeader.IsSet() {
 		cfg.PaddingHeader = s.PaddingHeader
 	}
 	if cfg.TextStyle == (TextStyle{}) {
@@ -1314,7 +1314,7 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		ScrollbarCfgX: &scrollbarCfg,
 		ScrollbarCfgY: &scrollbarCfg,
 		Color:         resolvedCfg.ColorBackground,
-		Padding:       Some(dataGridScrollPadding(&resolvedCfg)),
+		Padding:       dataGridScrollPadding(&resolvedCfg),
 		Spacing:       Some(float32(0)),
 		Sizing:        FillFill,
 		Content:       rows,
@@ -1374,7 +1374,7 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		ColorBorder: resolvedCfg.ColorBorder,
 		SizeBorder:  Some(resolvedCfg.SizeBorder),
 		Radius:      Some(resolvedCfg.Radius),
-		Padding:     Some(PaddingNone),
+		Padding:     PaddingNone,
 		Spacing:     Some(float32(0)),
 		Sizing:      resolvedCfg.Sizing,
 		Width:       resolvedCfg.Width,

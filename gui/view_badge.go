@@ -36,7 +36,7 @@ func Badge(cfg BadgeCfg) View {
 	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.BadgeStyle.Color
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = guiTheme.BadgeStyle.Padding
 	}
 	if cfg.TextStyle == (TextStyle{}) {
@@ -67,7 +67,7 @@ func Badge(cfg BadgeCfg) View {
 			Width:     sz,
 			Height:    sz,
 			Sizing:    FixedFixed,
-			Padding:   Some(PaddingNone),
+			Padding:   PaddingNone,
 		})
 	}
 
@@ -77,7 +77,7 @@ func Badge(cfg BadgeCfg) View {
 		Color:     bg,
 		Radius:    Some(radius),
 		Sizing:    FitFit,
-		Padding:   Some(cfg.Padding),
+		Padding:   cfg.Padding,
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
 		Content: []View{

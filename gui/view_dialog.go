@@ -96,7 +96,7 @@ func dialogViewGenerator(cfg DialogCfg) View {
 		ColorBorder:  cfg.ColorBorder,
 		SizeBorder:   Some(sizeBorder),
 		Radius:       Some(radius),
-		Padding:      Some(cfg.Padding),
+		Padding:      cfg.Padding,
 		Width:        cfg.Width,
 		Height:       cfg.Height,
 		MinWidth:     cfg.MinWidth,
@@ -121,7 +121,7 @@ func messageView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus: cfg.IDFocus,
@@ -146,7 +146,7 @@ func confirmView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
@@ -195,7 +195,7 @@ func promptView(cfg DialogCfg) []View {
 	views = append(views, Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
@@ -257,7 +257,7 @@ func applyDialogDefaults(cfg *DialogCfg) {
 	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = d.Padding
 	}
 	if cfg.TitleTextStyle == (TextStyle{}) {

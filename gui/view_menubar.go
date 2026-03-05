@@ -70,7 +70,7 @@ func Menubar(w *Window, cfg MenubarCfg) View {
 		SizeBorder:  cfg.SizeBorder,
 		Radius:      cfg.RadiusBorder,
 		Spacing:     cfg.Spacing,
-		Padding:     Some(cfg.Padding),
+		Padding:     cfg.Padding,
 		Sizing:      cfg.Sizing,
 		Float:         cfg.Float,
 		FloatAutoFlip: cfg.FloatAutoFlip,
@@ -107,16 +107,16 @@ func applyMenubarDefaults(cfg *MenubarCfg) {
 	if cfg.Sizing == (Sizing{}) {
 		cfg.Sizing = FillFit
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = d.Padding
 	}
-	if cfg.PaddingMenuItem == (Padding{}) {
+	if !cfg.PaddingMenuItem.IsSet() {
 		cfg.PaddingMenuItem = d.PaddingMenuItem
 	}
-	if cfg.PaddingSubmenu == (Padding{}) {
+	if !cfg.PaddingSubmenu.IsSet() {
 		cfg.PaddingSubmenu = d.PaddingSubmenu
 	}
-	if cfg.PaddingSubtitle == (Padding{}) {
+	if !cfg.PaddingSubtitle.IsSet() {
 		cfg.PaddingSubtitle = d.PaddingSubtitle
 	}
 	if !cfg.SpacingSubmenu.IsSet() {

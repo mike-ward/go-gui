@@ -44,7 +44,7 @@ func (w *Window) Sidebar(cfg SidebarCfg) View {
 	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ColorPanel
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = guiTheme.ContainerStyle.Padding
 	}
 	if cfg.Spring == (SpringCfg{}) {
@@ -70,7 +70,7 @@ func (w *Window) Sidebar(cfg SidebarCfg) View {
 		ID:              cfg.ID,
 		Sizing:          cfg.Sizing,
 		Width:           animW,
-		Padding:         Some(pad),
+		Padding:         pad,
 		Color:           cfg.Color,
 		Shadow:          cfg.Shadow,
 		Radius:          Some(cfg.Radius),

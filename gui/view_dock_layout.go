@@ -85,7 +85,7 @@ func (dv *dockLayoutView) GenerateLayout(w *Window) Layout {
 	cv := Canvas(ContainerCfg{
 		ID:      cfg.ID,
 		Sizing:  cfg.Sizing,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Spacing: Some(float32(0)),
 		Clip:    true,
 		AmendLayout: func(layout *Layout, w *Window) {
@@ -239,7 +239,7 @@ func dockGroupView(
 				Column(ContainerCfg{
 					Width:   1,
 					Sizing:  FixedFill,
-					Padding: Some(PaddingNone),
+					Padding: PaddingNone,
 					Color:   colorSep,
 				}))
 		}
@@ -265,7 +265,7 @@ func dockGroupView(
 	// Tab header row.
 	groupContent = append(groupContent, Row(ContainerCfg{
 		Sizing:  FillFit,
-		Padding: Some(NewPadding(2, 4, 0, 4)),
+		Padding: NewPadding(2, 4, 0, 4),
 		Spacing: Some(float32(0)),
 		Color:   cfg.ColorTabBar,
 		Content: tabButtons,
@@ -274,7 +274,7 @@ func dockGroupView(
 	// Content area.
 	groupContent = append(groupContent, Column(ContainerCfg{
 		Sizing:  FillFill,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Spacing: Some(float32(0)),
 		Clip:    true,
 		Color:   cfg.ColorContent,
@@ -284,7 +284,7 @@ func dockGroupView(
 	return Column(ContainerCfg{
 		ID:      group.ID,
 		Sizing:  FillFill,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Spacing: Some(float32(0)),
 		Clip:    true,
 		Content: groupContent,

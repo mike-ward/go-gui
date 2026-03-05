@@ -20,7 +20,7 @@ func dataGridHeaderRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		Color:       ColorTransparent,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     Some(PaddingNone),
+		Padding:     PaddingNone,
 		Spacing:     Some(-cfg.SizeBorder),
 		Content:     cells,
 	})
@@ -53,7 +53,7 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 		content = append(content, Row(ContainerCfg{
 			Sizing:  FillFill,
 			Clip:    true,
-			Padding: Some(PaddingNone),
+			Padding: PaddingNone,
 			HAlign:  col.Align,
 			VAlign:  VAlignMiddle,
 			Spacing: Some(float32(6)),
@@ -62,7 +62,7 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 	} else {
 		content = append(content, Row(ContainerCfg{
 			Sizing:  FillFill,
-			Padding: Some(PaddingNone),
+			Padding: PaddingNone,
 		}))
 	}
 	if headerControls.showReorder {
@@ -94,7 +94,7 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 		A11YState:   headerA11YState,
 		Width:       width,
 		Sizing:      FixedFill,
-		Padding:     Some(cfg.PaddingHeader),
+		Padding:     cfg.PaddingHeader,
 		Clip:        true,
 		Color:       cfg.ColorHeader,
 		ColorBorder: cfg.ColorBorder,
@@ -139,7 +139,7 @@ func dataGridResizeHandle(cfg *DataGridCfg, col GridColumnCfg, focusID uint32) V
 		ID:      gridID + ":resize:" + col.ID,
 		Width:   dataGridResizeHandleWidth,
 		Sizing:  FixedFill,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Color:   colorResizeHandle,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
 			startX := layout.Shape.X + e.MouseX
@@ -175,7 +175,7 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 	}
 
 	return Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Spacing: Some(dataGridHeaderReorderSpacing),
 		Width:   dataGridHeaderControlsWidth(true, false, false),
 		Sizing:  FixedFill,
@@ -295,7 +295,7 @@ func dataGridFilterRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     Some(cfg.PaddingFilter),
+		Padding:     cfg.PaddingFilter,
 		Spacing:     Some(-cfg.SizeBorder),
 		Content:     cells,
 	})
@@ -316,7 +316,7 @@ func dataGridFilterCell(cfg *DataGridCfg, col GridColumnCfg, width float32) View
 		ID:          cfg.ID + ":filter_cell:" + col.ID,
 		Width:       width,
 		Sizing:      FixedFill,
-		Padding:     Some(cfg.PaddingFilter),
+		Padding:     cfg.PaddingFilter,
 		Color:       ColorTransparent,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(cfg.SizeBorder),

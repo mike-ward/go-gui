@@ -110,16 +110,16 @@ func applyTabControlDefaults(cfg *TabControlCfg) {
 	if !cfg.ColorTabBorderFocus.IsSet() {
 		cfg.ColorTabBorderFocus = s.ColorTabBorderFocus
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = s.Padding
 	}
-	if cfg.PaddingHeader == (Padding{}) {
+	if !cfg.PaddingHeader.IsSet() {
 		cfg.PaddingHeader = s.PaddingHeader
 	}
-	if cfg.PaddingContent == (Padding{}) {
+	if !cfg.PaddingContent.IsSet() {
 		cfg.PaddingContent = s.PaddingContent
 	}
-	if cfg.PaddingTab == (Padding{}) {
+	if !cfg.PaddingTab.IsSet() {
 		cfg.PaddingTab = s.PaddingTab
 	}
 	if cfg.SizeBorder == 0 {
@@ -268,7 +268,7 @@ func TabControl(cfg TabControlCfg) View {
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(cfg.SizeBorder),
 		Radius:          Some(cfg.Radius),
-		Padding:         Some(cfg.Padding),
+		Padding:         cfg.Padding,
 		Spacing:         Some(cfg.Spacing),
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,
@@ -282,7 +282,7 @@ func TabControl(cfg TabControlCfg) View {
 				ColorBorder: cfg.ColorHeaderBorder,
 				SizeBorder:  Some(cfg.SizeHeaderBorder),
 				Radius:      Some(cfg.RadiusHeader),
-				Padding:     Some(cfg.PaddingHeader),
+				Padding:     cfg.PaddingHeader,
 				Spacing:     Some(cfg.SpacingHeader),
 				Sizing:      FillFit,
 				Content:     headerItems,
@@ -292,7 +292,7 @@ func TabControl(cfg TabControlCfg) View {
 				ColorBorder: cfg.ColorContentBorder,
 				SizeBorder:  Some(cfg.SizeContentBorder),
 				Radius:      Some(cfg.RadiusContent),
-				Padding:     Some(cfg.PaddingContent),
+				Padding:     cfg.PaddingContent,
 				Sizing:      FillFill,
 				Content:     activeContent,
 			}),

@@ -668,7 +668,7 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 	// Spacer.
 	content = append(content, Row(ContainerCfg{
 		Sizing:  FillFill,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 	}))
 	// Retry button on error.
 	if state.LoadError != "" {
@@ -701,7 +701,7 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 	// Rows status.
 	content = append(content, Row(ContainerCfg{
 		Sizing:  FitFill,
-		Padding: Some(NewPadding(0, 6, 0, 0)),
+		Padding: NewPadding(0, 6, 0, 0),
 		VAlign:  VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{
@@ -754,7 +754,7 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     Some(dataGridPagerPadding(cfg)),
+		Padding:     dataGridPagerPadding(cfg),
 		Spacing:     Some(float32(6)),
 		VAlign:      VAlignMiddle,
 		Content:     content,
@@ -768,7 +768,7 @@ func dataGridSourceStatusRow(cfg *DataGridCfg, message string) View {
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     Some(cfg.PaddingFilter),
+		Padding:     cfg.PaddingFilter,
 		VAlign:      VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{

@@ -54,7 +54,7 @@ func mainView(w *gui.Window) gui.View {
 		HAlign:  gui.HAlignCenter,
 		Sizing:  gui.FixedFixed,
 		Spacing: gui.Some(theme.SpacingSmall),
-		Padding: gui.Some(gui.NewPadding(8, 8, 8, 8)),
+		Padding: gui.NewPadding(8, 8, 8, 8),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      "10,000-item virtualized list box",

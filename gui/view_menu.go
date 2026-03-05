@@ -22,7 +22,7 @@ func Menu(w *Window, cfg MenubarCfg) View {
 		MinWidth:     cfg.WidthSubmenuMin.Get(DefaultMenubarStyle.WidthSubmenuMin),
 		MaxWidth:     cfg.WidthSubmenuMax.Get(DefaultMenubarStyle.WidthSubmenuMax),
 		Spacing:      Some(cfg.SpacingSubmenu.Get(DefaultMenubarStyle.SpacingSubmenu)),
-		Padding:      Some(cfg.PaddingSubmenu),
+		Padding:      cfg.PaddingSubmenu,
 		Float:        cfg.Float,
 		FloatAnchor:  cfg.FloatAnchor,
 		FloatTieOff:  cfg.FloatTieOff,
@@ -48,7 +48,7 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 	for _, item := range items {
 		// Determine padding.
 		pad := item.Padding
-		if pad == (Padding{}) {
+		if !pad.IsSet() {
 			if item.CustomView != nil {
 				pad = PaddingNone
 			} else if item.ID == MenuSubtitleID {
@@ -98,7 +98,7 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 				MinWidth:    cfg.WidthSubmenuMin.Get(DefaultMenubarStyle.WidthSubmenuMin),
 				MaxWidth:    cfg.WidthSubmenuMax.Get(DefaultMenubarStyle.WidthSubmenuMax),
 				Spacing:     Some(cfg.SpacingSubmenu.Get(DefaultMenubarStyle.SpacingSubmenu)),
-				Padding:     Some(cfg.PaddingSubmenu),
+				Padding:     cfg.PaddingSubmenu,
 				Float:         true,
 				FloatAutoFlip: true,
 				FloatAnchor: anchor,

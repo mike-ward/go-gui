@@ -164,7 +164,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	content = append(content,
 		Row(ContainerCfg{
 			Sizing:  FillFill,
-			Padding: Some(PaddingNone),
+			Padding: PaddingNone,
 		}),
 	)
 
@@ -209,7 +209,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			FloatTieOff:  FloatTopLeft,
 			FloatOffsetY: -sizeBorder,
 			IDScroll:     cfg.IDScroll,
-			Padding:      Some(cfg.Padding),
+			Padding:      cfg.Padding,
 			Spacing:      Some(float32(0)),
 			Content:      dropdownContent,
 		}))
@@ -229,7 +229,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			ColorBorder: cfg.ColorBorder,
 			SizeBorder:  Some(sizeBorder),
 			Radius:      Some(radius),
-			Padding:     Some(cfg.Padding),
+			Padding:     cfg.Padding,
 			Sizing:      cfg.Sizing,
 			MinWidth:    cfg.MinWidth,
 			MaxWidth:    cfg.MaxWidth,
@@ -359,7 +359,7 @@ func applyComboboxDefaults(cfg *ComboboxCfg) {
 	if !cfg.ColorHighlight.IsSet() {
 		cfg.ColorHighlight = d.ColorHighlight
 	}
-	if cfg.Padding == (Padding{}) {
+	if !cfg.Padding.IsSet() {
 		cfg.Padding = d.Padding
 	}
 	if cfg.MinWidth == 0 {

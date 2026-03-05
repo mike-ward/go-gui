@@ -266,7 +266,7 @@ func dockDragGhostView(state dockDragState, label string) View {
 		Opacity:      float32(dockDragGhostOpacity),
 		Sizing:       FixedFixed,
 		Clip:         true,
-		Padding:      Some(NewPadding(6, 12, 6, 12)),
+		Padding:      NewPadding(6, 12, 6, 12),
 		Color:        guiTheme.ColorPanel,
 		Shadow: &BoxShadow{
 			Color:      dockDragGhostShadowColor,
@@ -285,7 +285,7 @@ func dockDragZoneOverlayView(colorZone Color) View {
 		Sizing:  FixedFixed,
 		Width:   0,
 		Height:  0,
-		Padding: Some(PaddingNone),
+		Padding: PaddingNone,
 		Color:   colorZone,
 	})
 }

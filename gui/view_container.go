@@ -19,7 +19,7 @@ type ContainerCfg struct {
 
 	// Layout
 	Spacing  Opt[float32]
-	Padding  Opt[Padding]
+	Padding  Padding
 	HAlign   HorizontalAlign
 	VAlign   VerticalAlign
 	TextDir  TextDirection
@@ -94,10 +94,14 @@ type ContainerCfg struct {
 
 func applyContainerDefaults(cfg *ContainerCfg) (spacing, sizeBorder, radius float32, padding Padding) {
 	d := &DefaultContainerStyle
+	padding = cfg.Padding
+	if !padding.IsSet() {
+		padding = d.Padding
+	}
 	return cfg.Spacing.Get(d.Spacing),
 		cfg.SizeBorder.Get(d.SizeBorder),
 		cfg.Radius.Get(d.Radius),
-		cfg.Padding.Get(d.Padding)
+		padding
 }
 
 // containerView implements View for container-based layouts.
@@ -313,7 +317,7 @@ func invisibleContainerView() *containerView {
 		cfg: ContainerCfg{
 			Disabled: true,
 			OverDraw: true,
-			Padding:  Some(PaddingNone),
+			Padding:  PaddingNone,
 		},
 		shapeType: ShapeRectangle,
 	}
