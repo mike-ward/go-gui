@@ -267,6 +267,36 @@ func TestInputOnCharEnterMultiline(t *testing.T) {
 	}
 }
 
+func TestInputKeyDownEnterMultiline(t *testing.T) {
+	ctx := newInputTestMultiline("ab", 505, 2)
+	ctx.fireKeyDown(KeyEnter, 0)
+	if ctx.lastText != "ab\n" {
+		t.Fatalf("got %q, want %q", ctx.lastText, "ab\n")
+	}
+}
+
+func TestInputKeyDownEnterSingleLine(t *testing.T) {
+	committed := false
+	w := newTestWindow()
+	w.SetIDFocus(600)
+	setInputState(w, 600, InputState{CursorPos: 2})
+	layout := GenerateViewLayout(Input(InputCfg{
+		Text:    "hi",
+		IDFocus: 600,
+		OnTextCommit: func(_ *Layout, _ string, reason InputCommitReason, _ *Window) {
+			committed = true
+			if reason != CommitEnter {
+				t.Fatalf("got reason %d, want CommitEnter", reason)
+			}
+		},
+	}), w)
+	e := &Event{Type: EventKeyDown, KeyCode: KeyEnter}
+	layout.Shape.Events.OnKeyDown(&layout, e, w)
+	if !committed {
+		t.Fatal("OnTextCommit not called")
+	}
+}
+
 func TestInputOnCharUndo(t *testing.T) {
 	ctx := newInputTest("hello", 506, 5)
 	ctx.fireChar('!')

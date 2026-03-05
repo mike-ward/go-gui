@@ -722,6 +722,18 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				updateCursorAndSelection(imap, id, is,
 					newPos, isShift)
 			}
+		case KeyEnter:
+			if hcfg.Mode == InputMultiline {
+				text = inputInsert(text, "\n", id, w)
+				textChanged = true
+			} else {
+				if hcfg.OnTextCommit != nil {
+					hcfg.OnTextCommit(layout, text, CommitEnter, w)
+				}
+				if hcfg.OnEnter != nil {
+					hcfg.OnEnter(layout, e, w)
+				}
+			}
 		case KeyEscape:
 			is.SelectBeg = 0
 			is.SelectEnd = 0
