@@ -324,3 +324,86 @@ func TestGridOrmFilterDedup(t *testing.T) {
 		t.Fatalf("filters = %d, want 1", len(q.Filters))
 	}
 }
+
+func TestGridOrmBuildSQLQuickFilterDeterministicOrder(t *testing.T) {
+	colMap := map[string]GridOrmColumnSpec{
+		"z_col": {
+			ID:              "z_col",
+			DBField:         "z_field",
+			QuickFilter:     true,
+			Filterable:      true,
+			Sortable:        true,
+			CaseInsensitive: false,
+		},
+		"a_col": {
+			ID:              "a_col",
+			DBField:         "a_field",
+			QuickFilter:     true,
+			Filterable:      true,
+			Sortable:        true,
+			CaseInsensitive: false,
+		},
+	}
+	out, err := GridOrmBuildSQL(GridOrmQuerySpec{
+		QuickFilter: "x",
+		Limit:       10,
+		Offset:      0,
+	}, colMap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "(a_field like ? escape '\\' or z_field like ? escape '\\')"
+	if out.WhereSQL != want {
+		t.Fatalf("WhereSQL = %q, want %q", out.WhereSQL, want)
+	}
+	if len(out.Params) < 2 || out.Params[0] != "%x%" || out.Params[1] != "%x%" {
+		t.Fatalf("unexpected quick-filter param ordering: %#v", out.Params)
+	}
+}
+
+func TestGridOrmDeleteManyDeterministicIDs(t *testing.T) {
+	var gotIDs []string
+	src, err := NewGridOrmDataSource(GridOrmDataSource{
+		Columns: testColumns(),
+		FetchFn: func(GridOrmQuerySpec, *GridAbortSignal) (GridOrmPage, error) {
+			return GridOrmPage{}, nil
+		},
+		DeleteManyFn: func(ids []string, _ *GridAbortSignal) ([]string, error) {
+			gotIDs = append([]string(nil), ids...)
+			return ids, nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = src.MutateData(GridMutationRequest{
+		Kind:   GridMutationDelete,
+		RowIDs: []string{"c", "a", "b", "a"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gotIDs) != 3 || gotIDs[0] != "a" || gotIDs[1] != "b" || gotIDs[2] != "c" {
+		t.Fatalf("delete IDs = %#v, want [a b c]", gotIDs)
+	}
+}
+
+func TestGridOrmBuildSQLClampsLimitOffset(t *testing.T) {
+	src := testOrmSource(t)
+	out, err := src.BuildSQL(GridOrmQuerySpec{
+		QuickFilter: "x",
+		Limit:       -5,
+		Offset:      -10,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := len(out.Params)
+	if n < 2 {
+		t.Fatalf("params too short: %#v", out.Params)
+	}
+	if out.Params[n-2] != "100" || out.Params[n-1] != "0" {
+		t.Fatalf("limit/offset params = [%s %s], want [100 0]",
+			out.Params[n-2], out.Params[n-1])
+	}
+}

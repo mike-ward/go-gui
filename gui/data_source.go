@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -135,6 +136,7 @@ type DataGridDataSource interface {
 // InMemoryDataSource implements DataGridDataSource using an
 // in-memory row slice.
 type InMemoryDataSource struct {
+	mu            sync.RWMutex
 	Rows          []GridRow
 	DefaultLimit  int
 	LatencyMs     int
@@ -169,14 +171,27 @@ func (s *InMemoryDataSource) Capabilities() GridDataCapabilities {
 }
 
 func (s *InMemoryDataSource) FetchData(req GridDataRequest) (GridDataResult, error) {
+	if err := dataGridSourceSleepWithAbort(req.Signal, s.LatencyMs); err != nil {
+		return GridDataResult{}, err
+	}
+	s.mu.RLock()
+	rows := make([]GridRow, len(s.Rows))
+	copy(rows, s.Rows)
+	defaultLimit := s.DefaultLimit
+	rowCountKnown := s.RowCountKnown
+	s.mu.RUnlock()
 	return dataGridSourceInMemoryFetch(
-		s.Rows, s.DefaultLimit, s.LatencyMs,
-		s.RowCountKnown, req)
+		rows, defaultLimit, 0, rowCountKnown, req)
 }
 
 func (s *InMemoryDataSource) MutateData(req GridMutationRequest) (GridMutationResult, error) {
+	if err := dataGridSourceSleepWithAbort(req.Signal, s.LatencyMs); err != nil {
+		return GridMutationResult{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return dataGridSourceInMemoryMutate(
-		&s.Rows, s.LatencyMs, s.RowCountKnown, req)
+		&s.Rows, 0, s.RowCountKnown, req)
 }
 
 func dataGridSourceInMemoryFetch(
@@ -407,7 +422,7 @@ func dataGridSourceApplyQuery(
 		sort.Slice(idxs, func(a, b int) bool {
 			ka, kb := keys[idxs[a]], keys[idxs[b]]
 			if ka == kb {
-				return false
+				return idxs[a] < idxs[b]
 			}
 			if ka < kb {
 				return dir > 0
@@ -437,7 +452,7 @@ func dataGridSourceApplyQuery(
 				}
 				return ka > kb
 			}
-			return false
+			return ia < ib
 		})
 	}
 	result := make([]GridRow, n)
@@ -734,7 +749,16 @@ func dataGridSourceApplyUpdate(
 		updated = append(updated, (*rows)[idx])
 		updatedIDs[reqRow.ID] = true
 	}
-	for rowID, rowEdits := range editsByRow {
+	pendingIDs := make([]string, 0, len(editsByRow))
+	for rowID := range editsByRow {
+		if updatedIDs[rowID] {
+			continue
+		}
+		pendingIDs = append(pendingIDs, rowID)
+	}
+	sort.Strings(pendingIDs)
+	for _, rowID := range pendingIDs {
+		rowEdits := editsByRow[rowID]
 		if updatedIDs[rowID] {
 			continue
 		}
@@ -821,7 +845,10 @@ func dataGridSourceNextCreateRowID(
 	// Numeric range exhausted; try random hex IDs.
 	for range 10 {
 		var buf [8]byte
-		rand.Read(buf[:])
+		if _, err := rand.Read(buf[:]); err != nil {
+			return "", fmt.Errorf(
+				"grid: random id generation failed: %w", err)
+		}
 		candidate := fmt.Sprintf("__gen_%016x",
 			uint64(buf[0])<<56|uint64(buf[1])<<48|
 				uint64(buf[2])<<40|uint64(buf[3])<<32|

@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -221,6 +222,7 @@ func (s *GridOrmDataSource) MutateData(
 		for k := range idSet {
 			ids = append(ids, k)
 		}
+		sort.Strings(ids)
 		if len(ids) == 0 {
 			return GridMutationResult{}, nil
 		}
@@ -509,9 +511,11 @@ func GridOrmBuildSQL(
 		whereParts = append(whereParts, clause)
 	}
 	order := gridOrmBuildOrder(query.Sorts, colMap)
+	limit := intClamp(nonZero(spec.Limit, 100), 1, dataGridSourceMaxPageLimit)
+	offset := intMax(0, spec.Offset)
 	params = append(params,
-		fmt.Sprintf("%d", spec.Limit),
-		fmt.Sprintf("%d", spec.Offset))
+		fmt.Sprintf("%d", limit),
+		fmt.Sprintf("%d", offset))
 	return GridOrmSqlBuilder{
 		WhereSQL:  strings.Join(whereParts, " and "),
 		OrderSQL:  order,
@@ -546,7 +550,13 @@ func gridOrmBuildQuickFilter(
 	escapedLower := GridOrmEscapeLike(lowerNeedle)
 	escapedTrimmed := GridOrmEscapeLike(trimmed)
 	var orParts []string
-	for _, col := range columns {
+	keys := make([]string, 0, len(columns))
+	for k := range columns {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		col := columns[k]
 		if !col.QuickFilter {
 			continue
 		}

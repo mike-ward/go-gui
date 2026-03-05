@@ -1,6 +1,9 @@
 package gui
 
 import (
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -145,6 +148,28 @@ func TestInMemoryFetchMultiSort(t *testing.T) {
 	}
 }
 
+func TestInMemoryFetchSortStableTies(t *testing.T) {
+	rows := []GridRow{
+		{ID: "2", Cells: map[string]string{"name": "A"}},
+		{ID: "1", Cells: map[string]string{"name": "A"}},
+		{ID: "3", Cells: map[string]string{"name": "B"}},
+	}
+	src := NewInMemoryDataSource(rows)
+	res, err := src.FetchData(GridDataRequest{
+		Query: GridQueryState{
+			Sorts: []GridSort{{ColID: "name", Dir: GridSortAsc}},
+		},
+		Page: GridCursorPageReq{Limit: 100},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Rows[0].ID != "2" || res.Rows[1].ID != "1" {
+		t.Fatalf("tie order changed: got [%s %s], want [2 1]",
+			res.Rows[0].ID, res.Rows[1].ID)
+	}
+}
+
 func TestInMemoryFetchFilterEquals(t *testing.T) {
 	src := NewInMemoryDataSource(makeTestRows(5))
 	res, err := src.FetchData(GridDataRequest{
@@ -275,6 +300,27 @@ func TestInMemoryMutateUpdateWithEdits(t *testing.T) {
 	}
 	if src.Rows[0].Cells["name"] != "Edited" {
 		t.Fatalf("name = %q", src.Rows[0].Cells["name"])
+	}
+}
+
+func TestInMemoryMutateUpdateWithEditsDeterministicOrder(t *testing.T) {
+	src := NewInMemoryDataSource(makeTestRows(3))
+	res, err := src.MutateData(GridMutationRequest{
+		Kind: GridMutationUpdate,
+		Edits: []GridCellEdit{
+			{RowID: "c", ColID: "name", Value: "Edited-C"},
+			{RowID: "a", ColID: "name", Value: "Edited-A"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Updated) != 2 {
+		t.Fatalf("updated len = %d, want 2", len(res.Updated))
+	}
+	if res.Updated[0].ID != "a" || res.Updated[1].ID != "c" {
+		t.Fatalf("updated order = [%s %s], want [a c]",
+			res.Updated[0].ID, res.Updated[1].ID)
 	}
 }
 
@@ -455,4 +501,43 @@ func TestRowCountUnknown(t *testing.T) {
 	if res.RowCount != -1 {
 		t.Fatalf("RowCount = %d, want -1", res.RowCount)
 	}
+}
+
+func TestInMemoryConcurrentFetchMutate(t *testing.T) {
+	src := NewInMemoryDataSource(makeTestRows(20))
+	var stop atomic.Bool
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		for !stop.Load() {
+			_, err := src.FetchData(GridDataRequest{
+				Page: GridCursorPageReq{Limit: 10},
+			})
+			if err != nil {
+				t.Errorf("fetch error: %v", err)
+				return
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			_, err := src.MutateData(GridMutationRequest{
+				Kind: GridMutationUpdate,
+				Edits: []GridCellEdit{
+					{RowID: "a", ColID: "name", Value: strconv.Itoa(i)},
+				},
+			})
+			if err != nil {
+				t.Errorf("mutate error: %v", err)
+				return
+			}
+		}
+		stop.Store(true)
+	}()
+
+	wg.Wait()
 }
