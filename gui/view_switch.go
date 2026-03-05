@@ -18,7 +18,6 @@ type SwitchCfg struct {
 	OnClick          func(*Layout, *Event, *Window)
 	Width            Opt[float32]
 	Height           Opt[float32]
-	Radius           Opt[float32]
 	IDFocus          uint32
 	Disabled         bool
 	Invisible        bool
@@ -35,7 +34,7 @@ func Switch(cfg SwitchCfg) View {
 	d := &DefaultSwitchStyle
 	width := cfg.Width.Get(d.SizeWidth)
 	height := cfg.Height.Get(d.SizeHeight)
-	radius := cfg.Radius.Get(d.Radius)
+	radius := height / 2
 	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
 
 	thumbColor := cfg.ColorUnselect
@@ -122,7 +121,7 @@ func Switch(cfg SwitchCfg) View {
 }
 
 func applySwitchDefaults(cfg *SwitchCfg) {
-	d := &DefaultButtonStyle
+	d := &DefaultSwitchStyle
 	if cfg.Color == (Color{}) {
 		cfg.Color = d.Color
 	}
@@ -142,16 +141,16 @@ func applySwitchDefaults(cfg *SwitchCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if cfg.ColorSelect == (Color{}) {
-		cfg.ColorSelect = colorSelectDark
+		cfg.ColorSelect = d.ColorSelect
 	}
 	if cfg.ColorUnselect == (Color{}) {
-		cfg.ColorUnselect = colorInteriorDark
+		cfg.ColorUnselect = d.ColorUnselect
 	}
 
 	if cfg.Padding == (Padding{}) {
-		cfg.Padding = PaddingTwo
+		cfg.Padding = d.Padding
 	}
 	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = DefaultTextStyle
+		cfg.TextStyle = d.TextStyleNormal
 	}
 }
