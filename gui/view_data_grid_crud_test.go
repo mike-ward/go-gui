@@ -105,7 +105,23 @@ func TestRowsSignatureFallbackKeys(t *testing.T) {
 	h1 := dataGridRowsSignature(rows, nil)
 	h2 := dataGridRowsSignature(rows, []string{"a", "b"})
 	if h1 != h2 {
-		t.Fatalf("nil colIDs should use sorted keys from first row: %d vs %d", h1, h2)
+		t.Fatalf("nil colIDs should use sorted keys from all rows: %d vs %d", h1, h2)
+	}
+}
+
+func TestRowsSignatureFallbackIncludesKeysFromAllRows(t *testing.T) {
+	rows1 := []GridRow{
+		{ID: "r1", Cells: map[string]string{"a": "1"}},
+		{ID: "r2", Cells: map[string]string{"a": "2", "b": "x"}},
+	}
+	rows2 := []GridRow{
+		{ID: "r1", Cells: map[string]string{"a": "1"}},
+		{ID: "r2", Cells: map[string]string{"a": "2", "b": "y"}},
+	}
+	h1 := dataGridRowsSignature(rows1, nil)
+	h2 := dataGridRowsSignature(rows2, nil)
+	if h1 == h2 {
+		t.Fatal("fallback signature should include keys introduced in later rows")
 	}
 }
 
@@ -143,8 +159,8 @@ func TestCrudBuildPayloadCreates(t *testing.T) {
 			{ID: "__draft_g_1", Cells: map[string]string{"a": "new"}},
 			{ID: "r1", Cells: map[string]string{"a": "1"}},
 		},
-		DraftRowIDs: map[string]bool{"__draft_g_1": true},
-		DirtyRowIDs: map[string]bool{"__draft_g_1": true},
+		DraftRowIDs:   map[string]bool{"__draft_g_1": true},
+		DirtyRowIDs:   map[string]bool{"__draft_g_1": true},
 		DeletedRowIDs: map[string]bool{},
 	}
 	creates, updates, edits, deletes := dataGridCrudBuildPayload(state)

@@ -194,19 +194,41 @@ func TestDataGridPresentationSignatureStable(t *testing.T) {
 
 func TestDataGridPresentationSignatureDiffers(t *testing.T) {
 	cfg1 := &DataGridCfg{
+		ID:      "g1",
+		GroupBy: []string{"a"},
+		Rows:    []GridRow{{Cells: map[string]string{"a": "1"}}},
+	}
+	cfg2 := &DataGridCfg{
+		ID:      "g1",
+		GroupBy: []string{"a"},
+		Rows:    []GridRow{{Cells: map[string]string{"a": "2"}}},
+	}
+	cols := []GridColumnCfg{{ID: "a", Title: "A"}}
+	idx := []int{0}
+	groupCols := []string{"a"}
+	valueCols := []string{"a"}
+	s1 := dataGridPresentationSignature(cfg1, cols, idx, groupCols, valueCols)
+	s2 := dataGridPresentationSignature(cfg2, cols, idx, groupCols, valueCols)
+	if s1 == s2 {
+		t.Error("different data should produce different signature")
+	}
+}
+
+func TestDataGridPresentationSignatureFlatIgnoresCellValues(t *testing.T) {
+	cfg1 := &DataGridCfg{
 		ID:   "g1",
-		Rows: []GridRow{{Cells: map[string]string{"a": "1"}}},
+		Rows: []GridRow{{ID: "r1", Cells: map[string]string{"a": "1"}}},
 	}
 	cfg2 := &DataGridCfg{
 		ID:   "g1",
-		Rows: []GridRow{{Cells: map[string]string{"a": "2"}}},
+		Rows: []GridRow{{ID: "r1", Cells: map[string]string{"a": "2"}}},
 	}
 	cols := []GridColumnCfg{{ID: "a", Title: "A"}}
 	idx := []int{0}
 	s1 := dataGridPresentationSignature(cfg1, cols, idx, nil, nil)
 	s2 := dataGridPresentationSignature(cfg2, cols, idx, nil, nil)
-	if s1 == s2 {
-		t.Error("different data should produce different signature")
+	if s1 != s2 {
+		t.Error("flat presentation signature should ignore cell value changes")
 	}
 }
 

@@ -10,39 +10,39 @@ import (
 
 // Data grid constants.
 const (
-	dataGridVirtualBufferRows        = 2
-	dataGridResizeDoubleClickFrames  = uint64(24) // ~400ms at 60fps
-	dataGridEditDoubleClickFrames    = uint64(36) // ~600ms at 60fps
-	dataGridResizeHandleWidth        = float32(6)
-	dataGridAutofitPadding           = float32(18)
-	dataGridAutofitMaxRows           = 1000
-	dataGridIndicatorAlpha           = uint8(140)
-	dataGridResizeKeyStep            = float32(8)
-	dataGridResizeKeyStepLarge       = float32(24)
-	dataGridHeaderControlWidth       = float32(12)
-	dataGridHeaderReorderSpacing     = float32(1)
-	dataGridHeaderLabelMinWidth      = float32(24)
-	dataGridGroupIndentStep          = float32(14)
-	dataGridDetailIndentGap          = float32(4)
-	dataGridPDFPageWidth             = float32(612)
-	dataGridPDFPageHeight            = float32(792)
-	dataGridPDFMargin                = float32(40)
-	dataGridPDFFontSize              = float32(10)
-	dataGridPDFLineHeight            = float32(12)
-	dataGridRecordSep                = "\x1e"
-	dataGridUnitSep                  = "\x1f"
-	dataGridGroupSep                 = "\x1d"
-	dataGridDefaultRowHeight         = float32(30)
-	dataGridDefaultHeaderHeight      = float32(34)
-	dataGridDefaultPageLimit         = 100
-	dataGridJumpInputWidth           = float32(68)
+	dataGridVirtualBufferRows       = 2
+	dataGridResizeDoubleClickFrames = uint64(24) // ~400ms at 60fps
+	dataGridEditDoubleClickFrames   = uint64(36) // ~600ms at 60fps
+	dataGridResizeHandleWidth       = float32(6)
+	dataGridAutofitPadding          = float32(18)
+	dataGridAutofitMaxRows          = 1000
+	dataGridIndicatorAlpha          = uint8(140)
+	dataGridResizeKeyStep           = float32(8)
+	dataGridResizeKeyStepLarge      = float32(24)
+	dataGridHeaderControlWidth      = float32(12)
+	dataGridHeaderReorderSpacing    = float32(1)
+	dataGridHeaderLabelMinWidth     = float32(24)
+	dataGridGroupIndentStep         = float32(14)
+	dataGridDetailIndentGap         = float32(4)
+	dataGridPDFPageWidth            = float32(612)
+	dataGridPDFPageHeight           = float32(792)
+	dataGridPDFMargin               = float32(40)
+	dataGridPDFFontSize             = float32(10)
+	dataGridPDFLineHeight           = float32(12)
+	dataGridRecordSep               = "\x1e"
+	dataGridUnitSep                 = "\x1f"
+	dataGridGroupSep                = "\x1d"
+	dataGridDefaultRowHeight        = float32(30)
+	dataGridDefaultHeaderHeight     = float32(34)
+	dataGridDefaultPageLimit        = 100
+	dataGridJumpInputWidth          = float32(68)
 )
 
 // GridColumnPin specifies column pinning position.
 type GridColumnPin uint8
 
 const (
-	GridColumnPinNone  GridColumnPin = iota
+	GridColumnPinNone GridColumnPin = iota
 	GridColumnPinLeft
 	GridColumnPinRight
 )
@@ -78,7 +78,7 @@ func (op GridAggregateOp) String() string {
 type GridCellEditorKind uint8
 
 const (
-	GridCellEditorText     GridCellEditorKind = iota
+	GridCellEditorText GridCellEditorKind = iota
 	GridCellEditorSelect
 	GridCellEditorDate
 	GridCellEditorCheckbox
@@ -88,7 +88,7 @@ const (
 type dataGridDisplayRowKind uint8
 
 const (
-	dataGridDisplayRowData        dataGridDisplayRowKind = iota
+	dataGridDisplayRowData dataGridDisplayRowKind = iota
 	dataGridDisplayRowGroupHeader
 	dataGridDisplayRowDetail
 )
@@ -165,108 +165,108 @@ type GridCellFormat struct {
 // dataGridDisplayRow is a flat display entry (data, group
 // header, or detail expansion).
 type dataGridDisplayRow struct {
-	Kind           dataGridDisplayRowKind
-	DataRowIdx     int
-	GroupColID     string
-	GroupValue     string
-	GroupColTitle  string
-	GroupDepth     int
-	GroupCount     int
-	AggregateText  string
+	Kind          dataGridDisplayRowKind
+	DataRowIdx    int
+	GroupColID    string
+	GroupValue    string
+	GroupColTitle string
+	GroupDepth    int
+	GroupCount    int
+	AggregateText string
 }
 
 // dataGridPresentation is the flattened display row list
 // with a data-row-index → display-index map.
 type dataGridPresentation struct {
-	Rows           []dataGridDisplayRow
-	DataToDisplay  map[int]int
+	Rows          []dataGridDisplayRow
+	DataToDisplay map[int]int
 }
 
 // DataGridCfg configures a data grid widget.
 type DataGridCfg struct {
-	ID                      string
-	IDFocus                 uint32
-	IDScroll                uint32
-	Columns                 []GridColumnCfg
-	ColumnOrder             []string
-	GroupBy                 []string
-	Aggregates              []GridAggregateCfg
-	Rows                    []GridRow
-	DataSource              DataGridDataSource
-	PaginationKind          GridPaginationKind
-	Cursor                  string
-	PageLimit               int
-	RowCount                *int
-	Loading                 bool
-	LoadError               string
-	ShowCRUDToolbar         bool
-	AllowCreate             *bool
-	AllowDelete             *bool
-	Query                   GridQueryState
-	Selection               GridSelection
-	MultiSort               *bool
-	MultiSelect             *bool
-	RangeSelect             *bool
-	ShowHeader              *bool
-	FreezeHeader            bool
-	ShowFilterRow           bool
-	ShowQuickFilter         bool
-	ShowColumnChooser       bool
-	ShowGroupCounts         *bool
-	PageSize                int
-	PageIndex               int
-	HiddenColumnIDs         map[string]bool
-	FrozenTopRowIDs         []string
-	DetailExpandedRowIDs    map[string]bool
-	QuickFilterPlaceholder  string
-	QuickFilterDebounce     time.Duration
-	RowHeight               float32
-	HeaderHeight            float32
-	ColorBackground         Color
-	ColorHeader             Color
-	ColorHeaderHover        Color
-	ColorFilter             Color
-	ColorQuickFilter        Color
-	ColorRowHover           Color
-	ColorRowAlt             Color
-	ColorRowSelected        Color
-	ColorBorder             Color
-	ColorResizeHandle       Color
-	ColorResizeActive       Color
-	PaddingCell             Padding
-	PaddingHeader           Padding
-	PaddingFilter           Padding
-	TextStyle               TextStyle
-	TextStyleHeader         TextStyle
-	TextStyleFilter         TextStyle
-	Radius                  float32
-	SizeBorder              float32
-	Scrollbar               ScrollbarOverflow
-	Sizing                  Sizing
-	Width                   float32
-	Height                  float32
-	MinWidth                float32
-	MaxWidth                float32
-	MinHeight               float32
-	MaxHeight               float32
-	OnQueryChange           func(GridQueryState, *Event, *Window)
-	OnSelectionChange       func(GridSelection, *Event, *Window)
-	OnColumnOrderChange     func([]string, *Event, *Window)
-	OnColumnPinChange       func(string, GridColumnPin, *Event, *Window)
-	OnHiddenColumnsChange   func(map[string]bool, *Event, *Window)
-	OnPageChange            func(int, *Event, *Window)
-	OnDetailExpandedChange  func(map[string]bool, *Event, *Window)
-	OnCellEdit              func(GridCellEdit, *Event, *Window)
-	OnRowsChange            func([]GridRow, *Event, *Window)
-	OnCRUDError             func(string, *Event, *Window)
-	OnCellFormat            func(GridRow, int, GridColumnCfg, string, *Window) GridCellFormat
-	OnDetailRowView         func(GridRow, *Window) View
-	OnCopyRows              func([]GridRow, *Event, *Window) (string, bool)
-	OnRowActivate           func(GridRow, *Event, *Window)
-	Disabled                bool
-	Invisible               bool
-	A11YLabel               string
-	A11YDescription         string
+	ID                     string
+	IDFocus                uint32
+	IDScroll               uint32
+	Columns                []GridColumnCfg
+	ColumnOrder            []string
+	GroupBy                []string
+	Aggregates             []GridAggregateCfg
+	Rows                   []GridRow
+	DataSource             DataGridDataSource
+	PaginationKind         GridPaginationKind
+	Cursor                 string
+	PageLimit              int
+	RowCount               *int
+	Loading                bool
+	LoadError              string
+	ShowCRUDToolbar        bool
+	AllowCreate            *bool
+	AllowDelete            *bool
+	Query                  GridQueryState
+	Selection              GridSelection
+	MultiSort              *bool
+	MultiSelect            *bool
+	RangeSelect            *bool
+	ShowHeader             *bool
+	FreezeHeader           bool
+	ShowFilterRow          bool
+	ShowQuickFilter        bool
+	ShowColumnChooser      bool
+	ShowGroupCounts        *bool
+	PageSize               int
+	PageIndex              int
+	HiddenColumnIDs        map[string]bool
+	FrozenTopRowIDs        []string
+	DetailExpandedRowIDs   map[string]bool
+	QuickFilterPlaceholder string
+	QuickFilterDebounce    time.Duration
+	RowHeight              float32
+	HeaderHeight           float32
+	ColorBackground        Color
+	ColorHeader            Color
+	ColorHeaderHover       Color
+	ColorFilter            Color
+	ColorQuickFilter       Color
+	ColorRowHover          Color
+	ColorRowAlt            Color
+	ColorRowSelected       Color
+	ColorBorder            Color
+	ColorResizeHandle      Color
+	ColorResizeActive      Color
+	PaddingCell            Padding
+	PaddingHeader          Padding
+	PaddingFilter          Padding
+	TextStyle              TextStyle
+	TextStyleHeader        TextStyle
+	TextStyleFilter        TextStyle
+	Radius                 float32
+	SizeBorder             float32
+	Scrollbar              ScrollbarOverflow
+	Sizing                 Sizing
+	Width                  float32
+	Height                 float32
+	MinWidth               float32
+	MaxWidth               float32
+	MinHeight              float32
+	MaxHeight              float32
+	OnQueryChange          func(GridQueryState, *Event, *Window)
+	OnSelectionChange      func(GridSelection, *Event, *Window)
+	OnColumnOrderChange    func([]string, *Event, *Window)
+	OnColumnPinChange      func(string, GridColumnPin, *Event, *Window)
+	OnHiddenColumnsChange  func(map[string]bool, *Event, *Window)
+	OnPageChange           func(int, *Event, *Window)
+	OnDetailExpandedChange func(map[string]bool, *Event, *Window)
+	OnCellEdit             func(GridCellEdit, *Event, *Window)
+	OnRowsChange           func([]GridRow, *Event, *Window)
+	OnCRUDError            func(string, *Event, *Window)
+	OnCellFormat           func(GridRow, int, GridColumnCfg, string, *Window) GridCellFormat
+	OnDetailRowView        func(GridRow, *Window) View
+	OnCopyRows             func([]GridRow, *Event, *Window) (string, bool)
+	OnRowActivate          func(GridRow, *Event, *Window)
+	Disabled               bool
+	Invisible              bool
+	A11YLabel              string
+	A11YDescription        string
 }
 
 // boolDefault returns *p if non-nil, else def.
@@ -358,12 +358,12 @@ func applyDataGridDefaults(cfg *DataGridCfg) {
 // --- Internal state structs ---
 
 type dataGridResizeState struct {
-	Active           bool
-	ColID            string
-	StartMouseX      float32
-	StartWidth       float32
-	LastClickFrame   uint64
-	LastClickColID   string
+	Active         bool
+	ColID          string
+	StartMouseX    float32
+	StartWidth     float32
+	LastClickFrame uint64
+	LastClickColID string
 }
 
 type dataGridColWidths struct {
@@ -371,11 +371,11 @@ type dataGridColWidths struct {
 }
 
 type dataGridPresentationCache struct {
-	Signature      uint64
-	Rows           []dataGridDisplayRow
-	DataToDisplay  map[int]int
-	GroupRanges    map[string]int
-	GroupCols      []string
+	Signature     uint64
+	Rows          []dataGridDisplayRow
+	DataToDisplay map[int]int
+	GroupRanges   map[string]int
+	GroupCols     []string
 }
 
 type dataGridRangeState struct {
@@ -383,52 +383,52 @@ type dataGridRangeState struct {
 }
 
 type dataGridEditState struct {
-	EditingRowID    string
-	LastClickRowID  string
-	LastClickFrame  uint64
+	EditingRowID   string
+	LastClickRowID string
+	LastClickFrame uint64
 }
 
 type dataGridCrudState struct {
-	SourceSignature          uint64
-	LocalRowsLen             int
-	LocalRowsIDSignature     uint64
-	LocalRowsSignatureValid  bool
-	CommittedRows            []GridRow
-	WorkingRows              []GridRow
-	DirtyRowIDs              map[string]bool
-	DraftRowIDs              map[string]bool
-	DeletedRowIDs            map[string]bool
-	NextDraftSeq             int
-	Saving                   bool
-	SaveError                string
+	SourceSignature         uint64
+	LocalRowsLen            int
+	LocalRowsIDSignature    uint64
+	LocalRowsSignatureValid bool
+	CommittedRows           []GridRow
+	WorkingRows             []GridRow
+	DirtyRowIDs             map[string]bool
+	DraftRowIDs             map[string]bool
+	DeletedRowIDs           map[string]bool
+	NextDraftSeq            int
+	Saving                  bool
+	SaveError               string
 }
 
 type dataGridSourceState struct {
-	Rows            []GridRow
-	Loading         bool
-	LoadError       string
-	HasLoaded       bool
-	RequestID       uint64
-	RequestKey      string
-	QuerySignature  uint64
-	CurrentCursor   string
-	NextCursor      string
-	PrevCursor      string
-	OffsetStart     int
-	RowCount        *int
-	HasMore         bool
-	ReceivedCount   int
-	RequestCount    int
-	CancelledCount  int
-	StaleDropCount  int
-	ActiveAbort     *GridAbortController
-	PaginationKind  GridPaginationKind
-	ConfigCursor    string
-	PendingJumpRow  int
-	CachedCaps      GridDataCapabilities
-	CapsCached      bool
-	RowsDirty       bool
-	RowsSignature   uint64
+	Rows           []GridRow
+	Loading        bool
+	LoadError      string
+	HasLoaded      bool
+	RequestID      uint64
+	RequestKey     string
+	QuerySignature uint64
+	CurrentCursor  string
+	NextCursor     string
+	PrevCursor     string
+	OffsetStart    int
+	RowCount       *int
+	HasMore        bool
+	ReceivedCount  int
+	RequestCount   int
+	CancelledCount int
+	StaleDropCount int
+	ActiveAbort    *GridAbortController
+	PaginationKind GridPaginationKind
+	ConfigCursor   string
+	PendingJumpRow int
+	CachedCaps     GridDataCapabilities
+	CapsCached     bool
+	RowsDirty      bool
+	RowsSignature  uint64
 }
 
 // --- Helper functions ---
@@ -623,6 +623,20 @@ func dataGridCachedPresentation(cfg *DataGridCfg, columns []GridColumnCfg, rowIn
 func dataGridPresentationSignature(cfg *DataGridCfg, columns []GridColumnCfg, rowIndices []int, groupCols []string, valueCols []string) uint64 {
 	h := dataGridFnv64Offset
 	visibleIndices := dataGridVisibleRowIndices(len(cfg.Rows), rowIndices)
+	if len(groupCols) == 0 && len(cfg.Aggregates) == 0 && cfg.OnDetailRowView == nil {
+		h = dataGridFnv64Str(h, cfg.ID)
+		h = dataGridFnv64Byte(h, 0x1e)
+		for _, idx := range visibleIndices {
+			h = dataGridFnv64U64(h, uint64(idx))
+			h = dataGridFnv64Byte(h, 0x1f)
+			row := cfg.Rows[idx]
+			if row.ID != "" {
+				h = dataGridFnv64Str(h, row.ID)
+			}
+			h = dataGridFnv64Byte(h, 0x1f)
+		}
+		return h
+	}
 	groupTitles := dataGridGroupTitles(columns)
 	h = dataGridFnv64Str(h, cfg.ID)
 	h = dataGridFnv64Byte(h, 0x1e)
@@ -1295,15 +1309,15 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 	// Scrollable body.
 	scrollbarCfg := ScrollbarCfg{Overflow: resolvedCfg.Scrollbar}
 	scrollBody := Column(ContainerCfg{
-		ID:             resolvedCfg.ID + ":scroll",
-		IDScroll:       scrollID,
-		ScrollbarCfgX:  &scrollbarCfg,
-		ScrollbarCfgY:  &scrollbarCfg,
-		Color:          resolvedCfg.ColorBackground,
-		Padding:        Some(dataGridScrollPadding(&resolvedCfg)),
-		Spacing:        Some(float32(0)),
-		Sizing:         FillFill,
-		Content:        rows,
+		ID:            resolvedCfg.ID + ":scroll",
+		IDScroll:      scrollID,
+		ScrollbarCfgX: &scrollbarCfg,
+		ScrollbarCfgY: &scrollbarCfg,
+		Color:         resolvedCfg.ColorBackground,
+		Padding:       Some(dataGridScrollPadding(&resolvedCfg)),
+		Spacing:       Some(float32(0)),
+		Sizing:        FillFill,
+		Content:       rows,
 	})
 
 	// Final assembly.
@@ -1347,28 +1361,28 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 	}
 
 	return Column(ContainerCfg{
-		ID:             resolvedCfg.ID,
-		IDFocus:        focusID,
-		A11YRole:       AccessRoleGrid,
-		A11YLabel:      resolvedCfg.A11YLabel,
+		ID:              resolvedCfg.ID,
+		IDFocus:         focusID,
+		A11YRole:        AccessRoleGrid,
+		A11YLabel:       resolvedCfg.A11YLabel,
 		A11YDescription: resolvedCfg.A11YDescription,
-		OnKeyDown:      dataGridMakeOnKeydown(&resolvedCfg, columns, rowHeight,
+		OnKeyDown: dataGridMakeOnKeydown(&resolvedCfg, columns, rowHeight,
 			staticTop, scrollID, pageIndices, frozenTopIDs, presentation.DataToDisplay),
-		OnChar:         dataGridMakeOnChar(&resolvedCfg, columns),
-		OnMouseMove:    dataGridMakeOnMouseMove(resolvedCfg.ID),
-		Color:          resolvedCfg.ColorBackground,
-		ColorBorder:    resolvedCfg.ColorBorder,
-		SizeBorder:     Some(resolvedCfg.SizeBorder),
-		Radius:         Some(resolvedCfg.Radius),
-		Padding:        Some(PaddingNone),
-		Spacing:        Some(float32(0)),
-		Sizing:         resolvedCfg.Sizing,
-		Width:          resolvedCfg.Width,
-		Height:         resolvedCfg.Height,
-		MinWidth:       resolvedCfg.MinWidth,
-		MaxWidth:       resolvedCfg.MaxWidth,
-		MinHeight:      resolvedCfg.MinHeight,
-		MaxHeight:      resolvedCfg.MaxHeight,
-		Content:        content,
+		OnChar:      dataGridMakeOnChar(&resolvedCfg, columns),
+		OnMouseMove: dataGridMakeOnMouseMove(resolvedCfg.ID),
+		Color:       resolvedCfg.ColorBackground,
+		ColorBorder: resolvedCfg.ColorBorder,
+		SizeBorder:  Some(resolvedCfg.SizeBorder),
+		Radius:      Some(resolvedCfg.Radius),
+		Padding:     Some(PaddingNone),
+		Spacing:     Some(float32(0)),
+		Sizing:      resolvedCfg.Sizing,
+		Width:       resolvedCfg.Width,
+		Height:      resolvedCfg.Height,
+		MinWidth:    resolvedCfg.MinWidth,
+		MaxWidth:    resolvedCfg.MaxWidth,
+		MinHeight:   resolvedCfg.MinHeight,
+		MaxHeight:   resolvedCfg.MaxHeight,
+		Content:     content,
 	})
 }

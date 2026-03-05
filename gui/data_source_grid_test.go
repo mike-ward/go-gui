@@ -100,6 +100,49 @@ func TestDataGridSourceRequestKeyOffset(t *testing.T) {
 	}
 }
 
+func TestDataGridSourceRowsWithStableIDsOffset(t *testing.T) {
+	rows := []GridRow{
+		{Cells: map[string]string{"a": "x"}},
+		{ID: "keep", Cells: map[string]string{"a": "y"}},
+		{Cells: map[string]string{"a": "z"}},
+	}
+	state := dataGridSourceState{OffsetStart: 20}
+	got := dataGridSourceRowsWithStableIDs(rows, GridPaginationOffset, state)
+	if got[0].ID != "__src_o_20" {
+		t.Fatalf("row 0 ID = %q, want %q", got[0].ID, "__src_o_20")
+	}
+	if got[1].ID != "keep" {
+		t.Fatalf("row 1 ID = %q, want %q", got[1].ID, "keep")
+	}
+	if got[2].ID != "__src_o_22" {
+		t.Fatalf("row 2 ID = %q, want %q", got[2].ID, "__src_o_22")
+	}
+	if rows[0].ID != "" {
+		t.Fatal("input rows should not be mutated")
+	}
+}
+
+func TestDataGridSourceRowsWithStableIDsCursor(t *testing.T) {
+	rows := []GridRow{
+		{Cells: map[string]string{"a": "x"}},
+		{Cells: map[string]string{"a": "y"}},
+	}
+	state := dataGridSourceState{CurrentCursor: "i:40"}
+	got := dataGridSourceRowsWithStableIDs(rows, GridPaginationCursor, state)
+	if got[0].ID != "__src_c_40" || got[1].ID != "__src_c_41" {
+		t.Fatalf("got IDs [%q,%q], want [__src_c_40,__src_c_41]", got[0].ID, got[1].ID)
+	}
+}
+
+func TestDataGridSourceRowsWithStableIDsCursorOpaque(t *testing.T) {
+	rows := []GridRow{{Cells: map[string]string{"a": "x"}}}
+	state := dataGridSourceState{CurrentCursor: "opaque:token"}
+	got := dataGridSourceRowsWithStableIDs(rows, GridPaginationCursor, state)
+	if got[0].ID == "" {
+		t.Fatal("expected non-empty synthetic ID for opaque cursor")
+	}
+}
+
 func TestDataGridSourceCanPrevCursor(t *testing.T) {
 	// Has prev cursor → true.
 	state := dataGridSourceState{PrevCursor: "i:0"}

@@ -93,6 +93,26 @@ func TestGridDataFromCSVBOMStripping(t *testing.T) {
 	}
 }
 
+func TestGridDataFromCSVRaggedRowsExpandColumns(t *testing.T) {
+	csv := ",\n1,2,3\n4,5\n"
+	data, err := GridDataFromCSV(csv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(data.Columns) != 3 {
+		t.Fatalf("got %d columns, want 3", len(data.Columns))
+	}
+	if len(data.Rows) != 2 {
+		t.Fatalf("got %d rows, want 2", len(data.Rows))
+	}
+	if data.Rows[0].Cells[data.Columns[2].ID] != "3" {
+		t.Fatalf("row0 col3 = %q, want 3", data.Rows[0].Cells[data.Columns[2].ID])
+	}
+	if data.Rows[1].Cells[data.Columns[2].ID] != "" {
+		t.Fatalf("row1 col3 = %q, want empty", data.Rows[1].Cells[data.Columns[2].ID])
+	}
+}
+
 // --- GridRowsToTSV / GridRowsToTSVWithCfg ---
 
 func TestGridRowsToTSV(t *testing.T) {
@@ -135,6 +155,16 @@ func TestGridRowsToTSVEmptyColumns(t *testing.T) {
 	}
 }
 
+func TestGridRowsToTSVDefaultSanitizeFormula(t *testing.T) {
+	cols := []GridColumnCfg{{ID: "a", Title: "Col"}}
+	rows := []GridRow{{ID: "1", Cells: map[string]string{"a": "=SUM(A1)"}}}
+	got := GridRowsToTSV(cols, rows)
+	lines := strings.Split(got, "\n")
+	if lines[1] != "'=SUM(A1)" {
+		t.Fatalf("got %q, want %q", lines[1], "'=SUM(A1)")
+	}
+}
+
 // --- GridRowsToCSV / GridRowsToCSVWithCfg ---
 
 func TestGridRowsToCSVCommaEscape(t *testing.T) {
@@ -158,6 +188,16 @@ func TestGridRowsToCSVQuotesInValues(t *testing.T) {
 	lines := strings.Split(got, "\n")
 	if lines[1] != `"say ""hi"""` {
 		t.Errorf("quoted value = %q, want %q", lines[1], `"say ""hi"""`)
+	}
+}
+
+func TestGridRowsToCSVDefaultSanitizeFormula(t *testing.T) {
+	cols := []GridColumnCfg{{ID: "a", Title: "Col"}}
+	rows := []GridRow{{ID: "1", Cells: map[string]string{"a": "=1+1"}}}
+	got := GridRowsToCSV(cols, rows)
+	lines := strings.Split(got, "\n")
+	if lines[1] != "'=1+1" {
+		t.Fatalf("got %q, want %q", lines[1], "'=1+1")
 	}
 }
 
@@ -262,6 +302,36 @@ func TestGridRowsToXLSXAutoType(t *testing.T) {
 	// String cell: t="inlineStr".
 	if !strings.Contains(sheetXML, `t="inlineStr"`) {
 		t.Error("expected inline string cell")
+	}
+}
+
+func TestGridRowsToXLSXDefaultSanitizeFormula(t *testing.T) {
+	cols := []GridColumnCfg{{ID: "a", Title: "Col"}}
+	rows := []GridRow{{ID: "1", Cells: map[string]string{"a": "=1+1"}}}
+	data, err := GridRowsToXLSX(cols, rows)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	r, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("not valid ZIP: %v", err)
+	}
+	var sheetXML string
+	for _, f := range r.File {
+		if f.Name == "xl/worksheets/sheet1.xml" {
+			rc, _ := f.Open()
+			var buf bytes.Buffer
+			buf.ReadFrom(rc)
+			rc.Close()
+			sheetXML = buf.String()
+			break
+		}
+	}
+	if strings.Contains(sheetXML, "<v>=1+1</v>") {
+		t.Fatal("formula should be sanitized by default")
+	}
+	if !strings.Contains(sheetXML, "&apos;=1+1") {
+		t.Fatal("expected sanitized apostrophe-prefixed value in sheet XML")
 	}
 }
 

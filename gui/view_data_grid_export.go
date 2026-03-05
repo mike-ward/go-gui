@@ -35,26 +35,38 @@ func GridDataFromCSV(data string) (GridCsvData, error) {
 	}
 	reader := csv.NewReader(strings.NewReader(source))
 	reader.FieldsPerRecord = -1 // variable field count
-	allRows, err := reader.ReadAll()
+	header, err := reader.Read()
+	if err == io.EOF {
+		return GridCsvData{}, fmt.Errorf("csv data contains no rows")
+	}
 	if err != nil {
 		return GridCsvData{}, fmt.Errorf("failed to parse CSV: %w", err)
 	}
-	if len(allRows) == 0 {
-		return GridCsvData{}, fmt.Errorf("csv data contains no rows")
-	}
-	maxCols := 0
-	for _, row := range allRows {
-		if len(row) > maxCols {
-			maxCols = len(row)
+	maxCols := len(header)
+	columns := dataGridCSVColumns(header, maxCols)
+	rows := make([]GridRow, 0, 64)
+	nextRowID := 1
+	for {
+		fields, readErr := reader.Read()
+		if readErr == io.EOF {
+			break
 		}
-	}
-	if maxCols <= 0 {
-		return GridCsvData{}, fmt.Errorf("csv header row is empty")
-	}
-	columns := dataGridCSVColumns(allRows[0], maxCols)
-	rows := make([]GridRow, 0, len(allRows)-1)
-	for rowIdx := 1; rowIdx < len(allRows); rowIdx++ {
-		fields := allRows[rowIdx]
+		if readErr != nil {
+			return GridCsvData{}, fmt.Errorf("failed to parse CSV: %w", readErr)
+		}
+		if len(fields) > maxCols {
+			prevCols := len(columns)
+			maxCols = len(fields)
+			columns = dataGridCSVColumns(header, maxCols)
+			for rowIdx := range rows {
+				for colIdx := prevCols; colIdx < len(columns); colIdx++ {
+					rows[rowIdx].Cells[columns[colIdx].ID] = ""
+				}
+			}
+		}
+		if len(columns) == 0 {
+			continue
+		}
 		cells := make(map[string]string, len(columns))
 		for colIdx, col := range columns {
 			if colIdx < len(fields) {
@@ -64,9 +76,13 @@ func GridDataFromCSV(data string) (GridCsvData, error) {
 			}
 		}
 		rows = append(rows, GridRow{
-			ID:    strconv.Itoa(rowIdx),
+			ID:    strconv.Itoa(nextRowID),
 			Cells: cells,
 		})
+		nextRowID++
+	}
+	if len(columns) == 0 {
+		return GridCsvData{}, fmt.Errorf("csv header row is empty")
 	}
 	return GridCsvData{Columns: columns, Rows: rows}, nil
 }
@@ -74,7 +90,9 @@ func GridDataFromCSV(data string) (GridCsvData, error) {
 // GridRowsToTSV converts rows to tab-separated text with
 // a header row.
 func GridRowsToTSV(columns []GridColumnCfg, rows []GridRow) string {
-	return GridRowsToTSVWithCfg(columns, rows, GridExportCfg{})
+	return GridRowsToTSVWithCfg(columns, rows, GridExportCfg{
+		SanitizeSpreadsheetFormulas: true,
+	})
 }
 
 // GridRowsToTSVWithCfg converts rows to tab-separated text.
@@ -101,7 +119,9 @@ func GridRowsToTSVWithCfg(columns []GridColumnCfg, rows []GridRow, exportCfg Gri
 // GridRowsToCSV converts rows to comma-separated text with
 // a header row.
 func GridRowsToCSV(columns []GridColumnCfg, rows []GridRow) string {
-	return GridRowsToCSVWithCfg(columns, rows, GridExportCfg{})
+	return GridRowsToCSVWithCfg(columns, rows, GridExportCfg{
+		SanitizeSpreadsheetFormulas: true,
+	})
 }
 
 // GridRowsToCSVWithCfg converts rows to comma-separated text.
@@ -156,7 +176,9 @@ func GridRowsToPDFFile(path string, columns []GridColumnCfg, rows []GridRow) err
 // GridRowsToXLSX creates a minimal XLSX workbook and
 // returns the file bytes.
 func GridRowsToXLSX(columns []GridColumnCfg, rows []GridRow) ([]byte, error) {
-	return GridRowsToXLSXWithCfg(columns, rows, GridExportCfg{})
+	return GridRowsToXLSXWithCfg(columns, rows, GridExportCfg{
+		SanitizeSpreadsheetFormulas: true,
+	})
 }
 
 // GridRowsToXLSXWithCfg creates a minimal XLSX workbook.
@@ -170,7 +192,9 @@ func GridRowsToXLSXWithCfg(columns []GridColumnCfg, rows []GridRow, exportCfg Gr
 
 // GridRowsToXLSXFile writes a minimal XLSX workbook to path.
 func GridRowsToXLSXFile(path string, columns []GridColumnCfg, rows []GridRow) error {
-	return GridRowsToXLSXFileWithCfg(path, columns, rows, GridExportCfg{})
+	return GridRowsToXLSXFileWithCfg(path, columns, rows, GridExportCfg{
+		SanitizeSpreadsheetFormulas: true,
+	})
 }
 
 // GridRowsToXLSXFileWithCfg writes a minimal XLSX workbook

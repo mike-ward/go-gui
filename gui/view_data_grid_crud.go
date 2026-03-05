@@ -30,9 +30,15 @@ func dataGridRowsSignature(rows []GridRow, colIDs []string) uint64 {
 		return 0
 	}
 	h := uint64(dataGridFnv64Offset)
-	var fallbackKeys []string
-	if len(colIDs) == 0 && len(rows) > 0 {
-		fallbackKeys = sortedMapKeys(rows[0].Cells)
+	fallbackKeys := colIDs
+	if len(fallbackKeys) == 0 {
+		keySet := map[string]bool{}
+		for _, row := range rows {
+			for key := range row.Cells {
+				keySet[key] = true
+			}
+		}
+		fallbackKeys = sortedMapKeysFromSet(keySet)
 	}
 	for idx, row := range rows {
 		if idx > 0 {
@@ -41,10 +47,7 @@ func dataGridRowsSignature(rows []GridRow, colIDs []string) uint64 {
 		rowID := dataGridRowID(row, idx)
 		h = dataGridFnv64Str(h, rowID)
 		h = dataGridFnv64Str(h, dataGridRecordSep)
-		keys := colIDs
-		if len(keys) == 0 {
-			keys = fallbackKeys
-		}
+		keys := fallbackKeys
 		for j, key := range keys {
 			if j > 0 {
 				h = dataGridFnv64Str(h, dataGridUnitSep)
@@ -774,4 +777,3 @@ func sortedMapKeysFromSet(m map[string]bool) []string {
 	sort.Strings(keys)
 	return keys
 }
-

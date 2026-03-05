@@ -42,6 +42,7 @@ func dataGridSourceApplyLocalMutation(gridID string, rows []GridRow, rowCount in
 	dgSrc := StateMap[string, dataGridSourceState](w, nsDgSource, capModerate)
 	state, _ := dgSrc.Get(gridID)
 	dataGridSourceCancelActive(&state)
+	rows = dataGridSourceRowsWithStableIDs(rows, state.PaginationKind, state)
 	state.RequestID++
 	state.Rows = rows
 	state.ReceivedCount = len(rows)
@@ -113,6 +114,7 @@ func dataGridResolveSourceCfg(cfg DataGridCfg, w *Window) (DataGridCfg, dataGrid
 	} else {
 		rows = state.Rows
 	}
+	rows = dataGridSourceRowsWithStableIDs(rows, state.PaginationKind, state)
 	resolved := cfg
 	resolved.Rows = rows
 	resolved.PageSize = 0
@@ -331,6 +333,7 @@ func dataGridSourceApplySuccess(gridID string, requestID uint64, result GridData
 	if dataGridSourceDropIfStale(requestID, &state, w, gridID) {
 		return
 	}
+	result.Rows = dataGridSourceRowsWithStableIDs(result.Rows, state.PaginationKind, state)
 	state.Loading = false
 	state.LoadError = ""
 	state.HasLoaded = true
@@ -354,6 +357,47 @@ func dataGridSourceApplySuccess(gridID string, requestID uint64, result GridData
 	state.ActiveAbort = nil
 	dgSrc.Set(gridID, state)
 	w.UpdateWindow()
+}
+
+func dataGridSourceRowsWithStableIDs(rows []GridRow, kind GridPaginationKind, state dataGridSourceState) []GridRow {
+	if len(rows) == 0 {
+		return rows
+	}
+	needsClone := false
+	for _, row := range rows {
+		if row.ID == "" {
+			needsClone = true
+			break
+		}
+	}
+	if !needsClone {
+		return rows
+	}
+	out := cloneRows(rows)
+	for localIdx := range out {
+		if out[localIdx].ID != "" {
+			continue
+		}
+		out[localIdx].ID = dataGridSourceSyntheticRowID(kind, state, localIdx)
+	}
+	return out
+}
+
+func dataGridSourceSyntheticRowID(kind GridPaginationKind, state dataGridSourceState, localIdx int) string {
+	if localIdx < 0 {
+		localIdx = 0
+	}
+	switch kind {
+	case GridPaginationOffset:
+		absIdx := intMax(0, state.OffsetStart) + localIdx
+		return fmt.Sprintf("__src_o_%d", absIdx)
+	default:
+		if start, ok := dataGridSourceCursorToIndexOpt(state.CurrentCursor); ok {
+			return fmt.Sprintf("__src_c_%d", intMax(0, start)+localIdx)
+		}
+		h := dataGridFnv64Str(dataGridFnv64Offset, state.CurrentCursor)
+		return fmt.Sprintf("__src_cx_%016x_%d", h, localIdx)
+	}
 }
 
 func dataGridSourceApplyError(gridID string, requestID uint64, errMsg string, w *Window) {
