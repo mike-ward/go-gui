@@ -27,6 +27,8 @@ const (
 	scratchLayerLayoutsRetainMax        = 4096
 	scratchLayerLayoutsShrinkTo         = 256
 	scratchFocusSeenRetainMax           = 4096
+	scratchPlaceholderPoolRetainMax     = 4096
+	scratchPlaceholderPoolShrinkTo      = 256
 )
 
 // scratchPools holds reusable per-frame buffers.
@@ -48,6 +50,8 @@ type scratchPools struct {
 	svgTransformBatchesUsed int
 	wrapRows                []wrapRowRange
 	layerLayouts            []Layout
+	placeholderShapePool    []*Shape
+	placeholderPoolUsed     int
 }
 
 func (p *scratchPools) takeFilterRenderers(requiredCap int) []RenderCmd {
@@ -73,6 +77,7 @@ func (p *scratchPools) takeFloatingLayouts(requiredCap int) []*Layout {
 		s = make([]*Layout, 0, requiredCap)
 	}
 	p.floatingPoolUsed = 0
+	p.placeholderPoolUsed = 0
 	return s
 }
 
@@ -83,6 +88,9 @@ func (p *scratchPools) putFloatingLayouts(s []*Layout) {
 	p.floatingLayouts = s[:0]
 	if len(p.floatingLayoutPool) > scratchFloatingPoolRetainMax {
 		p.floatingLayoutPool = make([]*Layout, 0, scratchFloatingPoolShrinkTo)
+	}
+	if len(p.placeholderShapePool) > scratchPlaceholderPoolRetainMax {
+		p.placeholderShapePool = make([]*Shape, 0, scratchPlaceholderPoolShrinkTo)
 	}
 }
 
@@ -97,6 +105,19 @@ func (p *scratchPools) allocFloatingLayout(src Layout) *Layout {
 	cp := src
 	allocated := &cp
 	p.floatingLayoutPool = append(p.floatingLayoutPool, allocated)
+	return allocated
+}
+
+func (p *scratchPools) allocPlaceholderShape() *Shape {
+	idx := p.placeholderPoolUsed
+	p.placeholderPoolUsed++
+	if idx < len(p.placeholderShapePool) {
+		reused := p.placeholderShapePool[idx]
+		*reused = Shape{ShapeType: ShapeNone}
+		return reused
+	}
+	allocated := &Shape{ShapeType: ShapeNone}
+	p.placeholderShapePool = append(p.placeholderShapePool, allocated)
 	return allocated
 }
 

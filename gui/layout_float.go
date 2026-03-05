@@ -177,7 +177,13 @@ func layoutRemoveFloatingLayouts(layout *Layout, w *Window, layouts *[]*Layout) 
 			}
 			*layouts = append(*layouts, heapLayout)
 			layoutRemoveFloatingLayouts(heapLayout, w, layouts)
-			layout.Children[i] = layoutPlaceholder()
+			if w != nil {
+				layout.Children[i] = Layout{
+					Shape: w.scratch.allocPlaceholderShape(),
+				}
+			} else {
+				layout.Children[i] = layoutPlaceholder()
+			}
 		} else {
 			layoutRemoveFloatingLayouts(&layout.Children[i], w, layouts)
 		}

@@ -425,7 +425,9 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 	}
 
 	b.useGlyphPipeline()
-	b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
+	if err := b.textSys.DrawText(r.X, r.Y, r.Text, cfg); err != nil {
+		log.Printf("metal: DrawText: %v", err)
+	}
 	b.restoreAfterGlyph()
 }
 

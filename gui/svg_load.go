@@ -77,6 +77,12 @@ type CachedSvg struct {
 	defsPathData   map[string]cachedDefsPathData
 }
 
+type svgCacheKey struct {
+	srcHash uint64
+	w10     int32
+	h10     int32
+}
+
 // cachedSvgPaths converts TessellatedPath slices to CachedSvgPath.
 func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 	out := make([]CachedSvgPath, len(paths))
@@ -489,13 +495,21 @@ func buildSvgCacheKey(srcHash uint64, width, height float32) string {
 	return string(b)
 }
 
+func buildSvgCacheLookupKey(srcHash uint64, width, height float32) svgCacheKey {
+	return svgCacheKey{
+		srcHash: srcHash,
+		w10:     int32(width * 10),
+		h10:     int32(height * 10),
+	}
+}
+
 // LoadSvg loads and tessellates an SVG, caching the result.
 // svgSrc can be a file path or inline SVG data (starting with '<').
 func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, error) {
 	srcHash := hashString(svgSrc)
-	cacheKey := buildSvgCacheKey(srcHash, width, height)
+	cacheKey := buildSvgCacheLookupKey(srcHash, width, height)
 
-	sm := StateMapRead[string, *CachedSvg](w, nsSvgCache)
+	sm := StateMapRead[svgCacheKey, *CachedSvg](w, nsSvgCache)
 	if sm != nil {
 		if cached, ok := sm.Get(cacheKey); ok {
 			return cached, nil
@@ -600,7 +614,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 	}
 	const maxCachedVerts = 1_250_000
 	if totalVerts <= maxCachedVerts {
-		svgCache := StateMap[string, *CachedSvg](w, nsSvgCache, capModerate)
+		svgCache := StateMap[svgCacheKey, *CachedSvg](w, nsSvgCache, capModerate)
 		svgCache.Set(cacheKey, cached)
 	}
 	return cached, nil
@@ -657,13 +671,12 @@ func (w *Window) GetSvgDimensions(svgSrc string) (float32, float32, error) {
 // RemoveSvgFromCache removes all cached variants of an SVG.
 func (w *Window) RemoveSvgFromCache(svgSrc string) {
 	srcHash := hashString(svgSrc)
-	prefix := svgHashHex(srcHash) + ":"
 
-	svgCache := StateMapRead[string, *CachedSvg](w, nsSvgCache)
+	svgCache := StateMapRead[svgCacheKey, *CachedSvg](w, nsSvgCache)
 	if svgCache != nil {
-		var keysToDelete []string
+		var keysToDelete []svgCacheKey
 		for _, key := range svgCache.Keys() {
-			if strings.HasPrefix(key, prefix) {
+			if key.srcHash == srcHash {
 				keysToDelete = append(keysToDelete, key)
 			}
 		}
@@ -683,7 +696,7 @@ func (w *Window) RemoveSvgFromCache(svgSrc string) {
 
 // ClearSvgCache removes all cached SVGs.
 func (w *Window) ClearSvgCache() {
-	svgCache := StateMapRead[string, *CachedSvg](w, nsSvgCache)
+	svgCache := StateMapRead[svgCacheKey, *CachedSvg](w, nsSvgCache)
 	if svgCache != nil {
 		svgCache.Clear()
 	}

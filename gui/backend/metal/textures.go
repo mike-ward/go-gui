@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	_ "image/jpeg"
-	_ "image/png"
+	_ "image/jpeg" // register JPEG decoder
+	_ "image/png"  // register PNG decoder
 	"os"
 	"path/filepath"
 	"strings"
@@ -115,7 +115,9 @@ func (b *Backend) loadImageTexture(
 	if err != nil {
 		return metalTexCacheEntry{}, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	post, err := f.Stat()
 	if err != nil {
 		return metalTexCacheEntry{}, err

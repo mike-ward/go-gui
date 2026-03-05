@@ -26,6 +26,16 @@ static int _viewW, _viewH;
 #define MAX_TEX 8192
 static id<MTLTexture> _textures[MAX_TEX];
 static int _nextTexID = 1;
+static int _freeTexIDs[MAX_TEX];
+static int _freeTexCount = 0;
+
+// Reusable large-triangle upload buffers (triple-buffered per frame
+// to avoid per-draw allocations and CPU/GPU write hazards).
+#define TRI_BUF_RING 3
+#define TRI_BUF_MAX_PER_FRAME 256
+static id<MTLBuffer> _triBufs[TRI_BUF_RING][TRI_BUF_MAX_PER_FRAME];
+static int _triBufCursor[TRI_BUF_RING];
+static int _triBufFrame = -1;
 
 // Filter textures.
 static id<MTLTexture> _filterTexA;
@@ -628,6 +638,15 @@ void metalDestroy(void) {
     for (int i = 0; i < MAX_TEX; i++) {
         _textures[i] = nil;
     }
+    _nextTexID = 1;
+    _freeTexCount = 0;
+    for (int f = 0; f < TRI_BUF_RING; f++) {
+        _triBufCursor[f] = 0;
+        for (int i = 0; i < TRI_BUF_MAX_PER_FRAME; i++) {
+            _triBufs[f][i] = nil;
+        }
+    }
+    _triBufFrame = -1;
     _filterTexA = nil;
     _filterTexB = nil;
     for (int i = 0; i < PIPE_COUNT; i++) {
@@ -651,6 +670,9 @@ int metalBeginFrame(float r, float g, float b, float a) {
         _drawable = [_layer nextDrawable];
     }
     if (!_drawable) return -1;
+
+    _triBufFrame = (_triBufFrame + 1) % TRI_BUF_RING;
+    _triBufCursor[_triBufFrame] = 0;
 
     _cmdBuf = [_queue commandBuffer];
     _mainPassResumed = 0;
@@ -731,11 +753,28 @@ void metalDrawTriangles(const float* verts, int numVerts) {
     if (byteLen <= 4096) {
         [_enc setVertexBytes:verts length:byteLen atIndex:0];
     } else {
-        id<MTLBuffer> buf =
-            [_device newBufferWithBytes:verts
-                                length:byteLen
-                               options:MTLResourceStorageModeShared];
-        [_enc setVertexBuffer:buf offset:0 atIndex:0];
+        id<MTLBuffer> buf = nil;
+        if (_triBufFrame >= 0 && _triBufFrame < TRI_BUF_RING) {
+            int slot = _triBufCursor[_triBufFrame]++;
+            if (slot < TRI_BUF_MAX_PER_FRAME) {
+                buf = _triBufs[_triBufFrame][slot];
+                if (!buf || [buf length] < (NSUInteger)byteLen) {
+                    NSUInteger cap = (NSUInteger)byteLen;
+                    NSUInteger page = 4096;
+                    cap = ((cap + page - 1) / page) * page;
+                    buf = [_device newBufferWithLength:cap
+                                               options:MTLResourceStorageModeShared];
+                    _triBufs[_triBufFrame][slot] = buf;
+                }
+                memcpy([buf contents], verts, (size_t)byteLen);
+            }
+        }
+        if (buf) {
+            [_enc setVertexBuffer:buf offset:0 atIndex:0];
+        } else {
+            // Fallback if frame-local pool is exhausted.
+            [_enc setVertexBytes:verts length:byteLen atIndex:0];
+        }
     }
     [_enc drawPrimitives:MTLPrimitiveTypeTriangle
              vertexStart:0 vertexCount:numVerts];
@@ -755,11 +794,22 @@ void metalDrawGlyphQuad(const float* verts) {
 
 int metalCreateTexture(int w, int h, const void* pixels,
                        int hasData) {
-    if (_nextTexID >= MAX_TEX) return 0;
-    int tid = _nextTexID++;
+    int tid = 0;
+    if (_freeTexCount > 0) {
+        tid = _freeTexIDs[--_freeTexCount];
+    } else {
+        if (_nextTexID >= MAX_TEX) return 0;
+        tid = _nextTexID++;
+    }
 
     id<MTLTexture> tex = makeTexture(w, h,
         MTLPixelFormatRGBA8Unorm);
+    if (!tex) {
+        if (_freeTexCount < MAX_TEX) {
+            _freeTexIDs[_freeTexCount++] = tid;
+        }
+        return 0;
+    }
     if (hasData && pixels) {
         [tex replaceRegion:MTLRegionMake2D(0, 0, w, h)
                mipmapLevel:0
@@ -781,7 +831,11 @@ void metalUpdateTexture(int id, int x, int y, int w, int h,
 
 void metalDeleteTexture(int id) {
     if (id <= 0 || id >= MAX_TEX) return;
+    if (!_textures[id]) return;
     _textures[id] = nil;
+    if (_freeTexCount < MAX_TEX) {
+        _freeTexIDs[_freeTexCount++] = id;
+    }
 }
 
 void metalBindTexture(int id) {

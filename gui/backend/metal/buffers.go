@@ -17,10 +17,6 @@ func normColor(r, g, b, a uint8) colF {
 		float32(b) / 255, float32(a) / 255}
 }
 
-// Vertex layout: position(vec3) + texcoord(vec2) + color(vec4)
-// 9 floats * 4 bytes = 36 bytes per vertex.
-const vertexStride = 9 * 4
-
 // vertex is the CPU-side vertex for quad uploads.
 type vertex struct {
 	X, Y, Z    float32 // position; Z = packed params
@@ -48,18 +44,6 @@ func buildQuad(x, y, w, h float32, c gui.Color,
 		{x + w, y, z, 1, -1, nc.r, nc.g, nc.b, nc.a},
 		{x + w, y + h, z, 1, 1, nc.r, nc.g, nc.b, nc.a},
 		{x, y + h, z, -1, 1, nc.r, nc.g, nc.b, nc.a},
-	}
-}
-
-// buildQuadTex fills a 4-vertex array with texture UVs in 0..1
-// range, for compositing FBO textures or images.
-func buildQuadTex(x, y, w, h float32, c gui.Color) [4]vertex {
-	nc := normColor(c.R, c.G, c.B, c.A)
-	return [4]vertex{
-		{x, y, 0, 0, 1, nc.r, nc.g, nc.b, nc.a},
-		{x + w, y, 0, 1, 1, nc.r, nc.g, nc.b, nc.a},
-		{x + w, y + h, 0, 1, 0, nc.r, nc.g, nc.b, nc.a},
-		{x, y + h, 0, 0, 0, nc.r, nc.g, nc.b, nc.a},
 	}
 }
 

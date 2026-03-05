@@ -64,10 +64,10 @@ type Backend struct {
 	normBuf            []gui.GradientStop
 	sampledBuf         []gui.GradientStop
 
-	textures       metalTexCache
-	glyphBack      *metalGlyphBackend
-	filterBlur     float32
-	filterLayer    int
+	textures    metalTexCache
+	glyphBack   *metalGlyphBackend
+	filterBlur  float32
+	filterLayer int
 
 	allowedImageRoots []string
 	imagePathCache    map[string]string
@@ -115,7 +115,7 @@ func New(w *gui.Window) (*Backend, error) {
 	metalView := unsafe.Pointer(
 		C.SDL_Metal_CreateView(cWin))
 	if metalView == nil {
-		win.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("metal: MetalCreateView failed")
 	}
@@ -124,7 +124,7 @@ func New(w *gui.Window) (*Backend, error) {
 	if layer == nil {
 		C.SDL_Metal_DestroyView(
 			C.SDL_MetalView(metalView))
-		win.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("metal: MetalGetLayer failed")
 	}
@@ -134,7 +134,7 @@ func New(w *gui.Window) (*Backend, error) {
 	if rc != 0 {
 		C.SDL_Metal_DestroyView(
 			C.SDL_MetalView(metalView))
-		win.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("metal: init failed: %d", rc)
 	}
@@ -203,7 +203,9 @@ func New(w *gui.Window) (*Backend, error) {
 	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
 	w.SetSvgParser(svg.New())
 	w.SetClipboardFn(func(text string) {
-		sdl.SetClipboardText(text)
+		if err := sdl.SetClipboardText(text); err != nil {
+			log.Printf("metal: set clipboard: %v", err)
+		}
 	})
 	w.SetClipboardGetFn(func() string {
 		text, _ := sdl.GetClipboardText()
@@ -356,7 +358,7 @@ func (b *Backend) Destroy() {
 			C.SDL_MetalView(b.metalView))
 	}
 	if b.window != nil {
-		b.window.Destroy()
+		_ = b.window.Destroy()
 	}
 	sdl.Quit()
 	log.Println("metal: backend destroyed")

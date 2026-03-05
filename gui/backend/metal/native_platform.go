@@ -63,11 +63,11 @@ func (n *nativePlatform) ShowFolderDialog(_, _ string) gui.PlatformDialogResult 
 	return gui.PlatformDialogResult{}
 }
 
-func (n *nativePlatform) ShowMessageDialog(title, body string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
+func (n *nativePlatform) ShowMessageDialog(_, _ string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
 	return gui.NativeAlertResult{Status: gui.DialogOK}
 }
 
-func (n *nativePlatform) ShowConfirmDialog(title, body string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
+func (n *nativePlatform) ShowConfirmDialog(_, _ string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
 	return gui.NativeAlertResult{Status: gui.DialogOK}
 }
 

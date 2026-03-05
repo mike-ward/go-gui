@@ -37,10 +37,26 @@ func BenchmarkLayoutArrange(b *testing.B) {
 	w := &Window{}
 	w.windowWidth = 1200
 	w.windowHeight = 900
+
+	template := benchmarkArrangeLayout()
+	layout := Layout{
+		Shape:    &Shape{},
+		Children: make([]Layout, len(template.Children)),
+	}
+	childShapes := make([]Shape, len(template.Children))
+
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		layout := benchmarkArrangeLayout()
-		_ = layoutArrange(&layout, w)
+		*layout.Shape = *template.Shape
+		layout.Parent = nil
+		for j := range template.Children {
+			childShapes[j] = *template.Children[j].Shape
+			layout.Children[j] = Layout{
+				Shape: &childShapes[j],
+			}
+		}
+		layers := layoutArrange(&layout, w)
+		w.scratch.putLayerLayouts(layers)
 	}
 }
 
