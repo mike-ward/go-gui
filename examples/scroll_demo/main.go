@@ -70,7 +70,7 @@ func scrollColumn(id uint32, text string, w *gui.Window) gui.View {
 			Overflow: overflow,
 		},
 		ColorBorder: colorBorder,
-		Padding:     pad,
+		Padding:     gui.Some(pad),
 		Sizing:      gui.FillFill,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
@@ -85,7 +85,7 @@ func scrollColumn(id uint32, text string, w *gui.Window) gui.View {
 func pctRow(app *App) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.PaddingNone,
+		Padding: gui.Some(gui.PaddingNone),
 		HAlign:  gui.HAlignCenter,
 		VAlign:  gui.VAlignMiddle,
 		Spacing: gui.Some[float32](4),
@@ -122,7 +122,7 @@ func topRow(app *App) gui.View {
 	theme := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.PaddingNone,
+		Padding: gui.Some(gui.PaddingNone),
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
@@ -146,7 +146,7 @@ func themeButton(app *App) gui.View {
 		TextSelect:   textSel,
 		TextUnselect: textUnsel,
 		TextStyle:    gui.CurrentTheme().Icon3,
-		Padding:      gui.PaddingSmall,
+		Padding:      gui.Some(gui.PaddingSmall),
 		Selected:     app.Light,
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			app := gui.State[App](w)

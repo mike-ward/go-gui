@@ -20,7 +20,7 @@ type DialogCfg struct {
 	ID        string
 	Color     Color
 	ColorBorder Color
-	Padding     Padding
+	Padding     Opt[Padding]
 	SizeBorder  Opt[float32]
 
 	TitleTextStyle TextStyle
@@ -121,7 +121,7 @@ func messageView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus: cfg.IDFocus,
@@ -146,7 +146,7 @@ func confirmView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
@@ -195,7 +195,7 @@ func promptView(cfg DialogCfg) []View {
 	views = append(views, Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
@@ -258,7 +258,7 @@ func applyDialogDefaults(cfg *DialogCfg) {
 		cfg.ColorBorder = d.ColorBorder
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = d.Padding
+		cfg.Padding = Some(d.Padding)
 	}
 	if cfg.TitleTextStyle == (TextStyle{}) {
 		cfg.TitleTextStyle = d.TitleTextStyle

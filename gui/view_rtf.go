@@ -306,7 +306,7 @@ func rtfTooltipView(ts *tooltipState) View {
 		ColorBorder:  d.ColorBorder,
 		SizeBorder:   Some(d.SizeBorder),
 		Radius:       Some(d.Radius),
-		Padding:      d.Padding,
+		Padding:      Some(d.Padding),
 		MaxWidth:     300,
 		Content: []View{
 			Text(TextCfg{

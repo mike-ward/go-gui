@@ -16,7 +16,7 @@ type ToggleCfg struct {
 	ColorBorder      Color
 	ColorBorderFocus Color
 	ColorSelect      Color
-	Padding          Padding
+	Padding          Opt[Padding]
 	SizeBorder       Opt[float32]
 	Radius           Opt[float32]
 	MinWidth         float32
@@ -88,7 +88,7 @@ func Toggle(cfg ToggleCfg) View {
 	return Row(ContainerCfg{
 		ID:              cfg.ID,
 		IDFocus:         cfg.IDFocus,
-		Padding:         PaddingNone,
+		Padding:         Some(PaddingNone),
 		VAlign:          VAlignMiddle,
 		A11YRole:        AccessRoleCheckbox,
 		A11YState:       a11yState,
@@ -156,7 +156,7 @@ func applyToggleDefaults(cfg *ToggleCfg) {
 	}
 
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = PaddingTwoThree
+		cfg.Padding = Some(PaddingTwoThree)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle

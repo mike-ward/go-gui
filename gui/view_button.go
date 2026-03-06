@@ -10,7 +10,7 @@ type ButtonCfg struct {
 	ColorClick       Color
 	ColorBorder      Color
 	ColorBorderFocus Color
-	Padding          Padding
+	Padding          Opt[Padding]
 	SizeBorder       Opt[float32]
 	BlurRadius       float32
 	Shadow           *BoxShadow
@@ -155,7 +155,7 @@ func applyButtonDefaults(cfg *ButtonCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = d.Padding
+		cfg.Padding = Some(d.Padding)
 	}
 	if cfg.HAlign == HAlignStart {
 		cfg.HAlign = HAlignCenter

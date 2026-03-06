@@ -19,7 +19,7 @@ type SidebarCfg struct {
 	Color   Color
 	Shadow  *BoxShadow
 	Radius  float32
-	Padding Padding
+	Padding Opt[Padding]
 	Clip    bool
 	// TweenDuration > 0 uses tween; 0 uses spring.
 	Spring        SpringCfg
@@ -45,7 +45,7 @@ func (w *Window) Sidebar(cfg SidebarCfg) View {
 		cfg.Color = guiTheme.ColorPanel
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = guiTheme.ContainerStyle.Padding
+		cfg.Padding = Some(guiTheme.ContainerStyle.Padding)
 	}
 	if cfg.Spring == (SpringCfg{}) {
 		cfg.Spring = SpringStiff
@@ -60,10 +60,11 @@ func (w *Window) Sidebar(cfg SidebarCfg) View {
 	}
 
 	animW := sidebarAnimatedWidth(w, cfg)
-	padW := cfg.Padding.Left + cfg.Padding.Right
+	p := cfg.Padding.Get(Padding{})
+	padW := p.Left + p.Right
 	pad := cfg.Padding
 	if animW <= padW {
-		pad = Padding{}
+		pad = Some(Padding{})
 	}
 
 	return Column(ContainerCfg{

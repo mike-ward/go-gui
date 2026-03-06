@@ -233,8 +233,8 @@ type DataGridCfg struct {
 	ColorBorder            Color
 	ColorResizeHandle      Color
 	ColorResizeActive      Color
-	PaddingCell            Padding
-	PaddingHeader          Padding
+	PaddingCell            Opt[Padding]
+	PaddingHeader          Opt[Padding]
 	PaddingFilter          Padding
 	TextStyle              TextStyle
 	TextStyleHeader        TextStyle
@@ -330,10 +330,10 @@ func applyDataGridDefaults(cfg *DataGridCfg) {
 		cfg.ColorResizeActive = s.ColorResizeActive
 	}
 	if !cfg.PaddingCell.IsSet() {
-		cfg.PaddingCell = s.PaddingCell
+		cfg.PaddingCell = Some(s.PaddingCell)
 	}
 	if !cfg.PaddingHeader.IsSet() {
-		cfg.PaddingHeader = s.PaddingHeader
+		cfg.PaddingHeader = Some(s.PaddingHeader)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = s.TextStyle
@@ -502,8 +502,9 @@ func dataGridPagerHeight(cfg *DataGridCfg) float32 {
 }
 
 func dataGridPagerPadding(cfg *DataGridCfg) Padding {
-	left := f32Max(cfg.PaddingFilter.Left, cfg.PaddingCell.Left)
-	right := f32Max(cfg.PaddingFilter.Right, cfg.PaddingCell.Right)
+	pc := cfg.PaddingCell.Get(Padding{})
+	left := f32Max(cfg.PaddingFilter.Left, pc.Left)
+	right := f32Max(cfg.PaddingFilter.Right, pc.Right)
 	return NewPadding(cfg.PaddingFilter.Top, right, cfg.PaddingFilter.Bottom, left)
 }
 
@@ -526,7 +527,7 @@ func dataGridRowHeight(cfg *DataGridCfg, w *Window) float32 {
 	if cfg.RowHeight > 0 {
 		return cfg.RowHeight
 	}
-	return cfg.TextStyle.Size + cfg.PaddingCell.Height() + cfg.SizeBorder
+	return cfg.TextStyle.Size + cfg.PaddingCell.Get(Padding{}).Height() + cfg.SizeBorder
 }
 
 func dataGridStaticTopHeight(cfg *DataGridCfg, rowHeight float32, chooserOpen bool, includeHeader bool) float32 {
@@ -1314,7 +1315,7 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		ScrollbarCfgX: &scrollbarCfg,
 		ScrollbarCfgY: &scrollbarCfg,
 		Color:         resolvedCfg.ColorBackground,
-		Padding:       dataGridScrollPadding(&resolvedCfg),
+		Padding:       Some(dataGridScrollPadding(&resolvedCfg)),
 		Spacing:       Some(float32(0)),
 		Sizing:        FillFill,
 		Content:       rows,
@@ -1374,7 +1375,7 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		ColorBorder: resolvedCfg.ColorBorder,
 		SizeBorder:  Some(resolvedCfg.SizeBorder),
 		Radius:      Some(resolvedCfg.Radius),
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		Spacing:     Some(float32(0)),
 		Sizing:      resolvedCfg.Sizing,
 		Width:       resolvedCfg.Width,

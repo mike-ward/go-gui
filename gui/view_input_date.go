@@ -23,7 +23,7 @@ type InputDateCfg struct {
 	ColorBorder            Color
 	ColorBorderFocus       Color
 	ColorSelect            Color
-	Padding                Padding
+	Padding                Opt[Padding]
 	SizeBorder             Opt[float32]
 	CellSpacing            Opt[float32]
 	Radius                 Opt[float32]
@@ -83,7 +83,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	content = append(content,
 		Row(ContainerCfg{
 			Sizing:  FillFit,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Spacing: Some(SpacingSmall),
 			VAlign:  VAlignMiddle,
 			Content: []View{
@@ -112,7 +112,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 			Float:        true,
 			FloatAnchor:  FloatBottomLeft,
 			FloatTieOff:  FloatTopLeft,
-			Padding:      PaddingNone,
+			Padding:      Some(PaddingNone),
 			FloatOffsetY: -cfg.SizeBorder.Get(0),
 			Content: []View{
 				DatePicker(DatePickerCfg{
@@ -234,7 +234,7 @@ func applyInputDateDefaults(cfg *InputDateCfg) {
 		cfg.ColorSelect = d.ColorSelect
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = PaddingSmall
+		cfg.Padding = Some(PaddingSmall)
 	}
 	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
 	cellSpacing := cfg.CellSpacing.Get(d.CellSpacing)

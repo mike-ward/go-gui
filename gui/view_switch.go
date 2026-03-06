@@ -12,7 +12,7 @@ type SwitchCfg struct {
 	ColorBorderFocus Color
 	ColorSelect      Color
 	ColorUnselect    Color
-	Padding          Padding
+	Padding          Opt[Padding]
 	SizeBorder       Opt[float32]
 	TextStyle        TextStyle
 	OnClick          func(*Layout, *Event, *Window)
@@ -41,7 +41,7 @@ func Switch(cfg SwitchCfg) View {
 	if cfg.Selected {
 		thumbColor = cfg.ColorSelect
 	}
-	circleSize := height - cfg.Padding.Height() - (sizeBorder * 2)
+	circleSize := height - cfg.Padding.Get(Padding{}).Height() - (sizeBorder * 2)
 
 	colorFocus := cfg.ColorFocus
 	colorBorderFocus := cfg.ColorBorderFocus
@@ -89,7 +89,7 @@ func Switch(cfg SwitchCfg) View {
 
 	return Row(ContainerCfg{
 		IDFocus:         cfg.IDFocus,
-		Padding:         PaddingNone,
+		Padding:         Some(PaddingNone),
 		A11YRole:        AccessRoleSwitchToggle,
 		A11YState:       a11yState,
 		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.Label),
@@ -148,7 +148,7 @@ func applySwitchDefaults(cfg *SwitchCfg) {
 	}
 
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = d.Padding
+		cfg.Padding = Some(d.Padding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = d.TextStyleNormal

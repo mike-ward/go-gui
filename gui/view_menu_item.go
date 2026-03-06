@@ -21,7 +21,7 @@ type MenuItemCfg struct {
 	// Public configuration.
 	ID         string
 	Text       string
-	Padding    Padding
+	Padding    Opt[Padding]
 	Action     func(*MenuItemCfg, *Event, *Window)
 	Submenu    []MenuItemCfg
 	CustomView View
@@ -68,7 +68,7 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 	if itemCfg.Separator {
 		return Column(ContainerCfg{
 			Sizing:  FillFit,
-			Padding: NewPadding(2, 0, 2, 0),
+			Padding: Some(NewPadding(2, 0, 2, 0)),
 			Content: []View{
 				Rectangle(RectangleCfg{
 					Height: 1,

@@ -20,7 +20,7 @@ func dataGridHeaderRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		Color:       ColorTransparent,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content:     cells,
 	})
@@ -29,7 +29,7 @@ func dataGridHeaderRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount int, width float32, focusID uint32, showControls bool) View {
 	hasReorder := showControls && cfg.OnColumnOrderChange != nil && col.Reorderable
 	hasPin := showControls && cfg.OnColumnPinChange != nil
-	headerControls := dataGridHeaderControlState(width, cfg.PaddingHeader, hasReorder, hasPin, showControls && col.Resizable)
+	headerControls := dataGridHeaderControlState(width, cfg.PaddingHeader.Get(Padding{}), hasReorder, hasPin, showControls && col.Resizable)
 	headerFocusID := dataGridHeaderFocusID(cfg, colCount, colIdx)
 
 	content := make([]View, 0, 5)
@@ -53,7 +53,7 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 		content = append(content, Row(ContainerCfg{
 			Sizing:  FillFill,
 			Clip:    true,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			HAlign:  col.Align,
 			VAlign:  VAlignMiddle,
 			Spacing: Some(float32(6)),
@@ -62,7 +62,7 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 	} else {
 		content = append(content, Row(ContainerCfg{
 			Sizing:  FillFill,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 		}))
 	}
 	if headerControls.showReorder {
@@ -131,7 +131,7 @@ func dataGridResizeHandle(cfg *DataGridCfg, col GridColumnCfg, focusID uint32) V
 	rows := cfg.Rows
 	textStyleHeader := cfg.TextStyleHeader
 	textStyle := cfg.TextStyle
-	paddingCell := cfg.PaddingCell
+	paddingCell := cfg.PaddingCell.Get(Padding{})
 	colorResizeHandle := cfg.ColorResizeHandle
 	colorResizeActive := cfg.ColorResizeActive
 
@@ -139,7 +139,7 @@ func dataGridResizeHandle(cfg *DataGridCfg, col GridColumnCfg, focusID uint32) V
 		ID:      gridID + ":resize:" + col.ID,
 		Width:   dataGridResizeHandleWidth,
 		Sizing:  FixedFill,
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Color:   colorResizeHandle,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
 			startX := layout.Shape.X + e.MouseX
@@ -175,7 +175,7 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 	}
 
 	return Row(ContainerCfg{
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Spacing: Some(dataGridHeaderReorderSpacing),
 		Width:   dataGridHeaderControlsWidth(true, false, false),
 		Sizing:  FixedFill,
@@ -239,7 +239,7 @@ func dataGridIndicatorButton(label string, baseStyle TextStyle, hoverColor Color
 	return Button(ButtonCfg{
 		Width:       width,
 		Sizing:      sizing,
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		SizeBorder:  Some(float32(0)),
 		Radius:      Some(float32(0)),
 		Color:       ColorTransparent,
@@ -295,7 +295,7 @@ func dataGridFilterRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     cfg.PaddingFilter,
+		Padding:     Some(cfg.PaddingFilter),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content:     cells,
 	})
@@ -316,7 +316,7 @@ func dataGridFilterCell(cfg *DataGridCfg, col GridColumnCfg, width float32) View
 		ID:          cfg.ID + ":filter_cell:" + col.ID,
 		Width:       width,
 		Sizing:      FixedFill,
-		Padding:     cfg.PaddingFilter,
+		Padding:     Some(cfg.PaddingFilter),
 		Color:       ColorTransparent,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(cfg.SizeBorder),
@@ -329,7 +329,7 @@ func dataGridFilterCell(cfg *DataGridCfg, col GridColumnCfg, width float32) View
 				Placeholder: placeholder,
 				Disabled:    !col.Filterable || onQueryChange == nil,
 				Sizing:      FillFill,
-				Padding:     PaddingNone,
+				Padding:     Some(PaddingNone),
 				SizeBorder:  Some(float32(0)),
 				Radius:      Some(float32(0)),
 				Color:       cfg.ColorFilter,

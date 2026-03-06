@@ -142,7 +142,7 @@ func benchView(w *gui.Window) gui.View {
 		Width:   float32(ww),
 		Height:  float32(wh),
 		Sizing:  gui.FixedFixed,
-		Padding: gui.NewPadding(8, 8, 8, 8),
+		Padding: gui.Some(gui.NewPadding(8, 8, 8, 8)),
 		Content: []gui.View{
 			// Controls row.
 			gui.Row(gui.ContainerCfg{

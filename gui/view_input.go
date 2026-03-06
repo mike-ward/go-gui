@@ -31,7 +31,7 @@ type InputCfg struct {
 	MaxHeight float32
 
 	// Appearance
-	Padding          Padding
+	Padding          Opt[Padding]
 	Radius           Opt[float32]
 	SizeBorder       Opt[float32]
 	Color            Color
@@ -131,7 +131,7 @@ func Input(cfg InputCfg) View {
 
 	idScroll := cfg.IDScroll
 	innerCfg := ContainerCfg{
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Sizing:  innerSizing,
 		VAlign:  vAlign,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
@@ -394,7 +394,7 @@ func applyInputDefaults(cfg *InputCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = PaddingTwoFour
+		cfg.Padding = Some(PaddingTwoFour)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle

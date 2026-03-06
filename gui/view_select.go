@@ -16,7 +16,7 @@ type SelectCfg struct {
 	ColorBorderFocus Color
 	ColorFocus       Color
 	ColorSelect      Color
-	Padding          Padding
+	Padding          Opt[Padding]
 	SizeBorder       Opt[float32]
 	TextStyle        TextStyle
 	SubheadingStyle  TextStyle
@@ -92,7 +92,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 		}),
 		Row(ContainerCfg{
 			Sizing:  spacerSizing,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 		}),
 		Text(TextCfg{
 			Text:      arrowText,
@@ -130,8 +130,8 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			FloatTieOff:   FloatTopLeft,
 			FloatOffsetY:  -sizeBorder,
 			IDScroll:      idScroll,
-			Padding: NewPadding(
-				PadSmall, PadMedium, PadSmall, PadSmall),
+			Padding: Some(NewPadding(
+				PadSmall, PadMedium, PadSmall, PadSmall)),
 			Spacing: Some(float32(0)),
 			Content: options,
 		}))
@@ -212,11 +212,11 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 
 	return Row(ContainerCfg{
 		Color:   optColor,
-		Padding: NewPadding(0, PadSmall, 0, 1),
+		Padding: Some(NewPadding(0, PadSmall, 0, 1)),
 		Sizing:  FillFit,
 		Content: []View{
 			Row(ContainerCfg{
-				Padding: PadTBLR(2, 0),
+				Padding: Some(PadTBLR(2, 0)),
 				Content: []View{
 					Text(TextCfg{
 						Text: "✓",
@@ -272,11 +272,11 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 		label = option[3:]
 	}
 	return Column(ContainerCfg{
-		Padding: NewPadding(guiTheme.PaddingMedium.Top, 0, 0, 0),
+		Padding: Some(NewPadding(guiTheme.PaddingMedium.Top, 0, 0, 0)),
 		Sizing:  FillFit,
 		Content: []View{
 			Row(ContainerCfg{
-				Padding: PaddingNone,
+				Padding: Some(PaddingNone),
 				Sizing:  FillFit,
 				Spacing: Some[float32](PadXSmall),
 				Content: []View{
@@ -294,7 +294,7 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 				},
 			}),
 			Row(ContainerCfg{
-				Padding: PadTBLR(0, PadMedium),
+				Padding: Some(PadTBLR(0, PadMedium)),
 				Sizing:  FillFit,
 				Content: []View{
 					Rectangle(RectangleCfg{
@@ -442,7 +442,7 @@ func applySelectDefaults(cfg *SelectCfg) {
 		cfg.ColorSelect = colorSelectDark
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = PaddingTwoFour
+		cfg.Padding = Some(PaddingTwoFour)
 	}
 
 	if cfg.TextStyle == (TextStyle{}) {

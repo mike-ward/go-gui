@@ -72,7 +72,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 	radius := cfg.Radius.Get(dn.Radius)
 	visible := StateReadOr[string, bool](w, nsCmdPalette, cfg.ID, false)
 	if !visible {
-		return GenerateViewLayout(Row(ContainerCfg{Padding: PaddingNone}), w)
+		return GenerateViewLayout(Row(ContainerCfg{Padding: Some(PaddingNone)}), w)
 	}
 
 	query := StateReadOr[string, string](w, nsCmdPaletteQuery, cfg.ID, "")
@@ -167,7 +167,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 		Float:   true,
 		VAlign:  VAlignTop,
 		HAlign:  HAlignCenter,
-		Padding: NewPadding(60, 0, 0, 0),
+		Padding: Some(NewPadding(60, 0, 0, 0)),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			CommandPaletteDismiss(paletteID, w)
 			if onDismiss != nil {
@@ -184,7 +184,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 				SizeBorder:  Some(sizeBorder),
 				Radius:      Some(radius),
 				Width:       cfg.Width,
-				Padding:     PaddingNone,
+				Padding:     Some(PaddingNone),
 				Spacing:     Some(float32(0)),
 				Sizing:      FixedFit,
 				OnKeyDown:   makePaletteOnKeyDown(paletteID, onAction, onDismiss, filteredIDs),
@@ -194,7 +194,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 				},
 				Content: []View{
 					Row(ContainerCfg{
-						Padding: PaddingSmall,
+						Padding: Some(PaddingSmall),
 						Sizing:  FillFit,
 						Content: []View{
 							Input(InputCfg{
@@ -212,7 +212,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 						IDScroll:  cfg.IDScroll,
 						MaxHeight: cfg.MaxHeight,
 						Sizing:    FillFit,
-						Padding:   PaddingNone,
+						Padding:   Some(PaddingNone),
 						Spacing:   Some(float32(0)),
 						Clip:      true,
 						Content:   resultViews,

@@ -55,7 +55,7 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 			FloatTieOff:  cfg.FloatTieOff,
 			FloatOffsetX: cfg.FloatOffsetX,
 			FloatOffsetY: cfg.FloatOffsetY,
-			Padding:      PaddingNone,
+			Padding:      Some(PaddingNone),
 			Content: []View{
 				ListBox(ListBoxCfg{
 					ID:          lbID,
@@ -91,7 +91,7 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 		ID:      cfg.ID,
 		IDFocus: idFocus,
 		Sizing:  cfg.Sizing,
-		Padding: PaddingSmall,
+		Padding: Some(PaddingSmall),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			ss := StateMap[string, bool](w, nsSelect, capModerate)
 			ss.Clear()

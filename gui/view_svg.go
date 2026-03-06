@@ -16,7 +16,7 @@ type SvgCfg struct {
 	Color     Color   // override fill (for monochrome icons)
 	NoAnimate bool    // disable SMIL animation (default: animated)
 	Sizing    Sizing
-	Padding   Padding
+	Padding   Opt[Padding]
 	OnClick   func(*Layout, *Event, *Window)
 
 	// Accessibility
@@ -119,7 +119,7 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 			Height:   height,
 			Color:    c.Color,
 			Sizing:   c.Sizing,
-			Padding:  c.Padding,
+			Padding:  c.Padding.Get(Padding{}),
 			Events:   events,
 		},
 	}

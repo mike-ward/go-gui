@@ -36,7 +36,7 @@ type TooltipCfg struct {
 	Color        Color
 	ColorHover   Color
 	ColorBorder  Color
-	Padding      Padding
+	Padding      Opt[Padding]
 	TextStyle    TextStyle
 	Content      []View
 	Delay        time.Duration
@@ -106,7 +106,7 @@ func applyTooltipDefaults(cfg *TooltipCfg) {
 		cfg.ColorBorder = d.ColorBorder
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = d.Padding
+		cfg.Padding = Some(d.Padding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = d.TextStyle

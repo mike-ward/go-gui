@@ -17,7 +17,7 @@ type RadioButtonGroupCfg struct {
 	Options     []RadioOption
 	OnSelect    func(string, *Window)
 	Sizing      Sizing
-	Padding     Padding
+	Padding     Opt[Padding]
 	ColorBorder Color
 	SizeBorder  Opt[float32]
 	MinWidth    float32
@@ -103,6 +103,6 @@ func applyRadioGroupDefaults(cfg *RadioButtonGroupCfg) {
 		cfg.ColorBorder = guiTheme.ColorBorder
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = guiTheme.PaddingLarge
+		cfg.Padding = Some(guiTheme.PaddingLarge)
 	}
 }

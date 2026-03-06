@@ -27,7 +27,7 @@ type ListBoxCfg struct {
 	ColorHover      Color
 	ColorBorder     Color
 	ColorSelect     Color
-	Padding         Padding
+	Padding         Opt[Padding]
 	SelectedIDs     []string
 	Data            []ListBoxOption
 	OnSelect        func(ids []string, e *Event, w *Window)
@@ -259,7 +259,7 @@ func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]s
 		A11YLabel: dat.Name,
 		A11YState: a11yState,
 		Color:     color,
-		Padding:   PaddingTwoFive,
+		Padding:   Some(PaddingTwoFive),
 		Sizing:    FillFit,
 		Content:   []View{content},
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -284,7 +284,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 	if dat.IsSubheading {
 		return Column(ContainerCfg{
 			Spacing: Some[float32](1),
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Sizing:  FillFit,
 			Content: []View{
 				Text(TextCfg{
@@ -292,7 +292,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 					TextStyle: cfg.SubheadingStyle,
 				}),
 				Row(ContainerCfg{
-					Padding: PaddingNone,
+					Padding: Some(PaddingNone),
 					Sizing:  FillFit,
 					Content: []View{
 						Rectangle(RectangleCfg{
@@ -378,7 +378,7 @@ func applyListBoxDefaults(cfg *ListBoxCfg) {
 		cfg.ColorSelect = colorSelectDark
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = PaddingTwo
+		cfg.Padding = Some(PaddingTwo)
 	}
 
 	if cfg.TextStyle == (TextStyle{}) {

@@ -11,7 +11,7 @@ type DrawCanvasCfg struct {
 	MaxWidth  float32
 	MinHeight float32
 	MaxHeight float32
-	Padding   Padding
+	Padding   Opt[Padding]
 	Clip      bool
 	Color     Color
 	Radius    float32
@@ -48,9 +48,10 @@ func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
 			needsDraw = cached.Version != c.Version
 		}
 		if needsDraw {
+			pad := c.Padding.Get(Padding{})
 			dc := DrawContext{
-				Width:  c.Width - c.Padding.Left - c.Padding.Right,
-				Height: c.Height - c.Padding.Top - c.Padding.Bottom,
+				Width:  c.Width - pad.Left - pad.Right,
+				Height: c.Height - pad.Top - pad.Bottom,
 			}
 			c.OnDraw(&dc)
 			sm.Set(c.ID, DrawCanvasCache{
@@ -80,7 +81,7 @@ func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
 			MinHeight: c.MinHeight,
 			MaxHeight: c.MaxHeight,
 			Sizing:    c.Sizing,
-			Padding:   c.Padding,
+			Padding:   c.Padding.Get(Padding{}),
 			Clip:      c.Clip,
 			Color:     c.Color,
 			Radius:    c.Radius,

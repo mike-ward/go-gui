@@ -12,11 +12,11 @@ type MenubarCfg struct {
 	ColorBorder     Color
 	ColorSelect     Color
 	Sizing          Sizing
-	Padding         Padding
-	PaddingMenuItem Padding
+	Padding         Opt[Padding]
+	PaddingMenuItem Opt[Padding]
 	SizeBorder      Opt[float32]
-	PaddingSubmenu  Padding
-	PaddingSubtitle Padding
+	PaddingSubmenu  Opt[Padding]
+	PaddingSubtitle Opt[Padding]
 	Action          func(string, *Event, *Window)
 	Items           []MenuItemCfg
 	WidthSubmenuMin Opt[float32]
@@ -108,16 +108,16 @@ func applyMenubarDefaults(cfg *MenubarCfg) {
 		cfg.Sizing = FillFit
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = d.Padding
+		cfg.Padding = Some(d.Padding)
 	}
 	if !cfg.PaddingMenuItem.IsSet() {
-		cfg.PaddingMenuItem = d.PaddingMenuItem
+		cfg.PaddingMenuItem = Some(d.PaddingMenuItem)
 	}
 	if !cfg.PaddingSubmenu.IsSet() {
-		cfg.PaddingSubmenu = d.PaddingSubmenu
+		cfg.PaddingSubmenu = Some(d.PaddingSubmenu)
 	}
 	if !cfg.PaddingSubtitle.IsSet() {
-		cfg.PaddingSubtitle = d.PaddingSubtitle
+		cfg.PaddingSubtitle = Some(d.PaddingSubtitle)
 	}
 	if !cfg.SpacingSubmenu.IsSet() {
 		cfg.SpacingSubmenu = Some(d.SpacingSubmenu)

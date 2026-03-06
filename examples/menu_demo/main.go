@@ -41,7 +41,7 @@ func mainView(w *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Width:   float32(ww),
 		Height:  float32(wh),
-		Padding: gui.PaddingNone,
+		Padding: gui.Some(gui.PaddingNone),
 		Sizing:  gui.FixedFixed,
 		Spacing: gui.Some[float32](0),
 		Content: []gui.View{
@@ -150,7 +150,7 @@ func menu(w *gui.Window) gui.View {
 				Submenu: []gui.MenuItemCfg{
 					{
 						ID:      "search",
-						Padding: gui.PaddingNone,
+						Padding: gui.Some(gui.PaddingNone),
 						CustomView: gui.Input(gui.InputCfg{
 							Text:        app.SearchText,
 							IDFocus:     idFocusSearch,
@@ -159,10 +159,10 @@ func menu(w *gui.Window) gui.View {
 							MaxWidth:    100,
 							Sizing:      gui.FixedFill,
 							Placeholder: "Search",
-							Padding: gui.NewPadding(2,
+							Padding: gui.Some(gui.NewPadding(2,
 								gui.CurrentTheme().InputStyle.Padding.Right,
 								2,
-								gui.CurrentTheme().InputStyle.Padding.Left),
+								gui.CurrentTheme().InputStyle.Padding.Left)),
 							Radius:           gui.Some[float32](0),
 							SizeBorder:        gui.Some[float32](0),
 							TextStyle:        gui.CurrentTheme().MenubarStyle.TextStyle,
@@ -198,7 +198,7 @@ func body(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		HAlign:  gui.HAlignCenter,
-		Padding: gui.PaddingNone,
+		Padding: gui.Some(gui.PaddingNone),
 		Sizing:  gui.FillFill,
 		Content: []gui.View{
 			gui.Rectangle(gui.RectangleCfg{

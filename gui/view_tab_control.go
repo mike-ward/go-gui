@@ -37,10 +37,10 @@ type TabControlCfg struct {
 	ColorTabDisabled    Color
 	ColorTabBorder      Color
 	ColorTabBorderFocus Color
-	Padding             Padding
-	PaddingHeader       Padding
-	PaddingContent      Padding
-	PaddingTab          Padding
+	Padding             Opt[Padding]
+	PaddingHeader       Opt[Padding]
+	PaddingContent      Opt[Padding]
+	PaddingTab          Opt[Padding]
 	SizeBorder          float32
 	SizeHeaderBorder    float32
 	SizeContentBorder   float32
@@ -111,16 +111,16 @@ func applyTabControlDefaults(cfg *TabControlCfg) {
 		cfg.ColorTabBorderFocus = s.ColorTabBorderFocus
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = s.Padding
+		cfg.Padding = Some(s.Padding)
 	}
 	if !cfg.PaddingHeader.IsSet() {
-		cfg.PaddingHeader = s.PaddingHeader
+		cfg.PaddingHeader = Some(s.PaddingHeader)
 	}
 	if !cfg.PaddingContent.IsSet() {
-		cfg.PaddingContent = s.PaddingContent
+		cfg.PaddingContent = Some(s.PaddingContent)
 	}
 	if !cfg.PaddingTab.IsSet() {
-		cfg.PaddingTab = s.PaddingTab
+		cfg.PaddingTab = Some(s.PaddingTab)
 	}
 	if cfg.SizeBorder == 0 {
 		cfg.SizeBorder = s.SizeBorder

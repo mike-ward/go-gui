@@ -65,7 +65,7 @@ func mainView(w *gui.Window) gui.View {
 		Width:   float32(ww),
 		Height:  float32(wh),
 		Sizing:  gui.FixedFixed,
-		Padding: theme.PaddingSmall,
+		Padding: gui.Some(theme.PaddingSmall),
 		Spacing: gui.Some(theme.SpacingSmall),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{

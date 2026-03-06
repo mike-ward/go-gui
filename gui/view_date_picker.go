@@ -70,7 +70,7 @@ type DatePickerCfg struct {
 	ColorBorder          Color
 	ColorBorderFocus     Color
 	ColorSelect          Color
-	Padding              Padding
+	Padding              Opt[Padding]
 	SizeBorder           Opt[float32]
 	CellSpacing          Opt[float32]
 	Radius               Opt[float32]
@@ -196,7 +196,7 @@ func datePickerControls(
 	}
 
 	return Row(ContainerCfg{
-		Padding: PaddingSmall,
+		Padding: Some(PaddingSmall),
 		Spacing: Some(cellSpacing),
 		Content: []View{
 			Button(ButtonCfg{
@@ -229,7 +229,7 @@ func datePickerCalendar(
 	content = append(content, datePickerMonth(cfg, state, w)...)
 	return Column(ContainerCfg{
 		Spacing: Some(cellSpacing),
-		Padding: PaddingSmall,
+		Padding: Some(PaddingSmall),
 		Content: content,
 	})
 }
@@ -247,7 +247,7 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 		labels = append(labels, Row(ContainerCfg{
 			Width:   40,
 			HAlign:  HAlignCenter,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Content: []View{
 				Text(TextCfg{
 					Text:      label,
@@ -259,7 +259,7 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 	}
 	return Row(ContainerCfg{
 		Spacing: Some(cellSpacing),
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Content: labels,
 	})
 }
@@ -299,7 +299,7 @@ func datePickerMonth(
 					cells = append(cells, Row(ContainerCfg{
 						Width:   40,
 						Height:  40,
-						Padding: PaddingNone,
+						Padding: Some(PaddingNone),
 					}))
 				}
 				continue
@@ -349,7 +349,7 @@ func datePickerMonth(
 		}
 		rows = append(rows, Row(ContainerCfg{
 			Spacing: Some(cellSpacing),
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Content: cells,
 		}))
 		// Stop generating rows if all days rendered.
@@ -387,7 +387,7 @@ func datePickerAdjacentCell(
 		Height:  40,
 		HAlign:  HAlignCenter,
 		VAlign:  VAlignMiddle,
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Content: []View{
 			Text(TextCfg{
 				Text:      strconv.Itoa(adjDay),
@@ -602,7 +602,7 @@ func applyDatePickerDefaults(cfg *DatePickerCfg) {
 		cfg.ColorSelect = d.ColorSelect
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = d.Padding
+		cfg.Padding = Some(d.Padding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = d.TextStyle

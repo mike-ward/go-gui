@@ -15,13 +15,14 @@ func dataGridGroupHeaderRowView(cfg *DataGridCfg, entry dataGridDisplayRow, rowH
 	if entry.AggregateText != "" {
 		label += "  " + entry.AggregateText
 	}
+	pc := cfg.PaddingCell.Get(Padding{})
 	return Row(ContainerCfg{
 		Height:      rowHeight,
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     NewPadding(cfg.PaddingCell.Top, cfg.PaddingCell.Right, cfg.PaddingCell.Bottom, cfg.PaddingCell.Left+depthPad),
+		Padding:     Some(NewPadding(pc.Top, pc.Right, pc.Bottom, pc.Left+depthPad)),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content: []View{
 			Text(TextCfg{
@@ -43,6 +44,7 @@ func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, column
 	}
 	rowID := dataGridRowID(rowData, rowIdx)
 	detailView := cfg.OnDetailRowView(rowData, w)
+	pc := cfg.PaddingCell.Get(Padding{})
 	return Row(ContainerCfg{
 		ID:          cfg.ID + ":detail:" + rowID,
 		Height:      rowHeight,
@@ -50,13 +52,13 @@ func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, column
 		Color:       cfg.ColorBackground,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     NewPadding(cfg.PaddingCell.Top, cfg.PaddingCell.Right, cfg.PaddingCell.Bottom, cfg.PaddingCell.Left+dataGridDetailIndent()),
+		Padding:     Some(NewPadding(pc.Top, pc.Right, pc.Bottom, pc.Left+dataGridDetailIndent())),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content: []View{
 			Row(ContainerCfg{
 				Width:       dataGridColumnsTotalWidth(columns, columnWidths),
 				Sizing:      FixedFill,
-				Padding:     PaddingNone,
+				Padding:     Some(PaddingNone),
 				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
 				SizeBorder:  Some(float32(0)),
@@ -122,7 +124,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 		cellSpacing := float32(4)
 		cellHAlign := col.Align
 		if isEditingCell {
-			cellPadding = PaddingNone
+			cellPadding = Some(PaddingNone)
 			cellSpacing = 0
 		}
 		if colIdx == 0 && detailEnabled {
@@ -149,7 +151,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 			ID:          cfg.ID + ":row-delete:" + rowID,
 			Width:       dataGridHeaderControlWidth + 10,
 			Sizing:      FixedFill,
-			Padding:     PaddingNone,
+			Padding:     Some(PaddingNone),
 			SizeBorder:  Some(float32(0)),
 			Radius:      Some(float32(0)),
 			Color:       ColorTransparent,
@@ -185,7 +187,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 		Color:       rowColor,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder: Some(float32(0)),
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		Spacing: Some(-cfg.SizeBorder),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			dataGridRowClick(rows, selection, gridID, multiSelect, rangeSelect,
@@ -364,7 +366,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			Selected:   selectVal,
 			Options:    options,
 			Sizing:     FillFill,
-			Padding:    PaddingNone,
+			Padding:    Some(PaddingNone),
 			SizeBorder: Some(float32(0)),
 			Radius: Some(float32(0)),
 			OnSelect: func(selected []string, e *Event, w *Window) {
@@ -389,7 +391,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			IDFocus:    editorFocusID,
 			Date:       date,
 			Sizing:     FillFill,
-			Padding:    PaddingNone,
+			Padding:    Some(PaddingNone),
 			OnSelect: func(dates []time.Time, e *Event, w *Window) {
 				if len(dates) == 0 {
 					return
@@ -413,7 +415,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			ID:       editorID,
 			IDFocus:  editorFocusID,
 			Selected: checked,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			OnClick: func(_ *Layout, e *Event, w *Window) {
 				nextValue := editorFalseValue
 				if !checked {
@@ -436,7 +438,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			IDFocus:    editorFocusID,
 			Text:       value,
 			Sizing:     FillFill,
-			Padding:    PaddingNone,
+			Padding:    Some(PaddingNone),
 			SizeBorder: Some(float32(0)),
 			Radius: Some(float32(0)),
 			OnTextChanged: func(_ *Layout, text string, w *Window) {
@@ -465,7 +467,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 		IDFocus:   editorFocusID,
 		FocusSkip: true,
 		Sizing:    FillFill,
-		Padding:   PaddingNone,
+		Padding:   Some(PaddingNone),
 		Spacing: Some(float32(0)),
 		OnKeyDown: dataGridMakeEditorOnKeydown(cfg.ID, gridFocusID),
 		Content:   []View{editor},
@@ -665,7 +667,7 @@ func dataGridDetailToggleControl(cfg *DataGridCfg, rowID string, expanded, enabl
 		return Row(ContainerCfg{
 			Width:   dataGridHeaderControlWidth,
 			Sizing:  FixedFill,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Content: []View{
 				Text(TextCfg{
 					Text:      label,
@@ -681,7 +683,7 @@ func dataGridDetailToggleControl(cfg *DataGridCfg, rowID string, expanded, enabl
 		ID:          cfg.ID + ":detail_toggle:" + rowID,
 		Width:       dataGridHeaderControlWidth,
 		Sizing:      FixedFill,
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		SizeBorder: Some(float32(0)),
 		Radius: Some(float32(0)),
 		Color:       ColorTransparent,
@@ -754,7 +756,7 @@ func dataGridFrozenTopZone(cfg *DataGridCfg, rowViews []View, zoneHeight, totalW
 		Color:       cfg.ColorBackground,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder: Some(float32(0)),
-		Padding:     dataGridScrollPadding(cfg),
+		Padding:     Some(dataGridScrollPadding(cfg)),
 		Spacing: Some(float32(0)),
 		Content: []View{
 			Column(ContainerCfg{
@@ -764,7 +766,7 @@ func dataGridFrozenTopZone(cfg *DataGridCfg, rowViews []View, zoneHeight, totalW
 				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
 				SizeBorder: Some(float32(0)),
-				Padding:     PaddingNone,
+				Padding:     Some(PaddingNone),
 				Spacing: Some(float32(0)),
 				Content:     rowViews,
 			}),

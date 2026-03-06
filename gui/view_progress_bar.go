@@ -14,7 +14,7 @@ type ProgressBarCfg struct {
 	Color          Color
 	ColorBar       Color
 	TextBackground Color
-	TextPadding    Padding
+	TextPadding    Opt[Padding]
 	Percent        float32 // 0.0 to 1.0
 	Radius         float32
 	TextShow       bool
@@ -50,7 +50,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 		cfg.TextBackground = guiTheme.ProgressBarStyle.TextBackground
 	}
 	if !cfg.TextPadding.IsSet() {
-		cfg.TextPadding = guiTheme.ProgressBarStyle.TextPadding
+		cfg.TextPadding = Some(guiTheme.ProgressBarStyle.TextPadding)
 	}
 	if cfg.Radius == 0 {
 		cfg.Radius = guiTheme.ProgressBarStyle.Radius
@@ -58,7 +58,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 
 	content := make([]View, 0, 2)
 	content = append(content, Row(ContainerCfg{
-		Padding: PaddingNone,
+		Padding: Some(PaddingNone),
 		Radius:  Some(cfg.Radius),
 		Color:   cfg.ColorBar,
 	}))
@@ -122,7 +122,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 		Color:     cfg.Color,
 		Radius:    Some(cfg.Radius),
 		Sizing:    cfg.Sizing,
-		Padding:   PaddingNone,
+		Padding:   Some(PaddingNone),
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
 		AmendLayout: func(layout *Layout, w *Window) {

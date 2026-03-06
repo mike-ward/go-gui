@@ -20,7 +20,7 @@ type BadgeCfg struct {
 	Max       int // 0 = no cap; shows "max+" when exceeded
 	Dot       bool
 	Color     Color
-	Padding   Padding
+	Padding   Opt[Padding]
 	Radius    Opt[float32]
 	TextStyle TextStyle
 	DotSize   Opt[float32]
@@ -37,7 +37,7 @@ func Badge(cfg BadgeCfg) View {
 		cfg.Color = guiTheme.BadgeStyle.Color
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = guiTheme.BadgeStyle.Padding
+		cfg.Padding = Some(guiTheme.BadgeStyle.Padding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = guiTheme.BadgeStyle.TextStyle
@@ -67,7 +67,7 @@ func Badge(cfg BadgeCfg) View {
 			Width:     sz,
 			Height:    sz,
 			Sizing:    FixedFixed,
-			Padding:   PaddingNone,
+			Padding:   Some(PaddingNone),
 		})
 	}
 

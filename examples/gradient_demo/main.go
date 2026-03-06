@@ -140,7 +140,7 @@ func mainView(w *gui.Window) gui.View {
 			Overflow: gui.ScrollbarAuto,
 		},
 		Spacing: gui.Some[float32](40),
-		Padding: gui.NewPadding(40, 40, 40, 40),
+		Padding: gui.Some(gui.NewPadding(40, 40, 40, 40)),
 		Content: []gui.View{
 			// Direction radio group
 			gui.Column(gui.ContainerCfg{

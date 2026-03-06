@@ -12,7 +12,7 @@ type RadioCfg struct {
 	ColorBorderFocus Color
 	ColorSelect      Color
 	ColorUnselect    Color
-	Padding          Padding
+	Padding          Opt[Padding]
 	TextStyle        TextStyle
 	OnClick          func(*Layout, *Event, *Window)
 	Size             Opt[float32]
@@ -56,7 +56,7 @@ func Radio(cfg RadioCfg) View {
 
 	if len(cfg.Label) > 0 {
 		content = append(content, Row(ContainerCfg{
-			Padding: NewPadding(0, PadXSmall, 0, 0),
+			Padding: Some(NewPadding(0, PadXSmall, 0, 0)),
 			Content: []View{
 				Text(TextCfg{Text: cfg.Label, TextStyle: cfg.TextStyle}),
 			},
@@ -126,7 +126,7 @@ func applyRadioDefaults(cfg *RadioCfg) {
 		cfg.ColorUnselect = colorInteriorDark
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = PaddingSmall
+		cfg.Padding = Some(PaddingSmall)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle

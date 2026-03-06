@@ -27,7 +27,7 @@ type NumericInputCfg struct {
 	MaxHeight float32
 
 	// Appearance
-	Padding          Padding
+	Padding          Opt[Padding]
 	Radius           Opt[float32]
 	SizeBorder       Opt[float32]
 	Color            Color
@@ -99,7 +99,7 @@ func NumericInput(cfg NumericInputCfg) View {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
 		Radius:      Some(radius),
-		Padding:     PaddingNone,
+		Padding:     Some(PaddingNone),
 		Invisible:   cfg.Invisible,
 		Disabled:    cfg.Disabled,
 		VAlign:      VAlignMiddle,
@@ -196,12 +196,12 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 		Sizing:    FitFill,
 		Disabled:  cfg.Disabled,
 		Invisible: cfg.Invisible,
-		Padding:   NewPadding(0, PadSmall, 0, 0),
+		Padding:   Some(NewPadding(0, PadSmall, 0, 0)),
 		Content: []View{
 			Button(ButtonCfg{
 				ID:          cfg.ID + "_step_up",
 				Sizing:      FillFill,
-				Padding:     PaddingNone,
+				Padding:     Some(PaddingNone),
 				Color:       baseColor,
 				ColorHover:  cfg.ColorHover,
 				ColorFocus:  cfg.ColorHover,
@@ -224,7 +224,7 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 			Button(ButtonCfg{
 				ID:          cfg.ID + "_step_down",
 				Sizing:      FillFill,
-				Padding:     PaddingNone,
+				Padding:     Some(PaddingNone),
 				Color:       baseColor,
 				ColorHover:  cfg.ColorHover,
 				ColorFocus:  cfg.ColorHover,
@@ -308,7 +308,7 @@ func applyNumericInputDefaults(cfg *NumericInputCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = PaddingTwoFour
+		cfg.Padding = Some(PaddingTwoFour)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle

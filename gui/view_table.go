@@ -35,7 +35,7 @@ type TableCfg struct {
 	ColorSelect        Color
 	ColorHover         Color
 	ColorRowAlt        *Color
-	CellPadding        Padding
+	CellPadding        Opt[Padding]
 	TextStyle          TextStyle
 	TextStyleHead      TextStyle
 	AlignHead          HorizontalAlign
@@ -76,7 +76,7 @@ func applyTableDefaults(cfg *TableCfg) {
 		cfg.ColorHover = s.ColorHover
 	}
 	if !cfg.CellPadding.IsSet() {
-		cfg.CellPadding = s.CellPadding
+		cfg.CellPadding = Some(s.CellPadding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = s.TextStyle
@@ -103,7 +103,7 @@ func Table(cfg TableCfg) View {
 	if len(cfg.Data) == 0 {
 		return Column(ContainerCfg{
 			ID:      cfg.ID,
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 		})
 	}
 
@@ -128,7 +128,7 @@ func Table(cfg TableCfg) View {
 	}
 	columnWidths := make([]float32, numCols)
 	if cfg.TextMeasurer != nil {
-		pad := cfg.CellPadding.Width()
+		pad := cfg.CellPadding.Get(Padding{}).Width()
 		for _, r := range cfg.Data {
 			for ci, cell := range r.Cells {
 				style := cfg.TextStyle
@@ -150,7 +150,7 @@ func Table(cfg TableCfg) View {
 			}
 		}
 	} else {
-		w := cfg.ColumnWidthDefault + cfg.CellPadding.Width()
+		w := cfg.ColumnWidthDefault + cfg.CellPadding.Get(Padding{}).Width()
 		for i := range columnWidths {
 			columnWidths[i] = w
 		}
@@ -237,7 +237,7 @@ func Table(cfg TableCfg) View {
 		rows = append(rows, Row(ContainerCfg{
 			Color:   rowColor,
 			Spacing: Some(-cellBorder),
-			Padding: PaddingNone,
+			Padding: Some(PaddingNone),
 			Content: cells,
 			OnClick: func(layout *Layout, e *Event, w *Window) {
 				if rowOnClick != nil {
@@ -294,7 +294,7 @@ func Table(cfg TableCfg) View {
 	return Column(ContainerCfg{
 		ID:        cfg.ID,
 		Color:     ColorTransparent,
-		Padding:   PaddingNone,
+		Padding:   Some(PaddingNone),
 		Spacing:   Some(rowSpacing),
 		Sizing:    cfg.Sizing,
 		Width:     cfg.Width,

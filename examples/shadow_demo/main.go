@@ -31,11 +31,11 @@ func mainView(w *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FitFit,
 		Spacing: gui.Some[float32](40),
-		Padding: gui.NewPadding(10, 40, 40, 40),
+		Padding: gui.Some(gui.NewPadding(10, 40, 40, 40)),
 		HAlign:  gui.HAlignCenter,
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
-				Padding: gui.PaddingNone,
+				Padding: gui.Some(gui.PaddingNone),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
 						Text: "Drop Shadow Demo",
@@ -122,7 +122,7 @@ func toggleTheme(app *App) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		HAlign:  gui.HAlignEnd,
 		Sizing:  gui.FillFit,
-		Padding: gui.PaddingNone,
+		Padding: gui.Some(gui.PaddingNone),
 		Spacing: gui.Some[float32](10),
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
@@ -132,7 +132,7 @@ func toggleTheme(app *App) gui.View {
 				TextStyle:    gui.CurrentTheme().Icon3,
 				Selected:     app.LightTheme,
 				ColorSelect:  gui.RGBA(0, 0, 0, 0),
-				Padding:      gui.PaddingSmall,
+				Padding:      gui.Some(gui.PaddingSmall),
 				OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 					a := gui.State[App](w)
 					if a.LightTheme {

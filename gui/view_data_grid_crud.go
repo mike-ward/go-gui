@@ -169,7 +169,7 @@ func dataGridCrudToolbarRow(cfg *DataGridCfg, state dataGridCrudState, caps Grid
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(float32(0)),
-		Padding:     dataGridPagerPadding(cfg),
+		Padding:     Some(dataGridPagerPadding(cfg)),
 		Spacing:     Some(float32(6)),
 		VAlign:      VAlignMiddle,
 		Content: []View{
@@ -204,7 +204,7 @@ func dataGridCrudToolbarRow(cfg *DataGridCfg, state dataGridCrudState, caps Grid
 				}),
 			Row(ContainerCfg{
 				Sizing:  FillFill,
-				Padding: PaddingNone,
+				Padding: Some(PaddingNone),
 			}),
 			Text(TextCfg{
 				Text:      fmt.Sprintf("%s %d", guiLocale.StrSelected, selectedCount),

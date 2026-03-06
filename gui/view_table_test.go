@@ -164,7 +164,7 @@ func (m *tableTestMeasurer) LayoutText(_ string, _ TextStyle, _ float32) (glyph.
 func TestTableColumnAutoWidth(t *testing.T) {
 	v := Table(TableCfg{
 		TextMeasurer: &tableTestMeasurer{},
-		CellPadding:  NewPadding(4, 4, 4, 4),
+		CellPadding:  Some(NewPadding(4, 4, 4, 4)),
 		Data: []TableRowCfg{
 			TR([]TableCellCfg{TH("Name"), TH("Age")}),
 			TR([]TableCellCfg{TD("Alexander"), TD("30")}),
