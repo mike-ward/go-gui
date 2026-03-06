@@ -202,6 +202,7 @@ version.
 | -------------------------------------------------------------- | ----------------------------------------- |
 | [`animations`](examples/animations/)                           | Animation subsystem showcase              |
 | [`benchmark`](examples/benchmark/)                             | Frame timing and allocation benchmarks    |
+| [`calculator`](examples/calculator/)                           | Styled desktop calculator                 |
 | [`context_menu`](examples/context_menu/)                       | Right-click context menus                 |
 | [`data_grid_data_source`](examples/data_grid_data_source/)     | DataGrid with async data source           |
 | [`floating_layout`](examples/floating_layout/)                 | Float-anchored overlay positioning        |
