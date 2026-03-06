@@ -66,10 +66,10 @@ type Backend struct {
 	sampledBuf         []gui.GradientStop
 
 	textures    metalTexCache
-	glyphBack    *metalGlyphBackend
-	filterBlur   float32
-	filterLayer  int
-	customCache  map[uint64]C.int
+	glyphBack   *metalGlyphBackend
+	filterBlur  float32
+	filterLayer int
+	customCache map[uint64]C.int
 
 	allowedImageRoots []string
 	imagePathCache    map[string]string
@@ -100,12 +100,15 @@ func New(w *gui.Window) (*Backend, error) {
 	}
 
 	const windowMetal = 0x20000000 // SDL_WINDOW_METAL
+	flags := uint32(sdl.WINDOW_SHOWN | sdl.WINDOW_ALLOW_HIGHDPI | windowMetal)
+	if !cfg.FixedSize {
+		flags |= sdl.WINDOW_RESIZABLE
+	}
 	win, err := sdl.CreateWindow(
 		title,
 		sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED,
 		width, height,
-		sdl.WINDOW_SHOWN|sdl.WINDOW_RESIZABLE|
-			sdl.WINDOW_ALLOW_HIGHDPI|windowMetal,
+		flags,
 	)
 	if err != nil {
 		sdl.Quit()
@@ -372,4 +375,3 @@ func (b *Backend) useGlyphPipeline() {
 	C.metalSetPipeline(C.int(pipeGlyphTex))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }
-

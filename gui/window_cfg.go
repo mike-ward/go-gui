@@ -6,6 +6,9 @@ type WindowCfg struct {
 	Title  string
 	Width  int
 	Height int
+	// FixedSize disables user-driven window resizing when supported
+	// by the active backend.
+	FixedSize bool
 	// AllowedSvgRoots restricts file-based SVG loads to these paths.
 	// Empty means allow any local SVG path.
 	AllowedSvgRoots []string

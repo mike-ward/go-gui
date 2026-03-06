@@ -59,12 +59,16 @@ func New(w *gui.Window) (*Backend, error) {
 	if height <= 0 {
 		height = 480
 	}
+	flags := uint32(sdl.WINDOW_SHOWN | sdl.WINDOW_ALLOW_HIGHDPI)
+	if !cfg.FixedSize {
+		flags |= sdl.WINDOW_RESIZABLE
+	}
 
 	win, err := sdl.CreateWindow(
 		title,
 		sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED,
 		width, height,
-		sdl.WINDOW_SHOWN|sdl.WINDOW_RESIZABLE|sdl.WINDOW_ALLOW_HIGHDPI,
+		flags,
 	)
 	if err != nil {
 		sdl.Quit()
