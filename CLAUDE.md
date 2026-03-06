@@ -65,7 +65,7 @@ widget into tab-order focus.
 ### External Dependencies
 
 - `glyph` — text shaping/rendering library; local replace directive
-  points to `../go_glyph` (`~/Documents/github/go_glyph`).
+  points to `../go-glyph` (`~/Documents/github/go-glyph`).
   For any text-related work, consult glyph first to check if it already
   provides the needed functionality. Only create new text handling
   routines when glyph does not supply them.

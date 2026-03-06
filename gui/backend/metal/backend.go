@@ -9,7 +9,8 @@ package metal
 
 /*
 #cgo CFLAGS: -fobjc-arc
-#cgo pkg-config: sdl2
+#cgo darwin,arm64 CFLAGS: -I/opt/homebrew/include/SDL2
+#cgo darwin,amd64 CFLAGS: -I/usr/local/include/SDL2
 #cgo LDFLAGS: -framework Metal -framework QuartzCore -framework Foundation
 #include "metal_darwin.h"
 #include <SDL.h>
