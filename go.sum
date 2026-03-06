@@ -1,9 +1,9 @@
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 h1:5BVwOaUSBTlVZowGO6VZGw2H/zl9nrd3eCZfYV+NfQA=
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=
-github.com/mike-ward/go-glyph v0.0.0-20260306161645-c8fce6ad4da1 h1:9aDRHpupRHYGK8f3BwDCYAXiFPIknJ7cdVV2pZOODws=
-github.com/mike-ward/go-glyph v0.0.0-20260306161645-c8fce6ad4da1/go.mod h1:jsV/yFYssCROmfg4HTPUWZiKgC0E0SLPo85pBSjNRvs=
-github.com/mike-ward/go-glyph/backend/sdl2 v0.0.0-20260306161645-c8fce6ad4da1 h1:gKcbL3Rb5m1JgwMPa2Psq/4l5+29jok58sSlGPJ0MzM=
-github.com/mike-ward/go-glyph/backend/sdl2 v0.0.0-20260306161645-c8fce6ad4da1/go.mod h1:oDkEu+mUYcwrgDyH9j+4GSo2aKp6gXwFzvaKyh/BYUY=
+github.com/mike-ward/go-glyph v1.0.0 h1:q1797wC5U7nSG+1fwR12zyjQiH49cC2MecaHFEF4FzQ=
+github.com/mike-ward/go-glyph v1.0.0/go.mod h1:jsV/yFYssCROmfg4HTPUWZiKgC0E0SLPo85pBSjNRvs=
+github.com/mike-ward/go-glyph/backend/sdl2 v1.0.0 h1:i7+mLXg8MhMwpyb1kTH6jTDsGr90r4haCoFTvj2S/8c=
+github.com/mike-ward/go-glyph/backend/sdl2 v1.0.0/go.mod h1:N2Q2fMO6+VuEkNqUjEis/Vj7AmD5+HLUPxcS6BkWjjI=
 github.com/veandco/go-sdl2 v0.4.40 h1:fZv6wC3zz1Xt167P09gazawnpa0KY5LM7JAvKpX9d/U=
 github.com/veandco/go-sdl2 v0.4.40/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=
 github.com/yuin/goldmark v1.7.16 h1:n+CJdUxaFMiDUNnWC3dMWCIQJSkxH4uz3ZwQBkAlVNE=
