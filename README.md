@@ -59,7 +59,7 @@ between layout and rendering.
 #### macOS (Homebrew)
 
 ```bash
-brew install go sdl2
+brew install go pkg-config sdl2 freetype harfbuzz pango fontconfig
 ```
 
 #### Ubuntu / Debian

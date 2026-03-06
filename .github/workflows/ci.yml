@@ -35,7 +35,14 @@ jobs:
 
       - name: Install macOS system dependencies
         if: runner.os == 'macOS'
-        run: brew install sdl2
+        run: |
+          brew install \
+            pkg-config \
+            sdl2 \
+            freetype \
+            harfbuzz \
+            pango \
+            fontconfig
 
       - name: Test
         run: go test ./gui/...
