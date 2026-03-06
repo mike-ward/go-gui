@@ -213,6 +213,7 @@ version.
 | [`rtf`](examples/rtf/)                                         | RTF document viewer                       |
 | [`scroll_demo`](examples/scroll_demo/)                         | Scrollable content layouts                |
 | [`svg`](examples/svg/)                                         | SVG loading and display                   |
+| [`todo`](examples/todo/)                                       | Classic todo app                          |
 
 ## Core Concepts
 
