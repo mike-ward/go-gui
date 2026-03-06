@@ -1,17 +1,17 @@
 # Dependency Updates
 
-This project depends on private Go modules under `github.com/mike-ward/*`,
+This project depends on Go modules under `github.com/mike-ward/*`,
 including `github.com/mike-ward/go-glyph` and
 `github.com/mike-ward/go-glyph/backend/sdl2`.
 
 ## How dependency resolution works
 
 - [`go.mod`](/Users/mikeward/Documents/github/go-gui/go.mod) declares the module
-  requirements for both private modules.
+  requirements for both modules.
 - [`go.sum`](/Users/mikeward/Documents/github/go-gui/go.sum) records checksums
   for the exact dependency contents and their `go.mod` files.
-- CI sets `GOPRIVATE` and `GONOSUMDB` so the Go toolchain can fetch the private
-  modules directly from GitHub.
+- `go-glyph` is now public, so the Go toolchain can fetch it directly from
+  GitHub without extra CI authentication.
 
 ## Updating `go-glyph`
 
@@ -21,11 +21,9 @@ to the same release tag.
 ```bash
 cd /Users/mikeward/Documents/github/go-gui
 
-GOPRIVATE=github.com/mike-ward/* GONOSUMDB=github.com/mike-ward/* \
 go get github.com/mike-ward/go-glyph@v1.0.0 \
   github.com/mike-ward/go-glyph/backend/sdl2@v1.0.0
 
-GOPRIVATE=github.com/mike-ward/* GONOSUMDB=github.com/mike-ward/* \
 go mod tidy
 ```
 
@@ -47,8 +45,8 @@ go mod tidy
 Run these checks before committing:
 
 ```bash
-GOPRIVATE=github.com/mike-ward/* GONOSUMDB=github.com/mike-ward/* go test ./gui/...
-GOPRIVATE=github.com/mike-ward/* GONOSUMDB=github.com/mike-ward/* go vet ./...
+go test ./gui/...
+go vet ./...
 ```
 
 Commit both [`go.mod`](/Users/mikeward/Documents/github/go-gui/go.mod) and

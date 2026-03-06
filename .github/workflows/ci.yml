@@ -10,18 +10,12 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    env:
-      GONOSUMDB: github.com/mike-ward/*
-      GOPRIVATE: github.com/mike-ward/*
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-
-      - name: Configure private module access
-        run: git config --global url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "https://github.com/"
 
       - name: Install SDL2
         run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
@@ -32,18 +26,12 @@ jobs:
   vet:
     name: Vet
     runs-on: ubuntu-latest
-    env:
-      GONOSUMDB: github.com/mike-ward/*
-      GOPRIVATE: github.com/mike-ward/*
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-
-      - name: Configure private module access
-        run: git config --global url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "https://github.com/"
 
       - name: Install SDL2
         run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
