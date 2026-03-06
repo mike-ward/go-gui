@@ -104,6 +104,21 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		emitRenderer(RenderCmd{
 			Kind: RenderFilterEnd,
 		}, w)
+
+		// KeepSource: re-draw sharp original on top of blur.
+		if fg.Filter.KeepSource {
+			for _, path := range fg.RenderPaths {
+				emitSvgPathRenderer(path, color,
+					sx, sy, cached.Scale, animState, w)
+			}
+			for j := range fg.TextDraws {
+				emitCachedSvgTextDraw(&fg.TextDraws[j], sx, sy, w)
+			}
+			for j := range fg.TextPathDraws {
+				emitCachedSvgTextPathDraw(
+					&fg.TextPathDraws[j], sx, sy, w)
+			}
+		}
 	}
 
 	// Restore parent clip.

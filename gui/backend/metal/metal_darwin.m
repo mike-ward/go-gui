@@ -507,6 +507,45 @@ static id<MTLRenderPipelineState> makePipeline(
     return pso;
 }
 
+// makePipelineReplace creates a pipeline with no blending
+// (write-through). Used for full-screen filter passes that render
+// onto cleared targets where srcAlpha blending would corrupt the
+// output by double-applying alpha.
+static id<MTLRenderPipelineState> makePipelineReplace(
+    id<MTLLibrary> lib,
+    NSString *vsName,
+    NSString *fsName,
+    MTLVertexDescriptor *vd,
+    MTLPixelFormat pixFmt
+) {
+    MTLRenderPipelineDescriptor *desc =
+        [[MTLRenderPipelineDescriptor alloc] init];
+    desc.vertexFunction   = [lib newFunctionWithName:vsName];
+    desc.fragmentFunction = [lib newFunctionWithName:fsName];
+    desc.vertexDescriptor = vd;
+
+    desc.colorAttachments[0].pixelFormat = pixFmt;
+    desc.colorAttachments[0].blendingEnabled = NO;
+
+    if (!desc.vertexFunction) {
+        NSLog(@"metal: vertex function %@ not found", vsName);
+        return nil;
+    }
+    if (!desc.fragmentFunction) {
+        NSLog(@"metal: fragment function %@ not found", fsName);
+        return nil;
+    }
+
+    NSError *err = nil;
+    id<MTLRenderPipelineState> pso =
+        [_device newRenderPipelineStateWithDescriptor:desc
+                                                error:&err];
+    if (!pso) {
+        NSLog(@"metal: pipeline %@/%@: %@", vsName, fsName, err);
+    }
+    return pso;
+}
+
 static id<MTLTexture> makeTexture(int w, int h,
     MTLPixelFormat fmt) {
     MTLTextureDescriptor *td =
@@ -595,11 +634,11 @@ int metalInit(void* layerPtr) {
         makePipeline(lib, @"vs_solid", @"fs_image_clip",
                      mvd, pf);
     _pipelines[PIPE_FILTER_BLUR_H] =
-        makePipeline(lib, @"vs_filter", @"fs_filter_blur_h",
-                     mvd, pf);
+        makePipelineReplace(lib, @"vs_filter",
+                     @"fs_filter_blur_h", mvd, pf);
     _pipelines[PIPE_FILTER_BLUR_V] =
-        makePipeline(lib, @"vs_filter", @"fs_filter_blur_v",
-                     mvd, pf);
+        makePipelineReplace(lib, @"vs_filter",
+                     @"fs_filter_blur_v", mvd, pf);
     _pipelines[PIPE_FILTER_TEX] =
         makePipeline(lib, @"vs_filter", @"fs_filter_tex",
                      mvd, pf);
@@ -1083,21 +1122,20 @@ void metalEndFilter(float blurRadius, int layers) {
     tm[0] = 1; tm[5] = 1; tm[10] = 1; tm[15] = 1;
     [_enc setVertexBytes:tm length:64 atIndex:2];
 
-    float glowAlpha = (float)(60 * layers);
-    if (glowAlpha > 255) glowAlpha = 255;
-    glowAlpha /= 255.0f;
-    float a = glowAlpha;
-
+    // H-blur and V-blur each flip V, cancelling out. Composite
+    // must NOT flip again (v=0 at screen-top → texture-top).
     float verts[] = {
-        0,0,0, 0,1, 1,1,1,a,
-        (float)_viewW,0,0, 1,1, 1,1,1,a,
-        (float)_viewW,(float)_viewH,0, 1,0, 1,1,1,a,
-        0,(float)_viewH,0, 0,0, 1,1,1,a,
+        0,0,0, 0,0, 1,1,1,1,
+        (float)_viewW,0,0, 1,0, 1,1,1,1,
+        (float)_viewW,(float)_viewH,0, 1,1, 1,1,1,1,
+        0,(float)_viewH,0, 0,1, 1,1,1,1,
     };
     [_enc setVertexBytes:verts length:sizeof(verts) atIndex:0];
-    [_enc drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-                     indexCount:6
-                      indexType:MTLIndexTypeUInt16
-                    indexBuffer:_quadIdx
-              indexBufferOffset:0];
+    for (int i = 0; i < layers; i++) {
+        [_enc drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+                         indexCount:6
+                          indexType:MTLIndexTypeUInt16
+                        indexBuffer:_quadIdx
+                  indexBufferOffset:0];
+    }
 }

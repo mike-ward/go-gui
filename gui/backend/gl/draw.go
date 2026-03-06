@@ -595,17 +595,19 @@ func (b *Backend) endFilter() {
 	b.unbindFBO()
 	gogl.Viewport(0, 0, b.physW, b.physH)
 
-	// Composite blurred glow + sharp source.
-	// Draw glow at reduced alpha.
-	glowAlpha := min(float32(60*layers), 255) / 255.0
+	// Composite: draw blurred texture once per layer at full alpha,
+	// matching SVG feMerge semantics (each feMergeNode composites
+	// the blur at full opacity).
 	b.usePipeline(&b.pipelines.filterTex)
 	gogl.ActiveTexture(gogl.TEXTURE0)
 	gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexA)
 	if b.pipelines.filterTex.uTex >= 0 {
 		gogl.Uniform1i(b.pipelines.filterTex.uTex, 0)
 	}
-	gc := gui.RGBA(255, 255, 255, uint8(glowAlpha*255))
-	b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH), gc)
+	for range layers {
+		b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
+			gui.White)
+	}
 	gogl.BindTexture(gogl.TEXTURE_2D, 0)
 }
 
