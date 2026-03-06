@@ -46,6 +46,39 @@ type calcButton struct {
 	Action     func(*calculatorState)
 }
 
+var keypadRows = [][]calcButton{
+	{
+		{Label: "DEL", Background: colorTopButton, Action: backspace},
+		{Label: "AC", Background: colorTopButton, Action: clearState},
+		{Label: "%", Background: colorTopButton, Action: applyPercent},
+		{Label: "/", Background: colorOperator, Action: operatorAction("/")},
+	},
+	{
+		{Label: "7", Background: colorNumberButton, Action: digitAction("7")},
+		{Label: "8", Background: colorNumberButton, Action: digitAction("8")},
+		{Label: "9", Background: colorNumberButton, Action: digitAction("9")},
+		{Label: "x", Background: colorOperator, Action: operatorAction("*")},
+	},
+	{
+		{Label: "4", Background: colorNumberButton, Action: digitAction("4")},
+		{Label: "5", Background: colorNumberButton, Action: digitAction("5")},
+		{Label: "6", Background: colorNumberButton, Action: digitAction("6")},
+		{Label: "-", Background: colorOperator, Action: operatorAction("-")},
+	},
+	{
+		{Label: "1", Background: colorNumberButton, Action: digitAction("1")},
+		{Label: "2", Background: colorNumberButton, Action: digitAction("2")},
+		{Label: "3", Background: colorNumberButton, Action: digitAction("3")},
+		{Label: "+", Background: colorOperator, Action: operatorAction("+")},
+	},
+	{
+		{Label: "+/-", Background: colorNumberButton, Action: toggleSign},
+		{Label: "0", Background: colorNumberButton, Action: digitAction("0")},
+		{Label: ".", Background: colorNumberButton, Action: appendDecimal},
+		{Label: "=", Background: colorOperator, Action: evaluate},
+	},
+}
+
 func main() {
 	gui.SetTheme(gui.ThemeDarkNoPadding)
 
@@ -72,64 +105,85 @@ func newCalculatorState() *calculatorState {
 	}
 }
 
+func digitAction(digit string) func(*calculatorState) {
+	return func(state *calculatorState) {
+		appendDigit(state, digit)
+	}
+}
+
+func operatorAction(op string) func(*calculatorState) {
+	return func(state *calculatorState) {
+		applyOperator(state, op)
+	}
+}
+
 func handleKeyEvent(e *gui.Event, w *gui.Window) {
 	if e.Type != gui.EventKeyDown {
 		return
 	}
 
 	state := gui.State[calculatorState](w)
-	switch e.KeyCode {
-	case gui.Key0, gui.KeyKP0:
-		appendDigit(state, "0")
-	case gui.Key1, gui.KeyKP1:
-		appendDigit(state, "1")
-	case gui.Key2, gui.KeyKP2:
-		appendDigit(state, "2")
-	case gui.Key3, gui.KeyKP3:
-		appendDigit(state, "3")
-	case gui.Key4, gui.KeyKP4:
-		appendDigit(state, "4")
-	case gui.Key5, gui.KeyKP5:
-		appendDigit(state, "5")
-	case gui.Key6, gui.KeyKP6:
-		appendDigit(state, "6")
-	case gui.Key7, gui.KeyKP7:
-		appendDigit(state, "7")
-	case gui.Key8, gui.KeyKP8:
-		appendDigit(state, "8")
-	case gui.Key9, gui.KeyKP9:
-		appendDigit(state, "9")
-	case gui.KeyPeriod, gui.KeyKPDecimal:
+	if digit := keyDigit(e.KeyCode); digit != "" {
+		appendDigit(state, digit)
+		e.IsHandled = true
+		return
+	}
+
+	switch {
+	case e.KeyCode == gui.KeyPeriod || e.KeyCode == gui.KeyKPDecimal:
 		appendDecimal(state)
-	case gui.KeySlash, gui.KeyKPDivide:
+	case e.KeyCode == gui.KeySlash || e.KeyCode == gui.KeyKPDivide:
 		applyOperator(state, "/")
-	case gui.KeyKPMultiply:
+	case e.KeyCode == gui.KeyKPMultiply:
 		applyOperator(state, "*")
-	case gui.KeyMinus, gui.KeyKPSubtract:
+	case e.KeyCode == gui.KeyMinus || e.KeyCode == gui.KeyKPSubtract:
 		applyOperator(state, "-")
-	case gui.KeyEqual:
-		if e.Modifiers.Has(gui.ModShift) {
-			applyOperator(state, "+")
-		} else {
-			evaluate(state)
-		}
-	case gui.KeyKPAdd:
+	case e.KeyCode == gui.KeyEqual && e.Modifiers.Has(gui.ModShift):
 		applyOperator(state, "+")
-	case gui.KeyEnter, gui.KeyKPEnter:
+	case e.KeyCode == gui.KeyEqual || e.KeyCode == gui.KeyEnter || e.KeyCode == gui.KeyKPEnter:
 		evaluate(state)
-	case gui.KeyBackspace, gui.KeyDelete:
+	case e.KeyCode == gui.KeyKPAdd:
+		applyOperator(state, "+")
+	case e.KeyCode == gui.KeyBackspace || e.KeyCode == gui.KeyDelete:
 		backspace(state)
-	case gui.KeyEscape:
+	case e.KeyCode == gui.KeyEscape:
 		clearState(state)
-	case gui.KeyP:
+	case e.KeyCode == gui.KeyP:
 		applyPercent(state)
-	case gui.KeyN:
+	case e.KeyCode == gui.KeyN:
 		toggleSign(state)
 	default:
 		return
 	}
 
 	e.IsHandled = true
+}
+
+func keyDigit(key gui.KeyCode) string {
+	switch key {
+	case gui.Key0, gui.KeyKP0:
+		return "0"
+	case gui.Key1, gui.KeyKP1:
+		return "1"
+	case gui.Key2, gui.KeyKP2:
+		return "2"
+	case gui.Key3, gui.KeyKP3:
+		return "3"
+	case gui.Key4, gui.KeyKP4:
+		return "4"
+	case gui.Key5, gui.KeyKP5:
+		return "5"
+	case gui.Key6, gui.KeyKP6:
+		return "6"
+	case gui.Key7, gui.KeyKP7:
+		return "7"
+	case gui.Key8, gui.KeyKP8:
+		return "8"
+	case gui.Key9, gui.KeyKP9:
+		return "9"
+	default:
+		return ""
+	}
 }
 
 func mainView(w *gui.Window) gui.View {
@@ -256,41 +310,8 @@ func displayView(w *gui.Window) gui.View {
 }
 
 func keypadView(w *gui.Window) gui.View {
-	rows := [][]calcButton{
-		{
-			{Label: "DEL", Background: colorTopButton, Action: backspace},
-			{Label: "AC", Background: colorTopButton, Action: clearState},
-			{Label: "%", Background: colorTopButton, Action: applyPercent},
-			{Label: "/", Background: colorOperator, Action: func(s *calculatorState) { applyOperator(s, "/") }},
-		},
-		{
-			{Label: "7", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "7") }},
-			{Label: "8", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "8") }},
-			{Label: "9", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "9") }},
-			{Label: "x", Background: colorOperator, Action: func(s *calculatorState) { applyOperator(s, "*") }},
-		},
-		{
-			{Label: "4", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "4") }},
-			{Label: "5", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "5") }},
-			{Label: "6", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "6") }},
-			{Label: "-", Background: colorOperator, Action: func(s *calculatorState) { applyOperator(s, "-") }},
-		},
-		{
-			{Label: "1", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "1") }},
-			{Label: "2", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "2") }},
-			{Label: "3", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "3") }},
-			{Label: "+", Background: colorOperator, Action: func(s *calculatorState) { applyOperator(s, "+") }},
-		},
-		{
-			{Label: "+/-", Background: colorNumberButton, Action: toggleSign},
-			{Label: "0", Background: colorNumberButton, Action: func(s *calculatorState) { appendDigit(s, "0") }},
-			{Label: ".", Background: colorNumberButton, Action: appendDecimal},
-			{Label: "=", Background: colorOperator, Action: evaluate},
-		},
-	}
-
-	content := make([]gui.View, 0, len(rows))
-	for _, row := range rows {
+	content := make([]gui.View, 0, len(keypadRows))
+	for _, row := range keypadRows {
 		content = append(content, keypadRow(w, row))
 	}
 
