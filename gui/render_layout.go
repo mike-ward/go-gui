@@ -405,6 +405,9 @@ func renderInputCursor(shape *Shape, text string, baseX, baseY float32,
 	if !w.InputCursorOn() {
 		return
 	}
+	if shape.TC != nil && shape.TC.TextIsPlaceholder {
+		text = ""
+	}
 	is := StateReadOr(w, nsInput, shape.IDFocus, InputState{})
 	runeLen := utf8RuneCount(text)
 	pos := is.CursorPos

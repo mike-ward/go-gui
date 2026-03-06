@@ -1,3 +1,5 @@
+// The todo example shows a small stateful GUI app with a text input,
+// action buttons, and a list rendered from window state.
 package main
 
 import (
@@ -20,6 +22,12 @@ var (
 	colorDeleteHover = gui.ColorFromString("#dcdcdf")
 )
 
+const (
+	todoInputFocusID = 1
+	windowWidth      = 540
+	windowHeight     = 640
+)
+
 type todoItem struct {
 	ID        int
 	Title     string
@@ -32,26 +40,31 @@ type appState struct {
 	Items  []todoItem
 }
 
+func newAppState() *appState {
+	return &appState{
+		NextID: 6,
+		Items: []todoItem{
+			{ID: 1, Title: "Learn JavaScript projects"},
+			{ID: 2, Title: "Make a to do list app"},
+			{ID: 3, Title: "Host it on online server", Completed: true},
+			{ID: 4, Title: "Link it to your resume"},
+			{ID: 5, Title: "Get a software job"},
+		},
+	}
+}
+
 func main() {
 	gui.SetTheme(gui.ThemeLightNoPadding)
 
 	w := gui.NewWindow(gui.WindowCfg{
-		State: &appState{
-			NextID: 6,
-			Items: []todoItem{
-				{ID: 1, Title: "Learn JavaScript projects"},
-				{ID: 2, Title: "Make a to do list app"},
-				{ID: 3, Title: "Host it on online server", Completed: true},
-				{ID: 4, Title: "Link it to your resume"},
-				{ID: 5, Title: "Get a software job"},
-			},
-		},
+		State:  newAppState(),
 		Title:  "todo",
-		Width:  540,
-		Height: 640,
+		Width:  windowWidth,
+		Height: windowHeight,
 		OnInit: func(w *gui.Window) {
+			// Render once and put the caret in the input field.
 			w.UpdateView(mainView)
-			w.SetIDFocus(1)
+			w.SetIDFocus(todoInputFocusID)
 		},
 	})
 
@@ -124,7 +137,7 @@ func composerView(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Input(gui.InputCfg{
 				ID:               "todo-input",
-				IDFocus:          1,
+				IDFocus:          todoInputFocusID,
 				Sizing:           gui.FillFit,
 				Text:             app.Draft,
 				Placeholder:      "Add your task",
@@ -137,6 +150,7 @@ func composerView(w *gui.Window) gui.View {
 				TextStyle:        gui.TextStyle{Color: colorText, Size: 18},
 				PlaceholderStyle: gui.TextStyle{Color: colorMuted, Size: 18},
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
+					// Keep the input fully controlled by app state.
 					gui.State[appState](w).Draft = text
 				},
 				OnTextCommit: func(_ *gui.Layout, text string, _ gui.InputCommitReason, w *gui.Window) {
@@ -207,57 +221,48 @@ func todoRowView(item todoItem) gui.View {
 }
 
 func completeButton(item todoItem) gui.View {
-	if item.Completed {
-		return gui.Button(gui.ButtonCfg{
-			ID:               fmt.Sprintf("todo-check-%d", item.ID),
-			Width:            32,
-			Height:           32,
-			Sizing:           gui.FixedFixed,
-			Color:            colorAccent,
-			ColorHover:       colorAccent,
-			ColorClick:       colorAccent,
-			ColorFocus:       colorAccent,
-			ColorBorder:      colorAccent,
-			ColorBorderFocus: colorAccent,
-			Radius:           gui.Some(float32(16)),
-			Padding:          gui.Some(gui.PaddingNone),
-			Content: []gui.View{
-				gui.Text(gui.TextCfg{
-					Text: "✓",
-					TextStyle: gui.TextStyle{
-						Color:    gui.RGB(255, 255, 255),
-						Size:     18,
-						Typeface: 1,
-					},
-				}),
-			},
-			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-				toggleTodo(w, item.ID)
-				e.IsHandled = true
-			},
-		})
-	}
-
-	return gui.Button(gui.ButtonCfg{
-		ID:               fmt.Sprintf("todo-check-%d", item.ID),
-		Width:            32,
-		Height:           32,
-		Sizing:           gui.FixedFixed,
-		Color:            colorCardBG,
-		ColorHover:       colorCardBG,
-		ColorClick:       colorCardBG,
-		ColorFocus:       colorCardBG,
-		ColorBorder:      colorBorder,
-		ColorBorderFocus: colorAccent,
-		SizeBorder:       gui.Some(float32(2)),
-		Radius:           gui.Some(float32(16)),
-		Padding:          gui.Some(gui.PaddingNone),
-		Content:          []gui.View{gui.Text(gui.TextCfg{Text: ""})},
+	cfg := gui.ButtonCfg{
+		ID:      fmt.Sprintf("todo-check-%d", item.ID),
+		Width:   32,
+		Height:  32,
+		Sizing:  gui.FixedFixed,
+		Radius:  gui.Some(float32(16)),
+		Padding: gui.Some(gui.PaddingNone),
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			toggleTodo(w, item.ID)
 			e.IsHandled = true
 		},
-	})
+	}
+
+	if item.Completed {
+		cfg.Color = colorAccent
+		cfg.ColorHover = colorAccent
+		cfg.ColorClick = colorAccent
+		cfg.ColorFocus = colorAccent
+		cfg.ColorBorder = colorAccent
+		cfg.ColorBorderFocus = colorAccent
+		cfg.Content = []gui.View{
+			gui.Text(gui.TextCfg{
+				Text: "✓",
+				TextStyle: gui.TextStyle{
+					Color:    gui.RGB(255, 255, 255),
+					Size:     18,
+					Typeface: 1,
+				},
+			}),
+		}
+		return gui.Button(cfg)
+	}
+
+	cfg.Color = colorCardBG
+	cfg.ColorHover = colorCardBG
+	cfg.ColorClick = colorCardBG
+	cfg.ColorFocus = colorCardBG
+	cfg.ColorBorder = colorBorder
+	cfg.ColorBorderFocus = colorAccent
+	cfg.SizeBorder = gui.Some(float32(2))
+	cfg.Content = []gui.View{gui.Text(gui.TextCfg{Text: ""})}
+	return gui.Button(cfg)
 }
 
 func deleteButton(id int) gui.View {
@@ -315,7 +320,8 @@ func addTodo(w *gui.Window, title string) {
 	})
 	app.NextID++
 	app.Draft = ""
-	w.SetIDFocus(1)
+	// Re-focus the input so the next task can be entered immediately.
+	w.SetIDFocus(todoInputFocusID)
 }
 
 func toggleTodo(w *gui.Window, id int) {
@@ -332,6 +338,7 @@ func toggleTodo(w *gui.Window, id int) {
 func deleteTodo(w *gui.Window, id int) {
 	app := gui.State[appState](w)
 	items := app.Items[:0]
+	// Reuse the existing backing array to keep the example simple and cheap.
 	for _, item := range app.Items {
 		if item.ID == id {
 			continue

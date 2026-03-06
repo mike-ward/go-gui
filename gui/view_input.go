@@ -142,7 +142,21 @@ func Input(cfg InputCfg) View {
 			if ly.Shape.IDFocus > 0 {
 				w.SetIDFocus(ly.Shape.IDFocus)
 			}
-			if ly.Shape.TC == nil || ly.Shape.TC.TextIsPlaceholder {
+			if ly.Shape.TC == nil {
+				return
+			}
+			if ly.Shape.TC.TextIsPlaceholder {
+				imap := StateMap[uint32, InputState](
+					w, nsInput, capMany,
+				)
+				is, _ := imap.Get(ly.Shape.IDFocus)
+				is.CursorPos = 0
+				is.SelectBeg = 0
+				is.SelectEnd = 0
+				is.CursorOffset = -1
+				imap.Set(ly.Shape.IDFocus, is)
+				resetBlinkCursorVisible(w)
+				e.IsHandled = true
 				return
 			}
 			text := ly.Shape.TC.Text

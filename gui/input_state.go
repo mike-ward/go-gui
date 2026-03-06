@@ -1,6 +1,5 @@
 package gui
 
-
 const inputMaxInsertRunes = 65_536
 
 // InputState manages cursor, selection, and undo/redo for

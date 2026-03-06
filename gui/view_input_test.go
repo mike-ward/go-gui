@@ -69,6 +69,39 @@ func TestInputPlaceholderWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestInputClickPlaceholderResetsCursorToStart(t *testing.T) {
+	w := newTestWindow()
+	w.SetIDFocus(14)
+	setInputState(w, 14, InputState{
+		CursorPos: 7,
+		SelectBeg: 2,
+		SelectEnd: 5,
+	})
+	layout := GenerateViewLayout(Input(InputCfg{
+		Placeholder: "Type here",
+		IDFocus:     14,
+	}), w)
+	if len(layout.Children) == 0 {
+		t.Fatal("no children")
+	}
+	inner := &layout.Children[0]
+	if inner.Shape.Events == nil || inner.Shape.Events.OnClick == nil {
+		t.Fatal("missing click handler")
+	}
+	e := &Event{MouseX: inner.Shape.X, MouseY: inner.Shape.Y}
+	inner.Shape.Events.OnClick(inner, e, w)
+	is := getInputState(w, 14)
+	if is.CursorPos != 0 {
+		t.Fatalf("cursor=%d, want 0", is.CursorPos)
+	}
+	if is.SelectBeg != 0 || is.SelectEnd != 0 {
+		t.Fatalf("selection=%d-%d, want 0-0", is.SelectBeg, is.SelectEnd)
+	}
+	if !e.IsHandled {
+		t.Fatal("click should be handled")
+	}
+}
+
 func TestInputPasswordMask(t *testing.T) {
 	got := passwordMask("abc")
 	if got != "•••" {
@@ -639,6 +672,36 @@ func TestInputCursorNotRenderedWhenBlinkOff(t *testing.T) {
 	if len(w.renderers) != 0 {
 		t.Fatal("cursor should not render when blink off")
 	}
+}
+
+func TestInputCursorUsesColumnZeroForPlaceholder(t *testing.T) {
+	w := newTestWindow()
+	w.viewState.inputCursorOn = true
+	w.SetIDFocus(702)
+	setInputState(w, 702, InputState{CursorPos: 8})
+	style := DefaultTextStyle
+	shape := &Shape{
+		IDFocus:   702,
+		ShapeType: ShapeText,
+		Width:     200,
+		Height:    20,
+		TC: &ShapeTextConfig{
+			Text:              "Add your task",
+			TextStyle:         &style,
+			TextIsPlaceholder: true,
+		},
+	}
+	w.renderers = w.renderers[:0]
+	renderInputCursor(shape, "Add your task", 0, 0, glyph.Layout{}, false, w)
+	for _, r := range w.renderers {
+		if r.Kind == RenderRect && r.Fill && r.W < 2 {
+			if r.X != 0 {
+				t.Fatalf("cursor x=%v, want 0", r.X)
+			}
+			return
+		}
+	}
+	t.Fatal("cursor RenderRect not emitted")
 }
 
 // --- Selection render tests ---
