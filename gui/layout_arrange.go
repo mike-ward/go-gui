@@ -1,5 +1,7 @@
 package gui
 
+import "slices"
+
 // layoutArrange is the top-level layout orchestrator. It sets
 // parents, extracts floats, injects toast/dialog overlays, runs
 // the pipeline on each layer, and processes hover in reverse
@@ -16,6 +18,11 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 		w.scratch.putFloatingLayouts(floatingLayouts)
 	}()
 	layoutRemoveFloatingLayouts(layout, w, &floatingLayouts)
+
+	slices.SortStableFunc(floatingLayouts,
+		func(a, b *Layout) int {
+			return a.Shape.FloatZIndex - b.Shape.FloatZIndex
+		})
 
 	// Inject toast container as floating layer.
 	if len(w.toasts) > 0 {

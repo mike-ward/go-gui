@@ -49,6 +49,7 @@ type CommandPaletteCfg struct {
 	BackdropColor  Color
 	IDFocus        uint32
 	IDScroll       uint32
+	FloatZIndex    int
 }
 
 // commandPaletteView implements View for command palette.
@@ -164,8 +165,9 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 	return GenerateViewLayout(Column(ContainerCfg{
 		Color:   cfg.BackdropColor,
 		Sizing:  FillFill,
-		Float:   true,
-		VAlign:  VAlignTop,
+		Float:       true,
+		FloatZIndex: cfg.FloatZIndex,
+		VAlign:      VAlignTop,
 		HAlign:  HAlignCenter,
 		Padding: Some(NewPadding(60, 0, 0, 0)),
 		OnClick: func(_ *Layout, e *Event, w *Window) {

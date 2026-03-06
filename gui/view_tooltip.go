@@ -45,6 +45,7 @@ type TooltipCfg struct {
 	SizeBorder   float32
 	OffsetX      float32
 	OffsetY      float32
+	FloatZIndex  int
 	Anchor       FloatAttach
 	TieOff       FloatAttach
 }
@@ -60,6 +61,7 @@ func Tooltip(cfg TooltipCfg) View {
 		FloatTieOff:  cfg.TieOff,
 		FloatOffsetX: cfg.OffsetX,
 		FloatOffsetY: cfg.OffsetY,
+		FloatZIndex:  cfg.FloatZIndex,
 		Color:        cfg.Color,
 		ColorBorder:  cfg.ColorBorder,
 		SizeBorder:   Some(cfg.SizeBorder),

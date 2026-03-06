@@ -44,6 +44,7 @@ type ComboboxCfg struct {
 	IDFocus           uint32
 	IDScroll          uint32
 	Sizing            Sizing
+	FloatZIndex       int
 	Disabled          bool
 
 	A11YLabel       string
@@ -208,6 +209,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			FloatAnchor:  FloatBottomLeft,
 			FloatTieOff:  FloatTopLeft,
 			FloatOffsetY: -sizeBorder,
+			FloatZIndex:  cfg.FloatZIndex,
 			IDScroll:     cfg.IDScroll,
 			Padding:      cfg.Padding,
 			Spacing:      Some(float32(0)),

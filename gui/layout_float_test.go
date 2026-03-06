@@ -1,6 +1,9 @@
 package gui
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestFloatAutoFlipVertical(t *testing.T) {
 	// Parent near bottom edge; tooltip below overflows → flip above.
@@ -92,6 +95,38 @@ func TestFloatAutoFlipDisabled(t *testing.T) {
 	}
 	if !f32AreClose(y, 580) {
 		t.Errorf("Y: got %f, want 580", y)
+	}
+}
+
+func TestFloatZIndexSorting(t *testing.T) {
+	// Floats with z-index 2,0,1 → sorted 0,1,2.
+	floats := []*Layout{
+		{Shape: &Shape{FloatZIndex: 2, ID: "a"}},
+		{Shape: &Shape{FloatZIndex: 0, ID: "b"}},
+		{Shape: &Shape{FloatZIndex: 1, ID: "c"}},
+	}
+	slices.SortStableFunc(floats, func(a, b *Layout) int {
+		return a.Shape.FloatZIndex - b.Shape.FloatZIndex
+	})
+	if floats[0].Shape.ID != "b" || floats[1].Shape.ID != "c" || floats[2].Shape.ID != "a" {
+		t.Errorf("got %s,%s,%s; want b,c,a",
+			floats[0].Shape.ID, floats[1].Shape.ID, floats[2].Shape.ID)
+	}
+}
+
+func TestFloatZIndexStableOrder(t *testing.T) {
+	// Same z-index preserves extraction order.
+	floats := []*Layout{
+		{Shape: &Shape{FloatZIndex: 0, ID: "first"}},
+		{Shape: &Shape{FloatZIndex: 0, ID: "second"}},
+		{Shape: &Shape{FloatZIndex: 0, ID: "third"}},
+	}
+	slices.SortStableFunc(floats, func(a, b *Layout) int {
+		return a.Shape.FloatZIndex - b.Shape.FloatZIndex
+	})
+	if floats[0].Shape.ID != "first" || floats[1].Shape.ID != "second" || floats[2].Shape.ID != "third" {
+		t.Errorf("got %s,%s,%s; want first,second,third",
+			floats[0].Shape.ID, floats[1].Shape.ID, floats[2].Shape.ID)
 	}
 }
 

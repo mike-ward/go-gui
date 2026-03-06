@@ -38,6 +38,7 @@ type Shape struct {
 	Spacing      float32 // spacing between children
 	FloatOffsetX float32
 	FloatOffsetY float32
+	FloatZIndex  int
 
 	IDFocus           uint32 // >0 means focusable; value = tab order
 	IDScroll          uint32 // >0 means receives scroll events

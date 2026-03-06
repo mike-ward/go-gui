@@ -14,6 +14,8 @@ type ContextMenuCfg struct {
 	Action  func(string, *Event, *Window)
 	IDFocus uint32
 
+	FloatZIndex int
+
 	// Container passthrough (outer wrapper).
 	Sizing  Sizing
 	Width   float32
@@ -141,6 +143,7 @@ func contextMenuPopup(w *Window, cfg ContextMenuCfg, mx, my float32) View {
 		FloatTieOff:       FloatTopLeft,
 		FloatOffsetX:      mx,
 		FloatOffsetY:      my,
+		FloatZIndex:       cfg.FloatZIndex,
 	})
 }
 

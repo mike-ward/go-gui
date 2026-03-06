@@ -29,6 +29,7 @@ type SelectCfg struct {
 	SelectMultiple   bool
 	NoWrap           bool
 	Sizing           Sizing
+	FloatZIndex      int
 	Disabled         bool
 	Invisible        bool
 
@@ -129,6 +130,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			FloatAnchor:   FloatBottomLeft,
 			FloatTieOff:   FloatTopLeft,
 			FloatOffsetY:  -sizeBorder,
+			FloatZIndex:   cfg.FloatZIndex,
 			IDScroll:      idScroll,
 			Padding: Some(NewPadding(
 				PadSmall, PadMedium, PadSmall, PadSmall)),

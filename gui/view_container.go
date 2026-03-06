@@ -56,6 +56,7 @@ type ContainerCfg struct {
 	FloatTieOff   FloatAttach
 	FloatOffsetX float32
 	FloatOffsetY float32
+	FloatZIndex  int
 
 	// Accessibility
 	A11YRole        AccessRole
@@ -148,6 +149,7 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 			FloatTieOff:          c.FloatTieOff,
 			FloatOffsetX:         c.FloatOffsetX,
 			FloatOffsetY:         c.FloatOffsetY,
+			FloatZIndex:          c.FloatZIndex,
 			IDScroll:             c.IDScroll,
 			OverDraw:             c.OverDraw,
 			ScrollMode:           c.ScrollMode,

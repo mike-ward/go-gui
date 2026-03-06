@@ -20,6 +20,7 @@ type OverflowPanelCfg struct {
 	FloatTieOff  FloatAttach
 	FloatOffsetX float32
 	FloatOffsetY float32
+	FloatZIndex  int
 	Spacing      float32
 	Disabled     bool
 }
@@ -94,6 +95,7 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 			FloatTieOff: cfg.FloatTieOff,
 			FloatOffsetX: cfg.FloatOffsetX,
 			FloatOffsetY: cfg.FloatOffsetY,
+			FloatZIndex:  cfg.FloatZIndex,
 		}))
 	}
 

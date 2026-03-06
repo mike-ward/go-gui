@@ -32,6 +32,7 @@ type MenubarCfg struct {
 	FloatTieOff     FloatAttach
 	FloatOffsetX    float32
 	FloatOffsetY    float32
+	FloatZIndex     int
 	Disabled      bool
 	Invisible     bool
 	Float         bool
@@ -78,6 +79,7 @@ func Menubar(w *Window, cfg MenubarCfg) View {
 		FloatTieOff: cfg.FloatTieOff,
 		FloatOffsetX: cfg.FloatOffsetX,
 		FloatOffsetY: cfg.FloatOffsetY,
+		FloatZIndex:  cfg.FloatZIndex,
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		A11YRole:    AccessRoleMenuBar,
