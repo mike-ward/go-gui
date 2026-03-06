@@ -1,3 +1,5 @@
+// The rtf example demonstrates rich text runs, links, abbreviations,
+// and wrapping inside the RTF widget.
 package main
 
 import (
@@ -27,6 +29,7 @@ func mainView(w *gui.Window) gui.View {
 	ww, wh := w.WindowSize()
 	t := gui.CurrentTheme()
 
+	// Compose the document from styled runs so each feature is easy to spot.
 	rt := gui.RichText{Runs: []gui.RichTextRun{
 		gui.RichRun("Rich Text Demo", t.B1),
 		gui.RichBr(),

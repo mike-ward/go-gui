@@ -1,3 +1,5 @@
+// The svg example lets you browse several embedded SVG assets in
+// a simple split-view viewer.
 package main
 
 import (
@@ -101,6 +103,7 @@ func navPanel(selected int) gui.View {
 		if i == selected {
 			color = gui.CurrentTheme().ColorActive
 		}
+		// Capture the current loop values for the click handler.
 		idx := i
 		name := entry.Name
 		items[i] = gui.Row(gui.ContainerCfg{

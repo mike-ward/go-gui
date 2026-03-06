@@ -1,3 +1,5 @@
+// The custom shader example renders animated fragment shaders
+// inside ordinary go-gui containers.
 package main
 
 import (
@@ -6,6 +8,8 @@ import (
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend"
 )
+
+const shaderTickAnimationID = "shader_tick"
 
 type App struct {
 	StartTime time.Time
@@ -22,7 +26,8 @@ func main() {
 		OnInit: func(w *gui.Window) {
 			w.UpdateView(mainView)
 			w.AnimationAdd(&gui.Animate{
-				AnimateID: "shader_tick",
+				// Keep the frame loop hot so the shader parameter updates continuously.
+				AnimateID: shaderTickAnimationID,
 				Repeat:    true,
 				Callback:  func(_ *gui.Animate, _ *gui.Window) {},
 			})

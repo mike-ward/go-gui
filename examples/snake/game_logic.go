@@ -1,3 +1,5 @@
+// Game logic for the snake example, kept separate so the rules can
+// be tested without the GUI.
 package main
 
 import (
@@ -129,6 +131,7 @@ func (g *Game) Tick() {
 	head := g.Snake[0]
 	nextHead := Point{X: head.X + dx, Y: head.Y + dy}
 
+	// Wall hits and self-collisions both end the run immediately.
 	if nextHead.X < 0 || nextHead.X >= g.Width ||
 		nextHead.Y < 0 || nextHead.Y >= g.Height {
 		g.GameOver = true

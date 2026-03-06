@@ -1,3 +1,5 @@
+// The snake example is a small game built on go-gui state,
+// input events, and animations.
 package main
 
 import (
@@ -36,6 +38,7 @@ func main() {
 		FixedSize: true,
 		OnInit: func(w *gui.Window) {
 			w.UpdateView(mainView)
+			// Advance the game on a repeating animation timer.
 			startGameLoop(w)
 		},
 		OnEvent: handleKeyEvent,
@@ -54,6 +57,7 @@ func handleKeyEvent(e *gui.Event, w *gui.Window) {
 	if !app.Started {
 		switch e.KeyCode {
 		case gui.KeySpace, gui.KeyEnter:
+			// Landing screen uses the same controls as the running game.
 			startGame(w)
 			e.IsHandled = true
 		}

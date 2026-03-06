@@ -1,3 +1,5 @@
+// The gradient demo shows the built-in gradient directions and
+// how to swap them at runtime.
 package main
 
 import (
@@ -181,14 +183,14 @@ func mainView(w *gui.Window) gui.View {
 					gradientBox(200, 150, 15,
 						linearGradient(dir, gui.Red, gui.Orange),
 						nil, "Red -> Orange", gui.White),
-						gradientBox(200, 150, 15,
-							linearGradient(dir, gui.Green, gui.Blue),
-							&gui.BoxShadow{
-								BlurRadius: 20,
-								Color:      gui.RGBA(0, 0, 0, 50),
-								OffsetY:    5,
-							},
-							"Gradient + Shadow", gui.White),
+					gradientBox(200, 150, 15,
+						linearGradient(dir, gui.Green, gui.Blue),
+						&gui.BoxShadow{
+							BlurRadius: 20,
+							Color:      gui.RGBA(0, 0, 0, 50),
+							OffsetY:    5,
+						},
+						"Gradient + Shadow", gui.White),
 				},
 			}),
 

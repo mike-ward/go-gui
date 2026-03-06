@@ -1,3 +1,5 @@
+// The blur demo shows how blur radius can create glows and
+// soft-edged shapes.
 package main
 
 import (
@@ -27,6 +29,7 @@ func mainView(_ *gui.Window) gui.View {
 		Padding: gui.Some(gui.NewPadding(40, 40, 40, 40)),
 		HAlign:  gui.HAlignCenter,
 		Content: []gui.View{
+			// Each row highlights a different blur and radius combination.
 			gui.Text(gui.TextCfg{
 				Text: "Soft Shapes & Glows",
 				TextStyle: gui.TextStyle{

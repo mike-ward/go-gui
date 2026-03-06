@@ -1,3 +1,5 @@
+// The scroll demo shows scroll containers, programmatic scroll
+// control, and theme toggling.
 package main
 
 import (
@@ -22,6 +24,7 @@ func main() {
 		Height: 600,
 		OnInit: func(w *gui.Window) {
 			w.UpdateView(mainView)
+			// Give the scroll panel focus so its scrollbar is visible on startup.
 			w.SetIDFocus(1)
 		},
 	})

@@ -1,3 +1,5 @@
+// The color picker example combines color editing with runtime
+// theme switching.
 package main
 
 import (
@@ -55,6 +57,7 @@ func mainView(w *gui.Window) gui.View {
 				IDFocus: 10,
 				ShowHSV: app.ShowHSV,
 				OnColorChange: func(c gui.Color, _ *gui.Event, w *gui.Window) {
+					// Keep the picker controlled by the window state.
 					gui.State[App](w).Color = c
 				},
 			}),
@@ -84,6 +87,7 @@ func toggleTheme(app *App) gui.View {
 		OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
 			a := gui.State[App](w)
 			a.LightTheme = !a.LightTheme
+			// Switching the theme is enough; the next frame re-renders the picker.
 			if a.LightTheme {
 				w.SetTheme(gui.ThemeLightBordered)
 			} else {

@@ -1,3 +1,5 @@
+// The context menu example demonstrates right-click menus and
+// action handling.
 package main
 
 import (
@@ -53,6 +55,7 @@ func mainView(w *gui.Window) gui.View {
 		},
 		Action: func(id string, e *gui.Event, w *gui.Window) {
 			app := gui.State[App](w)
+			// Mirror the last menu action in the main view.
 			app.Status = fmt.Sprintf("Selected: %s", id)
 			e.IsHandled = true
 		},

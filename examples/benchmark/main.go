@@ -1,3 +1,5 @@
+// The benchmark example measures frame costs while rendering large
+// batches of widgets.
 package main
 
 import (
@@ -100,6 +102,7 @@ func startAnimation(w *gui.Window) {
 		Repeat:    true,
 		Callback: func(_ *gui.Animate, w *gui.Window) {
 			app := gui.State[App](w)
+			// Sample timings every frame so the averages track the live view.
 			now := time.Now()
 			if !app.LastFrame.IsZero() {
 				dt := now.Sub(app.LastFrame)

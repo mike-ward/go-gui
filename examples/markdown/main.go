@@ -1,3 +1,5 @@
+// The markdown example renders an embedded markdown document with
+// the built-in markdown view.
 package main
 
 import (
@@ -14,6 +16,7 @@ type App struct{}
 
 func main() {
 	gui.SetTheme(gui.ThemeDarkBordered)
+	// Enable link/code-block integrations used by the demo document.
 	gui.SetMarkdownExternalAPIsEnabled(true)
 
 	w := gui.NewWindow(gui.WindowCfg{

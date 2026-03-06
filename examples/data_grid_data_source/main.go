@@ -1,3 +1,5 @@
+// The data grid data source example shows a large grid backed by
+// a paged in-memory data source.
 package main
 
 import (
@@ -28,6 +30,7 @@ func main() {
 		Height: 760,
 		OnInit: func(w *gui.Window) {
 			app := gui.State[App](w)
+			// Build the large row set once, then switch paging modes on demand.
 			app.AllRows = makeRows(50000)
 			app.Columns = makeColumns()
 			rebuildSource(app)
@@ -142,6 +145,7 @@ func rebuildSource(app *App) {
 	if app.SimulateLatency {
 		latency = 140
 	}
+	// Recreate the source so pagination mode and latency toggles take effect.
 	app.Source = &gui.InMemoryDataSource{
 		Rows:           app.AllRows,
 		DefaultLimit:   220,

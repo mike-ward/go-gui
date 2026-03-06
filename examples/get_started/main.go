@@ -1,3 +1,5 @@
+// The get_started example is the smallest stateful go-gui app:
+// one button and one counter.
 package main
 
 import (
@@ -58,6 +60,7 @@ func mainView(w *gui.Window) gui.View {
 							}),
 						},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+							// Update the typed window state; the next frame reads it back.
 							gui.State[App](w).Clicks++
 							e.IsHandled = true
 						},

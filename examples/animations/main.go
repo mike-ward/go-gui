@@ -1,3 +1,5 @@
+// The animations example showcases tween, spring, keyframe, layout,
+// and hero transitions in one window.
 package main
 
 import (
@@ -39,6 +41,7 @@ func main() {
 		Width:  800,
 		Height: 600,
 		OnInit: func(w *gui.Window) {
+			// Register the root view once; animation callbacks mutate state.
 			w.UpdateView(mainView)
 		},
 	})
@@ -76,11 +79,11 @@ func mainView(w *gui.Window) gui.View {
 				Content: []gui.View{
 					// Animated sidebar
 					gui.Column(gui.ContainerCfg{
-						ID:     "sidebar",
-						Width:  s.SidebarWidth,
-						Sizing: gui.FixedFill,
-						Color:  gui.Purple,
-						Radius: gui.Some[float32](8),
+						ID:      "sidebar",
+						Width:   s.SidebarWidth,
+						Sizing:  gui.FixedFill,
+						Color:   gui.Purple,
+						Radius:  gui.Some[float32](8),
 						Padding: gui.Some(gui.NewPadding(10, 10, 10, 10)),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Sidebar"}),

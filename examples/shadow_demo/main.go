@@ -1,3 +1,5 @@
+// The shadow demo compares a few shadow and glow configurations
+// while letting the user toggle themes.
 package main
 
 import (
@@ -135,6 +137,7 @@ func toggleTheme(app *App) gui.View {
 				Padding:      gui.Some(gui.PaddingSmall),
 				OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 					a := gui.State[App](w)
+					// Swap themes first, then flip the toggle state to match.
 					if a.LightTheme {
 						w.SetTheme(gui.ThemeDarkNoPadding)
 					} else {

@@ -1,3 +1,5 @@
+// The menu demo shows a menu bar, nested items, and simple stateful
+// actions.
 package main
 
 import (
@@ -145,7 +147,7 @@ func menu(w *gui.Window) gui.View {
 				},
 			},
 			{
-				ID: "help",
+				ID:   "help",
 				Text: "Help",
 				Submenu: []gui.MenuItemCfg{
 					{
@@ -164,7 +166,7 @@ func menu(w *gui.Window) gui.View {
 								2,
 								gui.CurrentTheme().InputStyle.Padding.Left)),
 							Radius:           gui.Some[float32](0),
-							SizeBorder:        gui.Some[float32](0),
+							SizeBorder:       gui.Some[float32](0),
 							TextStyle:        gui.CurrentTheme().MenubarStyle.TextStyle,
 							PlaceholderStyle: gui.CurrentTheme().MenubarStyle.TextStyle,
 							OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {

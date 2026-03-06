@@ -1,3 +1,5 @@
+// The floating layout example shows how anchored overlays can be
+// positioned relative to their parent content.
 package main
 
 import (
@@ -87,11 +89,11 @@ func mainView(w *gui.Window) gui.View {
 			}),
 			// Centered floating overlay
 			gui.Column(gui.ContainerCfg{
-				Float:        true,
-				FloatAnchor:  gui.FloatMiddleCenter,
-				FloatTieOff:  gui.FloatMiddleCenter,
-				HAlign:       gui.HAlignCenter,
-				Color:        theme.ColorActive,
+				Float:       true,
+				FloatAnchor: gui.FloatMiddleCenter,
+				FloatTieOff: gui.FloatMiddleCenter,
+				HAlign:      gui.HAlignCenter,
+				Color:       theme.ColorActive,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
 						Text:      "Floating column with content",
@@ -119,7 +121,7 @@ func fauxEditMenu(theme gui.Theme) gui.View {
 				FloatAnchor: gui.FloatBottomLeft,
 				MinWidth:    75,
 				MaxWidth:    100,
-				Color: gui.RGBA(theme.ColorFocus.R, theme.ColorFocus.G, theme.ColorFocus.B, 210),
+				Color:       gui.RGBA(theme.ColorFocus.R, theme.ColorFocus.G, theme.ColorFocus.B, 210),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Cut"}),
 					gui.Text(gui.TextCfg{Text: "Copy"}),
@@ -134,7 +136,7 @@ func fauxEditMenu(theme gui.Theme) gui.View {
 								FloatOffsetX: 5,
 								MinWidth:     75,
 								MaxWidth:     100,
-								Color: gui.RGBA(theme.ColorFocus.R, theme.ColorFocus.G, theme.ColorFocus.B, 210),
+								Color:        gui.RGBA(theme.ColorFocus.R, theme.ColorFocus.G, theme.ColorFocus.B, 210),
 								Content: []gui.View{
 									gui.Text(gui.TextCfg{Text: "Clean"}),
 									gui.Text(gui.TextCfg{Text: "Selection"}),
