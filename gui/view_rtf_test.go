@@ -170,6 +170,94 @@ func TestRtfMouseMoveClearsOnNonTooltipRun(t *testing.T) {
 	}
 }
 
+func TestRtfMouseMoveUnderlineWithoutLinkDoesNotSetPointingHand(t *testing.T) {
+	w := &Window{}
+	rt := RichText{
+		Runs: []RichTextRun{
+			{Text: "underlined", Style: TextStyle{Underline: true}},
+		},
+	}
+	glyphLayout := glyph.Layout{
+		Width:  100,
+		Height: 20,
+		Items: []glyph.Item{
+			{
+				X: 10, Y: 12, Width: 60,
+				Ascent: 12, Descent: 4,
+				StartIndex: 0,
+				HasUnderline: true,
+			},
+		},
+	}
+	l := &Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRTF,
+			Width:     100,
+			Height:    20,
+			TC: &ShapeTextConfig{
+				RtfLayout: &glyphLayout,
+				RtfRuns:   &rt,
+			},
+		},
+	}
+	e := &Event{MouseX: 20, MouseY: 5}
+
+	rtfMouseMove(l, e, w)
+
+	if got := w.MouseCursorState(); got == CursorPointingHand {
+		t.Fatalf("cursor = %v, want non-link cursor", got)
+	}
+	if e.IsHandled {
+		t.Fatal("expected underline-only hover not to consume event")
+	}
+}
+
+func TestRtfMouseMoveLinkSetsPointingHand(t *testing.T) {
+	w := &Window{}
+	rt := RichText{
+		Runs: []RichTextRun{
+			{
+				Text:  "link",
+				Link:  "https://example.com",
+				Style: TextStyle{Underline: true},
+			},
+		},
+	}
+	glyphLayout := glyph.Layout{
+		Width:  100,
+		Height: 20,
+		Items: []glyph.Item{
+			{
+				X: 10, Y: 12, Width: 30,
+				Ascent: 12, Descent: 4,
+				StartIndex: 0,
+				HasUnderline: true,
+			},
+		},
+	}
+	l := &Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRTF,
+			Width:     100,
+			Height:    20,
+			TC: &ShapeTextConfig{
+				RtfLayout: &glyphLayout,
+				RtfRuns:   &rt,
+			},
+		},
+	}
+	e := &Event{MouseX: 20, MouseY: 5}
+
+	rtfMouseMove(l, e, w)
+
+	if got := w.MouseCursorState(); got != CursorPointingHand {
+		t.Fatalf("cursor = %v, want %v", got, CursorPointingHand)
+	}
+	if !e.IsHandled {
+		t.Fatal("expected link hover to consume event")
+	}
+}
+
 func TestRtfAmendTooltipClearsOutsideBounds(t *testing.T) {
 	w := &Window{}
 	w.viewState.tooltip = tooltipState{

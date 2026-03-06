@@ -229,7 +229,7 @@ func rtfMouseMove(l *Layout, e *Event, w *Window) {
 				e.IsHandled = true
 				return
 			}
-			if run.HasUnderline {
+			if found.Link != "" {
 				w.SetMouseCursorPointingHand()
 				e.IsHandled = true
 				return
