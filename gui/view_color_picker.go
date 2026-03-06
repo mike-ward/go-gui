@@ -109,10 +109,10 @@ func cpSVAndHueRow(
 	svSize, sliderH, indicatorSize float32,
 ) View {
 	return Row(ContainerCfg{
-			Padding: PaddingNone,
-			Spacing: Some(SpacingSmall),
-			Content: []View{
-				cpSVArea(cfg, hsv, svSize, indicatorSize),
+		Padding: PaddingNone,
+		Spacing: Some(SpacingSmall),
+		Content: []View{
+			cpSVArea(cfg, hsv, svSize, indicatorSize),
 			cpHueSlider(cfg, hsv, sliderH, svSize,
 				indicatorSize),
 		},
@@ -285,14 +285,20 @@ func cpHueSlider(
 func cpAlphaSlider(cfg *ColorPickerCfg) View {
 	onChange := cfg.OnColorChange
 	c := cfg.Color
+	thumbSize := cfg.Style.IndicatorSize
+	trackSize := float32(6)
 	return RangeSlider(RangeSliderCfg{
-		ID:     cfg.ID + ".alpha",
-		Value:  float32(c.A),
-		Min:    0,
-		Max:    255,
-		Step:   1,
-		Sizing: FillFit,
-		Height: 20,
+		ID:           cfg.ID + ".alpha",
+		Value:        float32(c.A),
+		Min:          0,
+		Max:          255,
+		Step:         1,
+		Sizing:       FillFit,
+		Size:         trackSize,
+		SizeBorder:   1,
+		ThumbSize:    thumbSize,
+		Height:       thumbSize,
+		RadiusBorder: trackSize / 2,
 		OnChange: func(v float32, e *Event, w *Window) {
 			if onChange != nil {
 				nc := c

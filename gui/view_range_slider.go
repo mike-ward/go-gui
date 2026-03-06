@@ -7,33 +7,33 @@ import (
 
 // RangeSliderCfg configures a range slider view.
 type RangeSliderCfg struct {
-	ID               string
-	Sizing           Sizing
-	Color            Color
-	ColorBorder      Color
-	ColorThumb       Color
-	ColorFocus       Color
-	ColorHover       Color
-	ColorLeft        Color
-	ColorClick       Color
-	Padding          Padding
-	SizeBorder       float32
-	OnChange         func(float32, *Event, *Window)
-	Value            float32
-	Min              float32
-	Max              float32
-	Step             float32
-	Width            float32
-	Height           float32
-	Size             float32
-	ThumbSize        float32
-	Radius           float32
-	RadiusBorder     float32
-	IDFocus          uint32
-	RoundValue       bool
-	Vertical         bool
-	Disabled         bool
-	Invisible        bool
+	ID           string
+	Sizing       Sizing
+	Color        Color
+	ColorBorder  Color
+	ColorThumb   Color
+	ColorFocus   Color
+	ColorHover   Color
+	ColorLeft    Color
+	ColorClick   Color
+	Padding      Padding
+	SizeBorder   float32
+	OnChange     func(float32, *Event, *Window)
+	Value        float32
+	Min          float32
+	Max          float32
+	Step         float32
+	Width        float32
+	Height       float32
+	Size         float32
+	ThumbSize    float32
+	Radius       float32
+	RadiusBorder float32
+	IDFocus      uint32
+	RoundValue   bool
+	Vertical     bool
+	Disabled     bool
+	Invisible    bool
 
 	// Accessibility
 	A11YLabel       string
@@ -119,7 +119,6 @@ func RangeSlider(cfg RangeSliderCfg) View {
 	thumbSize := cfg.ThumbSize
 	colorFocus := cfg.ColorFocus
 	colorHover := cfg.ColorHover
-	colorClick := cfg.ColorClick
 	disabled := cfg.Disabled
 	idFocus := cfg.IDFocus
 
@@ -159,6 +158,8 @@ func RangeSlider(cfg RangeSliderCfg) View {
 		VAlign:    VAlignMiddle,
 		axis:      wrapperAxis,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
+			ps := StateMap[string, bool](w, nsRangeSliderPress, capModerate)
+			ps.Set(sliderID, true)
 			ev := *e
 			ev.MouseX = e.MouseX + layout.Shape.X
 			ev.MouseY = e.MouseY + layout.Shape.Y
@@ -176,6 +177,8 @@ func RangeSlider(cfg RangeSliderCfg) View {
 				MouseUp: func(
 					_ *Layout, _ *Event, w *Window,
 				) {
+					ps := StateMap[string, bool](w, nsRangeSliderPress, capModerate)
+					ps.Set(sliderID, false)
 					w.MouseUnlock()
 				},
 			})
@@ -184,17 +187,13 @@ func RangeSlider(cfg RangeSliderCfg) View {
 		AmendLayout: func(layout *Layout, w *Window) {
 			rangeSliderAmendLayoutSlide(layout, w,
 				onChange, value, min, max, size, szBorder,
-				vertical, colorFocus, disabled, idFocus,
+				vertical, colorFocus, cfg.ColorLeft, disabled, idFocus,
 				roundValue)
 		},
 		OnHover: func(layout *Layout, e *Event, w *Window) {
 			w.SetMouseCursorPointingHand()
 			if len(layout.Children) > 0 {
 				layout.Children[0].Shape.ColorBorder = colorHover
-				if e.MouseButton == MouseLeft &&
-					len(layout.Children[0].Children) > 1 {
-					layout.Children[0].Children[1].Shape.ColorBorder = colorClick
-				}
 			}
 		},
 		OnKeyDown: func(layout *Layout, e *Event, w *Window) {
@@ -219,6 +218,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 						ColorBorder: cfg.ColorLeft,
 					}),
 					Circle(ContainerCfg{
+						Sizing:      FixedFixed,
 						Width:       cfg.ThumbSize,
 						Height:      cfg.ThumbSize,
 						Color:       cfg.ColorThumb,
@@ -244,7 +244,7 @@ func rangeSliderAmendLayoutSlide(
 	layout *Layout, w *Window,
 	onChange func(float32, *Event, *Window),
 	value, min, max, size, sizeBorder float32,
-	vertical bool, colorFocus Color,
+	vertical bool, colorFocus, colorLeft Color,
 	disabled bool, idFocus uint32, roundValue bool,
 ) {
 	if layout.Shape.Events == nil {
@@ -285,9 +285,17 @@ func rangeSliderAmendLayoutSlide(
 	if disabled {
 		return
 	}
+	if w != nil {
+		ps := StateMapRead[string, bool](w, nsRangeSliderPress)
+		if ps != nil {
+			if pressed, ok := ps.Get(layout.Shape.ID); ok && pressed {
+				thumb.Shape.Color = colorLeft
+				return
+			}
+		}
+	}
 	if w.IsFocus(idFocus) {
 		thumb.Shape.Color = colorFocus
-		thumb.Shape.ColorBorder = colorFocus
 	}
 }
 

@@ -146,6 +146,7 @@ const (
 	nsMenu                = "gui.menu"
 	nsDatePicker          = "gui.date_picker"
 	nsColorPicker         = "gui.color_picker"
+	nsRangeSliderPress    = "gui.range_slider.press"
 	nsInputDate           = "gui.input_date"
 	nsDgColWidths         = "gui.dg.col_widths"
 	nsDgPresentation      = "gui.dg.presentation"
