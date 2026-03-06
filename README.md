@@ -66,7 +66,15 @@ brew install go sdl2
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y golang build-essential pkg-config libsdl2-dev
+sudo apt-get install -y \
+  golang \
+  build-essential \
+  pkg-config \
+  libsdl2-dev \
+  libfreetype6-dev \
+  libharfbuzz-dev \
+  libpango1.0-dev \
+  libfontconfig1-dev
 ```
 
 #### Fedora / RHEL
