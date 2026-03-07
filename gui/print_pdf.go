@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-pdf/fpdf"
 )
@@ -82,7 +83,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 		case RenderRect:
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
 			pdf.SetFillColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color.A)
+			setAlpha(pdf, cmd.Color)
 			if cmd.Radius > 0 {
 				pdf.RoundedRect(px(cmd.X), py(cmd.Y),
 					pw(cmd.W), ph(cmd.H),
@@ -96,7 +97,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 		case RenderStrokeRect:
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
 			pdf.SetDrawColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color.A)
+			setAlpha(pdf, cmd.Color)
 			lw := max(cmd.Thickness, 1)
 			pdf.SetLineWidth(float64(lw * scale))
 			if cmd.Radius > 0 {
@@ -110,20 +111,31 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			resetAlpha(pdf)
 
 		case RenderText:
+			text := stripUnprintable(cmd.Text)
+			if text == "" {
+				continue
+			}
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
 			pdf.SetTextColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color.A)
+			setAlpha(pdf, cmd.Color)
 			family := pdfFontName(cmd.FontName)
 			size := float64(cmd.FontSize * scale / ptToMM)
 			pdf.SetFont(family, "", size)
-			pdf.Text(px(cmd.X), py(cmd.Y)+size*ptToMM64(),
-				cmd.Text)
+			// Y is top of text box; fpdf expects baseline.
+			// Ascent ≈ 75% of em for standard PDF fonts.
+			ascent := size * ptToMM64() * 0.75
+			lineH := size * ptToMM64() * 1.2
+			lines := strings.Split(text, "\n")
+			for i, line := range lines {
+				pdf.Text(px(cmd.X),
+					py(cmd.Y)+ascent+float64(i)*lineH, line)
+			}
 			resetAlpha(pdf)
 
 		case RenderLine:
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
 			pdf.SetDrawColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color.A)
+			setAlpha(pdf, cmd.Color)
 			lw := max(cmd.Thickness, 1)
 			pdf.SetLineWidth(float64(lw * scale))
 			pdf.Line(px(cmd.X), py(cmd.Y),
@@ -142,7 +154,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.SetDrawColor(int(r), int(g), int(b))
 				style = "D"
 			}
-			setAlpha(pdf, cmd.Color.A)
+			setAlpha(pdf, cmd.Color)
 			pdf.Circle(px(cx), py(cy), pw(radius), style)
 			resetAlpha(pdf)
 
@@ -272,13 +284,28 @@ func pdfFontName(name string) string {
 	}
 }
 
+// stripUnprintable removes Private Use Area and other non-printable
+// runes that built-in PDF fonts cannot render.
+func stripUnprintable(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.In(r, unicode.Co) { // Co = Private Use
+			return -1
+		}
+		return r
+	}, s)
+}
+
 // ptToMM64 returns ptToMM as float64 (used for font baseline).
 func ptToMM64() float64 { return float64(ptToMM) }
 
-// setAlpha applies alpha transparency to the PDF state if < 255.
-func setAlpha(pdf *fpdf.Fpdf, a uint8) {
-	if a < 255 {
-		pdf.SetAlpha(float64(a)/255.0, "Normal")
+// setAlpha applies alpha transparency to the PDF state. Unset colors
+// (Color.IsSet() == false) are treated as fully opaque.
+func setAlpha(pdf *fpdf.Fpdf, c Color) {
+	if !c.IsSet() {
+		return
+	}
+	if c.A < 255 {
+		pdf.SetAlpha(float64(c.A)/255.0, "Normal")
 	}
 }
 
