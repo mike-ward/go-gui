@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -119,9 +120,18 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			if text == "" {
 				continue
 			}
-			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
+			tc := cmd.Color
+			// Gradient text: use first stop color as fallback
+			// (true gradient fill not supported in built-in PDF
+			// fonts).
+			if cmd.TextGradient != nil &&
+				len(cmd.TextGradient.Stops) > 0 {
+				gc := cmd.TextGradient.Stops[0].Color
+				tc = Color{gc.R, gc.G, gc.B, gc.A, true}
+			}
+			r, g, b := tc.R, tc.G, tc.B
 			pdf.SetTextColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color)
+			setAlpha(pdf, tc)
 			family := pdfFontName(cmd.FontName)
 			style := pdfFontStyle(cmd.TextStylePtr)
 			size := float64(cmd.FontSize * scale / ptToMM)
@@ -361,10 +371,78 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				resetAlpha(pdf)
 			}
 
+		case RenderTextPath:
+			tp := cmd.TextPath
+			if tp == nil || cmd.TextStylePtr == nil || cmd.Text == "" {
+				continue
+			}
+			text := tr(stripUnprintable(cmd.Text))
+			if text == "" {
+				continue
+			}
+			ts := cmd.TextStylePtr
+			r, g, b := ts.Color.R, ts.Color.G, ts.Color.B
+			pdf.SetTextColor(int(r), int(g), int(b))
+			setAlpha(pdf, ts.Color)
+			family := pdfFontName(ts.Family)
+			style := pdfFontStyle(ts)
+			size := float64(ts.Size * scale / ptToMM)
+			pdf.SetFont(family, style, size)
+
+			// Measure per-character advances with fpdf.
+			runes := []rune(text)
+			advances := make([]float64, len(runes))
+			var totalAdv float64
+			for i, ch := range runes {
+				advances[i] = pdf.GetStringWidth(string(ch))
+				totalAdv += advances[i]
+			}
+
+			// Apply text-anchor offset.
+			offset := float64(tp.Offset * scale)
+			if tp.Anchor == 1 {
+				offset -= totalAdv / 2
+			} else if tp.Anchor == 2 {
+				offset -= totalAdv
+			}
+
+			// Method=stretch: scale advances to fill path.
+			advScale := 1.0
+			if tp.Method == 1 && totalAdv > 0 {
+				remaining := float64(tp.TotalLen*scale) - offset
+				if remaining > 0 {
+					advScale = remaining / totalAdv
+				}
+			}
+
+			// Place each character along the path.
+			cumAdv := 0.0
+			for i, ch := range runes {
+				adv := advances[i] * advScale
+				centerDist := float32((offset + cumAdv + adv/2) / float64(scale))
+				pathX, pathY, angle := SamplePathAt(
+					tp.Polyline, tp.Table, centerDist)
+				halfAdv := float32(adv / 2 / float64(scale))
+				cosA := float32(math.Cos(float64(angle)))
+				sinA := float32(math.Sin(float64(angle)))
+				gx := pathX + cmd.X - halfAdv*cosA
+				gy := pathY + cmd.Y - halfAdv*sinA
+
+				angleDeg := float64(angle) * 180 / math.Pi
+				mx := px(gx)
+				my := py(gy)
+				pdf.TransformBegin()
+				pdf.TransformRotate(-angleDeg, mx, my)
+				pdf.Text(mx, my, string(ch))
+				pdf.TransformEnd()
+				cumAdv += adv
+			}
+			resetAlpha(pdf)
+
 		// Unsupported kinds — skip silently.
 		case RenderShadow, RenderBlur, RenderFilterBegin,
 			RenderFilterEnd, RenderFilterComposite,
-			RenderCustomShader, RenderTextPath,
+			RenderCustomShader,
 			RenderLayout, RenderLayoutTransformed,
 			RenderLayoutPlaced, RenderNone:
 			continue
