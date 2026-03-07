@@ -39,6 +39,19 @@ func (w *Window) IMECompText() string {
 	return w.ime.compText
 }
 
+// IMECompCursor returns the cursor offset within the preedit
+// string (in characters).
+func (w *Window) IMECompCursor() int {
+	return w.ime.compCursor
+}
+
+// IMECompSelLen returns the length of the selected clause within
+// the preedit string (in characters). Zero means no clause is
+// selected.
+func (w *Window) IMECompSelLen() int {
+	return w.ime.compSelLen
+}
+
 // IMESetRect reports the cursor rect to the platform so the
 // candidate window positions correctly. No-ops if no backend.
 func (w *Window) IMESetRect(x, y, width, height float32) {

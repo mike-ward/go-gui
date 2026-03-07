@@ -38,6 +38,7 @@ func (w *Window) EventFn(e *Event) {
 
 	case EventUnfocused:
 		w.focused = false
+		w.imeClear()
 
 	case EventKeyDown:
 		keydownHandler(layout, e, w)

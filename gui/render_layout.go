@@ -435,7 +435,9 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	// IME preedit underline.
 	if imeComposing && hasPreLayout {
 		renderIMEPreeditUnderline(shape, text, baseX, baseY,
-			compInsertPos, compRuneLen, preLayout, style, w)
+			compInsertPos, compRuneLen,
+			w.IMECompCursor(), w.IMECompSelLen(),
+			preLayout, style, w)
 	}
 }
 
@@ -578,13 +580,14 @@ func renderInputSelection(shape *Shape, text string, baseX, baseY float32,
 	}, w)
 }
 
-// renderIMEPreeditUnderline draws an underline beneath the IME
-// preedit region and reports the cursor rect to the platform
-// for candidate window positioning.
+// renderIMEPreeditUnderline draws underlines beneath the IME
+// preedit region: thin for unconverted text, thick for the
+// selected clause. Reports the cursor rect to the platform for
+// candidate window positioning.
 func renderIMEPreeditUnderline(
 	shape *Shape, compositeText string,
 	baseX, baseY float32,
-	insertPos, compRuneLen int,
+	insertPos, compRuneLen, compCursor, compSelLen int,
 	gl glyph.Layout, style TextStyle, w *Window,
 ) {
 	startByte := runeToByteIndex(compositeText, insertPos)
@@ -596,18 +599,44 @@ func renderIMEPreeditUnderline(
 		c = c.WithOpacity(shape.Opacity)
 	}
 
+	thinH := max(float32(1), style.Size/14)
+	thickH := max(float32(2), style.Size/7)
+
+	// Thin underline for the entire preedit region.
 	rects := gl.GetSelectionRects(startByte, endByte)
-	underlineH := max(float32(1), style.Size/14)
 	for _, r := range rects {
 		emitRenderer(RenderCmd{
 			Kind:  RenderRect,
 			X:     baseX + r.X,
-			Y:     baseY + r.Y + r.Height - underlineH,
+			Y:     baseY + r.Y + r.Height - thinH,
 			W:     r.Width,
-			H:     underlineH,
+			H:     thinH,
 			Color: c,
 			Fill:  true,
 		}, w)
+	}
+
+	// Thick underline for the selected clause.
+	if compSelLen > 0 {
+		selStart := insertPos + compCursor
+		selEnd := selStart + compSelLen
+		if selEnd > insertPos+compRuneLen {
+			selEnd = insertPos + compRuneLen
+		}
+		sb := runeToByteIndex(compositeText, selStart)
+		eb := runeToByteIndex(compositeText, selEnd)
+		selRects := gl.GetSelectionRects(sb, eb)
+		for _, r := range selRects {
+			emitRenderer(RenderCmd{
+				Kind:  RenderRect,
+				X:     baseX + r.X,
+				Y:     baseY + r.Y + r.Height - thickH,
+				W:     r.Width,
+				H:     thickH,
+				Color: c,
+				Fill:  true,
+			}, w)
+		}
 	}
 
 	// Report cursor rect to platform for candidate window.
