@@ -257,17 +257,17 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				y3 := cmd.Y + cmd.Triangles[i+5]*svgScale
 
 				// Use vertex color if available, else cmd color.
-				var cr, cg, cb uint8
+				var vc Color
 				vi := i / 2 // vertex index
 				if vi < len(cmd.VertexColors) {
-					vc := cmd.VertexColors[vi]
-					cr, cg, cb = vc.R, vc.G, vc.B
+					vc = cmd.VertexColors[vi]
 				} else {
-					cr, cg, cb = cmd.Color.R, cmd.Color.G, cmd.Color.B
+					vc = cmd.Color
 				}
-				pdf.SetFillColor(int(cr), int(cg), int(cb))
-				pdf.SetDrawColor(int(cr), int(cg), int(cb))
+				pdf.SetFillColor(int(vc.R), int(vc.G), int(vc.B))
+				pdf.SetDrawColor(int(vc.R), int(vc.G), int(vc.B))
 				pdf.SetLineWidth(0.1)
+				setAlpha(pdf, vc)
 
 				pts := []fpdf.PointType{
 					{X: px(x1), Y: py(y1)},
@@ -275,6 +275,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 					{X: px(x3), Y: py(y3)},
 				}
 				pdf.Polygon(pts, "FD")
+				resetAlpha(pdf)
 			}
 
 			case RenderRTF:
