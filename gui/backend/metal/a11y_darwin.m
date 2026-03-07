@@ -61,6 +61,9 @@ enum {
     // STATE_LIVE = 256 — not mapped to NSAccessibility
 };
 
+// Forward declaration — used by isAccessibilityFocused.
+static int _curFocusedIdx = -1;
+
 // ─── GUIAccessibilityElement ─────────────────────────────────
 
 @interface GUIAccessibilityElement : NSAccessibilityElement
@@ -140,6 +143,10 @@ enum {
 
 - (BOOL)isAccessibilityModal {
     return (_nodeState & STATE_MODAL) != 0;
+}
+
+- (BOOL)isAccessibilityFocused {
+    return _nodeIndex == _curFocusedIdx;
 }
 
 // ─── Actions ─────────────────────────────────────────────────
@@ -294,6 +301,9 @@ void a11ySync(const A11yCNode *nodes, int count,
         0, 0, (float)_nsView.bounds.size.width,
         (float)_nsView.bounds.size.height, windowH);
 
+    // Update current focused index for isAccessibilityFocused.
+    _curFocusedIdx = focusedIdx;
+
     // Focus notification.
     if (focusedIdx != _prevFocusedIdx && focusedIdx >= 0 &&
         focusedIdx < count) {
@@ -327,10 +337,6 @@ void a11yAnnounce(const char *text) {
         NSAccessibilityPriorityKey:
             @(NSAccessibilityPriorityHigh),
     };
-    NSAccessibilityPostNotification(
-        NSApp,
-        NSAccessibilityAnnouncementRequestedNotification);
-    // Post with user info via the app element.
     NSAccessibilityPostNotificationWithUserInfo(
         NSApp,
         NSAccessibilityAnnouncementRequestedNotification,
