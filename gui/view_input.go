@@ -491,8 +491,10 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					changed = true
 				}
 			} else {
-				newText, _ := inputDelete(text, id, false, w)
-				if newText != text {
+				newText, delChanged := inputDeleteGrapheme(
+					text, id, false, layout, w,
+				)
+				if delChanged {
 					text = newText
 					changed = true
 				}
@@ -510,8 +512,10 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					changed = true
 				}
 			} else {
-				newText, _ := inputDelete(text, id, true, w)
-				if newText != text {
+				newText, delChanged := inputDeleteGrapheme(
+					text, id, true, layout, w,
+				)
+				if delChanged {
 					text = newText
 					changed = true
 				}
@@ -840,8 +844,10 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					textChanged = true
 				}
 			} else {
-				newText, _ := inputDelete(text, id, false, w)
-				if newText != text {
+				newText, delChanged := inputDeleteGrapheme(
+					text, id, false, layout, w,
+				)
+				if delChanged {
 					text = newText
 					textChanged = true
 				}
@@ -859,8 +865,10 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					textChanged = true
 				}
 			} else {
-				newText, _ := inputDelete(text, id, true, w)
-				if newText != text {
+				newText, delChanged := inputDeleteGrapheme(
+					text, id, true, layout, w,
+				)
+				if delChanged {
 					text = newText
 					textChanged = true
 				}
@@ -949,6 +957,44 @@ func trailingLineEnd(lines []glyph.Line, byteIdx, fallback int) int {
 		}
 	}
 	return fallback
+}
+
+// inputDeleteGrapheme deletes a grapheme cluster at cursor using
+// glyph when available, falling back to rune-based inputDelete.
+func inputDeleteGrapheme(
+	text string, idFocus uint32, forward bool,
+	layout *Layout, w *Window,
+) (string, bool) {
+	gl, glOK := inputGlyphLayoutFor(layout, w)
+	if !glOK {
+		newText, _ := inputDelete(text, idFocus, forward, w)
+		return newText, newText != text
+	}
+	is := inputStateOrDefault(idFocus, w)
+	if is.SelectBeg != is.SelectEnd {
+		newText, _ := inputDelete(text, idFocus, forward, w)
+		return newText, newText != text
+	}
+	pos := min(is.CursorPos, utf8RuneCount(text))
+	byteIdx := runeToByteIndex(text, pos)
+	var res glyph.MutationResult
+	if forward {
+		res = glyph.DeleteForward(text, gl, byteIdx)
+	} else {
+		res = glyph.DeleteBackward(text, gl, byteIdx)
+	}
+	if res.NewText == text {
+		return text, false
+	}
+	newPos := byteToRuneIndex(res.NewText, res.CursorPos)
+	undo := inputPushUndo(is, text)
+	imap := StateMap[uint32, InputState](w, nsInput, capMany)
+	imap.Set(idFocus, InputState{
+		CursorPos:    newPos,
+		CursorOffset: -1,
+		Undo:         undo,
+	})
+	return res.NewText, true
 }
 
 // passwordMask replaces each rune with a bullet character.
