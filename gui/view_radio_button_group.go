@@ -108,4 +108,7 @@ func applyRadioGroupDefaults(cfg *RadioButtonGroupCfg) {
 	if !cfg.Padding.IsSet() {
 		cfg.Padding = Some(guiTheme.PaddingLarge)
 	}
+	if !cfg.Spacing.IsSet() {
+		cfg.Spacing = Some(SpacingSmall)
+	}
 }
