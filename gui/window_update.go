@@ -139,6 +139,8 @@ func (w *Window) FrameFn() {
 	} else if w.refreshRenderOnly {
 		w.UpdateRenderOnly()
 	}
+	w.initA11y()
+	w.syncA11y()
 }
 
 // Update performs a full layout rebuild and re-renders.
