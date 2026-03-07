@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/filedialog"
 )
 
 // nativePlatform implements gui.NativePlatform for the GL backend.
@@ -45,16 +46,16 @@ func validateOpenURI(raw string) error {
 	}
 }
 
-func (n *nativePlatform) ShowOpenDialog(_, _ string, _ []string, _ bool) gui.PlatformDialogResult {
-	return gui.PlatformDialogResult{}
+func (n *nativePlatform) ShowOpenDialog(title, startDir string, extensions []string, allowMultiple bool) gui.PlatformDialogResult {
+	return filedialog.ShowOpenDialog(title, startDir, extensions, allowMultiple)
 }
 
-func (n *nativePlatform) ShowSaveDialog(_, _, _, _ string, _ []string, _ bool) gui.PlatformDialogResult {
-	return gui.PlatformDialogResult{}
+func (n *nativePlatform) ShowSaveDialog(title, startDir, defaultName, defaultExt string, extensions []string, confirmOverwrite bool) gui.PlatformDialogResult {
+	return filedialog.ShowSaveDialog(title, startDir, defaultName, defaultExt, extensions, confirmOverwrite)
 }
 
-func (n *nativePlatform) ShowFolderDialog(_, _ string) gui.PlatformDialogResult {
-	return gui.PlatformDialogResult{}
+func (n *nativePlatform) ShowFolderDialog(title, startDir string) gui.PlatformDialogResult {
+	return filedialog.ShowFolderDialog(title, startDir)
 }
 
 func (n *nativePlatform) ShowMessageDialog(title, body string, _ gui.NativeAlertLevel) gui.NativeAlertResult {

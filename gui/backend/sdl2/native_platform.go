@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/filedialog"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -29,16 +30,16 @@ func (n *nativePlatform) OpenURI(uri string) error {
 	return cmd.Start()
 }
 
-func (n *nativePlatform) ShowOpenDialog(_, _ string, _ []string, _ bool) gui.PlatformDialogResult {
-	return gui.PlatformDialogResult{}
+func (n *nativePlatform) ShowOpenDialog(title, startDir string, extensions []string, allowMultiple bool) gui.PlatformDialogResult {
+	return filedialog.ShowOpenDialog(title, startDir, extensions, allowMultiple)
 }
 
-func (n *nativePlatform) ShowSaveDialog(_, _, _, _ string, _ []string, _ bool) gui.PlatformDialogResult {
-	return gui.PlatformDialogResult{}
+func (n *nativePlatform) ShowSaveDialog(title, startDir, defaultName, defaultExt string, extensions []string, confirmOverwrite bool) gui.PlatformDialogResult {
+	return filedialog.ShowSaveDialog(title, startDir, defaultName, defaultExt, extensions, confirmOverwrite)
 }
 
-func (n *nativePlatform) ShowFolderDialog(_, _ string) gui.PlatformDialogResult {
-	return gui.PlatformDialogResult{}
+func (n *nativePlatform) ShowFolderDialog(title, startDir string) gui.PlatformDialogResult {
+	return filedialog.ShowFolderDialog(title, startDir)
 }
 
 func (n *nativePlatform) ShowMessageDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {

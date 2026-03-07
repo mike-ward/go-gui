@@ -87,7 +87,15 @@ func floatAttachLayout(
 	layout *Layout, winRect DrawClip,
 ) (float32, float32) {
 	if layout.Parent == nil {
-		return 0, 0
+		// No parent — use window rect as anchor reference
+		// so dialogs and other top-level floats position
+		// correctly (e.g. FloatMiddleCenter centers in window).
+		s := layout.Shape
+		ax, ay := attachOffset(s.FloatAnchor,
+			winRect.Width, winRect.Height)
+		tx, ty := attachOffset(s.FloatTieOff,
+			s.Width, s.Height)
+		return ax - tx + s.FloatOffsetX, ay - ty + s.FloatOffsetY
 	}
 	parent := layout.Parent.Shape
 	isRTL := effectiveTextDir(parent) == TextDirRTL

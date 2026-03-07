@@ -313,6 +313,20 @@ func spacebarToClick(onClick func(*Layout, *Event, *Window)) func(*Layout, *Even
 	}
 }
 
+// enterToClick wraps an onClick handler to fire when
+// Enter is pressed.
+func enterToClick(onClick func(*Layout, *Event, *Window)) func(*Layout, *Event, *Window) {
+	if onClick == nil {
+		return nil
+	}
+	return func(layout *Layout, e *Event, w *Window) {
+		if e.KeyCode == KeyEnter {
+			onClick(layout, e, w)
+			e.IsHandled = true
+		}
+	}
+}
+
 // leftClickOnly wraps a click handler to fire only on
 // left mouse button.
 func leftClickOnly(onClick func(*Layout, *Event, *Window)) func(*Layout, *Event, *Window) {

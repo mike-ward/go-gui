@@ -103,6 +103,7 @@ func Button(cfg ButtonCfg) View {
 		FloatOffsetY:     cfg.FloatOffsetY,
 		OnClick:          onClick,
 		OnChar:           spacebarToClick(onClick),
+		OnKeyDown:        enterToClick(onClick),
 		AmendLayout: func(layout *Layout, w *Window) {
 			if layout.Shape.Disabled ||
 				!layout.Shape.HasEvents() ||
