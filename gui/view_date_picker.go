@@ -168,8 +168,6 @@ func (w *Window) DatePickerReset(id string) {
 func datePickerControls(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) View {
-	dn := &DefaultDatePickerStyle
-	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	cfgID := cfg.ID
 	monthLabel := LocaleFormatDate(
 		datePickerViewTime(state),
@@ -196,23 +194,35 @@ func datePickerControls(
 	}
 
 	return Row(ContainerCfg{
-		Padding: Some(PaddingSmall),
-		Spacing: Some(cellSpacing),
+		VAlign:  VAlignMiddle,
+		Padding: Some(PaddingNone),
+		Sizing:  FillFit,
 		Content: []View{
 			Button(ButtonCfg{
-				Sizing:  FillFit,
-				OnClick: onToggle,
+				ColorBorder: ColorTransparent,
+				OnClick:     onToggle,
 				Content: []View{Text(TextCfg{
 					Text: monthLabel, TextStyle: cfg.TextStyle,
 				})},
 			}),
+			Rectangle(RectangleCfg{Sizing: FillFit}),
 			Button(ButtonCfg{
-				OnClick: onPrev,
-				Content: []View{Text(TextCfg{Text: "◀"})},
+				Disabled:    state.ShowYearMonthPicker,
+				ColorBorder: ColorTransparent,
+				OnClick:     onPrev,
+				Content: []View{Text(TextCfg{
+					Text:      IconArrowLeft,
+					TextStyle: CurrentTheme().Icon3,
+				})},
 			}),
 			Button(ButtonCfg{
-				OnClick: onNext,
-				Content: []View{Text(TextCfg{Text: "▶"})},
+				Disabled:    state.ShowYearMonthPicker,
+				ColorBorder: ColorTransparent,
+				OnClick:     onNext,
+				Content: []View{Text(TextCfg{
+					Text:      IconArrowRight,
+					TextStyle: CurrentTheme().Icon3,
+				})},
 			}),
 		},
 	})
@@ -222,14 +232,12 @@ func datePickerControls(
 func datePickerCalendar(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) View {
-	dn := &DefaultDatePickerStyle
-	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	content := make([]View, 0, 7)
 	content = append(content, datePickerWeekdays(cfg))
 	content = append(content, datePickerMonth(cfg, state, w)...)
 	return Column(ContainerCfg{
-		Spacing: Some(cellSpacing),
-		Padding: Some(PaddingSmall),
+		Spacing: Some[float32](0),
+		Padding: Some(PaddingNone),
 		Content: content,
 	})
 }
@@ -238,23 +246,18 @@ func datePickerCalendar(
 func datePickerWeekdays(cfg *DatePickerCfg) View {
 	dn := &DefaultDatePickerStyle
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
+	cellSize := datePickerCellSize(cfg)
 	labels := make([]View, 0, 7)
 	for i := range 7 {
 		dow := datePickerWeekdayIndex(i, cfg.MondayFirstDayOfWeek)
 		label := datePickerWeekdayLabel(dow, cfg.WeekdaysLen)
-		centeredTS := cfg.TextStyle
-		centeredTS.Align = TextAlignCenter
-		labels = append(labels, Row(ContainerCfg{
-			Width:   40,
-			HAlign:  HAlignCenter,
-			Padding: Some(PaddingNone),
-			Content: []View{
-				Text(TextCfg{
-					Text:      label,
-					TextStyle: centeredTS,
-					Sizing:    FillFit,
-				}),
-			},
+		labels = append(labels, Button(ButtonCfg{
+			Color:       ColorTransparent,
+			ColorBorder: ColorTransparent,
+			MinWidth:    cellSize,
+			MaxWidth:    cellSize,
+			Padding:     Some(PaddingThree),
+			Content:     []View{Text(TextCfg{Text: label})},
 		}))
 	}
 	return Row(ContainerCfg{
@@ -269,9 +272,9 @@ func datePickerMonth(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) []View {
 	dn := &DefaultDatePickerStyle
-	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	radius := cfg.Radius.Get(dn.Radius)
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
+	cellSize := datePickerCellSize(cfg)
 	viewTime := datePickerViewTime(state)
 	year, month := viewTime.Year(), viewTime.Month()
 	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
@@ -294,12 +297,17 @@ func datePickerMonth(
 			if d < 1 || d > daysInMonth {
 				if cfg.ShowAdjacentMonths {
 					cells = append(cells, datePickerAdjacentCell(
-						cfg, state, d, daysInMonth))
+						cfg, state, d, daysInMonth, cellSize))
 				} else {
-					cells = append(cells, Row(ContainerCfg{
-						Width:   40,
-						Height:  40,
-						Padding: Some(PaddingNone),
+					cells = append(cells, Button(ButtonCfg{
+						Color:       ColorTransparent,
+						ColorBorder: ColorTransparent,
+						Disabled:    true,
+						MinWidth:    cellSize,
+						MaxWidth:    cellSize,
+						MaxHeight:   cellSize,
+						Padding:     Some(PaddingThree),
+						Content:     []View{Text(TextCfg{Text: ""})},
 					}))
 				}
 				continue
@@ -311,10 +319,12 @@ func datePickerMonth(
 			dayStr := strconv.Itoa(d)
 
 			cellColor := cfg.Color
+			colorHover := cfg.ColorHover
 			if selected {
 				cellColor = cfg.ColorSelect
+				colorHover = cfg.ColorSelect
 			}
-			borderColor := cfg.ColorBorder
+			borderColor := ColorTransparent
 			if isToday && !cfg.HideTodayIndicator {
 				borderColor = cfg.TextStyle.Color
 			}
@@ -326,12 +336,16 @@ func datePickerMonth(
 
 			dayVal := d
 			cells = append(cells, Button(ButtonCfg{
-				Width:       40,
-				Height:      40,
+				MinWidth:    cellSize,
+				MaxWidth:    cellSize,
+				MaxHeight:   cellSize,
 				Color:       cellColor,
 				ColorBorder: borderColor,
-				SizeBorder:  Some(sizeBorder),
+				ColorClick:  cfg.ColorSelect,
+				ColorHover:  colorHover,
+				SizeBorder:  Some[float32](2),
 				Radius:      Some(radius),
+				Padding:     Some(PaddingThree),
 				Disabled:    disabled,
 				Content: []View{Text(TextCfg{
 					Text: dayStr, TextStyle: ts,
@@ -363,7 +377,7 @@ func datePickerMonth(
 // datePickerAdjacentCell builds a faded cell for prev/next month.
 func datePickerAdjacentCell(
 	cfg *DatePickerCfg, state datePickerState,
-	day, daysInMonth int,
+	day, daysInMonth int, cellSize float32,
 ) View {
 	var adjDay int
 	if day < 1 {
@@ -381,19 +395,18 @@ func datePickerAdjacentCell(
 	}
 	ts := cfg.TextStyle
 	ts.Color = RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 80)
-	ts.Align = TextAlignCenter
-	return Row(ContainerCfg{
-		Width:   40,
-		Height:  40,
-		HAlign:  HAlignCenter,
-		VAlign:  VAlignMiddle,
-		Padding: Some(PaddingNone),
-		Content: []View{
-			Text(TextCfg{
-				Text:      strconv.Itoa(adjDay),
-				TextStyle: ts,
-			}),
-		},
+	return Button(ButtonCfg{
+		Color:       ColorTransparent,
+		ColorBorder: ColorTransparent,
+		Disabled:    true,
+		MinWidth:    cellSize,
+		MaxWidth:    cellSize,
+		MaxHeight:   cellSize,
+		Padding:     Some(PaddingThree),
+		Content: []View{Text(TextCfg{
+			Text:      strconv.Itoa(adjDay),
+			TextStyle: ts,
+		})},
 	})
 }
 
@@ -576,6 +589,19 @@ func datePickerWeekdayLabel(dow int, wdLen DatePickerWeekdayLen) string {
 func datePickerDaysInMonth(month, year int) int {
 	t := time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.Local)
 	return t.Day()
+}
+
+// datePickerCellSize returns the width/height for a single day cell.
+// V calculates dynamically via text measurement; approximate here.
+func datePickerCellSize(cfg *DatePickerCfg) float32 {
+	switch cfg.WeekdaysLen {
+	case WeekdayFull:
+		return 70
+	case WeekdayThreeLetter:
+		return 38
+	default:
+		return 30
+	}
 }
 
 func applyDatePickerDefaults(cfg *DatePickerCfg) {

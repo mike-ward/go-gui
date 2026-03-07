@@ -82,7 +82,9 @@ Backend injects at startup; nil in tests:
 - `spacing()` counts only visible children (`ShapeType != ShapeNone`, `!Float`,
   `!OverDraw`) — fence-post gap calculation
 - Shape text fields live in `Shape.TC` (`*ShapeTextConfig`), not on `Shape`
-- `ContainerCfg` has no `Title`/`TitleBG` fields
+- `ContainerCfg.Title`/`TitleBG` render a group-box label in the top border
+  (floating eraser + text, like HTML fieldset). `TitleBG` should match the
+  parent's background color to erase the border behind the title.
 - `Children []Layout` holds values; parents are pointers — avoids cycles
 - `StateMap` (keyed by namespace constants like `nsOverflow`, `nsSvgCache`) is
   the per-window typed key-value store used by widgets for internal state

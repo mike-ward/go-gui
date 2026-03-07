@@ -27,6 +27,8 @@ type ContainerCfg struct {
 	Overflow bool
 
 	// Appearance
+	Title          string
+	TitleBG        Color
 	Color          Color
 	ColorBorder    Color
 	SizeBorder     Opt[float32]
@@ -164,7 +166,73 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 		},
 	}
 	ApplyFixedSizingConstraints(layout.Shape)
+	addGroupBoxTitle(c, w, &layout)
 	return layout
+}
+
+// addGroupBoxTitle injects floating eraser + text children to render
+// a title label in the container's top border (HTML fieldset style).
+func addGroupBoxTitle(c *ContainerCfg, w *Window, layout *Layout) {
+	if len(c.Title) == 0 {
+		return
+	}
+	ts := DefaultTextStyle
+
+	var textWidth, fontHeight float32
+	const pad float32 = 5
+	if w.textMeasurer != nil {
+		textWidth = w.textMeasurer.TextWidth(c.Title, ts)
+		fontHeight = w.textMeasurer.FontHeight(ts)
+	} else {
+		// Fallback for tests without a text measurer.
+		textWidth = float32(len(c.Title)) * 8
+		fontHeight = 16
+	}
+	// Center the title vertically on the top border line.
+	offset := fontHeight / 2
+
+	eraserColor := c.TitleBG
+	if !eraserColor.IsSet() {
+		eraserColor = ColorTransparent
+	}
+	if c.Disabled {
+		eraserColor = dimAlpha(eraserColor)
+	}
+
+	// Eraser hides the border behind the title text.
+	layout.Children = append(layout.Children, Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			Width:     textWidth + pad + pad - 1,
+			Height:    fontHeight,
+			X:         20,
+			Y:         -offset,
+			Color:     eraserColor,
+			Opacity:   1.0,
+			Float:     true,
+		},
+	})
+
+	textColor := ts.Color
+	if c.Disabled {
+		textColor = dimAlpha(textColor)
+	}
+	layout.Children = append(layout.Children, Layout{
+		Shape: &Shape{
+			ShapeType: ShapeText,
+			Width:     textWidth,
+			Height:    fontHeight,
+			X:         20 + pad,
+			Y:         -offset,
+			Color:     textColor,
+			Opacity:   1.0,
+			Float:     true,
+			TC: &ShapeTextConfig{
+				Text:      c.Title,
+				TextStyle: &ts,
+			},
+		},
+	})
 }
 
 func (cv *containerView) makeEffects() *ShapeEffects {
