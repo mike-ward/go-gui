@@ -4,10 +4,11 @@ import "testing"
 
 func TestLocaleRegistryInit(t *testing.T) {
 	names := LocaleRegisteredNames()
-	want := map[string]bool{
-		"en-US": true, "de-DE": true, "ar-SA": true,
+	want := []string{
+		"ar-SA", "de-DE", "en-US", "es-ES", "fr-FR",
+		"he-IL", "ja-JP", "ko-KR", "pt-BR", "zh-CN",
 	}
-	for id := range want {
+	for _, id := range want {
 		found := false
 		for _, n := range names {
 			if n == id {
@@ -16,7 +17,8 @@ func TestLocaleRegistryInit(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Fatalf("missing registered locale: %s", id)
+			t.Fatalf("missing registered locale: %s (have %v)",
+				id, names)
 		}
 	}
 }
@@ -61,6 +63,57 @@ func TestLocaleRegisteredNamesSorted(t *testing.T) {
 	for i := 1; i < len(names); i++ {
 		if names[i] < names[i-1] {
 			t.Fatalf("not sorted: %v", names)
+		}
+	}
+}
+
+func TestLocalePresetFields(t *testing.T) {
+	tests := []struct {
+		id      string
+		dir     TextDirection
+		decSep  rune
+		curCode string
+	}{
+		{"en-US", TextDirLTR, '.', "USD"},
+		{"de-DE", TextDirAuto, ',', "EUR"},
+		{"ar-SA", TextDirRTL, '.', "SAR"},
+		{"fr-FR", TextDirAuto, ',', "EUR"},
+		{"es-ES", TextDirAuto, ',', "EUR"},
+		{"pt-BR", TextDirAuto, ',', "BRL"},
+		{"ja-JP", TextDirAuto, '.', "JPY"},
+		{"zh-CN", TextDirAuto, '.', "CNY"},
+		{"ko-KR", TextDirAuto, '.', "KRW"},
+		{"he-IL", TextDirRTL, '.', "ILS"},
+	}
+	for _, tt := range tests {
+		l, ok := LocaleGet(tt.id)
+		if !ok {
+			t.Errorf("%s: not registered", tt.id)
+			continue
+		}
+		if l.TextDir != tt.dir {
+			t.Errorf("%s: TextDir = %v, want %v",
+				tt.id, l.TextDir, tt.dir)
+		}
+		if l.Number.DecimalSep != tt.decSep {
+			t.Errorf("%s: DecimalSep = %c, want %c",
+				tt.id, l.Number.DecimalSep, tt.decSep)
+		}
+		if l.Currency.Code != tt.curCode {
+			t.Errorf("%s: Currency.Code = %s, want %s",
+				tt.id, l.Currency.Code, tt.curCode)
+		}
+		if l.StrOK == "" {
+			t.Errorf("%s: StrOK empty", tt.id)
+		}
+		if l.StrCancel == "" {
+			t.Errorf("%s: StrCancel empty", tt.id)
+		}
+		if l.WeekdaysFull[0] == "" {
+			t.Errorf("%s: WeekdaysFull[0] empty", tt.id)
+		}
+		if l.MonthsFull[0] == "" {
+			t.Errorf("%s: MonthsFull[0] empty", tt.id)
 		}
 	}
 }

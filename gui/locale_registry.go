@@ -15,6 +15,13 @@ func init() {
 	LocaleRegister(LocaleEnUS)
 	LocaleRegister(LocaleDeDE)
 	LocaleRegister(LocaleArSA)
+	LocaleRegister(LocaleFrFR)
+	LocaleRegister(LocaleEsES)
+	LocaleRegister(LocalePtBR)
+	LocaleRegister(LocaleJaJP)
+	LocaleRegister(LocaleZhCN)
+	LocaleRegister(LocaleKoKR)
+	LocaleRegister(LocaleHeIL)
 }
 
 // LocaleRegister adds a locale to the global registry by ID.

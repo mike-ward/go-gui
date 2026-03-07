@@ -1,6 +1,9 @@
 package gui
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // NumberFormat defines locale-specific number formatting.
 type NumberFormat struct {
@@ -243,4 +246,42 @@ func (w *Window) SetLocaleID(id string) error {
 	}
 	w.SetLocale(l)
 	return nil
+}
+
+// LocaleAutoDetect detects the OS locale and sets the global
+// locale to the best matching registered locale. Call before
+// NewWindow. Falls back to language-prefix match if exact ID
+// is not registered.
+func LocaleAutoDetect() {
+	id := LocaleDetect()
+	if l, ok := LocaleGet(id); ok {
+		SetLocale(l)
+		return
+	}
+	// Try language-only prefix: "de-AT" → match "de-DE".
+	if i := strings.IndexByte(id, '-'); i > 0 {
+		prefix := id[:i]
+		for _, name := range LocaleRegisteredNames() {
+			if strings.HasPrefix(name, prefix+"-") {
+				if l, ok := LocaleGet(name); ok {
+					SetLocale(l)
+					return
+				}
+			}
+		}
+	}
+}
+
+// normalizeLocaleEnv normalizes a POSIX locale value like
+// "en_US.UTF-8" to BCP 47 "en-US".
+func normalizeLocaleEnv(v string) string {
+	// Strip encoding suffix (.UTF-8, .utf8, etc.).
+	if i := strings.IndexByte(v, '.'); i > 0 {
+		v = v[:i]
+	}
+	v = strings.ReplaceAll(v, "_", "-")
+	if v == "" || v == "C" || v == "POSIX" {
+		return "en-US"
+	}
+	return v
 }

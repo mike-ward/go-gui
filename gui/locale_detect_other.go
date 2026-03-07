@@ -1,0 +1,16 @@
+//go:build !darwin
+
+package gui
+
+import "os"
+
+// LocaleDetect returns the BCP 47 locale ID from environment
+// variables.
+func LocaleDetect() string {
+	for _, key := range []string{"LC_ALL", "LC_MESSAGES", "LANG"} {
+		if v := os.Getenv(key); v != "" {
+			return normalizeLocaleEnv(v)
+		}
+	}
+	return "en-US"
+}
