@@ -265,6 +265,7 @@ func weekdaysLenGroup(app *App) gui.View {
 		gui.RadioButtonGroupColumn(gui.RadioButtonGroupCfg{
 			Sizing:  gui.FillFit,
 			Padding: gui.Some(gui.PaddingNone),
+			Spacing: gui.Some(gui.SpacingSmall),
 			Value:   app.WeekdaysLen,
 			Options: []gui.RadioOption{
 				gui.NewRadioOption("One letter", "one"),

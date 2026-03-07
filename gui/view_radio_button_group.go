@@ -17,6 +17,7 @@ type RadioButtonGroupCfg struct {
 	Options     []RadioOption
 	OnSelect    func(string, *Window)
 	Sizing      Sizing
+	Spacing     Opt[float32]
 	Padding     Opt[Padding]
 	ColorBorder Color
 	SizeBorder  Opt[float32]
@@ -47,6 +48,7 @@ func RadioButtonGroupColumn(cfg RadioButtonGroupCfg) View {
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
+		Spacing:         cfg.Spacing,
 		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
 		MinHeight:       cfg.MinHeight,
@@ -67,6 +69,7 @@ func RadioButtonGroupRow(cfg RadioButtonGroupCfg) View {
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder2),
+		Spacing:         cfg.Spacing,
 		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
 		MinHeight:       cfg.MinHeight,
