@@ -22,6 +22,10 @@ func (w *Window) ExportPrintJob(job PrintJob) PrintExportResult {
 	if sourceH <= 0 {
 		sourceH = float32(w.windowHeight)
 	}
+	if len(w.renderers) == 0 {
+		w.Unlock()
+		return printExportErrorResult(job.OutputPath, printErrorRender, "no renderers available for export")
+	}
 	// Prepend window background as first render command so the
 	// PDF matches on-screen appearance (the backend paints the
 	// background via Clear(), which is not in the renderers).
@@ -41,10 +45,6 @@ func (w *Window) ExportPrintJob(job PrintJob) PrintExportResult {
 	})
 	renderersCopy = append(renderersCopy, w.renderers...)
 	w.Unlock()
-
-	if len(renderersCopy) == 0 {
-		return printExportErrorResult(job.OutputPath, printErrorRender, "no renderers available for export")
-	}
 	if sourceW <= 0 || sourceH <= 0 {
 		return printExportErrorResult(job.OutputPath, printErrorInvalidCfg, "source dimensions must be positive")
 	}
