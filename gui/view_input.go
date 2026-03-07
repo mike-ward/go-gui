@@ -611,9 +611,15 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				updateCursorAndSelection(imap, id, is,
 					int(beg), false)
 			} else {
-				newPos := pos - 1
-				if newPos < 0 {
-					newPos = 0
+				var newPos int
+				if glOK {
+					byteIdx := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text, gl.MoveCursorLeft(byteIdx))
+				} else {
+					newPos = pos - 1
+					if newPos < 0 {
+						newPos = 0
+					}
 				}
 				updateCursorAndSelection(imap, id, is,
 					newPos, isShift)
@@ -634,9 +640,15 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				updateCursorAndSelection(imap, id, is,
 					int(end), false)
 			} else {
-				newPos := pos + 1
-				if newPos > runeLen {
-					newPos = runeLen
+				var newPos int
+				if glOK {
+					byteIdx := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text, gl.MoveCursorRight(byteIdx))
+				} else {
+					newPos = pos + 1
+					if newPos > runeLen {
+						newPos = runeLen
+					}
 				}
 				updateCursorAndSelection(imap, id, is,
 					newPos, isShift)

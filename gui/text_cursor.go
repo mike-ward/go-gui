@@ -2,17 +2,6 @@ package gui
 
 import "unicode/utf8"
 
-// cursorLeft moves cursor one rune left, clamped at 0.
-func cursorLeft(pos int) int {
-	return intMax(0, pos-1)
-}
-
-// cursorRight moves cursor one rune right, clamped at text
-// rune count.
-func cursorRight(text string, pos int) int {
-	return min(utf8RuneCount(text), pos+1)
-}
-
 // cursorHome returns position 0 (start of text).
 func cursorHome() int {
 	return 0
@@ -21,18 +10,6 @@ func cursorHome() int {
 // cursorEnd returns the rune count (end of text).
 func cursorEnd(text string) int {
 	return utf8RuneCount(text)
-}
-
-// blanks used for word boundary detection.
-var wordBlanks = [4]byte{' ', '\t', '\f', '\v'}
-
-func isByteBlank(b byte) bool {
-	for _, bl := range wordBlanks {
-		if b == bl {
-			return true
-		}
-	}
-	return false
 }
 
 // runeToByteIndex converts a rune index to a byte index.
@@ -54,47 +31,6 @@ func byteToRuneIndex(text string, byteIdx int) int {
 		return utf8RuneCount(text)
 	}
 	return utf8.RuneCountInString(text[:byteIdx])
-}
-
-// cursorStartOfWord finds the start of the current word by
-// searching backward through blanks then non-blanks.
-func cursorStartOfWord(text string, pos int) int {
-	if pos < 0 {
-		return 0
-	}
-	byteIdx := runeToByteIndex(text, pos)
-	i := byteIdx - 1
-	if i >= len(text) {
-		i = len(text) - 1
-	}
-	// Skip blanks backward.
-	for i >= 0 && isByteBlank(text[i]) {
-		i--
-	}
-	// Skip non-blanks backward.
-	for i >= 0 && !isByteBlank(text[i]) {
-		i--
-	}
-	return byteToRuneIndex(text, i+1)
-}
-
-// cursorEndOfWord finds the end of the current word by
-// skipping blanks then non-blanks forward.
-func cursorEndOfWord(text string, pos int) int {
-	if pos < 0 {
-		return 0
-	}
-	byteIdx := runeToByteIndex(text, pos)
-	i := byteIdx
-	// Skip blanks forward.
-	for i < len(text) && isByteBlank(text[i]) {
-		i++
-	}
-	// Skip non-blanks forward.
-	for i < len(text) && !isByteBlank(text[i]) {
-		i++
-	}
-	return byteToRuneIndex(text, i)
 }
 
 // cursorStartOfParagraph finds the start of the current

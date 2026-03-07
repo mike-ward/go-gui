@@ -2,29 +2,7 @@ package gui
 
 import "testing"
 
-// --- cursor_right / cursor_end ---
-
-func TestCursorRightClamp3Byte(t *testing.T) {
-	text := "€" // 3 bytes, 1 rune
-	assertEqual(t, cursorRight(text, 0), 1)
-	assertEqual(t, cursorRight(text, 1), 1) // clamped
-}
-
-func TestCursorRightClamp4Byte(t *testing.T) {
-	text := "𝐀" // U+1D400, 4 bytes, 1 rune
-	assertEqual(t, cursorRight(text, 0), 1)
-	assertEqual(t, cursorRight(text, 1), 1)
-}
-
-func TestCursorRightCJK(t *testing.T) {
-	text := "日本語" // 3 runes, 9 bytes
-	assertEqual(t, cursorRight(text, 2), 3)
-	assertEqual(t, cursorRight(text, 3), 3)
-}
-
-func TestCursorRightEmptyText(t *testing.T) {
-	assertEqual(t, cursorRight("", 0), 0)
-}
+// --- cursor_end ---
 
 func TestCursorEnd3Byte(t *testing.T) {
 	assertEqual(t, cursorEnd("€€€"), 3)
@@ -49,31 +27,6 @@ func TestCursorEndCombiningChar(t *testing.T) {
 
 func TestCursorEndSingle4Byte(t *testing.T) {
 	assertEqual(t, cursorEnd("😀"), 1)
-}
-
-// --- cursor_left ---
-
-func TestCursorLeftAtZero(t *testing.T) {
-	assertEqual(t, cursorLeft(0), 0)
-}
-
-func TestCursorLeftFromOne(t *testing.T) {
-	assertEqual(t, cursorLeft(1), 0)
-}
-
-// --- word boundaries ---
-
-func TestCursorEndOfWordCJKMixed(t *testing.T) {
-	text := "hello 日本語 world"
-	// From pos 5 (space): skip space, then non-spaces → end of 日本語
-	assertEqual(t, cursorEndOfWord(text, 5), 9)
-}
-
-func TestCursorStartOfWordCJKMixed(t *testing.T) {
-	text := "hello 日本語 world"
-	// From pos 9 (space after 語): skip space back, then
-	// non-spaces back → start of 日本語 at rune 6
-	assertEqual(t, cursorStartOfWord(text, 9), 6)
 }
 
 // --- paragraph navigation ---

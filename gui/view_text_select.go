@@ -56,9 +56,17 @@ func makeTextOnClick() func(*Layout, *Event, *Window) {
 			now-is.LastClickTime <= 400
 		is.LastClickTime = now
 
-		runes := []rune(text)
 		if doubleClick {
-			beg, end := wordBoundsAt(runes, runePos)
+			var beg, end int
+			if glOK {
+				byteIdx := runeToByteIndex(text, runePos)
+				bBeg, bEnd := gl.GetWordAtIndex(byteIdx)
+				beg = byteToRuneIndex(text, bBeg)
+				end = byteToRuneIndex(text, bEnd)
+			} else {
+				beg, end = wordBoundsAt(
+					[]rune(text), runePos)
+			}
 			is.CursorPos = end
 			is.SelectBeg = uint32(beg)
 			is.SelectEnd = uint32(end)
@@ -135,13 +143,22 @@ func makeTextOnClick() func(*Layout, *Event, *Window) {
 			return rp
 		}
 
+		runes := []rune(text)
 		updateDragSelection := func(rp int, w *Window) {
 			dim := StateMap[uint32, InputState](
 				w, nsInput, capMany,
 			)
 			dis, _ := dim.Get(dragIDFocus)
 			if doubleClick {
-				wb, we := wordBoundsAt(runes, rp)
+				var wb, we int
+				if dragGLOK {
+					bi := runeToByteIndex(text, rp)
+					bBeg, bEnd := dragGL.GetWordAtIndex(bi)
+					wb = byteToRuneIndex(text, bBeg)
+					we = byteToRuneIndex(text, bEnd)
+				} else {
+					wb, we = wordBoundsAt(runes, rp)
+				}
 				if rp < int(anchorPos) {
 					dis.SelectBeg = anchorEnd
 					dis.SelectEnd = uint32(wb)
@@ -273,9 +290,16 @@ func makeTextOnKeyDown() func(*Layout, *Event, *Window) {
 				updateCursorAndSelection(
 					imap, id, is, int(beg), false)
 			} else {
-				newPos := pos - 1
-				if newPos < 0 {
-					newPos = 0
+				var newPos int
+				if glOK {
+					bi := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text,
+						gl.MoveCursorLeft(bi))
+				} else {
+					newPos = pos - 1
+					if newPos < 0 {
+						newPos = 0
+					}
 				}
 				updateCursorAndSelection(
 					imap, id, is, newPos, isShift)
@@ -300,9 +324,16 @@ func makeTextOnKeyDown() func(*Layout, *Event, *Window) {
 				updateCursorAndSelection(
 					imap, id, is, int(end), false)
 			} else {
-				newPos := pos + 1
-				if newPos > runeLen {
-					newPos = runeLen
+				var newPos int
+				if glOK {
+					bi := runeToByteIndex(text, pos)
+					newPos = byteToRuneIndex(text,
+						gl.MoveCursorRight(bi))
+				} else {
+					newPos = pos + 1
+					if newPos > runeLen {
+						newPos = runeLen
+					}
 				}
 				updateCursorAndSelection(
 					imap, id, is, newPos, isShift)
