@@ -294,6 +294,7 @@ func (m *stubTextMeasurer) TextWidth(text string, _ TextStyle) float32 {
 func (m *stubTextMeasurer) TextHeight(_ string, _ TextStyle) float32 {
 	return m.fontHeight
 }
+func (m *stubTextMeasurer) FontAscent(s TextStyle) float32 { return s.Size * 0.8 }
 func (m *stubTextMeasurer) FontHeight(_ TextStyle) float32 {
 	return m.fontHeight
 }

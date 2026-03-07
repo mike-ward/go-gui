@@ -121,9 +121,28 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			family := pdfFontName(cmd.FontName)
 			size := float64(cmd.FontSize * scale / ptToMM)
 			pdf.SetFont(family, "", size)
+
+			// Scale font so PDF text width matches source.
+			// Built-in PDF fonts have different metrics than
+			// the system font used by glyph.
+			if cmd.TextWidth > 0 && !strings.Contains(text, "\n") {
+				wantW := float64(cmd.TextWidth) * float64(scale)
+				pdfW := pdf.GetStringWidth(text)
+				if pdfW > 0 && wantW > 0 {
+					size *= wantW / pdfW
+					pdf.SetFont(family, "", size)
+				}
+			}
+
 			// Y is top of text box; fpdf expects baseline.
-			// Ascent ≈ 75% of em for standard PDF fonts.
-			ascent := size * ptToMM64() * 0.75
+			// Use actual font ascent when available; fall back
+			// to 75% of em for SVG text and other paths that
+			// don't populate FontAscent.
+			fa := cmd.FontAscent
+			if fa == 0 {
+				fa = cmd.FontSize * 0.75
+			}
+			ascent := float64(fa * scale)
 			lineH := size * ptToMM64() * 1.2
 			lines := strings.Split(text, "\n")
 			for i, line := range lines {
@@ -223,10 +242,19 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				continue
 			}
 			// Render SVG triangles as filled polygons.
+			// Vertices are in local SVG space; transform with
+			// cmd.X/Y offset and cmd.Scale (matching GPU backends).
+			svgScale := cmd.Scale
+			if svgScale == 0 {
+				svgScale = 1
+			}
 			for i := 0; i+5 < len(cmd.Triangles); i += 6 {
-				x1, y1 := cmd.Triangles[i], cmd.Triangles[i+1]
-				x2, y2 := cmd.Triangles[i+2], cmd.Triangles[i+3]
-				x3, y3 := cmd.Triangles[i+4], cmd.Triangles[i+5]
+				x1 := cmd.X + cmd.Triangles[i]*svgScale
+				y1 := cmd.Y + cmd.Triangles[i+1]*svgScale
+				x2 := cmd.X + cmd.Triangles[i+2]*svgScale
+				y2 := cmd.Y + cmd.Triangles[i+3]*svgScale
+				x3 := cmd.X + cmd.Triangles[i+4]*svgScale
+				y3 := cmd.Y + cmd.Triangles[i+5]*svgScale
 
 				// Use vertex color if available, else cmd color.
 				var cr, cg, cb uint8
@@ -238,13 +266,15 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 					cr, cg, cb = cmd.Color.R, cmd.Color.G, cmd.Color.B
 				}
 				pdf.SetFillColor(int(cr), int(cg), int(cb))
+				pdf.SetDrawColor(int(cr), int(cg), int(cb))
+				pdf.SetLineWidth(0.1)
 
 				pts := []fpdf.PointType{
 					{X: px(x1), Y: py(y1)},
 					{X: px(x2), Y: py(y2)},
 					{X: px(x3), Y: py(y3)},
 				}
-				pdf.Polygon(pts, "F")
+				pdf.Polygon(pts, "FD")
 			}
 
 			case RenderRTF:

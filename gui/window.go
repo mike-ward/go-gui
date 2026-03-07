@@ -13,6 +13,7 @@ type TextMeasurer interface {
 	TextWidth(text string, style TextStyle) float32
 	TextHeight(text string, style TextStyle) float32
 	FontHeight(style TextStyle) float32
+	FontAscent(style TextStyle) float32
 	LayoutText(text string, style TextStyle, wrapWidth float32) (glyph.Layout, error)
 }
 

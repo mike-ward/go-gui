@@ -65,7 +65,9 @@ type RenderCmd struct {
 	// String data.
 	Text     string  // Text
 	FontName string  // Text font family
-	FontSize float32 // Text font size (points)
+	FontSize   float32 // Text font size (points)
+	FontAscent float32 // Text font ascent (pixels)
+	TextWidth  float32 // Text source width (pixels)
 	Resource string  // Image file path
 
 	// SVG animation rotation (degrees, center in SVG space).

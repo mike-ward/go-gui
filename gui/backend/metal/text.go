@@ -219,6 +219,16 @@ func (tm *textMeasurer) FontHeight(
 	return h
 }
 
+func (tm *textMeasurer) FontAscent(
+	style gui.TextStyle) float32 {
+	cfg := guiStyleToGlyphConfig(style)
+	m, err := tm.textSys.FontMetrics(cfg)
+	if err != nil {
+		return style.Size * 0.8
+	}
+	return m.Ascender
+}
+
 func (tm *textMeasurer) LayoutText(
 	text string, style gui.TextStyle, wrapWidth float32,
 ) (glyph.Layout, error) {

@@ -160,6 +160,7 @@ func (m *mockTextMeasurer) TextWidth(text string, _ TextStyle) float32 {
 func (m *mockTextMeasurer) TextHeight(_ string, _ TextStyle) float32 {
 	return 20
 }
+func (m *mockTextMeasurer) FontAscent(s TextStyle) float32 { return s.Size * 0.8 }
 func (m *mockTextMeasurer) FontHeight(_ TextStyle) float32 {
 	return 22
 }
