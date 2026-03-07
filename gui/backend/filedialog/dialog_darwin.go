@@ -77,6 +77,53 @@ func ShowFolderDialog(title, startDir string) gui.PlatformDialogResult {
 	return toResult(r)
 }
 
+// ShowMessageDialog shows a native message alert.
+func ShowMessageDialog(title, body string,
+	level gui.NativeAlertLevel) gui.NativeAlertResult {
+
+	cTitle := C.CString(title)
+	defer C.free(unsafe.Pointer(cTitle))
+	cBody := C.CString(body)
+	defer C.free(unsafe.Pointer(cBody))
+
+	r := C.filedialogMessage(cTitle, cBody, C.int(level))
+	return toAlertResult(r)
+}
+
+// ShowConfirmDialog shows a native OK/Cancel alert.
+func ShowConfirmDialog(title, body string,
+	level gui.NativeAlertLevel) gui.NativeAlertResult {
+
+	cTitle := C.CString(title)
+	defer C.free(unsafe.Pointer(cTitle))
+	cBody := C.CString(body)
+	defer C.free(unsafe.Pointer(cBody))
+
+	r := C.filedialogConfirm(cTitle, cBody, C.int(level))
+	return toAlertResult(r)
+}
+
+func toAlertResult(r C.AlertResult) gui.NativeAlertResult {
+	var status gui.NativeDialogStatus
+	switch r.status {
+	case C.DIALOG_OK:
+		status = gui.DialogOK
+	case C.DIALOG_CANCEL:
+		status = gui.DialogCancel
+	default:
+		status = gui.DialogError
+	}
+	var errMsg string
+	if r.errorMessage != nil {
+		errMsg = C.GoString(r.errorMessage)
+		C.free(unsafe.Pointer(r.errorMessage))
+	}
+	return gui.NativeAlertResult{
+		Status:       status,
+		ErrorMessage: errMsg,
+	}
+}
+
 // --- helpers ---
 
 func toCStringArray(strs []string) (**C.char, C.int) {

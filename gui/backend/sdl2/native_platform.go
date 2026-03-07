@@ -7,7 +7,6 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/filedialog"
-	"github.com/veandco/go-sdl2/sdl"
 )
 
 // nativePlatform implements gui.NativePlatform for SDL2.
@@ -43,37 +42,11 @@ func (n *nativePlatform) ShowFolderDialog(title, startDir string) gui.PlatformDi
 }
 
 func (n *nativePlatform) ShowMessageDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {
-	flags := alertLevelToSDLFlags(level)
-	if err := sdl.ShowSimpleMessageBox(flags, title, body, nil); err != nil {
-		return gui.NativeAlertResult{
-			Status:       gui.DialogError,
-			ErrorMessage: err.Error(),
-		}
-	}
-	return gui.NativeAlertResult{Status: gui.DialogOK}
+	return filedialog.ShowMessageDialog(title, body, level)
 }
 
 func (n *nativePlatform) ShowConfirmDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {
-	data := &sdl.MessageBoxData{
-		Flags:   alertLevelToSDLFlags(level),
-		Title:   title,
-		Message: body,
-		Buttons: []sdl.MessageBoxButtonData{
-			{ButtonID: 1, Text: "OK"},
-			{ButtonID: 0, Text: "Cancel"},
-		},
-	}
-	buttonID, err := sdl.ShowMessageBox(data)
-	if err != nil {
-		return gui.NativeAlertResult{
-			Status:       gui.DialogError,
-			ErrorMessage: err.Error(),
-		}
-	}
-	if buttonID == 1 {
-		return gui.NativeAlertResult{Status: gui.DialogOK}
-	}
-	return gui.NativeAlertResult{Status: gui.DialogCancel}
+	return filedialog.ShowConfirmDialog(title, body, level)
 }
 
 func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotificationResult {
@@ -98,17 +71,6 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 		}
 	}
 	return gui.NativeNotificationResult{Status: gui.NotificationOK}
-}
-
-func alertLevelToSDLFlags(level gui.NativeAlertLevel) uint32 {
-	switch level {
-	case gui.AlertWarning:
-		return sdl.MESSAGEBOX_WARNING
-	case gui.AlertCritical:
-		return sdl.MESSAGEBOX_ERROR
-	default:
-		return sdl.MESSAGEBOX_INFORMATION
-	}
 }
 
 func (n *nativePlatform) ShowPrintDialog(_ gui.NativePrintParams) gui.PrintRunResult {

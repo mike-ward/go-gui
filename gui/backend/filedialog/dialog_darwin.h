@@ -31,4 +31,23 @@ DialogResult filedialogFolder(const char *title, const char *startDir);
 
 void filedialogFreeResult(DialogResult r);
 
+// Alert level constants matching gui.NativeAlertLevel.
+enum {
+    ALERT_INFO     = 0,
+    ALERT_WARNING  = 1,
+    ALERT_CRITICAL = 2,
+};
+
+// AlertResult returned by message/confirm dialogs.
+typedef struct {
+    int   status;  // DIALOG_OK, DIALOG_CANCEL, or DIALOG_ERROR
+    char *errorMessage;
+} AlertResult;
+
+AlertResult filedialogMessage(const char *title, const char *body,
+    int level);
+
+AlertResult filedialogConfirm(const char *title, const char *body,
+    int level);
+
 #endif

@@ -333,7 +333,17 @@ func renderCircle(shape *Shape, clip DrawClip, w *Window) {
 // renderText emits a RenderText command for a text shape.
 func renderText(shape *Shape, clip DrawClip, w *Window) {
 	tc := shape.TC
-	if tc == nil || len(tc.Text) == 0 {
+	if tc == nil {
+		return
+	}
+	if len(tc.Text) == 0 {
+		// Empty text — still render cursor if focused.
+		if shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() {
+			baseX := shape.X + shape.PaddingLeft()
+			baseY := shape.Y + shape.PaddingTop()
+			renderInputCursor(shape, "", baseX, baseY,
+				glyph.Layout{}, false, w)
+		}
 		return
 	}
 	dr := DrawClip{

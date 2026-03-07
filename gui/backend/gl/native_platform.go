@@ -58,12 +58,12 @@ func (n *nativePlatform) ShowFolderDialog(title, startDir string) gui.PlatformDi
 	return filedialog.ShowFolderDialog(title, startDir)
 }
 
-func (n *nativePlatform) ShowMessageDialog(title, body string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
-	return gui.NativeAlertResult{Status: gui.DialogOK}
+func (n *nativePlatform) ShowMessageDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {
+	return filedialog.ShowMessageDialog(title, body, level)
 }
 
-func (n *nativePlatform) ShowConfirmDialog(title, body string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
-	return gui.NativeAlertResult{Status: gui.DialogOK}
+func (n *nativePlatform) ShowConfirmDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {
+	return filedialog.ShowConfirmDialog(title, body, level)
 }
 
 func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotificationResult {

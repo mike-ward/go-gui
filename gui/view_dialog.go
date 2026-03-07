@@ -186,6 +186,7 @@ func promptView(cfg DialogCfg) []View {
 	views = append(views, Input(InputCfg{
 		ID:      "dialog_prompt_input",
 		Text:    cfg.Reply,
+		Sizing:  FillFit,
 		IDFocus: cfg.IDFocus,
 		OnTextChanged: func(_ *Layout, text string, w *Window) {
 			w.dialogCfg.Reply = text

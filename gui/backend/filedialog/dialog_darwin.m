@@ -143,6 +143,54 @@ DialogResult filedialogFolder(const char *title, const char *startDir) {
     }
 }
 
+static NSAlertStyle alertStyleFromLevel(int level) {
+    switch (level) {
+    case ALERT_WARNING:  return NSAlertStyleWarning;
+    case ALERT_CRITICAL: return NSAlertStyleCritical;
+    default:             return NSAlertStyleInformational;
+    }
+}
+
+AlertResult filedialogMessage(const char *title, const char *body,
+    int level) {
+    @autoreleasepool {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.alertStyle = alertStyleFromLevel(level);
+        if (title != NULL && title[0] != '\0')
+            alert.messageText =
+                [NSString stringWithUTF8String:title];
+        if (body != NULL && body[0] != '\0')
+            alert.informativeText =
+                [NSString stringWithUTF8String:body];
+        [alert addButtonWithTitle:@"OK"];
+        [alert runModal];
+        AlertResult r = {0};
+        r.status = DIALOG_OK;
+        return r;
+    }
+}
+
+AlertResult filedialogConfirm(const char *title, const char *body,
+    int level) {
+    @autoreleasepool {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.alertStyle = alertStyleFromLevel(level);
+        if (title != NULL && title[0] != '\0')
+            alert.messageText =
+                [NSString stringWithUTF8String:title];
+        if (body != NULL && body[0] != '\0')
+            alert.informativeText =
+                [NSString stringWithUTF8String:body];
+        [alert addButtonWithTitle:@"OK"];
+        [alert addButtonWithTitle:@"Cancel"];
+        NSModalResponse resp = [alert runModal];
+        AlertResult r = {0};
+        r.status = (resp == NSAlertFirstButtonReturn)
+            ? DIALOG_OK : DIALOG_CANCEL;
+        return r;
+    }
+}
+
 void filedialogFreeResult(DialogResult r) {
     for (int i = 0; i < r.pathCount; i++) {
         free(r.paths[i]);
