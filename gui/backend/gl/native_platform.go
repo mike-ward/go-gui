@@ -9,6 +9,7 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/filedialog"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 // nativePlatform implements gui.NativePlatform for the GL backend.
@@ -103,4 +104,7 @@ func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int) {}
 func (n *nativePlatform) A11yDestroy()                        {}
 func (n *nativePlatform) A11yAnnounce(_ string)               {}
 
+func (n *nativePlatform) IMEStart()                       { sdl.StartTextInput() }
+func (n *nativePlatform) IMEStop()                        { sdl.StopTextInput() }
+func (n *nativePlatform) IMESetRect(x, y, w, h int32)     { sdl.SetTextInputRect(&sdl.Rect{X: x, Y: y, W: w, H: h}) }
 func (n *nativePlatform) TitlebarDark(_ bool) {}

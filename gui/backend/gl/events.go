@@ -82,7 +82,16 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 		return gui.Event{
 			Type:      gui.EventChar,
 			CharCode:  uint32(r),
+			IMEText:   text,
 			Modifiers: mapKeyMod(sdl.GetModState()),
+		}, true
+
+	case *sdl.TextEditingEvent:
+		return gui.Event{
+			Type:      gui.EventIMEComposition,
+			IMEText:   e.GetText(),
+			IMEStart:  e.Start,
+			IMELength: e.Length,
 		}, true
 
 	case *sdl.WindowEvent:

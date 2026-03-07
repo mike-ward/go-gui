@@ -336,7 +336,8 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	if tc == nil {
 		return
 	}
-	if len(tc.Text) == 0 {
+	if len(tc.Text) == 0 && !(shape.IDFocus > 0 &&
+		shape.IDFocus == w.IDFocus() && w.IMEComposing()) {
 		// Empty text — still render cursor if focused.
 		if shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() {
 			baseX := shape.X + shape.PaddingLeft()
@@ -370,6 +371,27 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		}
 	}
 
+	// Insert IME preedit text at cursor position for display.
+	imeComposing := shape.IDFocus > 0 &&
+		shape.IDFocus == w.IDFocus() && w.IMEComposing()
+	compText := ""
+	compRuneLen := 0
+	compInsertPos := 0
+	if imeComposing {
+		compText = w.IMECompText()
+		compRunes := []rune(compText)
+		compRuneLen = len(compRunes)
+		is := StateReadOr(w, nsInput, shape.IDFocus,
+			InputState{})
+		runes := []rune(text)
+		compInsertPos = is.CursorPos
+		if compInsertPos > len(runes) {
+			compInsertPos = len(runes)
+		}
+		text = string(runes[:compInsertPos]) + compText +
+			string(runes[compInsertPos:])
+	}
+
 	baseX := shape.X + shape.PaddingLeft()
 	baseY := shape.Y + shape.PaddingTop()
 	style := textStyleOrDefault(shape)
@@ -377,13 +399,17 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	var preLayout glyph.Layout
 	hasPreLayout := false
 	needLayout := tc.TextSelBeg != tc.TextSelEnd ||
-		(shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() && w.InputCursorOn())
+		(shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() && w.InputCursorOn()) ||
+		imeComposing
 	if needLayout {
 		preLayout, hasPreLayout = inputGlyphLayoutResolved(text, shape, style, w, tc.TextIsPassword)
 	}
 
 	// Selection highlight (drawn before text so text overlays).
-	renderInputSelection(shape, text, baseX, baseY, preLayout, hasPreLayout, w)
+	if !imeComposing {
+		renderInputSelection(shape, text, baseX, baseY,
+			preLayout, hasPreLayout, w)
+	}
 
 	cmd := RenderCmd{
 		Kind:     RenderText,
@@ -401,7 +427,16 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	emitRenderer(cmd, w)
 
 	// Cursor (drawn after text).
-	renderInputCursor(shape, text, baseX, baseY, preLayout, hasPreLayout, w)
+	if !imeComposing {
+		renderInputCursor(shape, text, baseX, baseY,
+			preLayout, hasPreLayout, w)
+	}
+
+	// IME preedit underline.
+	if imeComposing && hasPreLayout {
+		renderIMEPreeditUnderline(shape, text, baseX, baseY,
+			compInsertPos, compRuneLen, preLayout, style, w)
+	}
 }
 
 // renderInputCursor emits a thin rect for the text cursor when
@@ -541,6 +576,45 @@ func renderInputSelection(shape *Shape, text string, baseX, baseY float32,
 		Color: selColor,
 		Fill:  true,
 	}, w)
+}
+
+// renderIMEPreeditUnderline draws an underline beneath the IME
+// preedit region and reports the cursor rect to the platform
+// for candidate window positioning.
+func renderIMEPreeditUnderline(
+	shape *Shape, compositeText string,
+	baseX, baseY float32,
+	insertPos, compRuneLen int,
+	gl glyph.Layout, style TextStyle, w *Window,
+) {
+	startByte := runeToByteIndex(compositeText, insertPos)
+	endByte := runeToByteIndex(compositeText,
+		insertPos+compRuneLen)
+
+	c := style.Color
+	if shape.Opacity < 1.0 {
+		c = c.WithOpacity(shape.Opacity)
+	}
+
+	rects := gl.GetSelectionRects(startByte, endByte)
+	underlineH := max(float32(1), style.Size/14)
+	for _, r := range rects {
+		emitRenderer(RenderCmd{
+			Kind:  RenderRect,
+			X:     baseX + r.X,
+			Y:     baseY + r.Y + r.Height - underlineH,
+			W:     r.Width,
+			H:     underlineH,
+			Color: c,
+			Fill:  true,
+		}, w)
+	}
+
+	// Report cursor rect to platform for candidate window.
+	if len(rects) > 0 {
+		r := rects[0]
+		w.IMESetRect(baseX+r.X, baseY+r.Y, r.Width, r.Height)
+	}
 }
 
 // inputGlyphLayout creates a glyph layout for the input text,

@@ -27,7 +27,11 @@ func (w *Window) EventFn(e *Event) {
 
 	switch e.Type {
 	case EventChar:
+		w.imeClear()
 		charHandler(layout, e, w)
+
+	case EventIMEComposition:
+		imeCompositionHandler(layout, e, w)
 
 	case EventFocused:
 		w.focused = true

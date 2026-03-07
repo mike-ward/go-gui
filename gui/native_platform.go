@@ -27,6 +27,11 @@ type NativePlatform interface {
 	A11yDestroy()
 	A11yAnnounce(text string)
 
+	// IME — input method editor lifecycle.
+	IMEStart()
+	IMEStop()
+	IMESetRect(x, y, w, h int32)
+
 	// URI — opens in default handler.
 	OpenURI(uri string) error
 

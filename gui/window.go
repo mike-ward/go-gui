@@ -198,12 +198,22 @@ func (w *Window) SetIDFocus(id uint32) {
 }
 
 func (w *Window) setIDFocusLocked(id uint32) {
+	prev := w.viewState.idFocus
 	w.clearInputSelections()
+	w.imeClear()
 	w.viewState.idFocus = id
 	if id > 0 {
 		w.viewState.inputCursorOn = true
 		if !w.hasAnimationLocked(blinkCursorAnimationID) {
 			w.animationAdd(NewBlinkCursorAnimation())
+		}
+	}
+	if np := w.nativePlatform; np != nil {
+		if prev > 0 && id != prev {
+			np.IMEStop()
+		}
+		if id > 0 {
+			np.IMEStart()
 		}
 	}
 }

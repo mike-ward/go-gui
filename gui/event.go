@@ -50,6 +50,7 @@ const (
 	EventQuitRequested
 	EventClipboardPasted
 	EventFilesDropped
+	EventIMEComposition
 )
 
 // MouseButton identifies which mouse button was pressed/released.
@@ -268,6 +269,7 @@ type TouchPoint struct {
 // Event holds input event data.
 type Event struct {
 	Touches           [8]TouchPoint
+	IMEText           string
 	FrameCount        uint64
 	MouseX            float32
 	MouseY            float32
@@ -277,6 +279,8 @@ type Event struct {
 	ScrollY           float32
 	Modifiers         Modifier
 	CharCode          uint32
+	IMEStart          int32
+	IMELength         int32
 	NumTouches        int
 	WindowWidth       int
 	WindowHeight      int

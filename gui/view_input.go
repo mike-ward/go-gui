@@ -531,7 +531,10 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			}
 		// Printable characters.
 		case ch >= CharSpace:
-			ins := string(rune(ch))
+			ins := e.IMEText
+			if len(ins) == 0 {
+				ins = string(rune(ch))
+			}
 			if mask != nil {
 				is := inputStateOrDefault(id, w)
 				res := InputMaskInsert(text, is.CursorPos, is.SelectBeg, is.SelectEnd, ins, mask)

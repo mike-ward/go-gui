@@ -19,6 +19,13 @@ func charHandler(layout *Layout, e *Event, w *Window) {
 	executeFocusCallback(layout, e, w, onChar, "charHandler")
 }
 
+// imeCompositionHandler handles IME composition events.
+// Updates the per-window IME state for the focused input.
+func imeCompositionHandler(layout *Layout, e *Event, w *Window) {
+	w.imeUpdate(e)
+	e.IsHandled = true
+}
+
 // keydownHandler handles key down events (special keys, shortcuts).
 // Traverses forward and delivers to focused element. Falls back to
 // keyboard scroll if the focused scroll container has no handler.
