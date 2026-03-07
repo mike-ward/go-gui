@@ -1,5 +1,7 @@
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 h1:5BVwOaUSBTlVZowGO6VZGw2H/zl9nrd3eCZfYV+NfQA=
 github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=
+github.com/go-pdf/fpdf v0.9.0 h1:PPvSaUuo1iMi9KkaAn90NuKi+P4gwMedWPHhj8YlJQw=
+github.com/go-pdf/fpdf v0.9.0/go.mod h1:oO8N111TkmKb9D7VvWGLvLJlaZUQVPM+6V42pp3iV4Y=
 github.com/mike-ward/go-glyph v1.0.0 h1:q1797wC5U7nSG+1fwR12zyjQiH49cC2MecaHFEF4FzQ=
 github.com/mike-ward/go-glyph v1.0.0/go.mod h1:jsV/yFYssCROmfg4HTPUWZiKgC0E0SLPo85pBSjNRvs=
 github.com/mike-ward/go-glyph/backend/sdl2 v1.0.0 h1:i7+mLXg8MhMwpyb1kTH6jTDsGr90r4haCoFTvj2S/8c=

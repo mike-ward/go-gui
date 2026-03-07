@@ -1,6 +1,9 @@
 package gui
 
-import "strings"
+import (
+	"os"
+	"strings"
+)
 
 // ExportPrintJob exports renderer output to PDF using PrintJob settings.
 // Returns a PrintExportResult with status and path.
@@ -19,25 +22,21 @@ func (w *Window) ExportPrintJob(job PrintJob) PrintExportResult {
 	if sourceH <= 0 {
 		sourceH = float32(w.windowHeight)
 	}
-	hasRenderers := len(w.renderers) > 0
+	renderersCopy := make([]RenderCmd, len(w.renderers))
+	copy(renderersCopy, w.renderers)
 	w.Unlock()
 
-	if !hasRenderers {
+	if len(renderersCopy) == 0 {
 		return printExportErrorResult(job.OutputPath, printErrorRender, "no renderers available for export")
 	}
 	if sourceW <= 0 || sourceH <= 0 {
 		return printExportErrorResult(job.OutputPath, printErrorInvalidCfg, "source dimensions must be positive")
 	}
 
-	// PDF rendering is backend-specific. Without a native
-	// platform, export is not supported.
-	if w.nativePlatform == nil {
-		return printExportErrorResult(job.OutputPath, "unsupported", "PDF export requires a native platform backend")
+	if err := renderToPDF(renderersCopy, job, sourceW, sourceH); err != nil {
+		return printExportErrorResult(job.OutputPath, printErrorRender, err.Error())
 	}
-
-	// The full PDF rendering pipeline (print_pdf.v / print_raster.v)
-	// is backend-specific. This stub validates and delegates.
-	return printExportErrorResult(job.OutputPath, "not_implemented", "PDF rendering pipeline not yet ported")
+	return printExportOKResult(job.OutputPath)
 }
 
 // RunPrintJob runs the native print flow for the provided PrintJob.
@@ -56,6 +55,10 @@ func (w *Window) RunPrintJob(job PrintJob) PrintRunResult {
 			code = printErrorIO
 		}
 		return printRunErrorResult(code, err.Error())
+	}
+	// Clean up temp PDF after dialog returns.
+	if job.Source.Kind == PrintSourceCurrentView {
+		defer os.Remove(pdfPath)
 	}
 
 	pw, ph := PrintPageSize(job.Paper, job.Orientation)
@@ -87,8 +90,19 @@ func (w *Window) RunPrintJob(job PrintJob) PrintRunResult {
 func printJobResolvePDFPath(w *Window, job PrintJob) (string, error) {
 	switch job.Source.Kind {
 	case PrintSourceCurrentView:
-		// Full implementation would export view to temp PDF.
-		return "", &printError{"PDF export from current view not yet implemented"}
+		tmp, err := os.CreateTemp("", "go-gui-print-*.pdf")
+		if err != nil {
+			return "", &printError{"failed to create temp file: " + err.Error()}
+		}
+		tmp.Close()
+		exportJob := job
+		exportJob.OutputPath = tmp.Name()
+		result := w.ExportPrintJob(exportJob)
+		if !result.IsOk() {
+			os.Remove(tmp.Name())
+			return "", &printError{result.ErrorMessage}
+		}
+		return tmp.Name(), nil
 	case PrintSourcePDFPath:
 		path := strings.TrimSpace(job.Source.PDFPath)
 		if path == "" {

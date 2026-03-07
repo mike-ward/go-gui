@@ -7,6 +7,7 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/filedialog"
+	"github.com/mike-ward/go-gui/gui/backend/printdialog"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -74,8 +75,8 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 	return gui.NativeNotificationResult{Status: gui.NotificationOK}
 }
 
-func (n *nativePlatform) ShowPrintDialog(_ gui.NativePrintParams) gui.PrintRunResult {
-	return gui.PrintRunResult{}
+func (n *nativePlatform) ShowPrintDialog(cfg gui.NativePrintParams) gui.PrintRunResult {
+	return printdialog.ShowPrintDialog(cfg)
 }
 
 func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return nil }
