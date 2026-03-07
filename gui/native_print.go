@@ -22,8 +22,24 @@ func (w *Window) ExportPrintJob(job PrintJob) PrintExportResult {
 	if sourceH <= 0 {
 		sourceH = float32(w.windowHeight)
 	}
-	renderersCopy := make([]RenderCmd, len(w.renderers))
-	copy(renderersCopy, w.renderers)
+	// Prepend window background as first render command so the
+	// PDF matches on-screen appearance (the backend paints the
+	// background via Clear(), which is not in the renderers).
+	bg := w.Config.BgColor
+	if bg == (Color{}) {
+		bg = CurrentTheme().ColorBackground
+	}
+	renderersCopy := make([]RenderCmd, 0, len(w.renderers)+1)
+	renderersCopy = append(renderersCopy, RenderCmd{
+		Kind:  RenderRect,
+		X:     0,
+		Y:     0,
+		W:     sourceW,
+		H:     sourceH,
+		Color: bg,
+		Fill:  true,
+	})
+	renderersCopy = append(renderersCopy, w.renderers...)
 	w.Unlock()
 
 	if len(renderersCopy) == 0 {

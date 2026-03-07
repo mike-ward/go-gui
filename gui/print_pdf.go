@@ -247,10 +247,76 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.Polygon(pts, "F")
 			}
 
+			case RenderRTF:
+			if cmd.LayoutPtr == nil {
+				continue
+			}
+			layoutText := cmd.LayoutPtr.Text
+			for i := range cmd.LayoutPtr.Items {
+				item := &cmd.LayoutPtr.Items[i]
+				if item.IsObject {
+					continue
+				}
+				// Text lives in Layout.Text; Item references
+				// a substring via StartIndex/Length.
+				end := item.StartIndex + item.Length
+				if end > len(layoutText) {
+					continue
+				}
+				text := stripUnprintable(
+					layoutText[item.StartIndex:end])
+				if text == "" {
+					continue
+				}
+				r, g, b := item.Color.R, item.Color.G, item.Color.B
+				pdf.SetTextColor(int(r), int(g), int(b))
+				if item.Color.A < 255 {
+					pdf.SetAlpha(float64(item.Color.A)/255.0, "Normal")
+				}
+				// Derive font size from ascent (≈75% of em for
+				// standard PDF fonts).
+				srcSize := item.Ascent / 0.75
+				size := srcSize * float64(scale) / float64(ptToMM)
+				pdf.SetFont("Helvetica", "", size)
+
+				// Scale font so PDF text width matches the
+				// glyph-computed item width. Built-in PDF
+				// fonts have different metrics than the
+				// system font used by glyph.
+				wantW := float64(item.Width) * float64(scale)
+				pdfW := pdf.GetStringWidth(text)
+				if pdfW > 0 && wantW > 0 {
+					size *= wantW / pdfW
+					pdf.SetFont("Helvetica", "", size)
+				}
+
+				ix := px(cmd.X + float32(item.X))
+				iy := py(cmd.Y + float32(item.Y))
+				pdf.Text(ix, iy, text)
+
+				if item.HasUnderline {
+					pdf.SetDrawColor(int(r), int(g), int(b))
+					lw := max(item.UnderlineThickness*float64(scale), 0.1)
+					pdf.SetLineWidth(lw)
+					uy := py(cmd.Y + float32(item.Y+item.UnderlineOffset))
+					pdf.Line(ix, uy,
+						ix+pw(float32(item.Width)), uy)
+				}
+				if item.HasStrikethrough {
+					pdf.SetDrawColor(int(r), int(g), int(b))
+					lw := max(item.StrikethroughThickness*float64(scale), 0.1)
+					pdf.SetLineWidth(lw)
+					sy := py(cmd.Y + float32(item.Y+item.StrikethroughOffset))
+					pdf.Line(ix, sy,
+						ix+pw(float32(item.Width)), sy)
+				}
+				resetAlpha(pdf)
+			}
+
 		// Unsupported kinds — skip silently.
 		case RenderShadow, RenderBlur, RenderFilterBegin,
 			RenderFilterEnd, RenderFilterComposite,
-			RenderCustomShader, RenderTextPath, RenderRTF,
+			RenderCustomShader, RenderTextPath,
 			RenderLayout, RenderLayoutTransformed,
 			RenderLayoutPlaced, RenderNone:
 			continue

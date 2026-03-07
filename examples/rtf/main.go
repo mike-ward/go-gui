@@ -20,6 +20,16 @@ func main() {
 		OnInit: func(w *gui.Window) {
 			w.UpdateView(mainView)
 		},
+		OnEvent: func(e *gui.Event, w *gui.Window) {
+			if e.Type == gui.EventKeyDown &&
+				e.KeyCode == gui.KeyP &&
+				e.Modifiers == gui.ModCtrl {
+				job := gui.NewPrintJob()
+				job.Title = "RTF Viewer"
+				w.RunPrintJob(job)
+				e.IsHandled = true
+			}
+		},
 	})
 
 	backend.Run(w)

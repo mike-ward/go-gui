@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/mike-ward/go-glyph"
 )
 
 func testPrintJob(t *testing.T) PrintJob {
@@ -280,6 +282,52 @@ func TestRenderToPDF_GradientBorder(t *testing.T) {
 			},
 		},
 	}}
+	if err := renderToPDF(cmds, j, 800, 600); err != nil {
+		t.Fatal(err)
+	}
+	assertPDFExists(t, j.OutputPath)
+}
+
+func TestRenderToPDF_RTF(t *testing.T) {
+	j := testPrintJob(t)
+	layout := &glyph.Layout{
+		Text: "Hello RTF",
+		Items: []glyph.Item{
+			{
+				StartIndex: 0,
+				Length:      9,
+				X:          0,
+				Y:          20,
+				Width:      80,
+				Ascent:     12,
+				Descent:    4,
+				Color:      glyph.Color{R: 0, G: 0, B: 0, A: 255},
+			},
+		},
+		Width:  200,
+		Height: 40,
+	}
+	cmds := []RenderCmd{{
+		Kind:      RenderRTF,
+		X:         10,
+		Y:         10,
+		LayoutPtr: layout,
+	}}
+	if err := renderToPDF(cmds, j, 800, 600); err != nil {
+		t.Fatal(err)
+	}
+	assertPDFExists(t, j.OutputPath)
+	// Text is zlib-compressed in the PDF stream, so verify
+	// the PDF is larger than a minimal empty page (~910 bytes).
+	info, _ := os.Stat(j.OutputPath)
+	if info.Size() < 1000 {
+		t.Errorf("PDF too small (%d bytes), likely missing text", info.Size())
+	}
+}
+
+func TestRenderToPDF_RTF_NilLayout(t *testing.T) {
+	j := testPrintJob(t)
+	cmds := []RenderCmd{{Kind: RenderRTF, X: 10, Y: 10}}
 	if err := renderToPDF(cmds, j, 800, 600); err != nil {
 		t.Fatal(err)
 	}
