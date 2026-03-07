@@ -17,8 +17,10 @@ const (
 
 // DatePickerRollerCfg configures a roller-style date picker.
 type DatePickerRollerCfg struct {
-	ID           string
-	IDFocus      uint32
+	ID              string
+	A11YLabel       string
+	A11YDescription string
+	IDFocus         uint32
 	SelectedDate time.Time
 	DisplayMode  DatePickerRollerDisplayMode
 	MinYear      int
@@ -93,6 +95,8 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 	return GenerateViewLayout(container(ContainerCfg{
 		ID:       cfg.ID,
 		IDFocus:  cfg.IDFocus,
+		A11YRole: AccessRoleDateField,
+		A11YLabel: a11yLabel(cfg.A11YLabel, "Date Roller"),
 		Color:    cfg.Color,
 		MinWidth: cfg.MinWidth,
 		MaxWidth: cfg.MaxWidth,

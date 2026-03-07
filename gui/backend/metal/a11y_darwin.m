@@ -59,6 +59,7 @@ enum {
     STATE_READ_ONLY = 64,
     STATE_MODAL     = 128,
     // STATE_LIVE = 256 — not mapped to NSAccessibility
+    STATE_DISABLED  = 512,
 };
 
 // Forward declaration — used by isAccessibilityFocused.
@@ -126,7 +127,7 @@ static int _curFocusedIdx = -1;
 }
 
 - (BOOL)isAccessibilityEnabled {
-    return !(_nodeState & STATE_READ_ONLY);
+    return !(_nodeState & (STATE_READ_ONLY | STATE_DISABLED));
 }
 
 - (BOOL)isAccessibilityExpanded {

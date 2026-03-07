@@ -55,6 +55,8 @@ type datePickerState struct {
 // DatePickerCfg configures a date picker calendar view.
 type DatePickerCfg struct {
 	ID                   string
+	A11YLabel            string
+	A11YDescription      string
 	Dates                []time.Time
 	AllowedWeekdays      []DatePickerWeekdays
 	AllowedMonths        []DatePickerMonths
@@ -119,6 +121,8 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 		cfg: ContainerCfg{
 			ID:          cfg.ID,
 			IDFocus:     cfg.IDFocus,
+			A11YRole:    AccessRoleGrid,
+			A11YLabel:   a11yLabel(cfg.A11YLabel, "Date Picker"),
 			Color:       cfg.Color,
 			ColorBorder: cfg.ColorBorder,
 			SizeBorder:  Some(sizeBorder),

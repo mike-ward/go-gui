@@ -83,9 +83,10 @@ func (dv *dockLayoutView) GenerateLayout(w *Window) Layout {
 	colorZone := core.colorZonePreview
 
 	cv := Canvas(ContainerCfg{
-		ID:      cfg.ID,
-		Sizing:  cfg.Sizing,
-		Padding: Some(PaddingNone),
+		ID:       cfg.ID,
+		A11YRole: AccessRoleGroup,
+		Sizing:   cfg.Sizing,
+		Padding:  Some(PaddingNone),
 		Spacing: Some(float32(0)),
 		Clip:    true,
 		AmendLayout: func(layout *Layout, w *Window) {

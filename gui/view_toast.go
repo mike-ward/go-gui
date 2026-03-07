@@ -181,6 +181,9 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 		Clip:        true,
 		Opacity:     frac,
 		Spacing:     Some(SpacingSmall),
+		A11YRole:    AccessRoleGroup,
+		A11YState:   AccessStateLive,
+		A11YLabel:   a11yLabel("", toast.cfg.Title),
 		AmendLayout: func(layout *Layout, _ *Window) {
 			if frac < 1.0 {
 				layout.Shape.Height *= frac

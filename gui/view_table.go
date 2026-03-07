@@ -31,6 +31,8 @@ type TableCellCfg struct {
 // TableCfg configures a table layout.
 type TableCfg struct {
 	ID                 string
+	A11YLabel          string
+	A11YDescription    string
 	ColorBorder        Color
 	ColorSelect        Color
 	ColorHover         Color
@@ -210,6 +212,7 @@ func Table(cfg TableCfg) View {
 			}
 
 			cells = append(cells, Column(ContainerCfg{
+				A11YRole:    AccessRoleGridCell,
 				Color:       ColorTransparent,
 				ColorBorder: cfg.ColorBorder,
 				SizeBorder:  Some(cellBorder),
@@ -293,6 +296,8 @@ func Table(cfg TableCfg) View {
 
 	return Column(ContainerCfg{
 		ID:        cfg.ID,
+		A11YRole:  AccessRoleGrid,
+		A11YLabel: cfg.A11YLabel,
 		Color:     ColorTransparent,
 		Padding:   Some(PaddingNone),
 		Spacing:   Some(rowSpacing),

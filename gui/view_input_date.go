@@ -154,6 +154,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 		cfg: ContainerCfg{
 			ID:          cfg.ID,
 			IDFocus:     cfg.IDFocus,
+			A11YRole:    AccessRoleDateField,
 			A11YLabel:   a11yLabel(cfg.A11YLabel, "Date Input"),
 			Color:       cfg.Color,
 			ColorBorder: cfg.ColorBorder,

@@ -61,6 +61,7 @@ func Badge(cfg BadgeCfg) View {
 	if cfg.Dot {
 		sz := dotSize
 		return Row(ContainerCfg{
+			A11YRole:  AccessRoleStaticText,
 			A11YLabel: a11yLabel(cfg.A11YLabel, "status"),
 			Color:     bg,
 			Radius:    Some(sz / 2),
@@ -73,6 +74,7 @@ func Badge(cfg BadgeCfg) View {
 
 	label := badgeLabel(cfg.Label, cfg.Max)
 	return Row(ContainerCfg{
+		A11YRole:  AccessRoleStaticText,
 		A11YLabel: a11yLabel(cfg.A11YLabel, label),
 		Color:     bg,
 		Radius:    Some(radius),

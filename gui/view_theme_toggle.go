@@ -2,9 +2,11 @@ package gui
 
 // ThemeToggleCfg configures a theme toggle view.
 type ThemeToggleCfg struct {
-	ID           string
-	IDFocus      uint32
-	Sizing       Sizing
+	ID              string
+	A11YLabel       string
+	A11YDescription string
+	IDFocus         uint32
+	Sizing          Sizing
 	OnSelect     func(string, *Event, *Window)
 	FloatAnchor  FloatAttach
 	FloatTieOff  FloatAttach
@@ -88,10 +90,12 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 	colorBorderFocus := guiTheme.ToggleStyle.ColorBorderFocus
 
 	return GenerateViewLayout(Row(ContainerCfg{
-		ID:      cfg.ID,
-		IDFocus: idFocus,
-		Sizing:  cfg.Sizing,
-		Padding: Some(PaddingSmall),
+		ID:       cfg.ID,
+		IDFocus:  idFocus,
+		A11YRole: AccessRoleButton,
+		A11YLabel: a11yLabel(cfg.A11YLabel, "Theme Toggle"),
+		Sizing:   cfg.Sizing,
+		Padding:  Some(PaddingSmall),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			ss := StateMap[string, bool](w, nsSelect, capModerate)
 			ss.Clear()

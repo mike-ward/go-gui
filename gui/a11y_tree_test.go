@@ -249,6 +249,47 @@ func TestA11yDeepNesting(t *testing.T) {
 	}
 }
 
+func TestA11yCollectDisabledState(t *testing.T) {
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole: AccessRoleButton,
+			Disabled: true,
+		},
+	}
+	var nodes []A11yNode
+	var live []liveNode
+	a11yCollect(&layout, -1, &nodes, 0, &live)
+	if len(nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(nodes))
+	}
+	if !nodes[0].State.Has(AccessStateDisabled) {
+		t.Error("expected AccessStateDisabled in state")
+	}
+}
+
+func TestA11yCollectDisabledPreservesExplicitState(t *testing.T) {
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole:  AccessRoleCheckbox,
+			A11YState: AccessStateChecked,
+			Disabled:  true,
+		},
+	}
+	var nodes []A11yNode
+	var live []liveNode
+	a11yCollect(&layout, -1, &nodes, 0, &live)
+	if len(nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(nodes))
+	}
+	s := nodes[0].State
+	if !s.Has(AccessStateChecked) {
+		t.Error("expected AccessStateChecked")
+	}
+	if !s.Has(AccessStateDisabled) {
+		t.Error("expected AccessStateDisabled")
+	}
+}
+
 // --- a11yActionCallback tests ---
 
 func TestA11yActionCallbackPress(t *testing.T) {

@@ -15,10 +15,12 @@ import (
 
 // RtfCfg configures a Rich Text View.
 type RtfCfg struct {
-	ID             string
-	RichText       RichText
-	MinWidth       float32
-	IDFocus        uint32
+	ID              string
+	A11YLabel       string
+	A11YDescription string
+	RichText        RichText
+	MinWidth        float32
+	IDFocus         uint32
 	Mode           TextMode
 	Invisible      bool
 	Clip           bool
@@ -73,6 +75,8 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 		ShapeType: ShapeRTF,
 		ID:        v.ID,
 		IDFocus:   v.IDFocus,
+		A11YRole:  AccessRoleStaticText,
+		A11Y:      makeA11YInfo(v.A11YLabel, v.A11YDescription),
 		Width:     layout.Width,
 		Height:    layout.Height,
 		Clip:      v.Clip,

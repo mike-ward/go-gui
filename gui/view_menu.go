@@ -15,6 +15,7 @@ func Menu(w *Window, cfg MenubarCfg) View {
 
 	return Column(ContainerCfg{
 		ID:           cfg.ID,
+		A11YRole:     AccessRoleMenu,
 		Color:        cfg.Color,
 		ColorBorder:  cfg.ColorBorder,
 		SizeBorder:   cfg.SizeBorder,

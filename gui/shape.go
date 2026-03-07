@@ -194,6 +194,7 @@ const (
 	AccessStateReadOnly AccessState = 64
 	AccessStateModal    AccessState = 128
 	AccessStateLive     AccessState = 256
+	AccessStateDisabled AccessState = 512
 )
 
 // Has checks if the state bitmask contains the given flag.

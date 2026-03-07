@@ -2,8 +2,10 @@ package gui
 
 // DrawCanvasCfg configures a draw canvas view.
 type DrawCanvasCfg struct {
-	ID        string
-	Version   uint64
+	ID              string
+	A11YLabel       string
+	A11YDescription string
+	Version         uint64
 	Sizing    Sizing
 	Width     float32
 	Height    float32
@@ -74,6 +76,8 @@ func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
 		Shape: &Shape{
 			ShapeType: ShapeDrawCanvas,
 			ID:        c.ID,
+			A11YRole:  AccessRoleImage,
+			A11Y:      makeA11YInfo(c.A11YLabel, c.A11YDescription),
 			Width:     c.Width,
 			Height:    c.Height,
 			MinWidth:  c.MinWidth,

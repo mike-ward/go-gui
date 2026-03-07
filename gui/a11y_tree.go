@@ -144,9 +144,14 @@ func a11yCollect(
 		label = shapeA11yLabel(s)
 	}
 
+	state := s.A11YState
+	if s.Disabled {
+		state |= AccessStateDisabled
+	}
+
 	*nodes = append(*nodes, A11yNode{
 		Role:        s.A11YRole,
-		State:       s.A11YState,
+		State:       state,
 		Label:       label,
 		Value:       value,
 		Description: description,
@@ -162,7 +167,7 @@ func a11yCollect(
 	}
 
 	// Track live regions.
-	if s.A11YState.Has(AccessStateLive) {
+	if state.Has(AccessStateLive) {
 		*live = append(*live, liveNode{label: label, value: value})
 	}
 

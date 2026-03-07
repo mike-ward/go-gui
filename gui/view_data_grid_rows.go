@@ -133,6 +133,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 
 		cells = append(cells, Row(ContainerCfg{
 			ID:          cfg.ID + ":cell:" + rowID + ":" + col.ID,
+			A11YRole:    AccessRoleGridCell,
 			Width:       dataGridColumnWidthFor(col, columnWidths),
 			Sizing:      FixedFill,
 			Padding:     cellPadding,

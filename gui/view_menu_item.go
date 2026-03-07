@@ -130,14 +130,17 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 	itemContent = append(itemContent, extra...)
 
 	return Column(ContainerCfg{
-		ID:      itemCfg.ID,
-		Color:   itemColor,
-		Sizing:  itemCfg.sizing,
-		Padding: itemCfg.Padding,
-		Radius:  Some(itemCfg.radius),
-		OnClick: menuItemClick(menubarCfg, itemCfg),
-		OnHover: onHover,
-		Content: itemContent,
+		ID:        itemCfg.ID,
+		A11YRole:  AccessRoleMenuItem,
+		A11YLabel: a11yLabel("", itemCfg.Text),
+		Color:     itemColor,
+		Sizing:    itemCfg.sizing,
+		Padding:   itemCfg.Padding,
+		Radius:    Some(itemCfg.radius),
+		Disabled:  itemCfg.disabled,
+		OnClick:   menuItemClick(menubarCfg, itemCfg),
+		OnHover:   onHover,
+		Content:   itemContent,
 	})
 }
 

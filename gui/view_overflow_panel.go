@@ -101,6 +101,7 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 
 	return Row(ContainerCfg{
 		ID:       cfg.ID,
+		A11YRole: AccessRoleGroup,
 		Sizing:   FillFit,
 		Padding:  Some(PaddingNone),
 		Spacing:  Some(cfg.Spacing),
