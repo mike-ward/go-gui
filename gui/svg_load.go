@@ -35,6 +35,7 @@ type CachedSvgTextDraw struct {
 	Text      string
 	TextStyle TextStyle
 	X, Y      float32
+	TextWidth float32 // measured width including letter-spacing
 	Gradient  *glyph.GradientConfig
 }
 
@@ -177,6 +178,7 @@ func cachedSvgTextDraws(texts []SvgText, scale float32,
 			TextStyle: ts,
 			X:         x,
 			Y:         y,
+			TextWidth: tw,
 			Gradient:  grad,
 		})
 	}

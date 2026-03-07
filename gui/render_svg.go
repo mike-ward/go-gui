@@ -197,6 +197,7 @@ func emitCachedSvgTextDraw(draw *CachedSvgTextDraw,
 		Color:        draw.TextStyle.Color,
 		FontName:     draw.TextStyle.Family,
 		FontSize:     draw.TextStyle.Size,
+		TextWidth:    draw.TextWidth,
 		TextStylePtr: &draw.TextStyle,
 		TextGradient: draw.Gradient,
 	}, w)

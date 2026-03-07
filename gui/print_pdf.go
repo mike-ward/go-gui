@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/go-pdf/fpdf"
+	"github.com/mike-ward/go-glyph"
 )
 
 // ptToMM converts PostScript points to millimeters.
@@ -57,16 +58,19 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 	pdf.SetAutoPageBreak(false, 0)
 	pdf.AddPage()
 
+	// Translate UTF-8 to cp1252 for built-in PDF fonts.
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
+
 	// Margin offset in mm.
 	ox := float64(m.Left * ptToMM)
 	oy := float64(m.Top * ptToMM)
 
 	// Header/footer rendering.
 	if job.Header.Enabled {
-		renderHeaderFooter(pdf, job.Header, job, pageW, m, true)
+		renderHeaderFooter(pdf, tr, job.Header, job, pageW, m, true)
 	}
 	if job.Footer.Enabled {
-		renderHeaderFooter(pdf, job.Footer, job, pageW, m, false)
+		renderHeaderFooter(pdf, tr, job.Footer, job, pageW, m, false)
 	}
 
 	// Coordinate helpers.
@@ -111,7 +115,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			resetAlpha(pdf)
 
 		case RenderText:
-			text := stripUnprintable(cmd.Text)
+			text := tr(stripUnprintable(cmd.Text))
 			if text == "" {
 				continue
 			}
@@ -119,8 +123,9 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			pdf.SetTextColor(int(r), int(g), int(b))
 			setAlpha(pdf, cmd.Color)
 			family := pdfFontName(cmd.FontName)
+			style := pdfFontStyle(cmd.TextStylePtr)
 			size := float64(cmd.FontSize * scale / ptToMM)
-			pdf.SetFont(family, "", size)
+			pdf.SetFont(family, style, size)
 
 			// Scale font so PDF text width matches source.
 			// Built-in PDF fonts have different metrics than
@@ -130,7 +135,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdfW := pdf.GetStringWidth(text)
 				if pdfW > 0 && wantW > 0 {
 					size *= wantW / pdfW
-					pdf.SetFont(family, "", size)
+					pdf.SetFont(family, style, size)
 				}
 			}
 
@@ -148,6 +153,18 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			for i, line := range lines {
 				pdf.Text(px(cmd.X),
 					py(cmd.Y)+ascent+float64(i)*lineH, line)
+			}
+
+			// Strikethrough — fpdf has no built-in support.
+			if cmd.TextStylePtr != nil && cmd.TextStylePtr.Strikethrough {
+				pdf.SetDrawColor(int(r), int(g), int(b))
+				lw := max(float64(scale)*0.5, 0.1)
+				pdf.SetLineWidth(lw)
+				textW := pdf.GetStringWidth(text)
+				for i := range lines {
+					sy := py(cmd.Y) + ascent*0.65 + float64(i)*lineH
+					pdf.Line(px(cmd.X), sy, px(cmd.X)+textW, sy)
+				}
 			}
 			resetAlpha(pdf)
 
@@ -294,8 +311,8 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				if end > len(layoutText) {
 					continue
 				}
-				text := stripUnprintable(
-					layoutText[item.StartIndex:end])
+				text := tr(stripUnprintable(
+					layoutText[item.StartIndex:end]))
 				if text == "" {
 					continue
 				}
@@ -365,6 +382,42 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 	return pdf.OutputFileAndClose(job.OutputPath)
 }
 
+// pdfFontStyle returns an fpdf style string ("B", "I", "BI", "U",
+// etc.) derived from a TextStyle. Returns "" when ts is nil.
+func pdfFontStyle(ts *TextStyle) string {
+	if ts == nil {
+		return ""
+	}
+	bold := ts.Typeface == glyph.TypefaceBold ||
+		ts.Typeface == glyph.TypefaceBoldItalic
+	italic := ts.Typeface == glyph.TypefaceItalic ||
+		ts.Typeface == glyph.TypefaceBoldItalic
+
+	// SVG text encodes weight/style in the Pango font name
+	// (e.g. "Sans Bold") rather than in Typeface.
+	if !bold || !italic {
+		lower := strings.ToLower(ts.Family)
+		if !bold && strings.Contains(lower, "bold") {
+			bold = true
+		}
+		if !italic && strings.Contains(lower, "italic") {
+			italic = true
+		}
+	}
+
+	var s string
+	if bold {
+		s += "B"
+	}
+	if italic {
+		s += "I"
+	}
+	if ts.Underline {
+		s += "U"
+	}
+	return s
+}
+
 // pdfFontName maps a gui font family name to a built-in PDF font.
 func pdfFontName(name string) string {
 	lower := strings.ToLower(name)
@@ -375,6 +428,11 @@ func pdfFontName(name string) string {
 		return "Courier"
 	case strings.Contains(lower, "serif") &&
 		!strings.Contains(lower, "sans"):
+		return "Times"
+	case strings.Contains(lower, "georgia"),
+		strings.Contains(lower, "times"),
+		strings.Contains(lower, "palatino"),
+		strings.Contains(lower, "garamond"):
 		return "Times"
 	default:
 		return "Helvetica"
@@ -437,7 +495,8 @@ func gradientCoords(dir GradientDirection) (float64, float64, float64, float64) 
 }
 
 // renderHeaderFooter draws a header or footer line on the page.
-func renderHeaderFooter(pdf *fpdf.Fpdf, cfg PrintHeaderFooterCfg,
+func renderHeaderFooter(pdf *fpdf.Fpdf, tr func(string) string,
+	cfg PrintHeaderFooterCfg,
 	job PrintJob, pageW float32, m PrintMargins, isHeader bool) {
 
 	fontSize := 8.0 // points
@@ -459,16 +518,16 @@ func renderHeaderFooter(pdf *fpdf.Fpdf, cfg PrintHeaderFooterCfg,
 	replacer := headerFooterReplacer(job)
 
 	if cfg.Left != "" {
-		text := replacer.Replace(cfg.Left)
+		text := tr(replacer.Replace(cfg.Left))
 		pdf.Text(leftX, y, text)
 	}
 	if cfg.Center != "" {
-		text := replacer.Replace(cfg.Center)
+		text := tr(replacer.Replace(cfg.Center))
 		tw := pdf.GetStringWidth(text)
 		pdf.Text(centerX-tw/2, y, text)
 	}
 	if cfg.Right != "" {
-		text := replacer.Replace(cfg.Right)
+		text := tr(replacer.Replace(cfg.Right))
 		tw := pdf.GetStringWidth(text)
 		pdf.Text(rightX-tw, y, text)
 	}
