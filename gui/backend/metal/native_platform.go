@@ -15,7 +15,9 @@ import (
 
 // nativePlatform implements gui.NativePlatform for the Metal
 // backend.
-type nativePlatform struct{}
+type nativePlatform struct {
+	window *sdl.Window
+}
 
 func (n *nativePlatform) OpenURI(uri string) error {
 	if err := validateOpenURI(uri); err != nil {
@@ -84,10 +86,23 @@ func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return 
 func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
-func (n *nativePlatform) A11yInit(_ func(action, index int))  {}
-func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int) {}
-func (n *nativePlatform) A11yDestroy()                        {}
-func (n *nativePlatform) A11yAnnounce(_ string)               {}
+func (n *nativePlatform) A11yInit(cb func(action, index int)) {
+	a11yActionCallback = cb
+	a11yInitBridge(n.window)
+}
+
+func (n *nativePlatform) A11ySync(nodes []gui.A11yNode, count, focusedIdx int) {
+	_, h := n.window.GetSize()
+	a11ySyncBridge(nodes, count, focusedIdx, float32(h))
+}
+
+func (n *nativePlatform) A11yDestroy() {
+	a11yDestroyBridge()
+}
+
+func (n *nativePlatform) A11yAnnounce(text string) {
+	a11yAnnounceBridge(text)
+}
 
 func (n *nativePlatform) IMEStart()                       { sdl.StartTextInput() }
 func (n *nativePlatform) IMEStop()                        { sdl.StopTextInput() }

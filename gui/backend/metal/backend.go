@@ -217,7 +217,7 @@ func New(w *gui.Window) (*Backend, error) {
 		text, _ := sdl.GetClipboardText()
 		return text
 	})
-	w.SetNativePlatform(&nativePlatform{})
+	w.SetNativePlatform(&nativePlatform{window: win})
 
 	return b, nil
 }
