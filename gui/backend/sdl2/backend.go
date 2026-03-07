@@ -267,5 +267,4 @@ func (b *Backend) Destroy() {
 		b.window.Destroy()
 	}
 	sdl.Quit()
-	log.Println("sdl2: backend destroyed")
 }

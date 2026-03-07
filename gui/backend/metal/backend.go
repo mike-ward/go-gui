@@ -367,7 +367,6 @@ func (b *Backend) Destroy() {
 		_ = b.window.Destroy()
 	}
 	sdl.Quit()
-	log.Println("metal: backend destroyed")
 }
 
 // useGlyphPipeline sets up Metal state for glyph text rendering.

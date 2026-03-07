@@ -363,7 +363,6 @@ func (b *Backend) Destroy() {
 		b.window.Destroy()
 	}
 	sdl.Quit()
-	log.Println("gl: backend destroyed")
 }
 
 // ortho builds an orthographic projection matrix (column-major).
