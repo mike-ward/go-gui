@@ -12,9 +12,10 @@ func detailPanel(w *gui.Window) gui.View {
 
 	if len(entries) == 0 {
 		return gui.Column(gui.ContainerCfg{
-			IDScroll: scrollDetail,
-			Sizing:   gui.FillFill,
-			Padding:  gui.Some(detailPanelPadding()),
+			IDScroll:   scrollDetail,
+			Sizing:     gui.FillFill,
+			SizeBorder: gui.Some(float32(0)),
+			Padding:    gui.Some(detailPanelPadding()),
 			ScrollbarCfgY: &gui.ScrollbarCfg{
 				GapEdge: 4,
 			},
@@ -48,11 +49,12 @@ func detailPanel(w *gui.Window) gui.View {
 	}
 
 	return gui.Column(gui.ContainerCfg{
-		IDScroll: scrollDetail,
-		Sizing:   gui.FillFill,
-		Color:    gui.CurrentTheme().ColorBackground,
-		Padding:  gui.Some(detailPanelPadding()),
-		Spacing:  gui.Some(gui.CurrentTheme().SpacingLarge),
+		IDScroll:   scrollDetail,
+		Sizing:     gui.FillFill,
+		Color:      gui.CurrentTheme().ColorBackground,
+		SizeBorder: gui.Some(float32(0)),
+		Padding:    gui.Some(detailPanelPadding()),
+		Spacing:    gui.Some(gui.CurrentTheme().SpacingLarge),
 		ScrollbarCfgY: &gui.ScrollbarCfg{
 			GapEdge: 4,
 		},
@@ -78,20 +80,26 @@ func viewTitleBar(entry DemoEntry, showDocs bool) gui.View {
 	}
 	if entry.ID != "welcome" && !strings.HasPrefix(entry.ID, "doc_") {
 		titleContent = append(titleContent,
-			gui.Row(gui.ContainerCfg{Sizing: gui.FillFit, Padding: gui.Some(gui.PaddingNone)}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Padding:    gui.Some(gui.PaddingNone),
+				SizeBorder: gui.Some(float32(0)),
+			}),
 			docButton(showDocs),
 		)
 	}
 	return gui.Column(gui.ContainerCfg{
-		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(0)),
-		Padding: gui.Some(gui.PaddingNone),
+		Sizing:     gui.FillFit,
+		Spacing:    gui.Some(float32(0)),
+		Padding:    gui.Some(gui.PaddingNone),
+		SizeBorder: gui.Some(float32(0)),
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
-				Sizing:  gui.FillFit,
-				Padding: gui.Some(gui.PaddingNone),
-				VAlign:  gui.VAlignMiddle,
-				Content: titleContent,
+				Sizing:     gui.FillFit,
+				Padding:    gui.Some(gui.PaddingNone),
+				SizeBorder: gui.Some(float32(0)),
+				VAlign:     gui.VAlignMiddle,
+				Content:    titleContent,
 			}),
 			line(),
 		},

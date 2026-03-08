@@ -108,6 +108,26 @@ func TestTreeTitleBarShowsDocToggle(t *testing.T) {
 	}
 }
 
+func TestTreeTitleBarSpacerHasNoBorder(t *testing.T) {
+	layout := gui.GenerateViewLayout(viewTitleBar(DemoEntry{
+		ID:    "tree",
+		Label: "Tree View",
+	}, false), &gui.Window{})
+	if len(layout.Children) == 0 {
+		t.Fatal("len(layout.Children) = 0, want title row")
+	}
+
+	row := layout.Children[0]
+	if len(row.Children) < 2 {
+		t.Fatalf("len(layout.Children[0].Children) = %d, want >= 2", len(row.Children))
+	}
+
+	spacer := row.Children[1]
+	if got, want := spacer.Shape.SizeBorder, float32(0); got != want {
+		t.Fatalf("layout.Children[0].Children[1].Shape.SizeBorder = %v, want %v", got, want)
+	}
+}
+
 func TestDemoTreeWrapsIntroText(t *testing.T) {
 	w := &gui.Window{}
 	w.SetState(newShowcaseApp())
@@ -146,6 +166,49 @@ func TestDetailPanelSummaryWraps(t *testing.T) {
 	}
 	if tc.TextMode != gui.TextModeWrap {
 		t.Fatalf("layout.Children[1].Shape.TC.TextMode = %v, want %v", tc.TextMode, gui.TextModeWrap)
+	}
+}
+
+func TestDetailPanelWelcomeWrappersHaveNoBorder(t *testing.T) {
+	w := &gui.Window{}
+	app := newShowcaseApp()
+	app.SelectedGroup = groupWelcome
+	app.SelectedComponent = "welcome"
+	w.SetState(app)
+
+	layout := gui.GenerateViewLayout(detailPanel(w), w)
+	if got, want := layout.Shape.SizeBorder, float32(0); got != want {
+		t.Fatalf("layout.Shape.SizeBorder = %v, want %v", got, want)
+	}
+	if len(layout.Children) == 0 {
+		t.Fatal("len(layout.Children) = 0, want title bar")
+	}
+
+	title := layout.Children[0]
+	if got, want := title.Shape.SizeBorder, float32(0); got != want {
+		t.Fatalf("layout.Children[0].Shape.SizeBorder = %v, want %v", got, want)
+	}
+	if len(title.Children) < 2 {
+		t.Fatalf("len(layout.Children[0].Children) = %d, want >= 2", len(title.Children))
+	}
+
+	line := title.Children[1]
+	if got, want := line.Shape.SizeBorder, float32(0); got != want {
+		t.Fatalf("layout.Children[0].Children[1].Shape.SizeBorder = %v, want %v", got, want)
+	}
+	if len(line.Children) == 0 {
+		t.Fatal("len(layout.Children[0].Children[1].Children) = 0, want separator")
+	}
+	if got, want := line.Children[0].Shape.SizeBorder, float32(0); got != want {
+		t.Fatalf("layout.Children[0].Children[1].Children[0].Shape.SizeBorder = %v, want %v", got, want)
+	}
+}
+
+func TestDemoWelcomePanelHasNoBorder(t *testing.T) {
+	w := &gui.Window{}
+	layout := gui.GenerateViewLayout(demoWelcome(w), w)
+	if got, want := layout.Shape.SizeBorder, float32(0); got != want {
+		t.Fatalf("layout.Shape.SizeBorder = %v, want %v", got, want)
 	}
 }
 

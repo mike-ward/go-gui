@@ -8,9 +8,10 @@ func demoWelcome(w *gui.Window) gui.View {
 
 func showcaseMarkdownPanel(w *gui.Window, id, source string) gui.View {
 	return gui.Column(gui.ContainerCfg{
-		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingSmall),
-		Color:   gui.CurrentTheme().ColorPanel,
+		Sizing:     gui.FillFit,
+		Padding:    gui.Some(gui.PaddingSmall),
+		SizeBorder: gui.Some(float32(0)),
+		Color:      gui.CurrentTheme().ColorPanel,
 		Content: []gui.View{
 			w.Markdown(gui.MarkdownCfg{
 				ID:      id,

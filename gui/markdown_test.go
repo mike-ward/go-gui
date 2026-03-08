@@ -21,6 +21,16 @@ func mdPlainText(blocks []MarkdownBlock) string {
 	return sb.String()
 }
 
+func markdownLayoutForSource(t *testing.T, source string) Layout {
+	t.Helper()
+
+	w := &Window{}
+	return GenerateViewLayout(w.Markdown(MarkdownCfg{
+		Source: source,
+		Style:  DefaultMarkdownStyle(),
+	}), w)
+}
+
 // --- Styled output ---
 
 func TestSanitizeLatex(t *testing.T) {
@@ -192,6 +202,67 @@ func TestMarkdownCanExplicitlyUseSingleLine(t *testing.T) {
 	}
 	if mode != TextModeSingleLine {
 		t.Fatalf("markdown text mode = %v, want TextModeSingleLine", mode)
+	}
+}
+
+func TestMarkdownListWrappersHaveNoBorder(t *testing.T) {
+	layout := markdownLayoutForSource(t, "- item")
+	if len(layout.Children) == 0 {
+		t.Fatal("len(layout.Children) = 0, want list wrapper")
+	}
+
+	list := layout.Children[0]
+	if got, want := list.Shape.SizeBorder, float32(0); !f32AreClose(got, want) {
+		t.Fatalf("layout.Children[0].Shape.SizeBorder = %v, want %v", got, want)
+	}
+	if len(list.Children) == 0 {
+		t.Fatal("len(layout.Children[0].Children) = 0, want list row")
+	}
+
+	row := list.Children[0]
+	if got, want := row.Shape.SizeBorder, float32(0); !f32AreClose(got, want) {
+		t.Fatalf("layout.Children[0].Children[0].Shape.SizeBorder = %v, want %v", got, want)
+	}
+	if len(row.Children) != 2 {
+		t.Fatalf("len(layout.Children[0].Children[0].Children) = %d, want 2", len(row.Children))
+	}
+
+	for i, child := range row.Children {
+		if got, want := child.Shape.SizeBorder, float32(0); !f32AreClose(got, want) {
+			t.Fatalf("layout.Children[0].Children[0].Children[%d].Shape.SizeBorder = %v, want %v", i, got, want)
+		}
+	}
+}
+
+func TestMarkdownBlockquoteWrappersHaveNoBorder(t *testing.T) {
+	layout := markdownLayoutForSource(t, "> quote")
+	if len(layout.Children) == 0 {
+		t.Fatal("len(layout.Children) = 0, want blockquote row")
+	}
+
+	row := layout.Children[0]
+	if got, want := row.Shape.SizeBorder, float32(0); !f32AreClose(got, want) {
+		t.Fatalf("layout.Children[0].Shape.SizeBorder = %v, want %v", got, want)
+	}
+	if len(row.Children) != 2 {
+		t.Fatalf("len(layout.Children[0].Children) = %d, want 2", len(row.Children))
+	}
+
+	quote := row.Children[1]
+	if got, want := quote.Shape.SizeBorder, float32(0); !f32AreClose(got, want) {
+		t.Fatalf("layout.Children[0].Children[1].Shape.SizeBorder = %v, want %v", got, want)
+	}
+}
+
+func TestMarkdownCodeBlocksHaveNoBorder(t *testing.T) {
+	layout := markdownLayoutForSource(t, "```\ncode\n```")
+	if len(layout.Children) == 0 {
+		t.Fatal("len(layout.Children) = 0, want code block")
+	}
+
+	code := layout.Children[0]
+	if got, want := code.Shape.SizeBorder, float32(0); !f32AreClose(got, want) {
+		t.Fatalf("layout.Children[0].Shape.SizeBorder = %v, want %v", got, want)
 	}
 }
 

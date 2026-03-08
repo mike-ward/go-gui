@@ -5,14 +5,16 @@ import "github.com/mike-ward/go-gui/gui"
 func line() gui.View {
 	t := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{
-		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.NewPadding(2, 5, 0, 0)),
+		Sizing:     gui.FillFit,
+		Padding:    gui.Some(gui.NewPadding(2, 5, 0, 0)),
+		SizeBorder: gui.Some(float32(0)),
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
-				Height:  1,
-				Sizing:  gui.FillFit,
-				Padding: gui.Some(gui.PaddingNone),
-				Color:   t.ColorActive,
+				Height:     1,
+				Sizing:     gui.FillFit,
+				Padding:    gui.Some(gui.PaddingNone),
+				SizeBorder: gui.Some(float32(0)),
+				Color:      t.ColorActive,
 			}),
 		},
 	})

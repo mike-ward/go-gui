@@ -197,10 +197,11 @@ func renderMdMath(
 	block MarkdownBlock, cfg MarkdownCfg, w *Window,
 ) View {
 	codeFallback := Column(ContainerCfg{
-		Color:   cfg.Style.CodeBlockBG,
-		Padding: cfg.Style.CodeBlockPadding,
-		Radius:  Some(cfg.Style.CodeBlockRadius),
-		Sizing:  FillFit,
+		Color:      cfg.Style.CodeBlockBG,
+		Padding:    cfg.Style.CodeBlockPadding,
+		Radius:     Some(cfg.Style.CodeBlockRadius),
+		SizeBorder: Some(float32(0)),
+		Sizing:     FillFit,
 		Content: []View{
 			Text(TextCfg{
 				Text:      block.MathLatex,
@@ -265,10 +266,11 @@ func renderMdMermaid(
 ) View {
 	source := richTextPlain(block.Content)
 	codeFallback := Column(ContainerCfg{
-		Color:   cfg.Style.CodeBlockBG,
-		Padding: cfg.Style.CodeBlockPadding,
-		Radius:  Some(cfg.Style.CodeBlockRadius),
-		Sizing:  FillFit,
+		Color:      cfg.Style.CodeBlockBG,
+		Padding:    cfg.Style.CodeBlockPadding,
+		Radius:     Some(cfg.Style.CodeBlockRadius),
+		SizeBorder: Some(float32(0)),
+		Sizing:     FillFit,
 		Content: []View{
 			RTF(RtfCfg{
 				RichText: block.Content,
@@ -384,11 +386,12 @@ func renderMdCode(
 	})
 
 	return Column(ContainerCfg{
-		Color:   cfg.Style.CodeBlockBG,
-		Padding: cfg.Style.CodeBlockPadding,
-		Radius:  Some(cfg.Style.CodeBlockRadius),
-		Sizing:  FillFit,
-		Clip:    true,
+		Color:      cfg.Style.CodeBlockBG,
+		Padding:    cfg.Style.CodeBlockPadding,
+		Radius:     Some(cfg.Style.CodeBlockRadius),
+		SizeBorder: Some(float32(0)),
+		Sizing:     FillFit,
+		Clip:       true,
 		Content: []View{
 			RTF(RtfCfg{
 				RichText: block.Content,
@@ -474,10 +477,11 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		// Flush accumulated list items.
 		if !block.IsList && len(listItems) > 0 {
 			content = append(content, Column(ContainerCfg{
-				Sizing:  FillFit,
-				Padding: Some(PaddingNone),
-				Spacing: Some(cfg.Style.BlockSpacing / 2),
-				Content: listItems,
+				Sizing:     FillFit,
+				Padding:    Some(PaddingNone),
+				SizeBorder: Some(float32(0)),
+				Spacing:    Some(cfg.Style.BlockSpacing / 2),
+				Content:    listItems,
 			}))
 			listItems = nil
 		}
@@ -485,8 +489,9 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		switch {
 		case block.IsMath:
 			content = append(content, Column(ContainerCfg{
-				Sizing: FillFit,
-				HAlign: HAlignCenter,
+				Sizing:     FillFit,
+				HAlign:     HAlignCenter,
+				SizeBorder: Some(float32(0)),
 				Content: []View{
 					renderMdMath(block, cfg, w),
 				},
@@ -495,8 +500,9 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		case block.IsCode:
 			if block.CodeLanguage == "mermaid" {
 				content = append(content, Column(ContainerCfg{
-					Sizing: FillFit,
-					HAlign: HAlignCenter,
+					Sizing:     FillFit,
+					HAlign:     HAlignCenter,
+					SizeBorder: Some(float32(0)),
 					Content: []View{
 						renderMdMermaid(block, cfg, w),
 					},
@@ -541,8 +547,9 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			leftMargin := float32(
 				block.BlockquoteDepth-1) * cfg.Style.NestIndent
 			content = append(content, Row(ContainerCfg{
-				Sizing:  FillFit,
-				Padding: Some(NewPadding(0, 0, 0, leftMargin)),
+				Sizing:     FillFit,
+				Padding:    Some(NewPadding(0, 0, 0, leftMargin)),
+				SizeBorder: Some(float32(0)),
 				Content: []View{
 					Rectangle(RectangleCfg{
 						Sizing: FixedFill,
@@ -550,9 +557,10 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 						Color:  cfg.Style.BlockquoteBorder,
 					}),
 					Column(ContainerCfg{
-						Color:   cfg.Style.BlockquoteBG,
-						Sizing:  FillFit,
-						Padding: Some(PaddingNone),
+						Color:      cfg.Style.BlockquoteBG,
+						Sizing:     FillFit,
+						Padding:    Some(PaddingNone),
+						SizeBorder: Some(float32(0)),
 						Content: []View{
 							RTF(RtfCfg{
 								RichText:      block.Content,
@@ -635,13 +643,15 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				indentW += 4
 			}
 			listItems = append(listItems, Row(ContainerCfg{
-				Sizing:  FillFit,
-				Padding: Some(NewPadding(0, 0, 0, indentW)),
+				Sizing:     FillFit,
+				Padding:    Some(NewPadding(0, 0, 0, indentW)),
+				SizeBorder: Some(float32(0)),
 				Content: []View{
 					Column(ContainerCfg{
-						Sizing:  FixedFit,
-						Padding: Some(PaddingNone),
-						Width:   prefixW,
+						Sizing:     FixedFit,
+						Padding:    Some(PaddingNone),
+						SizeBorder: Some(float32(0)),
+						Width:      prefixW,
 						Content: []View{
 							Text(TextCfg{
 								Text:      block.ListPrefix,
@@ -650,8 +660,9 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 						},
 					}),
 					Column(ContainerCfg{
-						Sizing:  FillFit,
-						Padding: Some(PaddingNone),
+						Sizing:     FillFit,
+						Padding:    Some(PaddingNone),
+						SizeBorder: Some(float32(0)),
 						Content: []View{
 							RTF(RtfCfg{
 								RichText:      block.Content,
@@ -665,10 +676,11 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			// Flush if last block.
 			if i == len(blocks)-1 && len(listItems) > 0 {
 				content = append(content, Column(ContainerCfg{
-					Sizing:  FillFit,
-					Padding: Some(PaddingNone),
-					Spacing: Some(cfg.Style.BlockSpacing / 2),
-					Content: listItems,
+					Sizing:     FillFit,
+					Padding:    Some(PaddingNone),
+					SizeBorder: Some(float32(0)),
+					Spacing:    Some(cfg.Style.BlockSpacing / 2),
+					Content:    listItems,
 				}))
 				listItems = nil
 			}
