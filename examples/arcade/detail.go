@@ -1,6 +1,10 @@
 package main
 
-import "github.com/mike-ward/go-gui/gui"
+import (
+	"strings"
+
+	"github.com/mike-ward/go-gui/gui"
+)
 
 func detailPanel(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
@@ -14,6 +18,21 @@ func detailPanel(w *gui.Window) gui.View {
 		}
 	}
 
+	var content gui.View
+	if app.ShowDocs && current.Group != "welcome" && !strings.HasPrefix(current.ID, "doc_") {
+		doc := componentDoc(current.ID)
+		if doc != "" {
+			content = w.Markdown(gui.MarkdownCfg{
+				Source: doc,
+				Style:  gui.DefaultMarkdownStyle(),
+			})
+		} else {
+			content = componentDemo(w, app.SelectedComponent)
+		}
+	} else {
+		content = componentDemo(w, app.SelectedComponent)
+	}
+
 	return gui.Column(gui.ContainerCfg{
 		IDScroll:      scrollDetail,
 		Sizing:        gui.FillFill,
@@ -22,22 +41,51 @@ func detailPanel(w *gui.Window) gui.View {
 		Spacing:       gui.Some(float32(12)),
 		ScrollbarCfgY: &gui.ScrollbarCfg{GapEdge: 4},
 		Content: []gui.View{
-			viewTitleBar(current),
+			viewTitleBar(current, app.ShowDocs),
 			gui.Text(gui.TextCfg{Text: current.Summary, TextStyle: t.N3}),
 			line(),
-			componentDemo(w, app.SelectedComponent),
+			content,
 		},
 	})
 }
 
-func viewTitleBar(entry DemoEntry) gui.View {
+func viewTitleBar(entry DemoEntry, showDocs bool) gui.View {
 	t := gui.CurrentTheme()
+	titleContent := []gui.View{
+		gui.Text(gui.TextCfg{Text: entry.Label, TextStyle: t.B5}),
+	}
+	if entry.ID != "welcome" && !strings.HasPrefix(entry.ID, "doc_") {
+		titleContent = append(titleContent,
+			gui.Row(gui.ContainerCfg{Sizing: gui.FillFit, Padding: gui.Some(gui.PaddingNone)}),
+			docButton(showDocs),
+		)
+	}
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Padding: gui.Some(gui.PaddingNone),
 		VAlign:  gui.VAlignMiddle,
+		Content: titleContent,
+	})
+}
+
+func docButton(showDocs bool) gui.View {
+	t := gui.CurrentTheme()
+	color := gui.ColorTransparent
+	if showDocs {
+		color = t.ColorActive
+	}
+	return gui.Button(gui.ButtonCfg{
+		ID:      "btn-doc-toggle",
+		Color:   color,
+		Padding: gui.Some(gui.NewPadding(2, 4, 2, 4)),
+		Radius:  gui.Some(float32(3)),
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: entry.Label, TextStyle: t.B5}),
+			gui.Text(gui.TextCfg{Text: gui.IconBook, TextStyle: t.Icon4}),
+		},
+		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+			app := gui.State[ArcadeApp](w)
+			app.ShowDocs = !app.ShowDocs
+			e.IsHandled = true
 		},
 	})
 }

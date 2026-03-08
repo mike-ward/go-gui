@@ -60,6 +60,7 @@ func demoRtf(_ *gui.Window) gui.View {
 
 func demoMarkdown(w *gui.Window) gui.View {
 	return w.Markdown(gui.MarkdownCfg{
+		Style: gui.DefaultMarkdownStyle(),
 		Source: `## Markdown Demo
 
 This is rendered from a **markdown** string. Supports:

@@ -1,3 +1,4 @@
+// Package main implements the Arcade showcase for the go-gui framework.
 package main
 
 import (

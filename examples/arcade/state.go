@@ -13,6 +13,9 @@ type ArcadeApp struct {
 	SelectedGroup     string
 	SelectedComponent string
 
+	// Docs toggle
+	ShowDocs bool
+
 	// Button
 	ButtonClicks int
 

@@ -4,6 +4,7 @@ import "github.com/mike-ward/go-gui/gui"
 
 func demoWelcome(w *gui.Window) gui.View {
 	return w.Markdown(gui.MarkdownCfg{
+		Style: gui.DefaultMarkdownStyle(),
 		Source: `# Welcome to Arcade
 
 Arcade is the **Go GUI** framework showcase. Browse the component
