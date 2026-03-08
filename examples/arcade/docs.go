@@ -851,6 +851,87 @@ Strategies: mono, complement, analogous, triadic, warm, cool.
 Use the tint slider to control surface saturation.
 `,
 
+	// Notification
+	"notification": `# Notification
+
+Send native OS notifications from your application.
+
+## Usage
+
+` + "```go" + `
+w.NativeNotification(gui.NativeNotificationCfg{
+    Title: "App",
+    Body:  "Task completed!",
+    OnDone: func(r gui.NativeNotificationResult, w *gui.Window) {
+        if r.Status == gui.NotificationOK { ... }
+    },
+})
+` + "```" + `
+
+## Result Status
+
+| Status | Meaning |
+|--------|---------|
+| NotificationOK | Delivered |
+| NotificationDenied | Permission denied |
+| NotificationError | Platform error |
+`,
+
+	// Shader
+	"shader": `# Custom Shader
+
+Apply custom fragment shaders (Metal + GLSL) to any container.
+
+## Usage
+
+` + "```go" + `
+gui.Column(gui.ContainerCfg{
+    Width: 300, Height: 200,
+    Sizing: gui.FixedFixed,
+    Shader: &gui.Shader{
+        Metal: "float4(uv.x, uv.y, 0.5, 1.0)",
+        GLSL:  "fragColor = vec4(uv.x, uv.y, 0.5, 1.0);",
+        Params: []float32{0},
+    },
+})
+` + "```" + `
+
+Params (up to 16 floats) are passed to the shader. Animate them
+with the animation system for dynamic effects.
+`,
+
+	// Printing
+	"printing": `# Printing / PDF Export
+
+Export the current window to PDF or send to the OS print dialog.
+
+## Export PDF
+
+` + "```go" + `
+job := gui.NewPrintJob()
+job.OutputPath = "/tmp/output.pdf"
+job.Title = "My Document"
+r := w.ExportPrintJob(job)
+` + "```" + `
+
+## Print
+
+` + "```go" + `
+job := gui.NewPrintJob()
+job.Title = "My Document"
+r := w.RunPrintJob(job)
+` + "```" + `
+`,
+
+	// Drag Reorder
+	"drag_reorder": `# Drag Reorder
+
+Drag-to-reorder support for ListBox and Tabs.
+
+**Status:** Coming soon. The drag reorder API is not yet available
+in go-gui. This entry is a placeholder.
+`,
+
 	// Locale
 	"locale": `# Locale
 
@@ -1080,4 +1161,455 @@ gui.LocaleFormatDate(time.Now(), locale.Date.ShortDate)
 locale, _ := gui.LocaleParse(jsonString)
 gui.LocaleRegister(locale)
 ` + "```" + `
+`
+
+const docCustomWidgets = `# Custom Widgets
+
+Build new widgets by composing existing ones. There is no special
+widget registration — just return a ` + "`View`" + ` from a function.
+
+## Pattern
+
+` + "```go" + `
+type MyWidgetCfg struct {
+    ID    string
+    Label string
+    Value float32
+}
+
+func MyWidget(cfg MyWidgetCfg) gui.View {
+    t := gui.CurrentTheme()
+    return gui.Column(gui.ContainerCfg{
+        Sizing: gui.FillFit,
+        Content: []gui.View{
+            gui.Text(gui.TextCfg{Text: cfg.Label, TextStyle: t.B3}),
+            gui.ProgressBar(gui.ProgressBarCfg{
+                Percent: cfg.Value,
+                Sizing:  gui.FillFit,
+            }),
+        },
+    })
+}
+` + "```" + `
+
+## Guidelines
+
+- Accept a ` + "`*Cfg`" + ` struct (zero-initializable)
+- Use ` + "`Opt[T]`" + ` for optional numeric fields
+- Event callbacks: ` + "`func(*Layout, *Event, *Window)`" + `
+- Set ` + "`e.IsHandled = true`" + ` to consume events
+- Prefer ` + "`Column`" + ` over raw ` + "`container()`" + ` for correct sizing
+`
+
+const docDataGrid = `# Data Grid
+
+Full-featured grid with sorting, filtering, paging, column reorder,
+and column chooser.
+
+## Basic Setup
+
+` + "```go" + `
+w.DataGrid(gui.DataGridCfg{
+    ID:       "grid",
+    PageSize: 10,
+    Columns: []gui.GridColumnCfg{
+        {ID: "name", Title: "Name", Width: 150,
+         Sortable: true, Filterable: true, Reorderable: true},
+    },
+    Rows: []gui.GridRow{
+        {ID: "1", Cells: map[string]string{"name": "Alice"}},
+    },
+    ShowQuickFilter:   true,
+    ShowColumnChooser: true,
+})
+` + "```" + `
+
+## Column Options
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Sortable | bool | Enable column sort |
+| Filterable | bool | Enable column filter |
+| Reorderable | bool | Allow drag reorder |
+| Resizable | bool | Allow resize |
+| Editable | bool | Inline editing |
+| Pin | GridColumnPin | Freeze left/right |
+`
+
+const docForms = `# Forms
+
+Combine inputs, labels, and containers into form layouts.
+
+## Labeled Row Pattern
+
+` + "```go" + `
+func labeledRow(t gui.Theme, label string, input gui.View) gui.View {
+    return gui.Row(gui.ContainerCfg{
+        Sizing: gui.FillFit, VAlign: gui.VAlignMiddle,
+        Spacing: gui.Some(float32(8)),
+        Content: []gui.View{
+            gui.Text(gui.TextCfg{Text: label, TextStyle: t.B3,
+                Sizing: gui.FixedFit}),
+            input,
+        },
+    })
+}
+` + "```" + `
+
+## Fieldset Grouping
+
+Use ` + "`ContainerCfg.Title`" + ` for HTML-fieldset-style group boxes:
+
+` + "```go" + `
+gui.Column(gui.ContainerCfg{
+    Title:       "Personal Info",
+    TitleBG:     t.ColorBackground,
+    ColorBorder: t.ColorBorder,
+    SizeBorder:  gui.Some(float32(1)),
+})
+` + "```" + `
+
+## Masked Input
+
+` + "```go" + `
+gui.Input(gui.InputCfg{
+    MaskPreset: gui.MaskPhoneUS,
+    Placeholder: "(555) 000-0000",
+})
+` + "```" + `
+`
+
+const docGradients = `# Gradients
+
+Apply linear gradients to any container.
+
+## Directions
+
+GradientToRight, GradientToLeft, GradientToTop, GradientToBottom,
+GradientToTopRight, GradientToTopLeft, GradientToBottomRight,
+GradientToBottomLeft
+
+## Usage
+
+` + "```go" + `
+gui.Column(gui.ContainerCfg{
+    Gradient: &gui.GradientDef{
+        Direction: gui.GradientToRight,
+        Stops: []gui.GradientStop{
+            {Pos: 0, Color: gui.ColorFromString("#3b82f6")},
+            {Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
+        },
+    },
+})
+` + "```" + `
+
+## Border Gradient
+
+` + "```go" + `
+gui.Column(gui.ContainerCfg{
+    BorderGradient: &gui.GradientDef{...},
+    SizeBorder: gui.Some(float32(2)),
+})
+` + "```" + `
+`
+
+const docLayoutAlgorithm = `# Layout Algorithm
+
+The layout engine runs in two passes: measure then arrange.
+
+## Sizing Modes
+
+| Mode | Behavior |
+|------|----------|
+| Fit | Shrink to content |
+| Fixed | Use explicit Width/Height |
+| Fill (Grow) | Expand to fill parent |
+
+Combined as two axes: FitFit, FillFill, FixedFixed, FillFit, etc.
+
+## Measure Pass
+
+1. Fit children measured first (leaf to root)
+2. Fixed children use their declared size
+3. Fill children split remaining space proportionally
+
+## Arrange Pass
+
+1. Children positioned per axis direction (Row=horizontal, Column=vertical)
+2. Spacing inserted between visible children
+3. Alignment (HAlign, VAlign) offsets children within the container
+4. AmendLayout hooks run for overlay repositioning
+
+## Key Rules
+
+- ` + "`spacing()`" + ` counts only visible children (not ShapeNone, Float, OverDraw)
+- Fill children in an AxisNone container get 0 size
+- Prefer Column/Row over raw container() for correct Fill distribution
+`
+
+const docMarkdownGuide = `# Markdown
+
+Render markdown strings with full CommonMark support.
+
+## Usage
+
+` + "```go" + `
+w.Markdown(gui.MarkdownCfg{
+    Source: "# Hello\n**Bold** and *italic*",
+    Style:  gui.DefaultMarkdownStyle(),
+})
+` + "```" + `
+
+## Supported Features
+
+- Headings (H1--H6)
+- **Bold**, *italic*, ~~strikethrough~~, ` + "`inline code`" + `
+- Links and images
+- Ordered and unordered lists
+- Code blocks with syntax highlighting
+- Blockquotes
+- Tables (GFM)
+- Horizontal rules
+
+## Custom Styles
+
+` + "```go" + `
+style := gui.DefaultMarkdownStyle()
+style.H1 = gui.TextStyle{Size: 32, Color: myColor}
+` + "```" + `
+`
+
+const docNativeDialogs = `# Native Dialogs
+
+Access OS-native file open, save, and folder dialogs.
+
+## Open File
+
+` + "```go" + `
+np := w.NativePlatformBackend()
+r := np.ShowOpenDialog("Open", "", []string{".go", ".txt"}, false)
+if len(r.Paths) > 0 {
+    path := r.Paths[0].Path
+}
+` + "```" + `
+
+## Save File
+
+` + "```go" + `
+r := np.ShowSaveDialog("Save", "", "file.txt", ".txt", nil, true)
+` + "```" + `
+
+## Select Folder
+
+` + "```go" + `
+r := np.ShowFolderDialog("Select Folder", "")
+` + "```" + `
+
+## Result
+
+` + "```go" + `
+type PlatformDialogResult struct {
+    Status       NativeDialogStatus
+    Paths        []PlatformPath
+    ErrorCode    string
+    ErrorMessage string
+}
+` + "```" + `
+`
+
+const docPerformance = `# Performance
+
+Tips for keeping go-gui apps fast and allocation-free.
+
+## Reduce Allocations
+
+- Reuse slices across frames (store in state, reset with ` + "`[:0]`" + `)
+- Avoid ` + "`fmt.Sprintf`" + ` in hot paths; use ` + "`strconv`" + ` instead
+- Prefer value types over pointers for small structs
+
+## StateMap
+
+Per-window typed key-value store for widget internal state.
+Keyed by namespace constants (nsOverflow, nsSvgCache, etc.).
+Avoids globals and closures.
+
+## Immediate-Mode Patterns
+
+- The view function runs every frame -- keep it fast
+- No virtual DOM or diffing; layout tree built fresh each frame
+- Avoid expensive computations in view functions; cache in state
+- Event callbacks should set ` + "`e.IsHandled = true`" + ` early
+
+## Profiling
+
+Use Go's built-in pprof. The hottest path is typically
+` + "`layoutArrange()`" + ` -> ` + "`renderLayout()`" + `.
+`
+
+const docPrinting = `# Printing
+
+Export the current window to PDF or send to the OS print dialog.
+
+## Export PDF
+
+` + "```go" + `
+job := gui.NewPrintJob()
+job.OutputPath = "/tmp/output.pdf"
+job.Title = "My Document"
+r := w.ExportPrintJob(job)
+if r.ErrorMessage != "" {
+    // handle error
+}
+` + "```" + `
+
+## Print via OS Dialog
+
+` + "```go" + `
+job := gui.NewPrintJob()
+job.Title = "My Document"
+r := w.RunPrintJob(job)
+` + "```" + `
+
+## PrintJob Options
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Paper | PaperSize | A4, Letter, etc. |
+| Orientation | PrintOrientation | Portrait / Landscape |
+| Margins | PrintMargins | Top/Right/Bottom/Left |
+| Copies | int | Number of copies |
+| Duplex | PrintDuplexMode | Simplex / LongEdge / ShortEdge |
+`
+
+const docShaders = `# Custom Shaders
+
+Apply custom fragment shaders to any container. Provide both
+Metal (MSL) and GLSL bodies for cross-platform support.
+
+## Usage
+
+` + "```go" + `
+gui.Column(gui.ContainerCfg{
+    Width: 300, Height: 200,
+    Sizing: gui.FixedFixed,
+    Shader: &gui.Shader{
+        Metal: "return float4(uv.x, uv.y, 0.5, 1.0);",
+        GLSL:  "fragColor = vec4(uv.x, uv.y, 0.5, 1.0);",
+        Params: []float32{0},
+    },
+})
+` + "```" + `
+
+## Parameters
+
+Up to 16 float32 values passed as ` + "`params[]`" + ` (Metal) or
+` + "`u_params[]`" + ` (GLSL). Animate them with the animation system.
+
+## Available Uniforms
+
+| Metal | GLSL | Description |
+|-------|------|-------------|
+| uniforms.size | u_size | Container size (vec2) |
+| in.position | gl_FragCoord | Fragment position |
+| params[i] | u_params[i] | Custom parameters |
+`
+
+const docSplitterGuide = `# Splitter
+
+Resizable split panes with draggable divider.
+
+## Usage
+
+` + "```go" + `
+gui.Splitter(gui.SplitterCfg{
+    ID:          "split",
+    Orientation: gui.SplitterHorizontal,
+    Sizing:      gui.FillFixed,
+    Ratio:       app.SplitterState.Ratio,
+    Collapsed:   app.SplitterState.Collapsed,
+    OnChange: func(r float32, c gui.SplitterCollapsed,
+        _ *gui.Event, w *gui.Window) {
+        a := gui.State[App](w)
+        a.SplitterState.Ratio = r
+        a.SplitterState.Collapsed = c
+    },
+    First:  gui.SplitterPaneCfg{MinSize: 100, Content: [...]},
+    Second: gui.SplitterPaneCfg{MinSize: 100, Content: [...]},
+    ShowCollapseButtons: true,
+    DoubleClickCollapse: true,
+})
+` + "```" + `
+
+## Key Properties
+
+| Property | Description |
+|----------|-------------|
+| IDFocus | Enables keyboard control |
+| DoubleClickCollapse | Collapse on divider double-click |
+| ShowCollapseButtons | Show collapse arrows |
+| DragStep | Arrow key step size |
+| DragStepLarge | Shift+Arrow step size |
+`
+
+const docSvg = `# SVG
+
+Render inline SVG strings or load from files.
+
+## Inline SVG
+
+` + "```go" + `
+gui.Svg(gui.SvgCfg{
+    SvgData: "<svg viewBox='0 0 100 100'>...</svg>",
+    Width: 100, Height: 100,
+})
+` + "```" + `
+
+## TextPath
+
+Render text along a curve using the SVG textPath element:
+
+` + "```xml" + `
+<svg viewBox="0 0 200 100">
+  <path id="curve" d="M10,80 Q100,10 190,80" fill="none"/>
+  <text><textPath href="#curve">Text on a path</textPath></text>
+</svg>
+` + "```" + `
+
+The SVG parser tessellates paths and renders via the backend.
+`
+
+const docTables = `# Tables
+
+Two table widgets: Table (simple) and DataGrid (full-featured).
+
+## Table
+
+Build from string arrays using ` + "`TableCfgFromData`" + `:
+
+` + "```go" + `
+cfg := gui.TableCfgFromData([][]string{
+    {"Name", "Age"},
+    {"Alice", "30"},
+    {"Bob", "25"},
+})
+cfg.ID = "my-table"
+gui.Table(cfg)
+` + "```" + `
+
+## DataGrid
+
+For sorting, filtering, paging, column reorder:
+
+` + "```go" + `
+w.DataGrid(gui.DataGridCfg{
+    ID:       "grid",
+    PageSize: 10,
+    Columns:  []gui.GridColumnCfg{...},
+    Rows:     []gui.GridRow{...},
+    ShowQuickFilter:   true,
+    ShowColumnChooser: true,
+})
+` + "```" + `
+
+See the Data Grid Guide doc page for full column options.
 `

@@ -268,5 +268,105 @@ func demoSvg(_ *gui.Window) gui.View {
 
 func demoImage(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
-	return demoPlaceholder(t, "Image display requires image files on disk")
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.Some(float32(12)),
+		Padding: gui.Some(gui.PaddingNone),
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{
+				Text:      "Images load from HTTP URLs (auto-cached by the framework).",
+				TextStyle: t.N3,
+			}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.Some(float32(12)),
+				Padding: gui.Some(gui.PaddingNone),
+				VAlign:  gui.VAlignBottom,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Sizing:  gui.FitFit,
+						Spacing: gui.Some(float32(4)),
+						Padding: gui.Some(gui.PaddingNone),
+						HAlign:  gui.HAlignCenter,
+						Content: []gui.View{
+							gui.Image(gui.ImageCfg{
+								Src:    "https://picsum.photos/id/237/200/150",
+								Width:  200,
+								Height: 150,
+							}),
+							gui.Text(gui.TextCfg{Text: "200 x 150", TextStyle: t.N2}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Sizing:  gui.FitFit,
+						Spacing: gui.Some(float32(4)),
+						Padding: gui.Some(gui.PaddingNone),
+						HAlign:  gui.HAlignCenter,
+						Content: []gui.View{
+							gui.Image(gui.ImageCfg{
+								Src:    "https://picsum.photos/id/1015/150/150",
+								Width:  150,
+								Height: 150,
+							}),
+							gui.Text(gui.TextCfg{Text: "150 x 150", TextStyle: t.N2}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Sizing:  gui.FitFit,
+						Spacing: gui.Some(float32(4)),
+						Padding: gui.Some(gui.PaddingNone),
+						HAlign:  gui.HAlignCenter,
+						Content: []gui.View{
+							gui.Image(gui.ImageCfg{
+								Src:    "https://picsum.photos/id/1025/100/100",
+								Width:  100,
+								Height: 100,
+							}),
+							gui.Text(gui.TextCfg{Text: "100 x 100", TextStyle: t.N2}),
+						},
+					}),
+				},
+			}),
+		},
+	})
+}
+
+func demoShader(_ *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.Some(float32(12)),
+		Padding: gui.Some(gui.PaddingNone),
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{
+				Text:      "Custom fragment shader (Metal + GLSL). Params[0] is animated time.",
+				TextStyle: t.N3,
+			}),
+			gui.Column(gui.ContainerCfg{
+				Width:  300,
+				Height: 200,
+				Sizing: gui.FixedFixed,
+				Radius: gui.Some(float32(8)),
+				Shader: &gui.Shader{
+					Metal: `
+float2 uv = in.position.xy / uniforms.size;
+float t = params[0];
+float r = 0.5 + 0.5 * sin(uv.x * 6.28 + t);
+float g = 0.5 + 0.5 * sin(uv.y * 6.28 + t * 1.3);
+float b = 0.5 + 0.5 * sin((uv.x + uv.y) * 3.14 + t * 0.7);
+return float4(r, g, b, 1.0);
+`,
+					GLSL: `
+vec2 uv = gl_FragCoord.xy / u_size;
+float t = u_params[0];
+float r = 0.5 + 0.5 * sin(uv.x * 6.28 + t);
+float g = 0.5 + 0.5 * sin(uv.y * 6.28 + t * 1.3);
+float b = 0.5 + 0.5 * sin((uv.x + uv.y) * 3.14 + t * 0.7);
+fragColor = vec4(r, g, b, 1.0);
+`,
+					Params: []float32{0},
+				},
+			}),
+		},
+	})
 }

@@ -131,11 +131,23 @@ func demoSelect(w *gui.Window) gui.View {
 				Text:      fmt.Sprintf("Selected: %v", app.SelectValue),
 				TextStyle: t.N3,
 			}),
+			sectionLabel(t, "Single Select"),
 			gui.Select(gui.SelectCfg{
 				ID:          "select-single",
 				Placeholder: "Pick a language",
 				Selected:    app.SelectValue,
 				Options:     []string{"Go", "Rust", "Zig", "C", "Python", "TypeScript"},
+				OnSelect: func(sel []string, _ *gui.Event, w *gui.Window) {
+					gui.State[ArcadeApp](w).SelectValue = sel
+				},
+			}),
+			sectionLabel(t, "Multi-Select"),
+			gui.Select(gui.SelectCfg{
+				ID:             "select-multi",
+				Placeholder:    "Pick languages",
+				Selected:       app.SelectValue,
+				SelectMultiple: true,
+				Options:        []string{"Go", "Rust", "Zig", "C", "Python", "TypeScript"},
 				OnSelect: func(sel []string, _ *gui.Event, w *gui.Window) {
 					gui.State[ArcadeApp](w).SelectValue = sel
 				},
@@ -202,6 +214,27 @@ func demoCombobox(w *gui.Window) gui.View {
 				OnSelect: func(v string, _ *gui.Event, w *gui.Window) {
 					gui.State[ArcadeApp](w).ComboboxValue = v
 				},
+			}),
+		},
+	})
+}
+
+func demoDragReorder(_ *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Padding: gui.Some(gui.NewPadding(24, 24, 24, 24)),
+		Color:   t.ColorPanel,
+		Radius:  gui.Some(float32(8)),
+		HAlign:  gui.HAlignCenter,
+		VAlign:  gui.VAlignMiddle,
+		Spacing: gui.Some(float32(8)),
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{Text: gui.IconLayout, TextStyle: t.Icon5}),
+			gui.Text(gui.TextCfg{Text: "Drag Reorder", TextStyle: t.B4}),
+			gui.Text(gui.TextCfg{
+				Text:      "Coming soon -- drag reorder API is not yet available.",
+				TextStyle: t.N3,
 			}),
 		},
 	})

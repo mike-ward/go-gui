@@ -126,6 +126,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoListBox(w)
 	case "combobox":
 		return demoCombobox(w)
+	case "drag_reorder":
+		return demoDragReorder(w)
 	case "range_slider":
 		return demoRangeSlider(w)
 
@@ -156,6 +158,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoRectangle(w)
 	case "icons":
 		return demoIcons(w)
+	case "shader":
+		return demoShader(w)
 
 	// Layout
 	case "row":
@@ -174,6 +178,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoSplitter(w)
 	case "scrollbar":
 		return demoScrollbar(w)
+	case "printing":
+		return demoPrinting(w)
 
 	// Navigation
 	case "breadcrumb":
@@ -202,6 +208,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoDialog(w)
 	case "tooltip":
 		return demoTooltip(w)
+	case "notification":
+		return demoNotification(w)
 
 	// Animations
 	case "animations":
@@ -228,6 +236,32 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoDoc(w, docAnimations)
 	case "doc_locales":
 		return demoDoc(w, docLocales)
+	case "doc_custom_widgets":
+		return demoDoc(w, docCustomWidgets)
+	case "doc_data_grid":
+		return demoDoc(w, docDataGrid)
+	case "doc_forms":
+		return demoDoc(w, docForms)
+	case "doc_gradients":
+		return demoDoc(w, docGradients)
+	case "doc_layout_algorithm":
+		return demoDoc(w, docLayoutAlgorithm)
+	case "doc_markdown":
+		return demoDoc(w, docMarkdownGuide)
+	case "doc_native_dialogs":
+		return demoDoc(w, docNativeDialogs)
+	case "doc_performance":
+		return demoDoc(w, docPerformance)
+	case "doc_printing":
+		return demoDoc(w, docPrinting)
+	case "doc_shaders":
+		return demoDoc(w, docShaders)
+	case "doc_splitter":
+		return demoDoc(w, docSplitterGuide)
+	case "doc_svg":
+		return demoDoc(w, docSvg)
+	case "doc_tables":
+		return demoDoc(w, docTables)
 
 	default:
 		return demoPlaceholder(gui.CurrentTheme(), "Demo: "+id)

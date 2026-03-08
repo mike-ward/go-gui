@@ -113,33 +113,76 @@ func demoForms(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	app := gui.State[ArcadeApp](w)
 	return gui.Column(gui.ContainerCfg{
-		Sizing:      gui.FillFit,
-		Spacing:     gui.Some(float32(12)),
-		Padding:     gui.Some(gui.NewPadding(16, 16, 16, 16)),
-		Color:       t.ColorPanel,
-		Radius:      gui.Some(float32(8)),
-		ColorBorder: t.ColorBorder,
-		SizeBorder:  gui.Some(float32(1)),
+		Sizing:  gui.FillFit,
+		Spacing: gui.Some(float32(16)),
+		Padding: gui.Some(gui.PaddingNone),
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: "Registration Form", TextStyle: t.B4}),
-			labeledRow(t, "Name", gui.Input(gui.InputCfg{
-				ID:          "form-name",
+			// Personal info fieldset
+			gui.Column(gui.ContainerCfg{
 				Sizing:      gui.FillFit,
-				Text:        app.InputText,
-				Placeholder: "Your name",
-				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-					gui.State[ArcadeApp](w).InputText = s
+				Spacing:     gui.Some(float32(10)),
+				Padding:     gui.Some(gui.NewPadding(16, 16, 16, 16)),
+				Title:       "Personal Info",
+				TitleBG:     t.ColorBackground,
+				ColorBorder: t.ColorBorder,
+				SizeBorder:  gui.Some(float32(1)),
+				Radius:      gui.Some(float32(6)),
+				Content: []gui.View{
+					labeledRow(t, "Name", gui.Input(gui.InputCfg{
+						ID:          "form-name",
+						Sizing:      gui.FillFit,
+						Text:        app.InputText,
+						Placeholder: "Your name",
+						OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
+							gui.State[ArcadeApp](w).InputText = s
+						},
+					})),
+					labeledRow(t, "Email", gui.Input(gui.InputCfg{
+						ID:          "form-email",
+						Sizing:      gui.FillFit,
+						Text:        app.InputPassword,
+						Placeholder: "you@example.com",
+						OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
+							gui.State[ArcadeApp](w).InputPassword = s
+						},
+					})),
+					labeledRow(t, "Phone", gui.Input(gui.InputCfg{
+						ID:          "form-phone",
+						Sizing:      gui.FillFit,
+						Text:        app.InputPhone,
+						Placeholder: "(555) 000-0000",
+						MaskPreset:  gui.MaskPhoneUS,
+						OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
+							gui.State[ArcadeApp](w).InputPhone = s
+						},
+					})),
 				},
-			})),
-			labeledRow(t, "Email", gui.Input(gui.InputCfg{
-				ID:          "form-email",
+			}),
+			// Notes fieldset
+			gui.Column(gui.ContainerCfg{
 				Sizing:      gui.FillFit,
-				Text:        app.InputPassword,
-				Placeholder: "you@example.com",
-				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-					gui.State[ArcadeApp](w).InputPassword = s
+				Spacing:     gui.Some(float32(10)),
+				Padding:     gui.Some(gui.NewPadding(16, 16, 16, 16)),
+				Title:       "Additional",
+				TitleBG:     t.ColorBackground,
+				ColorBorder: t.ColorBorder,
+				SizeBorder:  gui.Some(float32(1)),
+				Radius:      gui.Some(float32(6)),
+				Content: []gui.View{
+					gui.Text(gui.TextCfg{Text: "Notes", TextStyle: t.B3}),
+					gui.Input(gui.InputCfg{
+						ID:          "form-notes",
+						Sizing:      gui.FillFit,
+						Text:        app.InputMultiline,
+						Placeholder: "Additional notes...",
+						Mode:        gui.InputMultiline,
+						Height:      60,
+						OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
+							gui.State[ArcadeApp](w).InputMultiline = s
+						},
+					}),
 				},
-			})),
+			}),
 			gui.Button(gui.ButtonCfg{
 				ID:      "form-submit",
 				Padding: gui.Some(gui.NewPadding(8, 24, 8, 24)),

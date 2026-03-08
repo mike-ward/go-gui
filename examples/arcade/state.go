@@ -62,6 +62,15 @@ type ArcadeApp struct {
 	// Dialog
 	DialogResult string
 
+	// Notification
+	NotifyResult string
+
+	// Printing
+	PrintResult string
+
+	// Splitter (nested)
+	SplitterState2 gui.SplitterState
+
 	// Command palette
 	PaletteAction string
 
@@ -85,6 +94,7 @@ func newArcadeApp() *ArcadeApp {
 		BCSelected:        "home",
 		TabSelected:       "tab1",
 		SplitterState:     gui.SplitterState{Ratio: 0.5},
+		SplitterState2:    gui.SplitterState{Ratio: 0.5},
 		ColorPickerColor:  gui.ColorFromString("#3b82f6"),
 		ThemeGenSeed:      gui.ThemeDarkBorderedCfg.ColorSelect,
 		ThemeGenStrategy:  "mono",
@@ -140,6 +150,7 @@ func demoEntries() []DemoEntry {
 		{"select", "Select", "selection", "Dropdown selection", []string{"dropdown", "combo"}},
 		{"listbox", "ListBox", "selection", "Scrollable list selection", []string{"list", "multi"}},
 		{"combobox", "Combobox", "selection", "Editable dropdown", []string{"combo", "edit"}},
+		{"drag_reorder", "Drag Reorder", "selection", "Drag to reorder items -- coming soon", []string{"drag", "reorder"}},
 		{"range_slider", "Range Slider", "selection", "Numeric range selection", []string{"slider", "range"}},
 
 		{"table", "Table", "data", "Sortable data table", []string{"grid", "sort"}},
@@ -155,6 +166,7 @@ func demoEntries() []DemoEntry {
 		{"box_shadows", "Box Shadows", "graphics", "Shadow effects", []string{"shadow", "drop"}},
 		{"rectangle", "Rectangle", "graphics", "Styled rectangles", []string{"rect", "shape"}},
 		{"icons", "Icons", "graphics", "Icon font library", []string{"feather", "glyph"}},
+		{"shader", "Shader", "graphics", "Custom fragment shaders", []string{"metal", "glsl", "gpu"}},
 
 		{"row", "Row", "layout", "Horizontal layout", []string{"horizontal", "flex"}},
 		{"column", "Column", "layout", "Vertical layout", []string{"vertical", "flex"}},
@@ -164,6 +176,7 @@ func demoEntries() []DemoEntry {
 		{"sidebar", "Sidebar", "layout", "Slide-out sidebar", []string{"drawer", "panel"}},
 		{"splitter", "Splitter", "layout", "Resizable split panes", []string{"split", "resize"}},
 		{"scrollbar", "Scrollbar", "layout", "Custom scrollbar styling", []string{"scroll", "bar"}},
+		{"printing", "Printing", "layout", "PDF export and print jobs", []string{"pdf", "print", "export"}},
 
 		{"breadcrumb", "Breadcrumb", "navigation", "Path navigation", []string{"path", "trail"}},
 		{"tab_control", "Tab Control", "navigation", "Tabbed content panels", []string{"tab", "panel"}},
@@ -178,6 +191,7 @@ func demoEntries() []DemoEntry {
 
 		{"dialog", "Dialog", "overlays", "Modal dialogs", []string{"modal", "popup"}},
 		{"tooltip", "Tooltip", "overlays", "Hover tooltips", []string{"hover", "hint"}},
+		{"notification", "Notification", "overlays", "Native OS notifications", []string{"notify", "alert"}},
 
 		{"animations", "Animations", "animations", "Tween, spring, and keyframe animations", []string{"tween", "spring", "keyframe"}},
 
@@ -190,6 +204,19 @@ func demoEntries() []DemoEntry {
 		{"doc_themes", "Themes", "docs", "Built-in themes and custom theme creation", []string{"theme", "style", "color"}},
 		{"doc_animations", "Animations", "docs", "Tween, spring, and keyframe APIs", []string{"tween", "spring", "keyframe"}},
 		{"doc_locales", "Locales", "docs", "Locale registration and date/number formatting", []string{"i18n", "locale", "format"}},
+		{"doc_custom_widgets", "Custom Widgets", "docs", "Composition patterns for building widgets", []string{"widget", "custom", "compose"}},
+		{"doc_data_grid", "Data Grid Guide", "docs", "DataGrid columns, paging, sorting, filtering", []string{"grid", "paging", "sort"}},
+		{"doc_forms", "Forms Guide", "docs", "Form layout patterns with inputs", []string{"form", "input", "layout"}},
+		{"doc_gradients", "Gradients Guide", "docs", "Linear and radial gradient API", []string{"gradient", "color"}},
+		{"doc_layout_algorithm", "Layout Algorithm", "docs", "How sizing fit/fixed/grow works", []string{"sizing", "layout", "algorithm"}},
+		{"doc_markdown", "Markdown Guide", "docs", "Markdown renderer options", []string{"markdown", "render"}},
+		{"doc_native_dialogs", "Native Dialogs", "docs", "Open/Save/Folder native dialogs", []string{"dialog", "file", "native"}},
+		{"doc_performance", "Performance", "docs", "Allocation tips and immediate-mode patterns", []string{"alloc", "perf", "optimize"}},
+		{"doc_printing", "Printing Guide", "docs", "PrintJob API and PDF export", []string{"print", "pdf", "export"}},
+		{"doc_shaders", "Shaders Guide", "docs", "Custom fragment shader integration", []string{"shader", "metal", "glsl"}},
+		{"doc_splitter", "Splitter Guide", "docs", "Splitter API reference", []string{"splitter", "split", "resize"}},
+		{"doc_svg", "SVG Guide", "docs", "SVG widget and textPath", []string{"svg", "vector", "path"}},
+		{"doc_tables", "Tables Guide", "docs", "Table and DataGrid usage patterns", []string{"table", "grid", "data"}},
 	}
 }
 

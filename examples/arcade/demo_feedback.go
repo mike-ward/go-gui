@@ -72,6 +72,28 @@ func demoButton(w *gui.Window) gui.View {
 							e.IsHandled = true
 						},
 					}),
+					gui.Button(gui.ButtonCfg{
+						ID:      "btn-small",
+						Padding: gui.Some(gui.NewPadding(4, 8, 4, 8)),
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Small", TextStyle: t.N2}),
+						},
+						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+							gui.State[ArcadeApp](w).ButtonClicks++
+							e.IsHandled = true
+						},
+					}),
+					gui.Button(gui.ButtonCfg{
+						ID:      "btn-with-icon",
+						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: gui.IconDownload + " Download", TextStyle: t.N3}),
+						},
+						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+							gui.State[ArcadeApp](w).ButtonClicks++
+							e.IsHandled = true
+						},
+					}),
 				},
 			}),
 		},
