@@ -35,13 +35,19 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	sx := shape.X + (shape.Width-cached.Width*cached.Scale)/2
 	sy := shape.Y + (shape.Height-cached.Height*cached.Scale)/2
 
-	// Clip to the scaled viewBox area.
+	// Clip to intersection of parent clip and scaled viewBox.
+	svgClip, _ := rectIntersection(clip, DrawClip{
+		X:      sx,
+		Y:      sy,
+		Width:  cached.Width * cached.Scale,
+		Height: cached.Height * cached.Scale,
+	})
 	emitRenderer(RenderCmd{
 		Kind: RenderClip,
-		X:    sx,
-		Y:    sy,
-		W:    cached.Width * cached.Scale,
-		H:    cached.Height * cached.Scale,
+		X:    svgClip.X,
+		Y:    svgClip.Y,
+		W:    svgClip.Width,
+		H:    svgClip.Height,
 	}, w)
 
 	// Compute animation state for SMIL animations.

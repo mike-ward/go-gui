@@ -309,6 +309,27 @@ func demoSvg(_ *gui.Window) gui.View {
 				Sizing:  gui.FixedFixed,
 				SvgData: embeddedText("assets/tiger.svg"),
 			}),
+			gui.Column(gui.ContainerCfg{
+				Clip:       true,
+				Width:      70,
+				Height:     70,
+				Sizing:     gui.FixedFixed,
+				Padding:    gui.Some(gui.PaddingNone),
+				SizeBorder: gui.Some(float32(0)),
+				Content: []gui.View{
+					gui.Svg(gui.SvgCfg{
+						ID:     "svg-clip",
+						Width:  100,
+						Height: 100,
+						Sizing: gui.FixedFixed,
+						SvgData: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="45" fill="#3b82f6"/>
+  <circle cx="50" cy="50" r="30" fill="#8b5cf6"/>
+  <circle cx="50" cy="50" r="15" fill="#ec4899"/>
+</svg>`,
+					}),
+				},
+			}),
 		},
 	})
 }

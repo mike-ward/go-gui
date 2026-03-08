@@ -326,6 +326,9 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 }
 
 func (b *Backend) drawSvg(r *gui.RenderCmd) {
+	if r.IsClipMask {
+		return // clip masks not yet supported in render pipeline
+	}
 	if len(r.Triangles) == 0 || len(r.Triangles)%6 != 0 {
 		return
 	}
