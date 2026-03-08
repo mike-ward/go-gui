@@ -171,6 +171,7 @@ const (
 	nsSvgAnimStart        = "gui.svg_anim_start"
 	nsDragReorder         = "gui.drag_reorder"
 	nsDragReorderIDsMeta  = "gui.drag_reorder.ids_meta"
+	nsTableColWidths      = "gui.table.col_widths"
 	nsDockDrag            = "gui.dock_drag"
 	nsContextMenu         = "gui.context_menu"
 	nsRtfLinkMenu         = "gui.rtf_link_menu"

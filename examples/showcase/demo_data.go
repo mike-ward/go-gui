@@ -26,12 +26,24 @@ func demoTable(w *gui.Window) gui.View {
 	rows := showcaseTableRowsSorted(app.TableSortBy)
 	cfg := gui.TableCfgFromData(rows)
 	cfg.ID = "catalog-table"
-	cfg.Sizing = gui.FillFit
+	cfg.IDScroll = 9110
+	cfg.Sizing = gui.FitFit
+	cfg.MaxHeight = 260
 	cfg.SizeBorder = 1
 	cfg.SizeBorderHeader = 2
 	cfg.BorderStyle = tableBorderStyleFromValue(app.TableBorderStyle)
 	cfg.ColorBorder = gui.Gray
 	cfg.TextStyleHead = gui.CurrentTheme().B4
+	cfg.MultiSelect = app.TableMultiSelect
+	cfg.Selected = app.TableSelected
+	cfg.OnSelect = func(sel map[int]bool, _ int, _ *gui.Event, w *gui.Window) {
+		gui.State[ShowcaseApp](w).TableSelected = sel
+	}
+
+	if cfg.BorderStyle == gui.TableBorderNone {
+		alt := gui.RGBA(128, 128, 128, 20)
+		cfg.ColorRowAlt = &alt
+	}
 
 	header := make([]gui.TableCellCfg, 0, len(cfg.Data[0].Cells))
 	for idx, cell := range cfg.Data[0].Cells {
@@ -44,7 +56,8 @@ func demoTable(w *gui.Window) gui.View {
 			label += " ↑"
 		}
 		header = append(header, gui.TableCellCfg{
-			Value: label,
+			Value:    label,
+			HeadCell: true,
 			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 				app := gui.State[ShowcaseApp](w)
 				switch {
@@ -61,31 +74,73 @@ func demoTable(w *gui.Window) gui.View {
 	}
 	cfg.Data[0] = gui.TR(header)
 
+	selectedText := "none"
+	if len(app.TableSelected) > 0 {
+		parts := make([]string, 0, len(app.TableSelected))
+		for idx := range app.TableSelected {
+			if idx > 0 && idx < len(rows) {
+				parts = append(parts, rows[idx][0])
+			}
+		}
+		selectedText = strings.Join(parts, ", ")
+	}
+
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.Some(float32(12)),
 		Padding: gui.Some(gui.PaddingNone),
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: "Border style", TextStyle: gui.CurrentTheme().B3}),
-			gui.RadioButtonGroupRow(gui.RadioButtonGroupCfg{
-				IDFocus: 9108,
-				Padding: gui.Some(gui.NewPadding(2, 4, 2, 4)),
-				Value:   app.TableBorderStyle,
-				Options: []gui.RadioOption{
-					gui.NewRadioOption("All", "all"),
-					gui.NewRadioOption("Horizontal", "horizontal"),
-					gui.NewRadioOption("Header only", "header_only"),
-					gui.NewRadioOption("None", "none"),
-				},
-				OnSelect: func(value string, w *gui.Window) {
-					gui.State[ShowcaseApp](w).TableBorderStyle = value
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.Some(float32(20)),
+				Padding: gui.Some(gui.PaddingNone),
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Sizing:  gui.FitFit,
+						Spacing: gui.Some(float32(6)),
+						Padding: gui.Some(gui.PaddingNone),
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Border style",
+								TextStyle: gui.CurrentTheme().B3,
+							}),
+							gui.RadioButtonGroupRow(gui.RadioButtonGroupCfg{
+								IDFocus: 9108,
+								Padding: gui.Some(gui.NewPadding(2, 4, 2, 4)),
+								Value:   app.TableBorderStyle,
+								Options: []gui.RadioOption{
+									gui.NewRadioOption("All", "all"),
+									gui.NewRadioOption("Horizontal", "horizontal"),
+									gui.NewRadioOption("Header only", "header_only"),
+									gui.NewRadioOption("None", "none"),
+								},
+								OnSelect: func(value string, w *gui.Window) {
+									gui.State[ShowcaseApp](w).TableBorderStyle = value
+								},
+							}),
+						},
+					}),
+					gui.Toggle(gui.ToggleCfg{
+						IDFocus:  9109,
+						Label:    "Multi-select",
+						Selected: app.TableMultiSelect,
+						OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
+							a := gui.State[ShowcaseApp](w)
+							a.TableMultiSelect = !a.TableMultiSelect
+							a.TableSelected = nil
+						},
+					}),
 				},
 			}),
 			gui.Text(gui.TextCfg{
-				Text:      "Click a column header to sort.",
+				Text:      "Selected: " + selectedText,
+				TextStyle: gui.CurrentTheme().N2,
+			}),
+			gui.Text(gui.TextCfg{
+				Text:      "Click a column header to sort. Scroll to see all rows.",
 				TextStyle: gui.CurrentTheme().N3,
 			}),
-			gui.Table(cfg),
+			w.Table(cfg),
 		},
 	})
 }
@@ -346,6 +401,13 @@ func showcaseTableRows() [][]string {
 		{"Noah", "Designer", "Growth", "Boston"},
 		{"Mina", "Engineer", "Foundations", "San Diego"},
 		{"Omar", "PM", "Growth", "Atlanta"},
+		{"Lena", "Engineer", "Security", "Portland"},
+		{"Kai", "Designer", "Platform", "Miami"},
+		{"Ivy", "QA", "Growth", "Dallas"},
+		{"Theo", "PM", "Core UI", "Phoenix"},
+		{"Zara", "Engineer", "Foundations", "Nashville"},
+		{"Ravi", "Designer", "Security", "Houston"},
+		{"Eli", "QA", "Platform", "Detroit"},
 	}
 }
 

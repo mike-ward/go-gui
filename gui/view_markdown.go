@@ -523,7 +523,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 						Padding: Some(PaddingNone),
 						Clip:    true,
 						Content: []View{
-							Table(TableCfg{
+							w.Table(TableCfg{
 								BorderStyle:      cfg.Style.TableBorderStyle,
 								ColorBorder:      cfg.Style.TableBorderColor,
 								SizeBorder:       cfg.Style.TableBorderSize,
@@ -532,7 +532,6 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 								CellPadding:      cfg.Style.TableCellPadding,
 								ColorRowAlt:      cfg.Style.TableRowAlt,
 								ColumnAlignments: block.TableData.Alignments,
-								TextMeasurer:     w.textMeasurer,
 								Data:             buildMarkdownTableData(*block.TableData, cfg.Style),
 							}),
 						},

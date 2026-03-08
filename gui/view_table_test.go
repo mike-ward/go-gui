@@ -41,8 +41,15 @@ func TestTableBorderAll(t *testing.T) {
 	})
 	w := &Window{}
 	layout := GenerateViewLayout(v, w)
+	// 2 rows (cell borders with negative spacing, no separators).
 	if len(layout.Children) != 2 {
-		t.Errorf("rows = %d, want 2", len(layout.Children))
+		t.Errorf("children = %d, want 2", len(layout.Children))
+	}
+	// Each cell should have a border.
+	row := layout.Children[0]
+	cell := row.Children[0]
+	if cell.Shape.SizeBorder != 1 {
+		t.Errorf("cell border = %v, want 1", cell.Shape.SizeBorder)
 	}
 }
 
@@ -163,15 +170,16 @@ func (m *tableTestMeasurer) LayoutText(_ string, _ TextStyle, _ float32) (glyph.
 }
 
 func TestTableColumnAutoWidth(t *testing.T) {
-	v := Table(TableCfg{
-		TextMeasurer: &tableTestMeasurer{},
-		CellPadding:  Some(NewPadding(4, 4, 4, 4)),
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+	v := w.Table(TableCfg{
+		ID:          "auto-width-test",
+		CellPadding: Some(NewPadding(4, 4, 4, 4)),
 		Data: []TableRowCfg{
 			TR([]TableCellCfg{TH("Name"), TH("Age")}),
 			TR([]TableCellCfg{TD("Alexander"), TD("30")}),
 		},
 	})
-	w := &Window{}
 	layout := GenerateViewLayout(v, w)
 	// First column cell should be wider than second.
 	row0 := layout.Children[0]
@@ -201,5 +209,146 @@ func TestTableRowAltColor(t *testing.T) {
 	if layout.Children[1].Shape.Color != alt {
 		t.Errorf("row 1 color = %v, want %v",
 			layout.Children[1].Shape.Color, alt)
+	}
+}
+
+func TestWindowTable(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+	v := w.Table(TableCfg{
+		ID: "window-table-test",
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{TH("A"), TH("B")}),
+			TR([]TableCellCfg{TD("x"), TD("yy")}),
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+	if len(layout.Children) != 2 {
+		t.Fatalf("rows = %d, want 2", len(layout.Children))
+	}
+}
+
+func TestTableColumnWidthCaching(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+	cfg := TableCfg{
+		ID: "cache-test",
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{TH("Name")}),
+			TR([]TableCellCfg{TD("Alice")}),
+		},
+	}
+	// First call measures.
+	v1 := w.Table(cfg)
+	_ = GenerateViewLayout(v1, w)
+
+	// Second call should hit cache.
+	v2 := w.Table(cfg)
+	layout2 := GenerateViewLayout(v2, w)
+	if len(layout2.Children) != 2 {
+		t.Fatalf("rows = %d, want 2", len(layout2.Children))
+	}
+}
+
+func TestClearTableCache(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+	cfg := TableCfg{
+		ID: "clear-cache-test",
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{TH("Col")}),
+			TR([]TableCellCfg{TD("val")}),
+		},
+	}
+	v := w.Table(cfg)
+	_ = GenerateViewLayout(v, w)
+
+	// Clear specific.
+	w.ClearTableCache("clear-cache-test")
+
+	// Clear all.
+	v2 := w.Table(cfg)
+	_ = GenerateViewLayout(v2, w)
+	w.ClearAllTableCaches()
+}
+
+func TestTableVirtualization(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+
+	data := make([]TableRowCfg, 0, 101)
+	data = append(data, TR([]TableCellCfg{TH("Col")}))
+	for i := 0; i < 100; i++ {
+		data = append(data, TR([]TableCellCfg{TD("row")}))
+	}
+
+	v := w.Table(TableCfg{
+		ID:        "virtual-test",
+		IDScroll:  9999,
+		MaxHeight: 200,
+		Data:      data,
+	})
+	layout := GenerateViewLayout(v, w)
+	// Should have fewer children than total rows due to
+	// virtualization (visible rows + spacers).
+	if len(layout.Children) >= 101 {
+		t.Errorf("expected virtualized children < 101, got %d",
+			len(layout.Children))
+	}
+}
+
+func TestTableCfgFromCSV(t *testing.T) {
+	csv := "Name,Age\nAlice,30\nBob,25\n"
+	cfg, err := TableCfgFromCSV(csv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Data) != 3 {
+		t.Fatalf("rows = %d, want 3", len(cfg.Data))
+	}
+	if !cfg.Data[0].Cells[0].HeadCell {
+		t.Error("first row should be header")
+	}
+	if cfg.Data[0].Cells[0].Value != "Name" {
+		t.Errorf("header = %q, want Name", cfg.Data[0].Cells[0].Value)
+	}
+}
+
+func TestTableFromCSV(t *testing.T) {
+	w := &Window{}
+	v := w.TableFromCSV("A,B\n1,2\n")
+	layout := GenerateViewLayout(v, w)
+	if len(layout.Children) != 2 {
+		t.Fatalf("rows = %d, want 2", len(layout.Children))
+	}
+}
+
+func TestTableFromCSVError(t *testing.T) {
+	w := &Window{}
+	v := w.TableFromCSV("\"unclosed")
+	layout := GenerateViewLayout(v, w)
+	// Should produce error table with 1 row.
+	if len(layout.Children) != 1 {
+		t.Fatalf("rows = %d, want 1", len(layout.Children))
+	}
+}
+
+func TestTableRichTextCell(t *testing.T) {
+	v := Table(TableCfg{
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{{
+				RichText: &RichText{
+					Runs: []RichTextRun{
+						{Text: "bold", Style: TextStyle{Size: 14}},
+						{Text: " normal"},
+					},
+				},
+			}}),
+		},
+	})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	if len(layout.Children) != 1 {
+		t.Fatalf("rows = %d, want 1", len(layout.Children))
 	}
 }

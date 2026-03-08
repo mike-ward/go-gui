@@ -1,5 +1,13 @@
 package gui
 
+import (
+	"encoding/csv"
+	"hash/fnv"
+	"log"
+	"strings"
+	"sync"
+)
+
 // TableBorderStyle controls which borders are drawn in a table.
 type TableBorderStyle uint8
 
@@ -26,6 +34,7 @@ type TableCellCfg struct {
 	HAlign    *HorizontalAlign
 	TextStyle *TextStyle
 	Content   View
+	RichText  *RichText
 	OnClick   func(*Layout, *Event, *Window)
 }
 
@@ -53,9 +62,10 @@ type TableCfg struct {
 	OnSelect           func(map[int]bool, int, *Event, *Window)
 	Data               []TableRowCfg
 
-	// Text measurement — set by caller if *Window available.
-	// When non-nil, column widths auto-size to content.
-	TextMeasurer TextMeasurer
+	// IDScroll enables scrolling. When set with Height or
+	// MaxHeight, virtualization renders only visible rows.
+	IDScroll  uint32
+	Scrollbar ScrollbarOverflow
 
 	// Sizing
 	Sizing    Sizing
@@ -98,9 +108,26 @@ func applyTableDefaults(cfg *TableCfg) {
 	}
 }
 
-// Table generates a table from the given TableCfg.
-// When TextMeasurer is set, column widths auto-size to content.
+// tableColWidthCache stores measured column widths keyed by
+// content hash.
+type tableColWidthCache struct {
+	hash   uint64
+	widths []float32
+}
+
+// Table generates a table from the given TableCfg. For column
+// auto-sizing and caching, use w.Table(cfg) instead.
 func Table(cfg TableCfg) View {
+	return tableView(cfg, nil)
+}
+
+// Table generates a table with text measurement, column width
+// caching, and optional virtualization.
+func (w *Window) Table(cfg TableCfg) View {
+	return tableView(cfg, w)
+}
+
+func tableView(cfg TableCfg, w *Window) View {
 	applyTableDefaults(&cfg)
 
 	if len(cfg.Data) == 0 {
@@ -112,51 +139,31 @@ func Table(cfg TableCfg) View {
 
 	lastRowIdx := len(cfg.Data) - 1
 
-	var cellBorder float32
+	// Cell-level borders for BorderAll; negative spacing
+	// collapses doubled borders between cells and rows.
+	var cellBorder, rowSpacing float32
 	if cfg.BorderStyle == TableBorderAll {
 		cellBorder = cfg.SizeBorder
-	}
-
-	var rowSpacing float32
-	if cfg.BorderStyle == TableBorderAll {
 		rowSpacing = -cfg.SizeBorder
 	}
 
-	// Compute column widths.
-	numCols := 0
-	for _, r := range cfg.Data {
-		if len(r.Cells) > numCols {
-			numCols = len(r.Cells)
-		}
+	columnWidths := tableColumnWidths(&cfg, w)
+
+	// Virtualization.
+	listHeight := cfg.Height
+	if listHeight <= 0 {
+		listHeight = cfg.MaxHeight
 	}
-	columnWidths := make([]float32, numCols)
-	if cfg.TextMeasurer != nil {
-		pad := cfg.CellPadding.Get(Padding{}).Width()
-		for _, r := range cfg.Data {
-			for ci, cell := range r.Cells {
-				style := cfg.TextStyle
-				if cell.TextStyle != nil {
-					style = *cell.TextStyle
-				} else if cell.HeadCell {
-					style = cfg.TextStyleHead
-				}
-				tw := cfg.TextMeasurer.TextWidth(
-					cell.Value, style) + pad
-				if tw > columnWidths[ci] {
-					columnWidths[ci] = tw
-				}
-			}
-		}
-		for i := range columnWidths {
-			if columnWidths[i] < cfg.ColumnWidthMin {
-				columnWidths[i] = cfg.ColumnWidthMin
-			}
-		}
-	} else {
-		w := cfg.ColumnWidthDefault + cfg.CellPadding.Get(Padding{}).Width()
-		for i := range columnWidths {
-			columnWidths[i] = w
-		}
+	virtualize := cfg.IDScroll > 0 && listHeight > 0 &&
+		len(cfg.Data) > 0 && w != nil
+	rowHeight := float32(0)
+	first, last := 0, lastRowIdx
+	if virtualize {
+		rowHeight = tableEstimateRowHeight(&cfg, w)
+		scrollY := StateReadOr[uint32, float32](
+			w, nsScrollY, cfg.IDScroll, 0)
+		first, last = listCoreVisibleRange(
+			len(cfg.Data), rowHeight, listHeight, scrollY)
 	}
 
 	// Hoist loop-invariant values.
@@ -165,10 +172,29 @@ func Table(cfg TableCfg) View {
 	multiSelect := cfg.MultiSelect
 	colorHover := cfg.ColorHover
 
-	rows := make([]View, 0, len(cfg.Data)*2)
+	capacity := last - first + 3
+	if !virtualize {
+		capacity = len(cfg.Data) * 2
+	}
+	rows := make([]View, 0, capacity)
 
-	for rowIdx, r := range cfg.Data {
+	// Top spacer for virtualization.
+	if virtualize && first > 0 && rowHeight > 0 {
+		rows = append(rows, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(first) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+
+	for rowIdx := first; rowIdx <= last; rowIdx++ {
+		if rowIdx < 0 || rowIdx > lastRowIdx {
+			continue
+		}
+		r := cfg.Data[rowIdx]
+
 		cells := make([]View, 0, len(r.Cells))
+
 		for colIdx, cell := range r.Cells {
 			cellTextStyle := cfg.TextStyle
 			if cell.TextStyle != nil {
@@ -192,7 +218,11 @@ func Table(cfg TableCfg) View {
 			}
 
 			var cellContent []View
-			if cell.Content != nil {
+			if cell.RichText != nil {
+				cellContent = []View{
+					RTF(RtfCfg{RichText: *cell.RichText}),
+				}
+			} else if cell.Content != nil {
 				cellContent = []View{cell.Content}
 			} else {
 				cellContent = []View{
@@ -218,6 +248,7 @@ func Table(cfg TableCfg) View {
 				ColorBorder: cfg.ColorBorder,
 				SizeBorder:  Some(cellBorder),
 				Padding:     cfg.CellPadding,
+				Radius:      Some(float32(0)),
 				HAlign:      hAlign,
 				Sizing:      FixedFill,
 				Width:       colWidth,
@@ -239,9 +270,10 @@ func Table(cfg TableCfg) View {
 		ri := rowIdx
 
 		rows = append(rows, Row(ContainerCfg{
-			Color:   rowColor,
-			Spacing: Some(-cellBorder),
-			Padding: Some(PaddingNone),
+			Color:      rowColor,
+			Spacing:    Some(-cellBorder),
+			Padding:    Some(PaddingNone),
+			SizeBorder: Some(float32(0)),
 			Content: cells,
 			OnClick: func(layout *Layout, e *Event, w *Window) {
 				if rowOnClick != nil {
@@ -272,7 +304,7 @@ func Table(cfg TableCfg) View {
 			},
 		}))
 
-		// Separator.
+		// Horizontal separator.
 		sepHeight := cfg.SizeBorder
 		if rowIdx == 0 && cfg.SizeBorderHeader > 0 {
 			sepHeight = cfg.SizeBorderHeader
@@ -295,13 +327,24 @@ func Table(cfg TableCfg) View {
 		}
 	}
 
-	return Column(ContainerCfg{
+	// Bottom spacer for virtualization.
+	if virtualize && last < lastRowIdx && rowHeight > 0 {
+		remaining := lastRowIdx - last
+		rows = append(rows, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(remaining) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+
+	outerCfg := ContainerCfg{
 		ID:        cfg.ID,
 		A11YRole:  AccessRoleGrid,
 		A11YLabel: cfg.A11YLabel,
 		Color:     ColorTransparent,
 		Padding:   Some(PaddingNone),
 		Spacing:   Some(rowSpacing),
+		Radius:    Some(float32(0)),
 		Sizing:    cfg.Sizing,
 		Width:     cfg.Width,
 		Height:    cfg.Height,
@@ -310,7 +353,181 @@ func Table(cfg TableCfg) View {
 		MinHeight: cfg.MinHeight,
 		MaxHeight: cfg.MaxHeight,
 		Content:   rows,
+	}
+
+	if cfg.IDScroll > 0 {
+		outerCfg.IDScroll = cfg.IDScroll
+		outerCfg.Padding = Some(Padding{Right: DefaultScrollbarStyle.Size + PadXSmall})
+		outerCfg.ScrollbarCfgX = &ScrollbarCfg{
+			Overflow: ScrollbarHidden,
+		}
+		if cfg.Scrollbar != ScrollbarAuto {
+			outerCfg.ScrollbarCfgY = &ScrollbarCfg{
+				Overflow: cfg.Scrollbar,
+			}
+		}
+	}
+
+	return Column(outerCfg)
+}
+
+// tableColumnWidths computes column widths. When w is non-nil,
+// measures text and caches results in StateMap.
+func tableColumnWidths(cfg *TableCfg, w *Window) []float32 {
+	numCols := 0
+	for _, r := range cfg.Data {
+		if len(r.Cells) > numCols {
+			numCols = len(r.Cells)
+		}
+	}
+
+	if w == nil || w.textMeasurer == nil {
+		widths := make([]float32, numCols)
+		cw := cfg.ColumnWidthDefault +
+			cfg.CellPadding.Get(Padding{}).Width()
+		for i := range widths {
+			widths[i] = cw
+		}
+		return widths
+	}
+
+	hash := tableColumnWidthHash(cfg)
+
+	if cfg.ID != "" {
+		cache := StateMap[string, tableColWidthCache](
+			w, nsTableColWidths, capModerate)
+		if cached, ok := cache.Get(cfg.ID); ok &&
+			cached.hash == hash {
+			return cached.widths
+		}
+	} else if len(cfg.Data) > 20 {
+		tableWarnNoID()
+	}
+
+	widths := tableMeasureWidths(cfg, w.textMeasurer)
+
+	if cfg.ID != "" {
+		cache := StateMap[string, tableColWidthCache](
+			w, nsTableColWidths, capModerate)
+		cache.Set(cfg.ID, tableColWidthCache{
+			hash: hash, widths: widths,
+		})
+	}
+
+	return widths
+}
+
+// tableMeasureWidths measures all columns using TextMeasurer.
+func tableMeasureWidths(
+	cfg *TableCfg, tm TextMeasurer,
+) []float32 {
+	numCols := 0
+	for _, r := range cfg.Data {
+		if len(r.Cells) > numCols {
+			numCols = len(r.Cells)
+		}
+	}
+	widths := make([]float32, numCols)
+	pad := cfg.CellPadding.Get(Padding{}).Width()
+
+	for _, r := range cfg.Data {
+		for ci, cell := range r.Cells {
+			var tw float32
+			if cell.RichText != nil {
+				tw = tableRichTextWidth(cell.RichText, tm)
+			} else {
+				style := cfg.TextStyle
+				if cell.TextStyle != nil {
+					style = *cell.TextStyle
+				} else if cell.HeadCell {
+					style = cfg.TextStyleHead
+				}
+				tw = tm.TextWidth(cell.Value, style)
+			}
+			tw += pad
+			if tw > widths[ci] {
+				widths[ci] = tw
+			}
+		}
+	}
+
+	for i := range widths {
+		if widths[i] < cfg.ColumnWidthMin {
+			widths[i] = cfg.ColumnWidthMin
+		}
+	}
+	return widths
+}
+
+// tableRichTextWidth sums the width of each run.
+func tableRichTextWidth(rt *RichText, tm TextMeasurer) float32 {
+	var w float32
+	for _, run := range rt.Runs {
+		w += tm.TextWidth(run.Text, run.Style)
+	}
+	return w
+}
+
+// tableColumnWidthHash computes FNV-1a hash over sampled cell
+// values. Samples first, middle, and last rows.
+func tableColumnWidthHash(cfg *TableCfg) uint64 {
+	h := fnv.New64a()
+	n := len(cfg.Data)
+	indices := make([]int, 0, 3)
+	if n > 0 {
+		indices = append(indices, 0)
+	}
+	if n > 2 {
+		indices = append(indices, n/2)
+	}
+	if n > 1 {
+		indices = append(indices, n-1)
+	}
+	for _, i := range indices {
+		for _, cell := range cfg.Data[i].Cells {
+			h.Write([]byte(cell.Value))
+		}
+	}
+	return h.Sum64()
+}
+
+var tableWarnOnce sync.Once
+
+func tableWarnNoID() {
+	tableWarnOnce.Do(func() {
+		log.Printf("gui.Table: table with >20 rows has no ID; " +
+			"column width caching disabled")
 	})
+}
+
+// tableEstimateRowHeight estimates row height from TextStyle,
+// cell padding, and border.
+func tableEstimateRowHeight(cfg *TableCfg, w *Window) float32 {
+	style := cfg.TextStyle
+	height := style.Size
+	if w != nil && w.textMeasurer != nil {
+		height = w.textMeasurer.FontHeight(style)
+	}
+	return height + cfg.CellPadding.Get(Padding{}).Height()
+}
+
+// ClearTableCache removes cached column widths for the given
+// table ID.
+func (w *Window) ClearTableCache(id string) {
+	cache := StateMapRead[string, tableColWidthCache](
+		w, nsTableColWidths)
+	if cache != nil {
+		cache.Delete(id)
+	}
+}
+
+// ClearAllTableCaches removes all cached table column widths.
+func (w *Window) ClearAllTableCaches() {
+	cache := StateMapRead[string, tableColWidthCache](
+		w, nsTableColWidths)
+	if cache != nil {
+		cache.Clear()
+	}
 }
 
 // TR creates a table row from the given cells.
@@ -343,6 +560,27 @@ func TableCfgFromData(data [][]string) TableCfg {
 		rows = append(rows, TableRowCfg{Cells: cells})
 	}
 	return TableCfg{Data: rows}
+}
+
+// TableCfgFromCSV parses CSV data into a TableCfg. First row
+// is treated as a header row.
+func TableCfgFromCSV(data string) (TableCfg, error) {
+	reader := csv.NewReader(strings.NewReader(data))
+	records, err := reader.ReadAll()
+	if err != nil {
+		return TableCfg{}, err
+	}
+	return TableCfgFromData(records), nil
+}
+
+// TableFromCSV parses CSV data and returns a table view.
+// On parse error, returns an error table.
+func (w *Window) TableFromCSV(data string) View {
+	cfg, err := TableCfgFromCSV(data)
+	if err != nil {
+		return w.Table(TableCfgError(err.Error()))
+	}
+	return w.Table(cfg)
 }
 
 // TableCfgError creates a TableCfg with an error message.

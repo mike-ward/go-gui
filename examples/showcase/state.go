@@ -97,8 +97,10 @@ type ShowcaseApp struct {
 
 	DataGridQuery       gui.GridQueryState
 	DataGridSelection   gui.GridSelection
-	TableSortBy         int
-	TableBorderStyle    string
+	TableSortBy      int
+	TableBorderStyle string
+	TableMultiSelect bool
+	TableSelected    map[int]bool
 	DataSourceQuery     gui.GridQueryState
 	DataSourceSelection gui.GridSelection
 	DataSource          gui.DataGridDataSource

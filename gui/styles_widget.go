@@ -1,6 +1,10 @@
 package gui
 
-import "time"
+import (
+	"time"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 // InputStyle defines input field visual properties.
 type InputStyle struct {
@@ -790,7 +794,11 @@ var (
 		ColorHover:         colorHoverDark,
 		CellPadding:        PaddingTwoFive,
 		TextStyle:          DefaultTextStyle,
-		TextStyleHead:      DefaultTextStyle,
+		TextStyleHead: TextStyle{
+			Color:    DefaultTextStyle.Color,
+			Size:     DefaultTextStyle.Size,
+			Typeface: glyph.TypefaceBold,
+		},
 		AlignHead:          HAlignCenter,
 		ColumnWidthDefault: 50,
 		ColumnWidthMin:     20,

@@ -714,6 +714,7 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 	theme.B4 = makeStyle(bold, theme.SizeTextSmall)
 	theme.B5 = makeStyle(bold, theme.SizeTextXSmall)
 	theme.B6 = makeStyle(bold, theme.SizeTextTiny)
+	theme.TableStyle.TextStyleHead = theme.B3
 
 	// Italic shortcuts.
 	italic := ts

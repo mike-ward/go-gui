@@ -404,7 +404,7 @@ cfg := gui.TableCfgFromData([][]string{
     {"Bob", "25"},
 })
 cfg.ID = "my-table"
-gui.Table(cfg)
+w.Table(cfg)
 ` + "```" + `
 `,
 
@@ -1729,7 +1729,7 @@ cfg := gui.TableCfgFromData([][]string{
     {"Bob", "25"},
 })
 cfg.ID = "my-table"
-gui.Table(cfg)
+w.Table(cfg)
 ` + "```" + `
 
 ## DataGrid
