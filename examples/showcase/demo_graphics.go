@@ -315,36 +315,85 @@ func demoSvg(_ *gui.Window) gui.View {
 
 func demoImage(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
+	imgPath := showcaseAssetPath("image_clip_face.jpg")
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.Some(float32(12)),
 		Padding: gui.Some(gui.PaddingNone),
 		Content: []gui.View{
-			showcaseWrappedText(
-				"Images can load from local files or remote URLs. This showcase keeps the example self-contained with a local asset.",
-				t.N3,
-			),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(12)),
+				Spacing: gui.Some(float32(24)),
 				Padding: gui.Some(gui.PaddingNone),
-				VAlign:  gui.VAlignBottom,
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
-						Sizing:  gui.FitFit,
-						Spacing: gui.Some(float32(4)),
-						Padding: gui.Some(gui.PaddingNone),
-						HAlign:  gui.HAlignCenter,
+						Sizing:     gui.FitFit,
+						Spacing:    gui.Some(float32(8)),
+						Padding:    gui.Some(gui.PaddingNone),
+						SizeBorder: gui.Some(float32(0)),
 						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Default", TextStyle: t.B4}),
 							gui.Image(gui.ImageCfg{
-								Src:    showcaseAssetPath("arch.png"),
-								Width:  200,
-								Height: 150,
+								Src:    imgPath,
+								Width:  120,
+								Height: 120,
 							}),
-							gui.Text(gui.TextCfg{Text: "Local PNG asset", TextStyle: t.N2}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Sizing:     gui.FitFit,
+						Spacing:    gui.Some(float32(8)),
+						Padding:    gui.Some(gui.PaddingNone),
+						SizeBorder: gui.Some(float32(0)),
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Rounded (radius: 10)", TextStyle: t.B4}),
+							gui.Column(gui.ContainerCfg{
+								Clip:       true,
+								Radius:     gui.Some(float32(10)),
+								Width:      120,
+								Height:     120,
+								Sizing:     gui.FixedFixed,
+								Padding:    gui.Some(gui.PaddingNone),
+								SizeBorder: gui.Some(float32(0)),
+								Content: []gui.View{
+									gui.Image(gui.ImageCfg{
+										Src:    imgPath,
+										Width:  120,
+										Height: 120,
+									}),
+								},
+							}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Sizing:     gui.FitFit,
+						Spacing:    gui.Some(float32(8)),
+						Padding:    gui.Some(gui.PaddingNone),
+						SizeBorder: gui.Some(float32(0)),
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Circle", TextStyle: t.B4}),
+							gui.Circle(gui.ContainerCfg{
+								Clip:       true,
+								Width:      120,
+								Height:     120,
+								Sizing:     gui.FixedFixed,
+								Padding:    gui.Some(gui.PaddingNone),
+								SizeBorder: gui.Some(float32(0)),
+								Content: []gui.View{
+									gui.Image(gui.ImageCfg{
+										Src:    imgPath,
+										Width:  120,
+										Height: 120,
+									}),
+								},
+							}),
 						},
 					}),
 				},
+			}),
+			gui.Text(gui.TextCfg{
+				Text:      "Embedded: assets/image_clip_face.jpg",
+				TextStyle: t.N4,
 			}),
 		},
 	})
