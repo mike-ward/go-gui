@@ -595,7 +595,7 @@ func TableCfgError(message string) TableCfg {
 
 func copySelected(m map[int]bool) map[int]bool {
 	if m == nil {
-		return nil
+		return make(map[int]bool)
 	}
 	cp := make(map[int]bool, len(m))
 	for k, v := range m {
