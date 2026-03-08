@@ -95,29 +95,19 @@ func demoTable(w *gui.Window) gui.View {
 				Spacing: gui.Some(float32(20)),
 				Padding: gui.Some(gui.PaddingNone),
 				Content: []gui.View{
-					gui.Column(gui.ContainerCfg{
-						Sizing:  gui.FitFit,
-						Spacing: gui.Some(float32(6)),
-						Padding: gui.Some(gui.PaddingNone),
-						Content: []gui.View{
-							gui.Text(gui.TextCfg{
-								Text:      "Border style",
-								TextStyle: gui.CurrentTheme().B3,
-							}),
-							gui.RadioButtonGroupRow(gui.RadioButtonGroupCfg{
-								IDFocus: 9108,
-								Padding: gui.Some(gui.NewPadding(2, 4, 2, 4)),
-								Value:   app.TableBorderStyle,
-								Options: []gui.RadioOption{
-									gui.NewRadioOption("All", "all"),
-									gui.NewRadioOption("Horizontal", "horizontal"),
-									gui.NewRadioOption("Header only", "header_only"),
-									gui.NewRadioOption("None", "none"),
-								},
-								OnSelect: func(value string, w *gui.Window) {
-									gui.State[ShowcaseApp](w).TableBorderStyle = value
-								},
-							}),
+					gui.RadioButtonGroupRow(gui.RadioButtonGroupCfg{
+						IDFocus: 9108,
+						Title:   "Border style",
+						TitleBG: gui.CurrentTheme().ColorBackground,
+						Value:   app.TableBorderStyle,
+						Options: []gui.RadioOption{
+							gui.NewRadioOption("All", "all"),
+							gui.NewRadioOption("Horizontal", "horizontal"),
+							gui.NewRadioOption("Header only", "header_only"),
+							gui.NewRadioOption("None", "none"),
+						},
+						OnSelect: func(value string, w *gui.Window) {
+							gui.State[ShowcaseApp](w).TableBorderStyle = value
 						},
 					}),
 					gui.Toggle(gui.ToggleCfg{
@@ -138,7 +128,7 @@ func demoTable(w *gui.Window) gui.View {
 			}),
 			gui.Text(gui.TextCfg{
 				Text:      "Click a column header to sort. Scroll to see all rows.",
-				TextStyle: gui.CurrentTheme().N3,
+				TextStyle: gui.CurrentTheme().N5,
 			}),
 			w.Table(cfg),
 		},

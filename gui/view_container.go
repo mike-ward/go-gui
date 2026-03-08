@@ -213,10 +213,11 @@ func addGroupBoxTitle(c *ContainerCfg, w *Window, layout *Layout) {
 		},
 	})
 
-	textColor := ts.Color
+	textColor := c.ColorBorder
 	if c.Disabled {
 		textColor = dimAlpha(textColor)
 	}
+	ts.Color = textColor
 	layout.Children = append(layout.Children, Layout{
 		Shape: &Shape{
 			ShapeType: ShapeText,

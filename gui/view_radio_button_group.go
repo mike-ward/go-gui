@@ -21,6 +21,8 @@ type RadioButtonGroupCfg struct {
 	Padding     Opt[Padding]
 	ColorBorder Color
 	SizeBorder  Opt[float32]
+	Title       string
+	TitleBG     Color
 	MinWidth    float32
 	MinHeight   float32
 	IDFocus     uint32
@@ -33,7 +35,7 @@ type RadioButtonGroupCfg struct {
 var DefaultRadioGroupStyle = struct {
 	SizeBorder float32
 }{
-	SizeBorder: 0,
+	SizeBorder: 1.5,
 }
 
 // RadioButtonGroupColumn creates a vertically stacked radio
@@ -48,6 +50,8 @@ func RadioButtonGroupColumn(cfg RadioButtonGroupCfg) View {
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder),
+		Title:           cfg.Title,
+		TitleBG:         cfg.TitleBG,
 		Spacing:         cfg.Spacing,
 		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
@@ -69,6 +73,8 @@ func RadioButtonGroupRow(cfg RadioButtonGroupCfg) View {
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
 		SizeBorder:      Some(sizeBorder2),
+		Title:           cfg.Title,
+		TitleBG:         cfg.TitleBG,
 		Spacing:         cfg.Spacing,
 		Padding:         cfg.Padding,
 		MinWidth:        cfg.MinWidth,
