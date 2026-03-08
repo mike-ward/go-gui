@@ -86,7 +86,7 @@ type RenderCmd struct {
 	// Pointer fields.
 	Shader       *Shader
 	Gradient     *GradientDef
-	TextStylePtr *TextStyle            // SVG text: full style
+	TextStylePtr *TextStyle            // full text style (typeface, etc.)
 	TextGradient *glyph.GradientConfig // SVG gradient text
 	TextPath     *TextPathData         // SVG textPath placement data
 	LayoutPtr    *glyph.Layout         // RTF pre-shaped layout

@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 	"sync"
+
+	"github.com/mike-ward/go-glyph"
 )
 
 // TableBorderStyle controls which borders are drawn in a table.
@@ -274,7 +276,7 @@ func tableView(cfg TableCfg, w *Window) View {
 			Spacing:    Some(-cellBorder),
 			Padding:    Some(PaddingNone),
 			SizeBorder: Some(float32(0)),
-			Content: cells,
+			Content:    cells,
 			OnClick: func(layout *Layout, e *Event, w *Window) {
 				if rowOnClick != nil {
 					rowOnClick(layout, e, w)
@@ -535,9 +537,11 @@ func TR(cols []TableCellCfg) TableRowCfg {
 	return TableRowCfg{Cells: cols}
 }
 
-// TH creates a header cell.
+// TH creates a header cell with bold text.
 func TH(value string) TableCellCfg {
-	return TableCellCfg{Value: value, HeadCell: true}
+	ts := DefaultTextStyle
+	ts.Typeface = glyph.TypefaceBold
+	return TableCellCfg{Value: value, HeadCell: true, TextStyle: &ts}
 }
 
 // TD creates a data cell.
@@ -552,10 +556,11 @@ func TableCfgFromData(data [][]string) TableCfg {
 	for i, r := range data {
 		cells := make([]TableCellCfg, 0, len(r))
 		for _, cell := range r {
-			cells = append(cells, TableCellCfg{
-				Value:    cell,
-				HeadCell: i == 0,
-			})
+			if i == 0 {
+				cells = append(cells, TH(cell))
+			} else {
+				cells = append(cells, TD(cell))
+			}
 		}
 		rows = append(rows, TableRowCfg{Cells: cells})
 	}

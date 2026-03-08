@@ -421,15 +421,16 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		textWidth = w.textMeasurer.TextWidth(text, *tc.TextStyle)
 	}
 	cmd := RenderCmd{
-		Kind:       RenderText,
-		X:          baseX,
-		Y:          baseY,
-		Color:      c,
-		Text:       text,
-		FontName:   tc.TextStyle.Family,
-		FontSize:   tc.TextStyle.Size,
-		FontAscent: fontAscent,
-		TextWidth:  textWidth,
+		Kind:         RenderText,
+		X:            baseX,
+		Y:            baseY,
+		Color:        c,
+		Text:         text,
+		FontName:     tc.TextStyle.Family,
+		FontSize:     tc.TextStyle.Size,
+		FontAscent:   fontAscent,
+		TextWidth:    textWidth,
+		TextStylePtr: tc.TextStyle,
 	}
 	if tc.TextMode == TextModeWrap ||
 		tc.TextMode == TextModeWrapKeepSpaces {
