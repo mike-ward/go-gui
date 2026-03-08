@@ -1,5 +1,5 @@
-// The get_started example is the smallest stateful go-gui app:
-// one button and one counter.
+// Get_started is the smallest stateful go-gui app: one button
+// and one counter.
 package main
 
 import (

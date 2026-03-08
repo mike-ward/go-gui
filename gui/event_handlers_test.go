@@ -2,7 +2,7 @@ package gui
 
 import "testing"
 
-// helper: build a layout with one focused child that has events.
+// focusedChild builds a layout with one focused child that has events.
 func focusedChild(idFocus uint32, eh *EventHandlers) *Layout {
 	return &Layout{
 		Shape: &Shape{},

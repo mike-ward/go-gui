@@ -1,5 +1,5 @@
-// The rtf example demonstrates rich text runs, links, abbreviations,
-// and wrapping inside the RTF widget.
+// Rtf demonstrates rich text runs, links, abbreviations, and
+// wrapping inside the RTF widget.
 package main
 
 import (

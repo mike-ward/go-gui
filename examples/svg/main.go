@@ -1,5 +1,5 @@
-// The svg example lets you browse several embedded SVG assets in
-// a simple split-view viewer.
+// Svg lets you browse several embedded SVG assets in a simple
+// split-view viewer.
 package main
 
 import (

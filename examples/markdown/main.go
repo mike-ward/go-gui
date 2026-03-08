@@ -1,5 +1,5 @@
-// The markdown example renders an embedded markdown document with
-// the built-in markdown view.
+// Markdown renders an embedded markdown document with the built-in
+// markdown view.
 package main
 
 import (

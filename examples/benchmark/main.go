@@ -1,5 +1,5 @@
-// The benchmark example measures frame costs while rendering large
-// batches of widgets.
+// Benchmark measures frame costs while rendering large batches of
+// widgets.
 package main
 
 import (

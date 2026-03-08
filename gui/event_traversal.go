@@ -3,8 +3,8 @@ package gui
 // ShapeCallback is the type for shape event callbacks.
 type ShapeCallback = func(*Layout, *Event, *Window)
 
-// executeFocusCallback executes a callback if the layout has
-// focus. Returns true if handled.
+// isFocusedTarget reports whether the layout has keyboard focus
+// (or is the reserved dialog).
 func isFocusedTarget(layout *Layout, w *Window) bool {
 	if layout.Shape.IDFocus == 0 {
 		return false

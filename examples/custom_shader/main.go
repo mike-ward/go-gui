@@ -1,5 +1,5 @@
-// The custom shader example renders animated fragment shaders
-// inside ordinary go-gui containers.
+// Custom_shader renders animated fragment shaders inside ordinary
+// go-gui containers.
 package main
 
 import (

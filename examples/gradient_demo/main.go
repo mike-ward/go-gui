@@ -1,5 +1,5 @@
-// The gradient demo shows the built-in gradient directions and
-// how to swap them at runtime.
+// Gradient_demo shows the built-in gradient directions and how
+// to swap them at runtime.
 package main
 
 import (

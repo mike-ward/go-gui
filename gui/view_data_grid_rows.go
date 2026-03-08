@@ -542,9 +542,9 @@ func dataGridFirstEditableColumnIndexEx(columns []GridColumnCfg) int {
 	return -1
 }
 
-// Focus ID allocation: grid_focus_id is the base. Header
-// cells get IDs [base+1 .. base+col_count]. Editor cells
-// start at base+col_count+1.
+// dataGridCellEditorFocusBaseID returns the first focus ID for
+// editor cells. Header cells occupy [base+1 .. base+col_count];
+// editor cells start at base+col_count+1.
 func dataGridCellEditorFocusBaseID(cfg *DataGridCfg, colCount int) uint32 {
 	if colCount <= 0 {
 		return 0
