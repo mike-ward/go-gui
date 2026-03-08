@@ -12,7 +12,7 @@ var guiTheme Theme
 
 // Theme describes a complete GUI theme. Only styles for existing
 // Go views are populated (Button, Container, Rectangle, Text,
-// Input, Scrollbar, Radio, Switch, Toggle, Select, ListBox).
+// Input, Scrollbar, Radio, Switch, Toggle, Select, ListBox, Tree).
 type Theme struct {
 	Cfg             ThemeCfg
 	Name            string
@@ -27,67 +27,68 @@ type Theme struct {
 	TitlebarDark    bool
 
 	// Per-widget styles.
-	ButtonStyle    ButtonStyle
-	ContainerStyle ContainerStyle
-	RectangleStyle RectangleStyle
-	TextStyleDef   TextStyle
-	InputStyle     InputStyle
-	ScrollbarStyle ScrollbarStyle
-	RadioStyle     RadioStyle
-	SwitchStyle    SwitchStyle
-	ToggleStyle    ToggleStyle
-	SelectStyle    SelectStyle
-	ListBoxStyle   ListBoxStyle
-	DialogStyle    DialogStyle
-	ToastStyle        ToastStyle
-	TooltipStyle      TooltipStyle
-	BadgeStyle        BadgeStyle
-	ExpandPanelStyle  ExpandPanelStyle
-	ProgressBarStyle  ProgressBarStyle
-	RangeSliderStyle  RangeSliderStyle
-	TabControlStyle   TabControlStyle
-	BreadcrumbStyle   BreadcrumbStyle
-	SplitterStyle     SplitterStyle
-	TableStyle        TableStyle
-	ComboboxStyle        ComboboxStyle
-	CommandPaletteStyle  CommandPaletteStyle
-	MenubarStyle         MenubarStyle
-	DatePickerStyle      DatePickerStyle
-	ColorPickerStyle     ColorPickerStyle
-	DataGridStyle        DataGridStyle
+	ButtonStyle         ButtonStyle
+	ContainerStyle      ContainerStyle
+	RectangleStyle      RectangleStyle
+	TextStyleDef        TextStyle
+	InputStyle          InputStyle
+	ScrollbarStyle      ScrollbarStyle
+	RadioStyle          RadioStyle
+	SwitchStyle         SwitchStyle
+	ToggleStyle         ToggleStyle
+	SelectStyle         SelectStyle
+	ListBoxStyle        ListBoxStyle
+	TreeStyle           TreeStyle
+	DialogStyle         DialogStyle
+	ToastStyle          ToastStyle
+	TooltipStyle        TooltipStyle
+	BadgeStyle          BadgeStyle
+	ExpandPanelStyle    ExpandPanelStyle
+	ProgressBarStyle    ProgressBarStyle
+	RangeSliderStyle    RangeSliderStyle
+	TabControlStyle     TabControlStyle
+	BreadcrumbStyle     BreadcrumbStyle
+	SplitterStyle       SplitterStyle
+	TableStyle          TableStyle
+	ComboboxStyle       ComboboxStyle
+	CommandPaletteStyle CommandPaletteStyle
+	MenubarStyle        MenubarStyle
+	DatePickerStyle     DatePickerStyle
+	ColorPickerStyle    ColorPickerStyle
+	DataGridStyle       DataGridStyle
 
 	// Text size shortcuts (N = normal, B = bold,
 	// I = italic, M = mono, BI = bold+italic).
-	N1  TextStyle
-	N2  TextStyle
-	N3  TextStyle
-	N4  TextStyle
-	N5  TextStyle
-	N6  TextStyle
-	B1  TextStyle
-	B2  TextStyle
-	B3  TextStyle
-	B4  TextStyle
-	B5  TextStyle
-	B6  TextStyle
-	I1  TextStyle
-	I2  TextStyle
-	I3  TextStyle
-	I4  TextStyle
-	I5  TextStyle
-	I6  TextStyle
-	BI1 TextStyle
-	BI2 TextStyle
-	BI3 TextStyle
-	BI4 TextStyle
-	BI5 TextStyle
-	BI6 TextStyle
-	M1  TextStyle
-	M2  TextStyle
-	M3  TextStyle
-	M4  TextStyle
-	M5  TextStyle
-	M6  TextStyle
+	N1    TextStyle
+	N2    TextStyle
+	N3    TextStyle
+	N4    TextStyle
+	N5    TextStyle
+	N6    TextStyle
+	B1    TextStyle
+	B2    TextStyle
+	B3    TextStyle
+	B4    TextStyle
+	B5    TextStyle
+	B6    TextStyle
+	I1    TextStyle
+	I2    TextStyle
+	I3    TextStyle
+	I4    TextStyle
+	I5    TextStyle
+	I6    TextStyle
+	BI1   TextStyle
+	BI2   TextStyle
+	BI3   TextStyle
+	BI4   TextStyle
+	BI5   TextStyle
+	BI6   TextStyle
+	M1    TextStyle
+	M2    TextStyle
+	M3    TextStyle
+	M4    TextStyle
+	M5    TextStyle
+	M6    TextStyle
 	Icon1 TextStyle
 	Icon2 TextStyle
 	Icon3 TextStyle
@@ -343,6 +344,23 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			TextStyleNormal:  ts,
 			SubheadingStyle:  ts,
 		},
+		TreeStyle: TreeStyle{
+			Color:       ColorTransparent,
+			ColorHover:  cfg.ColorHover,
+			ColorFocus:  cfg.ColorFocus,
+			ColorBorder: ColorTransparent,
+			Padding:     PaddingNone,
+			SizeBorder:  cfg.SizeBorder,
+			Radius:      cfg.Radius,
+			TextStyle:   ts,
+			TextStyleIcon: TextStyle{
+				Color:  ts.Color,
+				Size:   cfg.SizeTextSmall,
+				Family: IconFontName,
+			},
+			Indent:  25,
+			Spacing: 0,
+		},
 		DialogStyle: DialogStyle{
 			Color:            cfg.ColorPanel,
 			ColorBorder:      cfg.ColorBorder,
@@ -437,36 +455,36 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			Radius:           cfg.RadiusSmall,
 		},
 		TabControlStyle: TabControlStyle{
-			Color:              cfg.ColorPanel,
-			ColorBorder:        cfg.ColorBorder,
-			ColorHeader:        ColorTransparent,
-			ColorHeaderBorder:  ColorTransparent,
-			ColorContent:       cfg.ColorPanel,
-			ColorContentBorder: cfg.ColorBorder,
-			ColorTab:           cfg.ColorInterior,
-			ColorTabHover:      cfg.ColorHover,
-			ColorTabFocus:      cfg.ColorFocus,
-			ColorTabClick:      cfg.ColorActive,
-			ColorTabSelected:   cfg.ColorSelect,
-			ColorTabDisabled:   cfg.ColorPanel,
-			ColorTabBorder:     cfg.ColorBorder,
+			Color:               cfg.ColorPanel,
+			ColorBorder:         cfg.ColorBorder,
+			ColorHeader:         ColorTransparent,
+			ColorHeaderBorder:   ColorTransparent,
+			ColorContent:        cfg.ColorPanel,
+			ColorContentBorder:  cfg.ColorBorder,
+			ColorTab:            cfg.ColorInterior,
+			ColorTabHover:       cfg.ColorHover,
+			ColorTabFocus:       cfg.ColorFocus,
+			ColorTabClick:       cfg.ColorActive,
+			ColorTabSelected:    cfg.ColorSelect,
+			ColorTabDisabled:    cfg.ColorPanel,
+			ColorTabBorder:      cfg.ColorBorder,
 			ColorTabBorderFocus: borderFocus,
-			Padding:            PaddingNone,
-			PaddingHeader:      PaddingNone,
-			PaddingContent:     cfg.PaddingMedium,
-			PaddingTab:         cfg.PaddingSmall,
-			SizeBorder:         cfg.SizeBorder,
-			SizeContentBorder:  cfg.SizeBorder,
-			SizeTabBorder:      cfg.SizeBorder,
-			Radius:             cfg.RadiusMedium,
-			RadiusHeader:       cfg.RadiusSmall,
-			RadiusContent:      cfg.RadiusMedium,
-			RadiusTab:          cfg.RadiusSmall,
-			RadiusTabBorder:    cfg.RadiusSmall,
-			Spacing:            cfg.SpacingSmall,
-			SpacingHeader:      cfg.SpacingSmall,
-			TextStyle:          ts,
-			TextStyleSelected:  ts,
+			Padding:             PaddingNone,
+			PaddingHeader:       PaddingNone,
+			PaddingContent:      cfg.PaddingMedium,
+			PaddingTab:          cfg.PaddingSmall,
+			SizeBorder:          cfg.SizeBorder,
+			SizeContentBorder:   cfg.SizeBorder,
+			SizeTabBorder:       cfg.SizeBorder,
+			Radius:              cfg.RadiusMedium,
+			RadiusHeader:        cfg.RadiusSmall,
+			RadiusContent:       cfg.RadiusMedium,
+			RadiusTab:           cfg.RadiusSmall,
+			RadiusTabBorder:     cfg.RadiusSmall,
+			Spacing:             cfg.SpacingSmall,
+			SpacingHeader:       cfg.SpacingSmall,
+			TextStyle:           ts,
+			TextStyleSelected:   ts,
 			TextStyleDisabled: TextStyle{
 				Color: RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 130),
 				Size:  ts.Size,
@@ -574,43 +592,43 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 		MenubarStyle: MenubarStyle{
 			WidthSubmenuMin:  50,
 			WidthSubmenuMax:  200,
-			Color:           cfg.ColorInterior,
-			ColorHover:      cfg.ColorHover,
-			ColorFocus:      cfg.ColorFocus,
-			ColorBorder:     cfg.ColorBorder,
+			Color:            cfg.ColorInterior,
+			ColorHover:       cfg.ColorHover,
+			ColorFocus:       cfg.ColorFocus,
+			ColorBorder:      cfg.ColorBorder,
 			ColorBorderFocus: borderFocus,
-			ColorSelect:     cfg.ColorSelect,
-			Padding:         cfg.PaddingSmall,
-			PaddingMenuItem: PaddingTwoFive,
-			PaddingSubmenu:  cfg.PaddingSmall,
-			PaddingSubtitle: NewPadding(0, cfg.PaddingSmall.Right, 0, cfg.PaddingSmall.Left),
-			SizeBorder:      cfg.SizeBorder,
-			Radius:          cfg.RadiusSmall,
-			RadiusBorder:    cfg.RadiusMedium,
-			RadiusSubmenu:   cfg.RadiusSmall,
-			RadiusMenuItem:  cfg.RadiusSmall,
-			Spacing:         cfg.SpacingMedium,
-			SpacingSubmenu:  1,
-			TextStyle:       ts,
+			ColorSelect:      cfg.ColorSelect,
+			Padding:          cfg.PaddingSmall,
+			PaddingMenuItem:  PaddingTwoFive,
+			PaddingSubmenu:   cfg.PaddingSmall,
+			PaddingSubtitle:  NewPadding(0, cfg.PaddingSmall.Right, 0, cfg.PaddingSmall.Left),
+			SizeBorder:       cfg.SizeBorder,
+			Radius:           cfg.RadiusSmall,
+			RadiusBorder:     cfg.RadiusMedium,
+			RadiusSubmenu:    cfg.RadiusSmall,
+			RadiusMenuItem:   cfg.RadiusSmall,
+			Spacing:          cfg.SpacingMedium,
+			SpacingSubmenu:   1,
+			TextStyle:        ts,
 			TextStyleSubtitle: TextStyle{
 				Color: ts.Color,
 				Size:  cfg.SizeTextSmall,
 			},
 		},
 		DatePickerStyle: DatePickerStyle{
-			CellSpacing:  3,
-			Color:        cfg.ColorInterior,
-			ColorHover:   cfg.ColorHover,
-			ColorFocus:   cfg.ColorFocus,
-			ColorClick:   cfg.ColorActive,
-			ColorBorder:  cfg.ColorBorder,
+			CellSpacing:      3,
+			Color:            cfg.ColorInterior,
+			ColorHover:       cfg.ColorHover,
+			ColorFocus:       cfg.ColorFocus,
+			ColorClick:       cfg.ColorActive,
+			ColorBorder:      cfg.ColorBorder,
 			ColorBorderFocus: borderFocus,
-			ColorSelect:  cfg.ColorSelect,
-			Padding:      PaddingNone,
-			SizeBorder:   cfg.SizeBorder,
-			Radius:       cfg.RadiusMedium,
-			RadiusBorder: cfg.RadiusMedium,
-			TextStyle:    ts,
+			ColorSelect:      cfg.ColorSelect,
+			Padding:          PaddingNone,
+			SizeBorder:       cfg.SizeBorder,
+			Radius:           cfg.RadiusMedium,
+			RadiusBorder:     cfg.RadiusMedium,
+			TextStyle:        ts,
 		},
 		ColorPickerStyle: ColorPickerStyle{
 			Color:            cfg.ColorInterior,
@@ -758,6 +776,7 @@ func SetTheme(t Theme) {
 	DefaultToggleStyle = t.ToggleStyle
 	DefaultSelectStyle = t.SelectStyle
 	DefaultListBoxStyle = t.ListBoxStyle
+	DefaultTreeStyle = t.TreeStyle
 	DefaultDialogStyle = t.DialogStyle
 	DefaultToastStyle = t.ToastStyle
 	DefaultTooltipStyle = t.TooltipStyle
@@ -831,6 +850,11 @@ func (t Theme) WithSelectStyle(s SelectStyle) Theme {
 
 func (t Theme) WithListBoxStyle(s ListBoxStyle) Theme {
 	t.ListBoxStyle = s
+	return t
+}
+
+func (t Theme) WithTreeStyle(s TreeStyle) Theme {
+	t.TreeStyle = s
 	return t
 }
 
@@ -1011,8 +1035,13 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.ListBoxStyle.ColorBorderFocus = borderFocus
 	t.ListBoxStyle.ColorSelect = sel
 
-	t.ScrollbarStyle.ColorThumb = active
+	t.TreeStyle.ColorHover = hover
+	t.TreeStyle.ColorFocus = focus
+	if o.ColorBorder != nil {
+		t.TreeStyle.ColorBorder = border
+	}
 
+	t.ScrollbarStyle.ColorThumb = active
 	t.RectangleStyle.ColorBorder = border
 
 	t.DialogStyle.Color = panel

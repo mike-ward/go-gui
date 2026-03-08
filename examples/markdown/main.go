@@ -50,7 +50,7 @@ func mainView(w *gui.Window) gui.View {
 			w.Markdown(gui.MarkdownCfg{
 				Source:     markdownSource,
 				Style:      style,
-				Mode:       gui.TextModeWrap,
+				Mode:       gui.Some(gui.TextModeWrap),
 				Color:      theme.ColorPanel,
 				SizeBorder: 1,
 				Radius:     theme.RadiusMedium,

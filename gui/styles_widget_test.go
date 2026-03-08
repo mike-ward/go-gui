@@ -77,3 +77,16 @@ func TestDefaultTooltipStyle(t *testing.T) {
 		t.Errorf("radius = %f, want %f", s.Radius, RadiusSmall)
 	}
 }
+
+func TestDefaultTreeStyle(t *testing.T) {
+	s := DefaultTreeStyle
+	if !s.ColorHover.IsSet() {
+		t.Error("tree hover color should be set")
+	}
+	if s.Radius != RadiusMedium {
+		t.Errorf("radius = %f, want %f", s.Radius, RadiusMedium)
+	}
+	if s.TextStyleIcon.Family != IconFontName {
+		t.Errorf("icon family = %q, want %q", s.TextStyleIcon.Family, IconFontName)
+	}
+}

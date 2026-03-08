@@ -8,36 +8,36 @@ import (
 
 func TestThemeMaker(t *testing.T) {
 	cfg := ThemeCfg{
-		Name:            "test",
-		ColorBackground: RGB(48, 48, 48),
-		ColorPanel:      RGB(64, 64, 64),
-		ColorInterior:   RGB(74, 74, 74),
-		ColorHover:      RGB(84, 84, 84),
-		ColorFocus:      RGB(94, 94, 94),
-		ColorActive:     RGB(104, 104, 104),
-		ColorBorder:     RGB(100, 100, 100),
-		ColorSelect:     RGB(65, 105, 225),
-		TextStyleDef:    TextStyle{Color: RGB(225, 225, 225), Size: 16},
-		PaddingSmall:    PaddingSmall,
-		PaddingMedium:   PaddingMedium,
-		PaddingLarge:    PaddingLarge,
-		Padding:         PaddingMedium,
-		Radius:          RadiusMedium,
-		RadiusSmall:     RadiusSmall,
-		RadiusMedium:    RadiusMedium,
-		RadiusLarge:     RadiusLarge,
-		SpacingSmall:    SpacingSmall,
-		SpacingMedium:   SpacingMedium,
-		SpacingLarge:    SpacingLarge,
-		SizeTextTiny:    SizeTextTiny,
-		SizeTextXSmall:  SizeTextXSmall,
-		SizeTextSmall:   SizeTextSmall,
-		SizeTextMedium:  SizeTextMedium,
-		SizeTextLarge:   SizeTextLarge,
-		SizeTextXLarge:  SizeTextXLarge,
-		SizeScrollbar:   7,
+		Name:             "test",
+		ColorBackground:  RGB(48, 48, 48),
+		ColorPanel:       RGB(64, 64, 64),
+		ColorInterior:    RGB(74, 74, 74),
+		ColorHover:       RGB(84, 84, 84),
+		ColorFocus:       RGB(94, 94, 94),
+		ColorActive:      RGB(104, 104, 104),
+		ColorBorder:      RGB(100, 100, 100),
+		ColorSelect:      RGB(65, 105, 225),
+		TextStyleDef:     TextStyle{Color: RGB(225, 225, 225), Size: 16},
+		PaddingSmall:     PaddingSmall,
+		PaddingMedium:    PaddingMedium,
+		PaddingLarge:     PaddingLarge,
+		Padding:          PaddingMedium,
+		Radius:           RadiusMedium,
+		RadiusSmall:      RadiusSmall,
+		RadiusMedium:     RadiusMedium,
+		RadiusLarge:      RadiusLarge,
+		SpacingSmall:     SpacingSmall,
+		SpacingMedium:    SpacingMedium,
+		SpacingLarge:     SpacingLarge,
+		SizeTextTiny:     SizeTextTiny,
+		SizeTextXSmall:   SizeTextXSmall,
+		SizeTextSmall:    SizeTextSmall,
+		SizeTextMedium:   SizeTextMedium,
+		SizeTextLarge:    SizeTextLarge,
+		SizeTextXLarge:   SizeTextXLarge,
+		SizeScrollbar:    7,
 		SizeScrollbarMin: 20,
-		SizeRadio:       16,
+		SizeRadio:        16,
 		SizeSwitchWidth:  36,
 		SizeSwitchHeight: 22,
 		ScrollMultiplier: 20,
@@ -62,10 +62,14 @@ func TestSetTheme(t *testing.T) {
 
 	theme := Theme{
 		ButtonStyle: ButtonStyle{Color: Red},
+		TreeStyle:   TreeStyle{ColorHover: Blue},
 	}
 	SetTheme(theme)
 	if DefaultButtonStyle.Color != Red {
 		t.Error("SetTheme should update DefaultButtonStyle")
+	}
+	if DefaultTreeStyle.ColorHover != Blue {
+		t.Error("SetTheme should update DefaultTreeStyle")
 	}
 }
 
@@ -91,23 +95,23 @@ func TestWithColors(t *testing.T) {
 
 func TestAdjustFontSize(t *testing.T) {
 	cfg := ThemeCfg{
-		TextStyleDef:   TextStyle{Color: RGB(225, 225, 225), Size: 16},
-		SizeTextTiny:   10,
-		SizeTextXSmall: 12,
-		SizeTextSmall:  14,
-		SizeTextMedium: 16,
-		SizeTextLarge:  20,
-		SizeTextXLarge: 24,
-		Radius:         RadiusMedium,
-		RadiusSmall:    RadiusSmall,
-		RadiusMedium:   RadiusMedium,
-		RadiusLarge:    RadiusLarge,
-		SpacingMedium:  SpacingMedium,
-		PaddingMedium:  PaddingMedium,
-		SizeScrollbar:  7,
+		TextStyleDef:     TextStyle{Color: RGB(225, 225, 225), Size: 16},
+		SizeTextTiny:     10,
+		SizeTextXSmall:   12,
+		SizeTextSmall:    14,
+		SizeTextMedium:   16,
+		SizeTextLarge:    20,
+		SizeTextXLarge:   24,
+		Radius:           RadiusMedium,
+		RadiusSmall:      RadiusSmall,
+		RadiusMedium:     RadiusMedium,
+		RadiusLarge:      RadiusLarge,
+		SpacingMedium:    SpacingMedium,
+		PaddingMedium:    PaddingMedium,
+		SizeScrollbar:    7,
 		SizeScrollbarMin: 20,
-		SizeRadio:      16,
-		SizeSwitchWidth: 36,
+		SizeRadio:        16,
+		SizeSwitchWidth:  36,
 		SizeSwitchHeight: 22,
 	}
 	theme := ThemeMaker(cfg)
@@ -209,5 +213,16 @@ func TestWithColorsRangeSlider(t *testing.T) {
 	})
 	if updated.RangeSliderStyle.ColorHover != hover {
 		t.Error("range slider hover not propagated")
+	}
+}
+
+func TestThemeMakerTreeStyle(t *testing.T) {
+	cfg := baseDarkCfg()
+	theme := ThemeMaker(cfg)
+	if theme.TreeStyle.ColorHover != cfg.ColorHover {
+		t.Errorf("TreeStyle.ColorHover = %v, want %v", theme.TreeStyle.ColorHover, cfg.ColorHover)
+	}
+	if theme.TreeStyle.Indent != 25 {
+		t.Errorf("TreeStyle.Indent = %f, want 25", theme.TreeStyle.Indent)
 	}
 }

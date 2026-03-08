@@ -154,6 +154,13 @@ func (w *Window) Update() {
 		return
 	}
 
+	if inspectorSupported && w.inspectorEnabled {
+		w.inspectorPropsCache = make(map[string]inspectorNodeProps)
+		selected := inspectorSelectedPath(w)
+		w.inspectorTreeCache = inspectorBuildTreeNodes(
+			&w.layout, selected, w.inspectorPropsCache)
+	}
+
 	if len(w.layout.Children) > 0 {
 		w.scratch.putLayerLayouts(w.layout.Children)
 	}
@@ -206,4 +213,7 @@ func composeLayout(layers []Layout, w *Window) Layout {
 func (w *Window) buildRenderers(bgColor Color, clip DrawClip) {
 	w.renderers = w.renderers[:0]
 	renderLayout(&w.layout, bgColor, clip, w)
+	if inspectorSupported && w.inspectorEnabled {
+		inspectorInjectWireframe(w)
+	}
 }

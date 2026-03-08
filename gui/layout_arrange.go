@@ -24,6 +24,17 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 			return a.Shape.FloatZIndex - b.Shape.FloatZIndex
 		})
 
+	// Inject inspector overlay as a floating layer.
+	if inspectorSupported && w.inspectorEnabled {
+		iv := inspectorFloatingPanel(w)
+		if iv != nil {
+			il := GenerateViewLayout(iv, w)
+			heapLayout := w.scratch.allocFloatingLayout(il)
+			layoutParents(heapLayout, nil)
+			floatingLayouts = append(floatingLayouts, heapLayout)
+		}
+	}
+
 	// Inject toast container as floating layer.
 	if len(w.toasts) > 0 {
 		tv := toastContainerView(w)

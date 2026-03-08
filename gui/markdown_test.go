@@ -153,3 +153,56 @@ func TestMarkdownBuildTableData(t *testing.T) {
 		}
 	}
 }
+
+func TestMarkdownDefaultsToWrap(t *testing.T) {
+	w := &Window{}
+	layout := GenerateViewLayout(w.Markdown(MarkdownCfg{
+		Source: "A paragraph that should wrap by default.",
+		Style:  DefaultMarkdownStyle(),
+	}), w)
+
+	if layout.Shape == nil || layout.Shape.Sizing != FillFit {
+		t.Fatalf("markdown sizing = %v, want FillFit", layout.Shape.Sizing)
+	}
+
+	mode, ok := firstMarkdownTextMode(layout)
+	if !ok {
+		t.Fatal("expected markdown text node")
+	}
+	if mode != TextModeWrap {
+		t.Fatalf("markdown text mode = %v, want TextModeWrap", mode)
+	}
+}
+
+func TestMarkdownCanExplicitlyUseSingleLine(t *testing.T) {
+	w := &Window{}
+	layout := GenerateViewLayout(w.Markdown(MarkdownCfg{
+		Source: "single line",
+		Style:  DefaultMarkdownStyle(),
+		Mode:   Some(TextModeSingleLine),
+	}), w)
+
+	if layout.Shape == nil || layout.Shape.Sizing != FitFit {
+		t.Fatalf("markdown sizing = %v, want FitFit", layout.Shape.Sizing)
+	}
+
+	mode, ok := firstMarkdownTextMode(layout)
+	if !ok {
+		t.Fatal("expected markdown text node")
+	}
+	if mode != TextModeSingleLine {
+		t.Fatalf("markdown text mode = %v, want TextModeSingleLine", mode)
+	}
+}
+
+func firstMarkdownTextMode(layout Layout) (TextMode, bool) {
+	if layout.Shape != nil && layout.Shape.TC != nil {
+		return layout.Shape.TC.TextMode, true
+	}
+	for _, child := range layout.Children {
+		if mode, ok := firstMarkdownTextMode(child); ok {
+			return mode, true
+		}
+	}
+	return 0, false
+}

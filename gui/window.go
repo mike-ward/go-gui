@@ -63,6 +63,11 @@ type Window struct {
 	// Dialog state.
 	dialogCfg DialogCfg
 
+	// Inspector state.
+	inspectorEnabled    bool
+	inspectorTreeCache  []TreeNodeCfg
+	inspectorPropsCache map[string]inspectorNodeProps
+
 	// Toast state.
 	toasts       []toastNotification
 	toastCounter uint64

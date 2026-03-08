@@ -100,13 +100,13 @@ func DefaultMarkdownStyle() MarkdownStyle {
 	}
 }
 
-// MarkdownCfg configures a Markdown View.
+// MarkdownCfg configures a Markdown View. Mode defaults to wrapped text.
 type MarkdownCfg struct {
 	ID                  string
 	Source              string
 	Style               MarkdownStyle
 	IDFocus             uint32
-	Mode                TextMode
+	Mode                Opt[TextMode]
 	MinWidth            float32
 	Invisible           bool
 	Clip                bool
@@ -405,6 +405,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 	if cfg.Invisible {
 		return invisibleContainerView()
 	}
+	mode := cfg.Mode.Get(TextModeWrap)
 
 	// Cache lookup.
 	hash := int64(markdown.MathHash(cfg.Source))
@@ -555,7 +556,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 						Content: []View{
 							RTF(RtfCfg{
 								RichText:      block.Content,
-								Mode:          cfg.Mode,
+								Mode:          mode,
 								BaseTextStyle: &block.BaseStyle,
 							}),
 						},
@@ -579,7 +580,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				RTF(RtfCfg{
 					ID:            block.AnchorSlug,
 					RichText:      block.Content,
-					Mode:          cfg.Mode,
+					Mode:          mode,
 					BaseTextStyle: &block.BaseStyle,
 				}),
 			}
@@ -605,7 +606,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		case block.IsDefTerm:
 			content = append(content, RTF(RtfCfg{
 				RichText:      block.Content,
-				Mode:          cfg.Mode,
+				Mode:          mode,
 				BaseTextStyle: &block.BaseStyle,
 			}))
 
@@ -617,7 +618,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				Content: []View{
 					RTF(RtfCfg{
 						RichText:      block.Content,
-						Mode:          cfg.Mode,
+						Mode:          mode,
 						BaseTextStyle: &block.BaseStyle,
 					}),
 				},
@@ -654,7 +655,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 						Content: []View{
 							RTF(RtfCfg{
 								RichText:      block.Content,
-								Mode:          cfg.Mode,
+								Mode:          mode,
 								BaseTextStyle: &block.BaseStyle,
 							}),
 						},
@@ -680,7 +681,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				FocusSkip:     cfg.FocusSkip,
 				Disabled:      cfg.Disabled,
 				MinWidth:      cfg.MinWidth,
-				Mode:          cfg.Mode,
+				Mode:          mode,
 				RichText:      block.Content,
 				BaseTextStyle: &block.BaseStyle,
 			}))
@@ -688,8 +689,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 	}
 
 	sizing := FitFit
-	if cfg.Mode == TextModeWrap ||
-		cfg.Mode == TextModeWrapKeepSpaces {
+	if mode == TextModeWrap ||
+		mode == TextModeWrapKeepSpaces {
 		sizing = FillFit
 	}
 

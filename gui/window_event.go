@@ -18,6 +18,31 @@ func (w *Window) EventFn(e *Event) {
 		return
 	}
 
+	if inspectorSupported && e.Type == EventKeyDown &&
+		e.KeyCode == KeyF12 {
+		inspectorToggle(w)
+		e.IsHandled = true
+		return
+	}
+	if inspectorSupported && w.inspectorEnabled &&
+		e.Type == EventKeyDown &&
+		e.Modifiers == ModCtrl {
+		switch e.KeyCode {
+		case KeyLeft:
+			inspectorResize(inspectorResizeStep, w)
+			e.IsHandled = true
+			return
+		case KeyRight:
+			inspectorResize(-inspectorResizeStep, w)
+			e.IsHandled = true
+			return
+		case KeyUp:
+			inspectorToggleSide(w)
+			e.IsHandled = true
+			return
+		}
+	}
+
 	// Top-level layout children represent z-axis layers.
 	// Dialogs are modal: route events to last child (dialog layer).
 	layout := &w.layout
@@ -55,7 +80,25 @@ func (w *Window) EventFn(e *Event) {
 
 	case EventMouseDown:
 		w.SetMouseCursor(CursorArrow)
-		mouseDownHandler(layout, false, e, w)
+		if inspectorSupported && w.inspectorEnabled {
+			panelW := inspectorPanelWidth(w)
+			left := inspectorIsLeft(w)
+			inApp := true
+			if left {
+				inApp = e.MouseX > panelW+inspectorMargin
+			} else {
+				inApp = e.MouseX < float32(w.windowWidth)-panelW-inspectorMargin
+			}
+			if inApp {
+				if picked := inspectorPickPath(&w.layout, e.MouseX, e.MouseY); picked != "" {
+					inspectorSelect(picked, w)
+				}
+				e.IsHandled = true
+			}
+		}
+		if !e.IsHandled {
+			mouseDownHandler(layout, false, e, w)
+		}
 		if !e.IsHandled {
 			ss := StateMap[string, bool](w, nsSelect, capModerate)
 			ss.Clear()

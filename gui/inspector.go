@@ -1,0 +1,777 @@
+package gui
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+const (
+	capInspector            = 8
+	inspectorIDFocus        = uint32(0xFFF00000)
+	inspectorIDScrollPanel  = uint32(0xFFF00001)
+	inspectorTreeID         = "__inspector_tree__"
+	inspectorPanelMinWidth  = float32(300)
+	inspectorResizeStep     = float32(50)
+	inspectorMargin         = float32(10)
+	inspectorPropPrefix     = "__prop_"
+	inspectorPropTextID     = "__prop_text"
+	inspectorPropIDID       = "__prop_id"
+	inspectorPropPosID      = "__prop_pos"
+	inspectorPropSizeID     = "__prop_size"
+	inspectorPropSizingID   = "__prop_sizing"
+	inspectorPropPaddingID  = "__prop_pad"
+	inspectorPropSpacingID  = "__prop_spacing"
+	inspectorPropColorID    = "__prop_color"
+	inspectorPropRadiusID   = "__prop_radius"
+	inspectorPropFocusID    = "__prop_focus"
+	inspectorPropScrollID   = "__prop_scroll"
+	inspectorPropAlignID    = "__prop_align"
+	inspectorPropFloatID    = "__prop_float"
+	inspectorPropClipID     = "__prop_clip"
+	inspectorPropOpacityID  = "__prop_opacity"
+	inspectorPropEventsID   = "__prop_events"
+	inspectorPropChildrenID = "__prop_children"
+)
+
+var (
+	inspectorTextStyle = TextStyle{
+		Size:  12,
+		Color: RGBA(220, 220, 220, 255),
+	}
+	inspectorIconStyle = TextStyle{
+		Family: IconFontName,
+		Size:   12,
+		Color:  RGBA(220, 220, 220, 255),
+	}
+)
+
+type inspectorStackFrame struct {
+	nodes []TreeNodeCfg
+	pos   int
+}
+
+type inspectorNodeProps struct {
+	TypeName    string
+	ID          string
+	X           float32
+	Y           float32
+	Width       float32
+	Height      float32
+	Sizing      Sizing
+	Padding     Padding
+	Spacing     float32
+	Color       Color
+	Radius      float32
+	IDFocus     uint32
+	IDScroll    uint32
+	HAlign      HorizontalAlign
+	VAlign      VerticalAlign
+	IsFloat     bool
+	Clip        bool
+	Opacity     float32
+	Events      string
+	TextPreview string
+	Children    int
+}
+
+func inspectorToggle(w *Window) {
+	if w == nil {
+		return
+	}
+	w.inspectorEnabled = !w.inspectorEnabled
+	w.UpdateWindow()
+}
+
+func inspectorIsLeft(w *Window) bool {
+	if w == nil {
+		return false
+	}
+	side := StateReadOr[string, string](w, nsInspector, "side", "")
+	return side == "left"
+}
+
+func inspectorToggleSide(w *Window) {
+	if w == nil {
+		return
+	}
+	sm := StateMap[string, string](w, nsInspector, capInspector)
+	side, _ := sm.Get("side")
+	if side == "left" {
+		sm.Delete("side")
+	} else {
+		sm.Set("side", "left")
+	}
+	w.UpdateWindow()
+}
+
+func inspectorPanelWidth(w *Window) float32 {
+	if w == nil {
+		return inspectorPanelMinWidth
+	}
+	width := StateReadOr[string, float32](
+		w, nsInspectorWidth, "width", inspectorPanelMinWidth)
+	return f32Max(width, inspectorPanelMinWidth)
+}
+
+func inspectorResize(delta float32, w *Window) {
+	if w == nil {
+		return
+	}
+	maxWidth := float32(w.windowWidth) * 0.8
+	if maxWidth < inspectorPanelMinWidth {
+		maxWidth = inspectorPanelMinWidth
+	}
+	width := f32Clamp(
+		inspectorPanelWidth(w)+delta,
+		inspectorPanelMinWidth,
+		maxWidth,
+	)
+	StateMap[string, float32](w, nsInspectorWidth, capInspector).
+		Set("width", width)
+	w.UpdateWindow()
+}
+
+func inspectorFloatingPanel(w *Window) View {
+	if w == nil {
+		return nil
+	}
+	panelHeight := f32Max(0, float32(w.windowHeight)-inspectorMargin*2)
+	panelWidth := inspectorPanelWidth(w)
+	inspectorApplyScrollTo(panelHeight, w)
+
+	left := inspectorIsLeft(w)
+	scrollbarPad := guiTheme.ScrollbarStyle.Size +
+		guiTheme.ScrollbarStyle.GapEdge*2
+	scrollbarCfg := &ScrollbarCfg{
+		ColorThumb: RGBA(255, 255, 255, 80),
+	}
+
+	return Column(ContainerCfg{
+		Float:         true,
+		FloatAnchor:   inspectorFloatAttach(left),
+		FloatTieOff:   inspectorFloatAttach(left),
+		FloatOffsetX:  inspectorFloatOffsetX(left),
+		FloatOffsetY:  inspectorMargin,
+		Sizing:        FixedFixed,
+		Width:         panelWidth,
+		Height:        panelHeight,
+		Color:         RGBA(20, 20, 20, 230),
+		Radius:        Some(float32(8)),
+		Clip:          true,
+		IDScroll:      inspectorIDScrollPanel,
+		ScrollbarCfgX: scrollbarCfg,
+		ScrollbarCfgY: scrollbarCfg,
+		Padding:       Some(NewPadding(0, scrollbarPad, 0, 0)),
+		Spacing:       Some(float32(0)),
+		OnClick: func(_ *Layout, e *Event, _ *Window) {
+			e.IsHandled = true
+		},
+		Content: []View{
+			inspectorHelpBar(),
+			inspectorTreeView(w),
+		},
+	})
+}
+
+func inspectorFloatAttach(left bool) FloatAttach {
+	if left {
+		return FloatTopLeft
+	}
+	return FloatTopRight
+}
+
+func inspectorFloatOffsetX(left bool) float32 {
+	if left {
+		return inspectorMargin
+	}
+	return -inspectorMargin
+}
+
+func inspectorHelpBar() View {
+	return Text(TextCfg{
+		Text: "  F12 toggle  Ctrl+Left/Right resize  Ctrl+Up side",
+		TextStyle: TextStyle{
+			Size:  10,
+			Color: RGBA(130, 130, 130, 200),
+		},
+	})
+}
+
+func inspectorTreeView(w *Window) View {
+	var nodes []TreeNodeCfg
+	if w != nil {
+		nodes = w.inspectorTreeCache
+	}
+	return Tree(TreeCfg{
+		ID:       inspectorTreeID,
+		IDFocus:  inspectorIDFocus,
+		Indent:   16,
+		Spacing:  1,
+		Nodes:    nodes,
+		OnSelect: func(id string, _ *Event, w *Window) { inspectorSelect(id, w) },
+	})
+}
+
+func inspectorSelect(path string, w *Window) {
+	if w == nil {
+		return
+	}
+	if strings.HasPrefix(path, inspectorPropPrefix) {
+		if selected := inspectorSelectedPath(w); selected != "" {
+			treeFocusedSet(w, inspectorTreeID, selected)
+		}
+		return
+	}
+	sm := StateMap[string, string](w, nsInspector, capInspector)
+	selected, _ := sm.Get("selected")
+	if selected == path {
+		sm.Delete("selected")
+		sm.Delete("scroll_to")
+		treeFocusedSet(w, inspectorTreeID, "")
+		w.UpdateWindow()
+		return
+	}
+
+	sm.Set("selected", path)
+	sm.Set("scroll_to", path)
+	treeFocusedSet(w, inspectorTreeID, path)
+
+	expanded := StateReadOr[string, map[string]bool](
+		w, nsTreeExpanded, inspectorTreeID, nil)
+	if expanded == nil {
+		expanded = make(map[string]bool)
+	}
+	expanded[path] = true
+	parts := strings.Split(path, ".")
+	if len(parts) > 0 {
+		prefix := parts[0]
+		expanded[prefix] = true
+		for i := 1; i < len(parts); i++ {
+			prefix += "." + parts[i]
+			expanded[prefix] = true
+		}
+	}
+	StateMap[string, map[string]bool](w, nsTreeExpanded, capModerate).
+		Set(inspectorTreeID, expanded)
+	w.UpdateWindow()
+}
+
+func inspectorPickPath(layout *Layout, x, y float32) string {
+	if layout == nil || len(layout.Children) == 0 {
+		return ""
+	}
+	return inspectorPickRecurse(&layout.Children[0], "0", x, y)
+}
+
+func inspectorPickRecurse(layout *Layout, path string, x, y float32) string {
+	if layout == nil || layout.Shape == nil {
+		return ""
+	}
+	if !layout.Shape.PointInShape(x, y) {
+		return ""
+	}
+	for i := len(layout.Children) - 1; i >= 0; i-- {
+		childPath := path + "." + strconv.Itoa(i)
+		if picked := inspectorPickRecurse(
+			&layout.Children[i], childPath, x, y); picked != "" {
+			return picked
+		}
+	}
+	return path
+}
+
+func inspectorSelectedPath(w *Window) string {
+	if w == nil {
+		return ""
+	}
+	return StateReadOr[string, string](w, nsInspector, "selected", "")
+}
+
+func inspectorBuildTreeNodes(
+	layout *Layout,
+	selected string,
+	props map[string]inspectorNodeProps,
+) []TreeNodeCfg {
+	if layout == nil || len(layout.Children) == 0 {
+		return nil
+	}
+	return inspectorLayoutToTree(&layout.Children[0], "0", selected, props)
+}
+
+func inspectorLayoutToTree(
+	layout *Layout,
+	path string,
+	selected string,
+	props map[string]inspectorNodeProps,
+) []TreeNodeCfg {
+	if layout == nil {
+		return nil
+	}
+	propSnapshot := inspectorSnapshotProps(layout)
+	if props != nil {
+		props[path] = propSnapshot
+	}
+
+	childNodes := make([]TreeNodeCfg, 0, len(layout.Children)+16)
+	if path == selected {
+		childNodes = append(childNodes, inspectorPropsNodes(propSnapshot)...)
+	}
+	for i := range layout.Children {
+		childPath := path + "." + strconv.Itoa(i)
+		childNodes = append(
+			childNodes,
+			inspectorLayoutToTree(
+				&layout.Children[i], childPath, selected, props,
+			)...,
+		)
+	}
+
+	return []TreeNodeCfg{{
+		ID:            path,
+		Text:          inspectorNodeLabel(layout.Shape),
+		TextStyle:     inspectorTextStyle,
+		TextStyleIcon: inspectorIconStyle,
+		Nodes:         childNodes,
+	}}
+}
+
+func inspectorPropsNodes(p inspectorNodeProps) []TreeNodeCfg {
+	propStyle := TextStyle{
+		Size:  11,
+		Color: RGBA(140, 180, 220, 255),
+	}
+	propIconStyle := TextStyle{
+		Family: IconFontName,
+		Size:   11,
+		Color:  RGBA(140, 180, 220, 255),
+	}
+
+	nodes := make([]TreeNodeCfg, 0, 16)
+	if p.TextPreview != "" {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropTextID,
+			Text:          `text: "` + p.TextPreview + `"`,
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.ID != "" {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropIDID,
+			Text:          "id: " + p.ID,
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	nodes = append(nodes,
+		TreeNodeCfg{
+			ID:            inspectorPropPosID,
+			Text:          fmt.Sprintf("pos: %d, %d", int(p.X), int(p.Y)),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		},
+		TreeNodeCfg{
+			ID:            inspectorPropSizeID,
+			Text:          fmt.Sprintf("size: %d x %d", int(p.Width), int(p.Height)),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		},
+	)
+	if p.Sizing.Width != SizingFit || p.Sizing.Height != SizingFit {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropSizingID,
+			Text:          "sizing: " + inspectorSizingString(p.Sizing),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if !p.Padding.IsNone() {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropPaddingID,
+			Text:          fmt.Sprintf("pad: %d %d %d %d", int(p.Padding.Top), int(p.Padding.Right), int(p.Padding.Bottom), int(p.Padding.Left)),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.Spacing > 0 {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropSpacingID,
+			Text:          fmt.Sprintf("spacing: %d", int(p.Spacing)),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.Color.IsSet() && p.Color.A > 0 {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:        inspectorPropColorID,
+			Text:      "color: " + inspectorColorString(p.Color),
+			Icon:      "[]",
+			TextStyle: propStyle,
+			TextStyleIcon: TextStyle{
+				Size:  11,
+				Color: p.Color,
+			},
+		})
+	}
+	if p.Radius > 0 {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropRadiusID,
+			Text:          fmt.Sprintf("radius: %d", int(p.Radius)),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.IDFocus > 0 {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropFocusID,
+			Text:          fmt.Sprintf("id_focus: %d", p.IDFocus),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.IDScroll > 0 {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropScrollID,
+			Text:          fmt.Sprintf("id_scroll: %d", p.IDScroll),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.HAlign != HAlignStart || p.VAlign != VAlignTop {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropAlignID,
+			Text:          "align: " + inspectorAlignString(p.HAlign, p.VAlign),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.IsFloat {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropFloatID,
+			Text:          "float: true",
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.Clip {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropClipID,
+			Text:          "clip: true",
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.Opacity < 1 {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropOpacityID,
+			Text:          fmt.Sprintf("opacity: %.2f", p.Opacity),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.Events != "" {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropEventsID,
+			Text:          "events: " + p.Events,
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	if p.Children > 0 {
+		nodes = append(nodes, TreeNodeCfg{
+			ID:            inspectorPropChildrenID,
+			Text:          fmt.Sprintf("children: %d", p.Children),
+			TextStyle:     propStyle,
+			TextStyleIcon: propIconStyle,
+		})
+	}
+	return nodes
+}
+
+func inspectorSnapshotProps(layout *Layout) inspectorNodeProps {
+	if layout == nil || layout.Shape == nil {
+		return inspectorNodeProps{}
+	}
+	shape := layout.Shape
+	textPreview := ""
+	if shape.TC != nil && shape.TC.Text != "" {
+		textPreview = truncatePreview(shape.TC.Text, 30)
+	}
+
+	props := inspectorNodeProps{
+		TypeName:    inspectorTypeName(shape),
+		ID:          shape.ID,
+		X:           shape.X,
+		Y:           shape.Y,
+		Width:       shape.Width,
+		Height:      shape.Height,
+		Sizing:      shape.Sizing,
+		Padding:     shape.Padding,
+		Spacing:     shape.Spacing,
+		Color:       shape.Color,
+		Radius:      shape.Radius,
+		IDFocus:     shape.IDFocus,
+		IDScroll:    shape.IDScroll,
+		HAlign:      shape.HAlign,
+		VAlign:      shape.VAlign,
+		IsFloat:     shape.Float,
+		Clip:        shape.Clip,
+		Opacity:     shape.Opacity,
+		TextPreview: textPreview,
+		Children:    len(layout.Children),
+	}
+	if shape.HasEvents() {
+		props.Events = inspectorEventsString(shape.Events)
+	}
+	return props
+}
+
+func inspectorNodeLabel(shape *Shape) string {
+	if shape == nil {
+		return "(nil)"
+	}
+	label := fmt.Sprintf(
+		"%s %dx%d",
+		inspectorTypeName(shape),
+		int(shape.Width),
+		int(shape.Height),
+	)
+	if shape.ID != "" {
+		label += " #" + shape.ID
+	}
+	return label
+}
+
+func inspectorTypeName(shape *Shape) string {
+	if shape == nil {
+		return "(nil)"
+	}
+	switch shape.ShapeType {
+	case ShapeText:
+		return "text"
+	case ShapeImage:
+		return "image"
+	case ShapeCircle:
+		return "circle"
+	case ShapeRTF:
+		return "rtf"
+	case ShapeSVG:
+		return "svg"
+	case ShapeDrawCanvas:
+		return "draw_canvas"
+	case ShapeNone, ShapeRectangle:
+		switch shape.Axis {
+		case AxisTopToBottom:
+			return "column"
+		case AxisLeftToRight:
+			return "row"
+		default:
+			return "canvas"
+		}
+	default:
+		return "unknown"
+	}
+}
+
+func inspectorFindByPath(layout *Layout, path string) (*Layout, bool) {
+	if layout == nil || path == "" {
+		return nil, false
+	}
+	node := layout
+	for _, part := range strings.Split(path, ".") {
+		idx, err := strconv.Atoi(part)
+		if err != nil || idx < 0 || idx >= len(node.Children) {
+			return nil, false
+		}
+		node = &node.Children[idx]
+	}
+	return node, true
+}
+
+func inspectorInjectWireframe(w *Window) {
+	if w == nil {
+		return
+	}
+	selected := inspectorSelectedPath(w)
+	if selected == "" {
+		return
+	}
+	node, ok := inspectorFindByPath(&w.layout, selected)
+	if !ok || node == nil || node.Shape == nil {
+		return
+	}
+	shape := node.Shape
+	emitRenderer(RenderCmd{
+		Kind:      RenderStrokeRect,
+		X:         shape.X,
+		Y:         shape.Y,
+		W:         shape.Width,
+		H:         shape.Height,
+		Radius:    shape.Radius,
+		Color:     RGBA(0, 255, 255, 200),
+		Thickness: 2,
+	}, w)
+
+	if shape.Padding.IsNone() {
+		return
+	}
+	emitRenderer(RenderCmd{
+		Kind:      RenderStrokeRect,
+		X:         shape.X + shape.Padding.Left,
+		Y:         shape.Y + shape.Padding.Top,
+		W:         f32Max(0, shape.Width-shape.Padding.Left-shape.Padding.Right),
+		H:         f32Max(0, shape.Height-shape.Padding.Top-shape.Padding.Bottom),
+		Color:     RGBA(0, 200, 0, 150),
+		Thickness: 1,
+	}, w)
+}
+
+func inspectorEventsString(events *EventHandlers) string {
+	if events == nil {
+		return ""
+	}
+	names := make([]string, 0, 10)
+	if events.OnClick != nil {
+		names = append(names, "click")
+	}
+	if events.OnChar != nil {
+		names = append(names, "char")
+	}
+	if events.OnKeyDown != nil {
+		names = append(names, "keydown")
+	}
+	if events.OnMouseMove != nil {
+		names = append(names, "mouse_move")
+	}
+	if events.OnMouseUp != nil {
+		names = append(names, "mouse_up")
+	}
+	if events.OnMouseScroll != nil {
+		names = append(names, "scroll")
+	}
+	if events.OnScroll != nil {
+		names = append(names, "scroll_cb")
+	}
+	if events.OnHover != nil {
+		names = append(names, "hover")
+	}
+	if events.OnIMECommit != nil {
+		names = append(names, "ime")
+	}
+	if events.AmendLayout != nil {
+		names = append(names, "amend")
+	}
+	return strings.Join(names, ", ")
+}
+
+func inspectorColorString(c Color) string {
+	if c.A == 255 {
+		return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
+	}
+	return fmt.Sprintf("#%02x%02x%02x%02x", c.R, c.G, c.B, c.A)
+}
+
+func inspectorApplyScrollTo(panelHeight float32, w *Window) {
+	if w == nil || panelHeight <= 0 {
+		return
+	}
+	sm := StateMap[string, string](w, nsInspector, capInspector)
+	target, ok := sm.Get("scroll_to")
+	if !ok || target == "" {
+		return
+	}
+	sm.Delete("scroll_to")
+
+	expanded := treeExpandedState(w, inspectorTreeID)
+	rowIdx := inspectorFlatRowIndex(w.inspectorTreeCache, expanded, target)
+	if rowIdx < 0 {
+		return
+	}
+	rowHeight := treeEstimateRowHeight(TreeCfg{
+		Nodes:   w.inspectorTreeCache,
+		Spacing: 1,
+	}, w)
+	targetY := float32(rowIdx) * rowHeight
+	newScroll := -(targetY - rowHeight*2)
+	if newScroll > 0 {
+		newScroll = 0
+	}
+	StateMap[uint32, float32](w, nsScrollY, capScroll).
+		Set(inspectorIDScrollPanel, newScroll)
+}
+
+func inspectorFlatRowIndex(
+	nodes []TreeNodeCfg,
+	expanded map[string]bool,
+	target string,
+) int {
+	stack := []inspectorStackFrame{{nodes: nodes}}
+	idx := 0
+	for len(stack) > 0 {
+		last := len(stack) - 1
+		if stack[last].pos >= len(stack[last].nodes) {
+			stack = stack[:last]
+			continue
+		}
+		node := stack[last].nodes[stack[last].pos]
+		stack[last].pos++
+		id := treeNodeID(node)
+		if id == target {
+			return idx
+		}
+		idx++
+		if expanded[id] && len(node.Nodes) > 0 {
+			stack = append(stack, inspectorStackFrame{
+				nodes: node.Nodes,
+			})
+		}
+	}
+	return -1
+}
+
+func inspectorSizingString(s Sizing) string {
+	return inspectorSizingTypeString(s.Width) + ", " +
+		inspectorSizingTypeString(s.Height)
+}
+
+func inspectorSizingTypeString(s SizingType) string {
+	switch s {
+	case SizingFill:
+		return "fill"
+	case SizingFixed:
+		return "fixed"
+	default:
+		return "fit"
+	}
+}
+
+func inspectorAlignString(h HorizontalAlign, v VerticalAlign) string {
+	return inspectorHAlignString(h) + ", " + inspectorVAlignString(v)
+}
+
+func inspectorHAlignString(h HorizontalAlign) string {
+	switch h {
+	case HAlignEnd:
+		return "end"
+	case HAlignCenter:
+		return "center"
+	case HAlignLeft:
+		return "left"
+	case HAlignRight:
+		return "right"
+	default:
+		return "start"
+	}
+}
+
+func inspectorVAlignString(v VerticalAlign) string {
+	switch v {
+	case VAlignMiddle:
+		return "middle"
+	case VAlignBottom:
+		return "bottom"
+	default:
+		return "top"
+	}
+}

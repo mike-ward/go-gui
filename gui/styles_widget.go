@@ -118,6 +118,21 @@ type ListBoxStyle struct {
 	SubheadingStyle  TextStyle
 }
 
+// TreeStyle defines tree view visual properties.
+type TreeStyle struct {
+	Color         Color
+	ColorHover    Color
+	ColorFocus    Color
+	ColorBorder   Color
+	Padding       Padding
+	SizeBorder    float32
+	Radius        float32
+	TextStyle     TextStyle
+	TextStyleIcon TextStyle
+	Indent        float32
+	Spacing       float32
+}
+
 // DialogStyle defines dialog visual properties.
 type DialogStyle struct {
 	Color            Color
@@ -146,24 +161,24 @@ const (
 
 // ToastStyle defines toast notification visual properties.
 type ToastStyle struct {
-	MaxVisible  int
-	Anchor      ToastAnchor
-	Width       float32
-	Margin      float32
-	Spacing     float32
-	AccentWidth float32
-	Padding     Padding
-	Radius      float32
-	SizeBorder  float32
-	Color       Color
-	ColorBorder Color
+	MaxVisible   int
+	Anchor       ToastAnchor
+	Width        float32
+	Margin       float32
+	Spacing      float32
+	AccentWidth  float32
+	Padding      Padding
+	Radius       float32
+	SizeBorder   float32
+	Color        Color
+	ColorBorder  Color
 	ColorInfo    Color
 	ColorSuccess Color
 	ColorWarning Color
 	ColorError   Color
-	TextStyle   TextStyle
-	TitleStyle  TextStyle
-	Shadow      *BoxShadow
+	TextStyle    TextStyle
+	TitleStyle   TextStyle
+	Shadow       *BoxShadow
 }
 
 // TooltipStyle defines tooltip visual properties.
@@ -242,38 +257,38 @@ type RangeSliderStyle struct {
 
 // TabControlStyle defines tab control visual properties.
 type TabControlStyle struct {
-	Color              Color
-	ColorBorder        Color
-	ColorHeader        Color
-	ColorHeaderBorder  Color
-	ColorContent       Color
-	ColorContentBorder Color
-	ColorTab           Color
-	ColorTabHover      Color
-	ColorTabFocus      Color
-	ColorTabClick      Color
-	ColorTabSelected   Color
-	ColorTabDisabled   Color
-	ColorTabBorder     Color
+	Color               Color
+	ColorBorder         Color
+	ColorHeader         Color
+	ColorHeaderBorder   Color
+	ColorContent        Color
+	ColorContentBorder  Color
+	ColorTab            Color
+	ColorTabHover       Color
+	ColorTabFocus       Color
+	ColorTabClick       Color
+	ColorTabSelected    Color
+	ColorTabDisabled    Color
+	ColorTabBorder      Color
 	ColorTabBorderFocus Color
-	Padding            Padding
-	PaddingHeader      Padding
-	PaddingContent     Padding
-	PaddingTab         Padding
-	SizeBorder         float32
-	SizeHeaderBorder   float32
-	SizeContentBorder  float32
-	SizeTabBorder      float32
-	Radius             float32
-	RadiusHeader       float32
-	RadiusContent      float32
-	RadiusTab          float32
-	RadiusTabBorder    float32
-	Spacing            float32
-	SpacingHeader      float32
-	TextStyle          TextStyle
-	TextStyleSelected  TextStyle
-	TextStyleDisabled  TextStyle
+	Padding             Padding
+	PaddingHeader       Padding
+	PaddingContent      Padding
+	PaddingTab          Padding
+	SizeBorder          float32
+	SizeHeaderBorder    float32
+	SizeContentBorder   float32
+	SizeTabBorder       float32
+	Radius              float32
+	RadiusHeader        float32
+	RadiusContent       float32
+	RadiusTab           float32
+	RadiusTabBorder     float32
+	Spacing             float32
+	SpacingHeader       float32
+	TextStyle           TextStyle
+	TextStyleSelected   TextStyle
+	TextStyleDisabled   TextStyle
 }
 
 // BreadcrumbStyle defines breadcrumb visual properties.
@@ -398,24 +413,24 @@ type MenubarStyle struct {
 
 // DatePickerStyle defines date picker visual properties.
 type DatePickerStyle struct {
-	HideTodayIndicator     bool
-	MondayFirstDayOfWeek   bool
-	ShowAdjacentMonths     bool
-	CellSpacing            float32
-	WeekdaysLen            DatePickerWeekdayLen
-	Color                  Color
-	ColorHover             Color
-	ColorFocus             Color
-	ColorClick             Color
-	ColorBorder            Color
-	ColorBorderFocus       Color
-	ColorSelect            Color
-	Padding                Padding
-	SizeBorder             float32
-	Radius                 float32
-	RadiusBorder           float32
-	Shadow                 *BoxShadow
-	TextStyle              TextStyle
+	HideTodayIndicator   bool
+	MondayFirstDayOfWeek bool
+	ShowAdjacentMonths   bool
+	CellSpacing          float32
+	WeekdaysLen          DatePickerWeekdayLen
+	Color                Color
+	ColorHover           Color
+	ColorFocus           Color
+	ColorClick           Color
+	ColorBorder          Color
+	ColorBorderFocus     Color
+	ColorSelect          Color
+	Padding              Padding
+	SizeBorder           float32
+	Radius               float32
+	RadiusBorder         float32
+	Shadow               *BoxShadow
+	TextStyle            TextStyle
 }
 
 // ColorPickerStyle defines color picker visual properties.
@@ -545,6 +560,24 @@ var (
 		SubheadingStyle:  DefaultTextStyle,
 	}
 
+	DefaultTreeStyle = TreeStyle{
+		Color:       ColorTransparent,
+		ColorHover:  colorHoverDark,
+		ColorFocus:  colorFocusDark,
+		ColorBorder: ColorTransparent,
+		Padding:     PaddingNone,
+		SizeBorder:  SizeBorderDef,
+		Radius:      RadiusMedium,
+		TextStyle:   DefaultTextStyle,
+		TextStyleIcon: TextStyle{
+			Color:  colorTextDark,
+			Size:   SizeTextSmall,
+			Family: IconFontName,
+		},
+		Indent:  25,
+		Spacing: 0,
+	}
+
 	DefaultDialogStyle = DialogStyle{
 		Color:            colorPanelDark,
 		ColorBorder:      colorBorderDark,
@@ -653,35 +686,35 @@ var (
 	}
 
 	DefaultTabControlStyle = TabControlStyle{
-		Color:              colorPanelDark,
-		ColorBorder:        colorBorderDark,
-		ColorHeader:        ColorTransparent,
-		ColorHeaderBorder:  ColorTransparent,
-		ColorContent:       colorPanelDark,
-		ColorContentBorder: colorBorderDark,
-		ColorTab:           colorInteriorDark,
-		ColorTabHover:      colorHoverDark,
-		ColorTabFocus:      colorFocusDark,
-		ColorTabClick:      colorActiveDark,
-		ColorTabSelected:   colorSelectDark,
-		ColorTabDisabled:   colorPanelDark,
-		ColorTabBorder:     colorBorderDark,
+		Color:               colorPanelDark,
+		ColorBorder:         colorBorderDark,
+		ColorHeader:         ColorTransparent,
+		ColorHeaderBorder:   ColorTransparent,
+		ColorContent:        colorPanelDark,
+		ColorContentBorder:  colorBorderDark,
+		ColorTab:            colorInteriorDark,
+		ColorTabHover:       colorHoverDark,
+		ColorTabFocus:       colorFocusDark,
+		ColorTabClick:       colorActiveDark,
+		ColorTabSelected:    colorSelectDark,
+		ColorTabDisabled:    colorPanelDark,
+		ColorTabBorder:      colorBorderDark,
 		ColorTabBorderFocus: colorSelectDark,
-		Padding:            PaddingNone,
-		PaddingHeader:      PaddingNone,
-		PaddingContent:     PaddingMedium,
-		PaddingTab:         PaddingSmall,
-		SizeBorder:         SizeBorderDef,
-		SizeContentBorder:  SizeBorderDef,
-		SizeTabBorder:      SizeBorderDef,
-		Radius:             RadiusMedium,
-		RadiusHeader:       RadiusSmall,
-		RadiusContent:      RadiusMedium,
-		RadiusTab:          RadiusSmall,
-		RadiusTabBorder:    RadiusSmall,
-		Spacing:            SpacingSmall,
-		SpacingHeader:      SpacingSmall,
-		TextStyle:          DefaultTextStyle,
+		Padding:             PaddingNone,
+		PaddingHeader:       PaddingNone,
+		PaddingContent:      PaddingMedium,
+		PaddingTab:          PaddingSmall,
+		SizeBorder:          SizeBorderDef,
+		SizeContentBorder:   SizeBorderDef,
+		SizeTabBorder:       SizeBorderDef,
+		Radius:              RadiusMedium,
+		RadiusHeader:        RadiusSmall,
+		RadiusContent:       RadiusMedium,
+		RadiusTab:           RadiusSmall,
+		RadiusTabBorder:     RadiusSmall,
+		Spacing:             SpacingSmall,
+		SpacingHeader:       SpacingSmall,
+		TextStyle:           DefaultTextStyle,
 		TextStyleSelected: TextStyle{
 			Color: colorTextDark,
 			Size:  SizeTextMedium,
@@ -795,19 +828,19 @@ var (
 	}
 
 	DefaultDatePickerStyle = DatePickerStyle{
-		CellSpacing:  3,
-		Color:        colorInteriorDark,
-		ColorHover:   colorHoverDark,
-		ColorFocus:   colorFocusDark,
-		ColorClick:   colorActiveDark,
-		ColorBorder:  colorBorderDark,
+		CellSpacing:      3,
+		Color:            colorInteriorDark,
+		ColorHover:       colorHoverDark,
+		ColorFocus:       colorFocusDark,
+		ColorClick:       colorActiveDark,
+		ColorBorder:      colorBorderDark,
 		ColorBorderFocus: colorSelectDark,
-		ColorSelect:  colorSelectDark,
-		Padding:      PaddingNone,
-		SizeBorder:   SizeBorderDef,
-		Radius:       RadiusMedium,
-		RadiusBorder: RadiusMedium,
-		TextStyle:    DefaultTextStyle,
+		ColorSelect:      colorSelectDark,
+		Padding:          PaddingNone,
+		SizeBorder:       SizeBorderDef,
+		Radius:           RadiusMedium,
+		RadiusBorder:     RadiusMedium,
+		TextStyle:        DefaultTextStyle,
 	}
 
 	DefaultColorPickerStyle = ColorPickerStyle{
@@ -827,24 +860,24 @@ var (
 	DefaultMenubarStyle = MenubarStyle{
 		WidthSubmenuMin:  50,
 		WidthSubmenuMax:  200,
-		Color:           colorInteriorDark,
-		ColorHover:      colorHoverDark,
-		ColorFocus:      colorFocusDark,
-		ColorBorder:     colorBorderDark,
+		Color:            colorInteriorDark,
+		ColorHover:       colorHoverDark,
+		ColorFocus:       colorFocusDark,
+		ColorBorder:      colorBorderDark,
 		ColorBorderFocus: colorSelectDark,
-		ColorSelect:     colorSelectDark,
-		Padding:         PaddingSmall,
-		PaddingMenuItem: PaddingTwoFive,
-		PaddingSubmenu:  PaddingSmall,
-		PaddingSubtitle: NewPadding(0, PadSmall, 0, PadSmall),
-		SizeBorder:      SizeBorderDef,
-		Radius:          RadiusSmall,
-		RadiusBorder:    RadiusMedium,
-		RadiusSubmenu:   RadiusSmall,
-		RadiusMenuItem:  RadiusSmall,
-		Spacing:         SpacingMedium,
-		SpacingSubmenu:  0,
-		TextStyle:       DefaultTextStyle,
+		ColorSelect:      colorSelectDark,
+		Padding:          PaddingSmall,
+		PaddingMenuItem:  PaddingTwoFive,
+		PaddingSubmenu:   PaddingSmall,
+		PaddingSubtitle:  NewPadding(0, PadSmall, 0, PadSmall),
+		SizeBorder:       SizeBorderDef,
+		Radius:           RadiusSmall,
+		RadiusBorder:     RadiusMedium,
+		RadiusSubmenu:    RadiusSmall,
+		RadiusMenuItem:   RadiusSmall,
+		Spacing:          SpacingMedium,
+		SpacingSubmenu:   0,
+		TextStyle:        DefaultTextStyle,
 		TextStyleSubtitle: TextStyle{
 			Color: colorTextDark,
 			Size:  SizeTextSmall,
