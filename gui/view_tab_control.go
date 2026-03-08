@@ -58,10 +58,18 @@ type TabControlCfg struct {
 	IDFocus             uint32
 	Disabled            bool
 	Invisible           bool
+	Reorderable         bool
+	OnReorder           func(movedID, beforeID string, w *Window)
 
 	A11YLabel       string
 	A11YDescription string
 }
+
+type tabControlView struct {
+	cfg TabControlCfg
+}
+
+func (tv *tabControlView) Content() []View { return nil }
 
 func applyTabControlDefaults(cfg *TabControlCfg) {
 	s := &DefaultTabControlStyle
@@ -171,6 +179,9 @@ func Tabs(cfg TabControlCfg) View {
 // TabControl creates a tab control with header row and content.
 func TabControl(cfg TabControlCfg) View {
 	applyTabControlDefaults(&cfg)
+	if cfg.Reorderable && cfg.OnReorder != nil {
+		return &tabControlView{cfg: cfg}
+	}
 
 	tabNavIDs := make([]string, len(cfg.Items))
 	tabNavDisabled := make([]bool, len(cfg.Items))
@@ -313,6 +324,237 @@ func makeTabOnClick(
 		}
 		e.IsHandled = true
 	}
+}
+
+func makeTabDragClick(
+	controlID string,
+	dragIdx int,
+	itemID string,
+	tabIDs []string,
+	onReorder func(string, string, *Window),
+	tabLayoutIDs []string,
+	onSelect func(string, *Event, *Window),
+	idFocus uint32,
+) func(*Layout, *Event, *Window) {
+	return func(layout *Layout, e *Event, w *Window) {
+		dragReorderStart(controlID, dragIdx, itemID,
+			DragReorderHorizontal, tabIDs, onReorder,
+			tabLayoutIDs, 0, 0, layout, e, w)
+		if onSelect != nil {
+			onSelect(itemID, e, w)
+		}
+		if idFocus > 0 {
+			w.SetIDFocus(idFocus)
+		}
+		e.IsHandled = true
+	}
+}
+
+func (tv *tabControlView) GenerateLayout(w *Window) Layout {
+	cfg := &tv.cfg
+
+	tabNavIDs := make([]string, len(cfg.Items))
+	tabNavDisabled := make([]bool, len(cfg.Items))
+	for i, item := range cfg.Items {
+		tabNavIDs[i] = item.ID
+		tabNavDisabled[i] = item.Disabled
+	}
+	selectedIdx := tabSelectedIndex(
+		tabNavIDs, tabNavDisabled, cfg.Selected)
+
+	// Build tab IDs for drag (enabled tabs only).
+	tabIDs := make([]string, 0, len(cfg.Items))
+	tabLayoutIDs := make([]string, 0, len(cfg.Items))
+	tabDragIdx := make(map[int]int)
+	di := 0
+	for i, item := range cfg.Items {
+		if !item.Disabled && !cfg.Disabled {
+			tabIDs = append(tabIDs, item.ID)
+			tabLayoutIDs = append(tabLayoutIDs,
+				tabButtonID(cfg.ID, item.ID))
+			tabDragIdx[i] = di
+			di++
+		}
+	}
+
+	drag := dragReorderGet(w, cfg.ID)
+	dragging := drag.active && !drag.cancelled
+	onReorder := cfg.OnReorder
+
+	if drag.started || drag.active {
+		dragReorderIDsMetaSet(w, cfg.ID, tabIDs)
+	}
+
+	headerItems := make([]View, 0, len(cfg.Items)+3)
+	var ghostView View
+
+	for i, item := range cfg.Items {
+		isSelected := i == selectedIdx
+		isDisabled := cfg.Disabled || item.Disabled
+		isDraggable := !isDisabled
+		dIdx := tabDragIdx[i]
+
+		if dragging && isDraggable &&
+			dIdx == drag.currentIndex {
+			headerItems = append(headerItems,
+				dragReorderGapView(drag, DragReorderHorizontal))
+		}
+
+		tabColor := cfg.ColorTab
+		hoverColor := cfg.ColorTabHover
+		focusColor := cfg.ColorTabFocus
+		clickColor := cfg.ColorTabClick
+		borderColor := cfg.ColorTabBorder
+
+		if isDisabled {
+			tabColor = cfg.ColorTabDisabled
+			hoverColor = cfg.ColorTabDisabled
+			focusColor = cfg.ColorTabDisabled
+			clickColor = cfg.ColorTabDisabled
+		} else if isSelected {
+			tabColor = cfg.ColorTabSelected
+			hoverColor = cfg.ColorTabSelected
+			focusColor = cfg.ColorTabSelected
+			clickColor = cfg.ColorTabSelected
+			borderColor = cfg.ColorTabBorderFocus
+		}
+
+		ts := cfg.TextStyle
+		if isDisabled {
+			ts = cfg.TextStyleDisabled
+		} else if isSelected {
+			ts = cfg.TextStyleSelected
+		}
+
+		a11yState := AccessStateNone
+		if isSelected {
+			a11yState = AccessStateSelected
+		}
+
+		var onClick func(*Layout, *Event, *Window)
+		if isDraggable {
+			onClick = makeTabDragClick(cfg.ID, dIdx, item.ID,
+				tabIDs, onReorder, tabLayoutIDs,
+				cfg.OnSelect, cfg.IDFocus)
+		} else if !isDisabled {
+			onClick = makeTabOnClick(
+				cfg.OnSelect, item.ID, cfg.IDFocus)
+		}
+
+		tabBtn := Button(ButtonCfg{
+			ID:               tabButtonID(cfg.ID, item.ID),
+			A11YRole:         AccessRoleTabItem,
+			A11YState:        a11yState,
+			A11YLabel:        item.Label,
+			Color:            tabColor,
+			ColorHover:       hoverColor,
+			ColorFocus:       focusColor,
+			ColorClick:       clickColor,
+			ColorBorder:      borderColor,
+			ColorBorderFocus: cfg.ColorTabBorderFocus,
+			Padding:          cfg.PaddingTab,
+			SizeBorder:       Some(cfg.SizeTabBorder),
+			Radius:           Some(cfg.RadiusTab),
+			Disabled:         isDisabled,
+			OnClick:          onClick,
+			Content: []View{
+				Text(TextCfg{
+					Text:      item.Label,
+					TextStyle: ts,
+				}),
+			},
+		})
+
+		if dragging && isDraggable &&
+			dIdx == drag.sourceIndex {
+			ghostView = tabBtn
+			continue
+		}
+
+		headerItems = append(headerItems, tabBtn)
+	}
+
+	if dragging && drag.currentIndex >= len(tabIDs) {
+		headerItems = append(headerItems,
+			dragReorderGapView(drag, DragReorderHorizontal))
+	}
+	if dragging && ghostView != nil {
+		headerItems = append(headerItems,
+			dragReorderGhostView(drag, ghostView))
+	}
+
+	var activeContent []View
+	if selectedIdx >= 0 && selectedIdx < len(cfg.Items) {
+		src := cfg.Items[selectedIdx].Content
+		activeContent = make([]View, len(src))
+		copy(activeContent, src)
+	}
+
+	disabled := cfg.Disabled
+	selected := cfg.Selected
+	onSelect := cfg.OnSelect
+	idFocus := cfg.IDFocus
+	controlID := cfg.ID
+
+	return GenerateViewLayout(Column(ContainerCfg{
+		ID:              cfg.ID,
+		IDFocus:         cfg.IDFocus,
+		A11YRole:        AccessRoleTab,
+		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.ID),
+		A11YDescription: cfg.A11YDescription,
+		Sizing:          cfg.Sizing,
+		Color:           cfg.Color,
+		ColorBorder:     cfg.ColorBorder,
+		SizeBorder:      Some(cfg.SizeBorder),
+		Radius:          Some(cfg.Radius),
+		Padding:         cfg.Padding,
+		Spacing:         Some(cfg.Spacing),
+		Disabled:        cfg.Disabled,
+		Invisible:       cfg.Invisible,
+		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
+			if dragReorderEscape(
+				controlID, e.KeyCode, w) {
+				e.IsHandled = true
+				return
+			}
+			for idx, id := range tabIDs {
+				if id == selected {
+					if dragReorderKeyboardMove(
+						e.KeyCode, e.Modifiers,
+						DragReorderHorizontal,
+						idx, tabIDs, onReorder, w) {
+						e.IsHandled = true
+						return
+					}
+					break
+				}
+			}
+			tabControlOnKeydown(disabled, tabNavIDs,
+				tabNavDisabled, selected, onSelect,
+				idFocus, e, w)
+		},
+		Content: []View{
+			Row(ContainerCfg{
+				Color:       cfg.ColorHeader,
+				ColorBorder: cfg.ColorHeaderBorder,
+				SizeBorder:  Some(cfg.SizeHeaderBorder),
+				Radius:      Some(cfg.RadiusHeader),
+				Padding:     cfg.PaddingHeader,
+				Spacing:     Some(cfg.SpacingHeader),
+				Sizing:      FillFit,
+				Content:     headerItems,
+			}),
+			Column(ContainerCfg{
+				Color:       cfg.ColorContent,
+				ColorBorder: cfg.ColorContentBorder,
+				SizeBorder:  Some(cfg.SizeContentBorder),
+				Radius:      Some(cfg.RadiusContent),
+				Padding:     cfg.PaddingContent,
+				Sizing:      FillFill,
+				Content:     activeContent,
+			}),
+		},
+	}), w)
 }
 
 func tabControlOnKeydown(

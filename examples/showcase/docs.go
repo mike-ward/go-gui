@@ -1039,30 +1039,33 @@ Drag-reorder remains deferred and is documented separately on the Drag Reorder p
 	// Drag Reorder
 	"drag_reorder": `# Drag Reorder
 
-Drag items to reorder within lists, tabs, and tree views. Keyboard shortcuts provide an accessible alternative to mouse dragging in the original showcase.
+Drag items to reorder within lists, tabs, and tree views. Keyboard shortcuts provide an accessible alternative to mouse dragging.
 
-## Status In This Port
+## Behaviors
 
-The original source demonstrates live reordering for:
-
-- List Box
-- Tab Control
-- Tree View
-
-` + "`go-gui`" + ` does not yet expose the required reorder APIs for those widgets, so the live panel is a faithful non-functional placeholder.
-
-## Original Behaviors
-
-- Drag items to reorder
+- Drag items to reorder (5px threshold before activation)
 - Use ` + "`Alt+Arrow`" + ` as a keyboard fallback
 - Press ` + "`Escape`" + ` to cancel an active drag
 - Tree reordering is scoped to siblings under the same parent
+- FLIP animation on index change and drop
+- Auto-scroll near container edges during drag
 
-## Source Sample Data
+## Usage
 
-- List Box: Apple, Banana, Cherry, Date, Elderberry, Fig
-- Tab Control: Alpha, Beta, Gamma, Delta
-- Tree View: src/, docs/, tests, build
+` + "```go" + `
+gui.ListBox(gui.ListBoxCfg{
+    Reorderable: true,
+    OnReorder: func(movedID, beforeID string, w *gui.Window) {
+        from, to := gui.ReorderIndices(ids, movedID, beforeID)
+        if from >= 0 { sliceMove(items, from, to) }
+    },
+})
+` + "```" + `
+
+The same ` + "`Reorderable`" + ` + ` + "`OnReorder`" + ` pattern applies to TabControl and Tree.
+
+` + "`ReorderIndices`" + ` computes delete/insert indices from ` + "`(movedID, beforeID)`" + `.
+` + "`beforeID`" + ` is ` + "`\"\"`" + ` when dropping at the end of the list.
 `,
 
 	// Locale

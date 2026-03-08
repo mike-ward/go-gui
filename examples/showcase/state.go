@@ -106,6 +106,11 @@ type ShowcaseApp struct {
 	TreeSelected  string
 	TreeLazyNodes map[string][]gui.TreeNodeCfg
 
+	DragListItems []gui.ListBoxOption
+	DragTabItems  []gui.TabItemCfg
+	DragTabSel    string
+	DragTreeNodes []gui.TreeNodeCfg
+
 	ThemeGenSeed       gui.Color
 	ThemeGenStrategy   string
 	ThemeGenTint       float32
@@ -160,6 +165,34 @@ func newShowcaseApp() *ShowcaseApp {
 			SelectedRowIDs: map[string]bool{},
 		},
 		TreeLazyNodes: make(map[string][]gui.TreeNodeCfg),
+		DragListItems: []gui.ListBoxOption{
+			gui.NewListBoxOption("apple", "Apple", ""),
+			gui.NewListBoxOption("banana", "Banana", ""),
+			gui.NewListBoxOption("cherry", "Cherry", ""),
+			gui.NewListBoxOption("date", "Date", ""),
+			gui.NewListBoxOption("elderberry", "Elderberry", ""),
+			gui.NewListBoxOption("fig", "Fig", ""),
+		},
+		DragTabItems: []gui.TabItemCfg{
+			gui.NewTabItem("alpha", "Alpha", nil),
+			gui.NewTabItem("beta", "Beta", nil),
+			gui.NewTabItem("gamma", "Gamma", nil),
+			gui.NewTabItem("delta", "Delta", nil),
+		},
+		DragTabSel: "alpha",
+		DragTreeNodes: []gui.TreeNodeCfg{
+			{ID: "src", Text: "src", Nodes: []gui.TreeNodeCfg{
+				{ID: "main.go", Text: "main.go"},
+				{ID: "util.go", Text: "util.go"},
+				{ID: "app.go", Text: "app.go"},
+			}},
+			{ID: "docs", Text: "docs", Nodes: []gui.TreeNodeCfg{
+				{ID: "README.md", Text: "README.md"},
+				{ID: "GUIDE.md", Text: "GUIDE.md"},
+			}},
+			{ID: "tests", Text: "tests"},
+			{ID: "build", Text: "build"},
+		},
 	}
 }
 

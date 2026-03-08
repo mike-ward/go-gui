@@ -32,8 +32,10 @@ type TreeCfg struct {
 	SizeBorder  Opt[float32]
 	Radius      Opt[float32]
 
-	Disabled  bool
-	Invisible bool
+	Disabled    bool
+	Invisible   bool
+	Reorderable bool
+	OnReorder   func(movedID, beforeID string, w *Window)
 
 	A11YLabel       string
 	A11YDescription string
@@ -111,9 +113,84 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 			listHeight, rowHeight, len(flatRows), cfg.IDScroll, w)
 	}
 
-	focusedID := StateReadOr[string, string](w, nsTreeFocus, cfg.ID, "")
+	focusedID := StateReadOr(w, nsTreeFocus, cfg.ID, "")
 	iconWidth := treeIconWidth(cfg, w)
-	rows := make([]View, 0, len(flatRows)+2)
+
+	canReorder := cfg.Reorderable && cfg.OnReorder != nil
+	onReorder := cfg.OnReorder
+	idScroll := cfg.IDScroll
+
+	// Build per-parent sibling maps for drag-reorder scoping.
+	var parentOf map[string]string           // nodeID → parentID
+	var siblingsByParent map[string][]string // parentID → []nodeID
+	if canReorder {
+		parentOf = make(map[string]string, len(visibleIDs))
+		siblingsByParent = make(map[string][]string)
+		for i := range flatRows {
+			row := flatRows[i]
+			if row.IsLoading {
+				continue
+			}
+			parentOf[row.ID] = row.ParentID
+			siblingsByParent[row.ParentID] = append(
+				siblingsByParent[row.ParentID], row.ID)
+		}
+	}
+
+	// Build sibling index and per-parent layout info.
+	var siblingIdx map[string]int
+	var parentLayoutIDs map[string][]string
+	var parentMidsOff map[string]int
+	if canReorder {
+		siblingIdx = make(map[string]int, len(visibleIDs))
+		parentLayoutIDs = make(map[string][]string)
+		parentMidsOff = make(map[string]int)
+
+		flatIdxOf := make(map[string]int, len(flatRows))
+		for i := range flatRows {
+			if !flatRows[i].IsLoading {
+				flatIdxOf[flatRows[i].ID] = i
+			}
+		}
+		for pid, sibs := range siblingsByParent {
+			moff := 0
+			var lids []string
+			for si, sid := range sibs {
+				siblingIdx[sid] = si
+				fi, ok := flatIdxOf[sid]
+				if !ok {
+					continue
+				}
+				if fi < first {
+					moff++
+				} else if fi <= last {
+					lids = append(lids,
+						"tr_"+cfg.ID+"_"+sid)
+				}
+			}
+			parentLayoutIDs[pid] = lids
+			parentMidsOff[pid] = moff
+		}
+	}
+
+	var drag dragReorderState
+	var dragging bool
+	var dragParent string
+	if canReorder {
+		drag = dragReorderGet(w, cfg.ID)
+		dragging = drag.active && !drag.cancelled
+		if drag.started || drag.active {
+			dragParent = parentOf[drag.itemID]
+			dragReorderIDsMetaSet(w, cfg.ID,
+				siblingsByParent[dragParent])
+		}
+	}
+
+	rowsCap := len(flatRows) + 2
+	if dragging {
+		rowsCap += 3
+	}
+	rows := make([]View, 0, rowsCap)
 	if virtualize && first > 0 {
 		rows = append(rows, Rectangle(RectangleCfg{
 			Color:  ColorTransparent,
@@ -121,13 +198,43 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 			Sizing: FillFixed,
 		}))
 	}
+
+	var ghostContent View
 	for i := first; i <= last; i++ {
 		if i < 0 || i >= len(flatRows) {
 			continue
 		}
-		rows = append(rows, treeRowView(
-			*cfg, flatRows[i], iconWidth, focusedID, w))
+		row := flatRows[i]
+		rowParent := parentOf[row.ID]
+		isDragSibling := dragging && rowParent == dragParent
+
+		if isDragSibling {
+			si := siblingIdx[row.ID]
+			if si == drag.currentIndex {
+				rows = append(rows,
+					dragReorderGapView(drag, DragReorderVertical))
+			}
+			if si == drag.sourceIndex {
+				ghostContent = treeRowContent(
+					*cfg, row, iconWidth, focusedID)
+				continue
+			}
+		}
+
+		if canReorder {
+			rows = append(rows, treeDragRowView(
+				*cfg, row, iconWidth, focusedID,
+				siblingIdx[row.ID],
+				siblingsByParent[rowParent],
+				parentLayoutIDs[rowParent],
+				parentMidsOff[rowParent],
+				idScroll, w))
+		} else {
+			rows = append(rows, treeRowView(
+				*cfg, row, iconWidth, focusedID, w))
+		}
 	}
+
 	if virtualize && last < len(flatRows)-1 {
 		remaining := len(flatRows) - 1 - last
 		rows = append(rows, Rectangle(RectangleCfg{
@@ -135,6 +242,18 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 			Height: float32(remaining) * rowHeight,
 			Sizing: FillFixed,
 		}))
+	}
+
+	if dragging {
+		dragSibs := siblingsByParent[dragParent]
+		if drag.currentIndex >= len(dragSibs) {
+			rows = append(rows,
+				dragReorderGapView(drag, DragReorderVertical))
+		}
+	}
+	if dragging && ghostContent != nil {
+		rows = append(rows,
+			dragReorderGhostView(drag, ghostContent))
 	}
 
 	sizeBorder := cfg.SizeBorder.Get(DefaultTreeStyle.SizeBorder)
@@ -148,6 +267,29 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 		IDFocus:   cfg.IDFocus,
 		IDScroll:  cfg.IDScroll,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
+			if canReorder {
+				if dragReorderEscape(cfg.ID, e.KeyCode, w) {
+					e.IsHandled = true
+					return
+				}
+				if e.Modifiers.Has(ModAlt) {
+					fid := StateReadOr(
+						w, nsTreeFocus, cfg.ID, "")
+					if fid != "" {
+						fp := parentOf[fid]
+						sibs := siblingsByParent[fp]
+						si := treeSiblingIndex(sibs, fid)
+						if si >= 0 &&
+							dragReorderKeyboardMove(
+								e.KeyCode, e.Modifiers,
+								DragReorderVertical,
+								si, sibs, onReorder, w) {
+							e.IsHandled = true
+							return
+						}
+					}
+				}
+			}
 			treeOnKeyDown(cfg.ID, visibleIDs, rowByID,
 				cfg.OnSelect, cfg.OnLazyLoad, e, w)
 		},
@@ -451,6 +593,134 @@ func treeRowView(
 			}
 		},
 	})
+}
+
+func treeDragRowView(
+	cfg TreeCfg,
+	row treeFlatRow,
+	iconWidth float32,
+	focusedID string,
+	sibIdx int,
+	siblingIDs []string,
+	itemLayoutIDs []string,
+	midsOffset int,
+	idScroll uint32,
+	_ *Window,
+) View {
+	if row.IsLoading {
+		return treeRowView(cfg, row, iconWidth, focusedID, nil)
+	}
+
+	rowID := row.ID
+	isFocused := focusedID == rowID
+	rowColor := ColorTransparent
+	if isFocused {
+		rowColor = cfg.ColorFocus
+	}
+	a11yState := AccessStateNone
+	if row.IsExpanded && row.HasChildren {
+		a11yState = AccessStateExpanded
+	}
+	rootFocusID := cfg.IDFocus
+	onSelect := cfg.OnSelect
+	onLazyLoad := cfg.OnLazyLoad
+	onReorder := cfg.OnReorder
+	treeID := cfg.ID
+	layoutID := "tr_" + cfg.ID + "_" + row.ID
+
+	return Row(ContainerCfg{
+		ID:        layoutID,
+		A11YRole:  AccessRoleTreeItem,
+		A11YLabel: row.Text,
+		A11YState: a11yState,
+		Color:     rowColor,
+		Radius:    Some(cfg.Radius.Get(DefaultTreeStyle.Radius)),
+		Padding: Some(NewPadding(
+			2, 5, 2,
+			float32(row.Depth)*cfg.Indent+5,
+		)),
+		Sizing:  FillFit,
+		Spacing: Some(float32(0)),
+		Content: []View{
+			Text(TextCfg{
+				Text:      treeArrowIcon(row) + " ",
+				MinWidth:  iconWidth,
+				TextStyle: row.TextStyleIcon,
+			}),
+			Text(TextCfg{
+				Text:      treeIconText(row.Icon),
+				MinWidth:  iconWidth,
+				TextStyle: row.TextStyleIcon,
+			}),
+			Text(TextCfg{
+				Text:      row.Text,
+				TextStyle: row.TextStyle,
+			}),
+		},
+		OnClick: func(layout *Layout, e *Event, w *Window) {
+			dragReorderStart(treeID, sibIdx, rowID,
+				DragReorderVertical, siblingIDs, onReorder,
+				itemLayoutIDs, midsOffset, idScroll,
+				layout, e, w)
+			treeRowClick(
+				treeID, row, rootFocusID, onSelect, onLazyLoad, e, w)
+		},
+		OnHover: func(layout *Layout, _ *Event, w *Window) {
+			w.SetMouseCursorPointingHand()
+			if !isFocused {
+				layout.Shape.Color = cfg.ColorHover
+			}
+		},
+	})
+}
+
+// treeRowContent returns the inner content of a tree row without
+// the Row container — used for the drag ghost.
+func treeRowContent(
+	cfg TreeCfg,
+	row treeFlatRow,
+	iconWidth float32,
+	focusedID string,
+) View {
+	rowColor := ColorTransparent
+	if focusedID == row.ID {
+		rowColor = cfg.ColorFocus
+	}
+	return Row(ContainerCfg{
+		Color:  rowColor,
+		Radius: Some(cfg.Radius.Get(DefaultTreeStyle.Radius)),
+		Padding: Some(NewPadding(
+			2, 5, 2,
+			float32(row.Depth)*cfg.Indent+5,
+		)),
+		Sizing:  FillFit,
+		Spacing: Some(float32(0)),
+		Content: []View{
+			Text(TextCfg{
+				Text:      treeArrowIcon(row) + " ",
+				MinWidth:  iconWidth,
+				TextStyle: row.TextStyleIcon,
+			}),
+			Text(TextCfg{
+				Text:      treeIconText(row.Icon),
+				MinWidth:  iconWidth,
+				TextStyle: row.TextStyleIcon,
+			}),
+			Text(TextCfg{
+				Text:      row.Text,
+				TextStyle: row.TextStyle,
+			}),
+		},
+	})
+}
+
+func treeSiblingIndex(siblings []string, id string) int {
+	for i, s := range siblings {
+		if s == id {
+			return i
+		}
+	}
+	return -1
 }
 
 func treeIconText(icon string) string {

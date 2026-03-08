@@ -43,6 +43,8 @@ type ListBoxCfg struct {
 	Multiple        bool
 	Disabled        bool
 	Invisible       bool
+	Reorderable     bool
+	OnReorder       func(movedID, beforeID string, w *Window)
 
 	A11YLabel       string
 	A11YDescription string
@@ -63,7 +65,8 @@ func NewListBoxSubheading(id, title string) ListBoxOption {
 // ListBox creates a list box view.
 func ListBox(cfg ListBoxCfg) View {
 	applyListBoxDefaults(&cfg)
-	if listBoxCanVirtualize(&cfg) {
+	if listBoxCanVirtualize(&cfg) ||
+		(cfg.Reorderable && cfg.OnReorder != nil) {
 		return &listBoxView{cfg: cfg}
 	}
 
@@ -173,9 +176,56 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	selectedIDs := cfg.SelectedIDs
 	itemIDs := cache.itemIDs
 
+	canReorder := cfg.Reorderable && cfg.OnReorder != nil
+	var drag dragReorderState
+	if canReorder {
+		drag = dragReorderGet(w, cfg.ID)
+	}
+	dragging := canReorder && drag.active && !drag.cancelled
+	onReorder := cfg.OnReorder
+	idScroll := cfg.IDScroll
+
+	var dragIdxByRow map[int]int
+	if canReorder {
+		dragIdxByRow = make(map[int]int, len(cfg.Data))
+		di := 0
+		for i := range cfg.Data {
+			if !cfg.Data[i].IsSubheading {
+				dragIdxByRow[i] = di
+				di++
+			}
+		}
+	}
+
+	var itemLayoutIDs []string
+	midsOffset := 0
+	if canReorder {
+		itemLayoutIDs = make([]string, 0, last-first+1)
+		for idx := 0; idx < first; idx++ {
+			if idx < len(cfg.Data) &&
+				!cfg.Data[idx].IsSubheading {
+				midsOffset++
+			}
+		}
+		for idx := first; idx <= last; idx++ {
+			if idx >= 0 && idx < len(cfg.Data) &&
+				!cfg.Data[idx].IsSubheading {
+				itemLayoutIDs = append(itemLayoutIDs,
+					"lb_"+cfg.ID+"_"+cfg.Data[idx].ID)
+			}
+		}
+	}
+
+	if canReorder && (drag.started || drag.active) {
+		dragReorderIDsMetaSet(w, cfg.ID, itemIDs)
+	}
+
 	listCap := len(cfg.Data)
 	if virtualize && last >= first {
 		listCap = last - first + 3
+	}
+	if dragging {
+		listCap += 3
 	}
 	list := make([]View, 0, listCap)
 
@@ -188,11 +238,32 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 		}))
 	}
 
+	var ghostContent View
 	for idx := first; idx <= last; idx++ {
 		if idx < 0 || idx >= len(cfg.Data) {
 			continue
 		}
-		list = append(list, listBoxItemView(cfg.Data[idx], *cfg, selectedSet))
+		di, isDraggable := dragIdxByRow[idx]
+
+		if dragging && isDraggable && di == drag.currentIndex {
+			list = append(list,
+				dragReorderGapView(drag, DragReorderVertical))
+		}
+
+		if dragging && isDraggable && di == drag.sourceIndex {
+			ghostContent = listBoxItemContent(
+				cfg.Data[idx], *cfg)
+			continue
+		}
+
+		if canReorder && isDraggable {
+			list = append(list, listBoxReorderItemView(
+				cfg.Data[idx], *cfg, selectedSet, di,
+				itemIDs, itemLayoutIDs, midsOffset, idScroll))
+		} else {
+			list = append(list,
+				listBoxItemView(cfg.Data[idx], *cfg, selectedSet))
+		}
 	}
 
 	if virtualize && last < len(cfg.Data)-1 {
@@ -205,6 +276,15 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 		}))
 	}
 
+	if dragging && drag.currentIndex >= len(itemIDs) {
+		list = append(list,
+			dragReorderGapView(drag, DragReorderVertical))
+	}
+	if dragging && ghostContent != nil {
+		list = append(list,
+			dragReorderGhostView(drag, ghostContent))
+	}
+
 	return GenerateViewLayout(Column(ContainerCfg{
 		ID:        cfg.ID,
 		A11YRole:  AccessRoleList,
@@ -212,6 +292,23 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 		IDFocus:   cfg.IDFocus,
 		IDScroll:  cfg.IDScroll,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
+			if canReorder {
+				if dragReorderEscape(
+					listBoxID, e.KeyCode, w) {
+					e.IsHandled = true
+					return
+				}
+				lbf := StateMap[string, int](
+					w, nsListBoxFocus, capModerate)
+				curIdx, _ := lbf.Get(listBoxID)
+				if curIdx >= 0 && curIdx < len(itemIDs) &&
+					dragReorderKeyboardMove(e.KeyCode,
+						e.Modifiers, DragReorderVertical,
+						curIdx, itemIDs, onReorder, w) {
+					e.IsHandled = true
+					return
+				}
+			}
 			listBoxOnKeyDown(listBoxID, itemIDs,
 				isMultiple, onSelect, selectedIDs, e, w)
 		},
@@ -275,6 +372,67 @@ func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]s
 				if layout.Shape.Color == ColorTransparent {
 					layout.Shape.Color = colorHover
 				}
+			}
+		},
+	})
+}
+
+func listBoxReorderItemView(
+	dat ListBoxOption,
+	cfg ListBoxCfg,
+	selectedSet map[string]struct{},
+	dragIdx int,
+	itemIDs []string,
+	itemLayoutIDs []string,
+	midsOffset int,
+	idScroll uint32,
+) View {
+	color := ColorTransparent
+	if listCoreContainsSelected(selectedSet, cfg.SelectedIDs, dat.ID) {
+		color = cfg.ColorSelect
+	}
+	content := listBoxItemContent(dat, cfg)
+	layoutID := "lb_" + cfg.ID + "_" + dat.ID
+
+	datID := dat.ID
+	isMultiple := cfg.Multiple
+	onSelect := cfg.OnSelect
+	hasOnSelect := onSelect != nil
+	selectedIDs := cfg.SelectedIDs
+	colorHover := cfg.ColorHover
+	listBoxID := cfg.ID
+	onReorder := cfg.OnReorder
+
+	a11yState := AccessStateNone
+	if listCoreContainsSelected(selectedSet, cfg.SelectedIDs, dat.ID) {
+		a11yState = AccessStateSelected
+	}
+
+	return Row(ContainerCfg{
+		ID:        layoutID,
+		A11YRole:  AccessRoleListItem,
+		A11YLabel: dat.Name,
+		A11YState: a11yState,
+		Color:     color,
+		Padding:   Some(PaddingTwoFive),
+		Sizing:    FillFit,
+		Content:   []View{content},
+		OnClick: func(layout *Layout, e *Event, w *Window) {
+			dragReorderStart(listBoxID, dragIdx, datID,
+				DragReorderVertical, itemIDs, onReorder,
+				itemLayoutIDs, midsOffset, idScroll,
+				layout, e, w)
+			if hasOnSelect {
+				ids := listBoxNextSelectedIDs(
+					selectedIDs, datID, isMultiple)
+				onSelect(ids, e, w)
+			}
+			e.IsHandled = true
+		},
+		OnHover: func(layout *Layout, _ *Event, w *Window) {
+			w.SetMouseCursor(CursorPointingHand)
+			if layout.Shape.Color == ColorTransparent {
+				layout.Shape.Color = colorHover
 			}
 		},
 	})
