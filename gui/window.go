@@ -139,6 +139,7 @@ type ViewState struct {
 	tooltip       tooltipState
 
 	// Markdown caches (lazy-init: nil until first use).
+	markdownTheme            string
 	markdownCache            *BoundedMap[int64, []MarkdownBlock]
 	diagramCache             *BoundedDiagramCache
 	diagramRequestSeq        uint64

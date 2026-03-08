@@ -18,6 +18,7 @@ type comboboxViewKey struct {
 	hl          int
 	filteredN   int
 	rowH        float32
+	theme       string
 }
 
 // ComboboxCfg configures a combobox view with typeahead filtering.
@@ -187,6 +188,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			hl:          hl,
 			filteredN:   len(filtered),
 			rowH:        rowH,
+			theme:       guiTheme.Name,
 		}
 		dropdownContent := cache.views
 		if cache.viewKey != viewKey || dropdownContent == nil {

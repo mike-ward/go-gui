@@ -26,6 +26,7 @@ type MarkdownStyle struct {
 	Italic            TextStyle
 	BoldItalic        TextStyle
 	Code              TextStyle
+	CodeBlockText     TextStyle
 	CodeBlockBG       Color
 	CodeKeywordColor  Color
 	CodeStringColor   Color
@@ -72,6 +73,11 @@ func DefaultMarkdownStyle() MarkdownStyle {
 		Italic:            guiTheme.I3,
 		BoldItalic:        guiTheme.BI3,
 		Code:              guiTheme.M5,
+		CodeBlockText: func() TextStyle {
+			s := guiTheme.M5
+			s.Size = (guiTheme.M5.Size + guiTheme.M6.Size) / 2
+			return s
+		}(),
 		CodeBlockBG:       RGBA(0, 0, 0, 50),
 		CodeKeywordColor:  guiTheme.ColorSelect,
 		CodeStringColor:   RGB(75, 125, 75),
@@ -356,9 +362,6 @@ func renderMdCode(
 		}
 	}
 
-	btnColor := cfg.Style.CodeBlockBG
-	btnColor.A = 200
-
 	copyBtn := Button(ButtonCfg{
 		Float:        true,
 		FloatAnchor:  FloatTopRight,
@@ -366,7 +369,8 @@ func renderMdCode(
 		FloatOffsetX: -4,
 		FloatOffsetY: 4,
 		Radius:       Some[float32](4),
-		Color:        btnColor,
+		Color:        cfg.Color,
+		SizeBorder:   Some[float32](0),
 		Padding:      Some(NewPadding(2, 4, 2, 4)),
 		Content:      btnContent,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -406,11 +410,14 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 	}
 	mode := cfg.Mode.Get(TextModeWrap)
 
-	// Cache lookup.
+	// Cache lookup; invalidate on theme change.
 	hash := int64(markdown.MathHash(cfg.Source))
-	if w.viewState.markdownCache == nil {
+	themeName := guiTheme.Name
+	if w.viewState.markdownCache == nil ||
+		w.viewState.markdownTheme != themeName {
 		w.viewState.markdownCache =
 			NewBoundedMap[int64, []MarkdownBlock](100)
+		w.viewState.markdownTheme = themeName
 	}
 	blocks, ok := w.viewState.markdownCache.Get(hash)
 	if !ok {
@@ -731,6 +738,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		FloatOffsetY: 4,
 		Radius:       Some[float32](4),
 		Color:        cfg.Color,
+		SizeBorder:   Some[float32](0),
 		Padding:      Some(NewPadding(2, 4, 2, 4)),
 		Content:      docBtnContent,
 		OnClick: func(_ *Layout, e *Event, w *Window) {

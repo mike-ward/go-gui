@@ -18,6 +18,7 @@ type cmdPaletteViewKey struct {
 	hl         int
 	filteredN  int
 	rowH       float32
+	theme      string
 }
 
 // CommandPaletteItem represents one action in the palette.
@@ -153,6 +154,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 		hl:         hl,
 		filteredN:  len(filtered),
 		rowH:       rowH,
+		theme:      guiTheme.Name,
 	}
 	resultViews := cache.views
 	if cache.viewKey != viewKey || resultViews == nil {

@@ -95,6 +95,14 @@ func styleMdBlock(
 		Content:         styleMdRuns(block.Runs, baseStyle, style),
 	}
 
+	// Code blocks use a smaller font than inline code.
+	if block.IsCode {
+		sz := style.CodeBlockText.Size
+		for i := range mb.Content.Runs {
+			mb.Content.Runs[i].Style.Size = sz
+		}
+	}
+
 	if block.TableData != nil {
 		td := styleMdTable(*block.TableData, style)
 		mb.TableData = &td
