@@ -108,20 +108,18 @@ func viewTitleBar(entry DemoEntry, showDocs bool) gui.View {
 
 func docButton(showDocs bool) gui.View {
 	color := gui.ColorTransparent
-	labelStyle := gui.CurrentTheme().N4
 	if showDocs {
 		color = gui.CurrentTheme().ColorActive
-		labelStyle = gui.CurrentTheme().B4
 	}
 	return gui.Button(gui.ButtonCfg{
-		ID:        "btn-doc-toggle",
-		A11YLabel: "Toggle docs",
-		Color:     color,
-		Padding:   gui.Some(gui.NewPadding(4, 8, 4, 8)),
-		Radius:    gui.Some(float32(3)),
+		ID:         "btn-doc-toggle",
+		A11YLabel:  "Toggle docs",
+		Color:      color,
+		SizeBorder: gui.Some(float32(0)),
+		Padding:    gui.Some(gui.NewPadding(4, 8, 4, 8)),
+		Radius:     gui.Some(float32(3)),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: gui.IconBook, TextStyle: gui.CurrentTheme().Icon4}),
-			gui.Text(gui.TextCfg{Text: "Docs", TextStyle: labelStyle}),
 		},
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			gui.State[ShowcaseApp](w).ShowDocs = !gui.State[ShowcaseApp](w).ShowDocs
