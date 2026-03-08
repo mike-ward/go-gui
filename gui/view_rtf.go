@@ -21,13 +21,13 @@ type RtfCfg struct {
 	RichText        RichText
 	MinWidth        float32
 	IDFocus         uint32
-	Mode           TextMode
-	Invisible      bool
-	Clip           bool
-	FocusSkip      bool
-	Disabled       bool
-	HangingIndent  float32 // negative indent for wrapped lines
-	BaseTextStyle  *TextStyle
+	Mode            TextMode
+	Invisible       bool
+	Clip            bool
+	FocusSkip       bool
+	Disabled        bool
+	HangingIndent   float32 // negative indent for wrapped lines
+	BaseTextStyle   *TextStyle
 }
 
 type rtfView struct {
@@ -90,11 +90,11 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 			AmendLayout: rtfAmendTooltip,
 		},
 		TC: &ShapeTextConfig{
-			TextMode:       v.Mode,
-			HangingIndent:  v.HangingIndent,
-			RtfBaseStyle:   baseStyle,
-			RtfLayout:      &layout,
-			RtfRuns:        &v.RichText,
+			TextMode:      v.Mode,
+			HangingIndent: v.HangingIndent,
+			RtfBaseStyle:  baseStyle,
+			RtfLayout:     &layout,
+			RtfRuns:       &v.RichText,
 		},
 	}
 	l := Layout{Shape: shape}
@@ -261,7 +261,7 @@ func rtfTooltipAnimation(tipID string) *Animate {
 // rtfAmendTooltip clears RTF tooltip state when the mouse
 // leaves the stored bounds, and dismisses the link context
 // menu when focus is lost.
-func rtfAmendTooltip(l *Layout, w *Window) {
+func rtfAmendTooltip(_ *Layout, w *Window) {
 	ts := &w.viewState.tooltip
 	if ts.text != "" {
 		mx := w.viewState.mousePosX
@@ -304,14 +304,14 @@ func rtfTooltipView(ts *tooltipState) View {
 		Float:         true,
 		FloatAutoFlip: true,
 		FloatTieOff:   FloatBottomCenter,
-		FloatOffsetX: ts.floatOffsetX,
-		FloatOffsetY: ts.floatOffsetY,
-		Color:        d.Color,
-		ColorBorder:  d.ColorBorder,
-		SizeBorder:   Some(d.SizeBorder),
-		Radius:       Some(d.Radius),
-		Padding:      Some(d.Padding),
-		MaxWidth:     300,
+		FloatOffsetX:  ts.floatOffsetX,
+		FloatOffsetY:  ts.floatOffsetY,
+		Color:         d.Color,
+		ColorBorder:   d.ColorBorder,
+		SizeBorder:    Some(d.SizeBorder),
+		Radius:        Some(d.Radius),
+		Padding:       Some(d.Padding),
+		MaxWidth:      300,
 		Content: []View{
 			Text(TextCfg{
 				Text:      ts.text,
@@ -346,7 +346,7 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 					found.Link[0] == '#' {
 					w.ScrollToView(found.Link[1:])
 				} else if w.nativePlatform != nil {
-					w.nativePlatform.OpenURI(found.Link)
+					_ = w.nativePlatform.OpenURI(found.Link)
 				}
 				e.IsHandled = true
 			}
@@ -408,7 +408,7 @@ func rtfLinkMenuView(w *Window, st rtfLinkMenuState) View {
 			switch id {
 			case "open_link":
 				if w.nativePlatform != nil {
-					w.nativePlatform.OpenURI(link)
+					_ = w.nativePlatform.OpenURI(link)
 				}
 			case "copy_link":
 				w.SetClipboard(link)

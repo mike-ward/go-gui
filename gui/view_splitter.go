@@ -16,7 +16,7 @@ const (
 type SplitterCollapsed uint8
 
 const (
-	SplitterCollapseNone   SplitterCollapsed = iota
+	SplitterCollapseNone SplitterCollapsed = iota
 	SplitterCollapseFirst
 	SplitterCollapseSecond
 )
@@ -55,34 +55,34 @@ type splitterPaneCore struct {
 
 // SplitterCfg configures a splitter component.
 type SplitterCfg struct {
-	ID                    string
-	IDFocus               uint32
-	Orientation           SplitterOrientation
-	Sizing                Sizing
-	Ratio                 float32
-	Collapsed             SplitterCollapsed
-	OnChange              func(float32, SplitterCollapsed, *Event, *Window)
-	First                 SplitterPaneCfg
-	Second                SplitterPaneCfg
-	HandleSize            float32
-	DragStep              float32
-	DragStepLarge         float32
-	DoubleClickCollapse   bool
-	ShowCollapseButtons   bool
-	ColorHandle           Color
-	ColorHandleHover      Color
-	ColorHandleActive     Color
-	ColorHandleBorder     Color
-	ColorGrip             Color
-	ColorButton           Color
-	ColorButtonHover      Color
-	ColorButtonActive     Color
-	ColorButtonIcon       Color
-	SizeBorder            float32
-	Radius                float32
-	RadiusBorder          float32
-	Disabled              bool
-	Invisible             bool
+	ID                  string
+	IDFocus             uint32
+	Orientation         SplitterOrientation
+	Sizing              Sizing
+	Ratio               float32
+	Collapsed           SplitterCollapsed
+	OnChange            func(float32, SplitterCollapsed, *Event, *Window)
+	First               SplitterPaneCfg
+	Second              SplitterPaneCfg
+	HandleSize          float32
+	DragStep            float32
+	DragStepLarge       float32
+	DoubleClickCollapse bool
+	ShowCollapseButtons bool
+	ColorHandle         Color
+	ColorHandleHover    Color
+	ColorHandleActive   Color
+	ColorHandleBorder   Color
+	ColorGrip           Color
+	ColorButton         Color
+	ColorButtonHover    Color
+	ColorButtonActive   Color
+	ColorButtonIcon     Color
+	SizeBorder          float32
+	Radius              float32
+	RadiusBorder        float32
+	Disabled            bool
+	Invisible           bool
 
 	A11YLabel       string
 	A11YDescription string
@@ -90,19 +90,19 @@ type SplitterCfg struct {
 
 // splitterCore holds callback-relevant fields.
 type splitterCore struct {
-	id                    string
-	idFocus               uint32
-	orientation           SplitterOrientation
-	ratio                 float32
-	collapsed             SplitterCollapsed
-	onChange              func(float32, SplitterCollapsed, *Event, *Window)
-	first                 splitterPaneCore
-	second                splitterPaneCore
-	handleSize            float32
-	dragStep              float32
-	dragStepLarge         float32
-	doubleClickCollapse   bool
-	disabled              bool
+	id                  string
+	idFocus             uint32
+	orientation         SplitterOrientation
+	ratio               float32
+	collapsed           SplitterCollapsed
+	onChange            func(float32, SplitterCollapsed, *Event, *Window)
+	first               splitterPaneCore
+	second              splitterPaneCore
+	handleSize          float32
+	dragStep            float32
+	dragStepLarge       float32
+	doubleClickCollapse bool
+	disabled            bool
 }
 
 type splitterComputed struct {
@@ -120,7 +120,7 @@ func newSplitterCore(cfg *SplitterCfg) *splitterCore {
 		orientation: cfg.Orientation,
 		ratio:       cfg.Ratio,
 		collapsed:   cfg.Collapsed,
-		onChange:     cfg.OnChange,
+		onChange:    cfg.OnChange,
 		first: splitterPaneCore{
 			minSize:       cfg.First.MinSize,
 			maxSize:       cfg.First.MaxSize,
@@ -327,16 +327,16 @@ func splitterButton(cfg *SplitterCfg, core *splitterCore,
 		Size:  size,
 	}
 	return Button(ButtonCfg{
-		ID:          fmt.Sprintf("%s:button:%d", cfg.ID, target),
-		Width:       size,
-		Height:      size,
-		Sizing:      FixedFixed,
-		Padding:     Some(PaddingNone),
-		Color:       cfg.ColorButton,
-		ColorHover:  cfg.ColorButtonHover,
-		ColorClick:  cfg.ColorButtonActive,
-		ColorFocus:  cfg.ColorButtonHover,
-		Radius:      Some(cfg.RadiusBorder),
+		ID:         fmt.Sprintf("%s:button:%d", cfg.ID, target),
+		Width:      size,
+		Height:     size,
+		Sizing:     FixedFixed,
+		Padding:    Some(PaddingNone),
+		Color:      cfg.ColorButton,
+		ColorHover: cfg.ColorButtonHover,
+		ColorClick: cfg.ColorButtonActive,
+		ColorFocus: cfg.ColorButtonHover,
+		Radius:     Some(cfg.RadiusBorder),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			splitterOnButtonClick(core, target, e, w)
 		},

@@ -22,6 +22,7 @@ func TestSelectGeneratesClosedLayout(t *testing.T) {
 }
 
 func TestSelectGeneratesDropdownWhenOpen(t *testing.T) {
+	_ = t
 	w := &Window{}
 	ss := StateMap[string, bool](w, nsSelect, capModerate)
 	ss.Set("s2", true)
@@ -58,6 +59,7 @@ func TestSelectGeneratesDropdownWhenOpen(t *testing.T) {
 }
 
 func TestSelectArrowChangesWithState(t *testing.T) {
+	_ = t
 	w := &Window{}
 	v := Select(SelectCfg{
 		ID:       "s3",
@@ -236,6 +238,7 @@ func TestFnvSum32Consistency(t *testing.T) {
 }
 
 func TestSelectPlaceholderWhenEmpty(t *testing.T) {
+	_ = t
 	w := &Window{}
 	v := Select(SelectCfg{
 		ID:          "s9",

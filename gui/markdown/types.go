@@ -6,18 +6,15 @@ package markdown
 
 // Limits for multi-line constructs.
 const (
-	maxBlockquoteLines           = 100
-	maxTableLines                = 500
-	maxTableColumns              = 100
-	maxListContinuationLines     = 50
-	maxFootnoteContinuationLines = 20
+	maxBlockquoteLines            = 100
+	maxTableLines                 = 500
+	maxTableColumns               = 100
+	maxListContinuationLines      = 50
+	maxFootnoteContinuationLines  = 20
 	maxParagraphContinuationLines = 100
-	maxCodeBlockLines            = 10000
-	maxMathBlockLines            = 200
+	maxCodeBlockLines             = 10000
+	maxMathBlockLines             = 200
 )
-
-// Inline parsing limits.
-const maxInlineNestingDepth = 16
 
 // Source length caps for external API submissions.
 const (
@@ -47,8 +44,9 @@ const (
 // Align represents column alignment in tables.
 type Align uint8
 
+// Align constants.
 const (
-	AlignStart  Align = iota
+	AlignStart Align = iota
 	AlignEnd
 	AlignCenter
 	AlignLeft
@@ -58,6 +56,7 @@ const (
 // Format represents inline text formatting.
 type Format uint8
 
+// Format constants.
 const (
 	FormatPlain Format = iota
 	FormatBold
@@ -69,6 +68,7 @@ const (
 // CodeTokenKind classifies syntax highlighting tokens.
 type CodeTokenKind uint8
 
+// CodeTokenKind constants.
 const (
 	TokenPlain CodeTokenKind = iota
 	TokenKeyword
@@ -82,6 +82,7 @@ const (
 // syntax highlighting.
 type CodeLanguage uint8
 
+// CodeLanguage constants.
 const (
 	LangGeneric CodeLanguage = iota
 	LangV

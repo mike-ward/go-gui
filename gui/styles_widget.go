@@ -152,6 +152,7 @@ type DialogStyle struct {
 // ToastAnchor specifies toast notification position.
 type ToastAnchor uint8
 
+// ToastAnchor constants.
 const (
 	ToastTopLeft ToastAnchor = iota
 	ToastTopRight

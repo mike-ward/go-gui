@@ -67,14 +67,14 @@ func TestApplyDockLayoutDefaults(t *testing.T) {
 func TestApplyDockLayoutDefaultsPreservesExplicit(t *testing.T) {
 	c := Color{255, 0, 0, 255, true}
 	cfg := DockLayoutCfg{
-		Sizing:           FixedFixed,
-		ColorZonePreview: c,
-		ColorTab:         c,
-		ColorTabActive:   c,
-		ColorTabHover:    c,
-		ColorTabBar:      c,
+		Sizing:            FixedFixed,
+		ColorZonePreview:  c,
+		ColorTab:          c,
+		ColorTabActive:    c,
+		ColorTabHover:     c,
+		ColorTabBar:       c,
 		ColorTabSeparator: c,
-		ColorContent:     c,
+		ColorContent:      c,
 	}
 	applyDockLayoutDefaults(&cfg)
 	if cfg.Sizing != FixedFixed {
@@ -321,6 +321,7 @@ func TestNewDockLayoutCore(t *testing.T) {
 // --- dockLayoutAmend ---
 
 func TestDockLayoutAmendNoChildren(t *testing.T) {
+	_ = t
 	w := &Window{}
 	layout := &Layout{Shape: &Shape{}}
 	// Should not panic with empty children.

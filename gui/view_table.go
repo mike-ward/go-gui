@@ -3,6 +3,7 @@ package gui
 // TableBorderStyle controls which borders are drawn in a table.
 type TableBorderStyle uint8
 
+// TableBorderStyle constants.
 const (
 	TableBorderNone       TableBorderStyle = iota // no borders
 	TableBorderAll                                // full grid

@@ -170,7 +170,7 @@ func (w *Window) DatePickerReset(id string) {
 
 // datePickerControls builds the header row: month/year + prev/next.
 func datePickerControls(
-	cfg *DatePickerCfg, state datePickerState, w *Window,
+	cfg *DatePickerCfg, state datePickerState, _ *Window,
 ) View {
 	cfgID := cfg.ID
 	monthLabel := LocaleFormatDate(
@@ -273,7 +273,7 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 
 // datePickerMonth builds 6 rows of 7 day cells.
 func datePickerMonth(
-	cfg *DatePickerCfg, state datePickerState, w *Window,
+	cfg *DatePickerCfg, state datePickerState, _ *Window,
 ) []View {
 	dn := &DefaultDatePickerStyle
 	radius := cfg.Radius.Get(dn.Radius)

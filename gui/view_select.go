@@ -192,7 +192,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 }
 
 // selectOptionView builds a single option row.
-func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool, idScroll uint32) View {
+func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool, _ uint32) View {
 	selectMultiple := cfg.SelectMultiple
 	onSelect := cfg.OnSelect
 	selectArray := cfg.Selected

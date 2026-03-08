@@ -125,7 +125,7 @@ func TestRollerAdjustDay(t *testing.T) {
 	}
 }
 
-func TestRollerAdjustDayNilOnChange(t *testing.T) {
+func TestRollerAdjustDayNilOnChange(_ *testing.T) {
 	sel := time.Date(2025, 3, 15, 0, 0, 0, 0, time.Local)
 	// Should not panic.
 	rollerAdjustDay(1, sel, nil, &Window{})

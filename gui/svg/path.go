@@ -289,8 +289,8 @@ func arcToCubic(x1, y1, rx, ry, phi float32, largeArc, sweep bool, x2, y2 float3
 		return []PathSegment{{CmdLineTo, []float32{x2, y2}}}
 	}
 
-	rx_ := f32Abs(rx)
-	ry_ := f32Abs(ry)
+	rxAbs := f32Abs(rx)
+	ryAbs := f32Abs(ry)
 	phiRad := float64(phi) * math.Pi / 180.0
 
 	cosPhi := float32(math.Cos(phiRad))
@@ -302,15 +302,15 @@ func arcToCubic(x1, y1, rx, ry, phi float32, largeArc, sweep bool, x2, y2 float3
 	y1p := -sinPhi*dx + cosPhi*dy
 
 	// Correct radii
-	lambda := (x1p*x1p)/(rx_*rx_) + (y1p*y1p)/(ry_*ry_)
+	lambda := (x1p*x1p)/(rxAbs*rxAbs) + (y1p*y1p)/(ryAbs*ryAbs)
 	if lambda > 1 {
 		sqrtLambda := float32(math.Sqrt(float64(lambda)))
-		rx_ *= sqrtLambda
-		ry_ *= sqrtLambda
+		rxAbs *= sqrtLambda
+		ryAbs *= sqrtLambda
 	}
 
-	rx2 := rx_ * rx_
-	ry2 := ry_ * ry_
+	rx2 := rxAbs * rxAbs
+	ry2 := ryAbs * ryAbs
 	x1p2 := x1p * x1p
 	y1p2 := y1p * y1p
 
@@ -323,14 +323,14 @@ func arcToCubic(x1, y1, rx, ry, phi float32, largeArc, sweep bool, x2, y2 float3
 		coef = -coef
 	}
 
-	cxp := coef * rx_ * y1p / ry_
-	cyp := -coef * ry_ * x1p / rx_
+	cxp := coef * rxAbs * y1p / ryAbs
+	cyp := -coef * ryAbs * x1p / rxAbs
 
 	cx := cosPhi*cxp - sinPhi*cyp + (x1+x2)/2
 	cy := sinPhi*cxp + cosPhi*cyp + (y1+y2)/2
 
-	theta1 := vectorAngle(1, 0, (x1p-cxp)/rx_, (y1p-cyp)/ry_)
-	dtheta := vectorAngle((x1p-cxp)/rx_, (y1p-cyp)/ry_, (-x1p-cxp)/rx_, (-y1p-cyp)/ry_)
+	theta1 := vectorAngle(1, 0, (x1p-cxp)/rxAbs, (y1p-cyp)/ryAbs)
+	dtheta := vectorAngle((x1p-cxp)/rxAbs, (y1p-cyp)/ryAbs, (-x1p-cxp)/rxAbs, (-y1p-cyp)/ryAbs)
 
 	if !sweep && dtheta > 0 {
 		dtheta -= 2 * math.Pi
@@ -344,7 +344,7 @@ func arcToCubic(x1, y1, rx, ry, phi float32, largeArc, sweep bool, x2, y2 float3
 	segments := make([]PathSegment, 0, nSegs)
 	theta := theta1
 	for range nSegs {
-		seg := arcSegmentToCubic(cx, cy, rx_, ry_, float32(phiRad), theta, dTheta)
+		seg := arcSegmentToCubic(cx, cy, rxAbs, ryAbs, float32(phiRad), theta, dTheta)
 		segments = append(segments, seg)
 		theta += dTheta
 	}

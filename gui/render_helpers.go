@@ -53,10 +53,10 @@ func resolveClipRadius(parentRadius float32, shape *Shape) float32 {
 // RoundedImageClip holds clipped image draw parameters including
 // mapped UV coordinates for SDF rounded clipping.
 type RoundedImageClip struct {
-	X, Y     float32
-	W, H     float32
-	U0, V0   float32
-	U1, V1   float32
+	X, Y   float32
+	W, H   float32
+	U0, V0 float32
+	U1, V1 float32
 }
 
 // roundedImageClipParams computes the intersection of an image rect

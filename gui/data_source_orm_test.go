@@ -13,7 +13,7 @@ func testColumns() []GridOrmColumnSpec {
 		{ID: "status", DBField: "status", QuickFilter: false,
 			Filterable: true, Sortable: true,
 			CaseInsensitive: false,
-			AllowedOps: []string{"equals"}},
+			AllowedOps:      []string{"equals"}},
 	}
 }
 
@@ -23,8 +23,8 @@ func testOrmSource(t *testing.T) *GridOrmDataSource {
 		Columns:      testColumns(),
 		DefaultLimit: 50,
 		FetchFn: func(
-			spec GridOrmQuerySpec,
-			signal *GridAbortSignal,
+			_ GridOrmQuerySpec,
+			_ *GridAbortSignal,
 		) (GridOrmPage, error) {
 			return GridOrmPage{
 				Rows:    []GridRow{{ID: "1"}},

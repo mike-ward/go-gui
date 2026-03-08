@@ -523,14 +523,14 @@ func dataGridQuickFilterHeight(cfg *DataGridCfg) float32 {
 	return dataGridHeaderHeight(cfg)
 }
 
-func dataGridRowHeight(cfg *DataGridCfg, w *Window) float32 {
+func dataGridRowHeight(cfg *DataGridCfg, _ *Window) float32 {
 	if cfg.RowHeight > 0 {
 		return cfg.RowHeight
 	}
 	return cfg.TextStyle.Size + cfg.PaddingCell.Get(Padding{}).Height() + cfg.SizeBorder
 }
 
-func dataGridStaticTopHeight(cfg *DataGridCfg, rowHeight float32, chooserOpen bool, includeHeader bool) float32 {
+func dataGridStaticTopHeight(cfg *DataGridCfg, _ float32, chooserOpen bool, includeHeader bool) float32 {
 	top := float32(0)
 	if cfg.ShowColumnChooser {
 		top += dataGridColumnChooserHeight(cfg, chooserOpen)
@@ -974,9 +974,7 @@ func dataGridFormatNumber(value float64) string {
 	for strings.Contains(text, ".") && strings.HasSuffix(text, "0") {
 		text = text[:len(text)-1]
 	}
-	if strings.HasSuffix(text, ".") {
-		text = text[:len(text)-1]
-	}
+	text = strings.TrimSuffix(text, ".")
 	return text
 }
 

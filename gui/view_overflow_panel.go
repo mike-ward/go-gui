@@ -87,12 +87,12 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 		}
 
 		content = append(content, Menu(w, MenubarCfg{
-			ID:          cfg.ID + "_menu",
-			IDFocus:     cfg.IDFocus,
-			Items:       menuItems,
-			Float:       true,
-			FloatAnchor: cfg.FloatAnchor,
-			FloatTieOff: cfg.FloatTieOff,
+			ID:           cfg.ID + "_menu",
+			IDFocus:      cfg.IDFocus,
+			Items:        menuItems,
+			Float:        true,
+			FloatAnchor:  cfg.FloatAnchor,
+			FloatTieOff:  cfg.FloatTieOff,
 			FloatOffsetX: cfg.FloatOffsetX,
 			FloatOffsetY: cfg.FloatOffsetY,
 			FloatZIndex:  cfg.FloatZIndex,

@@ -202,13 +202,6 @@ func (c *inputTestCtx) fireChar(charCode uint32) {
 	}
 }
 
-func (c *inputTestCtx) fireCharMod(charCode uint32, mod Modifier) {
-	e := &Event{Type: EventChar, CharCode: charCode, Modifiers: mod}
-	if c.layout.Shape.Events != nil && c.layout.Shape.Events.OnChar != nil {
-		c.layout.Shape.Events.OnChar(&c.layout, e, c.w)
-	}
-}
-
 func (c *inputTestCtx) fireKeyDown(key KeyCode, mod Modifier) {
 	e := &Event{Type: EventKeyDown, KeyCode: key, Modifiers: mod}
 	if c.layout.Shape.Events != nil && c.layout.Shape.Events.OnKeyDown != nil {
@@ -278,7 +271,7 @@ func TestInputOnCharEnterSingleLine(t *testing.T) {
 	layout := GenerateViewLayout(Input(InputCfg{
 		Text:    "hi",
 		IDFocus: 504,
-		OnTextCommit: func(_ *Layout, text string, reason InputCommitReason, _ *Window) {
+		OnTextCommit: func(_ *Layout, _ string, reason InputCommitReason, _ *Window) {
 			committed = true
 			if reason != CommitEnter {
 				t.Fatalf("got reason %d, want CommitEnter", reason)

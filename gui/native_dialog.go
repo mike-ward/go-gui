@@ -9,6 +9,7 @@ import (
 // NativeDialogStatus reports native dialog outcome.
 type NativeDialogStatus uint8
 
+// NativeDialogStatus constants.
 const (
 	DialogOK     NativeDialogStatus = iota
 	DialogCancel                    // user cancelled
@@ -68,6 +69,7 @@ type NativeFolderDialogCfg struct {
 // NativeAlertLevel controls the severity icon of a message/confirm dialog.
 type NativeAlertLevel uint8
 
+// NativeAlertLevel constants.
 const (
 	AlertInfo NativeAlertLevel = iota
 	AlertWarning

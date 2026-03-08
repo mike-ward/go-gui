@@ -56,9 +56,9 @@ type ContainerCfg struct {
 	FloatAutoFlip bool
 	FloatAnchor   FloatAttach
 	FloatTieOff   FloatAttach
-	FloatOffsetX float32
-	FloatOffsetY float32
-	FloatZIndex  int
+	FloatOffsetX  float32
+	FloatOffsetY  float32
+	FloatZIndex   int
 
 	// Accessibility
 	A11YRole        AccessRole

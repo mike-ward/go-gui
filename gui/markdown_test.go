@@ -7,20 +7,6 @@ import (
 
 // --- Test helpers ---
 
-func mdBlocks(source string) []MarkdownBlock {
-	return markdownToBlocks(source, DefaultMarkdownStyle())
-}
-
-func mdPlainText(blocks []MarkdownBlock) string {
-	var sb strings.Builder
-	for _, b := range blocks {
-		for _, r := range b.Content.Runs {
-			sb.WriteString(r.Text)
-		}
-	}
-	return sb.String()
-}
-
 func markdownLayoutForSource(t *testing.T, source string) Layout {
 	t.Helper()
 

@@ -63,12 +63,12 @@ type RenderCmd struct {
 	GroupIdx   int  // FilterBegin
 
 	// String data.
-	Text     string  // Text
-	FontName string  // Text font family
+	Text       string  // Text
+	FontName   string  // Text font family
 	FontSize   float32 // Text font size (points)
 	FontAscent float32 // Text font ascent (pixels)
 	TextWidth  float32 // Text source width (pixels)
-	Resource string  // Image file path
+	Resource   string  // Image file path
 
 	// SVG animation rotation (degrees, center in SVG space).
 	RotAngle float32
@@ -101,8 +101,6 @@ type TextPathData struct {
 	Anchor   int     // 0=start, 1=middle, 2=end
 	Method   int     // 0=align, 1=stretch
 }
-
-const passwordChar = '*'
 
 // renderCmdKindName returns a debug name for the given RenderKind.
 func renderCmdKindName(k RenderKind) string {

@@ -29,10 +29,19 @@ type HeroTransition struct {
 	progress float32
 }
 
-func (h *HeroTransition) ID() string                        { return heroTransitionID }
+// ID implements Animation.
+func (h *HeroTransition) ID() string { return heroTransitionID }
+
+// RefreshKind implements Animation.
 func (h *HeroTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (h *HeroTransition) IsStopped() bool                   { return h.stopped }
-func (h *HeroTransition) SetStart(now time.Time)            { h.start = now }
+
+// IsStopped implements Animation.
+func (h *HeroTransition) IsStopped() bool { return h.stopped }
+
+// SetStart implements Animation.
+func (h *HeroTransition) SetStart(now time.Time) { h.start = now }
+
+// Update implements Animation.
 func (h *HeroTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
 	return updateHeroTransition(h, deferred)
 }

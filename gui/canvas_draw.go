@@ -179,4 +179,3 @@ func arcToPolyline(cx, cy, rx, ry, start, sweep float32) []float32 {
 	}
 	return pts
 }
-

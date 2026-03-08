@@ -25,10 +25,19 @@ type KeyframeAnimation struct {
 
 const keyframeDefaultDuration = 500 * time.Millisecond
 
-func (k *KeyframeAnimation) ID() string                        { return k.AnimID }
+// ID returns the animation identifier.
+func (k *KeyframeAnimation) ID() string { return k.AnimID }
+
+// RefreshKind returns the refresh strategy.
 func (k *KeyframeAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (k *KeyframeAnimation) IsStopped() bool                   { return k.stopped }
-func (k *KeyframeAnimation) SetStart(now time.Time)            { k.start = now }
+
+// IsStopped reports whether the animation has finished.
+func (k *KeyframeAnimation) IsStopped() bool { return k.stopped }
+
+// SetStart sets the animation start time.
+func (k *KeyframeAnimation) SetStart(now time.Time) { k.start = now }
+
+// Update advances the animation by one tick.
 func (k *KeyframeAnimation) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
 	return updateKeyframe(k, deferred)
 }

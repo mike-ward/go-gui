@@ -184,7 +184,7 @@ func TestImageWithEvents(t *testing.T) {
 		ID:    "img1",
 		Src:   path,
 		Width: 50, Height: 50,
-		OnClick: func(l *Layout, e *Event, w *Window) {
+		OnClick: func(_ *Layout, _ *Event, _ *Window) {
 			clicked = true
 		},
 	})

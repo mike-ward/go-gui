@@ -67,7 +67,7 @@ const (
 type MouseCursor uint8
 
 const (
-	CursorDefault      MouseCursor = iota
+	CursorDefault MouseCursor = iota
 	CursorArrow
 	CursorIBeam
 	CursorCrosshair

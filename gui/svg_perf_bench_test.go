@@ -4,7 +4,7 @@ import "testing"
 
 type benchSvgParser struct{}
 
-func (benchSvgParser) ParseSvg(data string) (*SvgParsed, error) {
+func (benchSvgParser) ParseSvg(_ string) (*SvgParsed, error) {
 	return &SvgParsed{
 		TextPaths: []SvgTextPath{
 			{Text: "bench", PathID: "p1", FontFamily: "sans", FontSize: 12},
@@ -32,15 +32,15 @@ func (benchSvgParser) ParseSvg(data string) (*SvgParsed, error) {
 	}, nil
 }
 
-func (benchSvgParser) ParseSvgFile(path string) (*SvgParsed, error) {
+func (benchSvgParser) ParseSvgFile(_ string) (*SvgParsed, error) {
 	return benchSvgParser{}.ParseSvg("")
 }
 
-func (benchSvgParser) ParseSvgDimensions(data string) (float32, float32, error) {
+func (benchSvgParser) ParseSvgDimensions(_ string) (float32, float32, error) {
 	return 100, 100, nil
 }
 
-func (benchSvgParser) Tessellate(parsed *SvgParsed, scale float32) []TessellatedPath {
+func (benchSvgParser) Tessellate(parsed *SvgParsed, _ float32) []TessellatedPath {
 	return parsed.Paths
 }
 

@@ -217,19 +217,19 @@ func dataGridToggleColumnChooserOpen(gridID string, w *Window) {
 // --- Pager ---
 
 type dataGridPagerContext struct {
-	cfg            *DataGridCfg
-	focusID        uint32
-	pageIndex      int
-	pageCount      int
-	pageStart      int
-	pageEnd        int
-	totalRows      int
-	viewportH      float32
-	rowHeight      float32
-	staticTop      float32
-	scrollID       uint32
-	dataToDisplay  map[int]int
-	jumpText       string
+	cfg           *DataGridCfg
+	focusID       uint32
+	pageIndex     int
+	pageCount     int
+	pageStart     int
+	pageEnd       int
+	totalRows     int
+	viewportH     float32
+	rowHeight     float32
+	staticTop     float32
+	scrollID      uint32
+	dataToDisplay map[int]int
+	jumpText      string
 }
 
 func dataGridPagerRow(cfg *DataGridCfg, focusID uint32, pageIndex, pageCount, pageStart, pageEnd, totalRows int, viewportH, rowHeight, staticTop float32, scrollID uint32, dataToDisplay map[int]int, jumpText string) View {
@@ -361,19 +361,19 @@ func dataGridPagerJumpLabel(cfg *DataGridCfg) View {
 }
 
 type dataGridJumpContext struct {
-	rows               []GridRow
-	onSelectionChange  func(GridSelection, *Event, *Window)
-	onPageChange       func(int, *Event, *Window)
-	pageSize           int
-	totalRows          int
-	pageIndex          int
-	viewportH          float32
-	rowHeight          float32
-	staticTop          float32
-	scrollID           uint32
-	dataToDisplay      map[int]int
-	gridID             string
-	focusID            uint32
+	rows              []GridRow
+	onSelectionChange func(GridSelection, *Event, *Window)
+	onPageChange      func(int, *Event, *Window)
+	pageSize          int
+	totalRows         int
+	pageIndex         int
+	viewportH         float32
+	rowHeight         float32
+	staticTop         float32
+	scrollID          uint32
+	dataToDisplay     map[int]int
+	gridID            string
+	focusID           uint32
 }
 
 func dataGridJumpContextFromPager(pctx dataGridPagerContext) dataGridJumpContext {
@@ -484,161 +484,6 @@ func dataGridMakeOnMouseMove(gridID string) func(*Layout, *Event, *Window) {
 }
 
 // --- Header keyboard handler ---
-
-type dataGridHeaderKeydownContext struct {
-	gridID               string
-	columns              []GridColumnCfg
-	columnOrder          []string
-	hiddenColumnIDs      map[string]bool
-	query                GridQueryState
-	multiSort            bool
-	onQueryChange        func(GridQueryState, *Event, *Window)
-	onColumnOrderChange  func([]string, *Event, *Window)
-	onColumnPinChange    func(string, GridColumnPin, *Event, *Window)
-	headerFocusBase      uint32
-	col                  GridColumnCfg
-	colIdx               int
-	colCount             int
-	gridFocusID          uint32
-}
-
-func dataGridHeaderOnKeydown(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount int, focusID uint32) func(*Layout, *Event, *Window) {
-	keyCtx := dataGridHeaderKeydownContext{
-		gridID:              cfg.ID,
-		columns:             cfg.Columns,
-		columnOrder:         cfg.ColumnOrder,
-		hiddenColumnIDs:     cfg.HiddenColumnIDs,
-		query:               cfg.Query,
-		multiSort:           boolDefault(cfg.MultiSort, true),
-		onQueryChange:       cfg.OnQueryChange,
-		onColumnOrderChange: cfg.OnColumnOrderChange,
-		onColumnPinChange:   cfg.OnColumnPinChange,
-		headerFocusBase:     dataGridHeaderFocusBaseID(cfg, colCount),
-		col:                 col,
-		colIdx:              colIdx,
-		colCount:            colCount,
-		gridFocusID:         focusID,
-	}
-	return func(_ *Layout, e *Event, w *Window) {
-		dataGridHeaderOnKeydownDispatch(keyCtx, e, w)
-	}
-}
-
-func dataGridHeaderOnKeydownDispatch(kc dataGridHeaderKeydownContext, e *Event, w *Window) {
-	isCtrlOrSuper := e.Modifiers.Has(ModCtrl) || e.Modifiers.Has(ModSuper)
-	isAlt := e.Modifiers.Has(ModAlt)
-	isShift := e.Modifiers.Has(ModShift)
-
-	switch e.KeyCode {
-	case KeyEnter, KeySpace:
-		if e.Modifiers == 0 || e.Modifiers == ModShift {
-			dataGridHeaderToggleSort(kc.query, kc.multiSort, kc.onQueryChange, kc.col, e, w)
-		}
-	case KeyLeft, KeyRight:
-		isRTL := guiLocale.TextDir == TextDirRTL
-		rawDir := -1
-		if e.KeyCode == KeyRight {
-			rawDir = 1
-		}
-		dir := rawDir
-		if isRTL {
-			dir = -rawDir
-		}
-		if isCtrlOrSuper {
-			dataGridHeaderReorderByKey(kc.columns, kc.columnOrder, kc.hiddenColumnIDs, kc.onColumnOrderChange, kc.headerFocusBase, kc.col, kc.colCount, dir, e, w)
-			return
-		}
-		if isAlt {
-			step := dataGridResizeKeyStep
-			if isShift {
-				step = dataGridResizeKeyStepLarge
-			}
-			delta := -step
-			if e.KeyCode == KeyRight {
-				delta = step
-			}
-			dataGridHeaderResizeByKey(kc.gridID, kc.columns, kc.col, delta, e, w)
-			return
-		}
-		if e.Modifiers == 0 {
-			nextIdx := intClamp(kc.colIdx+dir, 0, kc.colCount-1)
-			if nextIdx != kc.colIdx {
-				nextFocusID := dataGridHeaderFocusIDFromBase(kc.headerFocusBase, kc.colCount, nextIdx)
-				if nextFocusID > 0 {
-					w.SetIDFocus(nextFocusID)
-				}
-				e.IsHandled = true
-			}
-		}
-	case KeyP:
-		if e.Modifiers == 0 {
-			dataGridHeaderPinByKey(kc.columns, kc.columnOrder, kc.hiddenColumnIDs, kc.onColumnPinChange, kc.headerFocusBase, kc.col, kc.colCount, e, w)
-		}
-	case KeyEscape:
-		if e.Modifiers == 0 {
-			if kc.gridFocusID > 0 {
-				w.SetIDFocus(kc.gridFocusID)
-			}
-			e.IsHandled = true
-		}
-	}
-}
-
-func dataGridHeaderToggleSort(query GridQueryState, multiSort bool, onQueryChange func(GridQueryState, *Event, *Window), col GridColumnCfg, e *Event, w *Window) {
-	if !col.Sortable || onQueryChange == nil {
-		return
-	}
-	shiftSort := multiSort && e.Modifiers.Has(ModShift)
-	next := dataGridToggleSort(query, col.ID, multiSort, shiftSort)
-	onQueryChange(next, e, w)
-	e.IsHandled = true
-}
-
-func dataGridHeaderReorderByKey(columns []GridColumnCfg, columnOrder []string, hiddenColumnIDs map[string]bool, onColumnOrderChange func([]string, *Event, *Window), headerFocusBase uint32, col GridColumnCfg, colCount, delta int, e *Event, w *Window) {
-	if !col.Reorderable || onColumnOrderChange == nil {
-		return
-	}
-	baseOrder := dataGridNormalizedColumnOrder(columns, columnOrder)
-	nextOrder := DataGridColumnOrderMove(baseOrder, col.ID, delta)
-	if dataGridStringSliceEqual(nextOrder, baseOrder) {
-		e.IsHandled = true
-		return
-	}
-	onColumnOrderChange(nextOrder, e, w)
-	nextIdx := dataGridEffectiveIndexForColumnWithOrder(columns, hiddenColumnIDs, nextOrder, col.ID)
-	if nextIdx >= 0 {
-		nextFocusID := dataGridHeaderFocusIDFromBase(headerFocusBase, colCount, nextIdx)
-		if nextFocusID > 0 {
-			w.SetIDFocus(nextFocusID)
-		}
-	}
-	e.IsHandled = true
-}
-
-func dataGridHeaderResizeByKey(gridID string, columns []GridColumnCfg, col GridColumnCfg, delta float32, e *Event, w *Window) {
-	if !col.Resizable {
-		return
-	}
-	current := dataGridColumnWidth(gridID, columns, col, w)
-	dataGridSetColumnWidth(gridID, col, current+delta, w)
-	e.IsHandled = true
-}
-
-func dataGridHeaderPinByKey(columns []GridColumnCfg, columnOrder []string, hiddenColumnIDs map[string]bool, onColumnPinChange func(string, GridColumnPin, *Event, *Window), headerFocusBase uint32, col GridColumnCfg, colCount int, e *Event, w *Window) {
-	if onColumnPinChange == nil {
-		return
-	}
-	nextPin := dataGridColumnNextPin(col.Pin)
-	onColumnPinChange(col.ID, nextPin, e, w)
-	nextIdx := dataGridEffectiveIndexForColumnWithPin(columns, columnOrder, hiddenColumnIDs, col.ID, nextPin)
-	if nextIdx >= 0 {
-		nextFocusID := dataGridHeaderFocusIDFromBase(headerFocusBase, colCount, nextIdx)
-		if nextFocusID > 0 {
-			w.SetIDFocus(nextFocusID)
-		}
-	}
-	e.IsHandled = true
-}
 
 // --- Main grid keyboard handler ---
 
@@ -922,10 +767,6 @@ func dataGridRangeSelectedRows(rows []GridRow, start, end int, targetRowID strin
 
 // --- Scroll ---
 
-func dataGridScrollRowIntoView(cfg *DataGridCfg, rowIdx int, rowHeight, staticTop float32, scrollID uint32, w *Window) {
-	dataGridScrollRowIntoViewEx(dataGridHeight(cfg), rowIdx, rowHeight, staticTop, scrollID, w)
-}
-
 func dataGridScrollRowIntoViewEx(viewportH float32, rowIdx int, rowHeight, staticTop float32, scrollID uint32, w *Window) {
 	if viewportH <= 0 || rowHeight <= 0 {
 		return
@@ -1085,4 +926,3 @@ func dataGridApplyPendingLocalJumpScroll(cfg *DataGridCfg, viewportH, rowHeight,
 	dataGridScrollRowIntoViewEx(viewportH, displayIdx, rowHeight, staticTop, scrollID, w)
 	dgPJ.Delete(cfg.ID)
 }
-

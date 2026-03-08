@@ -87,7 +87,7 @@ type GridDataResult struct {
 	Rows          []GridRow
 	NextCursor    string
 	PrevCursor    string
-	RowCount      int  // -1 when unknown
+	RowCount      int // -1 when unknown
 	HasMore       bool
 	ReceivedCount int
 }
@@ -136,11 +136,11 @@ type DataGridDataSource interface {
 // InMemoryDataSource implements DataGridDataSource using an
 // in-memory row slice.
 type InMemoryDataSource struct {
-	mu            sync.RWMutex
-	Rows          []GridRow
-	DefaultLimit  int
-	LatencyMs     int
-	RowCountKnown bool
+	mu             sync.RWMutex
+	Rows           []GridRow
+	DefaultLimit   int
+	LatencyMs      int
+	RowCountKnown  bool
 	SupportsCursor bool
 	SupportsOffset bool
 }

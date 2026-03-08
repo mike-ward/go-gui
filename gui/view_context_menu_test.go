@@ -152,7 +152,7 @@ func TestContextMenuActionClosesMenu(t *testing.T) {
 	}
 
 	// Simulate the wrapped action.
-	action := func(id string, e *Event, w *Window) {
+	action := func(_ string, _ *Event, w *Window) {
 		sm := StateMap[string, contextMenuState](
 			w, nsContextMenu, capFew)
 		sm.Set(cfg.ID, contextMenuState{})

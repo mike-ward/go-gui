@@ -168,7 +168,7 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 	onColumnOrderChange := cfg.OnColumnOrderChange
 	baseOrder := dataGridNormalizedColumnOrder(cfg.Columns, cfg.ColumnOrder)
 	colID := col.ID
-	leftArrow := "\u25C0" // ◀
+	leftArrow := "\u25C0"  // ◀
 	rightArrow := "\u25B6" // ▶
 	if guiLocale.TextDir == TextDirRTL {
 		leftArrow, rightArrow = rightArrow, leftArrow
@@ -481,13 +481,6 @@ func dataGridHeaderFocusID(cfg *DataGridCfg, colCount, colIdx int) uint32 {
 	return base + uint32(colIdx)
 }
 
-func dataGridHeaderFocusIDFromBase(base uint32, colCount, colIdx int) uint32 {
-	if base == 0 || colCount <= 0 || colIdx < 0 || colIdx >= colCount {
-		return 0
-	}
-	return base + uint32(colIdx)
-}
-
 func dataGridHeaderFocusIndex(cfg *DataGridCfg, colCount int, focusID uint32) int {
 	if colCount <= 0 || focusID == 0 {
 		return -1
@@ -604,7 +597,7 @@ func dataGridHeaderControlsWidth(showReorder, showPin, showResize bool) float32 
 
 // dataGridMakeHeaderOnKeydown builds the OnKeyDown handler
 // for header cells. Full implementation in events file.
-func dataGridMakeHeaderOnKeydown(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount int, focusID uint32) func(*Layout, *Event, *Window) {
+func dataGridMakeHeaderOnKeydown(_ *DataGridCfg, _ GridColumnCfg, _, _ int, _ uint32) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, _ *Event, _ *Window) {
 		// Placeholder — wired in view_data_grid_events.go.
 	}

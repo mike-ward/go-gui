@@ -13,11 +13,11 @@ func TestNativeIsValidExtension(t *testing.T) {
 		{"my-ext", true},
 		{"my_ext", true},
 		{"", false},
-		{"TXT", false},   // must be lowercase
-		{"a b", false},   // spaces not allowed
-		{"a.b", false},   // dots not allowed
-		{"a*b", false},   // special chars
-		{"txt!", false},  // exclamation
+		{"TXT", false},  // must be lowercase
+		{"a b", false},  // spaces not allowed
+		{"a.b", false},  // dots not allowed
+		{"a*b", false},  // special chars
+		{"txt!", false}, // exclamation
 	}
 	for _, tt := range tests {
 		got := nativeIsValidExtension(tt.ext)

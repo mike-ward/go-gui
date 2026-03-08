@@ -4,42 +4,42 @@ import "time"
 
 // InputDateCfg configures a date input with dropdown calendar.
 type InputDateCfg struct {
-	ID                     string
-	Date                   time.Time
-	Placeholder            string
-	AllowedWeekdays        []DatePickerWeekdays
-	AllowedMonths          []DatePickerMonths
-	AllowedYears           []int
-	AllowedDates           []time.Time
-	OnSelect               func([]time.Time, *Event, *Window)
-	OnEnter                func(*Layout, *Event, *Window)
-	WeekdaysLen            DatePickerWeekdayLen
-	TextStyle              TextStyle
-	PlaceholderStyle       TextStyle
-	Color                  Color
-	ColorHover             Color
-	ColorFocus             Color
-	ColorClick             Color
-	ColorBorder            Color
-	ColorBorderFocus       Color
-	ColorSelect            Color
-	Padding                Opt[Padding]
-	SizeBorder             Opt[float32]
-	CellSpacing            Opt[float32]
-	Radius                 Opt[float32]
-	RadiusBorder           Opt[float32]
-	IDFocus                uint32
-	Sizing                 Sizing
-	Width                  float32
-	Height                 float32
-	MinWidth               float32
-	MaxWidth               float32
-	Disabled               bool
-	Invisible              bool
-	SelectMultiple         bool
-	HideTodayIndicator     bool
-	MondayFirstDayOfWeek   bool
-	ShowAdjacentMonths     bool
+	ID                   string
+	Date                 time.Time
+	Placeholder          string
+	AllowedWeekdays      []DatePickerWeekdays
+	AllowedMonths        []DatePickerMonths
+	AllowedYears         []int
+	AllowedDates         []time.Time
+	OnSelect             func([]time.Time, *Event, *Window)
+	OnEnter              func(*Layout, *Event, *Window)
+	WeekdaysLen          DatePickerWeekdayLen
+	TextStyle            TextStyle
+	PlaceholderStyle     TextStyle
+	Color                Color
+	ColorHover           Color
+	ColorFocus           Color
+	ColorClick           Color
+	ColorBorder          Color
+	ColorBorderFocus     Color
+	ColorSelect          Color
+	Padding              Opt[Padding]
+	SizeBorder           Opt[float32]
+	CellSpacing          Opt[float32]
+	Radius               Opt[float32]
+	RadiusBorder         Opt[float32]
+	IDFocus              uint32
+	Sizing               Sizing
+	Width                float32
+	Height               float32
+	MinWidth             float32
+	MaxWidth             float32
+	Disabled             bool
+	Invisible            bool
+	SelectMultiple       bool
+	HideTodayIndicator   bool
+	MondayFirstDayOfWeek bool
+	ShowAdjacentMonths   bool
 
 	A11YLabel       string
 	A11YDescription string
@@ -116,29 +116,29 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 			FloatOffsetY: -cfg.SizeBorder.Get(0),
 			Content: []View{
 				DatePicker(DatePickerCfg{
-					ID:                     cfgID + ".picker",
-					Dates:                  []time.Time{cfg.Date},
-					AllowedWeekdays:        cfg.AllowedWeekdays,
-					AllowedMonths:          cfg.AllowedMonths,
-					AllowedYears:           cfg.AllowedYears,
-					AllowedDates:           cfg.AllowedDates,
-					WeekdaysLen:            cfg.WeekdaysLen,
-					TextStyle:              cfg.TextStyle,
-					Color:                  cfg.Color,
-					ColorHover:             cfg.ColorHover,
-					ColorFocus:             cfg.ColorFocus,
-					ColorClick:             cfg.ColorClick,
-					ColorBorder:            cfg.ColorBorder,
-					ColorBorderFocus:       cfg.ColorBorderFocus,
-					ColorSelect:            cfg.ColorSelect,
-					SizeBorder:             cfg.SizeBorder,
-					CellSpacing:            cfg.CellSpacing,
-					Radius:                 cfg.Radius,
-					RadiusBorder:           cfg.RadiusBorder,
-					SelectMultiple:         cfg.SelectMultiple,
-					HideTodayIndicator:     cfg.HideTodayIndicator,
-					MondayFirstDayOfWeek:   cfg.MondayFirstDayOfWeek,
-					ShowAdjacentMonths:     cfg.ShowAdjacentMonths,
+					ID:                   cfgID + ".picker",
+					Dates:                []time.Time{cfg.Date},
+					AllowedWeekdays:      cfg.AllowedWeekdays,
+					AllowedMonths:        cfg.AllowedMonths,
+					AllowedYears:         cfg.AllowedYears,
+					AllowedDates:         cfg.AllowedDates,
+					WeekdaysLen:          cfg.WeekdaysLen,
+					TextStyle:            cfg.TextStyle,
+					Color:                cfg.Color,
+					ColorHover:           cfg.ColorHover,
+					ColorFocus:           cfg.ColorFocus,
+					ColorClick:           cfg.ColorClick,
+					ColorBorder:          cfg.ColorBorder,
+					ColorBorderFocus:     cfg.ColorBorderFocus,
+					ColorSelect:          cfg.ColorSelect,
+					SizeBorder:           cfg.SizeBorder,
+					CellSpacing:          cfg.CellSpacing,
+					Radius:               cfg.Radius,
+					RadiusBorder:         cfg.RadiusBorder,
+					SelectMultiple:       cfg.SelectMultiple,
+					HideTodayIndicator:   cfg.HideTodayIndicator,
+					MondayFirstDayOfWeek: cfg.MondayFirstDayOfWeek,
+					ShowAdjacentMonths:   cfg.ShowAdjacentMonths,
 					OnSelect: func(dates []time.Time, e *Event, w *Window) {
 						inputDateClose(cfgID, w)
 						if cfg.OnSelect != nil {

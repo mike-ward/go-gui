@@ -27,6 +27,7 @@ type InputMemento struct {
 // InputMode selects single-line or multiline behavior.
 type InputMode uint8
 
+// InputMode constants.
 const (
 	InputSingleLine InputMode = iota
 	InputMultiline
@@ -35,6 +36,7 @@ const (
 // InputCommitReason identifies why text was committed.
 type InputCommitReason uint8
 
+// InputCommitReason constants.
 const (
 	CommitEnter InputCommitReason = iota
 	CommitBlur
@@ -435,20 +437,4 @@ func moveCursorLineEnd(runes []rune, pos int) int {
 		pos++
 	}
 	return pos
-}
-
-// inputSelectedText returns the selected text.
-func inputSelectedText(text string, idFocus uint32, w *Window) string {
-	is := StateReadOr(w, nsInput, idFocus, InputState{})
-	if is.SelectBeg == is.SelectEnd {
-		return ""
-	}
-	beg, end := u32Sort(is.SelectBeg, is.SelectEnd)
-	runeLen := utf8RuneCount(text)
-	if int(beg) >= runeLen || int(end) > runeLen {
-		return ""
-	}
-	begByte := runeToByteIndex(text, int(beg))
-	endByte := runeToByteIndex(text, int(end))
-	return text[begByte:endByte]
 }

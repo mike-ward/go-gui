@@ -24,6 +24,7 @@ const (
 // DiagramState represents the loading state of a diagram.
 type DiagramState uint8
 
+// DiagramState constants.
 const (
 	DiagramLoading DiagramState = iota
 	DiagramReady
@@ -82,7 +83,7 @@ func (c *BoundedDiagramCache) Set(
 	if existing, ok := c.data[key]; ok {
 		if existing.PNGPath != "" &&
 			existing.PNGPath != value.PNGPath {
-			os.Remove(existing.PNGPath)
+			_ = os.Remove(existing.PNGPath)
 		}
 	}
 	// If new key, evict oldest if at capacity.
@@ -91,7 +92,7 @@ func (c *BoundedDiagramCache) Set(
 			oldest := c.order[0]
 			if oe, ok := c.data[oldest]; ok {
 				if oe.PNGPath != "" {
-					os.Remove(oe.PNGPath)
+					_ = os.Remove(oe.PNGPath)
 				}
 			}
 			delete(c.data, oldest)
@@ -122,7 +123,7 @@ func (c *BoundedDiagramCache) Len() int {
 func (c *BoundedDiagramCache) Clear() {
 	for _, e := range c.data {
 		if e.PNGPath != "" {
-			os.Remove(e.PNGPath)
+			_ = os.Remove(e.PNGPath)
 		}
 	}
 	clear(c.data)
@@ -226,17 +227,17 @@ func fetchMermaidAsync(
 		}
 		tmpPath := tmpFile.Name()
 		if err := png.Encode(tmpFile, img); err != nil {
-			tmpFile.Close()
-			os.Remove(tmpPath)
+			_ = tmpFile.Close()
+			_ = os.Remove(tmpPath)
 			return
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		w.QueueCommand(func(w *Window) {
 			if !diagramCacheShouldApplyResult(
 				w.viewState.diagramCache,
 				hash, requestID) {
-				os.Remove(tmpPath)
+				_ = os.Remove(tmpPath)
 				return
 			}
 			w.viewState.diagramCache.Set(hash,
@@ -272,7 +273,7 @@ func mermaidHTTPFetch(source string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

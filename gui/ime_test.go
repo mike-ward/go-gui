@@ -74,7 +74,7 @@ func TestIMEClearedOnFocusChange(t *testing.T) {
 	}
 }
 
-func TestIMESetRectNoopWithoutPlatform(t *testing.T) {
+func TestIMESetRectNoopWithoutPlatform(_ *testing.T) {
 	w := newTestWindow()
 	// Should not panic with nil nativePlatform.
 	w.IMESetRect(10, 20, 30, 40)

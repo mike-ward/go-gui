@@ -365,7 +365,7 @@ func TestA11yActionCallbackDecrement(t *testing.T) {
 	}
 }
 
-func TestA11yActionCallbackOutOfBounds(t *testing.T) {
+func TestA11yActionCallbackOutOfBounds(_ *testing.T) {
 	w := newTestWindow()
 	w.a11y.nodes = nil
 	// Should not panic.
@@ -373,7 +373,7 @@ func TestA11yActionCallbackOutOfBounds(t *testing.T) {
 	a11yActionCallback(w, A11yActionPress, -1)
 }
 
-func TestA11yActionCallbackNilEvents(t *testing.T) {
+func TestA11yActionCallbackNilEvents(_ *testing.T) {
 	layout := Layout{
 		Shape: &Shape{A11YRole: AccessRoleButton},
 	}

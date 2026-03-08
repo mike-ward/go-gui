@@ -47,14 +47,20 @@ type GridOrmPage struct {
 	HasMore    bool
 }
 
-// ORM callback function types.
-type (
-	GridOrmFetchFn     func(spec GridOrmQuerySpec, signal *GridAbortSignal) (GridOrmPage, error)
-	GridOrmCreateFn    func(rows []GridRow, signal *GridAbortSignal) ([]GridRow, error)
-	GridOrmUpdateFn    func(rows []GridRow, edits []GridCellEdit, signal *GridAbortSignal) ([]GridRow, error)
-	GridOrmDeleteFn    func(rowID string, signal *GridAbortSignal) (string, error)
-	GridOrmDeleteManyFn func(rowIDs []string, signal *GridAbortSignal) ([]string, error)
-)
+// GridOrmFetchFn is a callback that fetches a page of ORM data.
+type GridOrmFetchFn func(spec GridOrmQuerySpec, signal *GridAbortSignal) (GridOrmPage, error)
+
+// GridOrmCreateFn is a callback that creates rows.
+type GridOrmCreateFn func(rows []GridRow, signal *GridAbortSignal) ([]GridRow, error)
+
+// GridOrmUpdateFn is a callback that updates rows.
+type GridOrmUpdateFn func(rows []GridRow, edits []GridCellEdit, signal *GridAbortSignal) ([]GridRow, error)
+
+// GridOrmDeleteFn is a callback that deletes a single row.
+type GridOrmDeleteFn func(rowID string, signal *GridAbortSignal) (string, error)
+
+// GridOrmDeleteManyFn is a callback that deletes multiple rows.
+type GridOrmDeleteManyFn func(rowIDs []string, signal *GridAbortSignal) ([]string, error)
 
 // GridOrmDataSource wraps user-provided ORM callbacks with
 // column validation, query normalization, and abort handling.
@@ -98,6 +104,7 @@ func (s *GridOrmDataSource) resolvedColumnMap() (map[string]GridOrmColumnSpec, e
 	return gridOrmValidateColumnMap(s.Columns)
 }
 
+// Capabilities returns the data capabilities of the ORM source.
 func (s *GridOrmDataSource) Capabilities() GridDataCapabilities {
 	return GridDataCapabilities{
 		SupportsCursorPagination: true,
@@ -111,6 +118,7 @@ func (s *GridOrmDataSource) Capabilities() GridDataCapabilities {
 	}
 }
 
+// FetchData retrieves a page of grid data from the ORM source.
 func (s *GridOrmDataSource) FetchData(
 	req GridDataRequest,
 ) (GridDataResult, error) {
@@ -162,6 +170,7 @@ func (s *GridOrmDataSource) FetchData(
 	}, nil
 }
 
+// MutateData applies create/update/delete mutations via the ORM.
 func (s *GridOrmDataSource) MutateData(
 	req GridMutationRequest,
 ) (GridMutationResult, error) {

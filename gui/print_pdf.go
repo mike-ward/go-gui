@@ -305,7 +305,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				resetAlpha(pdf)
 			}
 
-			case RenderRTF:
+		case RenderRTF:
 			if cmd.LayoutPtr == nil {
 				continue
 			}
@@ -581,9 +581,10 @@ func renderHeaderFooter(pdf *fpdf.Fpdf, tr func(string) string,
 	pdf.SetFont("Helvetica", "", fontSize)
 	pdf.SetTextColor(0, 0, 0)
 
-	yPt := m.Top * 0.5 // center in top margin
-	if !isHeader {
-		yPt = pageW - m.Bottom*0.5 // approximate
+	var yPt float32
+	if isHeader {
+		yPt = m.Top * 0.5 // center in top margin
+	} else {
 		_, pageH := PrintPageSize(job.Paper, job.Orientation)
 		yPt = pageH - m.Bottom*0.5
 	}

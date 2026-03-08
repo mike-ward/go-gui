@@ -50,6 +50,7 @@ type listCoreScored struct {
 // ListCoreAction represents a keyboard navigation action.
 type ListCoreAction uint8
 
+// ListCoreAction constants.
 const (
 	ListCoreNone ListCoreAction = iota
 	ListCoreMoveUp
@@ -294,11 +295,11 @@ func listCoreContainsSelected(selectedSet map[string]struct{}, selectedIDs []str
 // spacers. first/last are indices from listCoreVisibleRange.
 func listCoreViews(items []ListCoreItem, cfg ListCoreCfg, first, last, highlighted int, selectedIDs []string, rowHeight float32) []View {
 	total := len(items)
-	cap := 2
+	capacity := 2
 	if last >= first {
-		cap = last - first + 3
+		capacity = last - first + 3
 	}
-	views := make([]View, 0, cap)
+	views := make([]View, 0, capacity)
 
 	if first > 0 && rowHeight > 0 {
 		views = append(views, Rectangle(RectangleCfg{

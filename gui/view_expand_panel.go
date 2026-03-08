@@ -3,23 +3,23 @@ package gui
 // ExpandPanelCfg configures an expand panel. It consists of a
 // header (always visible) and content (visible when expanded).
 type ExpandPanelCfg struct {
-	ID        string
-	Head      View
-	Content   View
-	Open      bool
-	OnToggle  func(*Window)
-	Sizing    Sizing
-	Color     Color
-	ColorHover Color
-	ColorClick Color
+	ID          string
+	Head        View
+	Content     View
+	Open        bool
+	OnToggle    func(*Window)
+	Sizing      Sizing
+	Color       Color
+	ColorHover  Color
+	ColorClick  Color
 	ColorBorder Color
-	Padding    Opt[Padding]
-	SizeBorder Opt[float32]
-	Radius     Opt[float32]
-	MinWidth   float32
-	MaxWidth   float32
-	MinHeight  float32
-	MaxHeight  float32
+	Padding     Opt[Padding]
+	SizeBorder  Opt[float32]
+	Radius      Opt[float32]
+	MinWidth    float32
+	MaxWidth    float32
+	MinHeight   float32
+	MaxHeight   float32
 
 	// Accessibility
 	A11YLabel       string

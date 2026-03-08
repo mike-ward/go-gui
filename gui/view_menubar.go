@@ -5,38 +5,38 @@ import "log"
 // MenubarCfg configures a horizontal menubar or standalone
 // menu.
 type MenubarCfg struct {
-	ID              string
-	TextStyle       TextStyle
+	ID                string
+	TextStyle         TextStyle
 	TextStyleSubtitle TextStyle
-	Color           Color
-	ColorBorder     Color
-	ColorSelect     Color
-	Sizing          Sizing
-	Padding         Opt[Padding]
-	PaddingMenuItem Opt[Padding]
-	SizeBorder      Opt[float32]
-	PaddingSubmenu  Opt[Padding]
-	PaddingSubtitle Opt[Padding]
-	Action          func(string, *Event, *Window)
-	Items           []MenuItemCfg
-	WidthSubmenuMin Opt[float32]
-	WidthSubmenuMax Opt[float32]
-	Radius          Opt[float32]
-	RadiusBorder    Opt[float32]
-	RadiusSubmenu   Opt[float32]
-	RadiusMenuItem  Opt[float32]
-	Spacing         Opt[float32]
-	SpacingSubmenu  Opt[float32]
-	IDFocus         uint32
-	FloatAnchor     FloatAttach
-	FloatTieOff     FloatAttach
-	FloatOffsetX    float32
-	FloatOffsetY    float32
-	FloatZIndex     int
-	Disabled      bool
-	Invisible     bool
-	Float         bool
-	FloatAutoFlip bool
+	Color             Color
+	ColorBorder       Color
+	ColorSelect       Color
+	Sizing            Sizing
+	Padding           Opt[Padding]
+	PaddingMenuItem   Opt[Padding]
+	SizeBorder        Opt[float32]
+	PaddingSubmenu    Opt[Padding]
+	PaddingSubtitle   Opt[Padding]
+	Action            func(string, *Event, *Window)
+	Items             []MenuItemCfg
+	WidthSubmenuMin   Opt[float32]
+	WidthSubmenuMax   Opt[float32]
+	Radius            Opt[float32]
+	RadiusBorder      Opt[float32]
+	RadiusSubmenu     Opt[float32]
+	RadiusMenuItem    Opt[float32]
+	Spacing           Opt[float32]
+	SpacingSubmenu    Opt[float32]
+	IDFocus           uint32
+	FloatAnchor       FloatAttach
+	FloatTieOff       FloatAttach
+	FloatOffsetX      float32
+	FloatOffsetY      float32
+	FloatZIndex       int
+	Disabled          bool
+	Invisible         bool
+	Float             bool
+	FloatAutoFlip     bool
 }
 
 // Menubar creates a horizontal menubar with keyboard
@@ -64,28 +64,28 @@ func Menubar(w *Window, cfg MenubarCfg) View {
 	}
 
 	return Row(ContainerCfg{
-		ID:          cfg.ID,
-		IDFocus:     cfg.IDFocus,
-		Color:       cfg.Color,
-		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  cfg.SizeBorder,
-		Radius:      cfg.RadiusBorder,
-		Spacing:     cfg.Spacing,
-		Padding:     cfg.Padding,
-		Sizing:      cfg.Sizing,
+		ID:            cfg.ID,
+		IDFocus:       cfg.IDFocus,
+		Color:         cfg.Color,
+		ColorBorder:   cfg.ColorBorder,
+		SizeBorder:    cfg.SizeBorder,
+		Radius:        cfg.RadiusBorder,
+		Spacing:       cfg.Spacing,
+		Padding:       cfg.Padding,
+		Sizing:        cfg.Sizing,
 		Float:         cfg.Float,
 		FloatAutoFlip: cfg.FloatAutoFlip,
 		FloatAnchor:   cfg.FloatAnchor,
-		FloatTieOff: cfg.FloatTieOff,
-		FloatOffsetX: cfg.FloatOffsetX,
-		FloatOffsetY: cfg.FloatOffsetY,
-		FloatZIndex:  cfg.FloatZIndex,
-		Disabled:    cfg.Disabled,
-		Invisible:   cfg.Invisible,
-		A11YRole:    AccessRoleMenuBar,
-		OnKeyDown:   makeMenubarOnKeyDown(cfg),
-		AmendLayout: makeMenuAmendLayout(cfg.IDFocus),
-		Content:     menuBuild(cfg, 0, cfg.Items, w),
+		FloatTieOff:   cfg.FloatTieOff,
+		FloatOffsetX:  cfg.FloatOffsetX,
+		FloatOffsetY:  cfg.FloatOffsetY,
+		FloatZIndex:   cfg.FloatZIndex,
+		Disabled:      cfg.Disabled,
+		Invisible:     cfg.Invisible,
+		A11YRole:      AccessRoleMenuBar,
+		OnKeyDown:     makeMenubarOnKeyDown(cfg),
+		AmendLayout:   makeMenuAmendLayout(cfg.IDFocus),
+		Content:       menuBuild(cfg, 0, cfg.Items, w),
 	})
 }
 
@@ -255,7 +255,7 @@ func menuMapper(items []MenuItemCfg) MenuIdMap {
 // submenuMapper recursively builds navigation for submenu
 // items.
 func submenuMapper(items []MenuItemCfg, parentID string,
-	parentNode, rootNode MenuIdNode, rootRight string,
+	_, rootNode MenuIdNode, rootRight string,
 	m MenuIdMap) {
 
 	selectables := make([]MenuItemCfg, 0, len(items))

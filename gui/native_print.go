@@ -74,7 +74,7 @@ func (w *Window) RunPrintJob(job PrintJob) PrintRunResult {
 	}
 	// Clean up temp PDF after dialog returns.
 	if job.Source.Kind == PrintSourceCurrentView {
-		defer os.Remove(pdfPath)
+		defer func() { _ = os.Remove(pdfPath) }()
 	}
 
 	pw, ph := PrintPageSize(job.Paper, job.Orientation)
@@ -110,12 +110,12 @@ func printJobResolvePDFPath(w *Window, job PrintJob) (string, error) {
 		if err != nil {
 			return "", &printError{"failed to create temp file: " + err.Error()}
 		}
-		tmp.Close()
+		_ = tmp.Close()
 		exportJob := job
 		exportJob.OutputPath = tmp.Name()
 		result := w.ExportPrintJob(exportJob)
 		if !result.IsOk() {
-			os.Remove(tmp.Name())
+			_ = os.Remove(tmp.Name())
 			return "", &printError{result.ErrorMessage}
 		}
 		return tmp.Name(), nil

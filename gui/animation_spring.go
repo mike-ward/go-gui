@@ -38,10 +38,19 @@ type SpringAnimation struct {
 	state   springState
 }
 
-func (s *SpringAnimation) ID() string                        { return s.AnimID }
+// ID returns the animation identifier.
+func (s *SpringAnimation) ID() string { return s.AnimID }
+
+// RefreshKind returns the refresh strategy.
 func (s *SpringAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (s *SpringAnimation) IsStopped() bool                   { return s.stopped }
-func (s *SpringAnimation) SetStart(now time.Time)            { s.start = now }
+
+// IsStopped reports whether the animation has finished.
+func (s *SpringAnimation) IsStopped() bool { return s.stopped }
+
+// SetStart sets the animation start time.
+func (s *SpringAnimation) SetStart(now time.Time) { s.start = now }
+
+// Update advances the animation by one tick.
 func (s *SpringAnimation) Update(_ *Window, dt float32, deferred *[]queuedCommand) bool {
 	return updateSpring(s, dt, deferred)
 }

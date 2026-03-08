@@ -64,11 +64,8 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 
 	// Run pipeline on each floating layout.
 	for _, fl := range floatingLayouts {
-		if fl.Shape.ShapeClip.Width <= 0 &&
-			fl.Shape.ShapeClip.Height <= 0 {
-			// Skip invisible floats — but still run pipeline
-			// since clips haven't been set yet at this point.
-		}
+		// Note: clips haven't been set yet at this point, so
+		// invisible floats still need the pipeline.
 		layoutPipeline(fl, w)
 		layouts = append(layouts, *fl)
 	}

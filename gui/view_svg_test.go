@@ -58,25 +58,25 @@ type mockSvgParser struct {
 	width, height float32
 }
 
-func (m *mockSvgParser) ParseSvg(data string) (*SvgParsed, error) {
+func (m *mockSvgParser) ParseSvg(_ string) (*SvgParsed, error) {
 	return &SvgParsed{
 		Width:  m.width,
 		Height: m.height,
 	}, nil
 }
 
-func (m *mockSvgParser) ParseSvgFile(path string) (*SvgParsed, error) {
+func (m *mockSvgParser) ParseSvgFile(_ string) (*SvgParsed, error) {
 	return &SvgParsed{
 		Width:  m.width,
 		Height: m.height,
 	}, nil
 }
 
-func (m *mockSvgParser) ParseSvgDimensions(data string) (float32, float32, error) {
+func (m *mockSvgParser) ParseSvgDimensions(_ string) (float32, float32, error) {
 	return m.width, m.height, nil
 }
 
-func (m *mockSvgParser) Tessellate(parsed *SvgParsed, scale float32) []TessellatedPath {
+func (m *mockSvgParser) Tessellate(_ *SvgParsed, _ float32) []TessellatedPath {
 	return []TessellatedPath{
 		{
 			Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
@@ -133,7 +133,7 @@ func TestSvgWithOnClick(t *testing.T) {
 		SvgData: "<svg></svg>",
 		Width:   50,
 		Height:  50,
-		OnClick: func(l *Layout, e *Event, w *Window) {
+		OnClick: func(_ *Layout, _ *Event, _ *Window) {
 			clicked = true
 		},
 	})

@@ -91,8 +91,8 @@ func Badge(cfg BadgeCfg) View {
 	})
 }
 
-func badgeLabel(label string, max int) string {
-	if max <= 0 {
+func badgeLabel(label string, maxLen int) string {
+	if maxLen <= 0 {
 		return label
 	}
 	n := 0
@@ -105,8 +105,8 @@ func badgeLabel(label string, max int) string {
 	if len(label) == 0 {
 		return label
 	}
-	if n > max {
-		return strconv.Itoa(max) + "+"
+	if n > maxLen {
+		return strconv.Itoa(maxLen) + "+"
 	}
 	return label
 }

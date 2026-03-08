@@ -7,7 +7,7 @@ import (
 )
 
 // tessellateStroke converts polylines to stroke triangles.
-func tessellateStroke(polylines [][]float32, width float32, cap gui.StrokeCap, join gui.StrokeJoin) []float32 {
+func tessellateStroke(polylines [][]float32, width float32, lineCap gui.StrokeCap, join gui.StrokeJoin) []float32 {
 	var result []float32
 	halfW := width / 2
 
@@ -108,13 +108,13 @@ func tessellateStroke(polylines [][]float32, width float32, cap gui.StrokeCap, j
 		if !isClosed && len(normals) >= 2 {
 			addLineCap(poly[0], poly[1],
 				-normals[0], -normals[1], normals[0], normals[1],
-				halfW, cap, &result)
+				halfW, lineCap, &result)
 			lastIdx := (pointCount - 1) * 2
 			lastNormIdx := (len(normals)/2 - 1) * 2
 			addLineCap(poly[lastIdx], poly[lastIdx+1],
 				normals[lastNormIdx], normals[lastNormIdx+1],
 				-normals[lastNormIdx], -normals[lastNormIdx+1],
-				halfW, cap, &result)
+				halfW, lineCap, &result)
 		}
 	}
 	return result
@@ -211,8 +211,8 @@ func addRoundJoin(x, y, n1x, n1y, n2x, n2y, halfW float32, leftTurn bool, result
 	}
 }
 
-func addLineCap(x, y, dx, dy, nx, ny, halfW float32, cap gui.StrokeCap, result *[]float32) {
-	if cap == gui.ButtCap {
+func addLineCap(x, y, dx, dy, nx, ny, halfW float32, lineCap gui.StrokeCap, result *[]float32) {
+	if lineCap == gui.ButtCap {
 		return
 	}
 
@@ -223,7 +223,7 @@ func addLineCap(x, y, dx, dy, nx, ny, halfW float32, cap gui.StrokeCap, result *
 	dirX := dx / l
 	dirY := dy / l
 
-	if cap == gui.SquareCap {
+	if lineCap == gui.SquareCap {
 		ex := x + dirX*halfW
 		ey := y + dirY*halfW
 		ax := x + nx*halfW
@@ -235,7 +235,7 @@ func addLineCap(x, y, dx, dy, nx, ny, halfW float32, cap gui.StrokeCap, result *
 		dx2 := ex + nx*halfW
 		dy2 := ey + ny*halfW
 		*result = append(*result, ax, ay, bx, by, cx, cy, ax, ay, cx, cy, dx2, dy2)
-	} else if cap == gui.RoundCap {
+	} else if lineCap == gui.RoundCap {
 		startAngle := float32(math.Atan2(float64(ny), float64(nx)))
 		prevX := x + float32(math.Cos(float64(startAngle)))*halfW
 		prevY := y + float32(math.Sin(float64(startAngle)))*halfW

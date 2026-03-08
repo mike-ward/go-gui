@@ -9,8 +9,9 @@ import (
 // InputMaskPreset defines common mask patterns.
 type InputMaskPreset uint8
 
+// InputMaskPreset constants.
 const (
-	MaskNone          InputMaskPreset = iota
+	MaskNone InputMaskPreset = iota
 	MaskPhoneUS
 	MaskCreditCard16
 	MaskCreditCardAmex
@@ -55,10 +56,9 @@ type CompiledInputMask struct {
 }
 
 func identityRune(r rune) rune { return r }
-func maskNeverMatch(_ rune) bool { return false }
-func isASCIIDigit(r rune) bool  { return r >= '0' && r <= '9' }
-func isMaskLetter(r rune) bool  { return unicode.IsLetter(r) }
-func isMaskAlnum(r rune) bool   { return unicode.IsLetter(r) || unicode.IsNumber(r) }
+func isASCIIDigit(r rune) bool { return r >= '0' && r <= '9' }
+func isMaskLetter(r rune) bool { return unicode.IsLetter(r) }
+func isMaskAlnum(r rune) bool  { return unicode.IsLetter(r) || unicode.IsNumber(r) }
 
 // InputMaskDefaultTokens returns built-in mask tokens.
 func InputMaskDefaultTokens() []MaskTokenDef {

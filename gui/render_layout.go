@@ -139,7 +139,7 @@ func renderShapeInner(shape *Shape, parentColor Color, clip DrawClip, w *Window)
 
 // renderContainer draws a rectangle (possibly with shadow, gradient,
 // blur, or border).
-func renderContainer(shape *Shape, parentColor Color, clip DrawClip, w *Window) {
+func renderContainer(shape *Shape, _ Color, clip DrawClip, w *Window) {
 	fx := shape.FX
 	hasFX := fx != nil
 

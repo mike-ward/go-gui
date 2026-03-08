@@ -380,7 +380,7 @@ func treeRowView(
 	row treeFlatRow,
 	iconWidth float32,
 	focusedID string,
-	w *Window,
+	_ *Window,
 ) View {
 	if row.IsLoading {
 		return Row(ContainerCfg{

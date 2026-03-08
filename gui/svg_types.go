@@ -86,7 +86,7 @@ type SvgGradientDef struct {
 	Stops         []SvgGradientStop
 	X1, Y1        float32
 	X2, Y2        float32
-	CX, CY, R    float32
+	CX, CY, R     float32
 	FX, FY        float32
 	IsRadial      bool
 	GradientUnits string
@@ -95,6 +95,7 @@ type SvgGradientDef struct {
 // SvgAnimKind identifies the type of SMIL animation.
 type SvgAnimKind uint8
 
+// SvgAnimKind constants.
 const (
 	SvgAnimOpacity SvgAnimKind = iota
 	SvgAnimRotate
@@ -114,6 +115,7 @@ type SvgAnimation struct {
 // StrokeCap defines SVG stroke line cap styles.
 type StrokeCap uint8
 
+// StrokeCap constants.
 const (
 	ButtCap StrokeCap = iota
 	RoundCap
@@ -123,6 +125,7 @@ const (
 // StrokeJoin defines SVG stroke line join styles.
 type StrokeJoin uint8
 
+// StrokeJoin constants.
 const (
 	MiterJoin StrokeJoin = iota
 	RoundJoin

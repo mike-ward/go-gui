@@ -3,6 +3,7 @@ package gui
 // DialogType identifies the kind of dialog.
 type DialogType uint8
 
+// DialogType constants.
 const (
 	DialogMessage DialogType = iota
 	DialogConfirm
@@ -14,11 +15,11 @@ const dialogBaseIDFocus uint32 = 7568971
 
 // DialogCfg configures a modal dialog.
 type DialogCfg struct {
-	Title     string
-	Body      string
-	Reply     string
-	ID        string
-	Color     Color
+	Title       string
+	Body        string
+	Reply       string
+	ID          string
+	Color       Color
 	ColorBorder Color
 	Padding     Opt[Padding]
 	SizeBorder  Opt[float32]
@@ -28,9 +29,9 @@ type DialogCfg struct {
 
 	CustomContent []View
 
-	OnOkYes   func(*Window)
+	OnOkYes    func(*Window)
 	OnCancelNo func(*Window)
-	OnReply   func(string, *Window)
+	OnReply    func(string, *Window)
 
 	Width     float32
 	Height    float32
@@ -91,26 +92,26 @@ func dialogViewGenerator(cfg DialogCfg) View {
 	}
 
 	return Column(ContainerCfg{
-		ID:           reservedDialogID,
-		Color:        cfg.Color,
-		ColorBorder:  cfg.ColorBorder,
-		SizeBorder:   Some(sizeBorder),
-		Radius:       Some(radius),
-		Padding:      cfg.Padding,
-		Width:        cfg.Width,
-		Height:       cfg.Height,
-		MinWidth:     cfg.MinWidth,
-		MinHeight:    cfg.MinHeight,
-		MaxWidth:     cfg.MaxWidth,
-		MaxHeight:    cfg.MaxHeight,
-		Float:        true,
-		FloatAnchor:  FloatMiddleCenter,
-		FloatTieOff:  FloatMiddleCenter,
-		Spacing:      Some(SpacingMedium),
-		OnKeyDown:    dialogKeyDown(cfg),
-		A11YRole:     AccessRoleDialog,
-		A11YState:    AccessStateModal,
-		Content:      content,
+		ID:          reservedDialogID,
+		Color:       cfg.Color,
+		ColorBorder: cfg.ColorBorder,
+		SizeBorder:  Some(sizeBorder),
+		Radius:      Some(radius),
+		Padding:     cfg.Padding,
+		Width:       cfg.Width,
+		Height:      cfg.Height,
+		MinWidth:    cfg.MinWidth,
+		MinHeight:   cfg.MinHeight,
+		MaxWidth:    cfg.MaxWidth,
+		MaxHeight:   cfg.MaxHeight,
+		Float:       true,
+		FloatAnchor: FloatMiddleCenter,
+		FloatTieOff: FloatMiddleCenter,
+		Spacing:     Some(SpacingMedium),
+		OnKeyDown:   dialogKeyDown(cfg),
+		A11YRole:    AccessRoleDialog,
+		A11YState:   AccessStateModal,
+		Content:     content,
 	})
 }
 

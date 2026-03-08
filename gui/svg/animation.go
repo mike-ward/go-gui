@@ -1,3 +1,4 @@
+// Package svg parses and tessellates SVG content.
 package svg
 
 import (

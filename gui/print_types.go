@@ -18,6 +18,7 @@ const (
 // PaperSize selects standard paper dimensions.
 type PaperSize uint8
 
+// PaperSize constants.
 const (
 	PaperLetter PaperSize = iota
 	PaperLegal
@@ -28,6 +29,7 @@ const (
 // PrintOrientation selects portrait or landscape.
 type PrintOrientation uint8
 
+// PrintOrientation constants.
 const (
 	PrintPortrait PrintOrientation = iota
 	PrintLandscape
@@ -49,6 +51,7 @@ func DefaultPrintMargins() PrintMargins {
 // PrintScaleMode controls content scaling.
 type PrintScaleMode uint8
 
+// PrintScaleMode constants.
 const (
 	PrintScaleFitToPage PrintScaleMode = iota
 	PrintScaleActualSize
@@ -57,6 +60,7 @@ const (
 // PrintDuplexMode controls duplex printing.
 type PrintDuplexMode uint8
 
+// PrintDuplexMode constants.
 const (
 	PrintDuplexDefault PrintDuplexMode = iota
 	PrintDuplexSimplex
@@ -67,6 +71,7 @@ const (
 // PrintColorMode controls color output.
 type PrintColorMode uint8
 
+// PrintColorMode constants.
 const (
 	PrintColorDefault PrintColorMode = iota
 	PrintColorColor
@@ -91,6 +96,7 @@ type PrintHeaderFooterCfg struct {
 // PrintJobSourceKind selects the print source.
 type PrintJobSourceKind uint8
 
+// PrintJobSourceKind constants.
 const (
 	PrintSourceCurrentView PrintJobSourceKind = iota
 	PrintSourcePDFPath
@@ -140,6 +146,7 @@ func NewPrintJob() PrintJob {
 // PrintRunStatus reports the outcome of a native print dialog.
 type PrintRunStatus uint8
 
+// PrintRunStatus constants.
 const (
 	PrintRunOK PrintRunStatus = iota
 	PrintRunCancel
@@ -164,6 +171,7 @@ type PrintRunResult struct {
 // PrintExportStatus reports the outcome of ExportPrintJob.
 type PrintExportStatus uint8
 
+// PrintExportStatus constants.
 const (
 	PrintExportOK PrintExportStatus = iota
 	PrintExportError
@@ -186,14 +194,6 @@ func (r PrintExportResult) IsOk() bool {
 
 func printRunErrorResult(code, message string) PrintRunResult {
 	return PrintRunResult{Status: PrintRunError, ErrorCode: code, ErrorMessage: message}
-}
-
-func printRunCancelResult() PrintRunResult {
-	return PrintRunResult{Status: PrintRunCancel}
-}
-
-func printRunOKResult(path string, warnings []PrintWarning) PrintRunResult {
-	return PrintRunResult{Status: PrintRunOK, PDFPath: path, Warnings: warnings}
 }
 
 func printExportErrorResult(path, code, message string) PrintExportResult {

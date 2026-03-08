@@ -105,7 +105,9 @@ func (n *nativePlatform) A11yAnnounce(text string) {
 	a11yAnnounceBridge(text)
 }
 
-func (n *nativePlatform) IMEStart()                       { sdl.StartTextInput() }
-func (n *nativePlatform) IMEStop()                        { sdl.StopTextInput() }
-func (n *nativePlatform) IMESetRect(x, y, w, h int32)     { sdl.SetTextInputRect(&sdl.Rect{X: x, Y: y, W: w, H: h}) }
+func (n *nativePlatform) IMEStart() { sdl.StartTextInput() }
+func (n *nativePlatform) IMEStop()  { sdl.StopTextInput() }
+func (n *nativePlatform) IMESetRect(x, y, w, h int32) {
+	sdl.SetTextInputRect(&sdl.Rect{X: x, Y: y, W: w, H: h})
+}
 func (n *nativePlatform) TitlebarDark(_ bool) {}

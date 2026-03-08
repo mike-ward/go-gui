@@ -3,6 +3,7 @@ package gui
 // SizingType describes the three sizing modes.
 type SizingType uint8
 
+// SizingType constants.
 const (
 	SizingFit   SizingType = iota // element fits to content
 	SizingFill                    // element fills to parent

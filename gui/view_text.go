@@ -4,22 +4,22 @@ package gui
 // blocks of multiline text. Giving it an IDFocus allows mark
 // and copy operations.
 type TextCfg struct {
-	ID               string
-	Text             string
-	TextStyle        TextStyle
-	IDFocus          uint32
-	TabSize          uint32
-	MinWidth         float32
-	Mode             TextMode
-	Invisible        bool
-	Clip             bool
-	FocusSkip        bool
-	Disabled         bool
-	IsPassword       bool
+	ID                string
+	Text              string
+	TextStyle         TextStyle
+	IDFocus           uint32
+	TabSize           uint32
+	MinWidth          float32
+	Mode              TextMode
+	Invisible         bool
+	Clip              bool
+	FocusSkip         bool
+	Disabled          bool
+	IsPassword        bool
 	PlaceholderActive bool
-	Hero             bool
-	Opacity          float32
-	Sizing           Sizing
+	Hero              bool
+	Opacity           float32
+	Sizing            Sizing
 
 	// Accessibility
 	A11YLabel       string
@@ -28,8 +28,8 @@ type TextCfg struct {
 
 // textView implements View for text rendering.
 type textView struct {
-	cfg     TextCfg
-	sizing  Sizing
+	cfg    TextCfg
+	sizing Sizing
 }
 
 func (tv *textView) Content() []View { return nil }

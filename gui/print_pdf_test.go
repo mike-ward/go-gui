@@ -65,7 +65,7 @@ func TestRenderToPDF_Text(t *testing.T) {
 	cmds := []RenderCmd{{
 		Kind: RenderText, X: 50, Y: 50,
 		Color: RGBA(0, 0, 0, 255),
-		Text: "Hello PDF", FontName: "sans", FontSize: 14,
+		Text:  "Hello PDF", FontName: "sans", FontSize: 14,
 	}}
 	if err := renderToPDF(cmds, j, 800, 600); err != nil {
 		t.Fatal(err)
@@ -295,7 +295,7 @@ func TestRenderToPDF_RTF(t *testing.T) {
 		Items: []glyph.Item{
 			{
 				StartIndex: 0,
-				Length:      9,
+				Length:     9,
 				X:          0,
 				Y:          20,
 				Width:      80,

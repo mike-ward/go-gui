@@ -4,97 +4,12 @@ import (
 	"math"
 	"strconv"
 	"unicode"
-
-	"github.com/mike-ward/go-glyph"
 )
 
 type cachedDefsPathData struct {
 	polyline []float32
 	table    []float32
 	totalLen float32
-}
-
-// renderSvgTextPath emits a RenderTextPath command for text along
-// a referenced SVG path. The backend handles glyph layout and
-// placement using the glyph system's DrawLayoutPlaced API.
-func renderSvgTextPath(tp SvgTextPath, defsPaths map[string]string,
-	defsPathCache map[string]cachedDefsPathData,
-	shapeX, shapeY, scale float32, w *Window) {
-	var polyline []float32
-	var table []float32
-	var totalLen float32
-	if defsPathCache != nil {
-		if cached, ok := defsPathCache[tp.PathID]; ok {
-			polyline = cached.polyline
-			table = cached.table
-			totalLen = cached.totalLen
-		}
-	}
-	if len(polyline) < 4 || totalLen <= 0 {
-		d, ok := defsPaths[tp.PathID]
-		if !ok {
-			return
-		}
-		polyline = flattenDefsPath(d, scale)
-		if len(polyline) < 4 {
-			return
-		}
-		table, totalLen = buildArcLengthTable(polyline)
-		if totalLen <= 0 {
-			return
-		}
-	}
-
-	text := tp.Text
-	if len(text) == 0 {
-		return
-	}
-
-	// Build text style (matches svg_load.go pattern).
-	fontName := tp.FontFamily
-	if wn := pangoWeightName(tp.FontWeight); wn != "" {
-		fontName += " " + wn
-	}
-	typeface := glyph.TypefaceRegular
-	if tp.IsItalic {
-		typeface = glyph.TypefaceItalic
-	}
-	ts := TextStyle{
-		Family:        fontName,
-		Size:          tp.FontSize * scale,
-		LetterSpacing: tp.LetterSpacing * scale,
-		Typeface:      typeface,
-		StrokeWidth:   tp.StrokeWidth * scale,
-		StrokeColor:   svgToColor(tp.StrokeColor),
-	}
-	if tp.Opacity < 1.0 {
-		ts.Color = Color{tp.Color.R, tp.Color.G, tp.Color.B,
-			uint8(float32(tp.Color.A) * tp.Opacity), true}
-	} else {
-		ts.Color = svgToColor(tp.Color)
-	}
-
-	// Resolve startOffset.
-	offset := tp.StartOffset * scale
-	if tp.IsPercent {
-		offset = (tp.StartOffset / 100) * totalLen
-	}
-
-	emitRenderer(RenderCmd{
-		Kind:         RenderTextPath,
-		Text:         text,
-		X:            shapeX,
-		Y:            shapeY,
-		TextStylePtr: &ts,
-		TextPath: &TextPathData{
-			Polyline: polyline,
-			Table:    table,
-			TotalLen: totalLen,
-			Offset:   offset,
-			Anchor:   tp.Anchor,
-			Method:   tp.Method,
-		},
-	}, w)
 }
 
 // flattenDefsPath parses an SVG path d attribute and flattens it

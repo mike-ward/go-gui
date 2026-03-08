@@ -68,13 +68,13 @@ func attachOffset(a FloatAttach, w, h float32) (float32, float32) {
 
 // overflowAxis returns the total overflow of an element positioned
 // at pos with the given size within [min, max] bounds.
-func overflowAxis(pos, size, min, max float32) float32 {
+func overflowAxis(pos, size, minVal, maxVal float32) float32 {
 	var overflow float32
-	if pos < min {
-		overflow += min - pos
+	if pos < minVal {
+		overflow += minVal - pos
 	}
-	if pos+size > max {
-		overflow += pos + size - max
+	if pos+size > maxVal {
+		overflow += pos + size - maxVal
 	}
 	return overflow
 }

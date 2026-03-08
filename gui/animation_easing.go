@@ -70,7 +70,7 @@ func EaseOutElastic(t float32) float32 {
 		return 1
 	}
 	c4 := float32(2*math.Pi) / 3
-	return float32(math.Pow(2, float64(-10*t))) *
+	return float32(math.Pow(2, float64(-10*t)))*
 		float32(math.Sin(float64((t*10-0.75)*c4))) + 1
 }
 

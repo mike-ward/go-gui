@@ -65,7 +65,7 @@ func (b *Backend) drawClip(r *gui.RenderCmd) {
 		W: int32(r.W * s),
 		H: int32(r.H * s),
 	}
-	b.renderer.SetClipRect(&rect)
+	_ = b.renderer.SetClipRect(&rect)
 }
 
 func (b *Backend) drawRect(r *gui.RenderCmd) {
@@ -79,12 +79,12 @@ func (b *Backend) drawRect(r *gui.RenderCmd) {
 			r.Radius*s, r.Color)
 		return
 	}
-	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+	_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
 	rect := sdl.FRect{
 		X: r.X * s, Y: r.Y * s,
 		W: r.W * s, H: r.H * s,
 	}
-	b.renderer.FillRectF(&rect)
+	_ = b.renderer.FillRectF(&rect)
 }
 
 func (b *Backend) drawStrokeRect(r *gui.RenderCmd) {
@@ -95,12 +95,12 @@ func (b *Backend) drawStrokeRect(r *gui.RenderCmd) {
 			r.Radius*s, r.Color)
 		return
 	}
-	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+	_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
 	rect := sdl.FRect{
 		X: r.X * s, Y: r.Y * s,
 		W: r.W * s, H: r.H * s,
 	}
-	b.renderer.DrawRectF(&rect)
+	_ = b.renderer.DrawRectF(&rect)
 }
 
 func (b *Backend) drawText(r *gui.RenderCmd) {
@@ -130,7 +130,7 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 		cfg.Block.Wrap = glyph.WrapWord
 		cfg.Block.Width = r.W
 	}
-	b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
+	_ = b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
 }
 
 func (b *Backend) drawCircle(r *gui.RenderCmd) {
@@ -141,12 +141,12 @@ func (b *Backend) drawCircle(r *gui.RenderCmd) {
 	cx := r.X * s
 	cy := r.Y * s
 	rad := r.Radius * s
-	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+	_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
 	ri := int(rad)
 	for dy := -ri; dy <= ri; dy++ {
 		dx := int(math.Sqrt(float64(rad*rad) - float64(dy*dy)))
 		y := cy + float32(dy)
-		b.renderer.DrawLineF(cx-float32(dx), y, cx+float32(dx), y)
+		_ = b.renderer.DrawLineF(cx-float32(dx), y, cx+float32(dx), y)
 	}
 }
 
@@ -154,18 +154,18 @@ func (b *Backend) drawCircle(r *gui.RenderCmd) {
 // using three rectangles and four filled quarter-circle fans.
 func (b *Backend) fillRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 	rad = min(rad, w/2, h/2)
-	b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
+	_ = b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
 
 	// Center strip.
-	b.renderer.FillRectF(&sdl.FRect{
+	_ = b.renderer.FillRectF(&sdl.FRect{
 		X: x + rad, Y: y, W: w - 2*rad, H: h,
 	})
 	// Left strip.
-	b.renderer.FillRectF(&sdl.FRect{
+	_ = b.renderer.FillRectF(&sdl.FRect{
 		X: x, Y: y + rad, W: rad, H: h - 2*rad,
 	})
 	// Right strip.
-	b.renderer.FillRectF(&sdl.FRect{
+	_ = b.renderer.FillRectF(&sdl.FRect{
 		X: x + w - rad, Y: y + rad, W: rad, H: h - 2*rad,
 	})
 
@@ -176,20 +176,20 @@ func (b *Backend) fillRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 		fy := float32(dy)
 		fx := float32(dx)
 		// Top-left.
-		b.renderer.DrawLineF(x+rad-fx, y+rad-fy, x+rad, y+rad-fy)
+		_ = b.renderer.DrawLineF(x+rad-fx, y+rad-fy, x+rad, y+rad-fy)
 		// Top-right.
-		b.renderer.DrawLineF(x+w-rad, y+rad-fy, x+w-rad+fx, y+rad-fy)
+		_ = b.renderer.DrawLineF(x+w-rad, y+rad-fy, x+w-rad+fx, y+rad-fy)
 		// Bottom-left.
-		b.renderer.DrawLineF(x+rad-fx, y+h-rad+fy, x+rad, y+h-rad+fy)
+		_ = b.renderer.DrawLineF(x+rad-fx, y+h-rad+fy, x+rad, y+h-rad+fy)
 		// Bottom-right.
-		b.renderer.DrawLineF(x+w-rad, y+h-rad+fy, x+w-rad+fx, y+h-rad+fy)
+		_ = b.renderer.DrawLineF(x+w-rad, y+h-rad+fy, x+w-rad+fx, y+h-rad+fy)
 	}
 }
 
 func (b *Backend) drawLine(r *gui.RenderCmd) {
 	s := b.dpiScale
-	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
-	b.renderer.DrawLineF(r.X*s, r.Y*s, r.OffsetX*s, r.OffsetY*s)
+	_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+	_ = b.renderer.DrawLineF(r.X*s, r.Y*s, r.OffsetX*s, r.OffsetY*s)
 }
 
 func (b *Backend) drawShadow(r *gui.RenderCmd) {
@@ -206,8 +206,8 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 			c := gui.RGBA(r.Color.R, r.Color.G, r.Color.B, a)
 			b.fillRoundedRect(x, y, w, h, r.Radius*s+off, c)
 		} else {
-			b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
-			b.renderer.FillRectF(&sdl.FRect{X: x, Y: y, W: w, H: h})
+			_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
+			_ = b.renderer.FillRectF(&sdl.FRect{X: x, Y: y, W: w, H: h})
 		}
 	}
 }
@@ -216,12 +216,12 @@ func (b *Backend) drawBlur(r *gui.RenderCmd) {
 	// Placeholder: single rect at reduced alpha.
 	s := b.dpiScale
 	a := r.Color.A / 2
-	b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
+	_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, a)
 	rect := sdl.FRect{
 		X: r.X * s, Y: r.Y * s,
 		W: r.W * s, H: r.H * s,
 	}
-	b.renderer.FillRectF(&rect)
+	_ = b.renderer.FillRectF(&rect)
 }
 
 func (b *Backend) drawGradient(r *gui.RenderCmd) {
@@ -239,7 +239,7 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 		t := float32(i) / float32(bands)
 		t2 := float32(i+1) / float32(bands)
 		c := gui.SampleGradientStopColor(r.Gradient.Stops, (t+t2)/2)
-		b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
+		_ = b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
 		var rect sdl.FRect
 		if horizontal {
 			rect = sdl.FRect{
@@ -256,7 +256,7 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 				H: (t2 - t) * r.H * s,
 			}
 		}
-		b.renderer.FillRectF(&rect)
+		_ = b.renderer.FillRectF(&rect)
 	}
 }
 
@@ -276,8 +276,8 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 	}
 	for i := range 4 {
 		c := gui.SampleGradientStopColor(r.Gradient.Stops, positions[i])
-		b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
-		b.renderer.FillRectF(&rects[i])
+		_ = b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
+		_ = b.renderer.FillRectF(&rects[i])
 	}
 }
 
@@ -285,13 +285,13 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 // using four lines and four quarter-circle arcs (midpoint algorithm).
 func (b *Backend) strokeRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 	rad = min(rad, w/2, h/2)
-	b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
+	_ = b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
 
 	// Straight edges.
-	b.renderer.DrawLineF(x+rad, y, x+w-rad, y)     // top
-	b.renderer.DrawLineF(x+rad, y+h, x+w-rad, y+h) // bottom
-	b.renderer.DrawLineF(x, y+rad, x, y+h-rad)     // left
-	b.renderer.DrawLineF(x+w, y+rad, x+w, y+h-rad) // right
+	_ = b.renderer.DrawLineF(x+rad, y, x+w-rad, y)     // top
+	_ = b.renderer.DrawLineF(x+rad, y+h, x+w-rad, y+h) // bottom
+	_ = b.renderer.DrawLineF(x, y+rad, x, y+h-rad)     // left
+	_ = b.renderer.DrawLineF(x+w, y+rad, x+w, y+h-rad) // right
 
 	// Quarter-circle arcs at each corner (midpoint algorithm).
 	cx := [4]float32{x + rad, x + w - rad, x + w - rad, x + rad}
@@ -305,8 +305,8 @@ func (b *Backend) strokeRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 	for px >= py {
 		fx, fy := float32(px), float32(py)
 		for i := range 4 {
-			b.renderer.DrawPointF(cx[i]+fx*sx[i], cy[i]+fy*sy[i])
-			b.renderer.DrawPointF(cx[i]+fy*sx[i], cy[i]+fx*sy[i])
+			_ = b.renderer.DrawPointF(cx[i]+fx*sx[i], cy[i]+fy*sy[i])
+			_ = b.renderer.DrawPointF(cx[i]+fy*sx[i], cy[i]+fx*sy[i])
 		}
 		py++
 		if d < 0 {

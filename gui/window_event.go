@@ -9,10 +9,8 @@ func (w *Window) EventFn(e *Event) {
 
 	// Focus gate: block events when unfocused except right-click,
 	// focused, and scroll.
-	if !w.focused && e.Type == EventMouseDown &&
-		e.MouseButton == MouseRight {
-		// Allow right clicks without focus (browser behavior).
-	} else if !w.focused &&
+	if !w.focused &&
+		!(e.Type == EventMouseDown && e.MouseButton == MouseRight) &&
 		e.Type != EventFocused &&
 		e.Type != EventMouseScroll {
 		return
@@ -83,7 +81,7 @@ func (w *Window) EventFn(e *Event) {
 		if inspectorSupported && w.inspectorEnabled {
 			panelW := inspectorPanelWidth(w)
 			left := inspectorIsLeft(w)
-			inApp := true
+			var inApp bool
 			if left {
 				inApp = e.MouseX > panelW+inspectorMargin
 			} else {

@@ -72,6 +72,7 @@ func TestFileAccessReleaseAllEmpty(t *testing.T) {
 }
 
 func TestFileAccessRestoreNoAppID(t *testing.T) {
+	_ = t
 	w := &Window{}
 	w.RestoreFileAccess() // no-op, no panic
 }

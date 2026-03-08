@@ -158,19 +158,3 @@ func HeadingSlug(text string) string {
 	}
 	return string(buf)
 }
-
-// isHTMLTag checks if text between < > looks like an HTML tag.
-func isHTMLTag(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-	start := 0
-	if s[0] == '/' {
-		start = 1
-	}
-	if start >= len(s) {
-		return false
-	}
-	c := s[start]
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}

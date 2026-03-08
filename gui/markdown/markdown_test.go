@@ -11,16 +11,6 @@ func parse(source string) []Block {
 	return Parse(source, false)
 }
 
-func runTexts(blocks []Block) []string {
-	var result []string
-	for _, b := range blocks {
-		for _, r := range b.Runs {
-			result = append(result, r.Text)
-		}
-	}
-	return result
-}
-
 // assertContains checks s contains sub.
 func assertContains(t *testing.T, s, sub string) {
 	t.Helper()

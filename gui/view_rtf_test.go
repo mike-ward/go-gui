@@ -184,7 +184,7 @@ func TestRtfMouseMoveUnderlineWithoutLinkDoesNotSetPointingHand(t *testing.T) {
 			{
 				X: 10, Y: 12, Width: 60,
 				Ascent: 12, Descent: 4,
-				StartIndex: 0,
+				StartIndex:   0,
 				HasUnderline: true,
 			},
 		},
@@ -230,7 +230,7 @@ func TestRtfMouseMoveLinkSetsPointingHand(t *testing.T) {
 			{
 				X: 10, Y: 12, Width: 30,
 				Ascent: 12, Descent: 4,
-				StartIndex: 0,
+				StartIndex:   0,
 				HasUnderline: true,
 			},
 		},

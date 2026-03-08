@@ -1,5 +1,6 @@
 //go:build darwin
 
+// Package backend provides platform-specific backend initialization.
 package backend
 
 import (
@@ -7,4 +8,5 @@ import (
 	"github.com/mike-ward/go-gui/gui/backend/metal"
 )
 
+// Run starts the GUI event loop.
 func Run(w *gui.Window) { metal.Run(w) }

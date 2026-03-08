@@ -664,11 +664,11 @@ func getStrokeWidth(elem string) float32 {
 }
 
 func getStrokeLinecap(elem string) gui.StrokeCap {
-	cap, ok := findAttrOrStyle(elem, "stroke-linecap")
+	lineCap, ok := findAttrOrStyle(elem, "stroke-linecap")
 	if !ok {
 		return gui.StrokeCap(3) // inherit sentinel
 	}
-	switch cap {
+	switch lineCap {
 	case "round":
 		return gui.RoundCap
 	case "square":
@@ -813,10 +813,8 @@ func applyInheritedStyle(path *VectorPath, inherited groupStyle) {
 		path.FilterID = inherited.FilterID
 	}
 
-	// Inherit fill
-	if path.FillGradientID != "" {
-		// Gradient fill takes precedence
-	} else if path.FillColor == colorInherit {
+	// Inherit fill (gradient fill takes precedence)
+	if path.FillGradientID == "" && path.FillColor == colorInherit {
 		if inherited.Fill != "" {
 			if gid, ok := parseFillURL(inherited.Fill); ok {
 				path.FillGradientID = gid

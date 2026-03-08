@@ -1,4 +1,3 @@
-// Data grid: CSV/TSV/PDF/XLSX import and export.
 package gui
 
 import (
@@ -214,13 +213,13 @@ func GridRowsToXLSXFileWithCfg(path string, columns []GridColumnCfg, rows []Grid
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	return gridRowsWriteXLSX(f, columns, rows, exportCfg)
 }
 
 func gridRowsWriteXLSX(w io.Writer, columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg) error {
 	zw := zip.NewWriter(w)
-	defer zw.Close()
+	defer func() { _ = zw.Close() }()
 	entries := [][2]string{
 		{"[Content_Types].xml", dataGridXLSXContentTypesXML()},
 		{"_rels/.rels", dataGridXLSXRootRelsXML()},
@@ -416,9 +415,7 @@ func pdfNum(value float32) string {
 	for strings.HasSuffix(s, "0") && strings.Contains(s, ".") {
 		s = s[:len(s)-1]
 	}
-	if strings.HasSuffix(s, ".") {
-		s = s[:len(s)-1]
-	}
+	s = strings.TrimSuffix(s, ".")
 	return s
 }
 

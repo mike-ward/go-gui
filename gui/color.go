@@ -78,48 +78,48 @@ func (c Color) WithOpacity(opacity float32) Color {
 	}
 }
 
-// Add returns a + b, clamping each channel to 255.
-func (a Color) Add(b Color) Color {
+// Add returns c + b, clamping each channel to 255.
+func (c Color) Add(b Color) Color {
 	return Color{
-		R:   clampAdd(a.R, b.R),
-		G:   clampAdd(a.G, b.G),
-		B:   clampAdd(a.B, b.B),
-		A:   clampAdd(a.A, b.A),
+		R:   clampAdd(c.R, b.R),
+		G:   clampAdd(c.G, b.G),
+		B:   clampAdd(c.B, b.B),
+		A:   clampAdd(c.A, b.A),
 		set: true,
 	}
 }
 
-// Sub returns a - b, clamping each channel to 0.
-func (a Color) Sub(b Color) Color {
-	aa := a.A
-	if b.A > aa {
-		aa = b.A
+// Sub returns c - b, clamping each channel to 0.
+func (c Color) Sub(b Color) Color {
+	ca := c.A
+	if b.A > ca {
+		ca = b.A
 	}
 	return Color{
-		R:   clampSub(a.R, b.R),
-		G:   clampSub(a.G, b.G),
-		B:   clampSub(a.B, b.B),
-		A:   aa,
+		R:   clampSub(c.R, b.R),
+		G:   clampSub(c.G, b.G),
+		B:   clampSub(c.B, b.B),
+		A:   ca,
 		set: true,
 	}
 }
 
-// Over implements Porter-Duff "a over b" compositing.
-func (a Color) Over(b Color) Color {
-	aa := float32(a.A) / 255
-	ab := float32(b.A) / 255
-	ar := aa + ab*(1-aa)
-	if ar == 0 {
+// Over implements Porter-Duff "c over b" compositing.
+func (c Color) Over(b Color) Color {
+	ca := float32(c.A) / 255
+	ba := float32(b.A) / 255
+	ra := ca + ba*(1-ca)
+	if ra == 0 {
 		return Color{}
 	}
-	rr := (float32(a.R)*aa + float32(b.R)*ab*(1-aa)) / ar
-	gr := (float32(a.G)*aa + float32(b.G)*ab*(1-aa)) / ar
-	br := (float32(a.B)*aa + float32(b.B)*ab*(1-aa)) / ar
+	rr := (float32(c.R)*ca + float32(b.R)*ba*(1-ca)) / ra
+	gr := (float32(c.G)*ca + float32(b.G)*ba*(1-ca)) / ra
+	br := (float32(c.B)*ca + float32(b.B)*ba*(1-ca)) / ra
 	return Color{
 		R:   uint8(rr),
 		G:   uint8(gr),
 		B:   uint8(br),
-		A:   uint8(ar * 255),
+		A:   uint8(ra * 255),
 		set: true,
 	}
 }

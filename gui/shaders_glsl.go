@@ -3,6 +3,7 @@ package gui
 // shaders_glsl.go — GLSL 3.30 shader string constants
 // ported from V's shaders_glsl.v.
 
+// GLSL shader sources.
 const (
 	VsGLSL = `
     #version 330
@@ -482,5 +483,4 @@ const (
         frag_color = texture(tex_smp, uv) * color;
     }
 `
-
 )

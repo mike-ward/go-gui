@@ -297,7 +297,7 @@ func bcOnKeydown(
 	}
 
 	selectedIdx := bcSelectedIndex(items, selected)
-	targetIdx := -1
+	var targetIdx int
 
 	switch e.KeyCode {
 	case KeyLeft:

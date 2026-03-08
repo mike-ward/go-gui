@@ -119,7 +119,7 @@ func fetchMathAsync(
 			})
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -168,17 +168,17 @@ func fetchMathAsync(
 		}
 		tmpPath := tmpFile.Name()
 		if err := png.Encode(tmpFile, img); err != nil {
-			tmpFile.Close()
-			os.Remove(tmpPath)
+			_ = tmpFile.Close()
+			_ = os.Remove(tmpPath)
 			return
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		w.QueueCommand(func(w *Window) {
 			if !diagramCacheShouldApplyResult(
 				w.viewState.diagramCache,
 				hash, requestID) {
-				os.Remove(tmpPath)
+				_ = os.Remove(tmpPath)
 				return
 			}
 			w.viewState.diagramCache.Set(hash,

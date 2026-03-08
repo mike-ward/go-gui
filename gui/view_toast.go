@@ -5,6 +5,7 @@ import "time"
 // ToastSeverity indicates the visual severity of a toast.
 type ToastSeverity uint8
 
+// ToastSeverity constants.
 const (
 	ToastInfo ToastSeverity = iota
 	ToastSuccess
@@ -24,11 +25,11 @@ type ToastCfg struct {
 
 // toastNotification is an active toast instance.
 type toastNotification struct {
-	id      uint64
-	cfg     ToastCfg
+	id       uint64
+	cfg      ToastCfg
 	animFrac float32 // 0=collapsed, 1=full height
-	phase   toastPhase
-	hovered bool
+	phase    toastPhase
+	hovered  bool
 }
 
 // toastPhase tracks toast lifecycle.
@@ -349,8 +350,8 @@ func toastRemove(w *Window, id uint64) {
 // toastEnforceMaxVisible starts exit on oldest non-exiting toasts
 // when count exceeds max.
 func toastEnforceMaxVisible(w *Window) {
-	max := DefaultToastStyle.MaxVisible
-	if max <= 0 {
+	maxVisible := DefaultToastStyle.MaxVisible
+	if maxVisible <= 0 {
 		return
 	}
 	visible := 0
@@ -359,7 +360,7 @@ func toastEnforceMaxVisible(w *Window) {
 			visible++
 		}
 	}
-	for i := 0; visible > max && i < len(w.toasts); i++ {
+	for i := 0; visible > maxVisible && i < len(w.toasts); i++ {
 		if w.toasts[i].phase != toastExiting {
 			toastStartExit(w, w.toasts[i].id)
 			visible--

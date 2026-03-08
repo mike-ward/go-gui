@@ -34,10 +34,10 @@ func mainView(w *gui.Window) gui.View {
 	theme := gui.CurrentTheme()
 
 	return gui.Column(gui.ContainerCfg{
-		Width:   float32(ww),
-		Height:  float32(wh),
-		Sizing:  gui.FixedFixed,
-		HAlign:  gui.HAlignCenter,
+		Width:  float32(ww),
+		Height: float32(wh),
+		Sizing: gui.FixedFixed,
+		HAlign: gui.HAlignCenter,
 		Content: []gui.View{
 			toggleTheme(app, theme),
 			gui.Column(gui.ContainerCfg{

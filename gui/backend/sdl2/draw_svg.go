@@ -65,7 +65,7 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 			}
 		}
 	}
-	b.renderer.RenderGeometry(nil, verts, nil)
+	_ = b.renderer.RenderGeometry(nil, verts, nil)
 	b.svgVerts = verts[:0]
 }
 
@@ -76,7 +76,7 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	outW, outH, _ := b.renderer.GetOutputSize()
 	if b.filterPool == nil || b.filterPoolW != outW || b.filterPoolH != outH {
 		if b.filterPool != nil {
-			b.filterPool.Destroy()
+			_ = b.filterPool.Destroy()
 			b.filterPool = nil
 		}
 		tex, err := b.renderer.CreateTexture(
@@ -87,7 +87,7 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 		if err != nil {
 			return
 		}
-		tex.SetBlendMode(sdl.BLENDMODE_BLEND)
+		_ = tex.SetBlendMode(sdl.BLENDMODE_BLEND)
 		b.filterPool = tex
 		b.filterPoolW = outW
 		b.filterPoolH = outH
@@ -95,9 +95,9 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	b.filterTex = b.filterPool
 	b.filterBlur = r.BlurRadius * b.dpiScale
 	b.filterLayers = r.Layers
-	b.renderer.SetRenderTarget(b.filterTex)
-	b.renderer.SetDrawColor(0, 0, 0, 0)
-	b.renderer.Clear()
+	_ = b.renderer.SetRenderTarget(b.filterTex)
+	_ = b.renderer.SetDrawColor(0, 0, 0, 0)
+	_ = b.renderer.Clear()
 }
 
 // endFilter composites the filter texture back with a glow
@@ -110,7 +110,7 @@ func (b *Backend) endFilter() {
 	}
 	b.filterTex = nil
 
-	b.renderer.SetRenderTarget(nil)
+	_ = b.renderer.SetRenderTarget(nil)
 
 	blur := b.filterBlur
 	if blur < 1 {
@@ -146,7 +146,7 @@ func (b *Backend) endFilter() {
 		if a > 255 {
 			a = 255
 		}
-		tex.SetAlphaMod(uint8(a))
+		_ = tex.SetAlphaMod(uint8(a))
 		off := int32(s)
 		d := diag(off)
 		offsets := [8][2]int32{
@@ -154,12 +154,12 @@ func (b *Backend) endFilter() {
 			{-d, -d}, {d, -d}, {-d, d}, {d, d},
 		}
 		for _, o := range offsets {
-			b.renderer.Copy(tex, nil,
+			_ = b.renderer.Copy(tex, nil,
 				&sdl.Rect{X: o[0], Y: o[1], W: outW, H: outH})
 		}
 	}
 
 	// Render source graphic on top at full alpha.
-	tex.SetAlphaMod(255)
-	b.renderer.Copy(tex, nil, nil)
+	_ = tex.SetAlphaMod(255)
+	_ = b.renderer.Copy(tex, nil, nil)
 }

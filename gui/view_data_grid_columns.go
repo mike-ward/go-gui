@@ -156,34 +156,6 @@ func DataGridColumnOrderMove(order []string, colID string, delta int) []string {
 	return next
 }
 
-func dataGridEffectiveIndexForColumnWithOrder(columns []GridColumnCfg, hiddenColumnIDs map[string]bool, nextOrder []string, colID string) int {
-	cols := dataGridEffectiveColumns(columns, nextOrder, hiddenColumnIDs)
-	for idx, col := range cols {
-		if col.ID == colID {
-			return idx
-		}
-	}
-	return -1
-}
-
-func dataGridEffectiveIndexForColumnWithPin(columns []GridColumnCfg, columnOrder []string, hiddenColumnIDs map[string]bool, colID string, pin GridColumnPin) int {
-	nextColumns := make([]GridColumnCfg, len(columns))
-	copy(nextColumns, columns)
-	for idx, col := range nextColumns {
-		if col.ID == colID {
-			nextColumns[idx].Pin = pin
-			break
-		}
-	}
-	cols := dataGridEffectiveColumns(nextColumns, columnOrder, hiddenColumnIDs)
-	for idx, col := range cols {
-		if col.ID == colID {
-			return idx
-		}
-	}
-	return -1
-}
-
 func dataGridVisibleColumnCount(columns []GridColumnCfg, hidden map[string]bool) int {
 	count := 0
 	for _, col := range columns {

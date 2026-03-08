@@ -45,7 +45,6 @@ type scratchPools struct {
 	svgAnimStates           map[string]svgAnimState
 	svgGroupMatrices        map[string][6]float32
 	svgGroupOpacities       map[string]float32
-	svgTransformTris        []float32
 	svgTransformBatches     [][]float32
 	svgTransformBatchesUsed int
 	wrapRows                []wrapRowRange
@@ -220,22 +219,6 @@ func (p *scratchPools) putSvgAnimStates(m map[string]svgAnimState) {
 		return
 	}
 	p.svgAnimStates = m
-}
-
-func (p *scratchPools) takeSvgTransformTris(requiredCap int) []float32 {
-	s := p.svgTransformTris
-	s = s[:0]
-	if cap(s) < requiredCap {
-		s = make([]float32, 0, requiredCap)
-	}
-	return s
-}
-
-func (p *scratchPools) putSvgTransformTris(s []float32) {
-	if cap(s) > scratchSvgTrisRetainMax {
-		s = make([]float32, 0, scratchSvgTrisShrinkTo)
-	}
-	p.svgTransformTris = s[:0]
 }
 
 func (p *scratchPools) takeWrapRows(requiredCap int) []wrapRowRange {

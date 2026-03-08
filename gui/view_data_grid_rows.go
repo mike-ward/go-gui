@@ -187,15 +187,15 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 		Sizing:      FillFixed,
 		Color:       rowColor,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder: Some(float32(0)),
+		SizeBorder:  Some(float32(0)),
 		Padding:     Some(PaddingNone),
-		Spacing: Some(-cfg.SizeBorder),
+		Spacing:     Some(-cfg.SizeBorder),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			dataGridRowClick(rows, selection, gridID, multiSelect, rangeSelect,
 				onSelectionChange, editEnabled, editorFocusBase, colCount,
 				rowIdx, rowID, focusID, columns, e, w)
 		},
-		OnHover: func(layout *Layout, _ *Event, w *Window) {
+		OnHover: func(layout *Layout, _ *Event, _ *Window) {
 			w.SetMouseCursorPointingHand()
 			if !isSelected {
 				layout.Shape.Color = colorRowHover
@@ -342,7 +342,7 @@ func dataGridRangeIndices(rows []GridRow, anchorID, targetID string) (int, int) 
 
 // --- Cell editors ---
 
-func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col GridColumnCfg, value string, editorFocusID, gridFocusID uint32, w *Window) View {
+func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col GridColumnCfg, value string, editorFocusID, gridFocusID uint32, _ *Window) View {
 	editorID := cfg.ID + ":editor:" + rowID + ":" + col.ID
 	colID := col.ID
 	gridID := cfg.ID
@@ -369,7 +369,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			Sizing:     FillFill,
 			Padding:    Some(PaddingNone),
 			SizeBorder: Some(float32(0)),
-			Radius: Some(float32(0)),
+			Radius:     Some(float32(0)),
 			OnSelect: func(selected []string, e *Event, w *Window) {
 				nextValue := ""
 				if len(selected) > 0 {
@@ -388,11 +388,11 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 	case GridCellEditorDate:
 		date := dataGridParseEditorDate(value)
 		editor = InputDate(InputDateCfg{
-			ID:         editorID,
-			IDFocus:    editorFocusID,
-			Date:       date,
-			Sizing:     FillFill,
-			Padding:    Some(PaddingNone),
+			ID:      editorID,
+			IDFocus: editorFocusID,
+			Date:    date,
+			Sizing:  FillFill,
+			Padding: Some(PaddingNone),
 			OnSelect: func(dates []time.Time, e *Event, w *Window) {
 				if len(dates) == 0 {
 					return
@@ -416,7 +416,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			ID:       editorID,
 			IDFocus:  editorFocusID,
 			Selected: checked,
-			Padding: Some(PaddingNone),
+			Padding:  Some(PaddingNone),
 			OnClick: func(_ *Layout, e *Event, w *Window) {
 				nextValue := editorFalseValue
 				if !checked {
@@ -441,7 +441,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			Sizing:     FillFill,
 			Padding:    Some(PaddingNone),
 			SizeBorder: Some(float32(0)),
-			Radius: Some(float32(0)),
+			Radius:     Some(float32(0)),
 			OnTextChanged: func(_ *Layout, text string, w *Window) {
 				if rowID != "" && colID != "" {
 					e := &Event{}
@@ -469,7 +469,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 		FocusSkip: true,
 		Sizing:    FillFill,
 		Padding:   Some(PaddingNone),
-		Spacing: Some(float32(0)),
+		Spacing:   Some(float32(0)),
 		OnKeyDown: dataGridMakeEditorOnKeydown(cfg.ID, gridFocusID),
 		Content:   []View{editor},
 	})
@@ -488,7 +488,7 @@ func dataGridMakeEditorOnKeydown(gridID string, gridFocusID uint32) func(*Layout
 	}
 }
 
-func dataGridTrackRowEditClick(gridID string, editEnabled bool, editorFocusBase uint32, colCount int, columns []GridColumnCfg, rowIdx int, rowID string, gridFocusID uint32, e *Event, w *Window) {
+func dataGridTrackRowEditClick(gridID string, editEnabled bool, editorFocusBase uint32, colCount int, columns []GridColumnCfg, _ int, rowID string, gridFocusID uint32, e *Event, w *Window) {
 	if !editEnabled || dataGridHasKeyboardModifiers(e) {
 		return
 	}
@@ -524,28 +524,6 @@ func dataGridTrackRowEditClick(gridID string, editEnabled bool, editorFocusBase 
 
 func dataGridHasKeyboardModifiers(e *Event) bool {
 	return e.Modifiers.Has(ModShift) || e.Modifiers.Has(ModCtrl) || e.Modifiers.Has(ModAlt) || e.Modifiers.Has(ModSuper)
-}
-
-func dataGridStartEditActiveRow(cfg *DataGridCfg, e *Event, w *Window) {
-	if !dataGridEditingEnabled(cfg) || len(cfg.Rows) == 0 {
-		return
-	}
-	columns := dataGridEffectiveColumns(cfg.Columns, cfg.ColumnOrder, cfg.HiddenColumnIDs)
-	firstColIdx := dataGridFirstEditableColumnIndex(cfg, columns)
-	if firstColIdx < 0 {
-		return
-	}
-	rowIdx := dataGridActiveRowIndex(cfg.Rows, cfg.Selection)
-	if rowIdx < 0 || rowIdx >= len(cfg.Rows) {
-		return
-	}
-	rowID := dataGridRowID(cfg.Rows[rowIdx], rowIdx)
-	dataGridSetEditingRow(cfg.ID, rowID, w)
-	editorFocusID := dataGridCellEditorFocusID(cfg, len(columns), rowIdx, firstColIdx)
-	if editorFocusID > 0 {
-		w.SetIDFocus(editorFocusID)
-	}
-	e.IsHandled = true
 }
 
 func dataGridFirstEditableColumnIndex(cfg *DataGridCfg, columns []GridColumnCfg) int {
@@ -685,8 +663,8 @@ func dataGridDetailToggleControl(cfg *DataGridCfg, rowID string, expanded, enabl
 		Width:       dataGridHeaderControlWidth,
 		Sizing:      FixedFill,
 		Padding:     Some(PaddingNone),
-		SizeBorder: Some(float32(0)),
-		Radius: Some(float32(0)),
+		SizeBorder:  Some(float32(0)),
+		Radius:      Some(float32(0)),
 		Color:       ColorTransparent,
 		ColorHover:  cfg.ColorRowHover,
 		ColorFocus:  ColorTransparent,
@@ -756,9 +734,9 @@ func dataGridFrozenTopZone(cfg *DataGridCfg, rowViews []View, zoneHeight, totalW
 		Clip:        true,
 		Color:       cfg.ColorBackground,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder: Some(float32(0)),
+		SizeBorder:  Some(float32(0)),
 		Padding:     Some(dataGridScrollPadding(cfg)),
-		Spacing: Some(float32(0)),
+		Spacing:     Some(float32(0)),
 		Content: []View{
 			Column(ContainerCfg{
 				X:           scrollX,
@@ -766,9 +744,9 @@ func dataGridFrozenTopZone(cfg *DataGridCfg, rowViews []View, zoneHeight, totalW
 				Sizing:      FixedFill,
 				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
-				SizeBorder: Some(float32(0)),
+				SizeBorder:  Some(float32(0)),
 				Padding:     Some(PaddingNone),
-				Spacing: Some(float32(0)),
+				Spacing:     Some(float32(0)),
 				Content:     rowViews,
 			}),
 		},
@@ -831,7 +809,6 @@ func dataGridSplitFrozenTopIndices(cfg *DataGridCfg, rowIndices []int) (frozenTo
 	}
 	return
 }
-
 
 // itoa is a simple int-to-string without importing strconv.
 func itoa(n int) string {

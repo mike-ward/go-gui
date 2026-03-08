@@ -6,21 +6,21 @@ type DrawCanvasCfg struct {
 	A11YLabel       string
 	A11YDescription string
 	Version         uint64
-	Sizing    Sizing
-	Width     float32
-	Height    float32
-	MinWidth  float32
-	MaxWidth  float32
-	MinHeight float32
-	MaxHeight float32
-	Padding   Opt[Padding]
-	Clip      bool
-	Color     Color
-	Radius    float32
-	OnDraw    func(*DrawContext)
-	OnClick   func(*Layout, *Event, *Window)
-	OnHover   func(*Layout, *Event, *Window)
-	OnMouseScroll func(*Layout, *Event, *Window)
+	Sizing          Sizing
+	Width           float32
+	Height          float32
+	MinWidth        float32
+	MaxWidth        float32
+	MinHeight       float32
+	MaxHeight       float32
+	Padding         Opt[Padding]
+	Clip            bool
+	Color           Color
+	Radius          float32
+	OnDraw          func(*DrawContext)
+	OnClick         func(*Layout, *Event, *Window)
+	OnHover         func(*Layout, *Event, *Window)
+	OnMouseScroll   func(*Layout, *Event, *Window)
 }
 
 // drawCanvasView implements View for user-drawn canvas content.
@@ -66,9 +66,9 @@ func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
 	var events *EventHandlers
 	if c.OnClick != nil || c.OnHover != nil || c.OnMouseScroll != nil {
 		events = &EventHandlers{
-			OnClick:        leftClickOnly(c.OnClick),
-			OnHover:        c.OnHover,
-			OnMouseScroll:  c.OnMouseScroll,
+			OnClick:       leftClickOnly(c.OnClick),
+			OnHover:       c.OnHover,
+			OnMouseScroll: c.OnMouseScroll,
 		}
 	}
 

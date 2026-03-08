@@ -8,6 +8,7 @@ import (
 // DatePickerRollerDisplayMode controls which drums are shown.
 type DatePickerRollerDisplayMode uint8
 
+// DatePickerRollerDisplayMode constants.
 const (
 	RollerDayMonthYear DatePickerRollerDisplayMode = iota // DD MMM YYYY
 	RollerMonthDayYear                                    // MMM DD YYYY
@@ -21,18 +22,18 @@ type DatePickerRollerCfg struct {
 	A11YLabel       string
 	A11YDescription string
 	IDFocus         uint32
-	SelectedDate time.Time
-	DisplayMode  DatePickerRollerDisplayMode
-	MinYear      int
-	MaxYear      int
-	ItemHeight   float32
-	VisibleItems int // must be odd
-	MinWidth     float32
-	MaxWidth     float32
-	LongMonths   bool // true = "January", false = "Jan"
-	Color        Color
-	TextStyle    TextStyle
-	OnChange     func(time.Time, *Window)
+	SelectedDate    time.Time
+	DisplayMode     DatePickerRollerDisplayMode
+	MinYear         int
+	MaxYear         int
+	ItemHeight      float32
+	VisibleItems    int // must be odd
+	MinWidth        float32
+	MaxWidth        float32
+	LongMonths      bool // true = "January", false = "Jan"
+	Color           Color
+	TextStyle       TextStyle
+	OnChange        func(time.Time, *Window)
 }
 
 type datePickerRollerView struct {
@@ -93,18 +94,18 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 	selectedDate := cfg.SelectedDate
 
 	return GenerateViewLayout(container(ContainerCfg{
-		ID:       cfg.ID,
-		IDFocus:  cfg.IDFocus,
-		A11YRole: AccessRoleDateField,
+		ID:        cfg.ID,
+		IDFocus:   cfg.IDFocus,
+		A11YRole:  AccessRoleDateField,
 		A11YLabel: a11yLabel(cfg.A11YLabel, "Date Roller"),
-		Color:    cfg.Color,
-		MinWidth: cfg.MinWidth,
-		MaxWidth: cfg.MaxWidth,
-		Padding:  Some(PaddingSmall),
-		Spacing:  Some(SpacingSmall),
-		HAlign:   HAlignCenter,
-		VAlign:   VAlignMiddle,
-		axis:     AxisLeftToRight,
+		Color:     cfg.Color,
+		MinWidth:  cfg.MinWidth,
+		MaxWidth:  cfg.MaxWidth,
+		Padding:   Some(PaddingSmall),
+		Spacing:   Some(SpacingSmall),
+		HAlign:    HAlignCenter,
+		VAlign:    VAlignMiddle,
+		axis:      AxisLeftToRight,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
 			rollerOnKeyDown(onChange, selectedDate,
 				minYear, maxYear, e, w)
@@ -180,7 +181,7 @@ func rollerDrum(
 		Width:   drumWidth,
 		Padding: Some(PaddingNone),
 		Content: items,
-		OnScroll: func(_ *Layout, w *Window) {
+		OnScroll: func(_ *Layout, _ *Window) {
 			// Scroll dispatches via the view's scroll events,
 			// so keyboard is used instead for simplicity.
 		},
@@ -298,8 +299,8 @@ func rollerAdjustYear(
 	onChange(newDate, w)
 }
 
-func rollerDayFormat(v int) string   { return fmt.Sprintf("%02d", v) }
-func rollerYearFormat(v int) string  { return fmt.Sprintf("%d", v) }
+func rollerDayFormat(v int) string  { return fmt.Sprintf("%02d", v) }
+func rollerYearFormat(v int) string { return fmt.Sprintf("%d", v) }
 
 func rollerMonthFormat(long bool) func(int) string {
 	return func(v int) string {

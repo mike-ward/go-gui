@@ -163,13 +163,13 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 
 	// Build layout: backdrop column with centered card.
 	return GenerateViewLayout(Column(ContainerCfg{
-		Color:   cfg.BackdropColor,
-		Sizing:  FillFill,
+		Color:       cfg.BackdropColor,
+		Sizing:      FillFill,
 		Float:       true,
 		FloatZIndex: cfg.FloatZIndex,
 		VAlign:      VAlignTop,
-		HAlign:  HAlignCenter,
-		Padding: Some(NewPadding(60, 0, 0, 0)),
+		HAlign:      HAlignCenter,
+		Padding:     Some(NewPadding(60, 0, 0, 0)),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			CommandPaletteDismiss(paletteID, w)
 			if onDismiss != nil {

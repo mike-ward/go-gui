@@ -9,7 +9,7 @@ import (
 
 // mapEvent converts an SDL2 event to a gui.Event.
 // Returns the event and true to continue, or false to quit.
-func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
+func mapEvent(ev sdl.Event, _ *Backend) (gui.Event, bool) {
 	switch e := ev.(type) {
 	case *sdl.QuitEvent:
 		return gui.Event{}, false

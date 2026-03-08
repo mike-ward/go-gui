@@ -103,6 +103,7 @@ func TestTessellatePointInTriangleDegenerate(t *testing.T) {
 }
 
 func TestTessellatePointInTriangleOnEdge(t *testing.T) {
+	_ = t
 	// Point on edge: (0.5, 0) on triangle (0,0) (1,0) (0,1)
 	// barycentric: vv should be 0, so uu+vv < 1 but vv == 0
 	// The function uses strict < 1, so edge points with uu+vv < 1 are inside

@@ -4,12 +4,12 @@ package gui
 // rendering, and overlay drawing for docking panel drag operations.
 
 const (
-	dockDragThreshold        = float32(5.0)
-	dockDragGhostOpacity     = float32(0.85)
-	dockDragWindowEdgeZone   = float32(20.0)
-	dockDragEdgeRatio        = float32(0.25)
-	dockDragGhostShadowBlur  = float32(8.0)
-	dockDragGhostShadowOffY  = float32(2.0)
+	dockDragThreshold       = float32(5.0)
+	dockDragGhostOpacity    = float32(0.85)
+	dockDragWindowEdgeZone  = float32(20.0)
+	dockDragEdgeRatio       = float32(0.25)
+	dockDragGhostShadowBlur = float32(8.0)
+	dockDragGhostShadowOffY = float32(2.0)
 )
 
 var dockDragGhostShadowColor = Color{0, 0, 0, 60, true}
@@ -17,13 +17,14 @@ var dockDragGhostShadowColor = Color{0, 0, 0, 60, true}
 // DockDropZone identifies where a panel will be inserted on drop.
 type DockDropZone uint8
 
+// DockDropZone constants.
 const (
-	DockDropNone         DockDropZone = iota
-	DockDropCenter                    // add as tab
-	DockDropTop                       // split above
-	DockDropBottom                    // split below
-	DockDropLeft                      // split left
-	DockDropRight                     // split right
+	DockDropNone   DockDropZone = iota
+	DockDropCenter              // add as tab
+	DockDropTop                 // split above
+	DockDropBottom              // split below
+	DockDropLeft                // split left
+	DockDropRight               // split right
 	DockDropWindowTop
 	DockDropWindowBottom
 	DockDropWindowLeft
@@ -102,7 +103,7 @@ func dockDragStart(
 		MouseMove: func(_ *Layout, e *Event, w *Window) {
 			dockDragOnMouseMove(dockID, root, e.MouseX, e.MouseY, w)
 		},
-		MouseUp: func(_ *Layout, e *Event, w *Window) {
+		MouseUp: func(_ *Layout, _ *Event, w *Window) {
 			dockDragOnMouseUp(dockID, root, onLayoutChange, w)
 		},
 	})
@@ -171,7 +172,7 @@ func dockDragCancel(dockID string, w *Window) {
 func dockDragDetectZone(
 	dockID string, panelNodes []*DockNode,
 	mouseX, mouseY float32,
-	sourceGroup, panelID string,
+	sourceGroup, _ string,
 	w *Window,
 ) (DockDropZone, string) {
 	dockLayout, ok := w.layout.FindByID(dockID)

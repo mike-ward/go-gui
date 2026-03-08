@@ -245,7 +245,7 @@ func TestMouseMoveHandlerRespectsMouseLock(t *testing.T) {
 	lockCalled := false
 	w := &Window{windowWidth: 800, windowHeight: 600}
 	w.MouseLock(MouseLockCfg{
-		MouseMove: func(_ *Layout, e *Event, _ *Window) {
+		MouseMove: func(_ *Layout, _ *Event, _ *Window) {
 			lockCalled = true
 		},
 	})
@@ -285,7 +285,7 @@ func TestMouseUpHandlerRespectsMouseLock(t *testing.T) {
 	lockCalled := false
 	w := &Window{windowWidth: 800, windowHeight: 600}
 	w.MouseLock(MouseLockCfg{
-		MouseUp: func(_ *Layout, e *Event, _ *Window) {
+		MouseUp: func(_ *Layout, _ *Event, _ *Window) {
 			lockCalled = true
 		},
 	})

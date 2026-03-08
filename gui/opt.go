@@ -1,6 +1,6 @@
 package gui
 
-// Opt[T] is an optional value. The zero value means "not set";
+// Opt is an optional value. The zero value means "not set";
 // use Some(v) to set explicitly.
 type Opt[T any] struct {
 	val T

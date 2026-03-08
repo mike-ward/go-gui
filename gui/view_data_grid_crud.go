@@ -1,4 +1,3 @@
-// Data grid: CRUD operations, toolbar, dirty-state.
 package gui
 
 import (
@@ -691,7 +690,7 @@ func dataGridCrudApplySaveResult(gridID string, result dataGridCrudMutationResul
 		onRowsChange, true, focusID, e, w)
 }
 
-func dataGridCrudFinishSave(gridID string, replaceIDs map[string]string, rowCount int, onRowsChange func([]GridRow, *Event, *Window), hasSource bool, focusID uint32, e *Event, w *Window) {
+func dataGridCrudFinishSave(gridID string, _ map[string]string, rowCount int, onRowsChange func([]GridRow, *Event, *Window), hasSource bool, focusID uint32, e *Event, w *Window) {
 	dgCrud := StateMap[string, dataGridCrudState](w, nsDgCrud, capModerate)
 	state, _ := dgCrud.Get(gridID)
 	state.CommittedRows = cloneRows(state.WorkingRows)

@@ -2,10 +2,10 @@ package gui
 
 // Padding constants.
 const (
-	PadXSmall  = 3
-	PadSmall   = 5
-	PadMedium  = 10
-	PadLarge   = 15
+	PadXSmall = 3
+	PadSmall  = 5
+	PadMedium = 10
+	PadLarge  = 15
 )
 
 // Predefined paddings.

@@ -92,19 +92,19 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 				item.Submenu, w)
 
 			submenu := Column(ContainerCfg{
-				Color:       cfg.Color,
-				ColorBorder: cfg.ColorBorder,
-				SizeBorder:  cfg.SizeBorder,
-				Radius:      cfg.RadiusSubmenu,
-				MinWidth:    cfg.WidthSubmenuMin.Get(DefaultMenubarStyle.WidthSubmenuMin),
-				MaxWidth:    cfg.WidthSubmenuMax.Get(DefaultMenubarStyle.WidthSubmenuMax),
-				Spacing:     Some(cfg.SpacingSubmenu.Get(DefaultMenubarStyle.SpacingSubmenu)),
-				Padding:     cfg.PaddingSubmenu,
+				Color:         cfg.Color,
+				ColorBorder:   cfg.ColorBorder,
+				SizeBorder:    cfg.SizeBorder,
+				Radius:        cfg.RadiusSubmenu,
+				MinWidth:      cfg.WidthSubmenuMin.Get(DefaultMenubarStyle.WidthSubmenuMin),
+				MaxWidth:      cfg.WidthSubmenuMax.Get(DefaultMenubarStyle.WidthSubmenuMax),
+				Spacing:       Some(cfg.SpacingSubmenu.Get(DefaultMenubarStyle.SpacingSubmenu)),
+				Padding:       cfg.PaddingSubmenu,
 				Float:         true,
 				FloatAutoFlip: true,
-				FloatAnchor: anchor,
-				FloatTieOff: tieOff,
-				Content:     subViews,
+				FloatAnchor:   anchor,
+				FloatTieOff:   tieOff,
+				Content:       subViews,
 			})
 			views = append(views, menuItem(cfg, configured, submenu))
 		} else {
@@ -126,7 +126,6 @@ func makeMenuAmendLayout(idFocus uint32) func(*Layout, *Window) {
 		}
 	}
 }
-
 
 // findMenuItemCfg recursively searches for a menu item by ID.
 func findMenuItemCfg(items []MenuItemCfg, id string) (MenuItemCfg, bool) {

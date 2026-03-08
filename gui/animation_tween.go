@@ -19,10 +19,19 @@ type TweenAnimation struct {
 
 const tweenDefaultDuration = 300 * time.Millisecond
 
-func (t *TweenAnimation) ID() string                        { return t.AnimID }
+// ID implements Animation.
+func (t *TweenAnimation) ID() string { return t.AnimID }
+
+// RefreshKind implements Animation.
 func (t *TweenAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (t *TweenAnimation) IsStopped() bool                   { return t.stopped }
-func (t *TweenAnimation) SetStart(now time.Time)            { t.start = now }
+
+// IsStopped implements Animation.
+func (t *TweenAnimation) IsStopped() bool { return t.stopped }
+
+// SetStart implements Animation.
+func (t *TweenAnimation) SetStart(now time.Time) { t.start = now }
+
+// Update implements Animation.
 func (t *TweenAnimation) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
 	return updateTween(t, deferred)
 }

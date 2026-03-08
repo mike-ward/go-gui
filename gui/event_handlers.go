@@ -21,7 +21,7 @@ func charHandler(layout *Layout, e *Event, w *Window) {
 
 // imeCompositionHandler handles IME composition events.
 // Updates the per-window IME state for the focused input.
-func imeCompositionHandler(layout *Layout, e *Event, w *Window) {
+func imeCompositionHandler(_ *Layout, e *Event, w *Window) {
 	w.imeUpdate(e)
 	e.IsHandled = true
 }

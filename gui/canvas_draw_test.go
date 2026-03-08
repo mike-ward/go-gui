@@ -44,7 +44,7 @@ func TestDrawContextPolyline(t *testing.T) {
 
 func TestDrawContextPolylineDegenerate(t *testing.T) {
 	dc := DrawContext{}
-	dc.Polyline([]float32{0, 0}, Blue, 2) // too few points
+	dc.Polyline([]float32{0, 0}, Blue, 2)       // too few points
 	dc.Polyline([]float32{0, 0, 1, 1}, Blue, 0) // zero width
 	if len(dc.batches) != 0 {
 		t.Errorf("expected 0 batches, got %d", len(dc.batches))

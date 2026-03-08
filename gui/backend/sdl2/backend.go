@@ -78,11 +78,11 @@ func New(w *gui.Window) (*Backend, error) {
 	ren, err := sdl.CreateRenderer(win, -1,
 		sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 	if err != nil {
-		win.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("sdl2: CreateRenderer: %w", err)
 	}
-	ren.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	_ = ren.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
 
 	// Compute DPI scale.
 	outW, _, _ := ren.GetOutputSize()
@@ -96,8 +96,8 @@ func New(w *gui.Window) (*Backend, error) {
 	glyphBack := glyphsdl.New(ren, dpiScale)
 	textSys, err := glyph.NewTextSystem(glyphBack)
 	if err != nil {
-		ren.Destroy()
-		win.Destroy()
+		_ = ren.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("sdl2: NewTextSystem: %w", err)
 	}
@@ -145,7 +145,7 @@ func New(w *gui.Window) (*Backend, error) {
 
 	// Set clipboard functions.
 	w.SetClipboardFn(func(text string) {
-		sdl.SetClipboardText(text)
+		_ = sdl.SetClipboardText(text)
 	})
 	w.SetClipboardGetFn(func() string {
 		text, _ := sdl.GetClipboardText()
@@ -221,9 +221,9 @@ func (b *Backend) renderFrame(w *gui.Window) {
 		t := gui.CurrentTheme()
 		bg = t.ColorBackground
 	}
-	b.renderer.SetDrawColor(bg.R, bg.G, bg.B, bg.A)
-	b.renderer.Clear()
-	b.renderer.SetClipRect(nil)
+	_ = b.renderer.SetDrawColor(bg.R, bg.G, bg.B, bg.A)
+	_ = b.renderer.Clear()
+	_ = b.renderer.SetClipRect(nil)
 
 	w.Lock()
 	b.renderersDraw(w)
@@ -248,7 +248,7 @@ func Run(w *gui.Window) {
 func (b *Backend) Destroy() {
 	b.texCache.destroyAll()
 	if b.filterPool != nil {
-		b.filterPool.Destroy()
+		_ = b.filterPool.Destroy()
 		b.filterPool = nil
 	}
 	if b.textSys != nil {
@@ -261,10 +261,10 @@ func (b *Backend) Destroy() {
 		}
 	}
 	if b.renderer != nil {
-		b.renderer.Destroy()
+		_ = b.renderer.Destroy()
 	}
 	if b.window != nil {
-		b.window.Destroy()
+		_ = b.window.Destroy()
 	}
 	sdl.Quit()
 }

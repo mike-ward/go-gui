@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	_ "image/jpeg"
-	_ "image/png"
+	_ "image/jpeg" // Register JPEG decoder.
+	_ "image/png"  // Register PNG decoder.
 	"log"
 	"math"
 	"os"
@@ -59,7 +59,7 @@ func (c *texCache) set(path string, entry texCacheEntry) {
 		c.order = c.order[1:]
 		if old, ok := c.data[evict]; ok {
 			if old.tex != nil {
-				old.tex.Destroy()
+				_ = old.tex.Destroy()
 			}
 			delete(c.data, evict)
 		}
@@ -71,7 +71,7 @@ func (c *texCache) set(path string, entry texCacheEntry) {
 func (c *texCache) destroyAll() {
 	for _, e := range c.data {
 		if e.tex != nil {
-			e.tex.Destroy()
+			_ = e.tex.Destroy()
 		}
 	}
 	c.data = nil
@@ -121,10 +121,10 @@ func (b *Backend) loadTextureFromFile(path string, f *os.File) (texCacheEntry, e
 	}
 
 	if err := tex.Update(nil, unsafe.Pointer(&nrgba.Pix[0]), nrgba.Stride); err != nil {
-		tex.Destroy()
+		_ = tex.Destroy()
 		return texCacheEntry{}, err
 	}
-	tex.SetBlendMode(sdl.BLENDMODE_BLEND)
+	_ = tex.SetBlendMode(sdl.BLENDMODE_BLEND)
 
 	return texCacheEntry{tex: tex}, nil
 }
@@ -172,16 +172,16 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 
 	// Fill background when BgColor has alpha (e.g. mermaid/math PNGs).
 	if r.Color.A > 0 {
-		b.renderer.SetDrawColor(
+		_ = b.renderer.SetDrawColor(
 			r.Color.R, r.Color.G, r.Color.B, r.Color.A)
-		b.renderer.FillRect(&dst)
+		_ = b.renderer.FillRect(&dst)
 	}
 
 	if r.ClipRadius > 0 {
 		b.drawImageRounded(entry.tex, r)
 		return
 	}
-	b.renderer.Copy(entry.tex, nil, &dst)
+	_ = b.renderer.Copy(entry.tex, nil, &dst)
 }
 
 // loadTexture resolves races between path validation and open by checking path
@@ -200,7 +200,7 @@ func (b *Backend) loadTexture(path string) (texCacheEntry, error) {
 	if err != nil {
 		return texCacheEntry{}, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	post, err := f.Stat()
 	if err != nil {
 		return texCacheEntry{}, err
@@ -394,6 +394,6 @@ func (b *Backend) drawImageRounded(tex *sdl.Texture, r *gui.RenderCmd) {
 		}
 	}
 
-	b.renderer.RenderGeometry(tex, verts, nil)
+	_ = b.renderer.RenderGeometry(tex, verts, nil)
 	b.svgVerts = verts[:0]
 }

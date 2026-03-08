@@ -323,7 +323,7 @@ func validateSvgSourceWithRoots(svgSrc string, allowedRoots []string) error {
 	}
 	for _, part := range strings.Split(filepath.ToSlash(cleanPath), "/") {
 		if part == ".." {
-			return fmt.Errorf("invalid svg path: contains ..")
+			return fmt.Errorf("invalid svg path: contains parent directory reference")
 		}
 	}
 	ext := strings.ToLower(filepath.Ext(cleanPath))

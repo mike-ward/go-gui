@@ -4,10 +4,10 @@ import "time"
 
 // tooltipState tracks active tooltip bounds and ID.
 type tooltipState struct {
-	bounds       DrawClip  // absolute run bounds (mouse check)
-	floatOffsetX float32   // run-relative X for float popup
-	floatOffsetY float32   // run-relative Y for float popup
-	blockKey     uint64    // FNV hash of owning RichText
+	bounds       DrawClip // absolute run bounds (mouse check)
+	floatOffsetX float32  // run-relative X for float popup
+	floatOffsetY float32  // run-relative Y for float popup
+	blockKey     uint64   // FNV hash of owning RichText
 	id           string
 	hoverID      string    // trigger currently hovered
 	hoverStart   time.Time // when hover began
@@ -58,17 +58,17 @@ func Tooltip(cfg TooltipCfg) View {
 		Float:         true,
 		FloatAutoFlip: true,
 		FloatAnchor:   cfg.Anchor,
-		FloatTieOff:  cfg.TieOff,
-		FloatOffsetX: cfg.OffsetX,
-		FloatOffsetY: cfg.OffsetY,
-		FloatZIndex:  cfg.FloatZIndex,
-		Color:        cfg.Color,
-		ColorBorder:  cfg.ColorBorder,
-		SizeBorder:   Some(cfg.SizeBorder),
-		Radius:       Some(cfg.Radius),
-		Padding:      cfg.Padding,
-		MaxWidth:     300,
-		Content:      cfg.Content,
+		FloatTieOff:   cfg.TieOff,
+		FloatOffsetX:  cfg.OffsetX,
+		FloatOffsetY:  cfg.OffsetY,
+		FloatZIndex:   cfg.FloatZIndex,
+		Color:         cfg.Color,
+		ColorBorder:   cfg.ColorBorder,
+		SizeBorder:    Some(cfg.SizeBorder),
+		Radius:        Some(cfg.Radius),
+		Padding:       cfg.Padding,
+		MaxWidth:      300,
+		Content:       cfg.Content,
 	})
 }
 

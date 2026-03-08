@@ -69,4 +69,3 @@ func ortho(m *[16]float32, l, r, b, t, n, f float32) {
 	m[14] = -(f + n) / (f - n)
 	m[15] = 1
 }
-

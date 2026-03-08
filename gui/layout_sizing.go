@@ -75,7 +75,7 @@ func collectDistributionCandidates(layout *Layout, axis distributeAxis, mode dis
 	}
 }
 
-func shouldContinueDistribution(remaining, prevRemaining float32, mode distributeMode, fillCount int) bool {
+func shouldContinueDistribution(remaining, _ float32, mode distributeMode, fillCount int) bool {
 	if !f32IsFinite(remaining) || fillCount == 0 {
 		return false
 	}
@@ -369,10 +369,10 @@ func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 		remainingWidth -= layout.spacing()
 
 		if remainingWidth > f32Tolerance {
-			remainingWidth = distributeSpace(layout, remainingWidth, distributeGrow, distributeHorizontal, candidates, fixedIndices)
+			distributeSpace(layout, remainingWidth, distributeGrow, distributeHorizontal, candidates, fixedIndices)
 		}
 		if remainingWidth < -f32Tolerance && !layout.Shape.Wrap && !layout.Shape.Overflow {
-			remainingWidth = distributeSpace(layout, remainingWidth, distributeShrink, distributeHorizontal, candidates, fixedIndices)
+			distributeSpace(layout, remainingWidth, distributeShrink, distributeHorizontal, candidates, fixedIndices)
 		}
 	} else if layout.Shape.Axis == AxisTopToBottom {
 		if layout.Shape.IDScroll > 0 && layout.Shape.Sizing.Width == SizingFill &&
@@ -426,10 +426,10 @@ func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 		remainingHeight -= layout.spacing()
 
 		if remainingHeight > f32Tolerance {
-			remainingHeight = distributeSpace(layout, remainingHeight, distributeGrow, distributeVertical, candidates, fixedIndices)
+			distributeSpace(layout, remainingHeight, distributeGrow, distributeVertical, candidates, fixedIndices)
 		}
 		if remainingHeight < -f32Tolerance {
-			remainingHeight = distributeSpace(layout, remainingHeight, distributeShrink, distributeVertical, candidates, fixedIndices)
+			distributeSpace(layout, remainingHeight, distributeShrink, distributeVertical, candidates, fixedIndices)
 		}
 	} else if layout.Shape.Axis == AxisLeftToRight {
 		if layout.Shape.IDScroll > 0 && layout.Shape.Sizing.Height == SizingFill &&

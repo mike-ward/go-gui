@@ -142,7 +142,7 @@ type stubView struct {
 }
 
 func (sv *stubView) Content() []View { return sv.children }
-func (sv *stubView) GenerateLayout(w *Window) Layout {
+func (sv *stubView) GenerateLayout(_ *Window) Layout {
 	return Layout{Shape: &Shape{ID: sv.id}}
 }
 

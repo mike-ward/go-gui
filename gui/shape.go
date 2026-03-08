@@ -86,6 +86,7 @@ func NewShape() *Shape {
 // ShapeType defines the kind of Shape.
 type ShapeType uint8
 
+// ShapeType constants.
 const (
 	ShapeNone ShapeType = iota
 	ShapeRectangle
@@ -100,6 +101,7 @@ const (
 // TextDirection controls text/layout direction.
 type TextDirection uint8
 
+// TextDirection constants.
 const (
 	TextDirAuto TextDirection = iota // inherit from parent/global
 	TextDirLTR
@@ -109,6 +111,7 @@ const (
 // ScrollMode allows scrolling in one or both directions.
 type ScrollMode uint8
 
+// ScrollMode constants.
 const (
 	ScrollBoth ScrollMode = iota
 	ScrollVerticalOnly
@@ -118,6 +121,7 @@ const (
 // ScrollbarOrientation determines scrollbar orientation.
 type ScrollbarOrientation uint8
 
+// ScrollbarOrientation constants.
 const (
 	ScrollbarNone ScrollbarOrientation = iota
 	ScrollbarVertical
@@ -127,6 +131,7 @@ const (
 // FloatAttach defines anchor points for floating elements.
 type FloatAttach uint8
 
+// FloatAttach constants.
 const (
 	FloatTopLeft FloatAttach = iota
 	FloatTopCenter
@@ -142,6 +147,7 @@ const (
 // AccessRole identifies a shape's semantic role.
 type AccessRole uint8
 
+// AccessRole constants.
 const (
 	AccessRoleNone AccessRole = iota
 	AccessRoleButton
@@ -183,6 +189,7 @@ const (
 // AccessState is a bitmask of dynamic accessibility states.
 type AccessState uint16
 
+// AccessState constants.
 const (
 	AccessStateNone     AccessState = 0
 	AccessStateExpanded AccessState = 1
@@ -239,6 +246,7 @@ func (s *Shape) HasRtfLayout() bool {
 // TextMode controls how a text view renders text.
 type TextMode uint8
 
+// TextMode constants.
 const (
 	TextModeSingleLine TextMode = iota
 	TextModeMultiline
@@ -281,6 +289,7 @@ type BoxShadow struct {
 // GradientType specifies the gradient algorithm.
 type GradientType uint8
 
+// GradientType constants.
 const (
 	GradientLinear GradientType = iota
 	GradientRadial
@@ -290,6 +299,7 @@ const (
 // gradients.
 type GradientDirection uint8
 
+// GradientDirection constants.
 const (
 	GradientToTop GradientDirection = iota
 	GradientToTopRight

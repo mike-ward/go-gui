@@ -114,7 +114,7 @@ func TestEventFnBlocksWhenUnfocused(t *testing.T) {
 			{Shape: &Shape{
 				IDFocus: 1,
 				Events: &EventHandlers{
-					OnChar: func(_ *Layout, e *Event, _ *Window) {
+					OnChar: func(_ *Layout, _ *Event, _ *Window) {
 						called = true
 					},
 				},
@@ -247,6 +247,7 @@ func TestEventFnPreservesTooltipID(t *testing.T) {
 }
 
 func TestEventFnNilEventNoPanic(t *testing.T) {
+	_ = t
 	w := newEventTestWindow()
 	w.layout = Layout{Shape: &Shape{}}
 	w.EventFn(nil)

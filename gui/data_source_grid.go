@@ -1,4 +1,3 @@
-// Async data-source integration for the data grid.
 package gui
 
 import "fmt"

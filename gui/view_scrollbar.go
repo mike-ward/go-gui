@@ -4,7 +4,7 @@ package gui
 type ScrollbarOverflow uint8
 
 const (
-	ScrollbarAuto    ScrollbarOverflow = iota
+	ScrollbarAuto ScrollbarOverflow = iota
 	ScrollbarHidden
 	ScrollbarVisible
 	ScrollbarOnHover
@@ -353,4 +353,3 @@ func offsetFromMouseY(layout *Layout, mouseY float32, idScroll uint32, w *Window
 		sb.Shape.Events.OnScroll(sb, w)
 	}
 }
-

@@ -69,14 +69,14 @@ func New(w *gui.Window) (*Backend, error) {
 	}
 
 	// Request OpenGL 3.3 core profile.
-	sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
-	sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
-	sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK,
+	_ = sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
+	_ = sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
+	_ = sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK,
 		sdl.GL_CONTEXT_PROFILE_CORE)
-	sdl.GLSetAttribute(sdl.GL_CONTEXT_FLAGS,
+	_ = sdl.GLSetAttribute(sdl.GL_CONTEXT_FLAGS,
 		sdl.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG)
-	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 1)
-	sdl.GLSetAttribute(sdl.GL_STENCIL_SIZE, 8)
+	_ = sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 1)
+	_ = sdl.GLSetAttribute(sdl.GL_STENCIL_SIZE, 8)
 
 	cfg := w.Config
 	title := cfg.Title
@@ -109,20 +109,20 @@ func New(w *gui.Window) (*Backend, error) {
 
 	glCtx, err := win.GLCreateContext()
 	if err != nil {
-		win.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("gl: GLCreateContext: %w", err)
 	}
 
 	if err := gl.Init(); err != nil {
 		sdl.GLDeleteContext(glCtx)
-		win.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("gl: gl.Init: %w", err)
 	}
 
 	// Enable vsync.
-	sdl.GLSetSwapInterval(1)
+	_ = sdl.GLSetSwapInterval(1)
 
 	// Compute DPI scale.
 	glW, glH := win.GLGetDrawableSize()
@@ -155,7 +155,7 @@ func New(w *gui.Window) (*Backend, error) {
 	// Compile shader pipelines.
 	if err := b.initPipelines(); err != nil {
 		sdl.GLDeleteContext(glCtx)
-		win.Destroy()
+		_ = win.Destroy()
 		sdl.Quit()
 		return nil, fmt.Errorf("gl: initPipelines: %w", err)
 	}
@@ -204,7 +204,7 @@ func New(w *gui.Window) (*Backend, error) {
 	// Set injected interfaces on gui Window.
 	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
 	w.SetSvgParser(svg.New())
-	w.SetClipboardFn(func(text string) { sdl.SetClipboardText(text) })
+	w.SetClipboardFn(func(text string) { _ = sdl.SetClipboardText(text) })
 	w.SetClipboardGetFn(func() string {
 		text, _ := sdl.GetClipboardText()
 		return text
@@ -360,7 +360,7 @@ func (b *Backend) Destroy() {
 		sdl.GLDeleteContext(b.glCtx)
 	}
 	if b.window != nil {
-		b.window.Destroy()
+		_ = b.window.Destroy()
 	}
 	sdl.Quit()
 }

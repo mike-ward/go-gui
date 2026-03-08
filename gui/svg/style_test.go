@@ -391,9 +391,9 @@ func TestStyleApplyOpacityHalf(t *testing.T) {
 // --- Stroke attribute extraction ---
 
 func TestStyleGetStrokeLinecapRound(t *testing.T) {
-	cap := getStrokeLinecap(`<path stroke-linecap="round">`)
-	if cap != gui.RoundCap {
-		t.Fatalf("expected RoundCap, got %d", cap)
+	lineCap := getStrokeLinecap(`<path stroke-linecap="round">`)
+	if lineCap != gui.RoundCap {
+		t.Fatalf("expected RoundCap, got %d", lineCap)
 	}
 }
 

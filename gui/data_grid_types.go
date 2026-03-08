@@ -3,14 +3,16 @@ package gui
 // GridSortDir specifies ascending or descending sort order.
 type GridSortDir uint8
 
+// GridSortDir constants.
 const (
-	GridSortAsc  GridSortDir = iota
+	GridSortAsc GridSortDir = iota
 	GridSortDesc
 )
 
 // GridPaginationKind selects cursor- or offset-based paging.
 type GridPaginationKind uint8
 
+// GridPaginationKind constants.
 const (
 	GridPaginationCursor GridPaginationKind = iota
 	GridPaginationOffset
@@ -19,6 +21,7 @@ const (
 // GridMutationKind identifies a create, update, or delete.
 type GridMutationKind uint8
 
+// GridMutationKind constants.
 const (
 	GridMutationCreate GridMutationKind = iota
 	GridMutationUpdate

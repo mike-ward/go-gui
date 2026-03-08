@@ -214,13 +214,13 @@ func TestJumpEnabledLocal(t *testing.T) {
 	page := func(int, *Event, *Window) {}
 
 	tests := []struct {
-		name       string
-		rowsLen    int
-		onSel      func(GridSelection, *Event, *Window)
-		onPage     func(int, *Event, *Window)
-		pageSize   int
-		totalRows  int
-		want       bool
+		name      string
+		rowsLen   int
+		onSel     func(GridSelection, *Event, *Window)
+		onPage    func(int, *Event, *Window)
+		pageSize  int
+		totalRows int
+		want      bool
 	}{
 		{"enabled", 10, sel, page, 5, 10, true},
 		{"no rows", 0, sel, page, 5, 10, false},

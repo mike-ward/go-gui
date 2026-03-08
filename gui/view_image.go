@@ -190,7 +190,7 @@ func downloadImage(url, basePath string, w *Window) {
 		removeDownload(url, w)
 		return
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Validate content length.
 	const maxSize = 50 * 1024 * 1024
@@ -226,7 +226,7 @@ func downloadImage(url, basePath string, w *Window) {
 		removeDownload(url, w)
 		return
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 
 	f, err := os.Create(path)
 	if err != nil {
@@ -235,9 +235,9 @@ func downloadImage(url, basePath string, w *Window) {
 		return
 	}
 	_, err = io.Copy(f, resp2.Body)
-	f.Close()
+	_ = f.Close()
 	if err != nil {
-		os.Remove(path)
+		_ = os.Remove(path)
 		log.Printf("image download write: %v", err)
 		removeDownload(url, w)
 		return

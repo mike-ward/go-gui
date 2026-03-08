@@ -1,3 +1,4 @@
+// Package markdown parses and renders Markdown text.
 package markdown
 
 // extensions.go provides custom goldmark inline parsers for

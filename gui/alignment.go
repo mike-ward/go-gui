@@ -4,18 +4,20 @@ package gui
 // vertically, or not at all.
 type Axis uint8
 
+// Axis constants.
 const (
-	AxisNone         Axis = iota
-	AxisTopToBottom        // vertical
-	AxisLeftToRight        // horizontal
+	AxisNone        Axis = iota
+	AxisTopToBottom      // vertical
+	AxisLeftToRight      // horizontal
 )
 
 // HorizontalAlign specifies horizontal alignment.
 type HorizontalAlign uint8
 
+// HorizontalAlign constants.
 const (
-	HAlignStart  HorizontalAlign = iota // culture-dependent
-	HAlignEnd                           // culture-dependent
+	HAlignStart HorizontalAlign = iota // culture-dependent
+	HAlignEnd                          // culture-dependent
 	HAlignCenter
 	HAlignLeft  // always left
 	HAlignRight // always right
@@ -24,8 +26,9 @@ const (
 // VerticalAlign specifies vertical alignment.
 type VerticalAlign uint8
 
+// VerticalAlign constants.
 const (
-	VAlignTop    VerticalAlign = iota
+	VAlignTop VerticalAlign = iota
 	VAlignMiddle
 	VAlignBottom
 )
@@ -33,6 +36,7 @@ const (
 // TextAlignment specifies horizontal text alignment.
 type TextAlignment uint8
 
+// TextAlignment constants.
 const (
 	TextAlignLeft TextAlignment = iota
 	TextAlignCenter

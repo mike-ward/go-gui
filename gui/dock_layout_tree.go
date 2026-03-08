@@ -7,6 +7,7 @@ package gui
 // DockSplitDir controls how two panes are arranged in a split.
 type DockSplitDir uint8
 
+// DockSplitDir constants.
 const (
 	DockSplitHorizontal DockSplitDir = iota // left | right
 	DockSplitVertical                       // top | bottom
@@ -15,8 +16,9 @@ const (
 // DockNodeKind distinguishes split nodes from leaf panel groups.
 type DockNodeKind uint8
 
+// DockNodeKind constants.
 const (
-	DockNodeSplit      DockNodeKind = iota
+	DockNodeSplit DockNodeKind = iota
 	DockNodePanelGroup
 )
 

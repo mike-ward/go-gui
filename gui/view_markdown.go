@@ -157,7 +157,7 @@ func markdownWarnExternalAPIOnce(w *Window) {
 // buildMarkdownTableData converts ParsedTable to
 // TableRowCfg array.
 func buildMarkdownTableData(
-	parsed ParsedTable, style MarkdownStyle,
+	parsed ParsedTable, _ MarkdownStyle,
 ) []TableRowCfg {
 	rows := make([]TableRowCfg, 0, len(parsed.Rows)+1)
 
@@ -325,10 +325,6 @@ func renderMdMermaid(
 				State:     DiagramLoading,
 				RequestID: reqID,
 			})
-		mw := cfg.MermaidWidth
-		if mw <= 0 {
-			mw = 500
-		}
 		fetchMermaidAsync(w, source, diagramHash, reqID,
 			cfg.Style.MermaidBG.R,
 			cfg.Style.MermaidBG.G,

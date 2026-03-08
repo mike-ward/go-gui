@@ -419,7 +419,7 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 	// glyphBackend. Need to use a simple textured-quad
 	// pipeline for it.
 	b.useGlyphPipeline()
-	b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
+	_ = b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
 	b.restoreAfterGlyph()
 }
 

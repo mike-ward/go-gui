@@ -6,6 +6,7 @@ import "time"
 // requires each tick.
 type AnimationRefreshKind uint8
 
+// AnimationRefreshKind constants.
 const (
 	AnimationRefreshNone       AnimationRefreshKind = iota
 	AnimationRefreshRenderOnly                      // repaint only
@@ -48,10 +49,19 @@ func NewBlinkCursorAnimation() *BlinkCursorAnimation {
 	}
 }
 
-func (a *BlinkCursorAnimation) ID() string                        { return a.id }
+// ID implements Animation.
+func (a *BlinkCursorAnimation) ID() string { return a.id }
+
+// RefreshKind implements Animation.
 func (a *BlinkCursorAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshRenderOnly }
-func (a *BlinkCursorAnimation) IsStopped() bool                   { return a.stopped }
-func (a *BlinkCursorAnimation) SetStart(t time.Time)              { a.start = t }
+
+// IsStopped implements Animation.
+func (a *BlinkCursorAnimation) IsStopped() bool { return a.stopped }
+
+// SetStart implements Animation.
+func (a *BlinkCursorAnimation) SetStart(t time.Time) { a.start = t }
+
+// Update implements Animation.
 func (a *BlinkCursorAnimation) Update(w *Window, _ float32, _ *[]queuedCommand) bool {
 	return updateBlinkCursor(a, w)
 }
@@ -67,17 +77,24 @@ type Animate struct {
 	stopped   bool
 }
 
-const animationDelay = 500 * time.Millisecond
-
+// ID implements Animation.
 func (a *Animate) ID() string { return a.AnimateID }
+
+// RefreshKind implements Animation.
 func (a *Animate) RefreshKind() AnimationRefreshKind {
 	if a.Refresh != 0 {
 		return a.Refresh
 	}
 	return AnimationRefreshLayout
 }
-func (a *Animate) IsStopped() bool      { return a.stopped }
+
+// IsStopped implements Animation.
+func (a *Animate) IsStopped() bool { return a.stopped }
+
+// SetStart implements Animation.
 func (a *Animate) SetStart(t time.Time) { a.start = t }
+
+// Update implements Animation.
 func (a *Animate) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
 	return updateAnimate(a, deferred)
 }

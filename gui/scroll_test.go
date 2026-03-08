@@ -152,6 +152,7 @@ func TestScrollToView(t *testing.T) {
 }
 
 func TestScrollToViewNotFound(t *testing.T) {
+	_ = t
 	w := &Window{}
 	w.layout = Layout{Shape: &Shape{ShapeType: ShapeRectangle}}
 	w.ScrollToView("nonexistent") // should not panic

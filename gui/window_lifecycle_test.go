@@ -322,6 +322,7 @@ func TestSetClipboard(t *testing.T) {
 }
 
 func TestSetClipboardNilSafe(t *testing.T) {
+	_ = t
 	w := &Window{}
 	// Should not panic when no fn set.
 	w.SetClipboard("ignored")

@@ -128,7 +128,7 @@ func NumericInput(cfg NumericInputCfg) View {
 	})
 }
 
-func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, stepCfg NumericStepCfg, fillParent bool) View {
+func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, _ NumericStepCfg, fillParent bool) View {
 	sizing := cfg.Sizing
 	if fillParent {
 		sizing = FillFill
@@ -170,7 +170,7 @@ func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, stepCfg Num
 		Disabled:         cfg.Disabled,
 		Invisible:        cfg.Invisible,
 		OnTextChanged:    cfg.OnTextChanged,
-		OnTextCommit: func(layout *Layout, text string, reason InputCommitReason, w *Window) {
+		OnTextCommit: func(layout *Layout, text string, _ InputCommitReason, w *Window) {
 			modeCfg := numericModeCfgFromInput(cfg)
 			value, committed := numericInputCommitResultMode(
 				text, cfg.Value, cfg.Min, cfg.Max,

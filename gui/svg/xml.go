@@ -482,34 +482,34 @@ func parseTextElement(elem, body string, inherited groupStyle, state *parseState
 		color: color, fillGradientID: fillGradientID,
 		anchor: anchor, bold: bold, italic: italic,
 		fontWeight: fontWeight,
-		underline: underline, strikethrough: strikethrough,
+		underline:  underline, strikethrough: strikethrough,
 		letterSpacing: letterSpacing,
-		strokeColor: strokeColor, strokeWidth: strokeWidth,
+		strokeColor:   strokeColor, strokeWidth: strokeWidth,
 		opacity: opacity, filterID: inherited.FilterID,
 	}, state)
 }
 
 // textParentAttrs holds inherited attributes from a <text> element.
 type textParentAttrs struct {
-	x, y                        float32
-	fontSize                    float32
-	fontFamily                  string
-	color                       gui.SvgColor
-	fillGradientID              string
-	anchor                      uint8
-	bold, italic                bool
-	fontWeight                  int
-	underline, strikethrough    bool
-	letterSpacing               float32
-	strokeColor                 gui.SvgColor
-	strokeWidth                 float32
-	opacity                     float32
-	filterID                    string
+	x, y                     float32
+	fontSize                 float32
+	fontFamily               string
+	color                    gui.SvgColor
+	fillGradientID           string
+	anchor                   uint8
+	bold, italic             bool
+	fontWeight               int
+	underline, strikethrough bool
+	letterSpacing            float32
+	strokeColor              gui.SvgColor
+	strokeWidth              float32
+	opacity                  float32
+	filterID                 string
 }
 
 // parseTextBody parses direct text, <tspan>, and <textPath>
 // children within a <text> element body.
-func parseTextBody(parentElem, body string, p textParentAttrs, state *parseState) {
+func parseTextBody(_, body string, p textParentAttrs, state *parseState) {
 	pos := 0
 	curY := p.y
 

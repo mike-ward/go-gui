@@ -72,8 +72,8 @@ func TestDrawCanvasDefaultSizing(t *testing.T) {
 func TestDrawCanvasNoOnDraw(t *testing.T) {
 	w := &Window{}
 	v := DrawCanvas(DrawCanvasCfg{
-		ID:    "dc-nil",
-		Width: 10,
+		ID:     "dc-nil",
+		Width:  10,
 		Height: 10,
 	})
 	layout := GenerateViewLayout(v, w)

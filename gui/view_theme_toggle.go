@@ -7,11 +7,11 @@ type ThemeToggleCfg struct {
 	A11YDescription string
 	IDFocus         uint32
 	Sizing          Sizing
-	OnSelect     func(string, *Event, *Window)
-	FloatAnchor  FloatAttach
-	FloatTieOff  FloatAttach
-	FloatOffsetX float32
-	FloatOffsetY float32
+	OnSelect        func(string, *Event, *Window)
+	FloatAnchor     FloatAttach
+	FloatTieOff     FloatAttach
+	FloatOffsetX    float32
+	FloatOffsetY    float32
 }
 
 // ThemeToggle creates a toggle icon that opens a dropdown of
@@ -50,14 +50,14 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 			data[i] = NewListBoxOption(name, name, name)
 		}
 		content = append(content, Column(ContainerCfg{
-			ID:           cfg.ID + "dropdown",
+			ID:            cfg.ID + "dropdown",
 			Float:         true,
 			FloatAutoFlip: true,
 			FloatAnchor:   cfg.FloatAnchor,
-			FloatTieOff:  cfg.FloatTieOff,
-			FloatOffsetX: cfg.FloatOffsetX,
-			FloatOffsetY: cfg.FloatOffsetY,
-			Padding:      Some(PaddingNone),
+			FloatTieOff:   cfg.FloatTieOff,
+			FloatOffsetX:  cfg.FloatOffsetX,
+			FloatOffsetY:  cfg.FloatOffsetY,
+			Padding:       Some(PaddingNone),
 			Content: []View{
 				ListBox(ListBoxCfg{
 					ID:          lbID,
@@ -90,12 +90,12 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 	colorBorderFocus := guiTheme.ToggleStyle.ColorBorderFocus
 
 	return GenerateViewLayout(Row(ContainerCfg{
-		ID:       cfg.ID,
-		IDFocus:  idFocus,
-		A11YRole: AccessRoleButton,
+		ID:        cfg.ID,
+		IDFocus:   idFocus,
+		A11YRole:  AccessRoleButton,
 		A11YLabel: a11yLabel(cfg.A11YLabel, "Theme Toggle"),
-		Sizing:   cfg.Sizing,
-		Padding:  Some(PaddingSmall),
+		Sizing:    cfg.Sizing,
+		Padding:   Some(PaddingSmall),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			ss := StateMap[string, bool](w, nsSelect, capModerate)
 			ss.Clear()

@@ -7,6 +7,7 @@ import (
 )
 
 func TestLayoutPipelineNoPanic(t *testing.T) {
+	_ = t
 	w := &Window{}
 	shape := &Shape{
 		ShapeType: ShapeRectangle,

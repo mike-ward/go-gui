@@ -109,8 +109,8 @@ func RangeSlider(cfg RangeSliderCfg) View {
 	sliderID := cfg.ID
 	onChange := cfg.OnChange
 	value := cfg.Value
-	min := cfg.Min
-	max := cfg.Max
+	minVal := cfg.Min
+	maxVal := cfg.Max
 	step := cfg.Step
 	vertical := cfg.Vertical
 	roundValue := cfg.RoundValue
@@ -165,14 +165,14 @@ func RangeSlider(cfg RangeSliderCfg) View {
 			ev.MouseY = e.MouseY + layout.Shape.Y
 			rangeSliderMouseMove(layout, &ev, w,
 				sliderID, onChange, value,
-				min, max, vertical, roundValue)
+				minVal, maxVal, vertical, roundValue)
 			w.MouseLock(MouseLockCfg{
 				MouseMove: func(
 					layout *Layout, e *Event, w *Window,
 				) {
 					rangeSliderMouseMove(layout, e, w,
 						sliderID, onChange, value,
-						min, max, vertical, roundValue)
+						minVal, maxVal, vertical, roundValue)
 				},
 				MouseUp: func(
 					_ *Layout, _ *Event, w *Window,
@@ -186,11 +186,11 @@ func RangeSlider(cfg RangeSliderCfg) View {
 		},
 		AmendLayout: func(layout *Layout, w *Window) {
 			rangeSliderAmendLayoutSlide(layout, w,
-				onChange, value, min, max, size, szBorder,
+				onChange, value, minVal, maxVal, size, szBorder,
 				vertical, colorFocus, cfg.ColorLeft, disabled, idFocus,
 				roundValue)
 		},
-		OnHover: func(layout *Layout, e *Event, w *Window) {
+		OnHover: func(layout *Layout, _ *Event, w *Window) {
 			w.SetMouseCursorPointingHand()
 			if len(layout.Children) > 0 {
 				layout.Children[0].Shape.ColorBorder = colorHover
@@ -198,7 +198,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 		},
 		OnKeyDown: func(layout *Layout, e *Event, w *Window) {
 			rangeSliderOnKeyDown(layout, e, w,
-				onChange, value, min, max, step, roundValue)
+				onChange, value, minVal, maxVal, step, roundValue)
 		},
 		Content: []View{
 			container(ContainerCfg{
@@ -230,7 +230,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 						) {
 							rangeSliderAmendLayoutThumb(
 								layout, w, value,
-								min, max, thumbSize,
+								minVal, maxVal, thumbSize,
 								vertical)
 						},
 					}),
@@ -243,7 +243,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 func rangeSliderAmendLayoutSlide(
 	layout *Layout, w *Window,
 	onChange func(float32, *Event, *Window),
-	value, min, max, size, sizeBorder float32,
+	value, minVal, maxVal, size, sizeBorder float32,
 	vertical bool, colorFocus, colorLeft Color,
 	disabled bool, idFocus uint32, roundValue bool,
 ) {
@@ -254,7 +254,7 @@ func rangeSliderAmendLayoutSlide(
 		_ *Layout, e *Event, w *Window,
 	) {
 		rangeSliderOnMouseScroll(e, w, onChange,
-			value, min, max, roundValue)
+			value, minVal, maxVal, roundValue)
 	}
 
 	if len(layout.Children) == 0 {
@@ -267,8 +267,8 @@ func rangeSliderAmendLayoutSlide(
 	leftBar := &track.Children[0]
 	thumb := &track.Children[1]
 
-	clamped := f32Clamp(value, min, max)
-	percent := float32(math.Abs(float64(clamped / (max - min))))
+	clamped := f32Clamp(value, minVal, maxVal)
+	percent := float32(math.Abs(float64(clamped / (maxVal - minVal))))
 
 	if vertical {
 		h := track.Shape.Height
@@ -301,10 +301,10 @@ func rangeSliderAmendLayoutSlide(
 
 func rangeSliderAmendLayoutThumb(
 	layout *Layout, _ *Window,
-	value, min, max, thumbSize float32, vertical bool,
+	value, minVal, maxVal, thumbSize float32, vertical bool,
 ) {
-	clamped := f32Clamp(value, min, max)
-	percent := float32(math.Abs(float64(clamped / (max - min))))
+	clamped := f32Clamp(value, minVal, maxVal)
+	percent := float32(math.Abs(float64(clamped / (maxVal - minVal))))
 	radius := thumbSize / 2
 
 	if vertical {
@@ -326,7 +326,7 @@ func rangeSliderMouseMove(
 	layout *Layout, e *Event, w *Window,
 	sliderID string,
 	onChange func(float32, *Event, *Window),
-	curValue, min, max float32,
+	curValue, minVal, maxVal float32,
 	vertical, roundValue bool,
 ) {
 	if onChange == nil {
@@ -343,8 +343,8 @@ func rangeSliderMouseMove(
 	if vertical {
 		h := shape.Height
 		pct := f32Clamp((e.MouseY-shape.Y)/h, 0, 1)
-		val := (max - min) * pct
-		v := f32Clamp(val, min, max)
+		val := (maxVal - minVal) * pct
+		v := f32Clamp(val, minVal, maxVal)
 		if roundValue {
 			v = float32(math.Round(float64(v)))
 		}
@@ -352,8 +352,8 @@ func rangeSliderMouseMove(
 	} else {
 		wd := shape.Width
 		pct := f32Clamp((e.MouseX-shape.X)/wd, 0, 1)
-		val := (max - min) * pct
-		v := f32Clamp(val, min, max)
+		val := (maxVal - minVal) * pct
+		v := f32Clamp(val, minVal, maxVal)
 		if roundValue {
 			v = float32(math.Round(float64(v)))
 		}
@@ -366,7 +366,7 @@ func rangeSliderMouseMove(
 func rangeSliderOnKeyDown(
 	_ *Layout, e *Event, w *Window,
 	onChange func(float32, *Event, *Window),
-	curValue, min, max, step float32, roundValue bool,
+	curValue, minVal, maxVal, step float32, roundValue bool,
 ) {
 	if onChange == nil || e.Modifiers != ModNone {
 		return
@@ -374,13 +374,13 @@ func rangeSliderOnKeyDown(
 	v := curValue
 	switch e.KeyCode {
 	case KeyHome:
-		v = min
+		v = minVal
 	case KeyEnd:
-		v = max
+		v = maxVal
 	case KeyLeft, KeyUp:
-		v = f32Clamp(v-step, min, max)
+		v = f32Clamp(v-step, minVal, maxVal)
 	case KeyRight, KeyDown:
-		v = f32Clamp(v+step, min, max)
+		v = f32Clamp(v+step, minVal, maxVal)
 	default:
 		return
 	}
@@ -395,13 +395,13 @@ func rangeSliderOnKeyDown(
 func rangeSliderOnMouseScroll(
 	e *Event, w *Window,
 	onChange func(float32, *Event, *Window),
-	curValue, min, max float32, roundValue bool,
+	curValue, minVal, maxVal float32, roundValue bool,
 ) {
 	e.IsHandled = true
 	if onChange == nil || e.Modifiers != ModNone {
 		return
 	}
-	v := f32Clamp(curValue+e.ScrollY, min, max)
+	v := f32Clamp(curValue+e.ScrollY, minVal, maxVal)
 	if roundValue {
 		v = float32(math.Round(float64(v)))
 	}

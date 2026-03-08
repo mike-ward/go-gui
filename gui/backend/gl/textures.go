@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	_ "image/jpeg"
-	_ "image/png"
+	_ "image/jpeg" // Register JPEG decoder.
+	_ "image/png"  // Register PNG decoder.
 	"log"
 	"os"
 	"path/filepath"
@@ -179,7 +179,7 @@ func (b *Backend) loadImageTexture(path string) (glTexCacheEntry, error) {
 	if err != nil {
 		return glTexCacheEntry{}, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	post, err := f.Stat()
 	if err != nil {
 		return glTexCacheEntry{}, err

@@ -128,16 +128,15 @@ type MouseLockCfg struct {
 
 // ViewState holds per-window UI state.
 type ViewState struct {
-	registry       StateRegistry
-	idFocus        uint32
-	mouseCursor    MouseCursor
-	mouseLock      MouseLockCfg
-	cursorOnSticky bool
-	inputCursorOn  bool
-	mousePosX      float32
-	mousePosY      float32
-	menuKeyNav     bool
-	tooltip        tooltipState
+	registry      StateRegistry
+	idFocus       uint32
+	mouseCursor   MouseCursor
+	mouseLock     MouseLockCfg
+	inputCursorOn bool
+	mousePosX     float32
+	mousePosY     float32
+	menuKeyNav    bool
+	tooltip       tooltipState
 
 	// Markdown caches (lazy-init: nil until first use).
 	markdownCache            *BoundedMap[int64, []MarkdownBlock]
@@ -278,16 +277,35 @@ func (w *Window) HasFocus() bool {
 	return w.focused
 }
 
-func (w *Window) SetMouseCursorArrow()        { w.SetMouseCursor(CursorArrow) }
-func (w *Window) SetMouseCursorIBeam()        { w.SetMouseCursor(CursorIBeam) }
-func (w *Window) SetMouseCursorCrosshair()    { w.SetMouseCursor(CursorCrosshair) }
+// SetMouseCursorArrow sets the mouse cursor.
+func (w *Window) SetMouseCursorArrow() { w.SetMouseCursor(CursorArrow) }
+
+// SetMouseCursorIBeam sets the mouse cursor.
+func (w *Window) SetMouseCursorIBeam() { w.SetMouseCursor(CursorIBeam) }
+
+// SetMouseCursorCrosshair sets the mouse cursor.
+func (w *Window) SetMouseCursorCrosshair() { w.SetMouseCursor(CursorCrosshair) }
+
+// SetMouseCursorPointingHand sets the mouse cursor.
 func (w *Window) SetMouseCursorPointingHand() { w.SetMouseCursor(CursorPointingHand) }
-func (w *Window) SetMouseCursorAll()          { w.SetMouseCursor(CursorResizeAll) }
-func (w *Window) SetMouseCursorNS()           { w.SetMouseCursor(CursorResizeNS) }
-func (w *Window) SetMouseCursorEW()           { w.SetMouseCursor(CursorResizeEW) }
-func (w *Window) SetMouseCursorResizeNESW()   { w.SetMouseCursor(CursorResizeNESW) }
-func (w *Window) SetMouseCursorResizeNWSE()   { w.SetMouseCursor(CursorResizeNWSE) }
-func (w *Window) SetMouseCursorNotAllowed()   { w.SetMouseCursor(CursorNotAllowed) }
+
+// SetMouseCursorAll sets the mouse cursor.
+func (w *Window) SetMouseCursorAll() { w.SetMouseCursor(CursorResizeAll) }
+
+// SetMouseCursorNS sets the mouse cursor.
+func (w *Window) SetMouseCursorNS() { w.SetMouseCursor(CursorResizeNS) }
+
+// SetMouseCursorEW sets the mouse cursor.
+func (w *Window) SetMouseCursorEW() { w.SetMouseCursor(CursorResizeEW) }
+
+// SetMouseCursorResizeNESW sets the mouse cursor.
+func (w *Window) SetMouseCursorResizeNESW() { w.SetMouseCursor(CursorResizeNESW) }
+
+// SetMouseCursorResizeNWSE sets the mouse cursor.
+func (w *Window) SetMouseCursorResizeNWSE() { w.SetMouseCursor(CursorResizeNWSE) }
+
+// SetMouseCursorNotAllowed sets the mouse cursor.
+func (w *Window) SetMouseCursorNotAllowed() { w.SetMouseCursor(CursorNotAllowed) }
 
 // InputCursorOn returns the input cursor blink state.
 func (w *Window) InputCursorOn() bool {

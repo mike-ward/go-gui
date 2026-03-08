@@ -83,7 +83,7 @@ func TestDataGridSourceRequestKeyCursor(t *testing.T) {
 	state := dataGridSourceState{CurrentCursor: "i:10"}
 	sig := uint64(42)
 	got := dataGridSourceRequestKey(cfg, state, GridPaginationCursor, sig)
-	want := fmt.Sprintf("k:cursor|cursor:i:10|limit:20|q:42")
+	want := "k:cursor|cursor:i:10|limit:20|q:42"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
@@ -94,7 +94,7 @@ func TestDataGridSourceRequestKeyOffset(t *testing.T) {
 	state := dataGridSourceState{OffsetStart: 60}
 	sig := uint64(7)
 	got := dataGridSourceRequestKey(cfg, state, GridPaginationOffset, sig)
-	want := fmt.Sprintf("k:offset|start:60|end:90|q:7")
+	want := "k:offset|start:60|end:90|q:7"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}

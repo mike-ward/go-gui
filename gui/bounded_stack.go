@@ -3,10 +3,10 @@ package gui
 // BoundedStack is a stack with maximum size. When full, oldest
 // entries are dropped (FIFO eviction).
 type BoundedStack[T any] struct {
-	buf      []T
-	head     int
-	size     int
-	maxSize  int
+	buf     []T
+	head    int
+	size    int
+	maxSize int
 }
 
 // NewBoundedStack creates a BoundedStack with the given max size.

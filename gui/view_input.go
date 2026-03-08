@@ -361,8 +361,6 @@ func Input(cfg InputCfg) View {
 		OnHover: func(_ *Layout, _ *Event, w *Window) {
 			if w.IsFocus(idFocus) {
 				w.SetMouseCursor(CursorIBeam)
-			} else {
-				// Layout color change handled by hover
 			}
 		},
 		AmendLayout: func(layout *Layout, w *Window) {

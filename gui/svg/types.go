@@ -4,32 +4,33 @@ import "github.com/mike-ward/go-gui/gui"
 
 // Security limits for SVG parsing to prevent DoS attacks.
 const (
-	defaultIconSize  = 24
-	maxGroupDepth    = 32
-	maxElements      = 100000
-	maxPathSegments  = 100000
-	maxViewBoxDim    = float32(10000)
-	maxAttrLen       = 1048576 // 1MB
-	maxCoordinate    = float32(1000000)
-	maxAnimations    = 100
-	maxFlattenDepth  = 16
+	defaultIconSize = 24
+	maxGroupDepth   = 32
+	maxElements     = 100000
+	maxPathSegments = 100000
+	maxViewBoxDim   = float32(10000)
+	maxAttrLen      = 1048576 // 1MB
+	maxCoordinate   = float32(1000000)
+	maxAnimations   = 100
+	maxFlattenDepth = 16
 )
 
 // Tessellation and stroke constants.
 const (
-	strokeCrossTolerance  = float32(0.001)
-	strokeMiterLimit      = float32(4.0)
-	strokeRoundCapSegs    = 8
-	curveDegenThreshold   = float32(0.0001)
-	closedPathEpsilon     = float32(0.0001)
-	maxSplitTriDepth      = 8
+	strokeCrossTolerance = float32(0.001)
+	strokeMiterLimit     = float32(4.0)
+	strokeRoundCapSegs   = 8
+	curveDegenThreshold  = float32(0.0001)
+	closedPathEpsilon    = float32(0.0001)
+	maxSplitTriDepth     = 8
 )
 
 // PathCmd identifies a path segment type.
 type PathCmd uint8
 
+// PathCmd constants.
 const (
-	CmdMoveTo  PathCmd = iota
+	CmdMoveTo PathCmd = iota
 	CmdLineTo
 	CmdQuadTo
 	CmdCubicTo
@@ -97,23 +98,23 @@ var (
 
 // groupStyle holds inherited style properties for groups.
 type groupStyle struct {
-	Transform    [6]float32
-	Fill         string
-	Stroke       string
-	StrokeWidth  string
-	StrokeCap    string
-	StrokeJoin   string
-	ClipPathID   string
-	FilterID     string
-	FontFamily   string
-	FontSize     string
-	FontWeight   string
-	FontStyle    string
-	TextAnchor   string
-	Opacity      float32
-	FillOpacity  float32
+	Transform     [6]float32
+	Fill          string
+	Stroke        string
+	StrokeWidth   string
+	StrokeCap     string
+	StrokeJoin    string
+	ClipPathID    string
+	FilterID      string
+	FontFamily    string
+	FontSize      string
+	FontWeight    string
+	FontStyle     string
+	TextAnchor    string
+	Opacity       float32
+	FillOpacity   float32
 	StrokeOpacity float32
-	GroupID      string
+	GroupID       string
 }
 
 // defaultGroupStyle returns the root group style.

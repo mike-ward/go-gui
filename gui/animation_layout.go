@@ -28,10 +28,19 @@ type LayoutTransition struct {
 	progress  float32
 }
 
-func (l *LayoutTransition) ID() string                        { return layoutTransitionID }
+// ID implements Animation.
+func (l *LayoutTransition) ID() string { return layoutTransitionID }
+
+// RefreshKind implements Animation.
 func (l *LayoutTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
-func (l *LayoutTransition) IsStopped() bool                   { return l.stopped }
-func (l *LayoutTransition) SetStart(now time.Time)            { l.start = now }
+
+// IsStopped implements Animation.
+func (l *LayoutTransition) IsStopped() bool { return l.stopped }
+
+// SetStart implements Animation.
+func (l *LayoutTransition) SetStart(now time.Time) { l.start = now }
+
+// Update implements Animation.
 func (l *LayoutTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
 	return updateLayoutTransition(l, deferred)
 }

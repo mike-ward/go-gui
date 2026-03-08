@@ -3,6 +3,7 @@ package gui
 // shaders_metal.go — Metal shader string constants
 // ported from V's shaders_metal.v.
 
+// Metal shader sources.
 const (
 	VsMetal = `
 #include <metal_stdlib>
@@ -511,5 +512,4 @@ fragment float4 fs_main(VertexOut in [[stage_in]], texture2d<float> tex [[textur
     return tex.sample(smp, in.uv) * in.color;
 }
 `
-
 )

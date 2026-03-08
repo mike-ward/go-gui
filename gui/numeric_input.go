@@ -10,7 +10,7 @@ import (
 type NumericInputMode uint8
 
 const (
-	NumericNumber   NumericInputMode = iota
+	NumericNumber NumericInputMode = iota
 	NumericCurrency
 	NumericPercent
 )
@@ -59,11 +59,11 @@ type NumericPercentModeCfg struct {
 // numericModeCfg is an internal config for mode-aware
 // parse/format.
 type numericModeCfg struct {
-	mode               NumericInputMode
-	affix              string
-	affixPosition      NumericAffixPosition
-	affixSpacing       bool
-	displayMultiplier  float64
+	mode              NumericInputMode
+	affix             string
+	affixPosition     NumericAffixPosition
+	affixSpacing      bool
+	displayMultiplier float64
 }
 
 func numericLocaleNormalize(cfg NumericLocaleCfg) NumericLocaleCfg {
@@ -368,32 +368,6 @@ func numericClamp(value float64, minVal, maxVal *float64) float64 {
 }
 
 // --- mode-aware functions ---
-
-func makeNumericModeCfg(mode NumericInputMode, currency NumericCurrencyModeCfg, percent NumericPercentModeCfg) numericModeCfg {
-	switch mode {
-	case NumericCurrency:
-		return numericModeCfg{
-			mode:              NumericCurrency,
-			affix:             strings.TrimSpace(currency.Symbol),
-			affixPosition:     currency.Position,
-			affixSpacing:      currency.SymbolSpacing,
-			displayMultiplier: 1.0,
-		}
-	case NumericPercent:
-		return numericModeCfg{
-			mode:              NumericPercent,
-			affix:             strings.TrimSpace(percent.Symbol),
-			affixPosition:     percent.Position,
-			affixSpacing:      percent.SymbolSpacing,
-			displayMultiplier: 100.0,
-		}
-	default:
-		return numericModeCfg{
-			mode:              NumericNumber,
-			displayMultiplier: 1.0,
-		}
-	}
-}
 
 func numericModeToDisplay(value float64, mc numericModeCfg) float64 {
 	return value * mc.displayMultiplier

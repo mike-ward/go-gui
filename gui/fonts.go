@@ -16,8 +16,9 @@ const (
 	IconFontName = "feathericon"
 )
 
-//go:embed assets/feathericon.ttf
 // IconFontData is the embedded Feather icon TTF font data.
+//
+//go:embed assets/feathericon.ttf
 var IconFontData []byte
 
 // Icon constants — Feather icon font Unicode mappings.

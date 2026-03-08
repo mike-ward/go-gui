@@ -24,8 +24,8 @@ const vertexStride = 9 * 4
 
 // vertex is the CPU-side vertex for quad uploads.
 type vertex struct {
-	X, Y, Z float32 // position; Z = packed params
-	U, V    float32 // texcoord (-1..1 for SDF quads)
+	X, Y, Z    float32 // position; Z = packed params
+	U, V       float32 // texcoord (-1..1 for SDF quads)
 	R, G, B, A float32 // color (0..1)
 }
 
@@ -98,10 +98,10 @@ func (b *Backend) drawQuad(x, y, w, h float32, c gui.Color,
 	nc := normColor(c.R, c.G, c.B, c.A)
 
 	verts := [4]vertex{
-		{x, y, z, -1, -1, nc.r, nc.g, nc.b, nc.a},         // TL
-		{x + w, y, z, 1, -1, nc.r, nc.g, nc.b, nc.a},       // TR
-		{x + w, y + h, z, 1, 1, nc.r, nc.g, nc.b, nc.a},    // BR
-		{x, y + h, z, -1, 1, nc.r, nc.g, nc.b, nc.a},       // BL
+		{x, y, z, -1, -1, nc.r, nc.g, nc.b, nc.a},       // TL
+		{x + w, y, z, 1, -1, nc.r, nc.g, nc.b, nc.a},    // TR
+		{x + w, y + h, z, 1, 1, nc.r, nc.g, nc.b, nc.a}, // BR
+		{x, y + h, z, -1, 1, nc.r, nc.g, nc.b, nc.a},    // BL
 	}
 
 	gogl.BindVertexArray(b.quadVAO)

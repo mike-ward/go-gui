@@ -76,10 +76,10 @@ func LocaleLoad(path string) (Locale, error) {
 func (b *localeBundle) toLocale() Locale {
 	d := LocaleEnUS
 	return Locale{
-		ID:      strOr(b.ID, d.ID),
-		TextDir: parseTextDir(b.TextDir),
-		Number:  b.toNumberFormat(d.Number),
-		Date:    b.toDateFormat(d.Date),
+		ID:       strOr(b.ID, d.ID),
+		TextDir:  parseTextDir(b.TextDir),
+		Number:   b.toNumberFormat(d.Number),
+		Date:     b.toDateFormat(d.Date),
 		Currency: b.toCurrencyFormat(d.Currency),
 
 		StrOK:     bundleStr(b.Strings, "ok", d.StrOK),

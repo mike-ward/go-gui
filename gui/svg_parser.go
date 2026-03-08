@@ -2,11 +2,11 @@ package gui
 
 // SvgParsed holds the result of parsing an SVG document.
 type SvgParsed struct {
-	Paths      []TessellatedPath
-	Texts      []SvgText
-	TextPaths  []SvgTextPath
-	DefsPaths  map[string]string // id → raw SVG path d attribute
-	Gradients  map[string]SvgGradientDef
+	Paths          []TessellatedPath
+	Texts          []SvgText
+	TextPaths      []SvgTextPath
+	DefsPaths      map[string]string // id → raw SVG path d attribute
+	Gradients      map[string]SvgGradientDef
 	FilteredGroups []SvgParsedFilteredGroup
 	Animations     []SvgAnimation
 	Width          float32

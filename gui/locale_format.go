@@ -9,8 +9,9 @@ import (
 // LocaleFormatDate formats a date using locale-aware month
 // substitution. MMMM -> full month, MMM -> short month.
 // Other tokens use a simple V-style token replacement:
-//   YYYY->year, M->month, D->day, HH->hour, mm->minute,
-//   ss->second.
+//
+//	YYYY->year, M->month, D->day, HH->hour, mm->minute,
+//	ss->second.
 func LocaleFormatDate(t time.Time, format string) string {
 	monthIdx := int(t.Month()) - 1
 	if monthIdx < 0 || monthIdx >= 12 {

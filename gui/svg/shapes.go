@@ -49,8 +49,8 @@ func parseEllipseWithStyle(elem string, inherited groupStyle) (VectorPath, bool)
 	return path, true
 }
 
-func parsePolygonWithStyle(elem string, inherited groupStyle, close bool) (VectorPath, bool) {
-	path, ok := parsePolygonElement(elem, close)
+func parsePolygonWithStyle(elem string, inherited groupStyle, closed bool) (VectorPath, bool) {
+	path, ok := parsePolygonElement(elem, closed)
 	if !ok {
 		return VectorPath{}, false
 	}
@@ -207,7 +207,7 @@ func parseEllipseElement(elem string) (VectorPath, bool) {
 	return ellipseToPath(cx, cy, rx, ry, elem, fill, parseElementStyle(elem)), true
 }
 
-func ellipseToPath(cx, cy, rx, ry float32, elem, fill string, s elementStyle) VectorPath {
+func ellipseToPath(cx, cy, rx, ry float32, _, fill string, s elementStyle) VectorPath {
 	const k = float32(0.5522847498)
 	kx := rx * k
 	ky := ry * k
@@ -242,7 +242,7 @@ func ellipseToPath(cx, cy, rx, ry float32, elem, fill string, s elementStyle) Ve
 }
 
 // parsePolygonElement converts <polygon> or <polyline> to path.
-func parsePolygonElement(elem string, close bool) (VectorPath, bool) {
+func parsePolygonElement(elem string, closed bool) (VectorPath, bool) {
 	pointsStr, ok := findAttr(elem, "points")
 	if !ok {
 		return VectorPath{}, false
@@ -260,7 +260,7 @@ func parsePolygonElement(elem string, close bool) (VectorPath, bool) {
 	for i := 2; i < len(numbers)-1; i += 2 {
 		segments = append(segments, PathSegment{CmdLineTo, []float32{numbers[i], numbers[i+1]}})
 	}
-	if close {
+	if closed {
 		segments = append(segments, PathSegment{CmdClose, nil})
 	}
 
@@ -321,25 +321,4 @@ func attrFloat(elem, name string, fallback float32) float32 {
 		return fallback
 	}
 	return parseF32(v)
-}
-
-func newPathFromStyle(segments []PathSegment, fill string, s elementStyle) VectorPath {
-	vp := VectorPath{
-		Segments:         segments,
-		FillColor:        parseSvgColor(fill),
-		Transform:        s.Transform,
-		StrokeColor:      s.StrokeColor,
-		StrokeWidth:      s.StrokeWidth,
-		StrokeCap:        s.StrokeCap,
-		StrokeJoin:       s.StrokeJoin,
-		Opacity:          s.Opacity,
-		FillOpacity:      s.FillOpacity,
-		StrokeOpacity:    s.StrokeOpacity,
-		StrokeGradientID: s.StrokeGradientID,
-		StrokeDasharray:  s.StrokeDasharray,
-	}
-	if gid, found := parseFillURL(fill); found {
-		vp.FillGradientID = gid
-	}
-	return vp
 }

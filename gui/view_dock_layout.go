@@ -15,20 +15,20 @@ type DockPanelDef struct {
 
 // DockLayoutCfg configures a dock layout component.
 type DockLayoutCfg struct {
-	ID               string
-	Root             *DockNode
-	Panels           []DockPanelDef
-	OnLayoutChange   func(*DockNode, *Window)
-	OnPanelSelect    func(string, string, *Window) // (groupID, panelID)
-	OnPanelClose     func(string, *Window)
-	Sizing           Sizing
-	ColorZonePreview Color
-	ColorTab         Color
-	ColorTabActive   Color
-	ColorTabHover    Color
-	ColorTabBar      Color
+	ID                string
+	Root              *DockNode
+	Panels            []DockPanelDef
+	OnLayoutChange    func(*DockNode, *Window)
+	OnPanelSelect     func(string, string, *Window) // (groupID, panelID)
+	OnPanelClose      func(string, *Window)
+	Sizing            Sizing
+	ColorZonePreview  Color
+	ColorTab          Color
+	ColorTabActive    Color
+	ColorTabHover     Color
+	ColorTabBar       Color
 	ColorTabSeparator Color
-	ColorContent     Color
+	ColorContent      Color
 }
 
 // dockLayoutCore holds callback-relevant fields without content
@@ -87,8 +87,8 @@ func (dv *dockLayoutView) GenerateLayout(w *Window) Layout {
 		A11YRole: AccessRoleGroup,
 		Sizing:   cfg.Sizing,
 		Padding:  Some(PaddingNone),
-		Spacing: Some(float32(0)),
-		Clip:    true,
+		Spacing:  Some(float32(0)),
+		Clip:     true,
 		AmendLayout: func(layout *Layout, w *Window) {
 			dockLayoutAmend(dockID, colorZone, layout, w)
 		},
