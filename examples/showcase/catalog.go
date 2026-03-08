@@ -31,7 +31,7 @@ func catalogPanel(w *gui.Window) gui.View {
 		Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
 		Spacing: gui.Some(float32(8)),
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: "Component Catalog", TextStyle: t.B4}),
+			gui.Text(gui.TextCfg{Text: "Component Catalog", TextStyle: t.B3}),
 			searchInput(app),
 			groupPicker(app),
 			line(),
@@ -120,7 +120,7 @@ func groupPickerItem(label, key string, app *ShowcaseApp) gui.View {
 		Radius:      gui.Some(float32(3)),
 		Padding:     gui.Some(gui.NewPadding(3, 6, 3, 6)),
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: label, TextStyle: gui.CurrentTheme().N3}),
+			gui.Text(gui.TextCfg{Text: label, TextStyle: gui.CurrentTheme().N5}),
 		},
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			showcaseApp := gui.State[ShowcaseApp](w)
@@ -142,7 +142,7 @@ func catalogRows(entries []DemoEntry, app *ShowcaseApp) []gui.View {
 		return []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      "No matching components",
-				TextStyle: gui.CurrentTheme().N3,
+				TextStyle: gui.CurrentTheme().N4,
 			}),
 		}
 	}
@@ -170,7 +170,7 @@ func catalogRows(entries []DemoEntry, app *ShowcaseApp) []gui.View {
 		}
 		rows = append(rows, gui.Text(gui.TextCfg{
 			Text:      group.Label,
-			TextStyle: gui.CurrentTheme().B3,
+			TextStyle: gui.CurrentTheme().B5,
 		}))
 		for _, entry := range groupEntries {
 			rows = append(rows, catalogRow(entry, app))
@@ -199,7 +199,7 @@ func catalogRow(entry DemoEntry, app *ShowcaseApp) gui.View {
 		Padding:          gui.Some(gui.NewPadding(3, 6, 3, 6)),
 		HAlign:           gui.HAlignLeft,
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: entry.Label, TextStyle: gui.CurrentTheme().N3}),
+			gui.Text(gui.TextCfg{Text: entry.Label, TextStyle: gui.CurrentTheme().N4}),
 		},
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			showcaseApp := gui.State[ShowcaseApp](w)
