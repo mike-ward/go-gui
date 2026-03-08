@@ -377,7 +377,7 @@ func applyComboboxDefaults(cfg *ComboboxCfg) {
 		cfg.PlaceholderStyle = d.PlaceholderStyle
 	}
 	if cfg.MaxDropdownHeight == 0 {
-		cfg.MaxDropdownHeight = 200
+		cfg.MaxDropdownHeight = d.MaxDropdownHeight
 	}
 }
 

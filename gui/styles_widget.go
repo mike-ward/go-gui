@@ -145,6 +145,8 @@ type DialogStyle struct {
 	BlurRadius       float32
 	Shadow           *BoxShadow
 	AlignButtons     HorizontalAlign
+	MinWidth         float32
+	MaxWidth         float32
 	TitleTextStyle   TextStyle
 	TextStyle        TextStyle
 }
@@ -358,19 +360,20 @@ type TableStyle struct {
 
 // ComboboxStyle defines combobox visual properties.
 type ComboboxStyle struct {
-	Color            Color
-	ColorHover       Color
-	ColorFocus       Color
-	ColorBorder      Color
-	ColorBorderFocus Color
-	ColorHighlight   Color
-	Padding          Padding
-	SizeBorder       float32
-	Radius           float32
-	MinWidth         float32
-	MaxWidth         float32
-	TextStyle        TextStyle
-	PlaceholderStyle TextStyle
+	Color             Color
+	ColorHover        Color
+	ColorFocus        Color
+	ColorBorder       Color
+	ColorBorderFocus  Color
+	ColorHighlight    Color
+	Padding           Padding
+	SizeBorder        float32
+	Radius            float32
+	MinWidth          float32
+	MaxWidth          float32
+	MaxDropdownHeight float32
+	TextStyle         TextStyle
+	PlaceholderStyle  TextStyle
 }
 
 // CommandPaletteStyle defines command palette visual properties.

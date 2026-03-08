@@ -36,28 +36,28 @@ const (
 
 func applyScrollbarDefaults(cfg *ScrollbarCfg) {
 	if !cfg.ColorThumb.IsSet() {
-		cfg.ColorThumb = RGB(140, 140, 140)
+		cfg.ColorThumb = DefaultScrollbarStyle.ColorThumb
 	}
 	if !cfg.ColorBackground.IsSet() {
-		cfg.ColorBackground = ColorTransparent
+		cfg.ColorBackground = DefaultScrollbarStyle.ColorBackground
 	}
 	if cfg.Size == 0 {
-		cfg.Size = 8
+		cfg.Size = DefaultScrollbarStyle.Size
 	}
 	if cfg.MinThumbSize == 0 {
-		cfg.MinThumbSize = 20
+		cfg.MinThumbSize = DefaultScrollbarStyle.MinThumbSize
 	}
 	if cfg.Radius == 0 {
-		cfg.Radius = RadiusSmall
+		cfg.Radius = DefaultScrollbarStyle.Radius
 	}
 	if cfg.RadiusThumb == 0 {
-		cfg.RadiusThumb = RadiusSmall
+		cfg.RadiusThumb = DefaultScrollbarStyle.RadiusThumb
 	}
 	if cfg.GapEdge == 0 {
-		cfg.GapEdge = 2
+		cfg.GapEdge = DefaultScrollbarStyle.GapEdge
 	}
 	if cfg.GapEnd == 0 {
-		cfg.GapEnd = 2
+		cfg.GapEnd = DefaultScrollbarStyle.GapEnd
 	}
 }
 

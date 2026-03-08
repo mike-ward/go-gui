@@ -441,7 +441,7 @@ func applySelectDefaults(cfg *SelectCfg) {
 		cfg.ColorFocus = d.ColorFocus
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = colorSelectDark
+		cfg.ColorSelect = DefaultSelectStyle.ColorSelect
 	}
 	if !cfg.Padding.IsSet() {
 		cfg.Padding = Some(PaddingTwoFour)
@@ -451,15 +451,9 @@ func applySelectDefaults(cfg *SelectCfg) {
 		cfg.TextStyle = DefaultTextStyle
 	}
 	if cfg.SubheadingStyle == (TextStyle{}) {
-		cfg.SubheadingStyle = TextStyle{
-			Color: RGB(180, 180, 180),
-			Size:  SizeTextSmall,
-		}
+		cfg.SubheadingStyle = DefaultSelectStyle.SubheadingStyle
 	}
 	if cfg.PlaceholderStyle == (TextStyle{}) {
-		cfg.PlaceholderStyle = TextStyle{
-			Color: RGB(150, 150, 150),
-			Size:  SizeTextMedium,
-		}
+		cfg.PlaceholderStyle = DefaultSelectStyle.PlaceholderStyle
 	}
 }

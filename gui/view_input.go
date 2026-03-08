@@ -412,10 +412,7 @@ func applyInputDefaults(cfg *InputCfg) {
 		cfg.TextStyle = DefaultTextStyle
 	}
 	if cfg.PlaceholderStyle == (TextStyle{}) {
-		cfg.PlaceholderStyle = TextStyle{
-			Color: RGB(150, 150, 150),
-			Size:  SizeTextMedium,
-		}
+		cfg.PlaceholderStyle = DefaultInputStyle.PlaceholderStyle
 	}
 	if !cfg.Radius.IsSet() {
 		cfg.Radius = Some(d.Radius)

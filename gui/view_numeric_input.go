@@ -314,10 +314,7 @@ func applyNumericInputDefaults(cfg *NumericInputCfg) {
 		cfg.TextStyle = DefaultTextStyle
 	}
 	if cfg.PlaceholderStyle == (TextStyle{}) {
-		cfg.PlaceholderStyle = TextStyle{
-			Color: RGB(150, 150, 150),
-			Size:  SizeTextMedium,
-		}
+		cfg.PlaceholderStyle = DefaultInputStyle.PlaceholderStyle
 	}
 	if cfg.Decimals == 0 {
 		cfg.Decimals = 2

@@ -120,10 +120,10 @@ func applyRadioDefaults(cfg *RadioCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = colorSelectDark
+		cfg.ColorSelect = DefaultRadioStyle.ColorSelect
 	}
 	if !cfg.ColorUnselect.IsSet() {
-		cfg.ColorUnselect = colorInteriorDark
+		cfg.ColorUnselect = DefaultRadioStyle.ColorUnselect
 	}
 	if !cfg.Padding.IsSet() {
 		cfg.Padding = Some(PaddingNone)

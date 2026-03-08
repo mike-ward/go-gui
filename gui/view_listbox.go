@@ -375,7 +375,7 @@ func applyListBoxDefaults(cfg *ListBoxCfg) {
 		cfg.ColorBorder = d.ColorBorder
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = colorSelectDark
+		cfg.ColorSelect = DefaultListBoxStyle.ColorSelect
 	}
 	if !cfg.Padding.IsSet() {
 		cfg.Padding = Some(PaddingTwo)
@@ -385,10 +385,7 @@ func applyListBoxDefaults(cfg *ListBoxCfg) {
 		cfg.TextStyle = DefaultTextStyle
 	}
 	if cfg.SubheadingStyle == (TextStyle{}) {
-		cfg.SubheadingStyle = TextStyle{
-			Color: RGB(180, 180, 180),
-			Size:  SizeTextSmall,
-		}
+		cfg.SubheadingStyle = DefaultListBoxStyle.SubheadingStyle
 	}
 }
 

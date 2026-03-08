@@ -153,7 +153,7 @@ func applyToggleDefaults(cfg *ToggleCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = colorSelectDark
+		cfg.ColorSelect = DefaultToggleStyle.ColorSelect
 	}
 
 	if !cfg.Padding.IsSet() {

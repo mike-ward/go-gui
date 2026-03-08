@@ -275,10 +275,10 @@ func applyDialogDefaults(cfg *DialogCfg) {
 		cfg.AlignButtons = d.AlignButtons
 	}
 	if cfg.MinWidth == 0 {
-		cfg.MinWidth = 200
+		cfg.MinWidth = d.MinWidth
 	}
 	if cfg.MaxWidth == 0 {
-		cfg.MaxWidth = 300
+		cfg.MaxWidth = d.MaxWidth
 	}
 }
 
