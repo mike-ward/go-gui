@@ -361,6 +361,9 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	if shape.Disabled {
 		c = dimAlpha(c)
 	}
+	if c.A == 0 {
+		return
+	}
 
 	text := tc.Text
 	if tc.TextIsPassword {

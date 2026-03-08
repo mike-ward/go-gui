@@ -49,7 +49,7 @@ func Toggle(cfg ToggleCfg) View {
 	txtStyle := cfg.TextStyle
 	if !cfg.Selected {
 		if cfg.TextUnselect == " " {
-			txtStyle.Color = RGBA(0, 0, 0, 1) // TODO: text render ignores 0 alpha, why?
+			txtStyle.Color = ColorTransparent
 		} else {
 			txt = cfg.TextUnselect
 		}
