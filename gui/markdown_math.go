@@ -27,6 +27,18 @@ func sanitizeLatex(s string) string {
 	if len(s) > markdown.MaxLatexSourceLen {
 		return ""
 	}
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	result := strings.Map(func(r rune) rune {
+		switch {
+		case r == '\r' || r == '\n' || r == '\t':
+			return ' '
+		case r < 0x20:
+			return -1
+		default:
+			return r
+		}
+	}, s)
+	result = strings.TrimSpace(result)
 	blocked := []string{
 		`\write18`, `\input`, `\include`,
 		`\openin`, `\openout`, `\read`, `\write`,
@@ -57,7 +69,6 @@ func sanitizeLatex(s string) string {
 		`\tracingrestores`, `\tracingstats`,
 		`\vcenter`, `\valign`, `\vrule`,
 	}
-	result := s
 	for range 10 {
 		prev := result
 		for _, cmd := range blocked {

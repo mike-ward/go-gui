@@ -62,17 +62,17 @@ type MarkdownStyle struct {
 // current theme.
 func DefaultMarkdownStyle() MarkdownStyle {
 	return MarkdownStyle{
-		Text:              guiTheme.N3,
-		H1:                guiTheme.B1,
-		H2:                guiTheme.B2,
-		H3:                guiTheme.B3,
-		H4:                guiTheme.B4,
-		H5:                guiTheme.B5,
-		H6:                guiTheme.B6,
-		Bold:              guiTheme.B3,
-		Italic:            guiTheme.I3,
-		BoldItalic:        guiTheme.BI3,
-		Code:              guiTheme.M5,
+		Text:       guiTheme.N3,
+		H1:         guiTheme.B1,
+		H2:         guiTheme.B2,
+		H3:         guiTheme.B3,
+		H4:         guiTheme.B4,
+		H5:         guiTheme.B5,
+		H6:         guiTheme.B6,
+		Bold:       guiTheme.B3,
+		Italic:     guiTheme.I3,
+		BoldItalic: guiTheme.BI3,
+		Code:       guiTheme.M5,
 		CodeBlockText: func() TextStyle {
 			s := guiTheme.M5
 			s.Size = (guiTheme.M5.Size + guiTheme.M6.Size) / 2
@@ -160,6 +160,18 @@ func markdownWarnExternalAPIOnce(w *Window) {
 		"content may be sent to codecogs.com and kroki.io")
 }
 
+func markdownDiagramErrorView(
+	errText string, baseStyle TextStyle,
+) View {
+	errStyle := baseStyle
+	errStyle.Color = RGBA(200, 50, 50, 255)
+	return Text(TextCfg{
+		Text:      errText,
+		TextStyle: errStyle,
+		Mode:      TextModeWrap,
+	})
+}
+
 // buildMarkdownTableData converts ParsedTable to
 // TableRowCfg array.
 func buildMarkdownTableData(
@@ -236,12 +248,9 @@ func renderMdMath(
 					Height: entry.Height,
 				})
 			case DiagramError:
-				errStyle := cfg.Style.Code
-				errStyle.Color = RGBA(200, 50, 50, 255)
-				return Text(TextCfg{
-					Text:      entry.Error,
-					TextStyle: errStyle,
-				})
+				return markdownDiagramErrorView(
+					entry.Error, cfg.Style.Code,
+				)
 			}
 		}
 	}
@@ -309,12 +318,9 @@ func renderMdMermaid(
 					BgColor: White,
 				})
 			case DiagramError:
-				errStyle := cfg.Style.Code
-				errStyle.Color = RGBA(200, 50, 50, 255)
-				return Text(TextCfg{
-					Text:      entry.Error,
-					TextStyle: errStyle,
-				})
+				return markdownDiagramErrorView(
+					entry.Error, cfg.Style.Code,
+				)
 			}
 		}
 	}

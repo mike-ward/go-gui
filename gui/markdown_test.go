@@ -1,8 +1,11 @@
 package gui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
 // --- Test helpers ---
@@ -27,6 +30,8 @@ func TestSanitizeLatex(t *testing.T) {
 		{"\\input{secrets}", "{secrets}"},
 		{"\\def\\x{y}", "\\x{y}"},
 		{"\\write18{cmd}", "{cmd}"},
+		{"\\sum_{n=1}^{\\infty}\r\n\\frac{1}{n^2}",
+			"\\sum_{n=1}^{\\infty} \\frac{1}{n^2}"},
 	}
 	for _, tc := range tests {
 		got := sanitizeLatex(tc.input)
@@ -252,12 +257,63 @@ func TestMarkdownCodeBlocksHaveNoBorder(t *testing.T) {
 	}
 }
 
+func TestRenderMdMathErrorsWrap(t *testing.T) {
+	prev := markdownExternalAPIsEnabled
+	SetMarkdownExternalAPIsEnabled(true)
+	t.Cleanup(func() {
+		SetMarkdownExternalAPIsEnabled(prev)
+	})
+
+	style := DefaultMarkdownStyle()
+	block := MarkdownBlock{
+		IsMath:    true,
+		MathLatex: `\badcommand{this error should wrap}`,
+	}
+	hash := mathCacheHash(
+		fmt.Sprintf("display_%d",
+			markdown.MathHash(block.MathLatex)),
+	)
+	errText := strings.Repeat("codecogs api error ", 8)
+
+	w := &Window{}
+	w.viewState.diagramCache = NewBoundedDiagramCache(50)
+	w.viewState.diagramCache.Set(hash, DiagramCacheEntry{
+		State: DiagramError,
+		Error: errText,
+	})
+
+	layout := GenerateViewLayout(renderMdMath(block, MarkdownCfg{
+		Style: style,
+	}, w), w)
+
+	mode, ok := findTextModeByText(layout, errText)
+	if !ok {
+		t.Fatal("expected markdown math error text")
+	}
+	if mode != TextModeWrap {
+		t.Fatalf("math error text mode = %v, want TextModeWrap", mode)
+	}
+}
+
 func firstMarkdownTextMode(layout Layout) (TextMode, bool) {
 	if layout.Shape != nil && layout.Shape.TC != nil {
 		return layout.Shape.TC.TextMode, true
 	}
 	for _, child := range layout.Children {
 		if mode, ok := firstMarkdownTextMode(child); ok {
+			return mode, true
+		}
+	}
+	return 0, false
+}
+
+func findTextModeByText(layout Layout, text string) (TextMode, bool) {
+	if layout.Shape != nil && layout.Shape.TC != nil &&
+		layout.Shape.TC.Text == text {
+		return layout.Shape.TC.TextMode, true
+	}
+	for _, child := range layout.Children {
+		if mode, ok := findTextModeByText(child, text); ok {
 			return mode, true
 		}
 	}
