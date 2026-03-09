@@ -507,29 +507,134 @@ This showcase uses ` + "`gui.NewInMemoryDataSource`" + ` to mirror the original 
 `,
 
 	// Text
-	"text": `Theme typography sizes, weights, and styles.
+	"text": `Single-style text rendering with theme typography. Supports wrapping,
+alignment, gradients, outlines, rotation, and custom colors.
 
 ## Usage
 
 ` + "```go" + `
+t := gui.CurrentTheme()
+
+// Basic text
 gui.Text(gui.TextCfg{Text: "Hello", TextStyle: t.N3})
-gui.Text(gui.TextCfg{Text: "Bold", TextStyle: t.B4})
+
+// Wrapping text
+gui.Text(gui.TextCfg{
+    Text:      "Long paragraph that wraps to container width.",
+    TextStyle: t.N4,
+    Mode:      gui.TextModeWrap,
+})
+
+// Custom color
+gui.Text(gui.TextCfg{
+    Text: "Colored",
+    TextStyle: gui.TextStyle{
+        Color: gui.ColorFromString("#3b82f6"),
+        Size:  t.N3.Size,
+    },
+})
 ` + "```" + `
 
-## Style Shortcuts
+## Theme Style Shortcuts
 
 | Prefix | Meaning | Sizes |
 |--------|---------|-------|
-| N | Normal | N1–N6 |
+| N | Normal | N1–N6 (XLarge–Tiny) |
 | B | Bold | B1–B6 |
 | I | Italic | I1–I6 |
 | M | Monospace | M1–M6 |
 | Icon | Icon font | Icon1–Icon6 |
+
+## Text Modes
+
+| Mode | Behavior |
+|------|----------|
+| TextModeSingleLine | No wrapping (default) |
+| TextModeMultiline | Honors ` + "`\\n`" + ` line breaks |
+| TextModeWrap | Word-wraps to container width |
+| TextModeWrapKeepSpaces | Wraps preserving whitespace |
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Text | string | Content to display |
+| TextStyle | TextStyle | Font, size, color, decorations |
+| Mode | TextMode | Wrapping behavior |
+| MinWidth | float32 | Minimum text width |
+| Clip | bool | Clip text to bounds |
+| Opacity | float32 | Text opacity (0.0–1.0) |
+| Hero | bool | Animate text transitions |
+| IsPassword | bool | Mask characters |
+| Sizing | Sizing | Override default sizing |
+
+## TextStyle Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Color | Color | Text fill color |
+| Size | float32 | Font size in points |
+| Align | TextAlignment | Left, center, or right |
+| Underline | bool | Underline decoration |
+| Strikethrough | bool | Strikethrough decoration |
+| LetterSpacing | float32 | Extra space between characters |
+| LineSpacing | float32 | Extra space between lines |
+| Gradient | *glyph.GradientConfig | Gradient text fill |
+| StrokeWidth | float32 | Text outline width |
+| StrokeColor | Color | Text outline color |
+| RotationRadians | float32 | Text rotation |
 `,
 
-	"rtf": `Mixed styles within a single text block using TextStyle fields.
+	"rtf": `Mixed styles, links, abbreviations, and decorations within a single
+text block. Build a paragraph from ` + "`RichTextRun`" + ` slices rendered by
+` + "`gui.RTF`" + `.
 
-Supports bold, italic, underline, strikethrough, and custom colors.
+## Usage
+
+` + "```go" + `
+t := gui.CurrentTheme()
+gui.RTF(gui.RtfCfg{
+    RichText: gui.RichText{
+        Runs: []gui.RichTextRun{
+            gui.RichRun("Normal, ", t.N3),
+            gui.RichRun("bold, ", t.B3),
+            gui.RichRun("italic", t.I3),
+        },
+    },
+})
+` + "```" + `
+
+## Run Helpers
+
+| Helper | Description |
+|--------|-------------|
+| ` + "`RichRun(text, style)`" + ` | Styled text run |
+| ` + "`RichLink(text, url, style)`" + ` | Hyperlink (auto underline + theme color) |
+| ` + "`RichAbbr(text, expansion, style)`" + ` | Abbreviation with tooltip |
+| ` + "`RichFootnote(id, content, style)`" + ` | Superscript footnote marker with tooltip |
+| ` + "`RichBr()`" + ` | Line break |
+
+## Text Decorations
+
+Set ` + "`Underline`" + ` or ` + "`Strikethrough`" + ` on a ` + "`TextStyle`" + `:
+
+` + "```go" + `
+gui.RichRun("underlined", gui.TextStyle{
+    Color: t.N3.Color, Size: t.N3.Size,
+    Underline: true,
+})
+` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| RichText | RichText | Runs of styled text |
+| MinWidth | float32 | Minimum block width |
+| Mode | TextMode | Text wrapping mode |
+| HangingIndent | float32 | Negative indent for wrapped lines |
+| Clip | bool | Clip text to bounds |
+| BaseTextStyle | *TextStyle | Fallback style for runs |
 `,
 
 	"markdown": `Render markdown strings with syntax highlighting, tables, and blockquotes.
@@ -607,20 +712,53 @@ Set ` + "`Radius`" + ` to control corner rounding. Use ` + "`ColorBorder`" + ` a
 ` + "`SizeBorder`" + ` for outlined rectangles.
 `,
 
-	"icons": `Icon font catalog rendered from ` + "`gui.IconLookup`" + ` using the theme Icon styles.
+	"icons": `256 icons from the Feather icon font. Each icon is a named constant
+(e.g. ` + "`gui.IconCheck`" + `, ` + "`gui.IconFolder`" + `, ` + "`gui.IconSearch`" + `).
+Render with ` + "`gui.Text`" + ` using one of the six theme Icon styles.
 
 ## Usage
 
 ` + "```go" + `
+// Single icon
 gui.Text(gui.TextCfg{Text: gui.IconCheck, TextStyle: t.Icon4})
 
-for name, glyph := range gui.IconLookup {
-    _ = name
-    _ = glyph
-}
+// Icon with custom color
+gui.Text(gui.TextCfg{
+    Text:      gui.IconAlertCircle,
+    TextStyle: t.Icon3,
+    Color:     gui.ColorRed,
+})
+
+// Icon inside a button
+gui.Button(gui.ButtonCfg{
+    ID: "save",
+    Content: []gui.View{
+        gui.Text(gui.TextCfg{Text: gui.IconSave, TextStyle: t.Icon4}),
+        gui.Text(gui.TextCfg{Text: "Save"}),
+    },
+})
 ` + "```" + `
 
-Use ` + "`gui.IconLookup`" + ` for programmatic access to the full icon catalog.
+## Icon Styles
+
+| Style | Size | Maps to |
+|-------|------|---------|
+| t.Icon1 | XLarge | SizeTextXLarge |
+| t.Icon2 | Large | SizeTextLarge |
+| t.Icon3 | Medium | SizeTextMedium |
+| t.Icon4 | Small | SizeTextSmall |
+| t.Icon5 | XSmall | SizeTextXSmall |
+| t.Icon6 | Tiny | SizeTextTiny |
+
+## Programmatic Access
+
+` + "`gui.IconLookup`" + ` is a ` + "`map[string]string`" + ` of all icon names to glyphs:
+
+` + "```go" + `
+for name, glyph := range gui.IconLookup {
+    gui.Text(gui.TextCfg{Text: glyph, TextStyle: t.Icon4})
+}
+` + "```" + `
 `,
 
 	// Layout
