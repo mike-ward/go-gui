@@ -204,12 +204,30 @@ gui.DatePicker(gui.DatePickerCfg{ID: "dp"})
 
 	"date_picker_roller": `# Date Picker Roller
 
-Rolling drum-style date selection.
+Rolling drum-style date selection. Supports mouse scroll, click,
+and keyboard input.
+
+## Display Modes
+
+- **RollerDayMonthYear** (default) — DD MMM YYYY
+- **RollerMonthDayYear** — MMM DD YYYY
+- **RollerMonthYear** — MMM YYYY (no day drum)
+- **RollerYearOnly** — YYYY (single drum)
+
+## Keyboard
+
+- **Up/Down** — change month
+- **Shift+Up/Down** — change year
+- **Alt+Up/Down** — change day
 
 ## Usage
 
 ` + "```go" + `
-gui.DatePickerRoller(gui.DatePickerRollerCfg{ID: "dpr"})
+gui.DatePickerRoller(gui.DatePickerRollerCfg{
+    ID:          "dpr",
+    DisplayMode: gui.RollerMonthDayYear,
+    LongMonths:  true,
+})
 ` + "```" + `
 `,
 
