@@ -21,9 +21,7 @@ func componentDoc(id string) string {
 
 var widgetDocs = map[string]string{
 	// Feedback
-	"button": `# Button
-
-Trigger actions with click and keyboard focus.
+	"button": `Trigger actions with click and keyboard focus.
 
 ## Usage
 
@@ -55,9 +53,7 @@ gui.Button(gui.ButtonCfg{
 | OnClick | func(*Layout, *Event, *Window) | Button clicked |
 `,
 
-	"progress_bar": `# Progress Bar
-
-Determinate and indeterminate progress indicators.
+	"progress_bar": `Determinate and indeterminate progress indicators.
 
 ## Usage
 
@@ -77,9 +73,7 @@ gui.ProgressBar(gui.ProgressBarCfg{
 | Color | Color | Bar fill color |
 `,
 
-	"pulsar": `# Pulsar
-
-Animated pulse indicator for loading states.
+	"pulsar": `Animated pulse indicator for loading states.
 
 ## Usage
 
@@ -88,9 +82,7 @@ w.Pulsar()
 ` + "```" + `
 `,
 
-	"toast": `# Toast
-
-Non-blocking notifications with severity and auto-dismiss.
+	"toast": `Non-blocking notifications with severity and auto-dismiss.
 
 ## Usage
 
@@ -109,9 +101,7 @@ w.Toast(gui.ToastCfg{
 | w.ToastDismiss(id) | Dismiss specific toast |
 `,
 
-	"badge": `# Badge
-
-Numeric and colored pill labels for counts and status.
+	"badge": `Numeric and colored pill labels for counts and status.
 
 ## Usage
 
@@ -131,9 +121,7 @@ gui.Badge(gui.BadgeCfg{Label: "5", Variant: gui.BadgeInfo})
 `,
 
 	// Input
-	"input": `# Input
-
-Single-line, password, and multiline text input with optional mask.
+	"input": `Single-line, password, and multiline text input with optional mask.
 
 ## Usage
 
@@ -160,9 +148,7 @@ gui.Input(gui.InputCfg{
 | Height | float32 | Multiline height |
 `,
 
-	"numeric_input": `# Numeric Input
-
-Locale-aware number input with step buttons and arrow keys.
+	"numeric_input": `Locale-aware number input with step buttons and arrow keys.
 
 ## Usage
 
@@ -174,9 +160,7 @@ gui.NumericInput(gui.NumericInputCfg{
 ` + "```" + `
 `,
 
-	"color_picker": `# Color Picker
-
-Interactive HSV color selection wheel with value slider.
+	"color_picker": `Interactive HSV color selection wheel with value slider.
 
 ## Usage
 
@@ -191,9 +175,7 @@ gui.ColorPicker(gui.ColorPickerCfg{
 ` + "```" + `
 `,
 
-	"date_picker": `# Date Picker
-
-Calendar-style date selection with month/year navigation.
+	"date_picker": `Calendar-style date selection with month/year navigation.
 
 ## Usage
 
@@ -202,9 +184,7 @@ gui.DatePicker(gui.DatePickerCfg{ID: "dp"})
 ` + "```" + `
 `,
 
-	"date_picker_roller": `# Date Picker Roller
-
-Rolling drum-style date selection. Supports mouse scroll, click,
+	"date_picker_roller": `Rolling drum-style date selection. Supports mouse scroll, click,
 and keyboard input.
 
 ## Display Modes
@@ -231,9 +211,7 @@ gui.DatePickerRoller(gui.DatePickerRollerCfg{
 ` + "```" + `
 `,
 
-	"input_date": `# Input Date
-
-Text input with calendar popup for date entry.
+	"input_date": `Text input with calendar popup for date entry.
 
 ## Usage
 
@@ -242,18 +220,14 @@ gui.InputDate(gui.InputDateCfg{ID: "id", Sizing: gui.FillFit})
 ` + "```" + `
 `,
 
-	"forms": `# Forms
-
-Combine inputs, labels, and buttons into form layouts.
+	"forms": `Combine inputs, labels, and buttons into form layouts.
 
 Use ` + "`labeledRow`" + ` helpers to align labels with inputs in a
 consistent grid.
 `,
 
 	// Selection
-	"toggle": `# Toggle
-
-Checkbox-style toggles with labels.
+	"toggle": `Checkbox-style toggles with labels.
 
 ## Usage
 
@@ -276,9 +250,7 @@ gui.Toggle(gui.ToggleCfg{
 | OnClick | func(*Layout, *Event, *Window) | Toggle clicked |
 `,
 
-	"switch": `# Switch
-
-On/off switch control with animated thumb.
+	"switch": `On/off switch control with animated thumb.
 
 ## Usage
 
@@ -295,9 +267,7 @@ gui.Switch(gui.SwitchCfg{
 ` + "```" + `
 `,
 
-	"radio": `# Radio
-
-Single radio button for selecting one option from a group.
+	"radio": `Single radio button for selecting one option from a group.
 
 ## Usage
 
@@ -313,9 +283,7 @@ gui.Radio(gui.RadioCfg{
 ` + "```" + `
 `,
 
-	"radio_group": `# Radio Button Group
-
-Grouped radio buttons in row or column layout.
+	"radio_group": `Grouped radio buttons in row or column layout.
 
 ## Usage
 
@@ -333,9 +301,7 @@ gui.RadioButtonGroupColumn(gui.RadioButtonGroupCfg{
 ` + "```" + `
 `,
 
-	"select": `# Select
-
-Dropdown with optional multi-select.
+	"select": `Dropdown with optional multi-select.
 
 ## Usage
 
@@ -351,9 +317,7 @@ gui.Select(gui.SelectCfg{
 ` + "```" + `
 `,
 
-	"listbox": `# List Box
-
-Single and multi-select scrollable list.
+	"listbox": `Single and multi-select scrollable list.
 
 ## Usage
 
@@ -372,9 +336,7 @@ gui.ListBox(gui.ListBoxCfg{
 ` + "```" + `
 `,
 
-	"combobox": `# Combobox
-
-Editable dropdown with type-ahead filtering.
+	"combobox": `Editable dropdown with type-ahead filtering.
 
 ## Usage
 
@@ -390,9 +352,7 @@ gui.Combobox(gui.ComboboxCfg{
 ` + "```" + `
 `,
 
-	"range_slider": `# Range Slider
-
-Drag horizontal value control.
+	"range_slider": `Drag horizontal value control.
 
 ## Usage
 
@@ -409,9 +369,7 @@ gui.RangeSlider(gui.RangeSliderCfg{
 `,
 
 	// Data
-	"table": `# Table
-
-Sortable data table from string arrays.
+	"table": `Sortable data table from string arrays.
 
 ## Usage
 
@@ -426,9 +384,7 @@ w.Table(cfg)
 ` + "```" + `
 `,
 
-	"data_grid": `# Data Grid
-
-Full-featured grid with sorting, filtering, paging, and column chooser.
+	"data_grid": `Full-featured grid with sorting, filtering, paging, and column chooser.
 
 ## Usage
 
@@ -446,9 +402,7 @@ w.DataGrid(gui.DataGridCfg{
 ` + "```" + `
 `,
 
-	"data_source": `# Data Source
-
-Async data-source backed grid with CRUD operations.
+	"data_source": `Async data-source backed grid with CRUD operations.
 
 ## Usage
 
@@ -486,9 +440,7 @@ This showcase uses ` + "`gui.NewInMemoryDataSource`" + ` to mirror the original 
 `,
 
 	// Text
-	"text": `# Text
-
-Theme typography sizes, weights, and styles.
+	"text": `Theme typography sizes, weights, and styles.
 
 ## Usage
 
@@ -508,16 +460,12 @@ gui.Text(gui.TextCfg{Text: "Bold", TextStyle: t.B4})
 | Icon | Icon font | Icon1–Icon6 |
 `,
 
-	"rtf": `# Rich Text
-
-Mixed styles within a single text block using TextStyle fields.
+	"rtf": `Mixed styles within a single text block using TextStyle fields.
 
 Supports bold, italic, underline, strikethrough, and custom colors.
 `,
 
-	"markdown": `# Markdown
-
-Render markdown strings with syntax highlighting, tables, and blockquotes.
+	"markdown": `Render markdown strings with syntax highlighting, tables, and blockquotes.
 
 ## Usage
 
@@ -530,9 +478,7 @@ w.Markdown(gui.MarkdownCfg{
 `,
 
 	// Graphics
-	"svg": `# SVG
-
-Scalable vector graphics from file or inline string.
+	"svg": `Scalable vector graphics from file or inline string.
 
 ## Usage
 
@@ -544,9 +490,7 @@ gui.Svg(gui.SvgCfg{
 ` + "```" + `
 `,
 
-	"image": `# Image
-
-Display image files (PNG, JPEG, etc.).
+	"image": `Display image files (PNG, JPEG, etc.).
 
 ## Usage
 
@@ -558,9 +502,7 @@ gui.Image(gui.ImageCfg{
 ` + "```" + `
 `,
 
-	"gradient": `# Gradients
-
-Linear gradients with configurable direction and color stops.
+	"gradient": `Linear gradients with configurable direction and color stops.
 
 ## Usage
 
@@ -577,9 +519,7 @@ gui.Column(gui.ContainerCfg{
 ` + "```" + `
 `,
 
-	"box_shadows": `# Box Shadows
-
-Drop shadows on containers with offset, blur, and color.
+	"box_shadows": `Drop shadows on containers with offset, blur, and color.
 
 ## Usage
 
@@ -594,17 +534,13 @@ gui.Column(gui.ContainerCfg{
 ` + "```" + `
 `,
 
-	"rectangle": `# Rectangle
-
-Styled containers used as visual shapes: sharp, rounded, bordered, pill.
+	"rectangle": `Styled containers used as visual shapes: sharp, rounded, bordered, pill.
 
 Set ` + "`Radius`" + ` to control corner rounding. Use ` + "`ColorBorder`" + ` and
 ` + "`SizeBorder`" + ` for outlined rectangles.
 `,
 
-	"icons": `# Icons
-
-Icon font catalog rendered from ` + "`gui.IconLookup`" + ` using the theme Icon styles.
+	"icons": `Icon font catalog rendered from ` + "`gui.IconLookup`" + ` using the theme Icon styles.
 
 ## Usage
 
@@ -621,9 +557,7 @@ Use ` + "`gui.IconLookup`" + ` for programmatic access to the full icon catalog.
 `,
 
 	// Layout
-	"row": `# Row
-
-Horizontal container — children flow left to right.
+	"row": `Horizontal container — children flow left to right.
 
 ## Usage
 
@@ -635,9 +569,7 @@ gui.Row(gui.ContainerCfg{
 ` + "```" + `
 `,
 
-	"column": `# Column
-
-Vertical container — children flow top to bottom.
+	"column": `Vertical container — children flow top to bottom.
 
 ## Usage
 
@@ -649,9 +581,7 @@ gui.Column(gui.ContainerCfg{
 ` + "```" + `
 `,
 
-	"wrap_panel": `# Wrap Panel
-
-Horizontal flow that wraps to the next line when full.
+	"wrap_panel": `Horizontal flow that wraps to the next line when full.
 
 ## Usage
 
@@ -663,16 +593,12 @@ gui.Wrap(gui.ContainerCfg{
 ` + "```" + `
 `,
 
-	"overflow_panel": `# Overflow Panel
-
-Scrollable container for content that exceeds available space.
+	"overflow_panel": `Scrollable container for content that exceeds available space.
 
 Enable scrolling with ` + "`IDScroll`" + ` and ` + "`ScrollbarCfgY`" + `.
 `,
 
-	"expand_panel": `# Expand Panel
-
-Collapsible sections with animated expand/collapse.
+	"expand_panel": `Collapsible sections with animated expand/collapse.
 
 ## Usage
 
@@ -691,9 +617,7 @@ gui.ExpandPanel(gui.ExpandPanelCfg{
 ` + "```" + `
 `,
 
-	"sidebar": `# Sidebar
-
-Slide-out panel overlaying main content.
+	"sidebar": `Slide-out panel overlaying main content.
 
 ## Usage
 
@@ -707,9 +631,7 @@ w.Sidebar(gui.SidebarCfg{
 ` + "```" + `
 `,
 
-	"splitter": `# Splitter
-
-Resizable split panes with draggable divider.
+	"splitter": `Resizable split panes with draggable divider.
 
 ## Usage
 
@@ -726,9 +648,7 @@ gui.Splitter(gui.SplitterCfg{
 ` + "```" + `
 `,
 
-	"scrollbar": `# Scrollable Containers
-
-Custom scrollbar styling via ScrollbarCfg on any container.
+	"scrollbar": `Custom scrollbar styling via ScrollbarCfg on any container.
 
 ## Usage
 
@@ -742,9 +662,7 @@ gui.Column(gui.ContainerCfg{
 `,
 
 	// Navigation
-	"breadcrumb": `# Breadcrumb
-
-Trail navigation with clickable path segments.
+	"breadcrumb": `Trail navigation with clickable path segments.
 
 ## Usage
 
@@ -761,9 +679,7 @@ gui.Breadcrumb(gui.BreadcrumbCfg{
 ` + "```" + `
 `,
 
-	"tab_control": `# Tab Control
-
-Switch content panels with keyboard-friendly tabs.
+	"tab_control": `Switch content panels with keyboard-friendly tabs.
 
 ## Usage
 
@@ -781,9 +697,7 @@ gui.TabControl(gui.TabControlCfg{
 ` + "```" + `
 `,
 
-	"menus": `# Menus + Menubar
-
-Nested menus with separators, submenus, and keyboard shortcuts.
+	"menus": `Nested menus with separators, submenus, and keyboard shortcuts.
 
 ## Usage
 
@@ -804,9 +718,7 @@ gui.Menubar(gui.MenubarCfg{
 ` + "```" + `
 `,
 
-	"command_palette": `# Command Palette
-
-Quick command search with fuzzy filtering.
+	"command_palette": `Quick command search with fuzzy filtering.
 
 ## Usage
 
@@ -827,9 +739,7 @@ gui.CommandPaletteToggle("cmd", focusPalette, w)
 `,
 
 	// Overlays
-	"dialog": `# Dialog
-
-Message, confirm, and custom modal dialogs.
+	"dialog": `Message, confirm, and custom modal dialogs.
 
 ## Usage
 
@@ -855,9 +765,7 @@ w.Dialog(gui.DialogCfg{
 | DialogConfirm | Yes / No |
 `,
 
-	"tooltip": `# Tooltip
-
-Hover hints attached to any widget.
+	"tooltip": `Hover hints attached to any widget.
 
 ## Usage
 
@@ -872,9 +780,7 @@ gui.WithTooltip(w, gui.WithTooltipCfg{
 `,
 
 	// Animations
-	"animations": `# Animations
-
-Tween, spring, and keyframe animation APIs.
+	"animations": `Tween, spring, and keyframe animation APIs.
 
 ## Tween
 
@@ -907,9 +813,7 @@ w.AnimationAdd(a)
 `,
 
 	// Theme
-	"theme_gen": `# Theme Generator
-
-Generate a complete theme from a seed color using HSV color theory.
+	"theme_gen": `Generate a complete theme from a seed color using HSV color theory.
 
 Strategies: mono, complement, analogous, triadic, warm, cool.
 
@@ -917,9 +821,7 @@ Use the tint slider to control surface saturation.
 `,
 
 	// Notification
-	"notification": `# Notification
-
-Send native OS notifications from your application.
+	"notification": `Send native OS notifications from your application.
 
 ## Usage
 
@@ -943,9 +845,7 @@ w.NativeNotification(gui.NativeNotificationCfg{
 `,
 
 	// Shader
-	"shader": `# Custom Shader
-
-Apply custom fragment shaders (Metal + GLSL) to any container.
+	"shader": `Apply custom fragment shaders (Metal + GLSL) to any container.
 
 ## Usage
 
@@ -966,9 +866,7 @@ with the animation system for dynamic effects.
 `,
 
 	// Printing
-	"printing": `# Printing / PDF Export
-
-Export the current window to PDF or send to the OS print dialog.
+	"printing": `Export the current window to PDF or send to the OS print dialog.
 
 ## Export PDF
 
@@ -988,9 +886,7 @@ r := w.RunPrintJob(job)
 ` + "```" + `
 `,
 
-	"tree": `# Tree View
-
-Hierarchical expandable node display with virtualization and lazy-loading support.
+	"tree": `Hierarchical expandable node display with virtualization and lazy-loading support.
 
 ## Showcase Sections
 
@@ -1057,9 +953,7 @@ Drag-reorder remains deferred and is documented separately on the Drag Reorder p
 `,
 
 	// Drag Reorder
-	"drag_reorder": `# Drag Reorder
-
-Drag items to reorder within lists, tabs, and tree views. Keyboard shortcuts provide an accessible alternative to mouse dragging.
+	"drag_reorder": `Drag items to reorder within lists, tabs, and tree views. Keyboard shortcuts provide an accessible alternative to mouse dragging.
 
 ## Behaviors
 
@@ -1089,9 +983,7 @@ The same ` + "`Reorderable`" + ` + ` + "`OnReorder`" + ` pattern applies to TabC
 `,
 
 	// Locale
-	"locale": `# Locale
-
-Switch between registered locales to change date/number formatting
+	"locale": `Switch between registered locales to change date/number formatting
 and UI strings (OK, Cancel, etc.).
 
 Built-in: en-US, de-DE, fr-FR, es-ES, pt-BR, ja-JP, zh-CN, ko-KR, ar-SA, he-IL.
