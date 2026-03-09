@@ -117,6 +117,7 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 		content = append(content, datePickerCalendar(cfg, state, w))
 	}
 
+	cfgID := cfg.ID
 	col := &containerView{
 		cfg: ContainerCfg{
 			ID:          cfg.ID,
@@ -134,8 +135,18 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 			Content:     content,
 			axis:        AxisTopToBottom,
 			OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-				datePickerOnKeyDown(cfg, e, w)
+				sm := StateMap[string, datePickerState](
+					w, nsDatePicker, capModerate)
+				s, _ := sm.Get(cfgID)
+				if s.ShowYearMonthPicker {
+					datePickerRollerKeyDown(
+						sm, cfgID, s, e, w)
+				} else {
+					datePickerOnKeyDown(cfg, e, w)
+				}
 			},
+			AmendLayout: datePickerAmendScroll(
+				state.ShowYearMonthPicker, cfgID),
 		},
 		content:   content,
 		shapeType: ShapeRectangle,
@@ -178,11 +189,17 @@ func datePickerControls(
 		guiLocale.Date.MonthYear,
 	)
 
+	idFocus := cfg.IDFocus
 	onToggle := func(_ *Layout, e *Event, w *Window) {
 		sm := StateMap[string, datePickerState](w, nsDatePicker, capModerate)
 		s, _ := sm.Get(cfgID)
 		s.ShowYearMonthPicker = !s.ShowYearMonthPicker
 		sm.Set(cfgID, s)
+		if s.ShowYearMonthPicker {
+			w.SetIDFocus(idFocus)
+		} else {
+			w.SetIDFocus(0)
+		}
 		w.UpdateWindow()
 		e.IsHandled = true
 	}
@@ -433,6 +450,63 @@ func datePickerYearMonthPicker(
 			w.UpdateWindow()
 		},
 	})
+}
+
+func datePickerAmendScroll(
+	rollerVisible bool, cfgID string,
+) func(*Layout, *Window) {
+	if !rollerVisible {
+		return nil
+	}
+	return func(lo *Layout, _ *Window) {
+		if lo.Shape.Events == nil {
+			lo.Shape.Events = &EventHandlers{}
+		}
+		lo.Shape.Events.OnMouseScroll = func(
+			_ *Layout, e *Event, w *Window,
+		) {
+			e.IsHandled = true
+			delta := 1
+			if e.ScrollY > 0 {
+				delta = -1
+			}
+			datePickerNavMonth(cfgID, delta, w)
+		}
+	}
+}
+
+// datePickerRollerKeyDown handles keyboard for the embedded
+// month/year roller. Up/Down = month, Shift+Up/Down = year.
+func datePickerRollerKeyDown(
+	sm *BoundedMap[string, datePickerState],
+	cfgID string, s datePickerState,
+	e *Event, w *Window,
+) {
+	update := func(month, year int) {
+		s.ViewMonth = month
+		s.ViewYear = year
+		sm.Set(cfgID, s)
+		w.UpdateWindow()
+		e.IsHandled = true
+	}
+	switch {
+	case e.Modifiers == ModNone && e.KeyCode == KeyUp:
+		m, y := s.ViewMonth-1, s.ViewYear
+		if m < 1 {
+			m, y = 12, y-1
+		}
+		update(m, y)
+	case e.Modifiers == ModNone && e.KeyCode == KeyDown:
+		m, y := s.ViewMonth+1, s.ViewYear
+		if m > 12 {
+			m, y = 1, y+1
+		}
+		update(m, y)
+	case e.Modifiers == ModShift && e.KeyCode == KeyUp:
+		update(s.ViewMonth, s.ViewYear-1)
+	case e.Modifiers == ModShift && e.KeyCode == KeyDown:
+		update(s.ViewMonth, s.ViewYear+1)
+	}
 }
 
 // datePickerOnKeyDown handles arrow key navigation.

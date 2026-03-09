@@ -255,6 +255,7 @@ func demoDatePicker(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.DatePicker(gui.DatePickerCfg{
 				ID:             "date-picker",
+				IDFocus:        2,
 				Dates:          app.DatePickerDates,
 				SelectMultiple: true,
 				OnSelect: func(dates []time.Time, _ *gui.Event, w *gui.Window) {
@@ -275,6 +276,7 @@ func demoDatePickerRoller(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.DatePickerRoller(gui.DatePickerRollerCfg{
 				ID:           "date-roller",
+				IDFocus:      1,
 				SelectedDate: app.RollerDate,
 				OnChange: func(date time.Time, w *gui.Window) {
 					gui.State[ShowcaseApp](w).RollerDate = date

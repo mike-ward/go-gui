@@ -211,8 +211,19 @@ func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 			return
 		}
 	}
+	if layout.Shape.Disabled {
+		return
+	}
+	// Deliver to OnMouseScroll handler under cursor.
+	if layout.Shape.HasEvents() &&
+		layout.Shape.Events.OnMouseScroll != nil {
+		if layout.Shape.PointInShape(e.MouseX, e.MouseY) {
+			layout.Shape.Events.OnMouseScroll(layout, e, w)
+			return
+		}
+	}
 	// Handle scroll on scroll container under cursor.
-	if !layout.Shape.Disabled && layout.Shape.IDScroll > 0 {
+	if layout.Shape.IDScroll > 0 {
 		if layout.Shape.PointInShape(e.MouseX, e.MouseY) {
 			if e.Modifiers == ModShift {
 				e.IsHandled = scrollHorizontal(

@@ -53,38 +53,43 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 	sel := cfg.SelectedDate
 
 	var drums []View
+	var drumNames []string
 	switch cfg.DisplayMode {
 	case RollerDayMonthYear:
+		drumNames = []string{"day", "month", "year"}
 		drums = append(drums,
 			rollerDrum(cfg, "day", sel.Day(), 1,
 				datePickerDaysInMonth(int(sel.Month()), sel.Year()),
-				rollerDayFormat, 50),
+				rollerDayFormat, 38),
 			rollerDrum(cfg, "month", int(sel.Month()), 1, 12,
-				rollerMonthFormat(cfg.LongMonths), 80),
+				rollerMonthFormat(cfg.LongMonths), 56),
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 60),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
 		)
 	case RollerMonthDayYear:
+		drumNames = []string{"month", "day", "year"}
 		drums = append(drums,
 			rollerDrum(cfg, "month", int(sel.Month()), 1, 12,
-				rollerMonthFormat(cfg.LongMonths), 80),
+				rollerMonthFormat(cfg.LongMonths), 56),
 			rollerDrum(cfg, "day", sel.Day(), 1,
 				datePickerDaysInMonth(int(sel.Month()), sel.Year()),
-				rollerDayFormat, 50),
+				rollerDayFormat, 38),
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 60),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
 		)
 	case RollerMonthYear:
+		drumNames = []string{"month", "year"}
 		drums = append(drums,
 			rollerDrum(cfg, "month", int(sel.Month()), 1, 12,
-				rollerMonthFormat(cfg.LongMonths), 80),
+				rollerMonthFormat(cfg.LongMonths), 56),
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 60),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
 		)
 	case RollerYearOnly:
+		drumNames = []string{"year"}
 		drums = append(drums,
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 60),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
 		)
 	}
 
@@ -110,6 +115,33 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 			rollerOnKeyDown(onChange, selectedDate,
 				minYear, maxYear, e, w)
 		},
+		AmendLayout: func(lo *Layout, _ *Window) {
+			if lo.Shape.Events == nil {
+				lo.Shape.Events = &EventHandlers{}
+			}
+			lo.Shape.Events.OnMouseScroll = func(
+				_ *Layout, e *Event, w *Window,
+			) {
+				e.IsHandled = true
+				if onChange == nil {
+					return
+				}
+				delta := 1
+				if e.ScrollY > 0 {
+					delta = -1
+				}
+				for i, child := range lo.Children {
+					if i < len(drumNames) &&
+						child.Shape.PointInShape(
+							e.MouseX, e.MouseY) {
+						rollerDrumAdjust(drumNames[i],
+							delta, selectedDate,
+							minYear, maxYear, onChange, w)
+						return
+					}
+				}
+			}
+		},
 		Content: drums,
 	}), w)
 }
@@ -123,6 +155,10 @@ func rollerDrum(
 	vis := cfg.VisibleItems
 	half := vis / 2
 	ts := cfg.TextStyle
+	onChange := cfg.OnChange
+	selectedDate := cfg.SelectedDate
+	minYear := cfg.MinYear
+	maxYear := cfg.MaxYear
 
 	var items []View
 	for i := range vis {
@@ -140,7 +176,7 @@ func rollerDrum(
 		label := format(v)
 		itemTS := ts
 		if offset == 0 {
-			itemTS.Size = ts.Size + 4
+			itemTS.Size = ts.Size + 2
 		} else {
 			dist := offset
 			if dist < 0 {
@@ -156,7 +192,7 @@ func rollerDrum(
 
 		centeredTS := itemTS
 		centeredTS.Align = TextAlignCenter
-		items = append(items, Row(ContainerCfg{
+		itemCfg := ContainerCfg{
 			Width:   drumWidth,
 			Height:  cfg.ItemHeight,
 			Padding: NoPadding,
@@ -169,53 +205,40 @@ func rollerDrum(
 					Sizing:    FillFit,
 				}),
 			},
-		}))
+		}
+		if offset != 0 {
+			clickDelta := offset
+			itemCfg.OnClick = func(
+				_ *Layout, _ *Event, w *Window,
+			) {
+				rollerDrumAdjust(name, clickDelta,
+					selectedDate, minYear, maxYear,
+					onChange, w)
+			}
+		}
+		items = append(items, Row(itemCfg))
 	}
-
-	onChange := cfg.OnChange
-	selectedDate := cfg.SelectedDate
-	minYear := cfg.MinYear
-	maxYear := cfg.MaxYear
 
 	return Column(ContainerCfg{
 		Width:   drumWidth,
 		Padding: NoPadding,
 		Content: items,
-		OnScroll: func(_ *Layout, _ *Window) {
-			// Scroll dispatches via the view's scroll events,
-			// so keyboard is used instead for simplicity.
-		},
-		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-			switch name {
-			case "day":
-				if e.KeyCode == KeyUp {
-					rollerAdjustDay(-1, selectedDate, onChange, w)
-					e.IsHandled = true
-				} else if e.KeyCode == KeyDown {
-					rollerAdjustDay(1, selectedDate, onChange, w)
-					e.IsHandled = true
-				}
-			case "month":
-				if e.KeyCode == KeyUp {
-					rollerAdjustMonth(-1, selectedDate, onChange, w)
-					e.IsHandled = true
-				} else if e.KeyCode == KeyDown {
-					rollerAdjustMonth(1, selectedDate, onChange, w)
-					e.IsHandled = true
-				}
-			case "year":
-				if e.KeyCode == KeyUp {
-					rollerAdjustYear(-1, selectedDate, minYear, maxYear,
-						onChange, w)
-					e.IsHandled = true
-				} else if e.KeyCode == KeyDown {
-					rollerAdjustYear(1, selectedDate, minYear, maxYear,
-						onChange, w)
-					e.IsHandled = true
-				}
-			}
-		},
 	})
+}
+
+func rollerDrumAdjust(
+	name string, delta int, sel time.Time,
+	minYear, maxYear int,
+	onChange func(time.Time, *Window), w *Window,
+) {
+	switch name {
+	case "day":
+		rollerAdjustDay(delta, sel, onChange, w)
+	case "month":
+		rollerAdjustMonth(delta, sel, onChange, w)
+	case "year":
+		rollerAdjustYear(delta, sel, minYear, maxYear, onChange, w)
+	}
 }
 
 // rollerOnKeyDown handles keyboard navigation for the roller.
@@ -323,10 +346,10 @@ func applyRollerDefaults(cfg *DatePickerRollerCfg) {
 		cfg.MaxYear = 2100
 	}
 	if cfg.ItemHeight == 0 {
-		cfg.ItemHeight = 32
+		cfg.ItemHeight = 24
 	}
 	if cfg.VisibleItems == 0 {
-		cfg.VisibleItems = 5
+		cfg.VisibleItems = 3
 	}
 	if cfg.VisibleItems%2 == 0 {
 		cfg.VisibleItems++

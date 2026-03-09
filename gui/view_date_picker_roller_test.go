@@ -26,10 +26,10 @@ func TestRollerDefaults(t *testing.T) {
 	if cfg.MaxYear != 2100 {
 		t.Errorf("MaxYear = %d", cfg.MaxYear)
 	}
-	if cfg.ItemHeight != 32 {
+	if cfg.ItemHeight != 24 {
 		t.Errorf("ItemHeight = %f", cfg.ItemHeight)
 	}
-	if cfg.VisibleItems != 5 {
+	if cfg.VisibleItems != 3 {
 		t.Errorf("VisibleItems = %d", cfg.VisibleItems)
 	}
 	if cfg.SelectedDate.IsZero() {
