@@ -336,6 +336,19 @@ func (w *Window) SetTextMeasurer(tm TextMeasurer) {
 	w.textMeasurer = tm
 }
 
+// TextWidth measures the rendered width of text for the supplied style.
+// When no backend measurer is available, it uses the same approximation
+// as text layout generation.
+func (w *Window) TextWidth(text string, style TextStyle) float32 {
+	if style.Size == 0 {
+		style.Size = SizeTextMedium
+	}
+	if w == nil || w.textMeasurer == nil {
+		return float32(utf8RuneCount(text)) * style.Size * 0.6
+	}
+	return w.textMeasurer.TextWidth(text, style)
+}
+
 // SetClipboardFn sets the function used to copy text to the clipboard.
 func (w *Window) SetClipboardFn(fn func(string)) {
 	w.clipboardSetFn = fn

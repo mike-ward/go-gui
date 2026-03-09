@@ -1,6 +1,11 @@
 package main
 
-import "github.com/mike-ward/go-gui/gui"
+import (
+	"sort"
+	"strings"
+
+	"github.com/mike-ward/go-gui/gui"
+)
 
 func demoRectangle(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
@@ -57,51 +62,56 @@ func demoRectangle(_ *gui.Window) gui.View {
 	})
 }
 
-func demoIcons(_ *gui.Window) gui.View {
+func demoIcons(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
-	icons := []struct{ name, icon string }{
-		{"Home", gui.IconHome},
-		{"Search", gui.IconSearch},
-		{"Heart", gui.IconHeart},
-		{"Star", gui.IconStar},
-		{"Bell", gui.IconBell},
-		{"Calendar", gui.IconCalendar},
-		{"Camera", gui.IconCamera},
-		{"Clock", gui.IconClock},
-		{"Cloud", gui.IconCloud},
-		{"Code", gui.IconCode},
-		{"Download", gui.IconDownload},
-		{"Edit", gui.IconEdit},
-		{"Eye", gui.IconEye},
-		{"Filter", gui.IconFilter},
-		{"Globe", gui.IconGlobe},
-		{"Info", gui.IconInfo},
-		{"Layout", gui.IconLayout},
-		{"Plus", gui.IconPlus},
-		{"Tag", gui.IconTag},
-		{"Trash", gui.IconTrash},
+	keys := make([]string, 0, len(gui.IconLookup))
+	for key := range gui.IconLookup {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	cellMinWidth := float32(0)
+	for _, key := range keys {
+		labelWidth := w.TextWidth(strings.TrimPrefix(key, "icon_"), t.N5)
+		if labelWidth > cellMinWidth {
+			cellMinWidth = labelWidth
+		}
 	}
 
-	views := make([]gui.View, len(icons))
-	for i, ic := range icons {
-		views[i] = gui.Column(gui.ContainerCfg{
-			Width:   64,
-			Height:  64,
-			Sizing:  gui.FixedFixed,
-			HAlign:  gui.HAlignCenter,
-			VAlign:  gui.VAlignMiddle,
-			Spacing: gui.Some(float32(4)),
-			Content: []gui.View{
-				gui.Text(gui.TextCfg{Text: ic.icon, TextStyle: t.Icon4}),
-				gui.Text(gui.TextCfg{Text: ic.name, TextStyle: t.N1}),
-			},
-		})
+	cols := 4
+	rows := make([]gui.View, 0, (len(keys)+cols-1)/cols)
+	for i := 0; i < len(keys); i += cols {
+		end := i + cols
+		if end > len(keys) {
+			end = len(keys)
+		}
+
+		icons := make([]gui.View, 0, end-i)
+		for _, key := range keys[i:end] {
+			icons = append(icons, gui.Column(gui.ContainerCfg{
+				MinWidth: cellMinWidth,
+				Padding:  gui.Some(gui.PaddingNone),
+				HAlign:   gui.HAlignCenter,
+				Content: []gui.View{
+					gui.Text(gui.TextCfg{Text: gui.IconLookup[key], TextStyle: t.Icon1}),
+					gui.Text(gui.TextCfg{Text: strings.TrimPrefix(key, "icon_"), TextStyle: t.N5}),
+				},
+			}))
+		}
+
+		rows = append(rows, gui.Row(gui.ContainerCfg{
+			Sizing:  gui.FillFit,
+			Padding: gui.Some(gui.PaddingNone),
+			Spacing: gui.Some(float32(0)),
+			Content: icons,
+		}))
 	}
-	return gui.Wrap(gui.ContainerCfg{
+
+	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(4)),
+		Spacing: gui.Some(t.SpacingSmall),
 		Padding: gui.Some(gui.PaddingNone),
-		Content: views,
+		Content: rows,
 	})
 }
 

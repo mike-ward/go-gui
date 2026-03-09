@@ -586,18 +586,20 @@ Set ` + "`Radius`" + ` to control corner rounding. Use ` + "`ColorBorder`" + ` a
 
 	"icons": `# Icons
 
-Feather icon font glyphs rendered as text with Icon styles.
+Icon font catalog rendered from ` + "`gui.IconLookup`" + ` using the theme Icon styles.
 
 ## Usage
 
 ` + "```go" + `
-gui.Text(gui.TextCfg{Text: gui.IconHome, TextStyle: t.Icon4})
+gui.Text(gui.TextCfg{Text: gui.IconCheck, TextStyle: t.Icon4})
+
+for name, glyph := range gui.IconLookup {
+    _ = name
+    _ = glyph
+}
 ` + "```" + `
 
-Available icons: IconHome, IconSearch, IconHeart, IconStar, IconBell,
-IconCalendar, IconCamera, IconClock, IconCloud, IconCode, IconDownload,
-IconEdit, IconEye, IconFilter, IconGlobe, IconInfo, IconLayout,
-IconPlus, IconTag, IconTrash, and more.
+Use ` + "`gui.IconLookup`" + ` for programmatic access to the full icon catalog.
 `,
 
 	// Layout

@@ -191,6 +191,25 @@ func TestTextWithMeasurer(t *testing.T) {
 	}
 }
 
+func TestWindowTextWidthFallback(t *testing.T) {
+	w := NewWindow(WindowCfg{Width: 50, Height: 50})
+	got := w.TextWidth("test", TextStyle{Size: 20})
+	want := float32(len("test")) * 20 * 0.6
+	if got != want {
+		t.Errorf("TextWidth() = %f, want %f", got, want)
+	}
+}
+
+func TestWindowTextWidthUsesMeasurer(t *testing.T) {
+	w := NewWindow(WindowCfg{Width: 50, Height: 50})
+	w.SetTextMeasurer(&mockTextMeasurer{})
+
+	got := w.TextWidth("abcd", TextStyle{Size: 16})
+	if got != 40 {
+		t.Errorf("TextWidth() = %f, want 40", got)
+	}
+}
+
 func TestRenderersAccessor(t *testing.T) {
 	w := NewWindow(WindowCfg{Width: 50, Height: 50})
 	w.renderers = append(w.renderers, RenderCmd{Kind: RenderRect})
