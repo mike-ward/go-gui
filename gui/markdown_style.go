@@ -258,7 +258,7 @@ func styleMdTable(
 	headers := make([]RichText, 0, len(table.Headers))
 	for _, h := range table.Headers {
 		headers = append(headers,
-			styleMdRuns(h, style.Text, style))
+			styleMdRuns(h, style.TableHeadStyle, style))
 	}
 
 	rows := make([][]RichText, 0, len(table.Rows))
@@ -266,7 +266,7 @@ func styleMdTable(
 		sr := make([]RichText, table.ColCount)
 		for j, cell := range row {
 			if j < table.ColCount {
-				sr[j] = styleMdRuns(cell, style.Text, style)
+				sr[j] = styleMdRuns(cell, style.TableCellStyle, style)
 			}
 		}
 		rows = append(rows, sr)
