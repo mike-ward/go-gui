@@ -251,23 +251,23 @@ func rollerOnKeyDown(
 		return
 	}
 	switch {
-	case e.Modifiers == ModShift && e.KeyCode == KeyUp:
-		rollerAdjustDay(-1, sel, onChange, w)
-		e.IsHandled = true
-	case e.Modifiers == ModShift && e.KeyCode == KeyDown:
-		rollerAdjustDay(1, sel, onChange, w)
-		e.IsHandled = true
-	case e.Modifiers == ModAlt && e.KeyCode == KeyUp:
+	case e.Modifiers == ModNone && e.KeyCode == KeyUp:
 		rollerAdjustMonth(-1, sel, onChange, w)
 		e.IsHandled = true
-	case e.Modifiers == ModAlt && e.KeyCode == KeyDown:
+	case e.Modifiers == ModNone && e.KeyCode == KeyDown:
 		rollerAdjustMonth(1, sel, onChange, w)
 		e.IsHandled = true
-	case e.Modifiers == ModNone && e.KeyCode == KeyUp:
+	case e.Modifiers == ModShift && e.KeyCode == KeyUp:
 		rollerAdjustYear(-1, sel, minYear, maxYear, onChange, w)
 		e.IsHandled = true
-	case e.Modifiers == ModNone && e.KeyCode == KeyDown:
+	case e.Modifiers == ModShift && e.KeyCode == KeyDown:
 		rollerAdjustYear(1, sel, minYear, maxYear, onChange, w)
+		e.IsHandled = true
+	case e.Modifiers == ModAlt && e.KeyCode == KeyUp:
+		rollerAdjustDay(-1, sel, onChange, w)
+		e.IsHandled = true
+	case e.Modifiers == ModAlt && e.KeyCode == KeyDown:
+		rollerAdjustDay(1, sel, onChange, w)
 		e.IsHandled = true
 	}
 }
