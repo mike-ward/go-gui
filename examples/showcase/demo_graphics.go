@@ -78,7 +78,7 @@ func demoIcons(w *gui.Window) gui.View {
 		}
 	}
 
-	cols := 4
+	cols := 5
 	rows := make([]gui.View, 0, (len(keys)+cols-1)/cols)
 	for i := 0; i < len(keys); i += cols {
 		end := i + cols
