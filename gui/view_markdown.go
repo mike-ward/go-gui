@@ -62,22 +62,18 @@ type MarkdownStyle struct {
 // current theme.
 func DefaultMarkdownStyle() MarkdownStyle {
 	return MarkdownStyle{
-		Text:       guiTheme.N3,
-		H1:         guiTheme.B1,
-		H2:         guiTheme.B2,
-		H3:         guiTheme.B3,
-		H4:         guiTheme.B4,
-		H5:         guiTheme.B5,
-		H6:         guiTheme.B6,
-		Bold:       guiTheme.B3,
-		Italic:     guiTheme.I3,
-		BoldItalic: guiTheme.BI3,
-		Code:       guiTheme.M4,
-		CodeBlockText: func() TextStyle {
-			s := guiTheme.M5
-			s.Size = (guiTheme.M5.Size + guiTheme.M6.Size) / 2
-			return s
-		}(),
+		Text:              guiTheme.N3,
+		H1:                guiTheme.B1,
+		H2:                guiTheme.B2,
+		H3:                guiTheme.B3,
+		H4:                guiTheme.B4,
+		H5:                guiTheme.B5,
+		H6:                guiTheme.B6,
+		Bold:              guiTheme.B3,
+		Italic:            guiTheme.I3,
+		BoldItalic:        guiTheme.BI3,
+		Code:              guiTheme.M5,
+		CodeBlockText:     guiTheme.M5,
 		CodeBlockBG:       RGBA(0, 0, 0, 50),
 		CodeKeywordColor:  guiTheme.ColorSelect,
 		CodeStringColor:   RGB(75, 125, 75),
@@ -182,9 +178,11 @@ func buildMarkdownTableData(
 	// Header row.
 	hCells := make([]TableCellCfg, 0, len(parsed.Headers))
 	for _, h := range parsed.Headers {
+		rt := h
 		hCells = append(hCells, TableCellCfg{
 			Value:    richTextPlain(h),
 			HeadCell: true,
+			RichText: &rt,
 			Content: RTF(RtfCfg{
 				RichText: h,
 				Mode:     TextModeSingleLine,
@@ -197,8 +195,10 @@ func buildMarkdownTableData(
 	for _, r := range parsed.Rows {
 		cells := make([]TableCellCfg, 0, len(r))
 		for _, cell := range r {
+			rt := cell
 			cells = append(cells, TableCellCfg{
-				Value: richTextPlain(cell),
+				Value:    richTextPlain(cell),
+				RichText: &rt,
 				Content: RTF(RtfCfg{
 					RichText: cell,
 					Mode:     TextModeSingleLine,
