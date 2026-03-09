@@ -249,3 +249,259 @@ func TestContextMenuUserOnAnyClickHandled(t *testing.T) {
 		t.Error("menu should not open when user handler sets IsHandled")
 	}
 }
+
+// contextMenuPopupLayout opens a context menu and returns the
+// popup menu layout for keyboard testing.
+func contextMenuPopupLayout(t *testing.T, w *Window,
+	cfg ContextMenuCfg) Layout {
+	t.Helper()
+	if cfg.IDFocus == 0 {
+		cfg.IDFocus = fnvSum32("context_menu_" + cfg.ID)
+	}
+	sm := StateMap[string, contextMenuState](
+		w, nsContextMenu, capFew)
+	sm.Set(cfg.ID, contextMenuState{Open: true, X: 0, Y: 0})
+	w.SetIDFocus(cfg.IDFocus)
+
+	v := ContextMenu(w, cfg)
+	layout := GenerateViewLayout(v, w)
+
+	// Find the floating popup child.
+	for _, child := range layout.Children {
+		if child.Shape != nil && child.Shape.Float {
+			return child
+		}
+	}
+	t.Fatal("no floating popup found")
+	return Layout{}
+}
+
+func TestContextMenuKeyboardEscapeCloses(t *testing.T) {
+	w := &Window{}
+	cfg := ContextMenuCfg{
+		ID: "cmk1",
+		Items: []MenuItemCfg{
+			{ID: "a", Text: "A"},
+			{ID: "b", Text: "B"},
+		},
+	}
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	e := &Event{KeyCode: KeyEscape}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	if !e.IsHandled {
+		t.Error("expected IsHandled")
+	}
+	if w.IsFocus(cfg.IDFocus) {
+		t.Error("expected focus cleared")
+	}
+}
+
+func TestContextMenuKeyboardAutoSelectsFirst(t *testing.T) {
+	w := &Window{}
+	cfg := ContextMenuCfg{
+		ID: "cmk2",
+		Items: []MenuItemCfg{
+			{ID: "a", Text: "A"},
+			{ID: "b", Text: "B"},
+		},
+	}
+	idFocus := fnvSum32("context_menu_" + cfg.ID)
+	contextMenuPopupLayout(t, w, cfg)
+
+	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "a" {
+		t.Errorf("expected first item 'a' selected, got %q", sel)
+	}
+}
+
+func TestContextMenuKeyboardDownNavigation(t *testing.T) {
+	w := &Window{}
+	cfg := ContextMenuCfg{
+		ID: "cmk3",
+		Items: []MenuItemCfg{
+			{ID: "a", Text: "A"},
+			{ID: "b", Text: "B"},
+			{ID: "c", Text: "C"},
+		},
+	}
+	idFocus := fnvSum32("context_menu_" + cfg.ID)
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	// Down: a → b
+	e := &Event{KeyCode: KeyDown}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "b" {
+		t.Errorf("expected 'b', got %q", sel)
+	}
+
+	// Down: b → c
+	e = &Event{KeyCode: KeyDown}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	sel = StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "c" {
+		t.Errorf("expected 'c', got %q", sel)
+	}
+
+	// Down wraps: c → a
+	e = &Event{KeyCode: KeyDown}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	sel = StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "a" {
+		t.Errorf("expected wrap to 'a', got %q", sel)
+	}
+}
+
+func TestContextMenuKeyboardUpNavigation(t *testing.T) {
+	w := &Window{}
+	cfg := ContextMenuCfg{
+		ID: "cmk4",
+		Items: []MenuItemCfg{
+			{ID: "a", Text: "A"},
+			{ID: "b", Text: "B"},
+		},
+	}
+	idFocus := fnvSum32("context_menu_" + cfg.ID)
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	// Up wraps: a → b
+	e := &Event{KeyCode: KeyUp}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "b" {
+		t.Errorf("expected wrap to 'b', got %q", sel)
+	}
+}
+
+func TestContextMenuKeyboardEnterSelectsItem(t *testing.T) {
+	w := &Window{}
+	var firedID string
+	cfg := ContextMenuCfg{
+		ID: "cmk5",
+		Items: []MenuItemCfg{
+			{ID: "cut", Text: "Cut"},
+			{ID: "copy", Text: "Copy"},
+		},
+		Action: func(id string, _ *Event, _ *Window) {
+			firedID = id
+		},
+	}
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	// Down: cut → copy, then Enter.
+	popup.Shape.Events.OnKeyDown(&popup,
+		&Event{KeyCode: KeyDown}, w)
+	e := &Event{KeyCode: KeyEnter}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	if firedID != "copy" {
+		t.Errorf("expected 'copy', got %q", firedID)
+	}
+	if !e.IsHandled {
+		t.Error("expected IsHandled")
+	}
+}
+
+func TestContextMenuKeyboardSkipsSeparators(t *testing.T) {
+	w := &Window{}
+	cfg := ContextMenuCfg{
+		ID: "cmk6",
+		Items: []MenuItemCfg{
+			{ID: "a", Text: "A"},
+			MenuSeparator(),
+			{ID: "b", Text: "B"},
+		},
+	}
+	idFocus := fnvSum32("context_menu_" + cfg.ID)
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	// Down: a → b (skips separator).
+	e := &Event{KeyCode: KeyDown}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "b" {
+		t.Errorf("expected 'b', got %q", sel)
+	}
+}
+
+func TestContextMenuKeyboardSpaceSelectsItem(t *testing.T) {
+	w := &Window{}
+	var firedID string
+	cfg := ContextMenuCfg{
+		ID: "cmk7",
+		Items: []MenuItemCfg{
+			{ID: "paste", Text: "Paste"},
+		},
+		Action: func(id string, _ *Event, _ *Window) {
+			firedID = id
+		},
+	}
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	e := &Event{KeyCode: KeySpace}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	if firedID != "paste" {
+		t.Errorf("expected 'paste', got %q", firedID)
+	}
+}
+
+func TestContextMenuKeyboardRightOpensSubmenu(t *testing.T) {
+	w := &Window{}
+	cfg := ContextMenuCfg{
+		ID: "cmk8",
+		Items: []MenuItemCfg{
+			MenuSubmenu("more", "More", []MenuItemCfg{
+				{ID: "x", Text: "X"},
+				{ID: "y", Text: "Y"},
+			}),
+		},
+	}
+	idFocus := fnvSum32("context_menu_" + cfg.ID)
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	// Right: more → x (first submenu child).
+	e := &Event{KeyCode: KeyRight}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
+
+	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "x" {
+		t.Errorf("expected 'x', got %q", sel)
+	}
+}
+
+func TestContextMenuKeyboardLeftClosesSubmenu(t *testing.T) {
+	w := &Window{}
+	cfg := ContextMenuCfg{
+		ID: "cmk9",
+		Items: []MenuItemCfg{
+			MenuSubmenu("more", "More", []MenuItemCfg{
+				{ID: "x", Text: "X"},
+			}),
+		},
+	}
+	idFocus := fnvSum32("context_menu_" + cfg.ID)
+	popup := contextMenuPopupLayout(t, w, cfg)
+
+	// Right into submenu, then Left back.
+	popup.Shape.Events.OnKeyDown(&popup,
+		&Event{KeyCode: KeyRight}, w)
+	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "x" {
+		t.Fatalf("expected 'x', got %q", sel)
+	}
+
+	popup.Shape.Events.OnKeyDown(&popup,
+		&Event{KeyCode: KeyLeft}, w)
+	sel = StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	if sel != "more" {
+		t.Errorf("expected 'more', got %q", sel)
+	}
+}

@@ -1,7 +1,5 @@
 package gui
 
-import "log"
-
 // MenubarCfg configures a horizontal menubar or standalone
 // menu.
 type MenubarCfg struct {
@@ -45,8 +43,6 @@ func Menubar(w *Window, cfg MenubarCfg) View {
 	applyMenubarDefaults(&cfg)
 	if cfg.IDFocus == 0 {
 		cfg.IDFocus = fnvSum32("menubar_" + cfg.ID)
-		log.Printf("menubar: auto-generated IDFocus=%d for %q",
-			cfg.IDFocus, cfg.ID)
 	}
 	checkForDuplicateMenuIDs(cfg.Items)
 
@@ -206,6 +202,37 @@ func menubarOnKeyDown(cfg MenubarCfg, _ *Layout, e *Event, w *Window) {
 		}
 		e.IsHandled = true
 	}
+}
+
+// menuMapperVertical builds a directional navigation graph
+// for a vertical standalone menu (context menu). Top-level
+// items use Up/Down for siblings, Right to enter submenus.
+func menuMapperVertical(items []MenuItemCfg) MenuIdMap {
+	m := make(MenuIdMap)
+	selectables := make([]MenuItemCfg, 0, len(items))
+	for _, item := range items {
+		if isSelectableMenuID(item.ID) {
+			selectables = append(selectables, item)
+		}
+	}
+	if len(selectables) == 0 {
+		return m
+	}
+
+	for i, item := range selectables {
+		node := MenuIdNode{
+			Up:    menuItemUp(i, selectables),
+			Down:  menuItemDown(i, selectables),
+			Right: menuItemRight(item, ""),
+		}
+		m[item.ID] = node
+
+		if len(item.Submenu) > 0 {
+			submenuMapper(item.Submenu, item.ID, node,
+				node, "", m)
+		}
+	}
+	return m
 }
 
 // menuMapper builds a directional navigation graph for all

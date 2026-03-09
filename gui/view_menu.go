@@ -3,15 +3,28 @@ package gui
 import "log"
 
 // Menu creates a standalone columnar menu (used by
-// OverflowPanel and context menus).
+// OverflowPanel and context menus). Supports keyboard
+// navigation: Up/Down to move, Enter/Space to select,
+// Escape to close, Right/Left for submenus.
 func Menu(w *Window, cfg MenubarCfg) View {
 	applyMenubarDefaults(&cfg)
 	if cfg.IDFocus == 0 {
 		cfg.IDFocus = fnvSum32("menu_" + cfg.ID)
-		log.Printf("menu: auto-generated IDFocus=%d for %q",
-			cfg.IDFocus, cfg.ID)
 	}
 	checkForDuplicateMenuIDs(cfg.Items)
+
+	// Auto-select first item on focus.
+	if w.IsFocus(cfg.IDFocus) {
+		sel := StateReadOr[uint32, string](
+			w, nsMenu, cfg.IDFocus, "")
+		if sel == "" {
+			if first, ok := firstSelectable(cfg.Items); ok {
+				sm := StateMap[uint32, string](
+					w, nsMenu, capModerate)
+				sm.Set(cfg.IDFocus, first.ID)
+			}
+		}
+	}
 
 	return Column(ContainerCfg{
 		ID:           cfg.ID,
@@ -30,9 +43,73 @@ func Menu(w *Window, cfg MenubarCfg) View {
 		FloatOffsetX: cfg.FloatOffsetX,
 		FloatOffsetY: cfg.FloatOffsetY,
 		IDFocus:      cfg.IDFocus,
+		OnKeyDown:    makeMenuOnKeyDown(cfg),
 		AmendLayout:  makeMenuAmendLayout(cfg.IDFocus),
 		Content:      menuBuild(cfg, 1, cfg.Items, w),
 	})
+}
+
+// makeMenuOnKeyDown returns the keyboard handler for a
+// standalone vertical menu.
+func makeMenuOnKeyDown(cfg MenubarCfg) func(*Layout, *Event, *Window) {
+	return func(_ *Layout, e *Event, w *Window) {
+		sm := StateMap[uint32, string](w, nsMenu, capModerate)
+
+		switch e.KeyCode {
+		case KeyEscape:
+			w.SetIDFocus(0)
+			sm.Delete(cfg.IDFocus)
+			e.IsHandled = true
+
+		case KeySpace, KeyEnter:
+			sel, _ := sm.Get(cfg.IDFocus)
+			if sel == "" {
+				return
+			}
+			item, found := findMenuItemCfg(cfg.Items, sel)
+			if !found {
+				return
+			}
+			if item.Action != nil {
+				item.Action(&item, e, w)
+			}
+			if cfg.Action != nil {
+				cfg.Action(sel, e, w)
+			}
+			if len(item.Submenu) == 0 {
+				w.SetIDFocus(0)
+				sm.Delete(cfg.IDFocus)
+			}
+			e.IsHandled = true
+
+		case KeyLeft, KeyRight, KeyUp, KeyDown:
+			sel, _ := sm.Get(cfg.IDFocus)
+			if sel == "" {
+				return
+			}
+			idMap := menuMapperVertical(cfg.Items)
+			node, ok := idMap[sel]
+			if !ok {
+				return
+			}
+			var target string
+			switch e.KeyCode {
+			case KeyLeft:
+				target = node.Left
+			case KeyRight:
+				target = node.Right
+			case KeyUp:
+				target = node.Up
+			case KeyDown:
+				target = node.Down
+			}
+			if target != "" && target != sel {
+				sm.Set(cfg.IDFocus, target)
+				w.viewState.menuKeyNav = true
+			}
+			e.IsHandled = true
+		}
+	}
 }
 
 // menuBuild recursively builds menu item views.

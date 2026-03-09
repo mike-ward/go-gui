@@ -94,6 +94,29 @@ func (w *Window) EventFn(e *Event) {
 				e.IsHandled = true
 			}
 		}
+		// Dismiss open popups on any mouse down. Cleared
+		// before dispatch so handlers can re-open. Focus
+		// is only cleared when a popup was actually open
+		// to avoid interfering with normal focus flow.
+		popupOpen := false
+		if cms := StateMapRead[string, contextMenuState](
+			w, nsContextMenu); cms != nil && cms.Len() > 0 {
+			cms.Clear()
+			popupOpen = true
+		}
+		if rms := StateMapRead[string, rtfLinkMenuState](
+			w, nsRtfLinkMenu); rms != nil && rms.Len() > 0 {
+			rms.Clear()
+			popupOpen = true
+		}
+		if ms := StateMapRead[uint32, string](
+			w, nsMenu); ms != nil && ms.Len() > 0 {
+			ms.Clear()
+			popupOpen = true
+		}
+		if popupOpen {
+			w.SetIDFocus(0)
+		}
 		if !e.IsHandled {
 			mouseDownHandler(layout, false, e, w)
 		}
