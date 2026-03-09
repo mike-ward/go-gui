@@ -72,7 +72,7 @@ func DefaultMarkdownStyle() MarkdownStyle {
 		Bold:       guiTheme.B3,
 		Italic:     guiTheme.I3,
 		BoldItalic: guiTheme.BI3,
-		Code:       guiTheme.M5,
+		Code:       guiTheme.M4,
 		CodeBlockText: func() TextStyle {
 			s := guiTheme.M5
 			s.Size = (guiTheme.M5.Size + guiTheme.M6.Size) / 2

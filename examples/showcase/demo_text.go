@@ -123,12 +123,12 @@ func demoText(_ *gui.Window) gui.View {
 				},
 			}),
 			textDemoCard("", "", 0, []gui.View{
-			gui.Text(gui.TextCfg{
-				Text:      "Focus/select/copy: click inside block, drag selection, then Cmd/Ctrl+C.",
-				TextStyle: t.N5,
-				Mode:      gui.TextModeWrap,
-			}),
-			gui.Text(gui.TextCfg{
+				gui.Text(gui.TextCfg{
+					Text:      "Focus/select/copy: click inside block, drag selection, then Cmd/Ctrl+C.",
+					TextStyle: t.N5,
+					Mode:      gui.TextModeWrap,
+				}),
+				gui.Text(gui.TextCfg{
 					ID:        "text-selectable-block",
 					IDFocus:   9155,
 					FocusSkip: false,
