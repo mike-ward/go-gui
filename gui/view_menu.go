@@ -128,7 +128,7 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 		pad := item.Padding
 		if !pad.IsSet() {
 			if item.CustomView != nil {
-				pad = Some(PaddingNone)
+				pad = NoPadding
 			} else if item.ID == MenuSubtitleID {
 				pad = cfg.PaddingSubtitle
 			} else {

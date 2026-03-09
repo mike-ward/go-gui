@@ -28,9 +28,9 @@ func dataGridQuickFilterRow(cfg *DataGridCfg) View {
 		Sizing:      FillFixed,
 		Color:       cfg.ColorQuickFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(NewPadding(0, cfg.PaddingCell.Get(Padding{}).Right, 0, cfg.PaddingCell.Get(Padding{}).Left)),
-		Spacing:     Some(float32(6)),
+		Spacing:     SomeF(6),
 		VAlign:      VAlignMiddle,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			if inputFocusID > 0 {
@@ -45,9 +45,9 @@ func dataGridQuickFilterRow(cfg *DataGridCfg) View {
 				Text:             value,
 				Placeholder:      cfg.QuickFilterPlaceholder,
 				Sizing:           FillFill,
-				Padding:          Some(PaddingNone),
-				SizeBorder:       Some(float32(0)),
-				Radius:           Some(float32(0)),
+				Padding:          NoPadding,
+				SizeBorder:       SomeF(0),
+				Radius:           SomeF(0),
 				Color:            cfg.ColorQuickFilter,
 				ColorHover:       cfg.ColorQuickFilter,
 				ColorBorder:      cfg.ColorBorder,
@@ -141,7 +141,7 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 		Height:  rowH,
 		Sizing:  FillFixed,
 		Padding: Some(cfg.PaddingFilter),
-		Spacing: Some(float32(6)),
+		Spacing: SomeF(6),
 		VAlign:  VAlignMiddle,
 		Content: []View{
 			dataGridIndicatorButton(chooserLabel, cfg.TextStyleFilter, cfg.ColorHeaderHover,
@@ -175,10 +175,10 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 			Height:      rowH,
 			Sizing:      FillFixed,
 			Padding:     Some(cfg.PaddingFilter),
-			Spacing:     Some(float32(8)),
+			Spacing:     SomeF(8),
 			Color:       ColorTransparent,
 			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  Some(float32(0)),
+			SizeBorder:  SomeF(0),
 			Content:     options,
 		}))
 	}
@@ -187,9 +187,9 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
-		Padding:     Some(PaddingNone),
-		Spacing:     Some(float32(0)),
+		SizeBorder:  SomeF(0),
+		Padding:     NoPadding,
+		Spacing:     SomeF(0),
 		Content:     content,
 	})
 }
@@ -249,9 +249,9 @@ func dataGridBuildPagerRow(pctx dataGridPagerContext) View {
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(dataGridPagerPadding(cfg)),
-		Spacing:     Some(float32(6)),
+		Spacing:     SomeF(6),
 		VAlign:      VAlignMiddle,
 		Content:     content,
 	})
@@ -334,7 +334,7 @@ func dataGridPagerNextButton(cfg *DataGridCfg, onPageChange func(int, *Event, *W
 }
 
 func dataGridPagerSpacer() View {
-	return Row(ContainerCfg{Sizing: FillFill, Padding: Some(PaddingNone)})
+	return Row(ContainerCfg{Sizing: FillFill, Padding: NoPadding})
 }
 
 func dataGridPagerRowsStatus(cfg *DataGridCfg, rowsText string) View {
@@ -403,9 +403,9 @@ func dataGridPagerJumpInput(cfg *DataGridCfg, inputID string, focusID uint32, ju
 		Disabled:    !jumpEnabled,
 		Width:       dataGridJumpInputWidth,
 		Sizing:      FixedFill,
-		Padding:     Some(PaddingNone),
-		SizeBorder:  Some(float32(0)),
-		Radius:      Some(float32(0)),
+		Padding:     NoPadding,
+		SizeBorder:  SomeF(0),
+		Radius:      SomeF(0),
 		Color:       cfg.ColorFilter,
 		ColorHover:  cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,

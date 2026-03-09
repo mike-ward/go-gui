@@ -79,7 +79,7 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 		Spacing:         Some[float32](0),
 		Content: []View{
 			Row(ContainerCfg{
-				Padding: Some(PaddingNone),
+				Padding: NoPadding,
 				Sizing:  FillFit,
 				VAlign:  VAlignMiddle,
 				Content: []View{
@@ -117,7 +117,7 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 			}),
 			Column(ContainerCfg{
 				Invisible: !cfg.Open,
-				Padding:   Some(PaddingNone),
+				Padding:   NoPadding,
 				Sizing:    FillFit,
 				Spacing:   Some[float32](0),
 				Content: []View{

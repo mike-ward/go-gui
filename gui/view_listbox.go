@@ -113,7 +113,7 @@ func ListBox(cfg ListBoxCfg) View {
 		Radius:      Some(radius),
 		Padding:     cfg.Padding,
 		Sizing:      cfg.Sizing,
-		Spacing:     Some(float32(0)),
+		Spacing:     SomeF(0),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		Content:     list,
@@ -324,7 +324,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 		Radius:      Some(radius),
 		Padding:     cfg.Padding,
 		Sizing:      cfg.Sizing,
-		Spacing:     Some(float32(0)),
+		Spacing:     SomeF(0),
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		Content:     list,
@@ -442,7 +442,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 	if dat.IsSubheading {
 		return Column(ContainerCfg{
 			Spacing: Some[float32](1),
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 			Sizing:  FillFit,
 			Content: []View{
 				Text(TextCfg{
@@ -450,7 +450,7 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 					TextStyle: cfg.SubheadingStyle,
 				}),
 				Row(ContainerCfg{
-					Padding: Some(PaddingNone),
+					Padding: NoPadding,
 					Sizing:  FillFit,
 					Content: []View{
 						Rectangle(RectangleCfg{

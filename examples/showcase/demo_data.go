@@ -87,13 +87,13 @@ func demoTable(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(20)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(20),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.RadioButtonGroupRow(gui.RadioButtonGroupCfg{
 						IDFocus: 9108,
@@ -140,8 +140,8 @@ func demoDataGrid(w *gui.Window) gui.View {
 	rows := showcaseDataGridApplyQuery(showcaseDataGridRows(), app.DataGridQuery)
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(10)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(10),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      "Simple controlled grid. Sort, filter, and select rows.",
@@ -193,8 +193,8 @@ func demoDataSource(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(10)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(10),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      fmt.Sprintf("loading=%t  req=%d  rows=%d/%s", stats.Loading, stats.RequestCount, stats.ReceivedCount, countText),
@@ -232,8 +232,8 @@ func demoTree(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(16)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(16),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      "Selected: " + treeSelectedText(app.TreeSelected),

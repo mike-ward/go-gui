@@ -286,7 +286,7 @@ func dockDragZoneOverlayView(colorZone Color) View {
 		Sizing:  FixedFixed,
 		Width:   0,
 		Height:  0,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Color:   colorZone,
 	})
 }

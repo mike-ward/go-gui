@@ -155,7 +155,7 @@ func landingView(w *gui.Window, ww, wh float32) gui.View {
 		Height:  wh,
 		Sizing:  gui.FixedFixed,
 		Color:   gui.RGB(6, 10, 20),
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			landingBackdrop(ww, wh, frame),
 			gui.Column(gui.ContainerCfg{
@@ -234,7 +234,7 @@ func landingBackdrop(ww, wh float32, frame int) gui.View {
 			Height:  wh - 88,
 			Sizing:  gui.FixedFixed,
 			Color:   gui.RGBA(13, 16, 31, 180),
-			Padding: gui.Some(gui.PaddingNone),
+			Padding: gui.NoPadding,
 		}),
 	}
 
@@ -256,7 +256,7 @@ func landingBackdrop(ww, wh float32, frame int) gui.View {
 			Height:  s.size,
 			Sizing:  gui.FixedFixed,
 			Color:   gui.RGB(255, 211, 92),
-			Padding: gui.Some(gui.PaddingNone),
+			Padding: gui.NoPadding,
 		}))
 	}
 
@@ -282,7 +282,7 @@ func landingBackdrop(ww, wh float32, frame int) gui.View {
 			Width:   40,
 			Height:  40,
 			Sizing:  gui.FixedFixed,
-			Padding: gui.Some(gui.PaddingNone),
+			Padding: gui.NoPadding,
 			Content: []gui.View{
 				gui.Text(gui.TextCfg{
 					Text:      icon.text,
@@ -296,7 +296,7 @@ func landingBackdrop(ww, wh float32, frame int) gui.View {
 		Width:   ww,
 		Height:  wh,
 		Sizing:  gui.FixedFixed,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: content,
 	})
 }
@@ -309,7 +309,7 @@ func renderGrid(g *Game) gui.View {
 		Sizing:      gui.FixedFixed,
 		Width:       boardWidth,
 		Height:      boardHeight,
-		Padding:     gui.Some(gui.PaddingNone),
+		Padding:     gui.NoPadding,
 		Color:       gui.RGB(20, 24, 28),
 		ColorBorder: gui.RGB(75, 80, 85),
 		SizeBorder:  gui.Some[float32](1),
@@ -344,7 +344,7 @@ func gridCells(g *Game) []gui.View {
 				Height:  float32(cellSize - 2),
 				Sizing:  gui.FixedFixed,
 				Color:   color,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 			}))
 		}
 	}
@@ -445,7 +445,7 @@ func tileTitleView(frame int) gui.View {
 				Height:  8,
 				Sizing:  gui.FixedFixed,
 				Color:   color,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 			}))
 		}
 	}
@@ -454,7 +454,7 @@ func tileTitleView(frame int) gui.View {
 		Width:   290,
 		Height:  54,
 		Sizing:  gui.FixedFixed,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: blocks,
 	})
 }

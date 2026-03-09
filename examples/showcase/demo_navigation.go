@@ -7,8 +7,8 @@ func demoBreadcrumb(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Breadcrumb(gui.BreadcrumbCfg{
 				ID: "breadcrumb-demo",
@@ -110,8 +110,8 @@ func demoCommandPalette(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-palette",

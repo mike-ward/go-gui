@@ -157,13 +157,13 @@ func inspectorFloatingPanel(w *Window) View {
 		Width:         panelWidth,
 		Height:        panelHeight,
 		Color:         RGBA(20, 20, 20, 230),
-		Radius:        Some(float32(8)),
+		Radius:        SomeF(8),
 		Clip:          true,
 		IDScroll:      inspectorIDScrollPanel,
 		ScrollbarCfgX: scrollbarCfg,
 		ScrollbarCfgY: scrollbarCfg,
 		Padding:       Some(NewPadding(0, scrollbarPad, 0, 0)),
-		Spacing:       Some(float32(0)),
+		Spacing:       SomeF(0),
 		OnClick: func(_ *Layout, e *Event, _ *Window) {
 			e.IsHandled = true
 		},

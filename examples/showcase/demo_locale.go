@@ -26,7 +26,7 @@ func demoLocale(_ *gui.Window) gui.View {
 			ID:      "locale-" + n,
 			Color:   color,
 			Padding: gui.Some(gui.NewPadding(4, 10, 4, 10)),
-			Radius:  gui.Some(float32(12)),
+			Radius:  gui.SomeF(12),
 			Content: []gui.View{gui.Text(gui.TextCfg{Text: n, TextStyle: ts})},
 			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 				_ = w.SetLocaleID(n)
@@ -43,14 +43,14 @@ func demoLocale(_ *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Select a locale to see formatting changes.", TextStyle: t.N3}),
 			gui.Wrap(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(4)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(4),
+				Padding: gui.NoPadding,
 				Content: localeViews,
 			}),
 			line(),

@@ -122,7 +122,7 @@ func messageView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus: cfg.IDFocus,
@@ -147,7 +147,7 @@ func confirmView(cfg DialogCfg) View {
 	return Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
@@ -197,7 +197,7 @@ func promptView(cfg DialogCfg) []View {
 	views = append(views, Row(ContainerCfg{
 		Sizing:  FillFit,
 		HAlign:  cfg.AlignButtons,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Spacing: Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{

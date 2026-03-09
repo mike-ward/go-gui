@@ -99,11 +99,11 @@ func NumericInput(cfg NumericInputCfg) View {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
 		Radius:      Some(radius),
-		Padding:     Some(PaddingNone),
+		Padding:     NoPadding,
 		Invisible:   cfg.Invisible,
 		Disabled:    cfg.Disabled,
 		VAlign:      VAlignMiddle,
-		Spacing:     Some(float32(0)),
+		Spacing:     SomeF(0),
 		OnClick: func(_ *Layout, _ *Event, w *Window) {
 			if idFocus > 0 {
 				w.SetIDFocus(idFocus)
@@ -192,7 +192,7 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 	baseColor := cfg.Color
 
 	return Column(ContainerCfg{
-		Spacing:   Some(float32(0)),
+		Spacing:   SomeF(0),
 		Sizing:    FitFill,
 		Disabled:  cfg.Disabled,
 		Invisible: cfg.Invisible,
@@ -201,14 +201,14 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 			Button(ButtonCfg{
 				ID:          cfg.ID + "_step_up",
 				Sizing:      FillFill,
-				Padding:     Some(PaddingNone),
+				Padding:     NoPadding,
 				Color:       baseColor,
 				ColorHover:  cfg.ColorHover,
 				ColorFocus:  cfg.ColorHover,
 				ColorClick:  cfg.ColorBorderFocus,
 				ColorBorder: ColorTransparent,
-				SizeBorder:  Some(float32(0)),
-				Radius:      Some(float32(0)),
+				SizeBorder:  SomeF(0),
+				Radius:      SomeF(0),
 				OnClick: func(layout *Layout, e *Event, w *Window) {
 					numericInputApplyStep(
 						layout, cfg, locale, stepCfg,
@@ -224,14 +224,14 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 			Button(ButtonCfg{
 				ID:          cfg.ID + "_step_down",
 				Sizing:      FillFill,
-				Padding:     Some(PaddingNone),
+				Padding:     NoPadding,
 				Color:       baseColor,
 				ColorHover:  cfg.ColorHover,
 				ColorFocus:  cfg.ColorHover,
 				ColorClick:  cfg.ColorBorderFocus,
 				ColorBorder: ColorTransparent,
-				SizeBorder:  Some(float32(0)),
-				Radius:      Some(float32(0)),
+				SizeBorder:  SomeF(0),
+				Radius:      SomeF(0),
 				OnClick: func(layout *Layout, e *Event, w *Window) {
 					numericInputApplyStep(
 						layout, cfg, locale, stepCfg,

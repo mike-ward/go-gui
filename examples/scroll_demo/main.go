@@ -88,7 +88,7 @@ func scrollColumn(id uint32, text string, w *gui.Window) gui.View {
 func pctRow(app *App) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		HAlign:  gui.HAlignCenter,
 		VAlign:  gui.VAlignMiddle,
 		Spacing: gui.Some[float32](4),
@@ -125,7 +125,7 @@ func topRow(app *App) gui.View {
 	theme := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{

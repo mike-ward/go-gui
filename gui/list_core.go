@@ -363,7 +363,7 @@ func listCoreItemView(item ListCoreItem, index int, isHighlighted, isSelected bo
 		content = append(content,
 			Row(ContainerCfg{
 				Sizing:  FillFill,
-				Padding: Some(PaddingNone),
+				Padding: NoPadding,
 			}),
 			Text(TextCfg{
 				Text:      item.Detail,
@@ -408,8 +408,8 @@ func listCoreItemView(item ListCoreItem, index int, isHighlighted, isSelected bo
 // listCoreSubheadingView renders a subheading row.
 func listCoreSubheadingView(item ListCoreItem, cfg ListCoreCfg) View {
 	return Column(ContainerCfg{
-		Spacing: Some(float32(1)),
-		Padding: Some(PaddingNone),
+		Spacing: SomeF(1),
+		Padding: NoPadding,
 		Sizing:  FillFit,
 		Content: []View{
 			Text(TextCfg{
@@ -417,7 +417,7 @@ func listCoreSubheadingView(item ListCoreItem, cfg ListCoreCfg) View {
 				TextStyle: cfg.SubheadingStyle,
 			}),
 			Row(ContainerCfg{
-				Padding: Some(PaddingNone),
+				Padding: NoPadding,
 				Sizing:  FillFit,
 				Content: []View{
 					Rectangle(RectangleCfg{

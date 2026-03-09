@@ -41,8 +41,8 @@ func mainView(w *gui.Window) gui.View {
 		Width:   float32(ww),
 		Height:  float32(wh),
 		Sizing:  gui.FixedFixed,
-		Padding: gui.Some(gui.PaddingNone),
-		Spacing: gui.Some(float32(0)),
+		Padding: gui.NoPadding,
+		Spacing: gui.NoSpacing,
 		Content: []gui.View{catalogPanel(w), detailPanel(w)},
 	})
 }

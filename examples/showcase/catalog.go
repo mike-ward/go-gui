@@ -29,7 +29,7 @@ func catalogPanel(w *gui.Window) gui.View {
 		Sizing:  gui.FixedFill,
 		Color:   t.ColorPanel,
 		Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
-		Spacing: gui.Some(float32(8)),
+		Spacing: gui.SomeF(8),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Component Catalog", TextStyle: t.B3}),
 			searchInput(app),
@@ -41,14 +41,14 @@ func catalogPanel(w *gui.Window) gui.View {
 				Padding: gui.Some(gui.Padding{
 					Right: t.ScrollbarStyle.Size + 4,
 				}),
-				Spacing:       gui.Some(float32(2)),
+				Spacing:       gui.SomeF(2),
 				ScrollbarCfgY: &gui.ScrollbarCfg{GapEdge: 3},
 				Content:       catalogRows(entries, app),
 			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Padding: gui.Some(gui.PaddingNone),
-				Spacing: gui.Some(float32(8)),
+				Padding: gui.NoPadding,
+				Spacing: gui.SomeF(8),
 				HAlign:  gui.HAlignRight,
 				VAlign:  gui.VAlignMiddle,
 				Content: []gui.View{
@@ -88,8 +88,8 @@ func searchInput(app *ShowcaseApp) gui.View {
 func groupPicker(app *ShowcaseApp) gui.View {
 	return gui.Wrap(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
-		Spacing: gui.Some(float32(3)),
+		Padding: gui.NoPadding,
+		Spacing: gui.SomeF(3),
 		Content: []gui.View{
 			groupPickerItem("Welcome", groupWelcome, app),
 			groupPickerItem("All", groupAll, app),
@@ -117,7 +117,7 @@ func groupPickerItem(label, key string, app *ShowcaseApp) gui.View {
 		ID:          "grp-" + key,
 		Color:       color,
 		ColorBorder: color,
-		Radius:      gui.Some(float32(3)),
+		Radius:      gui.SomeF(3),
 		Padding:     gui.Some(gui.NewPadding(3, 6, 3, 6)),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: label, TextStyle: gui.CurrentTheme().N5}),
@@ -165,7 +165,7 @@ func catalogRows(entries []DemoEntry, app *ShowcaseApp) []gui.View {
 			rows = append(rows, gui.Row(gui.ContainerCfg{
 				Height:  6,
 				Sizing:  gui.FillFixed,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 			}))
 		}
 		rows = append(rows, gui.Text(gui.TextCfg{
@@ -195,7 +195,7 @@ func catalogRow(entry DemoEntry, app *ShowcaseApp) gui.View {
 		ColorFocus:       color,
 		ColorBorder:      gui.ColorTransparent,
 		ColorBorderFocus: gui.ColorTransparent,
-		Radius:           gui.Some(float32(4)),
+		Radius:           gui.SomeF(4),
 		Padding:          gui.Some(gui.NewPadding(3, 6, 3, 6)),
 		HAlign:           gui.HAlignLeft,
 		Content: []gui.View{

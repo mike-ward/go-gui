@@ -89,7 +89,7 @@ func Toggle(cfg ToggleCfg) View {
 	return Row(ContainerCfg{
 		ID:              cfg.ID,
 		IDFocus:         cfg.IDFocus,
-		Padding:         Some(PaddingNone),
+		Padding:         NoPadding,
 		VAlign:          VAlignMiddle,
 		A11YRole:        AccessRoleCheckbox,
 		A11YState:       a11yState,

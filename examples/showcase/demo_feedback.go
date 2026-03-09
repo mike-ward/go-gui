@@ -12,8 +12,8 @@ func demoButton(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(8)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(8),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      fmt.Sprintf("Clicks: %d", app.ButtonClicks),
@@ -21,8 +21,8 @@ func demoButton(w *gui.Window) gui.View {
 			}),
 			gui.Column(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(8)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
 				Content: buttonFeatureRows(w),
 			}),
 		},
@@ -44,7 +44,7 @@ func buttonFeatureRows(w *gui.Window) []gui.View {
 			ID:         "showcase-button-plain",
 			MinWidth:   buttonWidth,
 			MaxWidth:   buttonWidth,
-			SizeBorder: gui.Some(float32(0)),
+			SizeBorder: gui.NoBorder,
 			Content:    []gui.View{gui.Text(gui.TextCfg{Text: buttonText})},
 			OnClick:    showcaseButtonClick,
 		})),
@@ -59,7 +59,7 @@ func buttonFeatureRows(w *gui.Window) []gui.View {
 			ID:         "showcase-button-border",
 			MinWidth:   buttonWidth,
 			MaxWidth:   buttonWidth,
-			SizeBorder: gui.Some(float32(2)),
+			SizeBorder: gui.SomeF(2),
 			Content:    []gui.View{gui.Text(gui.TextCfg{Text: buttonText})},
 			OnClick:    showcaseButtonClick,
 		})),
@@ -70,7 +70,7 @@ func buttonFeatureRows(w *gui.Window) []gui.View {
 			Color:       gui.RGB(195, 105, 0),
 			ColorHover:  gui.RGB(195, 105, 0),
 			ColorClick:  gui.RGB(205, 115, 0),
-			SizeBorder:  gui.Some(float32(2)),
+			SizeBorder:  gui.SomeF(2),
 			ColorBorder: gui.RGB(160, 160, 160),
 			Padding:     gui.Some(gui.CurrentTheme().PaddingMedium),
 			VAlign:      gui.VAlignMiddle,
@@ -100,11 +100,11 @@ func buttonFeatureRows(w *gui.Window) []gui.View {
 func buttonFeatureRow(label string, button gui.View) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: label, TextStyle: gui.CurrentTheme().N3}),
-			gui.Row(gui.ContainerCfg{Sizing: gui.FillFit, Padding: gui.Some(gui.PaddingNone)}),
+			gui.Row(gui.ContainerCfg{Sizing: gui.FillFit, Padding: gui.NoPadding}),
 			button,
 		},
 	})
@@ -120,8 +120,8 @@ func showcaseButtonClick(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 func demoProgressBar(_ *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.ProgressBar(gui.ProgressBarCfg{Percent: 0.25, TextShow: true, Sizing: gui.FillFit}),
 			gui.ProgressBar(gui.ProgressBarCfg{Percent: 0.50, TextShow: true, Sizing: gui.FillFit}),
@@ -134,8 +134,8 @@ func demoProgressBar(_ *gui.Window) gui.View {
 func demoPulsar(w *gui.Window) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
-		Spacing: gui.Some(float32(8)),
+		Padding: gui.NoPadding,
+		Spacing: gui.SomeF(8),
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Loading", TextStyle: gui.CurrentTheme().N3}),
@@ -147,8 +147,8 @@ func demoPulsar(w *gui.Window) gui.View {
 func demoBadge(_ *gui.Window) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Badge(gui.BadgeCfg{Label: "Default"}),
@@ -166,8 +166,8 @@ func demoToast(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(8)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(8),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-toast",

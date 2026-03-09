@@ -110,7 +110,7 @@ func cpSVAndHueRow(
 	svSize, sliderH, indicatorSize float32,
 ) View {
 	return Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Spacing: Some(SpacingSmall),
 		Content: []View{
 			cpSVArea(cfg, hsv, svSize, indicatorSize),
@@ -142,8 +142,8 @@ func cpSVArea(
 				{Color: pureHue, Pos: 1},
 			},
 		},
-		Padding:    Some(PaddingNone),
-		SizeBorder: Some(float32(0)),
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
 		Radius:     Some(cfg.Style.Radius),
 		Content: []View{
 			container(ContainerCfg{
@@ -155,15 +155,15 @@ func cpSVArea(
 						{Color: Black, Pos: 1},
 					},
 				},
-				Padding: Some(PaddingNone),
+				Padding: NoPadding,
 				Content: []View{
 					Circle(ContainerCfg{
 						Width:       indicatorSize,
 						Height:      indicatorSize,
 						Color:       cfgColor,
 						ColorBorder: White,
-						SizeBorder:  Some(float32(2)),
-						Padding:     Some(PaddingNone),
+						SizeBorder:  SomeF(2),
+						Padding:     NoPadding,
 						AmendLayout: func(
 							layout *Layout, _ *Window,
 						) {
@@ -233,7 +233,7 @@ func cpHueSlider(
 				{Color: RGB(255, 0, 0), Pos: 1.0},
 			},
 		},
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Radius:  Some(cfg.Style.Radius),
 		Content: []View{
 			Circle(ContainerCfg{
@@ -241,8 +241,8 @@ func cpHueSlider(
 				Height:      indicatorSize,
 				Color:       HueColor(hsv.H),
 				ColorBorder: White,
-				SizeBorder:  Some(float32(2)),
-				Padding:     Some(PaddingNone),
+				SizeBorder:  SomeF(2),
+				Padding:     NoPadding,
 				AmendLayout: func(
 					layout *Layout, _ *Window,
 				) {
@@ -318,7 +318,7 @@ func cpPreviewRow(cfg *ColorPickerCfg) View {
 	cfgID := cfg.ID
 
 	return Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Spacing: Some(SpacingSmall),
 		VAlign:  VAlignMiddle,
 		Content: []View{
@@ -352,7 +352,7 @@ func cpPreviewRow(cfg *ColorPickerCfg) View {
 func cpRGBAInputs(cfg *ColorPickerCfg) View {
 	c := cfg.Color
 	return Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Spacing: Some(SpacingSmall),
 		Content: []View{
 			cpChannelInput(cfg, "Red", c.R, 0),
@@ -367,7 +367,7 @@ func cpHSVInputs(
 	cfg *ColorPickerCfg, hsv colorPickerState,
 ) View {
 	return Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Spacing: Some(SpacingSmall),
 		Content: []View{
 			cpHSVChannelInput(cfg, "Hue", int(hsv.H), 360, 0),
@@ -388,8 +388,8 @@ func cpChannelInput(
 	c := cfg.Color
 
 	return Column(ContainerCfg{
-		Padding: Some(PaddingNone),
-		Spacing: Some(float32(2)),
+		Padding: NoPadding,
+		Spacing: SomeF(2),
 		Content: []View{
 			Text(TextCfg{
 				Text: ch,
@@ -428,8 +428,8 @@ func cpHSVChannelInput(
 	cfgID := cfg.ID
 
 	return Column(ContainerCfg{
-		Padding: Some(PaddingNone),
-		Spacing: Some(float32(2)),
+		Padding: NoPadding,
+		Spacing: SomeF(2),
 		Content: []View{
 			Text(TextCfg{
 				Text: ch,

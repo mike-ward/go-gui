@@ -199,7 +199,7 @@ func datePickerControls(
 
 	return Row(ContainerCfg{
 		VAlign:  VAlignMiddle,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Sizing:  FillFit,
 		Content: []View{
 			Button(ButtonCfg{
@@ -241,7 +241,7 @@ func datePickerCalendar(
 	content = append(content, datePickerMonth(cfg, state, w)...)
 	return Column(ContainerCfg{
 		Spacing: Some[float32](0),
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Content: content,
 	})
 }
@@ -266,7 +266,7 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 	}
 	return Row(ContainerCfg{
 		Spacing: Some(cellSpacing),
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Content: labels,
 	})
 }
@@ -367,7 +367,7 @@ func datePickerMonth(
 		}
 		rows = append(rows, Row(ContainerCfg{
 			Spacing: Some(cellSpacing),
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 			Content: cells,
 		}))
 		// Stop generating rows if all days rendered.

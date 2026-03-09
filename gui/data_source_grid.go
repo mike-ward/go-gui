@@ -667,15 +667,15 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 	// Spacer.
 	content = append(content, Row(ContainerCfg{
 		Sizing:  FillFill,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 	}))
 	// Retry button on error.
 	if state.LoadError != "" {
 		content = append(content, Button(ButtonCfg{
 			Sizing:      FitFill,
-			Padding:     Some(PaddingNone),
-			SizeBorder:  Some(float32(0)),
-			Radius:      Some(float32(0)),
+			Padding:     NoPadding,
+			SizeBorder:  SomeF(0),
+			Radius:      SomeF(0),
 			Color:       ColorTransparent,
 			ColorHover:  cfg.ColorHeaderHover,
 			ColorFocus:  ColorTransparent,
@@ -725,9 +725,9 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 			Disabled:    !jumpEnabled,
 			Width:       dataGridJumpInputWidth,
 			Sizing:      FixedFill,
-			Padding:     Some(PaddingNone),
-			SizeBorder:  Some(float32(0)),
-			Radius:      Some(float32(0)),
+			Padding:     NoPadding,
+			SizeBorder:  SomeF(0),
+			Radius:      SomeF(0),
 			Color:       cfg.ColorFilter,
 			ColorHover:  cfg.ColorFilter,
 			ColorBorder: cfg.ColorBorder,
@@ -752,9 +752,9 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(dataGridPagerPadding(cfg)),
-		Spacing:     Some(float32(6)),
+		Spacing:     SomeF(6),
 		VAlign:      VAlignMiddle,
 		Content:     content,
 	})
@@ -766,7 +766,7 @@ func dataGridSourceStatusRow(cfg *DataGridCfg, message string) View {
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(cfg.PaddingFilter),
 		VAlign:      VAlignMiddle,
 		Content: []View{

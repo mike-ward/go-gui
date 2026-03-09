@@ -126,7 +126,7 @@ func applyRadioDefaults(cfg *RadioCfg) {
 		cfg.ColorUnselect = DefaultRadioStyle.ColorUnselect
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = Some(PaddingNone)
+		cfg.Padding = NoPadding
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle

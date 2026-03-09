@@ -12,8 +12,8 @@ func demoAnimations(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(16)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(16),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			animTweenDemo(t, app),
 			line(),
@@ -27,8 +27,8 @@ func demoAnimations(w *gui.Window) gui.View {
 func animTweenDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(8)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(8),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Tween Animation", TextStyle: t.B4}),
 			gui.Text(gui.TextCfg{
@@ -37,7 +37,7 @@ func animTweenDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
 						Width:  app.AnimTweenX,
@@ -48,15 +48,15 @@ func animTweenDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 						Height:  24,
 						Sizing:  gui.FixedFixed,
 						Color:   t.ColorActive,
-						Radius:  gui.Some(float32(12)),
+						Radius:  gui.SomeF(12),
 						Content: []gui.View{},
 					}),
 				},
 			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(8)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-tween-go",
@@ -85,8 +85,8 @@ func animTweenDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 func animSpringDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(8)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(8),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Spring Animation", TextStyle: t.B4}),
 			gui.Text(gui.TextCfg{
@@ -95,7 +95,7 @@ func animSpringDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
 						Width:  app.AnimSpringX,
@@ -106,15 +106,15 @@ func animSpringDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 						Height:  24,
 						Sizing:  gui.FixedFixed,
 						Color:   gui.ColorFromString("#10b981"),
-						Radius:  gui.Some(float32(4)),
+						Radius:  gui.SomeF(4),
 						Content: []gui.View{},
 					}),
 				},
 			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(8)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-spring-go",
@@ -144,8 +144,8 @@ func animSpringDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 func animKeyframeDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(8)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(8),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Keyframe Animation", TextStyle: t.B4}),
 			gui.Text(gui.TextCfg{
@@ -154,7 +154,7 @@ func animKeyframeDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
 						Width:  app.AnimKeyframeX,
@@ -165,15 +165,15 @@ func animKeyframeDemo(t gui.Theme, app *ShowcaseApp) gui.View {
 						Height:  24,
 						Sizing:  gui.FixedFixed,
 						Color:   gui.ColorFromString("#f59e0b"),
-						Radius:  gui.Some(float32(12)),
+						Radius:  gui.SomeF(12),
 						Content: []gui.View{},
 					}),
 				},
 			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(8)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-keyframe-go",

@@ -331,7 +331,7 @@ func toggleTheme(app *App, theme gui.Theme) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		HAlign:  gui.HAlignEnd,
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Toggle(gui.ToggleCfg{
 				TextSelect:   gui.IconMoon,

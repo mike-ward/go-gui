@@ -44,7 +44,7 @@ func mainView(w *gui.Window) gui.View {
 			gui.Row(gui.ContainerCfg{
 				VAlign:  gui.VAlignMiddle,
 				Sizing:  gui.FitFit,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Spacing: gui.Some(t.SpacingMedium),
 				Content: []gui.View{
 					toggleTheme(app),

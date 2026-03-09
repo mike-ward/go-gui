@@ -103,7 +103,7 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 		ID:       cfg.ID,
 		A11YRole: AccessRoleGroup,
 		Sizing:   FillFit,
-		Padding:  Some(PaddingNone),
+		Padding:  NoPadding,
 		Spacing:  Some(cfg.Spacing),
 		Overflow: true,
 		Disabled: cfg.Disabled,

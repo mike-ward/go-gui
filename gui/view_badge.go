@@ -68,7 +68,7 @@ func Badge(cfg BadgeCfg) View {
 			Width:     sz,
 			Height:    sz,
 			Sizing:    FixedFixed,
-			Padding:   Some(PaddingNone),
+			Padding:   NoPadding,
 		})
 	}
 

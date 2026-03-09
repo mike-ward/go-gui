@@ -79,7 +79,7 @@ func mainView(w *gui.Window) gui.View {
 		Content: []gui.View{
 			borderedGroup("Calendar", []gui.View{datePicker(app, w)}),
 			gui.Row(gui.ContainerCfg{
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Spacing: gui.Some(gui.SpacingLarge * 2),
 				Content: []gui.View{
 					optionsGroup(app),
@@ -209,7 +209,7 @@ func datePicker(app *App, w *gui.Window) gui.View {
 
 func optionsGroup(app *App) gui.View {
 	return gui.Column(gui.ContainerCfg{
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			borderedGroup("Options", []gui.View{
 				gui.Toggle(gui.ToggleCfg{
@@ -251,7 +251,7 @@ func optionsGroup(app *App) gui.View {
 
 func weekdaysGroup(app *App) gui.View {
 	return gui.Column(gui.ContainerCfg{
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			weekdaysLenGroup(app),
 			gui.Rectangle(gui.RectangleCfg{Color: gui.ColorTransparent}),
@@ -264,7 +264,7 @@ func weekdaysLenGroup(app *App) gui.View {
 	return borderedGroup("Weekdays", []gui.View{
 		gui.RadioButtonGroupColumn(gui.RadioButtonGroupCfg{
 			Sizing:  gui.FillFit,
-			Padding: gui.Some(gui.PaddingNone),
+			Padding: gui.NoPadding,
 			Value:   app.WeekdaysLen,
 			Options: []gui.RadioOption{
 				gui.NewRadioOption("One letter", "one"),
@@ -396,7 +396,7 @@ func clickAllowMonth(l *gui.Layout, e *gui.Event, w *gui.Window) {
 
 func yearsDatesGroup(app *App, w *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Sizing:  gui.FitFill,
 		Content: []gui.View{
 			allowedYearsGroup(app),
@@ -406,7 +406,7 @@ func yearsDatesGroup(app *App, w *gui.Window) gui.View {
 			gui.Row(gui.ContainerCfg{
 				HAlign:  gui.HAlignRight,
 				VAlign:  gui.VAlignMiddle,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Sizing:  gui.FillFit,
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{

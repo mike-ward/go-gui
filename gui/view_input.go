@@ -131,7 +131,7 @@ func Input(cfg InputCfg) View {
 
 	idScroll := cfg.IDScroll
 	innerCfg := ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Sizing:  innerSizing,
 		VAlign:  vAlign,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
@@ -355,7 +355,7 @@ func Input(cfg InputCfg) View {
 		Radius:          Some(radius),
 		Sizing:          cfg.Sizing,
 		IDScroll:        cfg.IDScroll,
-		Spacing:         Some(float32(0)),
+		Spacing:         SomeF(0),
 		OnChar:          makeInputOnChar(hcfg),
 		OnKeyDown:       makeInputOnKeyDown(hcfg),
 		OnHover: func(_ *Layout, _ *Event, w *Window) {

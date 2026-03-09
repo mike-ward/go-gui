@@ -16,7 +16,7 @@ func demoText(_ *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.Some(t.SpacingSmall),
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				ID:        "text-intro",
@@ -27,7 +27,7 @@ func demoText(_ *gui.Window) gui.View {
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
 				Spacing: gui.Some(t.SpacingMedium),
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				VAlign:  gui.VAlignMiddle,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Theme n3 text", TextStyle: t.N3}),
@@ -39,7 +39,7 @@ func demoText(_ *gui.Window) gui.View {
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
 				Spacing: gui.Some(t.SpacingMedium),
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				VAlign:  gui.VAlignMiddle,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
@@ -86,7 +86,7 @@ func demoText(_ *gui.Window) gui.View {
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
 				Spacing: gui.Some(t.SpacingMedium),
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				VAlign:  gui.VAlignTop,
 				Content: []gui.View{
 					textDemoCard("", "mode: .wrap + alignment", 260, []gui.View{
@@ -146,7 +146,7 @@ func demoText(_ *gui.Window) gui.View {
 				gui.Row(gui.ContainerCfg{
 					Sizing:  gui.FillFixed,
 					Height:  t.B4.Size * 4,
-					Padding: gui.Some(gui.PaddingNone),
+					Padding: gui.NoPadding,
 					VAlign:  gui.VAlignTop,
 					Content: []gui.View{
 						gui.Text(gui.TextCfg{
@@ -164,7 +164,7 @@ func demoText(_ *gui.Window) gui.View {
 				gui.Row(gui.ContainerCfg{
 					Sizing:  gui.FillFixed,
 					Height:  t.B4.Size * 4,
-					Padding: gui.Some(gui.PaddingNone),
+					Padding: gui.NoPadding,
 					VAlign:  gui.VAlignTop,
 					Content: []gui.View{
 						gui.Text(gui.TextCfg{
@@ -286,7 +286,7 @@ func textDemoCard(
 		Sizing:      gui.FillFit,
 		Color:       t.ColorPanel,
 		ColorBorder: t.ColorBorder,
-		SizeBorder:  gui.Some(float32(1)),
+		SizeBorder:  gui.SomeF(1),
 		Padding:     gui.Some(t.PaddingSmall),
 		Spacing:     gui.Some(t.SpacingSmall),
 		Content:     items,
@@ -302,8 +302,8 @@ func demoRtf(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(16)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(16),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			// Mixed inline styles in a single paragraph
 			sectionLabel(t, "Mixed Inline Styles"),

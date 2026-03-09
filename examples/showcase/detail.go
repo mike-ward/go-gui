@@ -14,7 +14,7 @@ func detailPanel(w *gui.Window) gui.View {
 		return gui.Column(gui.ContainerCfg{
 			IDScroll:   scrollDetail,
 			Sizing:     gui.FillFill,
-			SizeBorder: gui.Some(float32(0)),
+			SizeBorder: gui.NoBorder,
 			Padding:    gui.Some(detailPanelPadding()),
 			ScrollbarCfgY: &gui.ScrollbarCfg{
 				GapEdge: 4,
@@ -52,7 +52,7 @@ func detailPanel(w *gui.Window) gui.View {
 		IDScroll:   scrollDetail,
 		Sizing:     gui.FillFill,
 		Color:      gui.CurrentTheme().ColorBackground,
-		SizeBorder: gui.Some(float32(0)),
+		SizeBorder: gui.NoBorder,
 		Padding:    gui.Some(detailPanelPadding()),
 		Spacing:    gui.Some(gui.CurrentTheme().SpacingLarge),
 		ScrollbarCfgY: &gui.ScrollbarCfg{
@@ -82,22 +82,22 @@ func viewTitleBar(entry DemoEntry, showDocs bool) gui.View {
 		titleContent = append(titleContent,
 			gui.Row(gui.ContainerCfg{
 				Sizing:     gui.FillFit,
-				Padding:    gui.Some(gui.PaddingNone),
-				SizeBorder: gui.Some(float32(0)),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
 			}),
 			docButton(showDocs),
 		)
 	}
 	return gui.Column(gui.ContainerCfg{
 		Sizing:     gui.FillFit,
-		Spacing:    gui.Some(float32(0)),
-		Padding:    gui.Some(gui.PaddingNone),
-		SizeBorder: gui.Some(float32(0)),
+		Spacing:    gui.SomeF(0),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
 				Sizing:     gui.FillFit,
-				Padding:    gui.Some(gui.PaddingNone),
-				SizeBorder: gui.Some(float32(0)),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
 				VAlign:     gui.VAlignMiddle,
 				Content:    titleContent,
 			}),
@@ -115,9 +115,9 @@ func docButton(showDocs bool) gui.View {
 		ID:         "btn-doc-toggle",
 		A11YLabel:  "Toggle docs",
 		Color:      color,
-		SizeBorder: gui.Some(float32(0)),
+		SizeBorder: gui.NoBorder,
 		Padding:    gui.Some(gui.NewPadding(4, 8, 4, 8)),
-		Radius:     gui.Some(float32(3)),
+		Radius:     gui.SomeF(3),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: gui.IconBook, TextStyle: gui.CurrentTheme().Icon4}),
 		},
@@ -256,7 +256,7 @@ func demoPlaceholder(t gui.Theme, text string) gui.View {
 		Sizing:  gui.FillFit,
 		Color:   t.ColorPanel,
 		Padding: gui.Some(gui.NewPadding(24, 24, 24, 24)),
-		Radius:  gui.Some(float32(8)),
+		Radius:  gui.SomeF(8),
 		Content: []gui.View{
 			showcaseWrappedText(text, t.N3),
 		},

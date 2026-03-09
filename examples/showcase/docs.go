@@ -611,7 +611,7 @@ Horizontal container — children flow left to right.
 
 ` + "```go" + `
 gui.Row(gui.ContainerCfg{
-    Spacing: gui.Some(float32(8)),
+    Spacing: gui.SomeF(8),
     Content: []gui.View{child1, child2},
 })
 ` + "```" + `
@@ -625,7 +625,7 @@ Vertical container — children flow top to bottom.
 
 ` + "```go" + `
 gui.Column(gui.ContainerCfg{
-    Spacing: gui.Some(float32(8)),
+    Spacing: gui.SomeF(8),
     Content: []gui.View{child1, child2},
 })
 ` + "```" + `
@@ -639,7 +639,7 @@ Horizontal flow that wraps to the next line when full.
 
 ` + "```go" + `
 gui.Wrap(gui.ContainerCfg{
-    Spacing: gui.Some(float32(4)),
+    Spacing: gui.SomeF(4),
     Content: items,
 })
 ` + "```" + `
@@ -1109,7 +1109,7 @@ func view(w *gui.Window) gui.View {
     app := gui.State[App](w)
     return gui.Column(gui.ContainerCfg{
         Sizing: gui.FillFill, HAlign: gui.HAlignCenter,
-        VAlign: gui.VAlignMiddle, Spacing: gui.Some(float32(8)),
+        VAlign: gui.VAlignMiddle, Spacing: gui.SomeF(8),
         Content: []gui.View{
             gui.Text(gui.TextCfg{Text: fmt.Sprintf("Count: %d", app.Count)}),
             gui.Button(gui.ButtonCfg{
@@ -1189,7 +1189,7 @@ const docContainers = `# Containers
 
 ` + "```go" + `
 gui.Column(gui.ContainerCfg{
-    Spacing: gui.Some(float32(8)),
+    Spacing: gui.SomeF(8),
     Padding: gui.Some(gui.NewPadding(16, 16, 16, 16)),
 })
 ` + "```" + `
@@ -1384,7 +1384,7 @@ Combine inputs, labels, and containers into form layouts.
 func labeledRow(t gui.Theme, label string, input gui.View) gui.View {
     return gui.Row(gui.ContainerCfg{
         Sizing: gui.FillFit, VAlign: gui.VAlignMiddle,
-        Spacing: gui.Some(float32(8)),
+        Spacing: gui.SomeF(8),
         Content: []gui.View{
             gui.Text(gui.TextCfg{Text: label, TextStyle: t.B3,
                 Sizing: gui.FixedFit}),
@@ -1403,7 +1403,7 @@ gui.Column(gui.ContainerCfg{
     Title:       "Personal Info",
     TitleBG:     t.ColorBackground,
     ColorBorder: t.ColorBorder,
-    SizeBorder:  gui.Some(float32(1)),
+    SizeBorder:  gui.SomeF(1),
 })
 ` + "```" + `
 
@@ -1446,7 +1446,7 @@ gui.Column(gui.ContainerCfg{
 ` + "```go" + `
 gui.Column(gui.ContainerCfg{
     BorderGradient: &gui.GradientDef{...},
-    SizeBorder: gui.Some(float32(2)),
+    SizeBorder: gui.SomeF(2),
 })
 ` + "```" + `
 `

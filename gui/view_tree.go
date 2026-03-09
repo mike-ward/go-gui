@@ -565,7 +565,7 @@ func treeRowView(
 			float32(row.Depth)*cfg.Indent+5,
 		)),
 		Sizing:  FillFit,
-		Spacing: Some(float32(0)),
+		Spacing: NoSpacing,
 		Content: []View{
 			Text(TextCfg{
 				Text:      treeArrowIcon(row) + " ",
@@ -640,7 +640,7 @@ func treeDragRowView(
 			float32(row.Depth)*cfg.Indent+5,
 		)),
 		Sizing:  FillFit,
-		Spacing: Some(float32(0)),
+		Spacing: NoSpacing,
 		Content: []View{
 			Text(TextCfg{
 				Text:      treeArrowIcon(row) + " ",
@@ -694,7 +694,7 @@ func treeRowContent(
 			float32(row.Depth)*cfg.Indent+5,
 		)),
 		Sizing:  FillFit,
-		Spacing: Some(float32(0)),
+		Spacing: NoSpacing,
 		Content: []View{
 			Text(TextCfg{
 				Text:      treeArrowIcon(row) + " ",

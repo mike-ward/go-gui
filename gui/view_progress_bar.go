@@ -58,7 +58,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 
 	content := make([]View, 0, 2)
 	content = append(content, Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Radius:  Some(cfg.Radius),
 		Color:   cfg.ColorBar,
 	}))
@@ -122,7 +122,7 @@ func ProgressBar(cfg ProgressBarCfg) View {
 		Color:     cfg.Color,
 		Radius:    Some(cfg.Radius),
 		Sizing:    cfg.Sizing,
-		Padding:   Some(PaddingNone),
+		Padding:   NoPadding,
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
 		AmendLayout: func(layout *Layout, w *Window) {

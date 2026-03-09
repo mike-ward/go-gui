@@ -45,7 +45,7 @@ func Pulsar(cfg PulsarCfg, w *Window) View {
 	return Column(ContainerCfg{
 		ID:       cfg.ID,
 		MinWidth: width,
-		Padding:  Some(PaddingNone),
+		Padding:  NoPadding,
 		Content: []View{
 			Text(TextCfg{
 				Text:      txt,

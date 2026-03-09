@@ -89,7 +89,7 @@ func Switch(cfg SwitchCfg) View {
 
 	return Row(ContainerCfg{
 		IDFocus:         cfg.IDFocus,
-		Padding:         Some(PaddingNone),
+		Padding:         NoPadding,
 		A11YRole:        AccessRoleSwitchToggle,
 		A11YState:       a11yState,
 		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.Label),

@@ -19,8 +19,8 @@ func dataGridHeaderRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		Sizing:      FillFixed,
 		Color:       ColorTransparent,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
-		Padding:     Some(PaddingNone),
+		SizeBorder:  SomeF(0),
+		Padding:     NoPadding,
 		Spacing:     Some(-cfg.SizeBorder),
 		Content:     cells,
 	})
@@ -53,16 +53,16 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 		content = append(content, Row(ContainerCfg{
 			Sizing:  FillFill,
 			Clip:    true,
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 			HAlign:  col.Align,
 			VAlign:  VAlignMiddle,
-			Spacing: Some(float32(6)),
+			Spacing: SomeF(6),
 			Content: labelContent,
 		}))
 	} else {
 		content = append(content, Row(ContainerCfg{
 			Sizing:  FillFill,
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 		}))
 	}
 	if headerControls.showReorder {
@@ -99,7 +99,7 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 		Color:       cfg.ColorHeader,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(cfg.SizeBorder),
-		Spacing:     Some(float32(0)),
+		Spacing:     SomeF(0),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			e.IsHandled = true
 			if colSortable && onQueryChange != nil {
@@ -139,7 +139,7 @@ func dataGridResizeHandle(cfg *DataGridCfg, col GridColumnCfg, focusID uint32) V
 		ID:      gridID + ":resize:" + col.ID,
 		Width:   dataGridResizeHandleWidth,
 		Sizing:  FixedFill,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Color:   colorResizeHandle,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
 			startX := layout.Shape.X + e.MouseX
@@ -175,7 +175,7 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 	}
 
 	return Row(ContainerCfg{
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Spacing: Some(dataGridHeaderReorderSpacing),
 		Width:   dataGridHeaderControlsWidth(true, false, false),
 		Sizing:  FixedFill,
@@ -239,9 +239,9 @@ func dataGridIndicatorButton(label string, baseStyle TextStyle, hoverColor Color
 	return Button(ButtonCfg{
 		Width:       width,
 		Sizing:      sizing,
-		Padding:     Some(PaddingNone),
-		SizeBorder:  Some(float32(0)),
-		Radius:      Some(float32(0)),
+		Padding:     NoPadding,
+		SizeBorder:  SomeF(0),
+		Radius:      SomeF(0),
 		Color:       ColorTransparent,
 		ColorHover:  hoverColor,
 		ColorFocus:  ColorTransparent,
@@ -294,7 +294,7 @@ func dataGridFilterRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(cfg.PaddingFilter),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content:     cells,
@@ -320,7 +320,7 @@ func dataGridFilterCell(cfg *DataGridCfg, col GridColumnCfg, width float32) View
 		Color:       ColorTransparent,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(cfg.SizeBorder),
-		Spacing:     Some(float32(0)),
+		Spacing:     SomeF(0),
 		Content: []View{
 			Input(InputCfg{
 				ID:          inputID,
@@ -329,9 +329,9 @@ func dataGridFilterCell(cfg *DataGridCfg, col GridColumnCfg, width float32) View
 				Placeholder: placeholder,
 				Disabled:    !col.Filterable || onQueryChange == nil,
 				Sizing:      FillFill,
-				Padding:     Some(PaddingNone),
-				SizeBorder:  Some(float32(0)),
-				Radius:      Some(float32(0)),
+				Padding:     NoPadding,
+				SizeBorder:  SomeF(0),
+				Radius:      SomeF(0),
 				Color:       cfg.ColorFilter,
 				ColorHover:  cfg.ColorFilter,
 				ColorBorder: cfg.ColorBorder,

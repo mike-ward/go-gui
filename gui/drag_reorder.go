@@ -634,8 +634,8 @@ func dragReorderGhostView(state dragReorderState, content View) View {
 		Opacity:      dragReorderGhostOpacity,
 		Sizing:       FixedFixed,
 		Clip:         true,
-		Padding:      Some(PaddingNone),
-		SizeBorder:   Some(float32(0)),
+		Padding:      NoPadding,
+		SizeBorder:   SomeF(0),
 		VAlign:       VAlignMiddle,
 		Color:        guiTheme.ColorBackground,
 		Shadow: &BoxShadow{

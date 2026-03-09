@@ -387,7 +387,7 @@ func invisibleContainerView() *containerView {
 		cfg: ContainerCfg{
 			Disabled: true,
 			OverDraw: true,
-			Padding:  Some(PaddingNone),
+			Padding:  NoPadding,
 		},
 		shapeType: ShapeRectangle,
 	}

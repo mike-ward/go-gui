@@ -10,7 +10,7 @@ func showcaseMarkdownPanel(w *gui.Window, id, source string) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:     gui.FillFit,
 		Padding:    gui.Some(gui.PaddingSmall),
-		SizeBorder: gui.Some(float32(0)),
+		SizeBorder: gui.NoBorder,
 		Color:      gui.CurrentTheme().ColorPanel,
 		Content: []gui.View{
 			w.Markdown(gui.MarkdownCfg{
@@ -18,7 +18,7 @@ func showcaseMarkdownPanel(w *gui.Window, id, source string) gui.View {
 				Style:   gui.DefaultMarkdownStyle(),
 				Source:  source,
 				Mode:    gui.Some(gui.TextModeWrap),
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 			}),
 		},
 	})

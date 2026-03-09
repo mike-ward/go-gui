@@ -7,13 +7,13 @@ func demoDialog(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(8)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-dialog-msg",
@@ -88,7 +88,7 @@ func demoDialog(w *gui.Window) gui.View {
 								CustomContent: []gui.View{
 									gui.Column(gui.ContainerCfg{
 										Sizing:  gui.FillFit,
-										Spacing: gui.Some(float32(8)),
+										Spacing: gui.SomeF(8),
 										Padding: gui.Some(gui.NewPadding(8, 8, 8, 8)),
 										Content: []gui.View{
 											gui.Text(gui.TextCfg{
@@ -116,8 +116,8 @@ func demoDialog(w *gui.Window) gui.View {
 			sectionLabel(t, "Native File Dialogs"),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(8)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-open-file",
@@ -203,8 +203,8 @@ func demoNotification(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-notify",
@@ -243,8 +243,8 @@ func demoTooltip(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(16)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(16),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.WithTooltip(w, gui.WithTooltipCfg{
 				Text: "This is a tooltip!",

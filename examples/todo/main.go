@@ -92,9 +92,9 @@ func cardView(width, height float32, w *gui.Window) gui.View {
 		Height:      height,
 		Sizing:      gui.FixedFixed,
 		Color:       colorCardBG,
-		Radius:      gui.Some(float32(18)),
+		Radius:      gui.SomeF(18),
 		Padding:     gui.Some(gui.NewPadding(34, 34, 34, 34)),
-		Spacing:     gui.Some(float32(22)),
+		Spacing:     gui.SomeF(22),
 		ColorBorder: colorCardBG,
 		Content: []gui.View{
 			headerView(),
@@ -107,8 +107,8 @@ func cardView(width, height float32, w *gui.Window) gui.View {
 func headerView() gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
-		Spacing: gui.Some(float32(10)),
+		Padding: gui.NoPadding,
+		Spacing: gui.SomeF(10),
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
@@ -132,7 +132,7 @@ func composerView(w *gui.Window) gui.View {
 
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Input(gui.InputCfg{
@@ -145,7 +145,7 @@ func composerView(w *gui.Window) gui.View {
 				ColorHover:       colorInputBG,
 				ColorBorder:      colorInputBG,
 				ColorBorderFocus: colorAccent,
-				Radius:           gui.Some(float32(20)),
+				Radius:           gui.SomeF(20),
 				Padding:          gui.Some(gui.NewPadding(18, 20, 18, 20)),
 				TextStyle:        gui.TextStyle{Color: colorText, Size: 18},
 				PlaceholderStyle: gui.TextStyle{Color: colorMuted, Size: 18},
@@ -165,7 +165,7 @@ func composerView(w *gui.Window) gui.View {
 				ColorFocus:       colorAccent,
 				ColorBorder:      colorAccent,
 				ColorBorderFocus: colorAccent,
-				Radius:           gui.Some(float32(20)),
+				Radius:           gui.SomeF(20),
 				Padding:          gui.Some(gui.NewPadding(18, 28, 18, 28)),
 				MinWidth:         140,
 				Content: []gui.View{
@@ -196,8 +196,8 @@ func listView(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFill,
-		Padding: gui.Some(gui.PaddingNone),
-		Spacing: gui.Some(float32(14)),
+		Padding: gui.NoPadding,
+		Spacing: gui.SomeF(14),
 		Content: content,
 	})
 }
@@ -205,8 +205,8 @@ func listView(w *gui.Window) gui.View {
 func todoRowView(item todoItem) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
-		Spacing: gui.Some(float32(12)),
+		Padding: gui.NoPadding,
+		Spacing: gui.SomeF(12),
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			completeButton(item),
@@ -226,8 +226,8 @@ func completeButton(item todoItem) gui.View {
 		Width:   32,
 		Height:  32,
 		Sizing:  gui.FixedFixed,
-		Radius:  gui.Some(float32(16)),
-		Padding: gui.Some(gui.PaddingNone),
+		Radius:  gui.SomeF(16),
+		Padding: gui.NoPadding,
 		OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 			toggleTodo(w, item.ID)
 			e.IsHandled = true
@@ -260,7 +260,7 @@ func completeButton(item todoItem) gui.View {
 	cfg.ColorFocus = colorCardBG
 	cfg.ColorBorder = colorBorder
 	cfg.ColorBorderFocus = colorAccent
-	cfg.SizeBorder = gui.Some(float32(2))
+	cfg.SizeBorder = gui.SomeF(2)
 	cfg.Content = []gui.View{gui.Text(gui.TextCfg{Text: ""})}
 	return gui.Button(cfg)
 }
@@ -277,8 +277,8 @@ func deleteButton(id int) gui.View {
 		ColorFocus:       colorDeleteHover,
 		ColorBorder:      gui.ColorTransparent,
 		ColorBorderFocus: gui.ColorTransparent,
-		Radius:           gui.Some(float32(14)),
-		Padding:          gui.Some(gui.PaddingNone),
+		Radius:           gui.SomeF(14),
+		Padding:          gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text: "×",

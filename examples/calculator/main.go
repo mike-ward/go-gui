@@ -194,7 +194,7 @@ func mainView(w *gui.Window) gui.View {
 		Height:  float32(wh),
 		Sizing:  gui.FixedFixed,
 		Color:   colorBackdrop,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Column(gui.ContainerCfg{
 				X:       0,
@@ -220,10 +220,10 @@ func calculatorShell(w *gui.Window) gui.View {
 		Sizing:      gui.FixedFixed,
 		Color:       colorShell,
 		ColorBorder: colorShellBorder,
-		SizeBorder:  gui.Some(float32(2)),
-		Radius:      gui.Some(float32(22)),
+		SizeBorder:  gui.SomeF(2),
+		Radius:      gui.SomeF(22),
 		Padding:     gui.Some(gui.NewPadding(10, 10, 10, 10)),
-		Spacing:     gui.Some(float32(8)),
+		Spacing:     gui.SomeF(8),
 		Content: []gui.View{
 			topChrome(),
 			displayView(w),
@@ -236,12 +236,12 @@ func topChrome() gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		VAlign:  gui.VAlignMiddle,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FitFit,
-				Spacing: gui.Some(float32(8)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					chromeDot(gui.RGB(255, 95, 87)),
 					chromeDot(gui.RGB(255, 189, 46)),
@@ -251,7 +251,7 @@ func topChrome() gui.View {
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
 				HAlign:  gui.HAlignEnd,
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
 						Text: "CALC",
@@ -273,7 +273,7 @@ func chromeDot(color gui.Color) gui.View {
 		Height:  18,
 		Sizing:  gui.FixedFixed,
 		Color:   color,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 	})
 }
 
@@ -320,7 +320,7 @@ func keypadView(w *gui.Window) gui.View {
 		Height:  234,
 		Sizing:  gui.FixedFixed,
 		Spacing: gui.Some(buttonGap),
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: content,
 	})
 }
@@ -336,7 +336,7 @@ func keypadRow(w *gui.Window, buttons []calcButton) gui.View {
 		Height:  buttonSize,
 		Sizing:  gui.FixedFixed,
 		Spacing: gui.Some(buttonGap),
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Content: content,
 	})
 }
@@ -362,12 +362,12 @@ func calcKey(w *gui.Window, button calcButton) gui.View {
 		ColorFocus:       lighten(button.Background, 12),
 		ColorBorder:      lighten(button.Background, 18),
 		ColorBorderFocus: lighten(button.Background, 28),
-		SizeBorder:       gui.Some(float32(2)),
+		SizeBorder:       gui.SomeF(2),
 		Width:            buttonSize,
 		Height:           buttonSize,
 		Sizing:           gui.FixedFixed,
 		Radius:           gui.Some(buttonSize / 2),
-		Padding:          gui.Some(gui.PaddingNone),
+		Padding:          gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      button.Label,

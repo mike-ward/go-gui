@@ -166,7 +166,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	content = append(content,
 		Row(ContainerCfg{
 			Sizing:  FillFill,
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 		}),
 	)
 
@@ -214,7 +214,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			FloatZIndex:  cfg.FloatZIndex,
 			IDScroll:     cfg.IDScroll,
 			Padding:      cfg.Padding,
-			Spacing:      Some(float32(0)),
+			Spacing:      SomeF(0),
 			Content:      dropdownContent,
 		}))
 	}

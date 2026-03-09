@@ -32,7 +32,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 			ID:      "strat-" + sv,
 			Color:   color,
 			Padding: gui.Some(gui.NewPadding(4, 10, 4, 10)),
-			Radius:  gui.Some(float32(12)),
+			Radius:  gui.SomeF(12),
 			Content: []gui.View{gui.Text(gui.TextCfg{Text: strategyLabel(sv), TextStyle: textStyle})},
 			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 				gui.State[ShowcaseApp](w).ThemeGenStrategy = sv
@@ -49,20 +49,20 @@ func demoThemeGen(w *gui.Window) gui.View {
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(12)),
-		Padding: gui.Some(gui.PaddingNone),
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: title, TextStyle: t.N3}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(16)),
-				Padding: gui.Some(gui.PaddingNone),
+				Spacing: gui.SomeF(16),
+				Padding: gui.NoPadding,
 				VAlign:  gui.VAlignTop,
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
 						Sizing:  gui.FitFit,
-						Spacing: gui.Some(float32(10)),
-						Padding: gui.Some(gui.PaddingNone),
+						Spacing: gui.SomeF(10),
+						Padding: gui.NoPadding,
 						Content: []gui.View{
 							gui.ColorPicker(gui.ColorPickerCfg{
 								ID:    "theme-gen-cp",
@@ -95,13 +95,13 @@ func demoThemeGen(w *gui.Window) gui.View {
 							}),
 							gui.Row(gui.ContainerCfg{
 								Sizing:  gui.FillFit,
-								Spacing: gui.Some(float32(12)),
-								Padding: gui.Some(gui.PaddingNone),
+								Spacing: gui.SomeF(12),
+								Padding: gui.NoPadding,
 								Content: []gui.View{
 									gui.Column(gui.ContainerCfg{
 										Sizing:  gui.FitFit,
-										Spacing: gui.Some(float32(6)),
-										Padding: gui.Some(gui.PaddingNone),
+										Spacing: gui.SomeF(6),
+										Padding: gui.NoPadding,
 										Content: []gui.View{
 											gui.Text(gui.TextCfg{Text: "Radius", TextStyle: t.N3}),
 											gui.NumericInput(gui.NumericInputCfg{
@@ -130,8 +130,8 @@ func demoThemeGen(w *gui.Window) gui.View {
 									}),
 									gui.Column(gui.ContainerCfg{
 										Sizing:  gui.FitFit,
-										Spacing: gui.Some(float32(6)),
-										Padding: gui.Some(gui.PaddingNone),
+										Spacing: gui.SomeF(6),
+										Padding: gui.NoPadding,
 										Content: []gui.View{
 											gui.Text(gui.TextCfg{Text: "Border", TextStyle: t.N3}),
 											gui.NumericInput(gui.NumericInputCfg{
@@ -164,14 +164,14 @@ func demoThemeGen(w *gui.Window) gui.View {
 					}),
 					gui.Column(gui.ContainerCfg{
 						Sizing:  gui.FillFit,
-						Spacing: gui.Some(float32(10)),
-						Padding: gui.Some(gui.PaddingNone),
+						Spacing: gui.SomeF(10),
+						Padding: gui.NoPadding,
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Palette", TextStyle: t.B3}),
 							gui.Wrap(gui.ContainerCfg{
 								Sizing:  gui.FillFit,
-								Spacing: gui.Some(float32(4)),
-								Padding: gui.Some(gui.PaddingNone),
+								Spacing: gui.SomeF(4),
+								Padding: gui.NoPadding,
 								Content: strategyViews,
 							}),
 							gui.Checkbox(gui.ToggleCfg{
@@ -184,8 +184,8 @@ func demoThemeGen(w *gui.Window) gui.View {
 							}),
 							gui.Row(gui.ContainerCfg{
 								Sizing:  gui.FillFit,
-								Spacing: gui.Some(float32(8)),
-								Padding: gui.Some(gui.PaddingNone),
+								Spacing: gui.SomeF(8),
+								Padding: gui.NoPadding,
 								Content: []gui.View{
 									gui.Button(gui.ButtonCfg{
 										ID:      "btn-reset-dark",
@@ -211,8 +211,8 @@ func demoThemeGen(w *gui.Window) gui.View {
 							}),
 							gui.Row(gui.ContainerCfg{
 								Sizing:  gui.FillFit,
-								Spacing: gui.Some(float32(8)),
-								Padding: gui.Some(gui.PaddingNone),
+								Spacing: gui.SomeF(8),
+								Padding: gui.NoPadding,
 								Content: []gui.View{
 									gui.Button(gui.ButtonCfg{
 										ID:      "btn-theme-save",

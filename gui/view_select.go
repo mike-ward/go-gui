@@ -93,7 +93,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 		}),
 		Row(ContainerCfg{
 			Sizing:  spacerSizing,
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 		}),
 		Text(TextCfg{
 			Text:      arrowText,
@@ -134,7 +134,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			IDScroll:      idScroll,
 			Padding: Some(NewPadding(
 				PadSmall, PadMedium, PadSmall, PadSmall)),
-			Spacing: Some(float32(0)),
+			Spacing: NoSpacing,
 			Content: options,
 		}))
 	}
@@ -278,7 +278,7 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 		Sizing:  FillFit,
 		Content: []View{
 			Row(ContainerCfg{
-				Padding: Some(PaddingNone),
+				Padding: NoPadding,
 				Sizing:  FillFit,
 				Spacing: Some[float32](PadXSmall),
 				Content: []View{

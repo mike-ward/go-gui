@@ -159,7 +159,7 @@ func rollerDrum(
 		items = append(items, Row(ContainerCfg{
 			Width:   drumWidth,
 			Height:  cfg.ItemHeight,
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 			HAlign:  HAlignCenter,
 			VAlign:  VAlignMiddle,
 			Content: []View{
@@ -179,7 +179,7 @@ func rollerDrum(
 
 	return Column(ContainerCfg{
 		Width:   drumWidth,
-		Padding: Some(PaddingNone),
+		Padding: NoPadding,
 		Content: items,
 		OnScroll: func(_ *Layout, _ *Window) {
 			// Scroll dispatches via the view's scroll events,

@@ -47,7 +47,7 @@ func mainView(w *gui.Window) gui.View {
 		HAlign:  gui.HAlignCenter,
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
-				Padding: gui.Some(gui.PaddingNone),
+				Padding: gui.NoPadding,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
 						Text: "Drop Shadow Demo",
@@ -134,7 +134,7 @@ func toggleTheme(app *App) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		HAlign:  gui.HAlignEnd,
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.PaddingNone),
+		Padding: gui.NoPadding,
 		Spacing: gui.Some[float32](10),
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{

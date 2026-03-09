@@ -21,7 +21,7 @@ func dataGridGroupHeaderRowView(cfg *DataGridCfg, entry dataGridDisplayRow, rowH
 		Sizing:      FillFixed,
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(NewPadding(pc.Top, pc.Right, pc.Bottom, pc.Left+depthPad)),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content: []View{
@@ -51,17 +51,17 @@ func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, column
 		Sizing:      FillFixed,
 		Color:       cfg.ColorBackground,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(NewPadding(pc.Top, pc.Right, pc.Bottom, pc.Left+dataGridDetailIndent())),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content: []View{
 			Row(ContainerCfg{
 				Width:       dataGridColumnsTotalWidth(columns, columnWidths),
 				Sizing:      FixedFill,
-				Padding:     Some(PaddingNone),
+				Padding:     NoPadding,
 				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
-				SizeBorder:  Some(float32(0)),
+				SizeBorder:  SomeF(0),
 				Content:     []View{detailView},
 			}),
 		},
@@ -124,7 +124,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 		cellSpacing := float32(4)
 		cellHAlign := col.Align
 		if isEditingCell {
-			cellPadding = Some(PaddingNone)
+			cellPadding = NoPadding
 			cellSpacing = 0
 		}
 		if colIdx == 0 && detailEnabled {
@@ -152,9 +152,9 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 			ID:          cfg.ID + ":row-delete:" + rowID,
 			Width:       dataGridHeaderControlWidth + 10,
 			Sizing:      FixedFill,
-			Padding:     Some(PaddingNone),
-			SizeBorder:  Some(float32(0)),
-			Radius:      Some(float32(0)),
+			Padding:     NoPadding,
+			SizeBorder:  SomeF(0),
+			Radius:      SomeF(0),
 			Color:       ColorTransparent,
 			ColorHover:  cfg.ColorHeaderHover,
 			ColorFocus:  ColorTransparent,
@@ -187,8 +187,8 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 		Sizing:      FillFixed,
 		Color:       rowColor,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
-		Padding:     Some(PaddingNone),
+		SizeBorder:  SomeF(0),
+		Padding:     NoPadding,
 		Spacing:     Some(-cfg.SizeBorder),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			dataGridRowClick(rows, selection, gridID, multiSelect, rangeSelect,
@@ -367,9 +367,9 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			Selected:   selectVal,
 			Options:    options,
 			Sizing:     FillFill,
-			Padding:    Some(PaddingNone),
-			SizeBorder: Some(float32(0)),
-			Radius:     Some(float32(0)),
+			Padding:    NoPadding,
+			SizeBorder: NoBorder,
+			Radius:     SomeF(0),
 			OnSelect: func(selected []string, e *Event, w *Window) {
 				nextValue := ""
 				if len(selected) > 0 {
@@ -392,7 +392,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			IDFocus: editorFocusID,
 			Date:    date,
 			Sizing:  FillFill,
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 			OnSelect: func(dates []time.Time, e *Event, w *Window) {
 				if len(dates) == 0 {
 					return
@@ -416,7 +416,7 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			ID:       editorID,
 			IDFocus:  editorFocusID,
 			Selected: checked,
-			Padding:  Some(PaddingNone),
+			Padding:  NoPadding,
 			OnClick: func(_ *Layout, e *Event, w *Window) {
 				nextValue := editorFalseValue
 				if !checked {
@@ -439,9 +439,9 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 			IDFocus:    editorFocusID,
 			Text:       value,
 			Sizing:     FillFill,
-			Padding:    Some(PaddingNone),
-			SizeBorder: Some(float32(0)),
-			Radius:     Some(float32(0)),
+			Padding:    NoPadding,
+			SizeBorder: NoBorder,
+			Radius:     SomeF(0),
 			OnTextChanged: func(_ *Layout, text string, w *Window) {
 				if rowID != "" && colID != "" {
 					e := &Event{}
@@ -468,8 +468,8 @@ func dataGridCellEditorView(cfg *DataGridCfg, rowID string, rowIdx int, col Grid
 		IDFocus:   editorFocusID,
 		FocusSkip: true,
 		Sizing:    FillFill,
-		Padding:   Some(PaddingNone),
-		Spacing:   Some(float32(0)),
+		Padding:   NoPadding,
+		Spacing:   SomeF(0),
 		OnKeyDown: dataGridMakeEditorOnKeydown(cfg.ID, gridFocusID),
 		Content:   []View{editor},
 	})
@@ -646,7 +646,7 @@ func dataGridDetailToggleControl(cfg *DataGridCfg, rowID string, expanded, enabl
 		return Row(ContainerCfg{
 			Width:   dataGridHeaderControlWidth,
 			Sizing:  FixedFill,
-			Padding: Some(PaddingNone),
+			Padding: NoPadding,
 			Content: []View{
 				Text(TextCfg{
 					Text:      label,
@@ -662,9 +662,9 @@ func dataGridDetailToggleControl(cfg *DataGridCfg, rowID string, expanded, enabl
 		ID:          cfg.ID + ":detail_toggle:" + rowID,
 		Width:       dataGridHeaderControlWidth,
 		Sizing:      FixedFill,
-		Padding:     Some(PaddingNone),
-		SizeBorder:  Some(float32(0)),
-		Radius:      Some(float32(0)),
+		Padding:     NoPadding,
+		SizeBorder:  SomeF(0),
+		Radius:      SomeF(0),
 		Color:       ColorTransparent,
 		ColorHover:  cfg.ColorRowHover,
 		ColorFocus:  ColorTransparent,
@@ -734,9 +734,9 @@ func dataGridFrozenTopZone(cfg *DataGridCfg, rowViews []View, zoneHeight, totalW
 		Clip:        true,
 		Color:       cfg.ColorBackground,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(float32(0)),
+		SizeBorder:  SomeF(0),
 		Padding:     Some(dataGridScrollPadding(cfg)),
-		Spacing:     Some(float32(0)),
+		Spacing:     SomeF(0),
 		Content: []View{
 			Column(ContainerCfg{
 				X:           scrollX,
@@ -744,9 +744,9 @@ func dataGridFrozenTopZone(cfg *DataGridCfg, rowViews []View, zoneHeight, totalW
 				Sizing:      FixedFill,
 				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
-				SizeBorder:  Some(float32(0)),
-				Padding:     Some(PaddingNone),
-				Spacing:     Some(float32(0)),
+				SizeBorder:  SomeF(0),
+				Padding:     NoPadding,
+				Spacing:     SomeF(0),
 				Content:     rowViews,
 			}),
 		},
