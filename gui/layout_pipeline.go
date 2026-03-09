@@ -154,6 +154,7 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	if err != nil {
 		return
 	}
+	rtfSuppressInlineObjectGlyphs(&l)
 	tc.RtfLayout = &l
 	shape.Height = l.Height
 	tc.wrapCacheWidth = shape.Width

@@ -8,6 +8,38 @@ import (
 	"github.com/mike-ward/go-glyph"
 )
 
+type rtfStubTextMeasurer struct {
+	layout glyph.Layout
+}
+
+func (m *rtfStubTextMeasurer) TextWidth(text string, style TextStyle) float32 {
+	return float32(len(text)) * style.Size * 0.5
+}
+
+func (m *rtfStubTextMeasurer) TextHeight(_ string, style TextStyle) float32 {
+	return style.Size * 1.2
+}
+
+func (m *rtfStubTextMeasurer) FontAscent(style TextStyle) float32 {
+	return style.Size * 0.8
+}
+
+func (m *rtfStubTextMeasurer) FontHeight(style TextStyle) float32 {
+	return style.Size * 1.2
+}
+
+func (m *rtfStubTextMeasurer) LayoutText(
+	_ string, style TextStyle, _ float32,
+) (glyph.Layout, error) {
+	return glyph.Layout{Height: style.Size * 1.2}, nil
+}
+
+func (m *rtfStubTextMeasurer) LayoutRichText(
+	_ glyph.RichText, _ glyph.TextConfig,
+) (glyph.Layout, error) {
+	return m.layout, nil
+}
+
 func TestRtfHitTestLogic(t *testing.T) {
 	item := glyph.Item{
 		X: 10, Y: 20, Width: 50,
@@ -255,6 +287,80 @@ func TestRtfMouseMoveLinkSetsPointingHand(t *testing.T) {
 	}
 	if !e.IsHandled {
 		t.Fatal("expected link hover to consume event")
+	}
+}
+
+func TestRtfGenerateLayoutSuppressesInlineObjectGlyphs(t *testing.T) {
+	w := &Window{
+		textMeasurer: &rtfStubTextMeasurer{
+			layout: glyph.Layout{
+				Width:  120,
+				Height: 20,
+				Items: []glyph.Item{
+					{IsObject: true, ObjectID: "math_1", GlyphStart: 4, GlyphCount: 1},
+					{GlyphStart: 0, GlyphCount: 4},
+				},
+			},
+		},
+	}
+
+	layout := GenerateViewLayout(RTF(RtfCfg{
+		RichText: RichText{
+			Runs: []RichTextRun{{
+				MathID:    "math_1",
+				MathLatex: "x^2",
+				Style:     TextStyle{Size: 12},
+			}},
+		},
+	}), w)
+
+	items := layout.Shape.TC.RtfLayout.Items
+	if got := items[0].GlyphCount; got != 0 {
+		t.Fatalf("object GlyphCount = %d, want 0", got)
+	}
+	if got := items[1].GlyphCount; got != 4 {
+		t.Fatalf("text GlyphCount = %d, want 4", got)
+	}
+}
+
+func TestLayoutWrapRTFSuppressesInlineObjectGlyphs(t *testing.T) {
+	w := &Window{
+		textMeasurer: &rtfStubTextMeasurer{
+			layout: glyph.Layout{
+				Width:  80,
+				Height: 24,
+				Items: []glyph.Item{
+					{IsObject: true, ObjectID: "math_2", GlyphStart: 2, GlyphCount: 1},
+				},
+			},
+		},
+	}
+
+	baseStyle := glyph.TextStyle{Size: 12}
+	rt := RichText{
+		Runs: []RichTextRun{{
+			MathID:    "math_2",
+			MathLatex: "y^2",
+			Style:     TextStyle{Size: 12},
+		}},
+	}
+	shape := &Shape{
+		ShapeType: ShapeRTF,
+		Width:     100,
+		TC: &ShapeTextConfig{
+			TextMode:     TextModeWrap,
+			RtfBaseStyle: baseStyle,
+			RtfRuns:      &rt,
+		},
+	}
+
+	layoutWrapRTF(shape, shape.TC, w)
+
+	if shape.TC.RtfLayout == nil {
+		t.Fatal("expected wrapped RTF layout")
+	}
+	if got := shape.TC.RtfLayout.Items[0].GlyphCount; got != 0 {
+		t.Fatalf("wrapped object GlyphCount = %d, want 0", got)
 	}
 }
 

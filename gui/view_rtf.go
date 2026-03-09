@@ -37,6 +37,20 @@ type rtfView struct {
 
 func (v *rtfView) Content() []View { return nil }
 
+// rtfSuppressInlineObjectGlyphs prevents object placeholder glyphs from
+// painting when a later render pass draws the actual inline object.
+func rtfSuppressInlineObjectGlyphs(layout *glyph.Layout) {
+	if layout == nil {
+		return
+	}
+	for i := range layout.Items {
+		if !layout.Items[i].IsObject {
+			continue
+		}
+		layout.Items[i].GlyphCount = 0
+	}
+}
+
 func (v *rtfView) GenerateLayout(w *Window) Layout {
 	// Convert RichText to glyph.RichText.
 	vgRT := v.RichText.toGlyphRichTextWithMath(
@@ -67,6 +81,7 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 		}); ok {
 			if l, err := tm.LayoutRichText(vgRT, cfg); err == nil {
 				layout = l
+				rtfSuppressInlineObjectGlyphs(&layout)
 			}
 		}
 	}
