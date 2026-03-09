@@ -71,6 +71,7 @@ type ShowcaseApp struct {
 	RollerDate      time.Time
 
 	ColorPickerColor gui.Color
+	ColorPickerHSV   bool
 
 	Form FormModel
 

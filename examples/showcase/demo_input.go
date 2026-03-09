@@ -213,9 +213,18 @@ func demoColorPicker(w *gui.Window) gui.View {
 		Spacing: gui.Some(float32(12)),
 		Padding: gui.Some(gui.PaddingNone),
 		Content: []gui.View{
+			gui.Switch(gui.SwitchCfg{
+				ID:       "color-picker-hsv",
+				Label:    "Show HSV",
+				Selected: app.ColorPickerHSV,
+				OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
+					gui.State[ShowcaseApp](w).ColorPickerHSV = !gui.State[ShowcaseApp](w).ColorPickerHSV
+				},
+			}),
 			gui.ColorPicker(gui.ColorPickerCfg{
-				ID:    "color-picker",
-				Color: c,
+				ID:      "color-picker",
+				Color:   c,
+				ShowHSV: app.ColorPickerHSV,
 				OnColorChange: func(color gui.Color, _ *gui.Event, w *gui.Window) {
 					gui.State[ShowcaseApp](w).ColorPickerColor = color
 				},

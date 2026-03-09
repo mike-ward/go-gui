@@ -330,25 +330,18 @@ func cpPreviewRow(cfg *ColorPickerCfg) View {
 			}),
 			Input(InputCfg{
 				ID:        cfgID + ".hex",
+				IDFocus:   fnvSum32(cfgID + ".hex"),
 				Text:      c.ToHexString(),
 				TextStyle: cfg.Style.TextStyle,
 				Width:     100,
+				OnTextChanged: func(_ *Layout, text string, w *Window) {
+					cpApplyHex(text, cfgID, onChange, w)
+				},
 				OnTextCommit: func(
 					_ *Layout, text string,
 					_ InputCommitReason, w *Window,
 				) {
-					nc, ok := ColorFromHexString(text)
-					if ok && onChange != nil {
-						h, s, v := nc.ToHSV()
-						sm := StateMap[string, colorPickerState](
-							w, nsColorPicker, capModerate)
-						sm.Set(cfgID, colorPickerState{
-							H: h, S: s, V: v,
-						})
-						// Use a nil event for commit-triggered
-						// changes; caller should handle.
-						onChange(nc, nil, w)
-					}
+					cpApplyHex(text, cfgID, onChange, w)
 				},
 			}),
 		},
@@ -362,9 +355,9 @@ func cpRGBAInputs(cfg *ColorPickerCfg) View {
 		Padding: Some(PaddingNone),
 		Spacing: Some(SpacingSmall),
 		Content: []View{
-			cpChannelInput(cfg, "R", c.R, 0),
-			cpChannelInput(cfg, "G", c.G, 1),
-			cpChannelInput(cfg, "B", c.B, 2),
+			cpChannelInput(cfg, "Red", c.R, 0),
+			cpChannelInput(cfg, "Green", c.G, 1),
+			cpChannelInput(cfg, "Blue", c.B, 2),
 		},
 	})
 }
@@ -377,10 +370,10 @@ func cpHSVInputs(
 		Padding: Some(PaddingNone),
 		Spacing: Some(SpacingSmall),
 		Content: []View{
-			cpHSVChannelInput(cfg, "H", int(hsv.H), 360, 0),
-			cpHSVChannelInput(cfg, "S",
+			cpHSVChannelInput(cfg, "Hue", int(hsv.H), 360, 0),
+			cpHSVChannelInput(cfg, "Sat",
 				int(hsv.S*100), 100, 1),
-			cpHSVChannelInput(cfg, "V",
+			cpHSVChannelInput(cfg, "Value",
 				int(hsv.V*100), 100, 2),
 		},
 	})
@@ -407,34 +400,19 @@ func cpChannelInput(
 				},
 			}),
 			Input(InputCfg{
-				ID:        fmt.Sprintf("%s.%s", cfgID, ch),
+				ID:        fmt.Sprintf("%s.rgb.%d", cfgID, idx),
+				IDFocus:   fnvSum32(fmt.Sprintf("%s.rgb.%d", cfgID, idx)),
 				Text:      fmt.Sprintf("%d", val),
 				TextStyle: cfg.Style.TextStyle,
 				Width:     50,
+				OnTextChanged: func(_ *Layout, text string, w *Window) {
+					cpApplyRGB(text, idx, c, cfgID, onChange, w)
+				},
 				OnTextCommit: func(
 					_ *Layout, text string,
 					_ InputCommitReason, w *Window,
 				) {
-					v, ok := cpParseUint8(text)
-					if !ok || onChange == nil {
-						return
-					}
-					nc := c
-					switch idx {
-					case 0:
-						nc.R = v
-					case 1:
-						nc.G = v
-					case 2:
-						nc.B = v
-					}
-					h, s, vv := nc.ToHSV()
-					sm := StateMap[string, colorPickerState](
-						w, nsColorPicker, capModerate)
-					sm.Set(cfgID, colorPickerState{
-						H: h, S: s, V: vv,
-					})
-					onChange(nc, nil, w)
+					cpApplyRGB(text, idx, c, cfgID, onChange, w)
 				},
 			}),
 		},
@@ -462,39 +440,21 @@ func cpHSVChannelInput(
 				},
 			}),
 			Input(InputCfg{
-				ID:        fmt.Sprintf("%s.hsv.%s", cfgID, ch),
+				ID:        fmt.Sprintf("%s.hsv.%d", cfgID, idx),
+				IDFocus:   fnvSum32(fmt.Sprintf("%s.hsv.%d", cfgID, idx)),
 				Text:      fmt.Sprintf("%d", val),
 				TextStyle: cfg.Style.TextStyle,
 				Width:     50,
+				OnTextChanged: func(_ *Layout, text string, w *Window) {
+					cpApplyHSV(text, idx, maxVal, cfgID,
+						cfg.Color.A, onChange, w)
+				},
 				OnTextCommit: func(
 					_ *Layout, text string,
 					_ InputCommitReason, w *Window,
 				) {
-					n, err := strconv.Atoi(text)
-					if err != nil || onChange == nil {
-						return
-					}
-					if n < 0 {
-						n = 0
-					}
-					if n > maxVal {
-						n = maxVal
-					}
-					sm := StateMap[string, colorPickerState](
-						w, nsColorPicker, capModerate)
-					hsv, _ := sm.Get(cfgID)
-					switch idx {
-					case 0:
-						hsv.H = float32(n)
-					case 1:
-						hsv.S = float32(n) / 100
-					case 2:
-						hsv.V = float32(n) / 100
-					}
-					sm.Set(cfgID, hsv)
-					nc := ColorFromHSVA(
-						hsv.H, hsv.S, hsv.V, cfg.Color.A)
-					onChange(nc, nil, w)
+					cpApplyHSV(text, idx, maxVal, cfgID,
+						cfg.Color.A, onChange, w)
 				},
 			}),
 		},
@@ -589,6 +549,76 @@ func applyColorPickerDefaults(cfg *ColorPickerCfg) {
 }
 
 // cpParseUint8 parses a string as a uint8 value.
+func cpApplyRGB(
+	text string, idx int, c Color, cfgID string,
+	onChange func(Color, *Event, *Window), w *Window,
+) {
+	v, ok := cpParseUint8(text)
+	if !ok || onChange == nil {
+		return
+	}
+	nc := c
+	switch idx {
+	case 0:
+		nc.R = v
+	case 1:
+		nc.G = v
+	case 2:
+		nc.B = v
+	}
+	h, s, vv := nc.ToHSV()
+	sm := StateMap[string, colorPickerState](
+		w, nsColorPicker, capModerate)
+	sm.Set(cfgID, colorPickerState{H: h, S: s, V: vv})
+	onChange(nc, nil, w)
+}
+
+func cpApplyHSV(
+	text string, idx, maxVal int, cfgID string,
+	alpha uint8, onChange func(Color, *Event, *Window),
+	w *Window,
+) {
+	n, err := strconv.Atoi(text)
+	if err != nil || onChange == nil {
+		return
+	}
+	if n < 0 {
+		n = 0
+	}
+	if n > maxVal {
+		n = maxVal
+	}
+	sm := StateMap[string, colorPickerState](
+		w, nsColorPicker, capModerate)
+	hsv, _ := sm.Get(cfgID)
+	switch idx {
+	case 0:
+		hsv.H = float32(n)
+	case 1:
+		hsv.S = float32(n) / 100
+	case 2:
+		hsv.V = float32(n) / 100
+	}
+	sm.Set(cfgID, hsv)
+	nc := ColorFromHSVA(hsv.H, hsv.S, hsv.V, alpha)
+	onChange(nc, nil, w)
+}
+
+func cpApplyHex(
+	text, cfgID string,
+	onChange func(Color, *Event, *Window), w *Window,
+) {
+	nc, ok := ColorFromHexString(text)
+	if !ok || onChange == nil {
+		return
+	}
+	h, s, v := nc.ToHSV()
+	sm := StateMap[string, colorPickerState](
+		w, nsColorPicker, capModerate)
+	sm.Set(cfgID, colorPickerState{H: h, S: s, V: v})
+	onChange(nc, nil, w)
+}
+
 func cpParseUint8(s string) (uint8, bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 0 || n > 255 {
