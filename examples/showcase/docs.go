@@ -160,7 +160,8 @@ gui.NumericInput(gui.NumericInputCfg{
 ` + "```" + `
 `,
 
-	"color_picker": `Interactive HSV color selection wheel with value slider.
+	"color_picker": `Interactive HSV color selection with SV area, hue slider,
+alpha slider, hex input, and RGB/HSV channel inputs.
 
 ## Usage
 
@@ -168,11 +169,31 @@ gui.NumericInput(gui.NumericInputCfg{
 gui.ColorPicker(gui.ColorPickerCfg{
     ID:    "cp",
     Color: app.Color,
+    ShowHSV: true,
     OnColorChange: func(c gui.Color, _ *gui.Event, w *gui.Window) {
         gui.State[App](w).Color = c
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Color | Color | Current color value |
+| ShowHSV | bool | Show H/S/V channel inputs |
+| OnColorChange | func(Color, *Event, *Window) | Color changed callback |
+| IDFocus | uint32 | Tab-order focus ID |
+| Style | ColorPickerStyle | Custom styling |
+
+## Components
+
+- **SV area** — click/drag to set saturation and value
+- **Hue slider** — vertical rainbow slider for hue selection
+- **Alpha slider** — horizontal slider (0–255)
+- **Hex input** — editable hex color string
+- **RGB inputs** — Red, Green, Blue channel inputs (0–255)
+- **HSV inputs** — Hue (0–360), Sat (0–100), Value (0–100) (when ShowHSV is true)
 `,
 
 	"date_picker": `Calendar-style date selection with month/year navigation.
@@ -180,8 +201,54 @@ gui.ColorPicker(gui.ColorPickerCfg{
 ## Usage
 
 ` + "```go" + `
-gui.DatePicker(gui.DatePickerCfg{ID: "dp"})
+gui.DatePicker(gui.DatePickerCfg{
+    ID:    "dp",
+    Dates: app.SelectedDates,
+    OnSelect: func(dates []time.Time, _ *gui.Event, w *gui.Window) {
+        gui.State[App](w).SelectedDates = dates
+    },
+})
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Dates | []time.Time | Currently selected date(s) |
+| SelectMultiple | bool | Allow multiple date selection |
+| OnSelect | func([]time.Time, *Event, *Window) | Selection callback |
+| MondayFirstDayOfWeek | bool | Start week on Monday |
+| ShowAdjacentMonths | bool | Show prev/next month days |
+| HideTodayIndicator | bool | Hide today border highlight |
+| WeekdaysLen | DatePickerWeekdayLen | Header label length |
+| IDFocus | uint32 | Tab-order focus ID |
+
+## Filtering
+
+| Property | Type | Description |
+|----------|------|-------------|
+| AllowedWeekdays | []DatePickerWeekdays | Restrict to specific days |
+| AllowedMonths | []DatePickerMonths | Restrict to specific months |
+| AllowedYears | []int | Restrict to specific years |
+| AllowedDates | []time.Time | Restrict to specific dates |
+
+## Weekday Label Lengths
+
+| Constant | Example |
+|----------|---------|
+| WeekdayOneLetter | S |
+| WeekdayThreeLetter | Sun |
+| WeekdayFull | Sunday |
+
+## Keyboard
+
+- **Left/Right** — navigate months
+- Click month/year header to toggle roller picker
+- In roller mode: **Up/Down** = month, **Shift+Up/Down** = year
+
+## API
+
+` + "`w.DatePickerReset(id)`" + ` clears picker state.
 `,
 
 	"date_picker_roller": `Rolling drum-style date selection. Supports mouse scroll, click,
