@@ -427,12 +427,6 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		preLayout, hasPreLayout = inputGlyphLayoutResolved(text, shape, renderStyle, w, true)
 	}
 
-	// Selection highlight (drawn before text so text overlays).
-	if !imeComposing {
-		renderInputSelection(shape, text, baseX, baseY,
-			preLayout, hasPreLayout, w)
-	}
-
 	if renderWithLayout && hasPreLayout {
 		cmd := RenderCmd{
 			Kind:         RenderLayout,
@@ -474,6 +468,13 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 			cmd.W = shape.Width
 		}
 		emitRenderer(cmd, w)
+	}
+
+	// Selection highlight (drawn after text so BgColor does not
+	// obscure it; semi-transparent overlay remains readable).
+	if !imeComposing {
+		renderInputSelection(shape, text, baseX, baseY,
+			preLayout, hasPreLayout, w)
 	}
 
 	// Cursor (drawn after text).
