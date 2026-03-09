@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/mike-ward/go-glyph"
 	"github.com/mike-ward/go-gui/gui"
 )
 
@@ -238,6 +239,25 @@ type colorJSON struct {
 	A uint8 `json:"a"`
 }
 
+type affineTransformJSON struct {
+	XX float32 `json:"xx"`
+	XY float32 `json:"xy"`
+	YX float32 `json:"yx"`
+	YY float32 `json:"yy"`
+	X0 float32 `json:"x0"`
+	Y0 float32 `json:"y0"`
+}
+
+type gradientStopJSON struct {
+	Color    colorJSON `json:"color"`
+	Position float32   `json:"position"`
+}
+
+type gradientConfigJSON struct {
+	Stops     []gradientStopJSON     `json:"stops"`
+	Direction glyph.GradientDirection `json:"direction"`
+}
+
 type textStyleJSON struct {
 	Family        string            `json:"family"`
 	Color         colorJSON         `json:"color"`
@@ -248,6 +268,9 @@ type textStyleJSON struct {
 	Align         gui.TextAlignment `json:"align"`
 	Underline     bool              `json:"underline"`
 	Strikethrough bool              `json:"strikethrough"`
+	RotationRadians float32         `json:"rotation_radians"`
+	AffineTransform *affineTransformJSON `json:"affine_transform,omitempty"`
+	Gradient        *gradientConfigJSON  `json:"gradient,omitempty"`
 	StrokeWidth   float32           `json:"stroke_width"`
 	StrokeColor   colorJSON         `json:"stroke_color"`
 }
@@ -304,6 +327,67 @@ func (c colorJSON) toColor() gui.Color {
 	return gui.RGBA(c.R, c.G, c.B, c.A)
 }
 
+func affineTransformJSONFromGlyph(
+	t *glyph.AffineTransform,
+) *affineTransformJSON {
+	if t == nil {
+		return nil
+	}
+	return &affineTransformJSON{
+		XX: t.XX, XY: t.XY, YX: t.YX, YY: t.YY, X0: t.X0, Y0: t.Y0,
+	}
+}
+
+func (t *affineTransformJSON) toGlyph() *glyph.AffineTransform {
+	if t == nil {
+		return nil
+	}
+	return &glyph.AffineTransform{
+		XX: t.XX, XY: t.XY, YX: t.YX, YY: t.YY, X0: t.X0, Y0: t.Y0,
+	}
+}
+
+func gradientConfigJSONFromGlyph(
+	g *glyph.GradientConfig,
+) *gradientConfigJSON {
+	if g == nil {
+		return nil
+	}
+	stops := make([]gradientStopJSON, 0, len(g.Stops))
+	for _, stop := range g.Stops {
+		stops = append(stops, gradientStopJSON{
+			Color:    colorJSON{R: stop.Color.R, G: stop.Color.G, B: stop.Color.B, A: stop.Color.A},
+			Position: stop.Position,
+		})
+	}
+	return &gradientConfigJSON{
+		Stops:     stops,
+		Direction: g.Direction,
+	}
+}
+
+func (g *gradientConfigJSON) toGlyph() *glyph.GradientConfig {
+	if g == nil {
+		return nil
+	}
+	stops := make([]glyph.GradientStop, 0, len(g.Stops))
+	for _, stop := range g.Stops {
+		stops = append(stops, glyph.GradientStop{
+			Color: glyph.Color{
+				R: stop.Color.R,
+				G: stop.Color.G,
+				B: stop.Color.B,
+				A: stop.Color.A,
+			},
+			Position: stop.Position,
+		})
+	}
+	return &glyph.GradientConfig{
+		Stops:     stops,
+		Direction: g.Direction,
+	}
+}
+
 func textStyleJSONFromTextStyle(ts gui.TextStyle) textStyleJSON {
 	return textStyleJSON{
 		Family:        ts.Family,
@@ -315,6 +399,9 @@ func textStyleJSONFromTextStyle(ts gui.TextStyle) textStyleJSON {
 		Align:         ts.Align,
 		Underline:     ts.Underline,
 		Strikethrough: ts.Strikethrough,
+		RotationRadians: ts.RotationRadians,
+		AffineTransform: affineTransformJSONFromGlyph(ts.AffineTransform),
+		Gradient:        gradientConfigJSONFromGlyph(ts.Gradient),
 		StrokeWidth:   ts.StrokeWidth,
 		StrokeColor:   colorJSONFromColor(ts.StrokeColor),
 	}
@@ -331,6 +418,9 @@ func (ts textStyleJSON) toTextStyle() gui.TextStyle {
 		Align:         ts.Align,
 		Underline:     ts.Underline,
 		Strikethrough: ts.Strikethrough,
+		RotationRadians: ts.RotationRadians,
+		AffineTransform: ts.AffineTransform.toGlyph(),
+		Gradient:        ts.Gradient.toGlyph(),
 		StrokeWidth:   ts.StrokeWidth,
 		StrokeColor:   ts.StrokeColor.toColor(),
 	}

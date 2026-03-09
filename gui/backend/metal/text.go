@@ -235,6 +235,10 @@ func (tm *textMeasurer) LayoutText(
 	cfg := guiStyleToGlyphConfig(style)
 	if wrapWidth > 0 {
 		cfg.Block.Width = wrapWidth
+		cfg.Block.Wrap = glyph.WrapWord
+	} else if wrapWidth < 0 {
+		cfg.Block.Width = -wrapWidth
+		cfg.Block.Wrap = glyph.WrapNone
 	}
 	return tm.textSys.LayoutText(text, cfg)
 }
@@ -246,18 +250,33 @@ func (tm *textMeasurer) LayoutRichText(
 }
 
 func guiStyleToGlyphConfig(s gui.TextStyle) glyph.TextConfig {
+	align := glyph.AlignLeft
+	switch s.Align {
+	case gui.TextAlignCenter:
+		align = glyph.AlignCenter
+	case gui.TextAlignRight:
+		align = glyph.AlignRight
+	}
 	return glyph.TextConfig{
 		Style: glyph.TextStyle{
 			FontName:      s.Family,
 			Size:          s.Size,
 			Color:         glyph.Color{R: s.Color.R, G: s.Color.G, B: s.Color.B, A: s.Color.A},
+			BgColor:       glyph.Color{R: s.BgColor.R, G: s.BgColor.G, B: s.BgColor.B, A: s.BgColor.A},
 			Typeface:      s.Typeface,
 			Underline:     s.Underline,
 			Strikethrough: s.Strikethrough,
 			LetterSpacing: s.LetterSpacing,
 			StrokeWidth:   s.StrokeWidth,
 			StrokeColor:   glyph.Color{R: s.StrokeColor.R, G: s.StrokeColor.G, B: s.StrokeColor.B, A: s.StrokeColor.A},
+			Features:      s.Features,
 		},
-		Block: glyph.DefaultBlockStyle(),
+		Block: glyph.BlockStyle{
+			Align:       align,
+			Wrap:        glyph.WrapWord,
+			Width:       -1,
+			LineSpacing: s.LineSpacing,
+		},
+		Gradient: s.Gradient,
 	}
 }

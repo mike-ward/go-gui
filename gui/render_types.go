@@ -87,9 +87,10 @@ type RenderCmd struct {
 	Shader       *Shader
 	Gradient     *GradientDef
 	TextStylePtr *TextStyle            // full text style (typeface, etc.)
-	TextGradient *glyph.GradientConfig // SVG gradient text
+	TextGradient *glyph.GradientConfig // text gradient for glyph-layout draws
 	TextPath     *TextPathData         // SVG textPath placement data
-	LayoutPtr    *glyph.Layout         // RTF pre-shaped layout
+	LayoutPtr    *glyph.Layout         // pre-shaped glyph layout
+	LayoutTransform *glyph.AffineTransform
 }
 
 // TextPathData holds pre-computed path data for RenderTextPath.

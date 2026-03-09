@@ -1,151 +1,301 @@
 package main
 
-import "github.com/mike-ward/go-gui/gui"
+import (
+	"github.com/mike-ward/go-glyph"
+	"github.com/mike-ward/go-gui/gui"
+)
 
 func demoText(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
+	wrapSample := "Wrap mode collapses repeated spaces and wraps words to fit the available width."
+	keepSpacesSample := "wrap_keep_spaces keeps    repeated spaces.\nColumns:\nName\tRole\nAlex\tDesigner\nRiley\tEngineer"
+	emojiSample := "Emoji: 😀 🚀 🎉 👍🏽 👩‍💻 🧑‍🚀"
+	graphemeSample := "Multi-grapheme: 👨‍👩‍👧‍👦  🇺🇸  1️⃣  café"
+	i18nSample := "i18n: English | Español | العربية | हिन्दी | 日本語 | 한국어 | עברית | ไทย"
+
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.Some(float32(16)),
+		Spacing: gui.Some(t.SpacingSmall),
 		Padding: gui.Some(gui.PaddingNone),
 		Content: []gui.View{
-			// Typography scale
-			sectionLabel(t, "Typography Scale"),
-			gui.Column(gui.ContainerCfg{
-				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(4)),
-				Padding: gui.Some(gui.PaddingNone),
-				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "N1 -- extra small", TextStyle: t.N1}),
-					gui.Text(gui.TextCfg{Text: "N2 -- small", TextStyle: t.N2}),
-					gui.Text(gui.TextCfg{Text: "N3 -- normal", TextStyle: t.N3}),
-					gui.Text(gui.TextCfg{Text: "N4 -- medium", TextStyle: t.N4}),
-					gui.Text(gui.TextCfg{Text: "N5 -- large", TextStyle: t.N5}),
-					gui.Text(gui.TextCfg{Text: "N6 -- extra large", TextStyle: t.N6}),
-				},
+			gui.Text(gui.TextCfg{
+				ID:        "text-intro",
+				Text:      "Text supports style variants, alignment, wrapping modes, tabs, and selection/copy.",
+				TextStyle: t.N5,
+				Mode:      gui.TextModeWrap,
 			}),
-
-			line(),
-
-			// Weight and style variants
-			sectionLabel(t, "Weight & Style"),
-			gui.Column(gui.ContainerCfg{
-				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(4)),
-				Padding: gui.Some(gui.PaddingNone),
-				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "B3 -- bold", TextStyle: t.B3}),
-					gui.Text(gui.TextCfg{Text: "I3 -- italic", TextStyle: t.I3}),
-					gui.Text(gui.TextCfg{Text: "BI3 -- bold italic", TextStyle: t.BI3}),
-					gui.Text(gui.TextCfg{Text: "M3 -- monospace", TextStyle: t.M3}),
-				},
-			}),
-
-			line(),
-
-			// Text alignment
-			sectionLabel(t, "Alignment"),
-			gui.Column(gui.ContainerCfg{
-				Sizing:      gui.FillFit,
-				Padding:     gui.Some(gui.NewPadding(8, 8, 8, 8)),
-				Spacing:     gui.Some(float32(4)),
-				Color:       t.ColorPanel,
-				Radius:      gui.Some(float32(6)),
-				ColorBorder: t.ColorBorder,
-				SizeBorder:  gui.Some(float32(1)),
-				Content: []gui.View{
-					gui.Text(gui.TextCfg{
-						Text:      "Left aligned (default)",
-						TextStyle: gui.TextStyle{Color: t.N3.Color, Size: t.N3.Size, Align: gui.TextAlignLeft},
-						Sizing:    gui.FillFit,
-					}),
-					gui.Text(gui.TextCfg{
-						Text:      "Center aligned",
-						TextStyle: gui.TextStyle{Color: t.N3.Color, Size: t.N3.Size, Align: gui.TextAlignCenter},
-						Sizing:    gui.FillFit,
-					}),
-					gui.Text(gui.TextCfg{
-						Text:      "Right aligned",
-						TextStyle: gui.TextStyle{Color: t.N3.Color, Size: t.N3.Size, Align: gui.TextAlignRight},
-						Sizing:    gui.FillFit,
-					}),
-				},
-			}),
-
-			line(),
-
-			// Decorations
-			sectionLabel(t, "Decorations"),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(16)),
+				Spacing: gui.Some(t.SpacingMedium),
 				Padding: gui.Some(gui.PaddingNone),
+				VAlign:  gui.VAlignMiddle,
+				Content: []gui.View{
+					gui.Text(gui.TextCfg{Text: "Theme n3 text", TextStyle: t.N3}),
+					gui.Text(gui.TextCfg{Text: "Theme b3 text", TextStyle: t.B3}),
+					gui.Text(gui.TextCfg{Text: "Theme i3 text", TextStyle: t.I3}),
+					gui.Text(gui.TextCfg{Text: "Theme m3 text", TextStyle: t.M3}),
+				},
+			}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.Some(t.SpacingMedium),
+				Padding: gui.Some(gui.PaddingNone),
+				VAlign:  gui.VAlignMiddle,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
 						Text: "Underlined",
 						TextStyle: gui.TextStyle{
-							Color: t.N3.Color, Size: t.N3.Size,
+							Color:     t.N4.Color,
+							Size:      t.N4.Size,
 							Underline: true,
 						},
 					}),
 					gui.Text(gui.TextCfg{
 						Text: "Strikethrough",
 						TextStyle: gui.TextStyle{
-							Color: t.N3.Color, Size: t.N3.Size,
+							Color:         t.N4.Color,
+							Size:          t.N4.Size,
 							Strikethrough: true,
 						},
 					}),
 					gui.Text(gui.TextCfg{
-						Text: "Outlined",
+						Text: "Background color",
 						TextStyle: gui.TextStyle{
-							Color: gui.ColorTransparent, Size: t.N4.Size,
-							StrokeWidth: 1,
-							StrokeColor: t.ColorActive,
-						},
-					}),
-					gui.Text(gui.TextCfg{
-						Text: " Highlighted ",
-						TextStyle: gui.TextStyle{
-							Color:   t.N3.Color,
-							Size:    t.N3.Size,
-							BgColor: gui.RGBA(59, 130, 246, 80),
+							Color:   gui.White,
+							Size:    t.N4.Size,
+							BgColor: gui.RGB(27, 54, 93),
 						},
 					}),
 				},
 			}),
-
-			line(),
-
-			// Emoji / i18n
-			sectionLabel(t, "Emoji & Multigrapheme"),
+			textDemoCard("", "Emoji, Multi-grapheme, and i18n", 0, []gui.View{
+				gui.Text(gui.TextCfg{Text: emojiSample, TextStyle: t.N4, Mode: gui.TextModeWrap}),
+				gui.Text(gui.TextCfg{Text: graphemeSample, TextStyle: t.N4, Mode: gui.TextModeWrap}),
+				gui.Text(gui.TextCfg{Text: i18nSample, TextStyle: t.N4, Mode: gui.TextModeWrap}),
+				gui.Text(gui.TextCfg{
+					Text:   "RTL sample: العربية עברית",
+					Mode:   gui.TextModeWrap,
+					Sizing: gui.FillFit,
+					TextStyle: gui.TextStyle{
+						Color: t.N4.Color,
+						Size:  t.N4.Size,
+						Align: gui.TextAlignRight,
+					},
+				}),
+			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
-				Spacing: gui.Some(float32(12)),
+				Spacing: gui.Some(t.SpacingMedium),
 				Padding: gui.Some(gui.PaddingNone),
-				VAlign:  gui.VAlignMiddle,
+				VAlign:  gui.VAlignTop,
 				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "\U0001f680\U0001f30d\U0001f3b5\U0001f525\u2764\ufe0f\U0001f469\u200d\U0001f4bb", TextStyle: t.N5}),
-					gui.Text(gui.TextCfg{Text: "\u0928\u092e\u0938\u094d\u0924\u0947", TextStyle: t.N4}),
-					gui.Text(gui.TextCfg{Text: "\u0645\u0631\u062d\u0628\u0627", TextStyle: t.N4}),
-					gui.Text(gui.TextCfg{Text: "\u3053\u3093\u306b\u3061\u306f", TextStyle: t.N4}),
-					gui.Text(gui.TextCfg{Text: "\ud55c\uad6d\uc5b4", TextStyle: t.N4}),
+					textDemoCard("", "mode: .wrap + alignment", 260, []gui.View{
+						gui.Text(gui.TextCfg{
+							ID:        "text-wrap-sample",
+							Text:      wrapSample,
+							Mode:      gui.TextModeWrap,
+							Sizing:    gui.FillFit,
+							TextStyle: gui.TextStyle{Color: t.N5.Color, Size: t.N5.Size, Align: gui.TextAlignLeft},
+						}),
+						gui.Text(gui.TextCfg{
+							Text:      "Center aligned text",
+							Mode:      gui.TextModeWrap,
+							Sizing:    gui.FillFit,
+							TextStyle: gui.TextStyle{Color: t.N5.Color, Size: t.N5.Size, Align: gui.TextAlignCenter},
+						}),
+						gui.Text(gui.TextCfg{
+							Text:      "Right aligned text",
+							Mode:      gui.TextModeWrap,
+							Sizing:    gui.FillFit,
+							TextStyle: gui.TextStyle{Color: t.N5.Color, Size: t.N5.Size, Align: gui.TextAlignRight},
+						}),
+					}),
+					textDemoCard("", "mode: .wrap_keep_spaces", 260, []gui.View{
+						gui.Text(gui.TextCfg{
+							ID:        "text-wrap-keep-spaces",
+							Text:      keepSpacesSample,
+							Mode:      gui.TextModeWrapKeepSpaces,
+							Sizing:    gui.FillFit,
+							TabSize:   8,
+							TextStyle: t.M5,
+						}),
+					}),
 				},
 			}),
-
-			line(),
-
-			// Selectable text
-			sectionLabel(t, "Selectable Text"),
+			textDemoCard("", "", 0, []gui.View{
 			gui.Text(gui.TextCfg{
-				ID:        "text-selectable",
-				IDFocus:   50,
-				Text:      "This text block is selectable and copyable. Click to focus, then use Ctrl+A / Cmd+A to select all and Ctrl+C / Cmd+C to copy.",
-				TextStyle: t.N3,
+				Text:      "Focus/select/copy: click inside block, drag selection, then Cmd/Ctrl+C.",
+				TextStyle: t.N5,
 				Mode:      gui.TextModeWrap,
-				Sizing:    gui.FillFit,
+			}),
+			gui.Text(gui.TextCfg{
+					ID:        "text-selectable-block",
+					IDFocus:   9155,
+					FocusSkip: false,
+					Mode:      gui.TextModeMultiline,
+					Sizing:    gui.FillFit,
+					Text:      "Selectable text block\n- Click to focus\n- Drag to select range\n- Copy with Cmd/Ctrl+C",
+					TextStyle: gui.TextStyle{
+						Color:   t.N4.Color,
+						Size:    t.N4.Size,
+						BgColor: t.ColorPanel,
+					},
+				}),
+			}),
+			textDemoCard("", "Transforms", 0, []gui.View{
+				gui.Row(gui.ContainerCfg{
+					Sizing:  gui.FillFixed,
+					Height:  t.B4.Size * 4,
+					Padding: gui.Some(gui.PaddingNone),
+					VAlign:  gui.VAlignTop,
+					Content: []gui.View{
+						gui.Text(gui.TextCfg{
+							ID:   "text-transform-rotation",
+							Text: "Rotated text via TextStyle.RotationRadians",
+							TextStyle: gui.TextStyle{
+								Color:           t.B4.Color,
+								Size:            t.B4.Size,
+								Typeface:        t.B4.Typeface,
+								RotationRadians: 0.35,
+							},
+						}),
+					},
+				}),
+				gui.Row(gui.ContainerCfg{
+					Sizing:  gui.FillFixed,
+					Height:  t.B4.Size * 4,
+					Padding: gui.Some(gui.PaddingNone),
+					VAlign:  gui.VAlignTop,
+					Content: []gui.View{
+						gui.Text(gui.TextCfg{
+							ID:   "text-transform-affine",
+							Text: "Affine text: skew + translate",
+							TextStyle: gui.TextStyle{
+								Color:    t.B4.Color,
+								Size:     t.B4.Size,
+								Typeface: t.B4.Typeface,
+								AffineTransform: &glyph.AffineTransform{
+									XX: 1.0,
+									XY: -0.35,
+									YX: 0.15,
+									YY: 1.0,
+									X0: 24,
+									Y0: 0,
+								},
+							},
+						}),
+					},
+				}),
+			}),
+			textDemoCard("", "Gradient Text", 0, []gui.View{
+				gui.Text(gui.TextCfg{
+					ID:   "text-gradient-horizontal",
+					Text: "Horizontal Rainbow Gradient",
+					Mode: gui.TextModeWrap,
+					TextStyle: gui.TextStyle{
+						Color:    t.B2.Color,
+						Size:     t.B2.Size,
+						Typeface: t.B2.Typeface,
+						Gradient: &glyph.GradientConfig{
+							Direction: glyph.GradientHorizontal,
+							Stops: []glyph.GradientStop{
+								{Color: glyph.Color{R: 255, G: 0, B: 0, A: 255}, Position: 0.0},
+								{Color: glyph.Color{R: 255, G: 200, B: 0, A: 255}, Position: 0.33},
+								{Color: glyph.Color{R: 0, G: 180, B: 255, A: 255}, Position: 0.66},
+								{Color: glyph.Color{R: 180, G: 0, B: 255, A: 255}, Position: 1.0},
+							},
+						},
+					},
+				}),
+				gui.Text(gui.TextCfg{
+					ID:   "text-gradient-vertical",
+					Text: "Vertical Sunset Gradient",
+					Mode: gui.TextModeWrap,
+					TextStyle: gui.TextStyle{
+						Color:    t.B2.Color,
+						Size:     t.B2.Size,
+						Typeface: t.B2.Typeface,
+						Gradient: &glyph.GradientConfig{
+							Direction: glyph.GradientVertical,
+							Stops: []glyph.GradientStop{
+								{Color: glyph.Color{R: 255, G: 100, B: 100, A: 255}, Position: 0.0},
+								{Color: glyph.Color{R: 255, G: 200, B: 80, A: 255}, Position: 0.5},
+								{Color: glyph.Color{R: 180, G: 80, B: 200, A: 255}, Position: 1.0},
+							},
+						},
+					},
+				}),
+			}),
+			textDemoCard("", "Outlined & Hollow Text", 0, []gui.View{
+				gui.Text(gui.TextCfg{
+					Text: "Outlined text (fill + stroke)",
+					Mode: gui.TextModeWrap,
+					TextStyle: gui.TextStyle{
+						Color:       t.B2.Color,
+						Size:        t.B2.Size,
+						Typeface:    t.B2.Typeface,
+						StrokeWidth: 1.5,
+						StrokeColor: gui.Red,
+					},
+				}),
+				gui.Text(gui.TextCfg{
+					Text: "Hollow text (stroke only)",
+					Mode: gui.TextModeWrap,
+					TextStyle: gui.TextStyle{
+						Color:       gui.ColorTransparent,
+						Size:        t.B2.Size,
+						Typeface:    t.B2.Typeface,
+						StrokeWidth: 1.5,
+						StrokeColor: t.TextStyleDef.Color,
+					},
+				}),
+			}),
+			textDemoCard("", "Curved Text (SVG textPath)", 0, []gui.View{
+				gui.Svg(gui.SvgCfg{
+					ID: "text-curved-svg",
+					SvgData: `<svg viewBox="0 0 500 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="curve" d="M20,80 Q250,10 480,80" fill="none"/>
+  </defs>
+  <text font-size="18" fill="#3399cc" font-weight="600">
+    <textPath href="#curve" startOffset="50%" text-anchor="middle">Text flowing along a curved path</textPath>
+  </text>
+</svg>`,
+					Width:  500,
+					Height: 100,
+				}),
 			}),
 		},
 	})
+}
+
+func textDemoCard(
+	id, title string,
+	width float32,
+	content []gui.View,
+) gui.View {
+	t := gui.CurrentTheme()
+	items := content
+	if title != "" {
+		items = append([]gui.View{
+			gui.Text(gui.TextCfg{Text: title, TextStyle: t.B5}),
+		}, content...)
+	}
+	cfg := gui.ContainerCfg{
+		ID:          id,
+		Sizing:      gui.FillFit,
+		Color:       t.ColorPanel,
+		ColorBorder: t.ColorBorder,
+		SizeBorder:  gui.Some(float32(1)),
+		Padding:     gui.Some(t.PaddingSmall),
+		Spacing:     gui.Some(t.SpacingSmall),
+		Content:     items,
+	}
+	if width > 0 {
+		cfg.Width = width
+		cfg.Sizing = gui.FixedFit
+	}
+	return gui.Column(cfg)
 }
 
 func demoRtf(_ *gui.Window) gui.View {

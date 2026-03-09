@@ -269,6 +269,74 @@ func TestThemeCfgSaveLoadRoundTrip(t *testing.T) {
 	}
 }
 
+func TestDemoTextLayout(t *testing.T) {
+	w := &gui.Window{}
+	layout := gui.GenerateViewLayout(demoText(w), w)
+
+	t.Run("intro text wraps", func(t *testing.T) {
+		l, ok := layout.FindByID("text-intro")
+		if !ok {
+			t.Fatal("text-intro not found")
+		}
+		if l.Shape.TC == nil || l.Shape.TC.TextMode != gui.TextModeWrap {
+			t.Fatal("text-intro should use TextModeWrap")
+		}
+	})
+
+	t.Run("wrap keep spaces has tab size", func(t *testing.T) {
+		l, ok := layout.FindByID("text-wrap-keep-spaces")
+		if !ok {
+			t.Fatal("text-wrap-keep-spaces not found")
+		}
+		tc := l.Shape.TC
+		if tc == nil {
+			t.Fatal("text-wrap-keep-spaces TC is nil")
+		}
+		if tc.TextMode != gui.TextModeWrapKeepSpaces {
+			t.Fatalf("expected TextModeWrapKeepSpaces, got %v", tc.TextMode)
+		}
+		if tc.TextTabSize != 8 {
+			t.Fatalf("expected TabSize 8, got %d", tc.TextTabSize)
+		}
+	})
+
+	t.Run("selectable block is focusable multiline", func(t *testing.T) {
+		l, ok := layout.FindByID("text-selectable-block")
+		if !ok {
+			t.Fatal("text-selectable-block not found")
+		}
+		if l.Shape.IDFocus == 0 {
+			t.Fatal("text-selectable-block should have IDFocus > 0")
+		}
+		if l.Shape.TC == nil || l.Shape.TC.TextMode != gui.TextModeMultiline {
+			t.Fatal("text-selectable-block should use TextModeMultiline")
+		}
+	})
+
+	t.Run("transform sections exist", func(t *testing.T) {
+		for _, id := range []string{"text-transform-rotation", "text-transform-affine"} {
+			if _, ok := layout.FindByID(id); !ok {
+				t.Fatalf("%s not found", id)
+			}
+		}
+	})
+
+	t.Run("gradient sections exist", func(t *testing.T) {
+		for _, id := range []string{"text-gradient-horizontal", "text-gradient-vertical"} {
+			if _, ok := layout.FindByID(id); !ok {
+				t.Fatalf("%s not found", id)
+			}
+		}
+	})
+
+	t.Run("curved text section exists", func(t *testing.T) {
+		// SVG parser not available in headless tests; skip if not found.
+		if _, ok := layout.FindByID("text-curved-svg"); !ok {
+			t.Skip("text-curved-svg not found (no SVG parser in test)")
+		}
+	})
+}
+
 func TestFormValidationHelpers(t *testing.T) {
 	if got := validateUsernameSync(""); got != "username required" {
 		t.Fatalf("unexpected username required result: %q", got)

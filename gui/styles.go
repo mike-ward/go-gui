@@ -52,7 +52,10 @@ type TextStyle struct {
 	Align         TextAlignment
 	Underline     bool
 	Strikethrough bool
+	RotationRadians float32
+	AffineTransform *glyph.AffineTransform
 	Typeface      glyph.Typeface
+	Gradient      *glyph.GradientConfig
 	StrokeWidth   float32
 	StrokeColor   Color
 	Features      *glyph.FontFeatures
@@ -76,6 +79,7 @@ func (ts TextStyle) ToGlyphStyle() glyph.TextStyle {
 		Color:         glyph.Color{R: ts.Color.R, G: ts.Color.G, B: ts.Color.B, A: ts.Color.A},
 		BgColor:       glyph.Color{R: ts.BgColor.R, G: ts.BgColor.G, B: ts.BgColor.B, A: ts.BgColor.A},
 		Size:          ts.Size,
+		LetterSpacing: ts.LetterSpacing,
 		Features:      ts.Features,
 		Underline:     ts.Underline,
 		Strikethrough: ts.Strikethrough,
@@ -83,6 +87,32 @@ func (ts TextStyle) ToGlyphStyle() glyph.TextStyle {
 		StrokeWidth:   ts.StrokeWidth,
 		StrokeColor:   glyph.Color{R: ts.StrokeColor.R, G: ts.StrokeColor.G, B: ts.StrokeColor.B, A: ts.StrokeColor.A},
 	}
+}
+
+// HasTextTransform reports whether the style applies a non-identity transform.
+func (ts TextStyle) HasTextTransform() bool {
+	if ts.AffineTransform != nil {
+		return !affineTransformIsIdentity(*ts.AffineTransform)
+	}
+	return ts.RotationRadians != 0
+}
+
+// EffectiveTextTransform returns the explicit affine transform when present,
+// otherwise a rotation-derived transform, otherwise the identity transform.
+func (ts TextStyle) EffectiveTextTransform() glyph.AffineTransform {
+	if ts.AffineTransform != nil {
+		return *ts.AffineTransform
+	}
+	if ts.RotationRadians != 0 {
+		return glyph.AffineRotation(ts.RotationRadians)
+	}
+	return glyph.AffineIdentity()
+}
+
+func affineTransformIsIdentity(t glyph.AffineTransform) bool {
+	return t.XX == 1 && t.XY == 0 &&
+		t.YX == 0 && t.YY == 1 &&
+		t.X0 == 0 && t.Y0 == 0
 }
 
 // ButtonStyle defines button visual properties.

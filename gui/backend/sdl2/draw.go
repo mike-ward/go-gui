@@ -38,6 +38,10 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.drawImage(r)
 		case gui.RenderSvg:
 			b.drawSvg(r)
+		case gui.RenderLayout:
+			b.drawLayout(r)
+		case gui.RenderLayoutTransformed:
+			b.drawLayoutTransformed(r)
 		case gui.RenderTextPath:
 			b.drawTextPath(r)
 		case gui.RenderRTF:
@@ -47,7 +51,6 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 		case gui.RenderFilterComposite,
-			gui.RenderLayout, gui.RenderLayoutTransformed,
 			gui.RenderLayoutPlaced,
 			gui.RenderCustomShader:
 			// Skip — requires GPU pipeline or unsupported in SDL2.
@@ -391,6 +394,36 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	}
 
 	b.textSys.DrawLayoutPlaced(layout, placements)
+}
+
+func (b *Backend) drawLayout(r *gui.RenderCmd) {
+	if b.textSys == nil || r.LayoutPtr == nil {
+		return
+	}
+	if r.TextGradient != nil {
+		b.textSys.DrawLayoutWithGradient(
+			*r.LayoutPtr, r.X, r.Y, r.TextGradient,
+		)
+		return
+	}
+	b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
+}
+
+func (b *Backend) drawLayoutTransformed(r *gui.RenderCmd) {
+	if b.textSys == nil || r.LayoutPtr == nil ||
+		r.LayoutTransform == nil {
+		return
+	}
+	if r.TextGradient != nil {
+		b.textSys.DrawLayoutTransformedWithGradient(
+			*r.LayoutPtr, r.X, r.Y,
+			*r.LayoutTransform, r.TextGradient,
+		)
+		return
+	}
+	b.textSys.DrawLayoutTransformed(
+		*r.LayoutPtr, r.X, r.Y, *r.LayoutTransform,
+	)
 }
 
 func (b *Backend) drawRtf(r *gui.RenderCmd) {

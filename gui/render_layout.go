@@ -398,14 +398,33 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	baseX := shape.X + shape.PaddingLeft()
 	baseY := shape.Y + shape.PaddingTop()
 	style := textStyleOrDefault(shape)
+	renderStyle := style
+	renderStyle.Color = c
+	if renderStyle.BgColor.A > 0 {
+		if shape.Opacity < 1.0 {
+			renderStyle.BgColor = renderStyle.BgColor.WithOpacity(shape.Opacity)
+		}
+		if shape.Disabled {
+			renderStyle.BgColor = dimAlpha(renderStyle.BgColor)
+		}
+	}
+	if renderStyle.StrokeColor.A > 0 {
+		if shape.Opacity < 1.0 {
+			renderStyle.StrokeColor = renderStyle.StrokeColor.WithOpacity(shape.Opacity)
+		}
+		if shape.Disabled {
+			renderStyle.StrokeColor = dimAlpha(renderStyle.StrokeColor)
+		}
+	}
 
 	var preLayout glyph.Layout
 	hasPreLayout := false
 	needLayout := tc.TextSelBeg != tc.TextSelEnd ||
 		(shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() && w.InputCursorOn()) ||
 		imeComposing
-	if needLayout {
-		preLayout, hasPreLayout = inputGlyphLayoutResolved(text, shape, style, w, tc.TextIsPassword)
+	renderWithLayout := plainTextNeedsGlyphLayout(shape, tc, renderStyle)
+	if needLayout || renderWithLayout {
+		preLayout, hasPreLayout = inputGlyphLayoutResolved(text, shape, renderStyle, w, true)
 	}
 
 	// Selection highlight (drawn before text so text overlays).
@@ -414,29 +433,48 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 			preLayout, hasPreLayout, w)
 	}
 
-	fontAscent := tc.TextStyle.Size * 0.8 // fallback
-	var textWidth float32
-	if w.textMeasurer != nil {
-		fontAscent = w.textMeasurer.FontAscent(*tc.TextStyle)
-		textWidth = w.textMeasurer.TextWidth(text, *tc.TextStyle)
+	if renderWithLayout && hasPreLayout {
+		cmd := RenderCmd{
+			Kind:         RenderLayout,
+			X:            baseX,
+			Y:            baseY,
+			Text:         text,
+			LayoutPtr:    &preLayout,
+			TextStylePtr: &renderStyle,
+			TextGradient: renderStyle.Gradient,
+		}
+		if renderStyle.HasTextTransform() {
+			transform := renderStyle.EffectiveTextTransform()
+			cmd.Kind = RenderLayoutTransformed
+			cmd.LayoutTransform = &transform
+		}
+		emitRenderer(cmd, w)
+	} else {
+		fontAscent := tc.TextStyle.Size * 0.8 // fallback
+		var textWidth float32
+		if w.textMeasurer != nil {
+			fontAscent = w.textMeasurer.FontAscent(*tc.TextStyle)
+			textWidth = w.textMeasurer.TextWidth(text, *tc.TextStyle)
+		}
+		cmd := RenderCmd{
+			Kind:         RenderText,
+			X:            baseX,
+			Y:            baseY,
+			Color:        c,
+			Text:         text,
+			FontName:     tc.TextStyle.Family,
+			FontSize:     tc.TextStyle.Size,
+			FontAscent:   fontAscent,
+			TextWidth:    textWidth,
+			TextStylePtr: &renderStyle,
+			TextGradient: renderStyle.Gradient,
+		}
+		if tc.TextMode == TextModeWrap ||
+			tc.TextMode == TextModeWrapKeepSpaces {
+			cmd.W = shape.Width
+		}
+		emitRenderer(cmd, w)
 	}
-	cmd := RenderCmd{
-		Kind:         RenderText,
-		X:            baseX,
-		Y:            baseY,
-		Color:        c,
-		Text:         text,
-		FontName:     tc.TextStyle.Family,
-		FontSize:     tc.TextStyle.Size,
-		FontAscent:   fontAscent,
-		TextWidth:    textWidth,
-		TextStylePtr: tc.TextStyle,
-	}
-	if tc.TextMode == TextModeWrap ||
-		tc.TextMode == TextModeWrapKeepSpaces {
-		cmd.W = shape.Width
-	}
-	emitRenderer(cmd, w)
 
 	// Cursor (drawn after text).
 	if !imeComposing {
@@ -676,16 +714,7 @@ func inputGlyphLayoutResolved(text string, shape *Shape, style TextStyle, w *Win
 			displayText = passwordMask(text)
 		}
 	}
-	var wrapWidth float32
-	if shape.TC != nil && (shape.TC.TextMode == TextModeWrap ||
-		shape.TC.TextMode == TextModeWrapKeepSpaces) {
-		wrapWidth = shape.Width
-	}
-	ly, err := w.textMeasurer.LayoutText(displayText, style, wrapWidth)
-	if err != nil {
-		return glyph.Layout{}, false
-	}
-	return ly, true
+	return plainTextLayoutResolved(displayText, shape, style, w)
 }
 
 // textStyleOrDefault returns the TextStyle from shape.TC or a

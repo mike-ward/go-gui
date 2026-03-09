@@ -21,6 +21,11 @@ func rendererValidForDraw(r RenderCmd) bool {
 		return f32AllFinite3(r.X, r.Y, r.Radius) && r.Radius > 0
 	case RenderText:
 		return f32AllFinite2(r.X, r.Y) && len(r.Text) > 0
+	case RenderLayout:
+		return f32AllFinite2(r.X, r.Y) && r.LayoutPtr != nil
+	case RenderLayoutTransformed:
+		return f32AllFinite2(r.X, r.Y) &&
+			r.LayoutPtr != nil && r.LayoutTransform != nil
 	case RenderImage:
 		return f32AllFinite4(r.X, r.Y, r.W, r.H) &&
 			r.W > 0 && r.H > 0 && f32IsFinite(r.ClipRadius)

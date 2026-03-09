@@ -228,6 +228,7 @@ type ShapeTextConfig struct {
 	TextIsPassword    bool
 	TextIsPlaceholder bool
 	HangingIndent     float32
+	TextLayout        *glyph.Layout
 	RtfRuns           *RichText
 	RtfLayout         *glyph.Layout
 	RtfBaseStyle      glyph.TextStyle
@@ -236,6 +237,11 @@ type ShapeTextConfig struct {
 	wrapCacheText     string
 	wrapCacheStyle    TextStyle
 	wrapCacheHeight   float32
+	textLayoutWidth   float32
+	textLayoutValid   bool
+	textLayoutText    string
+	textLayoutStyle   TextStyle
+	textLayoutMode    TextMode
 }
 
 // HasRtfLayout returns true if the shape has an RTF layout.

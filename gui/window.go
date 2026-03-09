@@ -14,6 +14,8 @@ type TextMeasurer interface {
 	TextHeight(text string, style TextStyle) float32
 	FontHeight(style TextStyle) float32
 	FontAscent(style TextStyle) float32
+	// LayoutText uses wrapWidth > 0 for wrap-enabled block width and
+	// wrapWidth < 0 for width-constrained no-wrap alignment/layout.
 	LayoutText(text string, style TextStyle, wrapWidth float32) (glyph.Layout, error)
 }
 

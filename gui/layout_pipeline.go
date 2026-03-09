@@ -91,8 +91,8 @@ func layoutInDialogLayout(layout *Layout) bool {
 	return false
 }
 
-// layoutWrapText re-layouts text and RTF shapes that use text
-// wrapping. Called after fill-widths so actual widths are known.
+// layoutWrapText re-layouts text and RTF shapes whose height depends on
+// glyph layout. Called after fill-widths so actual widths are known.
 func layoutWrapText(layout *Layout, w *Window) {
 	if layout == nil || w == nil {
 		return
@@ -109,18 +109,22 @@ func layoutWrapTextWalk(layout *Layout, w *Window) {
 	if tc == nil {
 		return
 	}
-	if tc.TextMode != TextModeWrap &&
-		tc.TextMode != TextModeWrapKeepSpaces {
-		return
-	}
-	if shape.Width <= 0 {
-		return
-	}
 	switch shape.ShapeType {
 	case ShapeRTF:
+		if tc.TextMode != TextModeWrap &&
+			tc.TextMode != TextModeWrapKeepSpaces {
+			return
+		}
+		if shape.Width <= 0 {
+			return
+		}
 		layoutWrapRTF(shape, tc, w)
 	case ShapeText:
-		layoutWrapPlainText(shape, tc, w)
+		style := textStyleOrDefault(shape)
+		if !plainTextNeedsGlyphLayout(shape, tc, style) {
+			return
+		}
+		layoutPlainText(shape, tc, style, w)
 	}
 }
 
@@ -162,7 +166,10 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	tc.wrapCacheValid = true
 }
 
-func layoutWrapPlainText(shape *Shape, tc *ShapeTextConfig,
+func layoutPlainText(
+	shape *Shape,
+	tc *ShapeTextConfig,
+	style TextStyle,
 	w *Window,
 ) {
 	if w.textMeasurer == nil || tc.TextStyle == nil {
@@ -171,22 +178,13 @@ func layoutWrapPlainText(shape *Shape, tc *ShapeTextConfig,
 	if len(tc.Text) == 0 {
 		return
 	}
-	if tc.wrapCacheValid &&
-		f32AreClose(tc.wrapCacheWidth, shape.Width) &&
-		tc.wrapCacheText == tc.Text &&
-		tc.wrapCacheStyle == *tc.TextStyle {
-		shape.Height = tc.wrapCacheHeight
-		return
-	}
-	l, err := w.textMeasurer.LayoutText(
-		tc.Text, *tc.TextStyle, shape.Width)
-	if err != nil {
+	l, ok := plainTextLayoutResolved(tc.Text, shape, style, w)
+	if !ok {
 		return
 	}
 	shape.Height = l.Height
-	tc.wrapCacheWidth = shape.Width
-	tc.wrapCacheText = tc.Text
-	tc.wrapCacheStyle = *tc.TextStyle
-	tc.wrapCacheHeight = l.Height
-	tc.wrapCacheValid = true
+	if tc.TextMode == TextModeMultiline &&
+		shape.Sizing.Width != SizingFixed && l.Width > 0 {
+		shape.Width = l.Width
+	}
 }

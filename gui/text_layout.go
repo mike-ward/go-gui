@@ -1,0 +1,100 @@
+package gui
+
+import "github.com/mike-ward/go-glyph"
+
+func plainTextNeedsGlyphLayout(
+	shape *Shape,
+	tc *ShapeTextConfig,
+	style TextStyle,
+) bool {
+	if shape == nil || tc == nil {
+		return false
+	}
+	return tc.TextMode != TextModeSingleLine ||
+		style.Align != TextAlignLeft ||
+		style.LineSpacing != 0 ||
+		style.BgColor.A > 0 ||
+		style.Features != nil ||
+		style.Gradient != nil ||
+		style.HasTextTransform()
+}
+
+func plainTextLayoutWidthArg(
+	shape *Shape,
+	tc *ShapeTextConfig,
+	style TextStyle,
+) float32 {
+	if shape == nil || tc == nil || shape.Width <= 0 {
+		return 0
+	}
+	if tc.TextMode == TextModeWrap ||
+		tc.TextMode == TextModeWrapKeepSpaces {
+		return shape.Width
+	}
+	if style.Align != TextAlignLeft {
+		return -shape.Width
+	}
+	return 0
+}
+
+func plainTextGlyphConfig(style TextStyle, widthArg float32) glyph.TextConfig {
+	cfg := glyph.TextConfig{
+		Style:    style.ToGlyphStyle(),
+		Block:    glyph.DefaultBlockStyle(),
+		Gradient: style.Gradient,
+	}
+	cfg.Block.Align = textAlignmentToGlyph(style.Align)
+	cfg.Block.LineSpacing = style.LineSpacing
+	if widthArg > 0 {
+		cfg.Block.Width = widthArg
+		cfg.Block.Wrap = glyph.WrapWord
+	} else if widthArg < 0 {
+		cfg.Block.Width = -widthArg
+		cfg.Block.Wrap = glyph.WrapNone
+	}
+	return cfg
+}
+
+func textAlignmentToGlyph(align TextAlignment) glyph.Alignment {
+	switch align {
+	case TextAlignCenter:
+		return glyph.AlignCenter
+	case TextAlignRight:
+		return glyph.AlignRight
+	default:
+		return glyph.AlignLeft
+	}
+}
+
+func plainTextLayoutResolved(
+	text string,
+	shape *Shape,
+	style TextStyle,
+	w *Window,
+) (glyph.Layout, bool) {
+	if w == nil || w.textMeasurer == nil ||
+		shape == nil || shape.TC == nil {
+		return glyph.Layout{}, false
+	}
+	tc := shape.TC
+	widthArg := plainTextLayoutWidthArg(shape, tc, style)
+	if tc.textLayoutValid &&
+		f32AreClose(tc.textLayoutWidth, widthArg) &&
+		tc.textLayoutText == text &&
+		tc.textLayoutStyle == style &&
+		tc.textLayoutMode == tc.TextMode &&
+		tc.TextLayout != nil {
+		return *tc.TextLayout, true
+	}
+	layout, err := w.textMeasurer.LayoutText(text, style, widthArg)
+	if err != nil {
+		return glyph.Layout{}, false
+	}
+	tc.TextLayout = &layout
+	tc.textLayoutWidth = widthArg
+	tc.textLayoutText = text
+	tc.textLayoutStyle = style
+	tc.textLayoutMode = tc.TextMode
+	tc.textLayoutValid = true
+	return layout, true
+}

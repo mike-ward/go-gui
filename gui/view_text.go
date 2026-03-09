@@ -77,6 +77,14 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 		layout.Shape.Width = float32(utf8RuneCount(c.Text)) * charWidth
 		layout.Shape.Height = ts.Size * 1.4
 	}
+	if c.Mode == TextModeMultiline {
+		if l, ok := plainTextLayoutResolved(c.Text, layout.Shape, *ts, w); ok {
+			layout.Shape.Height = l.Height
+			if layout.Shape.Sizing.Width != SizingFixed && l.Width > 0 {
+				layout.Shape.Width = l.Width
+			}
+		}
+	}
 
 	if c.Mode == TextModeSingleLine ||
 		layout.Shape.Sizing.Width == SizingFixed {
