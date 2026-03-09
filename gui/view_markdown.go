@@ -123,7 +123,7 @@ type MarkdownCfg struct {
 	SizeBorder          float32
 	Radius              float32
 	Padding             Opt[Padding]
-	MermaidWidth        int
+	MermaidWidth        int // max pixel width for mermaid diagrams (0 = 600)
 	DisableExternalAPIs bool
 }
 
@@ -311,10 +311,19 @@ func renderMdMermaid(
 					TextStyle: cfg.Style.Text,
 				})
 			case DiagramReady:
+				w, h := entry.Width, entry.Height
+				mw := float32(cfg.MermaidWidth)
+				if mw <= 0 {
+					mw = 600
+				}
+				if w > mw {
+					h *= mw / w
+					w = mw
+				}
 				return Image(ImageCfg{
 					Src:     entry.PNGPath,
-					Width:   entry.Width,
-					Height:  entry.Height,
+					Width:   w,
+					Height:  h,
 					BgColor: White,
 				})
 			case DiagramError:
