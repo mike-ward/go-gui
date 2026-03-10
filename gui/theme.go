@@ -414,9 +414,7 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			ColorSuccess: RGBA(46, 160, 67, 255),
 			ColorWarning: RGBA(210, 153, 34, 255),
 			ColorError:   RGBA(218, 54, 51, 255),
-			Padding:      NewPadding(2, 8, 2, 8),
-			Radius:       cfg.RadiusSmall,
-			TextStyle:    ts,
+			Padding: NewPadding(2, 6, 2, 6),
 			DotSize:      8,
 		},
 		ExpandPanelStyle: ExpandPanelStyle{

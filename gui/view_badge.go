@@ -1,6 +1,10 @@
 package gui
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 // BadgeVariant selects the badge color preset.
 type BadgeVariant uint8
@@ -21,7 +25,6 @@ type BadgeCfg struct {
 	Dot       bool
 	Color     Color
 	Padding   Opt[Padding]
-	Radius    Opt[float32]
 	TextStyle TextStyle
 	DotSize   Opt[float32]
 
@@ -40,11 +43,14 @@ func Badge(cfg BadgeCfg) View {
 		cfg.Padding = Some(guiTheme.BadgeStyle.Padding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = guiTheme.BadgeStyle.TextStyle
+		cfg.TextStyle = guiTheme.N5
+		cfg.TextStyle.Color = White
+		cfg.TextStyle.Typeface = glyph.TypefaceBold
 	}
 
 	style := guiTheme.BadgeStyle
-	radius := cfg.Radius.Get(style.Radius)
+	pad := cfg.Padding.Get(style.Padding)
+	radius := (cfg.TextStyle.Size + pad.Top + pad.Bottom) / 2
 	dotSize := cfg.DotSize.Get(style.DotSize)
 	bg := cfg.Color
 	switch cfg.Variant {
@@ -61,27 +67,29 @@ func Badge(cfg BadgeCfg) View {
 	if cfg.Dot {
 		sz := dotSize
 		return Row(ContainerCfg{
-			A11YRole:  AccessRoleStaticText,
-			A11YLabel: a11yLabel(cfg.A11YLabel, "status"),
-			Color:     bg,
-			Radius:    Some(sz / 2),
-			Width:     sz,
-			Height:    sz,
-			Sizing:    FixedFixed,
-			Padding:   NoPadding,
+			A11YRole:   AccessRoleStaticText,
+			A11YLabel:  a11yLabel(cfg.A11YLabel, "status"),
+			Color:      bg,
+			Radius:     Some(sz / 2),
+			Width:      sz,
+			Height:     sz,
+			Sizing:     FixedFixed,
+			Padding:    NoPadding,
+			SizeBorder: NoBorder,
 		})
 	}
 
 	label := badgeLabel(cfg.Label, cfg.Max)
 	return Row(ContainerCfg{
-		A11YRole:  AccessRoleStaticText,
-		A11YLabel: a11yLabel(cfg.A11YLabel, label),
-		Color:     bg,
-		Radius:    Some(radius),
-		Sizing:    FitFit,
-		Padding:   cfg.Padding,
-		HAlign:    HAlignCenter,
-		VAlign:    VAlignMiddle,
+		A11YRole:   AccessRoleStaticText,
+		A11YLabel:  a11yLabel(cfg.A11YLabel, label),
+		Color:      bg,
+		Radius:     Some(radius),
+		Sizing:     FitFit,
+		Padding:    Some(pad),
+		SizeBorder: NoBorder,
+		HAlign:     HAlignCenter,
+		VAlign:     VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{
 				Text:      label,

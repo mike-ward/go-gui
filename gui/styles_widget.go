@@ -212,9 +212,8 @@ type BadgeStyle struct {
 	ColorSuccess Color
 	ColorWarning Color
 	ColorError   Color
-	Padding      Padding
-	Radius       float32
-	TextStyle    TextStyle
+	Padding   Padding
+	TextStyle TextStyle
 	DotSize      float32
 }
 
@@ -641,15 +640,13 @@ var (
 	}
 
 	DefaultBadgeStyle = BadgeStyle{
-		Color:        colorActiveDark,
+		Color:        colorSelectDark,
 		ColorInfo:    colorSelectDark,
 		ColorSuccess: RGBA(46, 160, 67, 255),
 		ColorWarning: RGBA(210, 153, 34, 255),
 		ColorError:   RGBA(218, 54, 51, 255),
-		Padding:      NewPadding(2, 8, 2, 8),
-		Radius:       RadiusSmall,
-		TextStyle:    DefaultTextStyle,
-		DotSize:      8,
+		Padding: NewPadding(2, 6, 2, 6),
+		DotSize: 8,
 	}
 
 	DefaultExpandPanelStyle = ExpandPanelStyle{

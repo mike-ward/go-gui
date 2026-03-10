@@ -145,19 +145,45 @@ func demoPulsar(w *gui.Window) gui.View {
 }
 
 func demoBadge(_ *gui.Window) gui.View {
-	return gui.Row(gui.ContainerCfg{
-		Sizing:  gui.FillFit,
-		Spacing: gui.SomeF(12),
-		Padding: gui.NoPadding,
-		VAlign:  gui.VAlignMiddle,
+	t := gui.CurrentTheme()
+	badgeRow := func(content []gui.View) gui.View {
+		return gui.Row(gui.ContainerCfg{
+			Sizing:     gui.FillFit,
+			Spacing:    gui.SomeF(t.SpacingSmall),
+			Padding:    gui.NoPadding,
+			SizeBorder: gui.NoBorder,
+			VAlign:     gui.VAlignMiddle,
+			Content:    content,
+		})
+	}
+	return gui.Column(gui.ContainerCfg{
+		Sizing:     gui.FillFit,
+		Spacing:    gui.SomeF(t.SpacingSmall),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
 		Content: []gui.View{
-			gui.Badge(gui.BadgeCfg{Label: "Default"}),
-			gui.Badge(gui.BadgeCfg{Label: "Info", Variant: gui.BadgeInfo}),
-			gui.Badge(gui.BadgeCfg{Label: "Success", Variant: gui.BadgeSuccess}),
-			gui.Badge(gui.BadgeCfg{Label: "Warning", Variant: gui.BadgeWarning}),
-			gui.Badge(gui.BadgeCfg{Label: "Error", Variant: gui.BadgeError}),
-			gui.Badge(gui.BadgeCfg{Label: "42", Max: 99}),
-			gui.Badge(gui.BadgeCfg{Dot: true, Variant: gui.BadgeError}),
+			gui.Text(gui.TextCfg{Text: "Variants", TextStyle: t.B4}),
+			badgeRow([]gui.View{
+				gui.Badge(gui.BadgeCfg{Label: "5"}),
+				gui.Badge(gui.BadgeCfg{Label: "3", Variant: gui.BadgeInfo}),
+				gui.Badge(gui.BadgeCfg{Label: "12", Variant: gui.BadgeSuccess}),
+				gui.Badge(gui.BadgeCfg{Label: "7", Variant: gui.BadgeWarning}),
+				gui.Badge(gui.BadgeCfg{Label: "99", Variant: gui.BadgeError}),
+			}),
+			gui.Text(gui.TextCfg{Text: "Max cap", TextStyle: t.B4}),
+			badgeRow([]gui.View{
+				gui.Badge(gui.BadgeCfg{Label: "5", Max: 99}),
+				gui.Badge(gui.BadgeCfg{Label: "150", Max: 99, Variant: gui.BadgeError}),
+				gui.Badge(gui.BadgeCfg{Label: "1000", Max: 999, Variant: gui.BadgeInfo}),
+			}),
+			gui.Text(gui.TextCfg{Text: "Dot mode", TextStyle: t.B4}),
+			badgeRow([]gui.View{
+				gui.Badge(gui.BadgeCfg{Dot: true}),
+				gui.Badge(gui.BadgeCfg{Dot: true, Variant: gui.BadgeInfo}),
+				gui.Badge(gui.BadgeCfg{Dot: true, Variant: gui.BadgeSuccess}),
+				gui.Badge(gui.BadgeCfg{Dot: true, Variant: gui.BadgeWarning}),
+				gui.Badge(gui.BadgeCfg{Dot: true, Variant: gui.BadgeError}),
+			}),
 		},
 	})
 }
