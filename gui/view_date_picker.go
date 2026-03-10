@@ -507,6 +507,11 @@ func datePickerRollerKeyDown(
 		e.IsHandled = true
 	}
 	switch {
+	case e.Modifiers == ModNone && e.KeyCode == KeyEscape:
+		s.ShowYearMonthPicker = false
+		sm.Set(cfgID, s)
+		w.UpdateWindow()
+		e.IsHandled = true
 	case e.Modifiers == ModNone && e.KeyCode == KeyUp:
 		m, y := s.ViewMonth-1, s.ViewYear
 		if m < 1 {

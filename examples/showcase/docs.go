@@ -333,6 +333,16 @@ and keyboard input.
 - **RollerMonthYear** — MMM YYYY (no day drum)
 - **RollerYearOnly** — YYYY (single drum)
 
+## Key Properties
+
+| Property     | Type | Description                  |
+|--------------|------|------------------------------|
+| VisibleItems | int  | Visible rows per drum (odd)  |
+| ItemHeight   | f32  | Row height in pixels         |
+| LongMonths   | bool | "January" vs "Jan"           |
+| MinYear      | int  | Earliest year (default 1900) |
+| MaxYear      | int  | Latest year (default 2100)   |
+
 ## Keyboard
 
 - **Up/Down** — change month
@@ -343,9 +353,10 @@ and keyboard input.
 
 ` + "```go" + `
 gui.DatePickerRoller(gui.DatePickerRollerCfg{
-    ID:          "dpr",
-    DisplayMode: gui.RollerMonthDayYear,
-    LongMonths:  true,
+    ID:           "dpr",
+    DisplayMode:  gui.RollerMonthDayYear,
+    VisibleItems: 5,
+    LongMonths:   true,
 })
 ` + "```" + `
 `,
