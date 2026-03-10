@@ -479,12 +479,12 @@ func showcaseFormRow(label string, field gui.View) gui.View {
 func showcaseFormState(label string, state ShowcaseFieldState) gui.View {
 	return gui.Text(gui.TextCfg{
 		Text:      fmt.Sprintf("%s: touched=%t, dirty=%t, pending=%t", label, state.Touched, state.Dirty, state.Pending),
-		TextStyle: gui.CurrentTheme().N2,
+		TextStyle: gui.CurrentTheme().N3,
 	})
 }
 
 func showcaseFormIssue(fieldID, text string) gui.View {
-	style := gui.CurrentTheme().N2
+	style := gui.CurrentTheme().N3
 	if fieldID != "" && text != "" {
 		style.Color = gui.RGB(219, 87, 87)
 		text = fieldID + ": " + text
