@@ -1,11 +1,15 @@
 package gui
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // InputDateCfg configures a date input with dropdown calendar.
 type InputDateCfg struct {
 	ID                   string
 	Date                 time.Time
+	Dates                []time.Time
 	Placeholder          string
 	AllowedWeekdays      []DatePickerWeekdays
 	AllowedMonths        []DatePickerMonths
@@ -49,13 +53,13 @@ type inputDateView struct {
 	cfg InputDateCfg
 }
 
+func (idv *inputDateView) Content() []View { return nil }
+
 // InputDate creates a date input field with a dropdown calendar.
 func InputDate(cfg InputDateCfg) View {
 	applyInputDateDefaults(&cfg)
 	return &inputDateView{cfg: cfg}
 }
-
-func (idv *inputDateView) Content() []View { return nil }
 
 func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	cfg := &idv.cfg
@@ -64,10 +68,17 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	cfgID := cfg.ID
 
 	// Format date for display.
+	dates := cfg.Dates
+	if len(dates) == 0 && !cfg.Date.IsZero() {
+		dates = []time.Time{cfg.Date}
+	}
+
 	dateText := ""
-	if !cfg.Date.IsZero() {
-		dateText = LocaleFormatDate(cfg.Date,
+	if len(dates) == 1 {
+		dateText = LocaleFormatDate(dates[0],
 			guiLocale.Date.ShortDate)
+	} else if len(dates) > 1 {
+		dateText = fmt.Sprintf("%d dates selected", len(dates))
 	}
 
 	displayText := dateText
@@ -117,7 +128,7 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 			Content: []View{
 				DatePicker(DatePickerCfg{
 					ID:                   cfgID + ".picker",
-					Dates:                []time.Time{cfg.Date},
+					Dates:                dates,
 					AllowedWeekdays:      cfg.AllowedWeekdays,
 					AllowedMonths:        cfg.AllowedMonths,
 					AllowedYears:         cfg.AllowedYears,

@@ -132,3 +132,42 @@ func TestInputDateWithPickerOpen(t *testing.T) {
 		t.Error("open state should have children")
 	}
 }
+
+func TestInputDateMultiSelectText(t *testing.T) {
+	w := &Window{}
+	d1 := time.Date(2025, 3, 15, 0, 0, 0, 0, time.Local)
+	d2 := time.Date(2025, 3, 16, 0, 0, 0, 0, time.Local)
+	
+	v := InputDate(InputDateCfg{
+		ID:    "id-multi",
+		Dates: []time.Time{d1, d2},
+	})
+	layout := GenerateViewLayout(v, w)
+	
+	// The text child should say "2 dates selected".
+	// The structure is Row -> [Text, Button]
+	row := &layout.Children[0]
+	text := row.Children[0].Shape.TC.Text
+	if text != "2 dates selected" {
+		t.Errorf("got %q, want '2 dates selected'", text)
+	}
+}
+
+func TestInputDateSingleDateText(t *testing.T) {
+	w := &Window{}
+	d1 := time.Date(2025, 3, 15, 0, 0, 0, 0, time.Local)
+	
+	v := InputDate(InputDateCfg{
+		ID:   "id-single",
+		Date: d1,
+	})
+	layout := GenerateViewLayout(v, w)
+	
+	// The text child should say formatted date.
+	row := &layout.Children[0]
+	text := row.Children[0].Shape.TC.Text
+	expected := LocaleFormatDate(d1, guiLocale.Date.ShortDate)
+	if text != expected {
+		t.Errorf("got %q, want %q", text, expected)
+	}
+}

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -50,6 +51,7 @@ type datePickerState struct {
 	ShowYearMonthPicker bool
 	ViewMonth           int
 	ViewYear            int
+	FocusDay            int
 	CalBodyHeight       float32
 }
 
@@ -158,6 +160,17 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 		Disabled:    cfg.Disabled,
 		Invisible:   cfg.Invisible,
 		Content:     content,
+		AmendLayout: func(lo *Layout, w *Window) {
+			if w.IsFocus(cfg.IDFocus) {
+				lo.Shape.ColorBorder = cfg.ColorBorderFocus
+			}
+		},
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			if cfg.IDFocus > 0 && !cfg.Disabled {
+				w.SetIDFocus(cfg.IDFocus)
+				e.IsHandled = true
+			}
+		},
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
 			sm := StateMap[string, datePickerState](
 				w, nsDatePicker, capModerate)
@@ -185,6 +198,7 @@ func datePickerGetState(w *Window, cfg *DatePickerCfg) datePickerState {
 		s = datePickerState{
 			ViewMonth: int(now.Month()),
 			ViewYear:  now.Year(),
+			FocusDay:  now.Day(),
 		}
 		sm.Set(cfg.ID, s)
 	}
@@ -214,21 +228,25 @@ func datePickerControls(
 		s, _ := sm.Get(cfgID)
 		s.ShowYearMonthPicker = !s.ShowYearMonthPicker
 		sm.Set(cfgID, s)
-		if s.ShowYearMonthPicker {
+		if idFocus > 0 {
 			w.SetIDFocus(idFocus)
-		} else {
-			w.SetIDFocus(0)
 		}
 		w.UpdateWindow()
 		e.IsHandled = true
 	}
 
 	onPrev := func(_ *Layout, e *Event, w *Window) {
+		if idFocus > 0 {
+			w.SetIDFocus(idFocus)
+		}
 		datePickerNavMonth(cfgID, -1, w)
 		e.IsHandled = true
 	}
 
 	onNext := func(_ *Layout, e *Event, w *Window) {
+		if idFocus > 0 {
+			w.SetIDFocus(idFocus)
+		}
 		datePickerNavMonth(cfgID, 1, w)
 		e.IsHandled = true
 	}
@@ -272,7 +290,7 @@ func datePickerControls(
 	})
 }
 
-// datePickerCalendar builds weekday headers + day grid.
+// datePickerCalendar builds the weekday headers and the day grid.
 func datePickerCalendar(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) View {
@@ -299,7 +317,7 @@ func datePickerCalendar(
 	})
 }
 
-// datePickerWeekdays builds the weekday header row.
+// datePickerWeekdays builds the weekday header row (e.g., "Mon", "Tue").
 func datePickerWeekdays(cfg *DatePickerCfg) View {
 	dn := &DefaultDatePickerStyle
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
@@ -327,10 +345,11 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 	})
 }
 
-// datePickerMonth builds 6 rows of 7 day cells.
+// datePickerMonth builds 6 rows of 7 day cells for the current view month.
 func datePickerMonth(
-	cfg *DatePickerCfg, state datePickerState, _ *Window,
+	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) []View {
+
 	dn := &DefaultDatePickerStyle
 	radius := cfg.Radius.Get(dn.Radius)
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
@@ -376,6 +395,7 @@ func datePickerMonth(
 			isToday := isSameDay(cellDate, today)
 			selected := datePickerIsSelected(cellDate, cfg.Dates)
 			disabled := datePickerIsDisabled(cellDate, cfg)
+			isFocused := d == state.FocusDay
 			dayStr := strconv.Itoa(d)
 
 			cellColor := ColorTransparent
@@ -388,6 +408,9 @@ func datePickerMonth(
 			if isToday && !cfg.HideTodayIndicator {
 				borderColor = cfg.TextStyle.Color
 			}
+			if isFocused && w.IsFocus(cfg.IDFocus) {
+				borderColor = cfg.ColorBorderFocus
+			}
 
 			ts := cfg.TextStyle
 			if disabled {
@@ -395,7 +418,9 @@ func datePickerMonth(
 			}
 
 			dayVal := d
+			cfgID := cfg.ID
 			cells = append(cells, Button(ButtonCfg{
+				ID:          fmt.Sprintf("%s.day.%d", cfg.ID, d),
 				MinWidth:    cellSize,
 				MaxWidth:    cellSize,
 				MaxHeight:   cellSize,
@@ -411,8 +436,17 @@ func datePickerMonth(
 					Text: dayStr, TextStyle: ts,
 				})},
 				OnClick: func(_ *Layout, e *Event, w *Window) {
+					sm := StateMap[string, datePickerState](w, nsDatePicker, capModerate)
+					s, _ := sm.Get(cfgID)
+					s.FocusDay = dayVal
+					sm.Set(cfgID, s)
+
+					if cfg.IDFocus > 0 {
+						w.SetIDFocus(cfg.IDFocus)
+					}
+
 					dates := datePickerUpdateSelections(
-						dayVal, state, cfg.Dates,
+						dayVal, s, cfg.Dates,
 						selectMultiple)
 					if onSelect != nil {
 						onSelect(dates, e, w)
@@ -437,6 +471,7 @@ func datePickerAdjacentCell(
 	day, daysInMonth int, cellSize float32,
 ) View {
 	var adjDay int
+	var delta int
 	if day < 1 {
 		// Previous month.
 		prevMonth := state.ViewMonth - 1
@@ -446,16 +481,29 @@ func datePickerAdjacentCell(
 			prevYear--
 		}
 		adjDay = datePickerDaysInMonth(prevMonth, prevYear) + day
+		delta = -1
 	} else {
 		// Next month.
 		adjDay = day - daysInMonth
+		delta = 1
 	}
 	ts := cfg.TextStyle
 	ts.Color = RGBA(ts.Color.R, ts.Color.G, ts.Color.B, 80)
+	cfgID := cfg.ID
+	onSelect := cfg.OnSelect
+	selectMultiple := cfg.SelectMultiple
+
+	var idSuffix string
+	if delta < 0 {
+		idSuffix = "prev"
+	} else {
+		idSuffix = "next"
+	}
+
 	return Button(ButtonCfg{
+		ID:          fmt.Sprintf("%s.day.%s.%d", cfg.ID, idSuffix, adjDay),
 		Color:       ColorTransparent,
 		ColorBorder: ColorTransparent,
-		Disabled:    true,
 		MinWidth:    cellSize,
 		MaxWidth:    cellSize,
 		MaxHeight:   cellSize,
@@ -464,10 +512,27 @@ func datePickerAdjacentCell(
 			Text:      strconv.Itoa(adjDay),
 			TextStyle: ts,
 		})},
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			if cfg.IDFocus > 0 {
+				w.SetIDFocus(cfg.IDFocus)
+			}
+			datePickerNavMonth(cfgID, delta, w)
+			// After navigation, select the day in the new month.
+			// Retrieve updated state to get correct year/month.
+			sm := StateMap[string, datePickerState](w, nsDatePicker, capModerate)
+			s, _ := sm.Get(cfgID)
+			dates := datePickerUpdateSelections(
+				adjDay, s, cfg.Dates,
+				selectMultiple)
+			if onSelect != nil {
+				onSelect(dates, e, w)
+			}
+			e.IsHandled = true
+		},
 	})
 }
 
-// datePickerYearMonthPicker builds a roller picker.
+// datePickerYearMonthPicker builds a roller picker for fast month/year selection.
 func datePickerYearMonthPicker(
 	cfg *DatePickerCfg, state datePickerState,
 ) View {
@@ -481,6 +546,9 @@ func datePickerYearMonthPicker(
 		ColorBorder:  ColorTransparent,
 		SizeBorder:   NoBorder,
 		OnChange: func(t time.Time, w *Window) {
+			if cfg.IDFocus > 0 {
+				w.SetIDFocus(cfg.IDFocus)
+			}
 			sm := StateMap[string, datePickerState](
 				w, nsDatePicker, capModerate)
 			s, _ := sm.Get(cfgID)
@@ -533,12 +601,63 @@ func datePickerRollerKeyDown(
 
 // datePickerOnKeyDown handles arrow key navigation.
 func datePickerOnKeyDown(cfg *DatePickerCfg, e *Event, w *Window) {
+	sm := StateMap[string, datePickerState](w, nsDatePicker, capModerate)
+	s, _ := sm.Get(cfg.ID)
+	days := datePickerDaysInMonth(s.ViewMonth, s.ViewYear)
+
+	update := func() {
+		sm.Set(cfg.ID, s)
+		w.UpdateWindow()
+		e.IsHandled = true
+	}
+
 	switch e.KeyCode {
 	case KeyLeft:
-		datePickerNavMonth(cfg.ID, -1, w)
-		e.IsHandled = true
+		s.FocusDay--
+		if s.FocusDay < 1 {
+			datePickerNavMonth(cfg.ID, -1, w)
+			s, _ = sm.Get(cfg.ID)
+			s.FocusDay = datePickerDaysInMonth(s.ViewMonth, s.ViewYear)
+		}
+		update()
 	case KeyRight:
-		datePickerNavMonth(cfg.ID, 1, w)
+		s.FocusDay++
+		if s.FocusDay > days {
+			datePickerNavMonth(cfg.ID, 1, w)
+			s, _ = sm.Get(cfg.ID)
+			s.FocusDay = 1
+		}
+		update()
+	case KeyUp:
+		s.FocusDay -= 7
+		if s.FocusDay < 1 {
+			datePickerNavMonth(cfg.ID, -1, w)
+			s, _ = sm.Get(cfg.ID)
+			prevDays := datePickerDaysInMonth(s.ViewMonth, s.ViewYear)
+			s.FocusDay += prevDays
+		}
+		update()
+	case KeyDown:
+		s.FocusDay += 7
+		if s.FocusDay > days {
+			datePickerNavMonth(cfg.ID, 1, w)
+			s, _ = sm.Get(cfg.ID)
+			s.FocusDay -= days
+		}
+		update()
+	case KeyHome:
+		s.FocusDay = 1
+		update()
+	case KeyEnd:
+		s.FocusDay = days
+		update()
+	case KeyEnter, KeySpace:
+		dates := datePickerUpdateSelections(
+			s.FocusDay, s, cfg.Dates,
+			cfg.SelectMultiple)
+		if cfg.OnSelect != nil {
+			cfg.OnSelect(dates, e, w)
+		}
 		e.IsHandled = true
 	}
 }
