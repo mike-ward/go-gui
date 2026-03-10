@@ -117,72 +117,132 @@ func demoIcons(w *gui.Window) gui.View {
 }
 
 func demoGradient(_ *gui.Window) gui.View {
-	return gui.Row(gui.ContainerCfg{
-		Sizing:  gui.FillFit,
-		Spacing: gui.SomeF(12),
-		Padding: gui.NoPadding,
+	return gui.Column(gui.ContainerCfg{
+		Sizing:     gui.FillFit,
+		Spacing:    gui.SomeF(12),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
 		Content: []gui.View{
-			gui.Column(gui.ContainerCfg{
-				Width:  120,
-				Height: 80,
-				Sizing: gui.FixedFixed,
-				Gradient: &gui.GradientDef{
-					Direction: gui.GradientToRight,
-					Stops: []gui.GradientStop{
-						{Pos: 0, Color: gui.ColorFromString("#3b82f6")},
-						{Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
-					},
-				},
-				Radius: gui.SomeF(8),
-				HAlign: gui.HAlignCenter,
-				VAlign: gui.VAlignMiddle,
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(12),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
 				Content: []gui.View{
-					gui.Text(gui.TextCfg{
-						Text:      "Horizontal",
-						TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+					gui.Column(gui.ContainerCfg{
+						Width:  120,
+						Height: 80,
+						Sizing: gui.FixedFixed,
+						Gradient: &gui.GradientDef{
+							Direction: gui.GradientToRight,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#3b82f6")},
+								{Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Horizontal",
+								TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+							}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:  120,
+						Height: 80,
+						Sizing: gui.FixedFixed,
+						Gradient: &gui.GradientDef{
+							Direction: gui.GradientToTop,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#f97316")},
+								{Pos: 1, Color: gui.ColorFromString("#ef4444")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Vertical",
+								TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+							}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:  120,
+						Height: 80,
+						Sizing: gui.FixedFixed,
+						Gradient: &gui.GradientDef{
+							Direction: gui.GradientToTopRight,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#10b981")},
+								{Pos: 0.5, Color: gui.ColorFromString("#3b82f6")},
+								{Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Diagonal",
+								TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+							}),
+						},
 					}),
 				},
 			}),
-			gui.Column(gui.ContainerCfg{
-				Width:  120,
-				Height: 80,
-				Sizing: gui.FixedFixed,
-				Gradient: &gui.GradientDef{
-					Direction: gui.GradientToTop,
-					Stops: []gui.GradientStop{
-						{Pos: 0, Color: gui.ColorFromString("#f97316")},
-						{Pos: 1, Color: gui.ColorFromString("#ef4444")},
-					},
-				},
-				Radius: gui.SomeF(8),
-				HAlign: gui.HAlignCenter,
-				VAlign: gui.VAlignMiddle,
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(12),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
 				Content: []gui.View{
-					gui.Text(gui.TextCfg{
-						Text:      "Vertical",
-						TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+					gui.Column(gui.ContainerCfg{
+						Width:  120,
+						Height: 80,
+						Sizing: gui.FixedFixed,
+						Gradient: &gui.GradientDef{
+							Type: gui.GradientRadial,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#facc15")},
+								{Pos: 1, Color: gui.ColorFromString("#f97316")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Radial",
+								TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+							}),
+						},
 					}),
-				},
-			}),
-			gui.Column(gui.ContainerCfg{
-				Width:  120,
-				Height: 80,
-				Sizing: gui.FixedFixed,
-				Gradient: &gui.GradientDef{
-					Direction: gui.GradientToTopRight,
-					Stops: []gui.GradientStop{
-						{Pos: 0, Color: gui.ColorFromString("#10b981")},
-						{Pos: 0.5, Color: gui.ColorFromString("#3b82f6")},
-						{Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
-					},
-				},
-				Radius: gui.SomeF(8),
-				HAlign: gui.HAlignCenter,
-				VAlign: gui.VAlignMiddle,
-				Content: []gui.View{
-					gui.Text(gui.TextCfg{
-						Text:      "Diagonal",
-						TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+					gui.Column(gui.ContainerCfg{
+						Width:  120,
+						Height: 80,
+						Sizing: gui.FixedFixed,
+						Gradient: &gui.GradientDef{
+							Type: gui.GradientRadial,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#ffffff")},
+								{Pos: 0.4, Color: gui.ColorFromString("#ec4899")},
+								{Pos: 1, Color: gui.ColorFromString("#7c3aed")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Radial Multi",
+								TextStyle: gui.TextStyle{Color: gui.RGB(255, 255, 255), Size: 14},
+							}),
+						},
 					}),
 				},
 			}),
