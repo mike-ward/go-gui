@@ -23,6 +23,7 @@ func demoInput(w *gui.Window) gui.View {
 			),
 			labeledRow(t, "Text", gui.Input(gui.InputCfg{
 				ID:          "input-text",
+				IDFocus:     9160,
 				Sizing:      gui.FillFit,
 				Text:        app.InputText,
 				Placeholder: "Enter text...",
@@ -32,6 +33,7 @@ func demoInput(w *gui.Window) gui.View {
 			})),
 			labeledRow(t, "Password", gui.Input(gui.InputCfg{
 				ID:          "input-password",
+				IDFocus:     9161,
 				Sizing:      gui.FillFit,
 				Text:        app.InputPassword,
 				Placeholder: "Enter password...",
@@ -42,6 +44,7 @@ func demoInput(w *gui.Window) gui.View {
 			})),
 			labeledRow(t, "Phone", gui.Input(gui.InputCfg{
 				ID:          "input-phone",
+				IDFocus:     9162,
 				Sizing:      gui.FillFit,
 				Text:        app.InputPhone,
 				Placeholder: "(555) 000-0000",
@@ -52,16 +55,18 @@ func demoInput(w *gui.Window) gui.View {
 			})),
 			labeledRow(t, "Expiry", gui.Input(gui.InputCfg{
 				ID:          "input-expiry",
+				IDFocus:     9163,
 				Sizing:      gui.FillFit,
 				Text:        app.InputExpiry,
 				Placeholder: "MM/YY",
-				Mask:        "##/##",
+				MaskPreset:  gui.MaskExpiryMMYY,
 				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).InputExpiry = s
 				},
 			})),
 			labeledRow(t, "Multiline", gui.Input(gui.InputCfg{
 				ID:          "input-multi",
+				IDFocus:     9164,
 				Sizing:      gui.FillFit,
 				Text:        app.InputMultiline,
 				Placeholder: "Multiple lines...",
