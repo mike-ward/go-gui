@@ -34,17 +34,13 @@ const (
 	inspectorPropChildrenID = "__prop_children"
 )
 
-var (
-	inspectorTextStyle = TextStyle{
-		Size:  12,
-		Color: RGBA(220, 220, 220, 255),
-	}
-	inspectorIconStyle = TextStyle{
-		Family: IconFontName,
-		Size:   12,
-		Color:  RGBA(220, 220, 220, 255),
-	}
-)
+func inspectorNodeTextStyle() TextStyle {
+	return guiTheme.TreeStyle.TextStyle
+}
+
+func inspectorNodeIconStyle() TextStyle {
+	return guiTheme.TreeStyle.TextStyleIcon
+}
 
 type inspectorStackFrame struct {
 	nodes []TreeNodeCfg
@@ -144,7 +140,7 @@ func inspectorFloatingPanel(w *Window) View {
 	scrollbarPad := guiTheme.ScrollbarStyle.Size +
 		guiTheme.ScrollbarStyle.GapEdge*2
 	scrollbarCfg := &ScrollbarCfg{
-		ColorThumb: RGBA(255, 255, 255, 80),
+		ColorThumb: guiTheme.ScrollbarStyle.ColorThumb,
 	}
 
 	return Column(ContainerCfg{
@@ -156,7 +152,8 @@ func inspectorFloatingPanel(w *Window) View {
 		Sizing:        FixedFixed,
 		Width:         panelWidth,
 		Height:        panelHeight,
-		Color:         RGBA(20, 20, 20, 230),
+		Color: RGBA(guiTheme.ColorPanel.R, guiTheme.ColorPanel.G,
+			guiTheme.ColorPanel.B, 245),
 		Radius:        SomeF(8),
 		Clip:          true,
 		IDScroll:      inspectorIDScrollPanel,
@@ -192,8 +189,10 @@ func inspectorHelpBar() View {
 	return Text(TextCfg{
 		Text: "  F12 toggle  Alt+Left/Right resize  Alt+Up side",
 		TextStyle: TextStyle{
-			Size:  10,
-			Color: RGBA(130, 130, 130, 200),
+			Size: guiTheme.SizeTextXSmall,
+			Color: RGBA(guiTheme.TextStyleDef.Color.R,
+				guiTheme.TextStyleDef.Color.G,
+				guiTheme.TextStyleDef.Color.B, 130),
 		},
 	})
 }
@@ -330,21 +329,22 @@ func inspectorLayoutToTree(
 	return []TreeNodeCfg{{
 		ID:            path,
 		Text:          inspectorNodeLabel(layout.Shape),
-		TextStyle:     inspectorTextStyle,
-		TextStyleIcon: inspectorIconStyle,
+		TextStyle:     inspectorNodeTextStyle(),
+		TextStyleIcon: inspectorNodeIconStyle(),
 		Nodes:         childNodes,
 	}}
 }
 
 func inspectorPropsNodes(p inspectorNodeProps) []TreeNodeCfg {
+	propColor := RGBA(220, 160, 60, 255)
 	propStyle := TextStyle{
-		Size:  11,
-		Color: RGBA(140, 180, 220, 255),
+		Size:  guiTheme.SizeTextXSmall,
+		Color: propColor,
 	}
 	propIconStyle := TextStyle{
 		Family: IconFontName,
-		Size:   11,
-		Color:  RGBA(140, 180, 220, 255),
+		Size:   guiTheme.SizeTextXSmall,
+		Color:  propColor,
 	}
 
 	nodes := make([]TreeNodeCfg, 0, 16)
@@ -406,10 +406,10 @@ func inspectorPropsNodes(p inspectorNodeProps) []TreeNodeCfg {
 		nodes = append(nodes, TreeNodeCfg{
 			ID:        inspectorPropColorID,
 			Text:      "color: " + inspectorColorString(p.Color),
-			Icon:      "[]",
+			Icon:      "\u25A0",
 			TextStyle: propStyle,
 			TextStyleIcon: TextStyle{
-				Size:  11,
+				Size:  guiTheme.SizeTextXSmall,
 				Color: p.Color,
 			},
 		})
