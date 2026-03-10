@@ -181,6 +181,7 @@ var relatedExampleMap = map[string][]string{
 	"markdown":            {"examples/showcase/demo_text.go", "examples/markdown/main.go", "examples/markdown/markdown_source.md"},
 	"tab_control":         {"examples/showcase/demo_navigation.go"},
 	"command_palette":     {"examples/showcase/demo_navigation.go"},
+	"context_menu":       {"examples/showcase/demo_overlays.go", "examples/context_menu/main.go"},
 	"tooltip":             {"examples/showcase/demo_overlays.go"},
 	"rectangle":           {"examples/showcase/demo_graphics.go", "examples/gradient_demo/main.go"},
 	"scrollbar":           {"examples/showcase/demo_layout.go", "examples/scroll_demo/main.go"},

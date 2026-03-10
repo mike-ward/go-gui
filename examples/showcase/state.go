@@ -90,7 +90,8 @@ type ShowcaseApp struct {
 	PrintingLastPath string
 	PrintingStatus   string
 
-	PaletteAction string
+	PaletteAction     string
+	ContextMenuResult string
 
 	AnimTweenX    float32
 	AnimSpringX   float32
@@ -308,6 +309,7 @@ func demoEntries() []DemoEntry {
 		{ID: "dialog", Label: "Dialog", Group: groupOverlays, Summary: "Message, confirm, prompt, and custom dialogs.", Tags: []string{"modal", "confirm", "prompt"}},
 		{ID: "expand_panel", Label: "Expand Panel", Group: groupOverlays, Summary: "Collapsible region with custom header and content.", Tags: []string{"accordion", "collapse", "panel"}},
 		{ID: "command_palette", Label: "Command Palette", Group: groupOverlays, Summary: "Keyboard-first searchable action list.", Tags: []string{"command", "search", "palette", "keyboard"}},
+		{ID: "context_menu", Label: "Context Menu", Group: groupOverlays, Summary: "Right-click floating menu with submenus and keyboard navigation.", Tags: []string{"context", "menu", "right-click", "popup", "floating"}},
 		{ID: "tooltip", Label: "Tooltip", Group: groupOverlays, Summary: "Hover hints with custom placement and content.", Tags: []string{"hover", "hint", "floating"}},
 		{ID: "inspector", Label: "Inspector", Group: groupOverlays, Summary: "Dev-mode layout tree and property inspector.", Tags: []string{"inspector", "debug", "devtools", "layout", "tree"}},
 

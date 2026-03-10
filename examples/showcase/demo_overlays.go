@@ -279,6 +279,93 @@ func demoInspector(w *gui.Window) gui.View {
 	})
 }
 
+func demoContextMenu(w *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	app := gui.State[ShowcaseApp](w)
+
+	action := func(id string, e *gui.Event, w *gui.Window) {
+		gui.State[ShowcaseApp](w).ContextMenuResult = id
+		e.IsHandled = true
+	}
+
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
+		Content: []gui.View{
+			sectionLabel(t, "Basic Context Menu"),
+			gui.ContextMenu(w, gui.ContextMenuCfg{
+				ID:     "ctx-basic",
+				Sizing: gui.FillFit,
+				Items: []gui.MenuItemCfg{
+					{ID: "cut", Text: "Cut"},
+					{ID: "copy", Text: "Copy"},
+					{ID: "paste", Text: "Paste"},
+					gui.MenuSeparator(),
+					{ID: "delete", Text: "Delete"},
+				},
+				Action: action,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Sizing:  gui.FillFit,
+						Color:   t.ColorPanel,
+						Padding: gui.SomeP(24, 24, 24, 24),
+						Radius:  gui.SomeF(8),
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Right-click here for a basic menu",
+								TextStyle: t.N3,
+							}),
+						},
+					}),
+				},
+			}),
+			line(),
+			sectionLabel(t, "With Submenus and Subtitles"),
+			gui.ContextMenu(w, gui.ContextMenuCfg{
+				ID:     "ctx-sub",
+				Sizing: gui.FillFit,
+				Items: []gui.MenuItemCfg{
+					gui.MenuSubtitle("Edit"),
+					{ID: "cut2", Text: "Cut"},
+					{ID: "copy2", Text: "Copy"},
+					{ID: "paste2", Text: "Paste"},
+					gui.MenuSeparator(),
+					gui.MenuSubmenu("format", "Format", []gui.MenuItemCfg{
+						{ID: "bold", Text: "Bold"},
+						{ID: "italic", Text: "Italic"},
+						{ID: "underline", Text: "Underline"},
+					}),
+					gui.MenuSeparator(),
+					gui.MenuSubtitle("View"),
+					{ID: "zoom_in", Text: "Zoom In"},
+					{ID: "zoom_out", Text: "Zoom Out"},
+				},
+				Action: action,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Sizing:  gui.FillFit,
+						Color:   t.ColorPanel,
+						Padding: gui.SomeP(24, 24, 24, 24),
+						Radius:  gui.SomeF(8),
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Right-click here for submenus",
+								TextStyle: t.N3,
+							}),
+						},
+					}),
+				},
+			}),
+			line(),
+			gui.Text(gui.TextCfg{
+				Text:      "Selected: " + app.ContextMenuResult,
+				TextStyle: t.N3,
+			}),
+		},
+	})
+}
+
 func demoTooltip(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{

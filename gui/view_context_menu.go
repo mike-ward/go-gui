@@ -87,8 +87,8 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 			if e.MouseButton == MouseRight {
 				sm.Set(cfg.ID, contextMenuState{
 					Open: true,
-					X:    e.MouseX + l.Shape.X,
-					Y:    e.MouseY + l.Shape.Y,
+					X:    e.MouseX,
+					Y:    e.MouseY,
 				})
 				w.SetIDFocus(idFocus)
 			} else {

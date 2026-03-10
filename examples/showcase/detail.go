@@ -224,6 +224,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoTabControl(w)
 	case "command_palette":
 		return demoCommandPalette(w)
+	case "context_menu":
+		return demoContextMenu(w)
 	case "tooltip":
 		return demoTooltip(w)
 	case "inspector":
