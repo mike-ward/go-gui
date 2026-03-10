@@ -68,18 +68,34 @@ gui.ProgressBar(gui.ProgressBarCfg{
 
 | Property | Type | Description |
 |----------|------|-------------|
-| Value | float32 | Progress 0.0–1.0 |
-| Indeterminate | bool | Animated indeterminate mode |
-| Color | Color | Bar fill color |
+| Percent | float32 | Progress 0.0–1.0 |
+| Indefinite | bool | Animated looping mode |
+| Vertical | bool | Vertical orientation |
+| TextShow | bool | Show percentage text overlay |
+| Text | string | Custom overlay text |
+| Color | Color | Track background |
+| ColorBar | Color | Fill bar color |
+| Radius | float32 | Corner radius |
 `,
 
-	"pulsar": `Animated pulse indicator for loading states.
+	"pulsar": `Animated blinking text indicator for loading states. Alternates
+between two text strings synced to the input cursor blink.
 
 ## Usage
 
 ` + "```go" + `
-w.Pulsar()
+gui.Pulsar(gui.PulsarCfg{ID: "p1"}, w)
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Text1 | string | First text frame |
+| Text2 | string | Second text frame |
+| Color | Color | Text color |
+| Size | float32 | Font size |
+| Width | float32 | Fixed width |
 `,
 
 	"toast": `Non-blocking notifications with severity and auto-dismiss.
@@ -99,6 +115,27 @@ w.Toast(gui.ToastCfg{
 |--------|-------------|
 | w.Toast(cfg) | Show toast |
 | w.ToastDismiss(id) | Dismiss specific toast |
+| w.ToastDismissAll() | Dismiss all toasts |
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Title | string | Toast heading |
+| Body | string | Toast message |
+| Severity | ToastSeverity | Visual style |
+| Duration | time.Duration | Auto-dismiss delay (0 = manual) |
+| ActionLabel | string | Optional action button text |
+| OnAction | func(*Window) | Action button callback |
+
+## Severity
+
+| Constant | Use case |
+|----------|----------|
+| ToastInfo | Informational |
+| ToastSuccess | Positive outcome |
+| ToastWarning | Needs attention |
+| ToastError | Critical failure |
 `,
 
 	"badge": `Numeric and colored pill labels for counts and status.
@@ -118,6 +155,20 @@ gui.Badge(gui.BadgeCfg{Label: "5", Variant: gui.BadgeInfo})
 | BadgeSuccess | Positive status |
 | BadgeWarning | Needs attention |
 | BadgeError | Critical |
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Label | string | Badge text |
+| Variant | BadgeVariant | Color variant |
+| Max | int | Cap value; shows "max+" when exceeded (0 = no cap) |
+| Dot | bool | Show as a small dot instead of text |
+| DotSize | Opt[float32] | Dot diameter |
+| Color | Color | Custom background color |
+| Padding | Opt[Padding] | Inner padding |
+| Radius | Opt[float32] | Corner radius |
+| TextStyle | TextStyle | Label text style |
 `,
 
 	// Input
@@ -158,6 +209,27 @@ gui.NumericInput(gui.NumericInputCfg{
     Placeholder: "Enter number",
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Text | string | Current text value |
+| Value | *float64 | Parsed numeric value |
+| Placeholder | string | Hint text |
+| Decimals | int | Decimal places |
+| Min | *float64 | Minimum allowed value |
+| Max | *float64 | Maximum allowed value |
+| Mode | NumericInputMode | Number, currency, or percent |
+| StepCfg | NumericStepCfg | Step button configuration |
+| Locale | NumericLocaleCfg | Locale formatting rules |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnTextChanged | func(*Layout, string, *Window) | Text changes |
+| OnValueCommit | func(*Layout, *float64, string, *Window) | Value committed (blur/enter) |
 `,
 
 	"color_picker": `Interactive HSV color selection with SV area, hue slider,
@@ -278,13 +350,41 @@ gui.DatePickerRoller(gui.DatePickerRollerCfg{
 ` + "```" + `
 `,
 
-	"input_date": `Text input with calendar popup for date entry.
+	"input_date": `Text input with calendar popup for date entry. Combines a text
+field with an inline date picker dropdown.
 
 ## Usage
 
 ` + "```go" + `
-gui.InputDate(gui.InputDateCfg{ID: "id", Sizing: gui.FillFit})
+gui.InputDate(gui.InputDateCfg{
+    ID:     "id",
+    Date:   app.Date,
+    Sizing: gui.FillFit,
+    OnSelect: func(dates []time.Time, _ *gui.Event, w *gui.Window) {
+        gui.State[App](w).Date = dates[0]
+    },
+})
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Date | time.Time | Current date value |
+| Placeholder | string | Input hint text |
+| SelectMultiple | bool | Allow multiple dates |
+| MondayFirstDayOfWeek | bool | Start week on Monday |
+| ShowAdjacentMonths | bool | Show prev/next month days |
+| HideTodayIndicator | bool | Hide today highlight |
+
+## Filtering
+
+| Property | Type | Description |
+|----------|------|-------------|
+| AllowedWeekdays | []DatePickerWeekdays | Restrict to specific days |
+| AllowedMonths | []DatePickerMonths | Restrict to specific months |
+| AllowedYears | []int | Restrict to specific years |
+| AllowedDates | []time.Time | Restrict to specific dates |
 `,
 
 	"forms": `Combine inputs, labels, and buttons into form layouts.
@@ -315,6 +415,19 @@ gui.Toggle(gui.ToggleCfg{
 | Callback | Signature | Fired when |
 |----------|-----------|------------|
 | OnClick | func(*Layout, *Event, *Window) | Toggle clicked |
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Label | string | Label text |
+| Selected | bool | Checked state |
+| TextSelect | string | Text when selected (default "✓") |
+| TextUnselect | string | Text when unselected |
+| IDFocus | uint32 | Tab-order focus ID |
+| Disabled | bool | Disable interaction |
+
+` + "`Checkbox()`" + ` is an alias for ` + "`Toggle()`" + `.
 `,
 
 	"switch": `On/off switch control with animated thumb.
@@ -332,6 +445,23 @@ gui.Switch(gui.SwitchCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Label | string | Label text |
+| Selected | bool | On/off state |
+| Width | Opt[float32] | Track width |
+| Height | Opt[float32] | Track height |
+| IDFocus | uint32 | Tab-order focus ID |
+| Disabled | bool | Disable interaction |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnClick | func(*Layout, *Event, *Window) | Switch toggled |
 `,
 
 	"radio": `Single radio button for selecting one option from a group.
@@ -348,6 +478,22 @@ gui.Radio(gui.RadioCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Label | string | Radio label |
+| Selected | bool | Selection state |
+| Size | Opt[float32] | Button diameter |
+| IDFocus | uint32 | Tab-order focus ID |
+| Disabled | bool | Disable interaction |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnClick | func(*Layout, *Event, *Window) | Radio clicked |
 `,
 
 	"radio_group": `Grouped radio buttons in row or column layout.
@@ -366,6 +512,30 @@ gui.RadioButtonGroupColumn(gui.RadioButtonGroupCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Value | string | Currently selected value |
+| Options | []RadioOption | Available choices (Label + Value) |
+| Spacing | Opt[float32] | Gap between radio buttons |
+| Title | string | Group-box label |
+| TitleBG | Color | Border-eraser background for title |
+| IDFocus | uint32 | Tab-order focus ID for first radio |
+
+## Factories
+
+| Function | Layout |
+|----------|--------|
+| RadioButtonGroupColumn(cfg) | Vertical (stacked) |
+| RadioButtonGroupRow(cfg) | Horizontal (inline) |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnSelect | func(string, *Window) | Selection changes |
 `,
 
 	"select": `Dropdown with optional multi-select.
@@ -382,6 +552,24 @@ gui.Select(gui.SelectCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Selected | []string | Currently selected option(s) |
+| Options | []string | Available choices (prefix "---" for subheaders) |
+| Placeholder | string | Hint text when empty |
+| SelectMultiple | bool | Allow multi-select |
+| NoWrap | bool | Clip text in multi-select mode |
+| IDFocus | uint32 | Tab-order focus ID |
+| Disabled | bool | Disable interaction |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnSelect | func([]string, *Event, *Window) | Selection changes |
 `,
 
 	"listbox": `Single and multi-select scrollable list.
@@ -401,6 +589,26 @@ gui.ListBox(gui.ListBoxCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| SelectedIDs | []string | Selected item IDs |
+| Data | []ListBoxOption | Items (ID, Name, Value, IsSubheading) |
+| Multiple | bool | Allow multi-select |
+| Height | float32 | Fixed height (enables virtualization) |
+| IDScroll | uint32 | Scroll container ID |
+| IDFocus | uint32 | Tab-order focus ID |
+| Reorderable | bool | Enable drag-reorder |
+| Disabled | bool | Disable interaction |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnSelect | func([]string, *Event, *Window) | Selection changes |
+| OnReorder | func(movedID, beforeID string, *Window) | Item reordered |
 `,
 
 	"combobox": `Editable dropdown with type-ahead filtering.
@@ -417,6 +625,24 @@ gui.Combobox(gui.ComboboxCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Value | string | Current selection |
+| Placeholder | string | Hint text |
+| Options | []string | Searchable options |
+| MaxDropdownHeight | float32 | Max dropdown pixel height |
+| IDFocus | uint32 | Tab-order focus ID |
+| IDScroll | uint32 | Scroll ID (enables virtualization) |
+| Disabled | bool | Disable interaction |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnSelect | func(string, *Event, *Window) | Option selected |
 `,
 
 	"range_slider": `Drag horizontal value control.
@@ -433,6 +659,26 @@ gui.RangeSlider(gui.RangeSliderCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Value | float32 | Current value |
+| Min | float32 | Range minimum (default 0) |
+| Max | float32 | Range maximum (default 100) |
+| Step | float32 | Step increment (default 1) |
+| Vertical | bool | Vertical orientation |
+| RoundValue | bool | Round to integers |
+| ThumbSize | float32 | Thumb diameter |
+| IDFocus | uint32 | Tab-order focus ID |
+| Disabled | bool | Disable interaction |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnChange | func(float32, *Event, *Window) | Value changes |
 `,
 
 	// Data
@@ -449,6 +695,25 @@ cfg := gui.TableCfgFromData([][]string{
 cfg.ID = "my-table"
 w.Table(cfg)
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Data | []TableRowCfg | Row data (first row = headers via TableCfgFromData) |
+| ColumnAlignments | []HorizontalAlign | Per-column alignment |
+| ColumnWidthDefault | float32 | Default column width |
+| ColumnWidthMin | float32 | Minimum column width |
+| MultiSelect | bool | Allow multi-row selection |
+| Selected | map[int]bool | Selected row indices |
+| IDScroll | uint32 | Scroll container ID |
+| BorderStyle | TableBorderStyle | Cell border style |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnSelect | func(map[int]bool, int, *Event, *Window) | Row selection changes |
 `,
 
 	"data_grid": `Full-featured grid with sorting, filtering, paging, and column chooser.
@@ -467,6 +732,35 @@ w.DataGrid(gui.DataGridCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Columns | []GridColumnCfg | Column definitions |
+| Rows | []GridRow | Static row data |
+| DataSource | DataGridDataSource | Async data backend |
+| PageSize | int | Rows per page |
+| ShowQuickFilter | bool | Show search bar |
+| ShowFilterRow | bool | Show per-column filters |
+| ShowColumnChooser | bool | Show column visibility picker |
+| ShowCRUDToolbar | bool | Show create/delete toolbar |
+| FreezeHeader | bool | Sticky header during scroll |
+
+## GridColumnCfg
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | string | Column identifier |
+| Title | string | Header text |
+| Width | float32 | Column width |
+| Sortable | bool | Enable sorting |
+| Filterable | bool | Enable filtering |
+| Editable | bool | Enable inline editing |
+| Resizable | bool | Enable drag-resize |
+| Reorderable | bool | Enable drag-reorder |
+| Pin | GridColumnPin | Pin left or right |
+| Align | HorizontalAlign | Cell alignment |
 `,
 
 	"data_source": `Async data-source backed grid with CRUD operations.
@@ -637,7 +931,8 @@ gui.RichRun("underlined", gui.TextStyle{
 | BaseTextStyle | *TextStyle | Fallback style for runs |
 `,
 
-	"markdown": `Render markdown strings with syntax highlighting, tables, and blockquotes.
+	"markdown": `Render markdown strings with syntax highlighting, tables, blockquotes,
+and mermaid diagrams.
 
 ## Usage
 
@@ -647,6 +942,17 @@ w.Markdown(gui.MarkdownCfg{
     Style:  gui.DefaultMarkdownStyle(),
 })
 ` + "```" + `
+
+## Supported Elements
+
+- Headings (H1–H6), paragraphs, line breaks
+- **Bold**, *italic*, ~~strikethrough~~, ` + "`code`" + `
+- Ordered and unordered lists
+- Tables with column alignment
+- Fenced code blocks with syntax highlighting
+- Blockquotes, horizontal rules
+- Links and images
+- Mermaid diagrams (` + "` ```mermaid `" + `)
 `,
 
 	// Graphics
@@ -660,6 +966,19 @@ gui.Svg(gui.SvgCfg{
     Width: 100, Height: 100,
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| FileName | string | SVG file path |
+| SvgData | string | Inline SVG string |
+| Width | float32 | Display width |
+| Height | float32 | Display height |
+| Color | Color | Override fill color (monochrome icons) |
+| NoAnimate | bool | Disable SMIL animation |
+
+Provide either ` + "`FileName`" + ` or ` + "`SvgData`" + `, not both.
 `,
 
 	"image": `Display image files (PNG, JPEG, etc.).
@@ -672,6 +991,24 @@ gui.Image(gui.ImageCfg{
     Width: 200, Height: 150,
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Src | string | Image file path |
+| Width | float32 | Display width |
+| Height | float32 | Display height |
+| MinWidth | float32 | Minimum width |
+| MaxWidth | float32 | Maximum width |
+| BgColor | Color | Opaque fill behind image |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnClick | func(*Layout, *Event, *Window) | Image clicked |
+| OnHover | func(*Layout, *Event, *Window) | Mouse enters image |
 `,
 
 	"gradient": `Linear gradients with configurable direction and color stops.
@@ -689,6 +1026,29 @@ gui.Column(gui.ContainerCfg{
     },
 })
 ` + "```" + `
+
+## Gradient Types
+
+| Type | Description |
+|------|-------------|
+| GradientLinear | Linear gradient (default) |
+| GradientRadial | Radial gradient |
+
+## Directions
+
+| Constant | Angle |
+|----------|-------|
+| GradientToTop | 0° |
+| GradientToTopRight | 45° |
+| GradientToRight | 90° |
+| GradientToBottomRight | 135° |
+| GradientToBottom | 180° |
+| GradientToBottomLeft | 225° |
+| GradientToLeft | 270° |
+| GradientToTopLeft | 315° |
+
+Set ` + "`HasAngle: true`" + ` with ` + "`Angle`" + ` for arbitrary angles in degrees.
+` + "`BorderGradient`" + ` applies the gradient to the border instead of the fill.
 `,
 
 	"box_shadows": `Drop shadows on containers with offset, blur, and color.
@@ -704,12 +1064,44 @@ gui.Column(gui.ContainerCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| OffsetX | float32 | Horizontal shadow offset |
+| OffsetY | float32 | Vertical shadow offset |
+| BlurRadius | float32 | Shadow blur amount |
+| SpreadRadius | float32 | Shadow spread distance |
+| Color | Color | Shadow color (use RGBA for transparency) |
 `,
 
-	"rectangle": `Styled containers used as visual shapes: sharp, rounded, bordered, pill.
+	"rectangle": `Standalone visual shape: sharp, rounded, bordered, or pill.
 
-Set ` + "`Radius`" + ` to control corner rounding. Use ` + "`ColorBorder`" + ` and
-` + "`SizeBorder`" + ` for outlined rectangles.
+## Usage
+
+` + "```go" + `
+gui.Rectangle(gui.RectangleCfg{
+    Width: 100, Height: 60,
+    Sizing: gui.FixedFixed,
+    Color: gui.ColorFromString("#3b82f6"),
+    Radius: 8,
+})
+` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Color | Color | Fill color |
+| ColorBorder | Color | Border color |
+| SizeBorder | float32 | Border thickness |
+| Radius | float32 | Corner radius |
+| BlurRadius | float32 | Background blur |
+| Gradient | *GradientDef | Gradient fill |
+| BorderGradient | *GradientDef | Gradient border |
+| Shadow | *BoxShadow | Drop shadow |
+| Shader | *Shader | Custom fragment shader |
 `,
 
 	"icons": `256 icons from the Feather icon font. Each icon is a named constant
@@ -772,6 +1164,20 @@ gui.Row(gui.ContainerCfg{
     Content: []gui.View{child1, child2},
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Spacing | Opt[float32] | Gap between children |
+| Padding | Opt[Padding] | Inner padding |
+| HAlign | HorizontalAlign | Horizontal alignment |
+| VAlign | VerticalAlign | Vertical alignment |
+| Color | Color | Background color |
+| Radius | Opt[float32] | Corner radius |
+| Clip | bool | Clip children to bounds |
+| IDScroll | uint32 | Enable scrolling |
+| Sizing | Sizing | Size behavior |
 `,
 
 	"column": `Vertical container — children flow top to bottom.
@@ -784,9 +1190,25 @@ gui.Column(gui.ContainerCfg{
     Content: []gui.View{child1, child2},
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Spacing | Opt[float32] | Gap between children |
+| Padding | Opt[Padding] | Inner padding |
+| HAlign | HorizontalAlign | Horizontal alignment |
+| VAlign | VerticalAlign | Vertical alignment |
+| Color | Color | Background color |
+| Radius | Opt[float32] | Corner radius |
+| Clip | bool | Clip children to bounds |
+| IDScroll | uint32 | Enable scrolling |
+| Sizing | Sizing | Size behavior |
 `,
 
 	"wrap_panel": `Horizontal flow that wraps to the next line when full.
+Items fill left to right, then break to the next row when the
+container width is exceeded.
 
 ## Usage
 
@@ -796,11 +1218,46 @@ gui.Wrap(gui.ContainerCfg{
     Content: items,
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Spacing | Opt[float32] | Gap between items |
+| Padding | Opt[Padding] | Inner padding |
+| HAlign | HorizontalAlign | Row alignment |
+| VAlign | VerticalAlign | Cross-axis alignment |
+| Color | Color | Background color |
+| Sizing | Sizing | Size behavior |
 `,
 
-	"overflow_panel": `Scrollable container for content that exceeds available space.
+	"overflow_panel": `Toolbar that hides items that don't fit and shows them in a
+dropdown menu. Useful for responsive toolbars and action bars.
 
-Enable scrolling with ` + "`IDScroll`" + ` and ` + "`ScrollbarCfgY`" + `.
+## Usage
+
+` + "```go" + `
+gui.OverflowPanel(gui.OverflowPanelCfg{
+    ID:      "toolbar",
+    IDFocus: 100,
+    Items: []gui.OverflowItem{
+        {ID: "cut", View: cutBtn},
+        {ID: "copy", View: copyBtn},
+        {ID: "paste", View: pasteBtn},
+    },
+})
+` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Items | []OverflowItem | Ordered toolbar items |
+| Trigger | []View | Custom overflow button |
+| Padding | Opt[Padding] | Inner padding |
+| Spacing | float32 | Gap between items |
+| IDFocus | uint32 | Tab-order focus ID |
+| Disabled | bool | Disable interaction |
 `,
 
 	"expand_panel": `Collapsible sections with animated expand/collapse.
@@ -820,6 +1277,21 @@ gui.ExpandPanel(gui.ExpandPanelCfg{
     Content: []gui.View{...},
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Title | string | Header text (clickable toggle) |
+| Open | bool | Expanded state |
+| Head | View | Custom header view (overrides Title) |
+| Content | View | Collapsible body content |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnToggle | func(*Layout, *Event, *Window) | Header clicked |
 `,
 
 	"sidebar": `Slide-out panel overlaying main content.
@@ -834,6 +1306,20 @@ w.Sidebar(gui.SidebarCfg{
     MainContent: []gui.View{...},
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Open | bool | Sidebar visibility |
+| Width | float32 | Sidebar width |
+| Content | []View | Sidebar content |
+| Color | Color | Sidebar background |
+| Shadow | *BoxShadow | Sidebar shadow |
+| Padding | Opt[Padding] | Inner padding |
+| Clip | bool | Clip content to bounds |
+| Spring | SpringCfg | Animation spring config |
+| TweenDuration | time.Duration | Animation duration (alt to spring) |
 `,
 
 	"splitter": `Resizable split panes with draggable divider.
@@ -851,6 +1337,34 @@ gui.Splitter(gui.SplitterCfg{
     Content2: []gui.View{right},
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Ratio | float32 | Split position (0.0–1.0) |
+| Orientation | SplitterOrientation | Horizontal or vertical split |
+| Collapsed | SplitterCollapsed | Which pane is collapsed |
+| HandleSize | float32 | Drag handle thickness |
+| DragStep | float32 | Step size for keyboard |
+| DoubleClickCollapse | bool | Double-click handle to collapse |
+| ShowCollapseButtons | bool | Show collapse/expand buttons |
+
+## Pane Properties (First / Second)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| MinSize | float32 | Minimum pane size |
+| MaxSize | float32 | Maximum pane size |
+| Collapsible | bool | Allow collapse |
+| CollapsedSize | float32 | Size when collapsed |
+| Content | []View | Pane content |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnChange | func(SplitterState, *Window) | Ratio or collapse state changes |
 `,
 
 	"scrollbar": `Custom scrollbar styling via ScrollbarCfg on any container.
@@ -864,6 +1378,28 @@ gui.Column(gui.ContainerCfg{
     Content:       views,
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Size | float32 | Scrollbar thickness |
+| MinThumbSize | float32 | Minimum thumb length |
+| Radius | float32 | Track corner radius |
+| RadiusThumb | float32 | Thumb corner radius |
+| GapEdge | float32 | Gap from container edge |
+| GapEnd | float32 | Gap from track ends |
+| ColorThumb | Color | Thumb color |
+| ColorBackground | Color | Track background |
+
+## Overflow Modes
+
+| Constant | Behavior |
+|----------|----------|
+| ScrollbarAuto | Show when content overflows |
+| ScrollbarHidden | Never show |
+| ScrollbarVisible | Always show |
+| ScrollbarOnHover | Show on mouse hover |
 `,
 
 	// Navigation
@@ -882,6 +1418,22 @@ gui.Breadcrumb(gui.BreadcrumbCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Items | []BreadcrumbItemCfg | Path segments (ID + Label) |
+| Selected | string | Active segment ID |
+| Separator | string | Custom separator character |
+| IDFocus | uint32 | Tab-order focus ID |
+| Disabled | bool | Disable interaction |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnSelect | func(string, *Event, *Window) | Segment clicked |
 `,
 
 	"tab_control": `Switch content panels with keyboard-friendly tabs.
@@ -900,6 +1452,32 @@ gui.TabControl(gui.TabControlCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Items | []TabItemCfg | Tab definitions (ID, Label, Content) |
+| Selected | string | Active tab ID |
+| IDFocus | uint32 | Tab-order focus ID |
+| Reorderable | bool | Enable drag-reorder of tabs |
+| Disabled | bool | Disable interaction |
+
+## TabItemCfg
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | string | Tab identifier |
+| Label | string | Tab header text |
+| Content | []View | Tab panel content |
+| Disabled | bool | Disable this tab |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnSelect | func(string, *Window) | Tab selection changes |
+| OnReorder | func(movedID, beforeID string, *Window) | Tab reordered |
 `,
 
 	"menus": `Nested menus with separators, submenus, and keyboard shortcuts.
@@ -921,6 +1499,22 @@ gui.Menubar(gui.MenubarCfg{
     },
 })
 ` + "```" + `
+
+## MenuItemCfg
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | string | Action identifier |
+| Text | string | Display label |
+| Submenu | []MenuItemCfg | Nested submenu items |
+| CustomView | View | Custom rendered content |
+| Separator | bool | Render as a separator line |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| Action (on MenubarCfg) | func(string, *Event, *Window) | Menu item selected |
 `,
 
 	"command_palette": `Quick command search with fuzzy filtering.
@@ -941,6 +1535,35 @@ gui.CommandPalette(gui.CommandPaletteCfg{
 // Toggle with Ctrl+K or programmatically:
 gui.CommandPaletteToggle("cmd", focusPalette, w)
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Items | []CommandPaletteItem | Available commands |
+| Placeholder | string | Search input hint |
+| Width | float32 | Palette width |
+| MaxHeight | float32 | Maximum dropdown height |
+| IDFocus | uint32 | Focus ID for input |
+| IDScroll | uint32 | Scroll ID for results list |
+
+## CommandPaletteItem
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ID | string | Action identifier |
+| Label | string | Display text |
+| Detail | string | Secondary description |
+| Icon | string | Icon glyph |
+| Group | string | Group heading |
+| Disabled | bool | Disable this item |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnAction | func(string, *Event, *Window) | Command selected |
+| OnDismiss | func(*Event, *Window) | Palette dismissed |
 `,
 
 	// Overlays
@@ -968,9 +1591,32 @@ w.Dialog(gui.DialogCfg{
 |------|---------|
 | DialogMessage | OK |
 | DialogConfirm | Yes / No |
+| DialogPrompt | Text input + OK / Cancel |
+| DialogCustom | User-provided CustomContent |
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Title | string | Dialog heading |
+| Body | string | Message text |
+| Reply | string | Pre-filled prompt text (DialogPrompt) |
+| DialogType | DialogType | Button configuration |
+| CustomContent | []View | Custom views (DialogCustom) |
+| IDFocus | uint32 | Initial focus target |
+| AlignButtons | HorizontalAlign | Button alignment |
+
+## Events
+
+| Callback | Signature | Fired when |
+|----------|-----------|------------|
+| OnOkYes | func(*Window) | OK or Yes clicked |
+| OnCancelNo | func(*Window) | Cancel or No clicked |
+| OnReply | func(string, *Window) | Prompt submitted |
 `,
 
-	"tooltip": `Hover hints attached to any widget.
+	"tooltip": `Hover hints attached to any widget. Wrap any view with
+` + "`WithTooltip`" + ` to show text on hover after a configurable delay.
 
 ## Usage
 
@@ -982,6 +1628,16 @@ gui.WithTooltip(w, gui.WithTooltipCfg{
     },
 })
 ` + "```" + `
+
+## Key Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Text | string | Tooltip text |
+| Delay | time.Duration | Hover delay before showing |
+| Content | []View | Wrapped target views |
+| Anchor | FloatAttach | Tooltip anchor point |
+| TieOff | FloatAttach | Target attach point |
 `,
 
 	// Animations
@@ -1020,9 +1676,28 @@ w.AnimationAdd(a)
 	// Theme
 	"theme_gen": `Generate a complete theme from a seed color using HSV color theory.
 
-Strategies: mono, complement, analogous, triadic, warm, cool.
+## Usage
 
-Use the tint slider to control surface saturation.
+` + "```go" + `
+theme := gui.ThemeMaker(gui.ThemeCfg{
+    SeedColor: gui.ColorFromString("#3b82f6"),
+})
+gui.SetTheme(theme)
+` + "```" + `
+
+## Color Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| Mono | Single-hue variations |
+| Complement | Opposite hue accent |
+| Analogous | Adjacent hue palette |
+| Triadic | Three evenly-spaced hues |
+| Warm | Warm-shifted palette |
+| Cool | Cool-shifted palette |
+
+Use the tint slider to control surface saturation. Dark mode
+is derived automatically from the same seed color.
 `,
 
 	// Notification
@@ -1191,7 +1866,16 @@ The same ` + "`Reorderable`" + ` + ` + "`OnReorder`" + ` pattern applies to TabC
 	"locale": `Switch between registered locales to change date/number formatting
 and UI strings (OK, Cancel, etc.).
 
-Built-in: en-US, de-DE, fr-FR, es-ES, pt-BR, ja-JP, zh-CN, ko-KR, ar-SA, he-IL.
+## Built-in Locales
+
+en-US, de-DE, fr-FR, es-ES, pt-BR, ja-JP, zh-CN, ko-KR, ar-SA, he-IL.
+
+## What Changes
+
+- Date picker day/month names and first-day-of-week
+- Numeric input decimal/thousands separators
+- Dialog button labels (OK, Cancel, Yes, No)
+- RTL text direction (ar-SA, he-IL)
 `,
 }
 
