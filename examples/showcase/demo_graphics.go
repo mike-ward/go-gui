@@ -19,7 +19,7 @@ func demoRectangle(_ *gui.Window) gui.View {
 				Height:  60,
 				Sizing:  gui.FixedFixed,
 				Color:   t.ColorActive,
-				Radius:  gui.SomeF(0),
+				Radius:  gui.NoRadius,
 				HAlign:  gui.HAlignCenter,
 				VAlign:  gui.VAlignMiddle,
 				Content: []gui.View{gui.Text(gui.TextCfg{Text: "Sharp", TextStyle: t.N2})},

@@ -42,7 +42,7 @@ func detailPanel(w *gui.Window) gui.View {
 		content = w.Markdown(gui.MarkdownCfg{
 			ID:      "doc-" + entry.ID,
 			Source:  componentDoc(entry.ID),
-			Padding: gui.Some(gui.PaddingNone),
+			Padding: gui.NoPadding,
 			Style:   gui.DefaultMarkdownStyle(),
 		})
 	default:
@@ -91,7 +91,7 @@ func viewTitleBar(entry DemoEntry, showDocs bool) gui.View {
 	}
 	return gui.Column(gui.ContainerCfg{
 		Sizing:     gui.FillFit,
-		Spacing:    gui.SomeF(0),
+		Spacing:    gui.NoSpacing,
 		Padding:    gui.NoPadding,
 		SizeBorder: gui.NoBorder,
 		Content: []gui.View{
