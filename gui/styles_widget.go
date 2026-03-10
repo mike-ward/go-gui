@@ -789,11 +789,11 @@ var (
 	}
 
 	DefaultTableStyle = TableStyle{
-		ColorBorder:        colorBorderDark,
-		ColorSelect:        colorSelectDark,
-		ColorHover:         colorHoverDark,
-		CellPadding:        PaddingTwoFive,
-		TextStyle:          DefaultTextStyle,
+		ColorBorder: colorBorderDark,
+		ColorSelect: colorSelectDark,
+		ColorHover:  colorHoverDark,
+		CellPadding: PaddingTwoFive,
+		TextStyle:   DefaultTextStyle,
 		TextStyleHead: TextStyle{
 			Color:    DefaultTextStyle.Color,
 			Size:     DefaultTextStyle.Size,
@@ -840,16 +840,16 @@ var (
 	}
 
 	DefaultDatePickerStyle = DatePickerStyle{
-		CellSpacing:      8,
+		CellSpacing:      2,
 		Color:            colorInteriorDark,
 		ColorHover:       colorHoverDark,
 		ColorFocus:       colorFocusDark,
 		ColorClick:       colorActiveDark,
-		ColorBorder:      ColorTransparent,
+		ColorBorder:      colorBorderDark,
 		ColorBorderFocus: colorSelectDark,
 		ColorSelect:      colorSelectDark,
-		Padding:          PaddingMedium,
-		SizeBorder:       0,
+		Padding:          PaddingSmall,
+		SizeBorder:       SizeBorderDef,
 		Radius:           RadiusMedium,
 		RadiusBorder:     RadiusMedium,
 		TextStyle:        DefaultTextStyle,

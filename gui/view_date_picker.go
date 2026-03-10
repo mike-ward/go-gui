@@ -50,6 +50,7 @@ type datePickerState struct {
 	ShowYearMonthPicker bool
 	ViewMonth           int
 	ViewYear            int
+	CalBodyHeight       float32
 }
 
 // DatePickerCfg configures a date picker calendar view.
@@ -101,7 +102,6 @@ func (dv *datePickerView) Content() []View { return nil }
 func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 	cfg := &dv.cfg
 	dn := &DefaultDatePickerStyle
-	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	radiusBorder := cfg.RadiusBorder.Get(dn.RadiusBorder)
 
@@ -112,45 +112,64 @@ func (dv *datePickerView) GenerateLayout(w *Window) Layout {
 	content := make([]View, 0, 2)
 	content = append(content, datePickerControls(cfg, state, w))
 	if state.ShowYearMonthPicker {
-		content = append(content, datePickerYearMonthPicker(cfg, state))
+		// Wrap roller with calendar body height to prevent height
+		// change when switching views.
+		body := datePickerYearMonthPicker(cfg, state)
+		if state.CalBodyHeight > 0 {
+			body = Column(ContainerCfg{
+				Sizing:     FillFit,
+				MinHeight:  state.CalBodyHeight,
+				HAlign:     HAlignCenter,
+				VAlign:     VAlignMiddle,
+				Padding:    NoPadding,
+				SizeBorder: NoBorder,
+				Content:    []View{body},
+			})
+		}
+		content = append(content, body)
 	} else {
 		content = append(content, datePickerCalendar(cfg, state, w))
 	}
 
+	// Stable size: 7 columns wide, 6 day rows + gaps tall.
+	// Include padding + border so min covers full outer box.
+	cellSize := datePickerCellSize(cfg)
+	pad := cfg.Padding.Get(dn.Padding)
+	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
+	padW := float32(pad.Left+pad.Right) + 2*sizeBorder
+	padH := float32(pad.Top+pad.Bottom) + 2*sizeBorder
+	minWidth := 7*cellSize + 6*cellSpacing + padW
+	minHeight := 6*cellSize + 6*cellSpacing + padH
+
 	cfgID := cfg.ID
-	col := &containerView{
-		cfg: ContainerCfg{
-			ID:          cfg.ID,
-			IDFocus:     cfg.IDFocus,
-			A11YRole:    AccessRoleGrid,
-			A11YLabel:   a11yLabel(cfg.A11YLabel, "Date Picker"),
-			Color:       cfg.Color,
-			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  Some(sizeBorder),
-			Radius:      Some(radiusBorder),
-			Padding:     cfg.Padding,
-			Spacing:     Some(cellSpacing),
-			Disabled:    cfg.Disabled,
-			Invisible:   cfg.Invisible,
-			Content:     content,
-			axis:        AxisTopToBottom,
-			OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-				sm := StateMap[string, datePickerState](
-					w, nsDatePicker, capModerate)
-				s, _ := sm.Get(cfgID)
-				if s.ShowYearMonthPicker {
-					datePickerRollerKeyDown(
-						sm, cfgID, s, e, w)
-				} else {
-					datePickerOnKeyDown(cfg, e, w)
-				}
-			},
-			AmendLayout: datePickerAmendScroll(
-				state.ShowYearMonthPicker, cfgID),
+	col := Column(ContainerCfg{
+		ID:          cfg.ID,
+		IDFocus:     cfg.IDFocus,
+		A11YRole:    AccessRoleGrid,
+		A11YLabel:   a11yLabel(cfg.A11YLabel, "Date Picker"),
+		Color:       cfg.Color,
+		ColorBorder: cfg.ColorBorder,
+		SizeBorder:  cfg.SizeBorder,
+		Radius:      Some(radiusBorder),
+		Padding:     cfg.Padding,
+		Spacing:     Some(cellSpacing),
+		MinWidth:    minWidth,
+		MinHeight:   minHeight,
+		Disabled:    cfg.Disabled,
+		Invisible:   cfg.Invisible,
+		Content:     content,
+		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
+			sm := StateMap[string, datePickerState](
+				w, nsDatePicker, capModerate)
+			s, _ := sm.Get(cfgID)
+			if s.ShowYearMonthPicker {
+				datePickerRollerKeyDown(
+					sm, cfgID, s, e, w)
+			} else {
+				datePickerOnKeyDown(cfg, e, w)
+			}
 		},
-		content:   content,
-		shapeType: ShapeRectangle,
-	}
+	})
 	return GenerateViewLayout(col, w)
 }
 
@@ -215,9 +234,10 @@ func datePickerControls(
 	}
 
 	return Row(ContainerCfg{
-		VAlign:  VAlignMiddle,
-		Padding: NoPadding,
-		Sizing:  FillFit,
+		VAlign:     VAlignMiddle,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Sizing:     FillFit,
 		Content: []View{
 			Button(ButtonCfg{
 				Color:       ColorTransparent,
@@ -256,13 +276,26 @@ func datePickerControls(
 func datePickerCalendar(
 	cfg *DatePickerCfg, state datePickerState, w *Window,
 ) View {
+	dn := &DefaultDatePickerStyle
+	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	content := make([]View, 0, 7)
 	content = append(content, datePickerWeekdays(cfg))
 	content = append(content, datePickerMonth(cfg, state, w)...)
+	cfgID := cfg.ID
 	return Column(ContainerCfg{
-		Spacing: Some[float32](0),
-		Padding: NoPadding,
-		Content: content,
+		Spacing:    Some(cellSpacing),
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Content:    content,
+		AmendLayout: func(lo *Layout, w *Window) {
+			sm := StateMap[string, datePickerState](
+				w, nsDatePicker, capModerate)
+			s, _ := sm.Get(cfgID)
+			if s.CalBodyHeight != lo.Shape.Height {
+				s.CalBodyHeight = lo.Shape.Height
+				sm.Set(cfgID, s)
+			}
+		},
 	})
 }
 
@@ -287,9 +320,10 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 		}))
 	}
 	return Row(ContainerCfg{
-		Spacing: Some(cellSpacing),
-		Padding: NoPadding,
-		Content: labels,
+		Spacing:    Some(cellSpacing),
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Content:    labels,
 	})
 }
 
@@ -333,7 +367,7 @@ func datePickerMonth(
 						MaxWidth:    cellSize,
 						MaxHeight:   cellSize,
 						Padding:     Some(PaddingThree),
-						Content:     []View{Text(TextCfg{Text: ""})},
+						Content:     []View{Text(TextCfg{Text: " "})},
 					}))
 				}
 				continue
@@ -388,14 +422,11 @@ func datePickerMonth(
 			}))
 		}
 		rows = append(rows, Row(ContainerCfg{
-			Spacing: Some(cellSpacing),
-			Padding: NoPadding,
-			Content: cells,
+			Spacing:    Some(cellSpacing),
+			Padding:    NoPadding,
+			SizeBorder: NoBorder,
+			Content:    cells,
 		}))
-		// Stop generating rows if all days rendered.
-		if day+row*7+6 >= daysInMonth {
-			break
-		}
 	}
 	return rows
 }
@@ -445,6 +476,10 @@ func datePickerYearMonthPicker(
 		ID:           cfg.ID + ".roller",
 		SelectedDate: datePickerViewTime(state),
 		DisplayMode:  RollerMonthYear,
+		VisibleItems: 5,
+		Color:        ColorTransparent,
+		ColorBorder:  ColorTransparent,
+		SizeBorder:   NoBorder,
 		OnChange: func(t time.Time, w *Window) {
 			sm := StateMap[string, datePickerState](
 				w, nsDatePicker, capModerate)
@@ -455,29 +490,6 @@ func datePickerYearMonthPicker(
 			w.UpdateWindow()
 		},
 	})
-}
-
-func datePickerAmendScroll(
-	rollerVisible bool, cfgID string,
-) func(*Layout, *Window) {
-	if !rollerVisible {
-		return nil
-	}
-	return func(lo *Layout, _ *Window) {
-		if lo.Shape.Events == nil {
-			lo.Shape.Events = &EventHandlers{}
-		}
-		lo.Shape.Events.OnMouseScroll = func(
-			_ *Layout, e *Event, w *Window,
-		) {
-			e.IsHandled = true
-			delta := 1
-			if e.ScrollY > 0 {
-				delta = -1
-			}
-			datePickerNavMonth(cfgID, delta, w)
-		}
-	}
 }
 
 // datePickerRollerKeyDown handles keyboard for the embedded

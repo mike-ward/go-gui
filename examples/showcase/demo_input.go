@@ -258,16 +258,26 @@ func demoDatePicker(w *gui.Window) gui.View {
 		Spacing: gui.SomeF(10),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
-			gui.DatePicker(gui.DatePickerCfg{
-				ID:             "date-picker",
-				IDFocus:        2,
-				Dates:          app.DatePickerDates,
-				SelectMultiple: true,
-				OnSelect: func(dates []time.Time, _ *gui.Event, w *gui.Window) {
-					gui.State[ShowcaseApp](w).DatePickerDates = append([]time.Time(nil), dates...)
+			gui.Column(gui.ContainerCfg{
+				Sizing:     gui.FitFit,
+				SizeBorder: gui.NoBorder,
+				Padding:    gui.NoPadding,
+				Content: []gui.View{
+					gui.DatePicker(gui.DatePickerCfg{
+						ID:             "date-picker",
+						IDFocus:        2,
+						Dates:          app.DatePickerDates,
+						SelectMultiple: true,
+						OnSelect: func(dates []time.Time, _ *gui.Event, w *gui.Window) {
+							gui.State[ShowcaseApp](w).DatePickerDates = append([]time.Time(nil), dates...)
+						},
+					}),
 				},
 			}),
-			gui.Text(gui.TextCfg{Text: "Selected: " + selected, TextStyle: gui.CurrentTheme().N3}),
+			gui.Text(gui.TextCfg{
+				Text:      "Selected: " + selected,
+				Mode:      gui.TextModeWrap,
+				TextStyle: gui.CurrentTheme().N4}),
 		},
 	})
 }

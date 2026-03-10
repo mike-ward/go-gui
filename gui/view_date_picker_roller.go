@@ -32,6 +32,10 @@ type DatePickerRollerCfg struct {
 	MaxWidth        float32
 	LongMonths      bool // true = "January", false = "Jan"
 	Color           Color
+	ColorBorder     Color
+	SizeBorder      Opt[float32]
+	Radius          Opt[float32]
+	Padding         Opt[Padding]
 	TextStyle       TextStyle
 	OnChange        func(time.Time, *Window)
 }
@@ -99,15 +103,18 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 	selectedDate := cfg.SelectedDate
 
 	return GenerateViewLayout(container(ContainerCfg{
-		ID:        cfg.ID,
-		IDFocus:   cfg.IDFocus,
-		A11YRole:  AccessRoleDateField,
-		A11YLabel: a11yLabel(cfg.A11YLabel, "Date Roller"),
-		Color:     cfg.Color,
-		MinWidth:  cfg.MinWidth,
-		MaxWidth:  cfg.MaxWidth,
-		Padding:   Some(PaddingSmall),
-		Spacing:   Some(SpacingSmall),
+		ID:          cfg.ID,
+		IDFocus:     cfg.IDFocus,
+		A11YRole:    AccessRoleDateField,
+		A11YLabel:   a11yLabel(cfg.A11YLabel, "Date Roller"),
+		Color:       cfg.Color,
+		ColorBorder: cfg.ColorBorder,
+		SizeBorder:  cfg.SizeBorder,
+		Radius:      cfg.Radius,
+		MinWidth:    cfg.MinWidth,
+		MaxWidth:    cfg.MaxWidth,
+		Padding:     cfg.Padding,
+		Spacing:     Some(SpacingSmall),
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
 		axis:      AxisLeftToRight,
@@ -356,6 +363,19 @@ func applyRollerDefaults(cfg *DatePickerRollerCfg) {
 	}
 	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ColorBackground
+	}
+	d := &DefaultDatePickerStyle
+	if !cfg.ColorBorder.IsSet() {
+		cfg.ColorBorder = d.ColorBorder
+	}
+	if !cfg.SizeBorder.IsSet() {
+		cfg.SizeBorder = Some(d.SizeBorder)
+	}
+	if !cfg.Radius.IsSet() {
+		cfg.Radius = Some(d.RadiusBorder)
+	}
+	if !cfg.Padding.IsSet() {
+		cfg.Padding = Some(PaddingSmall)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle
