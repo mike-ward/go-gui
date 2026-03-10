@@ -24,7 +24,7 @@ func (w *Window) EventFn(e *Event) {
 	}
 	if inspectorSupported && w.inspectorEnabled &&
 		e.Type == EventKeyDown &&
-		e.Modifiers == ModCtrl {
+		e.Modifiers == ModAlt {
 		switch e.KeyCode {
 		case KeyLeft:
 			inspectorResize(inspectorResizeStep, w)

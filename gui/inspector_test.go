@@ -236,14 +236,14 @@ func TestEventFnInspectorHotkeysAndPick(t *testing.T) {
 		t.Fatal("F12 should enable inspector")
 	}
 
-	w.EventFn(&Event{Type: EventKeyDown, KeyCode: KeyLeft, Modifiers: ModCtrl})
+	w.EventFn(&Event{Type: EventKeyDown, KeyCode: KeyLeft, Modifiers: ModAlt})
 	if got := inspectorPanelWidth(w); got != inspectorPanelMinWidth+inspectorResizeStep {
 		t.Fatalf("panel width = %.0f, want %.0f", got, inspectorPanelMinWidth+inspectorResizeStep)
 	}
 
-	w.EventFn(&Event{Type: EventKeyDown, KeyCode: KeyUp, Modifiers: ModCtrl})
+	w.EventFn(&Event{Type: EventKeyDown, KeyCode: KeyUp, Modifiers: ModAlt})
 	if !inspectorIsLeft(w) {
-		t.Fatal("Ctrl+Up should move inspector to the left")
+		t.Fatal("Alt+Up should move inspector to the left")
 	}
 
 	w.EventFn(&Event{Type: EventMouseDown, MouseX: 361, MouseY: 30})

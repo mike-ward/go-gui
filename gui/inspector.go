@@ -190,7 +190,7 @@ func inspectorFloatOffsetX(left bool) float32 {
 
 func inspectorHelpBar() View {
 	return Text(TextCfg{
-		Text: "  F12 toggle  Ctrl+Left/Right resize  Ctrl+Up side",
+		Text: "  F12 toggle  Alt+Left/Right resize  Alt+Up side",
 		TextStyle: TextStyle{
 			Size:  10,
 			Color: RGBA(130, 130, 130, 200),
