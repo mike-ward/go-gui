@@ -215,11 +215,11 @@ gui.NumericInput(gui.NumericInputCfg{
 | Property | Type | Description |
 |----------|------|-------------|
 | Text | string | Current text value |
-| Value | *float64 | Parsed numeric value |
+| Value | Opt[float64] | Parsed numeric value |
 | Placeholder | string | Hint text |
 | Decimals | int | Decimal places |
-| Min | *float64 | Minimum allowed value |
-| Max | *float64 | Maximum allowed value |
+| Min | Opt[float64] | Minimum allowed value |
+| Max | Opt[float64] | Maximum allowed value |
 | Mode | NumericInputMode | Number, currency, or percent |
 | StepCfg | NumericStepCfg | Step button configuration |
 | Locale | NumericLocaleCfg | Locale formatting rules |
@@ -229,7 +229,7 @@ gui.NumericInput(gui.NumericInputCfg{
 | Callback | Signature | Fired when |
 |----------|-----------|------------|
 | OnTextChanged | func(*Layout, string, *Window) | Text changes |
-| OnValueCommit | func(*Layout, *float64, string, *Window) | Value committed (blur/enter) |
+| OnValueCommit | func(*Layout, Opt[float64], string, *Window) | Value committed (blur/enter) |
 `,
 
 	"color_picker": `Interactive HSV color selection with SV area, hue slider,
