@@ -466,6 +466,7 @@ func labeledRow(t gui.Theme, label string, content gui.View) gui.View {
 			gui.Text(gui.TextCfg{
 				Text:      label,
 				TextStyle: t.B3,
+				MinWidth:  80,
 				Sizing:    gui.FixedFit,
 			}),
 			content,
