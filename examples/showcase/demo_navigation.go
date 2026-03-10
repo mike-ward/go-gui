@@ -40,7 +40,7 @@ func demoTabControl(w *gui.Window) gui.View {
 			gui.NewTabItem("tab1", "Overview", []gui.View{
 				gui.Column(gui.ContainerCfg{
 					Sizing:  gui.FillFit,
-					Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+					Padding: gui.SomeP(12, 12, 12, 12),
 					Content: []gui.View{
 						gui.Text(gui.TextCfg{Text: "Overview tab content.", TextStyle: t.N3}),
 					},
@@ -49,7 +49,7 @@ func demoTabControl(w *gui.Window) gui.View {
 			gui.NewTabItem("tab2", "Details", []gui.View{
 				gui.Column(gui.ContainerCfg{
 					Sizing:  gui.FillFit,
-					Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+					Padding: gui.SomeP(12, 12, 12, 12),
 					Content: []gui.View{
 						gui.Text(gui.TextCfg{Text: "Details tab content.", TextStyle: t.N3}),
 					},
@@ -58,7 +58,7 @@ func demoTabControl(w *gui.Window) gui.View {
 			gui.NewTabItem("tab3", "Settings", []gui.View{
 				gui.Column(gui.ContainerCfg{
 					Sizing:  gui.FillFit,
-					Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+					Padding: gui.SomeP(12, 12, 12, 12),
 					Content: []gui.View{
 						gui.Text(gui.TextCfg{Text: "Settings tab content.", TextStyle: t.N3}),
 					},
@@ -115,7 +115,7 @@ func demoCommandPalette(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-palette",
-				Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+				Padding: gui.SomeP(8, 16, 8, 16),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Open Command Palette", TextStyle: t.N3}),
 				},

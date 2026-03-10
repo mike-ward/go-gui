@@ -25,7 +25,7 @@ func demoLocale(_ *gui.Window) gui.View {
 		localeViews[i] = gui.Button(gui.ButtonCfg{
 			ID:      "locale-" + n,
 			Color:   color,
-			Padding: gui.Some(gui.NewPadding(4, 10, 4, 10)),
+			Padding: gui.SomeP(4, 10, 4, 10),
 			Radius:  gui.SomeF(12),
 			Content: []gui.View{gui.Text(gui.TextCfg{Text: n, TextStyle: ts})},
 			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {

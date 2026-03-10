@@ -36,3 +36,8 @@ var (
 
 // NoPadding is shorthand for Some(PaddingNone).
 var NoPadding = Some(PaddingNone)
+
+// SomeP is shorthand for Some(NewPadding(top, right, bottom, left)).
+func SomeP(top, right, bottom, left float32) Opt[Padding] {
+	return Opt[Padding]{val: NewPadding(top, right, bottom, left), set: true}
+}

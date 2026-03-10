@@ -132,8 +132,8 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			FloatOffsetY:  -sizeBorder,
 			FloatZIndex:   cfg.FloatZIndex,
 			IDScroll:      idScroll,
-			Padding: Some(NewPadding(
-				PadSmall, PadMedium, PadSmall, PadSmall)),
+			Padding: SomeP(
+				PadSmall, PadMedium, PadSmall, PadSmall),
 			Spacing: NoSpacing,
 			Content: options,
 		}))
@@ -214,7 +214,7 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 
 	return Row(ContainerCfg{
 		Color:   optColor,
-		Padding: Some(NewPadding(0, PadSmall, 0, 1)),
+		Padding: SomeP(0, PadSmall, 0, 1),
 		Sizing:  FillFit,
 		Content: []View{
 			Row(ContainerCfg{
@@ -274,7 +274,7 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 		label = option[3:]
 	}
 	return Column(ContainerCfg{
-		Padding: Some(NewPadding(guiTheme.PaddingMedium.Top, 0, 0, 0)),
+		Padding: SomeP(guiTheme.PaddingMedium.Top, 0, 0, 0),
 		Sizing:  FillFit,
 		Content: []View{
 			Row(ContainerCfg{

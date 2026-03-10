@@ -43,7 +43,7 @@ func mainView(w *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FitFit,
 		Spacing: gui.Some[float32](40),
-		Padding: gui.Some(gui.NewPadding(10, 40, 40, 40)),
+		Padding: gui.SomeP(10, 40, 40, 40),
 		HAlign:  gui.HAlignCenter,
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{

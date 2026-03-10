@@ -58,7 +58,7 @@ func mainView(w *gui.Window) gui.View {
 		Height:  float32(wh),
 		Sizing:  gui.FixedFixed,
 		Spacing: gui.Some[float32](20),
-		Padding: gui.Some(gui.NewPadding(20, 20, 20, 20)),
+		Padding: gui.SomeP(20, 20, 20, 20),
 		Content: []gui.View{
 			// Control buttons
 			gui.Row(gui.ContainerCfg{
@@ -84,7 +84,7 @@ func mainView(w *gui.Window) gui.View {
 						Sizing:  gui.FixedFill,
 						Color:   gui.Purple,
 						Radius:  gui.Some[float32](8),
-						Padding: gui.Some(gui.NewPadding(10, 10, 10, 10)),
+						Padding: gui.SomeP(10, 10, 10, 10),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Sidebar"}),
 						},
@@ -104,7 +104,7 @@ func mainView(w *gui.Window) gui.View {
 								Sizing:  gui.FixedFixed,
 								Color:   gui.Orange,
 								Radius:  gui.Some[float32](12),
-								Padding: gui.Some(gui.NewPadding(10, 10, 10, 10)),
+								Padding: gui.SomeP(10, 10, 10, 10),
 								VAlign:  gui.VAlignMiddle,
 								HAlign:  gui.HAlignCenter,
 								Content: []gui.View{
@@ -156,7 +156,7 @@ func detailView(w *gui.Window) gui.View {
 		Height:  float32(wh),
 		Sizing:  gui.FixedFixed,
 		Spacing: gui.Some[float32](20),
-		Padding: gui.Some(gui.NewPadding(20, 20, 20, 20)),
+		Padding: gui.SomeP(20, 20, 20, 20),
 		Content: []gui.View{
 			gui.Row(gui.ContainerCfg{
 				Content: []gui.View{
@@ -170,7 +170,7 @@ func detailView(w *gui.Window) gui.View {
 				Sizing:  gui.FillFill,
 				Color:   gui.Orange,
 				Radius:  gui.Some[float32](16),
-				Padding: gui.Some(gui.NewPadding(20, 20, 20, 20)),
+				Padding: gui.SomeP(20, 20, 20, 20),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{
 						ID:   "detail-title",

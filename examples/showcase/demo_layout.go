@@ -131,7 +131,7 @@ func demoExpandPanel(w *gui.Window) gui.View {
 				Head: gui.Text(gui.TextCfg{Text: "Click to expand", TextStyle: t.B3}),
 				Content: gui.Column(gui.ContainerCfg{
 					Sizing:  gui.FillFit,
-					Padding: gui.Some(gui.NewPadding(8, 0, 8, 0)),
+					Padding: gui.SomeP(8, 0, 8, 0),
 					Content: []gui.View{
 						gui.Text(gui.TextCfg{
 							Text:      "This content is revealed when the panel is expanded.",
@@ -158,7 +158,7 @@ func demoSidebar(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-sidebar-toggle",
-				Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+				Padding: gui.SomeP(8, 16, 8, 16),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Toggle Sidebar", TextStyle: t.N3}),
 				},
@@ -180,7 +180,7 @@ func demoSidebar(w *gui.Window) gui.View {
 						Content: []gui.View{
 							gui.Column(gui.ContainerCfg{
 								Sizing:  gui.FillFill,
-								Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+								Padding: gui.SomeP(12, 12, 12, 12),
 								Spacing: gui.SomeF(8),
 								Content: []gui.View{
 									gui.Text(gui.TextCfg{Text: "Sidebar", TextStyle: t.B4}),
@@ -194,7 +194,7 @@ func demoSidebar(w *gui.Window) gui.View {
 					}),
 					gui.Column(gui.ContainerCfg{
 						Sizing:  gui.FillFill,
-						Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+						Padding: gui.SomeP(12, 12, 12, 12),
 						Color:   t.ColorPanel,
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Main content area", TextStyle: t.N3}),
@@ -300,7 +300,7 @@ func showcaseSplitterPane(title, note string, accent gui.Color) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFill,
-		Padding: gui.Some(gui.NewPadding(10, 10, 10, 10)),
+		Padding: gui.SomeP(10, 10, 10, 10),
 		Spacing: gui.SomeF(6),
 		Color:   t.ColorPanel,
 		Content: []gui.View{
@@ -424,7 +424,7 @@ func demoPrinting(w *gui.Window) gui.View {
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-export-pdf",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: gui.IconDownload + " Export PDF", TextStyle: t.N3}),
 						},
@@ -446,7 +446,7 @@ func demoPrinting(w *gui.Window) gui.View {
 					}),
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-print",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: gui.IconLayout + " Print", TextStyle: t.N3}),
 						},

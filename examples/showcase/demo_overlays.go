@@ -17,7 +17,7 @@ func demoDialog(w *gui.Window) gui.View {
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-dialog-msg",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Message", TextStyle: t.N3}),
 						},
@@ -35,7 +35,7 @@ func demoDialog(w *gui.Window) gui.View {
 					}),
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-dialog-confirm",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Confirm", TextStyle: t.N3}),
 						},
@@ -56,7 +56,7 @@ func demoDialog(w *gui.Window) gui.View {
 					}),
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-dialog-prompt",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Prompt", TextStyle: t.N3}),
 						},
@@ -77,7 +77,7 @@ func demoDialog(w *gui.Window) gui.View {
 					}),
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-dialog-custom",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Custom", TextStyle: t.N3}),
 						},
@@ -89,7 +89,7 @@ func demoDialog(w *gui.Window) gui.View {
 									gui.Column(gui.ContainerCfg{
 										Sizing:  gui.FillFit,
 										Spacing: gui.SomeF(8),
-										Padding: gui.Some(gui.NewPadding(8, 8, 8, 8)),
+										Padding: gui.SomeP(8, 8, 8, 8),
 										Content: []gui.View{
 											gui.Text(gui.TextCfg{
 												Text:      "This dialog has custom content.",
@@ -121,7 +121,7 @@ func demoDialog(w *gui.Window) gui.View {
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-open-file",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: gui.IconFolder + " Open", TextStyle: t.N3}),
 						},
@@ -144,7 +144,7 @@ func demoDialog(w *gui.Window) gui.View {
 					}),
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-save-file",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: gui.IconDownload + " Save", TextStyle: t.N3}),
 						},
@@ -167,7 +167,7 @@ func demoDialog(w *gui.Window) gui.View {
 					}),
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-folder",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: gui.IconFolder + " Folder", TextStyle: t.N3}),
 						},
@@ -208,7 +208,7 @@ func demoNotification(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-notify",
-				Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+				Padding: gui.SomeP(8, 16, 8, 16),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: gui.IconBell + " Send Notification", TextStyle: t.N3}),
 				},
@@ -291,7 +291,7 @@ func demoTooltip(w *gui.Window) gui.View {
 				Content: []gui.View{
 					gui.Button(gui.ButtonCfg{
 						ID:      "btn-tooltip",
-						Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
 							gui.Text(gui.TextCfg{Text: "Hover me", TextStyle: t.N3}),
 						},

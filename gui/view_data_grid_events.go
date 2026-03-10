@@ -29,7 +29,7 @@ func dataGridQuickFilterRow(cfg *DataGridCfg) View {
 		Color:       cfg.ColorQuickFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
-		Padding:     Some(NewPadding(0, cfg.PaddingCell.Get(Padding{}).Right, 0, cfg.PaddingCell.Get(Padding{}).Left)),
+		Padding:     SomeP(0, cfg.PaddingCell.Get(Padding{}).Right, 0, cfg.PaddingCell.Get(Padding{}).Left),
 		Spacing:     SomeF(6),
 		VAlign:      VAlignMiddle,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -340,7 +340,7 @@ func dataGridPagerSpacer() View {
 func dataGridPagerRowsStatus(cfg *DataGridCfg, rowsText string) View {
 	return Row(ContainerCfg{
 		Sizing:  FitFill,
-		Padding: Some(NewPadding(0, 6, 0, 0)),
+		Padding: SomeP(0, 6, 0, 0),
 		VAlign:  VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{

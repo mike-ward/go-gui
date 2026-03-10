@@ -231,7 +231,7 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 		Sizing:    FitFill,
 		Disabled:  cfg.Disabled,
 		Invisible: cfg.Invisible,
-		Padding:   Some(NewPadding(0, PadSmall, 0, 0)),
+		Padding:   SomeP(0, PadSmall, 0, 0),
 		Content: []View{
 			Button(ButtonCfg{
 				ID:          stepUpID,

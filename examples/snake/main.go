@@ -133,7 +133,7 @@ func mainView(w *gui.Window) gui.View {
 		HAlign:  gui.HAlignCenter,
 		VAlign:  gui.VAlignMiddle,
 		Spacing: gui.Some[float32](10),
-		Padding: gui.Some(gui.NewPadding(paddingOuter, paddingOuter, paddingOuter, paddingOuter)),
+		Padding: gui.SomeP(paddingOuter, paddingOuter, paddingOuter, paddingOuter),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Snake", TextStyle: theme.B2}),
 			gui.Text(gui.TextCfg{Text: fmt.Sprintf("Score: %d", g.Score), TextStyle: theme.B3}),
@@ -167,7 +167,7 @@ func landingView(w *gui.Window, ww, wh float32) gui.View {
 				HAlign:  gui.HAlignCenter,
 				VAlign:  gui.VAlignMiddle,
 				Spacing: gui.Some[float32](14),
-				Padding: gui.Some(gui.NewPadding(24, 24, 24, 24)),
+				Padding: gui.SomeP(24, 24, 24, 24),
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
 						Width:   420,
@@ -176,7 +176,7 @@ func landingView(w *gui.Window, ww, wh float32) gui.View {
 						HAlign:  gui.HAlignCenter,
 						VAlign:  gui.VAlignMiddle,
 						Spacing: gui.Some[float32](10),
-						Padding: gui.Some(gui.NewPadding(22, 24, 22, 24)),
+						Padding: gui.SomeP(22, 24, 22, 24),
 						Radius:  gui.Some[float32](14),
 						Content: []gui.View{
 							tileTitleView(frame),
@@ -205,7 +205,7 @@ func landingView(w *gui.Window, ww, wh float32) gui.View {
 								ColorClick:  gui.RGB(230, 90, 42),
 								ColorBorder: gui.RGB(255, 211, 92),
 								SizeBorder:  gui.Some[float32](2),
-								Padding:     gui.Some(gui.NewPadding(12, 18, 12, 18)),
+								Padding:     gui.SomeP(12, 18, 12, 18),
 								Content: []gui.View{
 									gui.Text(gui.TextCfg{
 										Text:      fmt.Sprintf("%s  PRESS TO BEGIN", gui.IconGamepad),

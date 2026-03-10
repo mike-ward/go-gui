@@ -119,7 +119,7 @@ func docButton(showDocs bool) gui.View {
 		A11YLabel:  "Toggle docs",
 		Color:      color,
 		SizeBorder: gui.NoBorder,
-		Padding:    gui.Some(gui.NewPadding(4, 8, 4, 8)),
+		Padding:    gui.SomeP(4, 8, 4, 8),
 		Radius:     gui.SomeF(3),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: gui.IconBook, TextStyle: gui.CurrentTheme().Icon4}),
@@ -260,7 +260,7 @@ func demoPlaceholder(t gui.Theme, text string) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Color:   t.ColorPanel,
-		Padding: gui.Some(gui.NewPadding(24, 24, 24, 24)),
+		Padding: gui.SomeP(24, 24, 24, 24),
 		Radius:  gui.SomeF(8),
 		Content: []gui.View{
 			showcaseWrappedText(text, t.N3),

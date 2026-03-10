@@ -94,7 +94,7 @@ func DefaultMarkdownStyle() MarkdownStyle {
 		TableBorderSize:   1,
 		TableHeadStyle:    guiTheme.B4,
 		TableCellStyle:    guiTheme.N4,
-		TableCellPadding:  Some(NewPadding(5, 10, 5, 10)),
+		TableCellPadding:  SomeP(5, 10, 5, 10),
 		HighlightBG:       RGB(199, 142, 18),
 		MathDPIDisplay:    150,
 		MathDPIInline:     200,
@@ -386,7 +386,7 @@ func renderMdCode(
 		Radius:       Some[float32](4),
 		Color:        cfg.Color,
 		SizeBorder:   Some[float32](0),
-		Padding:      Some(NewPadding(2, 4, 2, 4)),
+		Padding:      SomeP(2, 4, 2, 4),
 		Content:      btnContent,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			plain := richTextPlain(block.Content)
@@ -565,7 +565,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 				block.BlockquoteDepth-1) * cfg.Style.NestIndent
 			content = append(content, Row(ContainerCfg{
 				Sizing:     FillFit,
-				Padding:    Some(NewPadding(0, 0, 0, leftMargin)),
+				Padding:    SomeP(0, 0, 0, leftMargin),
 				SizeBorder: NoBorder,
 				Content: []View{
 					Rectangle(RectangleCfg{
@@ -638,8 +638,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		case block.IsDefValue:
 			content = append(content, Row(ContainerCfg{
 				Sizing: FillFit,
-				Padding: Some(NewPadding(
-					0, 0, 0, cfg.Style.NestIndent)),
+				Padding: SomeP(
+					0, 0, 0, cfg.Style.NestIndent),
 				Content: []View{
 					RTF(RtfCfg{
 						RichText:      block.Content,
@@ -661,7 +661,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			}
 			listItems = append(listItems, Row(ContainerCfg{
 				Sizing:     FillFit,
-				Padding:    Some(NewPadding(0, 0, 0, indentW)),
+				Padding:    SomeP(0, 0, 0, indentW),
 				SizeBorder: NoBorder,
 				Content: []View{
 					Column(ContainerCfg{
@@ -753,7 +753,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		Radius:       Some[float32](4),
 		Color:        cfg.Color,
 		SizeBorder:   Some[float32](0),
-		Padding:      Some(NewPadding(2, 4, 2, 4)),
+		Padding:      SomeP(2, 4, 2, 4),
 		Content:      docBtnContent,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			w.SetClipboard(source)

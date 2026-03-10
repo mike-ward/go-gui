@@ -76,7 +76,7 @@ func mainView(w *gui.Window) gui.View {
 		Height:   float32(wh),
 		Sizing:   gui.FixedFixed,
 		IDScroll: 1,
-		Padding:  gui.Some(gui.NewPadding(10, 10, 10, 10)),
+		Padding:  gui.SomeP(10, 10, 10, 10),
 		Content: []gui.View{
 			gui.RTF(gui.RtfCfg{
 				RichText:      rt,

@@ -6,7 +6,7 @@ func line() gui.View {
 	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:     gui.FillFit,
-		Padding:    gui.Some(gui.NewPadding(3, 0, 0, 0)),
+		Padding:    gui.SomeP(3, 0, 0, 0),
 		SizeBorder: gui.NoBorder,
 		Radius:     gui.NoRadius,
 		Content: []gui.View{
@@ -45,7 +45,7 @@ func demoBoxSized(label string, color gui.Color, w, h float32) gui.View {
 func placeholderHeader(text string) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+		Padding: gui.SomeP(12, 12, 12, 12),
 		Color:   gui.CurrentTheme().ColorPanel,
 		Radius:  gui.SomeF(8),
 		Content: []gui.View{

@@ -159,7 +159,7 @@ func inspectorFloatingPanel(w *Window) View {
 		IDScroll:      inspectorIDScrollPanel,
 		ScrollbarCfgX: scrollbarCfg,
 		ScrollbarCfgY: scrollbarCfg,
-		Padding:       Some(NewPadding(0, scrollbarPad, 0, 0)),
+		Padding:       SomeP(0, scrollbarPad, 0, 0),
 		Spacing:       SomeF(0),
 		OnClick: func(_ *Layout, e *Event, _ *Window) {
 			e.IsHandled = true

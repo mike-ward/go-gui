@@ -700,7 +700,7 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 	// Rows status.
 	content = append(content, Row(ContainerCfg{
 		Sizing:  FitFill,
-		Padding: Some(NewPadding(0, 6, 0, 0)),
+		Padding: SomeP(0, 6, 0, 0),
 		VAlign:  VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{

@@ -310,7 +310,7 @@ func showcaseShadowCard(title, note string, bg, shadowColor gui.Color, shadowOff
 		Width:       170,
 		Height:      96,
 		Sizing:      gui.FixedFixed,
-		Padding:     gui.Some(gui.NewPadding(10, 10, 10, 10)),
+		Padding:     gui.SomeP(10, 10, 10, 10),
 		Spacing:     gui.SomeF(2),
 		Radius:      gui.SomeF(10),
 		Color:       bg,

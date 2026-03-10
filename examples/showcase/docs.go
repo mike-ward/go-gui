@@ -2056,7 +2056,7 @@ const docContainers = `# Containers
 ` + "```go" + `
 gui.Column(gui.ContainerCfg{
     Spacing: gui.SomeF(8),
-    Padding: gui.Some(gui.NewPadding(16, 16, 16, 16)),
+    Padding: gui.SomeP(16, 16, 16, 16),
 })
 ` + "```" + `
 

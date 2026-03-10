@@ -28,7 +28,7 @@ func catalogPanel(w *gui.Window) gui.View {
 		Width:   catalogWidth,
 		Sizing:  gui.FixedFill,
 		Color:   t.ColorPanel,
-		Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+		Padding: gui.SomeP(12, 12, 12, 12),
 		Spacing: gui.SomeF(8),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Component Catalog", TextStyle: t.B3}),
@@ -118,7 +118,7 @@ func groupPickerItem(label, key string, app *ShowcaseApp) gui.View {
 		Color:       color,
 		ColorBorder: color,
 		Radius:      gui.SomeF(3),
-		Padding:     gui.Some(gui.NewPadding(3, 6, 3, 6)),
+		Padding:     gui.SomeP(3, 6, 3, 6),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: label, TextStyle: gui.CurrentTheme().N5}),
 		},
@@ -196,7 +196,7 @@ func catalogRow(entry DemoEntry, app *ShowcaseApp) gui.View {
 		ColorBorder:      gui.ColorTransparent,
 		ColorBorderFocus: gui.ColorTransparent,
 		Radius:           gui.SomeF(4),
-		Padding:          gui.Some(gui.NewPadding(3, 6, 3, 6)),
+		Padding:          gui.SomeP(3, 6, 3, 6),
 		HAlign:           gui.HAlignLeft,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: entry.Label, TextStyle: gui.CurrentTheme().N4}),
@@ -219,7 +219,7 @@ func toggleLocale(app *ShowcaseApp) gui.View {
 		Color:            gui.ColorTransparent,
 		ColorBorder:      gui.ColorTransparent,
 		ColorBorderFocus: gui.CurrentTheme().ColorActive,
-		Padding:          gui.Some(gui.NewPadding(6, 8, 6, 8)),
+		Padding:          gui.SomeP(6, 8, 6, 8),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      label,

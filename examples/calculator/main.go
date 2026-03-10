@@ -204,7 +204,7 @@ func mainView(w *gui.Window) gui.View {
 				Sizing:  gui.FixedFixed,
 				HAlign:  gui.HAlignCenter,
 				VAlign:  gui.VAlignMiddle,
-				Padding: gui.Some(gui.NewPadding(28, 28, 28, 28)),
+				Padding: gui.SomeP(28, 28, 28, 28),
 				Content: []gui.View{
 					calculatorShell(w),
 				},
@@ -222,7 +222,7 @@ func calculatorShell(w *gui.Window) gui.View {
 		ColorBorder: colorShellBorder,
 		SizeBorder:  gui.SomeF(2),
 		Radius:      gui.SomeF(22),
-		Padding:     gui.Some(gui.NewPadding(10, 10, 10, 10)),
+		Padding:     gui.SomeP(10, 10, 10, 10),
 		Spacing:     gui.SomeF(8),
 		Content: []gui.View{
 			topChrome(),
@@ -298,7 +298,7 @@ func displayView(w *gui.Window) gui.View {
 		Sizing:  gui.FixedFixed,
 		HAlign:  gui.HAlignEnd,
 		VAlign:  gui.VAlignBottom,
-		Padding: gui.Some(gui.NewPadding(2, 4, 2, 4)),
+		Padding: gui.SomeP(2, 4, 2, 4),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				IDFocus:   displayFocus,

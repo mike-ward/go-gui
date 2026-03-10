@@ -22,7 +22,7 @@ func dataGridGroupHeaderRowView(cfg *DataGridCfg, entry dataGridDisplayRow, rowH
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
-		Padding:     Some(NewPadding(pc.Top, pc.Right, pc.Bottom, pc.Left+depthPad)),
+		Padding:     SomeP(pc.Top, pc.Right, pc.Bottom, pc.Left+depthPad),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content: []View{
 			Text(TextCfg{
@@ -52,7 +52,7 @@ func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, column
 		Color:       cfg.ColorBackground,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
-		Padding:     Some(NewPadding(pc.Top, pc.Right, pc.Bottom, pc.Left+dataGridDetailIndent())),
+		Padding:     SomeP(pc.Top, pc.Right, pc.Bottom, pc.Left+dataGridDetailIndent()),
 		Spacing:     Some(-cfg.SizeBorder),
 		Content: []View{
 			Row(ContainerCfg{

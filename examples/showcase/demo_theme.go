@@ -31,7 +31,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 		strategyViews[i] = gui.Button(gui.ButtonCfg{
 			ID:      "strat-" + sv,
 			Color:   color,
-			Padding: gui.Some(gui.NewPadding(4, 10, 4, 10)),
+			Padding: gui.SomeP(4, 10, 4, 10),
 			Radius:  gui.SomeF(12),
 			Content: []gui.View{gui.Text(gui.TextCfg{Text: strategyLabel(sv), TextStyle: textStyle})},
 			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
@@ -189,7 +189,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 								Content: []gui.View{
 									gui.Button(gui.ButtonCfg{
 										ID:      "btn-reset-dark",
-										Padding: gui.Some(gui.NewPadding(6, 12, 6, 12)),
+										Padding: gui.SomeP(6, 12, 6, 12),
 										Content: []gui.View{gui.Text(gui.TextCfg{Text: "Reset Dark", TextStyle: t.N3})},
 										OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 											w.SetTheme(gui.ThemeDarkBordered)
@@ -199,7 +199,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 									}),
 									gui.Button(gui.ButtonCfg{
 										ID:      "btn-reset-light",
-										Padding: gui.Some(gui.NewPadding(6, 12, 6, 12)),
+										Padding: gui.SomeP(6, 12, 6, 12),
 										Content: []gui.View{gui.Text(gui.TextCfg{Text: "Reset Light", TextStyle: t.N3})},
 										OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 											w.SetTheme(gui.ThemeLightBordered)
@@ -216,7 +216,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 								Content: []gui.View{
 									gui.Button(gui.ButtonCfg{
 										ID:      "btn-theme-save",
-										Padding: gui.Some(gui.NewPadding(6, 12, 6, 12)),
+										Padding: gui.SomeP(6, 12, 6, 12),
 										Content: []gui.View{gui.Text(gui.TextCfg{Text: "Save Theme", TextStyle: t.N3})},
 										OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 											w.NativeSaveDialog(gui.NativeSaveDialogCfg{
@@ -254,7 +254,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 									}),
 									gui.Button(gui.ButtonCfg{
 										ID:      "btn-theme-load",
-										Padding: gui.Some(gui.NewPadding(6, 12, 6, 12)),
+										Padding: gui.SomeP(6, 12, 6, 12),
 										Content: []gui.View{gui.Text(gui.TextCfg{Text: "Load Theme", TextStyle: t.N3})},
 										OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 											w.NativeOpenDialog(gui.NativeOpenDialogCfg{

@@ -171,7 +171,7 @@ func demoToast(_ *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-toast",
-				Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+				Padding: gui.SomeP(8, 16, 8, 16),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Show Toast", TextStyle: t.N3}),
 				},
@@ -182,7 +182,7 @@ func demoToast(_ *gui.Window) gui.View {
 			}),
 			gui.Button(gui.ButtonCfg{
 				ID:      "btn-toast-dismiss",
-				Padding: gui.Some(gui.NewPadding(8, 16, 8, 16)),
+				Padding: gui.SomeP(8, 16, 8, 16),
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{Text: "Dismiss All", TextStyle: t.N3}),
 				},

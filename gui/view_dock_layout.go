@@ -266,7 +266,7 @@ func dockGroupView(
 	// Tab header row.
 	groupContent = append(groupContent, Row(ContainerCfg{
 		Sizing:  FillFit,
-		Padding: Some(NewPadding(2, 4, 0, 4)),
+		Padding: SomeP(2, 4, 0, 4),
 		Spacing: NoSpacing,
 		Color:   cfg.ColorTabBar,
 		Content: tabButtons,
@@ -344,7 +344,7 @@ func dockTabButton(
 		ID:         "dock_tab:" + groupID + ":" + panelID,
 		Sizing:     FillFit,
 		HAlign:     HAlignLeft,
-		Padding:    Some(NewPadding(4, 8, 4, 8)),
+		Padding:    SomeP(4, 8, 4, 8),
 		Radius:     Some[float32](0),
 		SizeBorder: Some[float32](0),
 		Color:      colorTab,

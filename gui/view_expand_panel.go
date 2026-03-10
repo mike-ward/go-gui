@@ -85,7 +85,7 @@ func ExpandPanel(cfg ExpandPanelCfg) View {
 				Content: []View{
 					cfg.Head,
 					Row(ContainerCfg{
-						Padding: Some(NewPadding(0, PadMedium, 0, 0)),
+						Padding: SomeP(0, PadMedium, 0, 0),
 						Content: []View{
 							Text(TextCfg{
 								Text:      arrowText,

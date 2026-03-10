@@ -171,7 +171,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 		FloatZIndex: cfg.FloatZIndex,
 		VAlign:      VAlignTop,
 		HAlign:      HAlignCenter,
-		Padding:     Some(NewPadding(60, 0, 0, 0)),
+		Padding:     SomeP(60, 0, 0, 0),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			CommandPaletteDismiss(paletteID, w)
 			if onDismiss != nil {

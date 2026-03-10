@@ -79,7 +79,7 @@ func mainView(w *gui.Window) gui.View {
 		Height:  float32(wh),
 		Sizing:  gui.FixedFixed,
 		Color:   colorPageBG,
-		Padding: gui.Some(gui.NewPadding(12, 12, 12, 12)),
+		Padding: gui.SomeP(12, 12, 12, 12),
 		Content: []gui.View{
 			cardView(float32(ww)-24, float32(wh)-24, w),
 		},
@@ -93,7 +93,7 @@ func cardView(width, height float32, w *gui.Window) gui.View {
 		Sizing:      gui.FixedFixed,
 		Color:       colorCardBG,
 		Radius:      gui.SomeF(18),
-		Padding:     gui.Some(gui.NewPadding(34, 34, 34, 34)),
+		Padding:     gui.SomeP(34, 34, 34, 34),
 		Spacing:     gui.SomeF(22),
 		ColorBorder: colorCardBG,
 		Content: []gui.View{
@@ -146,7 +146,7 @@ func composerView(w *gui.Window) gui.View {
 				ColorBorder:      colorInputBG,
 				ColorBorderFocus: colorAccent,
 				Radius:           gui.SomeF(20),
-				Padding:          gui.Some(gui.NewPadding(18, 20, 18, 20)),
+				Padding:          gui.SomeP(18, 20, 18, 20),
 				TextStyle:        gui.TextStyle{Color: colorText, Size: 18},
 				PlaceholderStyle: gui.TextStyle{Color: colorMuted, Size: 18},
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
@@ -166,7 +166,7 @@ func composerView(w *gui.Window) gui.View {
 				ColorBorder:      colorAccent,
 				ColorBorderFocus: colorAccent,
 				Radius:           gui.SomeF(20),
-				Padding:          gui.Some(gui.NewPadding(18, 28, 18, 28)),
+				Padding:          gui.SomeP(18, 28, 18, 28),
 				MinWidth:         140,
 				Content: []gui.View{
 					gui.Text(gui.TextCfg{

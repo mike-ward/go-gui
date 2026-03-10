@@ -56,7 +56,7 @@ func Radio(cfg RadioCfg) View {
 
 	if len(cfg.Label) > 0 {
 		content = append(content, Row(ContainerCfg{
-			Padding: Some(NewPadding(0, PadXSmall, 0, 0)),
+			Padding: SomeP(0, PadXSmall, 0, 0),
 			Content: []View{
 				Text(TextCfg{Text: cfg.Label, TextStyle: cfg.TextStyle}),
 			},
