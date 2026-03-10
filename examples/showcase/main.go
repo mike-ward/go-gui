@@ -30,6 +30,11 @@ func main() {
 			app := gui.State[ShowcaseApp](w)
 			syncThemeGenFromCfg(app, gui.CurrentTheme().Cfg)
 			w.UpdateView(mainView)
+			w.AnimationAdd(&gui.Animate{
+				AnimateID: "shader_tick",
+				Repeat:    true,
+				Callback:  func(_ *gui.Animate, _ *gui.Window) {},
+			})
 		},
 	})
 	backend.Run(w)

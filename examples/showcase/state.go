@@ -124,10 +124,13 @@ type ShowcaseApp struct {
 	ThemeGenPickText   bool
 	ThemeGenText       gui.Color
 	ThemeGenName       string
+
+	ShaderStartTime time.Time
 }
 
 func newShowcaseApp() *ShowcaseApp {
 	return &ShowcaseApp{
+		ShaderStartTime:      time.Now(),
 		SelectedGroup:        groupAll,
 		SelectedComponent:    "welcome",
 		InputMultiline:       "Now is the time for all good men to come to the aid of their country",

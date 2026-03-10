@@ -3,6 +3,7 @@ package main
 import (
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mike-ward/go-gui/gui"
 )
@@ -430,40 +431,89 @@ func demoImage(_ *gui.Window) gui.View {
 	})
 }
 
-func demoShader(_ *gui.Window) gui.View {
+func demoShader(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
+	app := gui.State[ShowcaseApp](w)
+	elapsed := float32(time.Since(app.ShaderStartTime).Milliseconds()) / 1000.0
+
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.SomeF(12),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      "Custom fragment shader (Metal + GLSL). Params[0] is animated time.",
+				Text:      "Custom fragment shaders (Metal + GLSL). Params[0] is animated time.",
 				TextStyle: t.N3,
 			}),
-			gui.Column(gui.ContainerCfg{
-				Width:  300,
-				Height: 200,
-				Sizing: gui.FixedFixed,
-				Radius: gui.SomeF(8),
-				Shader: &gui.Shader{
-					Metal: `
-float2 uv = in.position.xy / uniforms.size;
-float t = params[0];
-float r = 0.5 + 0.5 * sin(uv.x * 6.28 + t);
-float g = 0.5 + 0.5 * sin(uv.y * 6.28 + t * 1.3);
-float b = 0.5 + 0.5 * sin((uv.x + uv.y) * 3.14 + t * 0.7);
-return float4(r, g, b, 1.0);
-`,
-					GLSL: `
-vec2 uv = gl_FragCoord.xy / u_size;
-float t = u_params[0];
-float r = 0.5 + 0.5 * sin(uv.x * 6.28 + t);
-float g = 0.5 + 0.5 * sin(uv.y * 6.28 + t * 1.3);
-float b = 0.5 + 0.5 * sin((uv.x + uv.y) * 3.14 + t * 0.7);
-fragColor = vec4(r, g, b, 1.0);
-`,
-					Params: []float32{0},
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(20),
+				Padding: gui.NoPadding,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Width:  200,
+						Height: 200,
+						Sizing: gui.FixedFixed,
+						Radius: gui.SomeF(16),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Shader: &gui.Shader{
+							Metal: `
+								float t = in.p0.x;
+								float2 st = in.uv * 0.5 + 0.5;
+								float3 c = 0.5 + 0.5 * cos(t + st.xyx + float3(0,2,4));
+								float4 frag_color = float4(c, 1.0);
+							`,
+							GLSL: `
+								float t = p0.x;
+								vec2 st = uv * 0.5 + 0.5;
+								vec3 c = 0.5 + 0.5 * cos(t + st.xyx + vec3(0,2,4));
+								vec4 frag_color = vec4(c, 1.0);
+							`,
+							Params: []float32{elapsed},
+						},
+						Content: []gui.View{gui.Text(gui.TextCfg{Text: "Rainbow", TextStyle: t.N2})},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:  200,
+						Height: 200,
+						Sizing: gui.FixedFixed,
+						Radius: gui.SomeF(16),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Shader: &gui.Shader{
+							Metal: `
+								float t = in.p0.x;
+								float2 st = in.uv * 3.0;
+								float v = sin(st.x + t) + sin(st.y + t)
+									+ sin(st.x + st.y + t)
+									+ sin(length(st) + 1.5 * t);
+								v = v * 0.25 + 0.5;
+								float3 c = float3(
+									sin(v * 3.14159),
+									sin(v * 3.14159 + 2.094),
+									sin(v * 3.14159 + 4.188));
+								c = c * 0.5 + 0.5;
+								float4 frag_color = float4(c, 1.0);
+							`,
+							GLSL: `
+								float t = p0.x;
+								vec2 st = uv * 3.0;
+								float v = sin(st.x + t) + sin(st.y + t)
+									+ sin(st.x + st.y + t)
+									+ sin(length(st) + 1.5 * t);
+								v = v * 0.25 + 0.5;
+								vec3 c = vec3(
+									sin(v * 3.14159),
+									sin(v * 3.14159 + 2.094),
+									sin(v * 3.14159 + 4.188));
+								c = c * 0.5 + 0.5;
+								vec4 frag_color = vec4(c, 1.0);
+							`,
+							Params: []float32{elapsed},
+						},
+						Content: []gui.View{gui.Text(gui.TextCfg{Text: "Plasma", TextStyle: t.N2})},
+					}),
 				},
 			}),
 		},
