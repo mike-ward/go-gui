@@ -220,6 +220,7 @@ func datePickerControls(
 		Sizing:  FillFit,
 		Content: []View{
 			Button(ButtonCfg{
+				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
 				OnClick:     onToggle,
 				Content: []View{Text(TextCfg{
@@ -229,6 +230,7 @@ func datePickerControls(
 			Rectangle(RectangleCfg{Sizing: FillFit}),
 			Button(ButtonCfg{
 				Disabled:    state.ShowYearMonthPicker,
+				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
 				OnClick:     onPrev,
 				Content: []View{Text(TextCfg{
@@ -238,6 +240,7 @@ func datePickerControls(
 			}),
 			Button(ButtonCfg{
 				Disabled:    state.ShowYearMonthPicker,
+				Color:       ColorTransparent,
 				ColorBorder: ColorTransparent,
 				OnClick:     onNext,
 				Content: []View{Text(TextCfg{
@@ -268,17 +271,19 @@ func datePickerWeekdays(cfg *DatePickerCfg) View {
 	dn := &DefaultDatePickerStyle
 	cellSpacing := cfg.CellSpacing.Get(dn.CellSpacing)
 	cellSize := datePickerCellSize(cfg)
+	wdTS := cfg.TextStyle
+	wdTS.Color = RGBA(wdTS.Color.R, wdTS.Color.G, wdTS.Color.B, 160)
 	labels := make([]View, 0, 7)
 	for i := range 7 {
 		dow := datePickerWeekdayIndex(i, cfg.MondayFirstDayOfWeek)
 		label := datePickerWeekdayLabel(dow, cfg.WeekdaysLen)
-		labels = append(labels, Button(ButtonCfg{
-			Color:       ColorTransparent,
-			ColorBorder: ColorTransparent,
-			MinWidth:    cellSize,
-			MaxWidth:    cellSize,
-			Padding:     Some(PaddingThree),
-			Content:     []View{Text(TextCfg{Text: label})},
+		labels = append(labels, Column(ContainerCfg{
+			MinWidth:   cellSize,
+			MaxWidth:   cellSize,
+			HAlign:     HAlignCenter,
+			SizeBorder: NoBorder,
+			Padding:    Some(PaddingThree),
+			Content:    []View{Text(TextCfg{Text: label, TextStyle: wdTS})},
 		}))
 	}
 	return Row(ContainerCfg{
@@ -339,7 +344,7 @@ func datePickerMonth(
 			disabled := datePickerIsDisabled(cellDate, cfg)
 			dayStr := strconv.Itoa(d)
 
-			cellColor := cfg.Color
+			cellColor := ColorTransparent
 			colorHover := cfg.ColorHover
 			if selected {
 				cellColor = cfg.ColorSelect
@@ -674,11 +679,11 @@ func datePickerDaysInMonth(month, year int) int {
 func datePickerCellSize(cfg *DatePickerCfg) float32 {
 	switch cfg.WeekdaysLen {
 	case WeekdayFull:
-		return 70
+		return 76
 	case WeekdayThreeLetter:
-		return 38
+		return 44
 	default:
-		return 30
+		return 36
 	}
 }
 

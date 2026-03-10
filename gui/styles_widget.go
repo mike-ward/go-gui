@@ -840,16 +840,16 @@ var (
 	}
 
 	DefaultDatePickerStyle = DatePickerStyle{
-		CellSpacing:      3,
+		CellSpacing:      8,
 		Color:            colorInteriorDark,
 		ColorHover:       colorHoverDark,
 		ColorFocus:       colorFocusDark,
 		ColorClick:       colorActiveDark,
-		ColorBorder:      colorBorderDark,
+		ColorBorder:      ColorTransparent,
 		ColorBorderFocus: colorSelectDark,
 		ColorSelect:      colorSelectDark,
-		Padding:          PaddingNone,
-		SizeBorder:       SizeBorderDef,
+		Padding:          PaddingMedium,
+		SizeBorder:       0,
 		Radius:           RadiusMedium,
 		RadiusBorder:     RadiusMedium,
 		TextStyle:        DefaultTextStyle,
