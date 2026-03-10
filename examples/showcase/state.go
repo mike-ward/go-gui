@@ -316,6 +316,7 @@ func demoEntries() []DemoEntry {
 		{ID: "expand_panel", Label: "Expand Panel", Group: groupOverlays, Summary: "Collapsible region with custom header and content.", Tags: []string{"accordion", "collapse", "panel"}},
 		{ID: "command_palette", Label: "Command Palette", Group: groupOverlays, Summary: "Keyboard-first searchable action list.", Tags: []string{"command", "search", "palette", "keyboard"}},
 		{ID: "tooltip", Label: "Tooltip", Group: groupOverlays, Summary: "Hover hints with custom placement and content.", Tags: []string{"hover", "hint", "floating"}},
+		{ID: "inspector", Label: "Inspector", Group: groupOverlays, Summary: "Dev-mode layout tree and property inspector.", Tags: []string{"inspector", "debug", "devtools", "layout", "tree"}},
 
 		{ID: "row", Label: "Row", Group: groupLayout, Summary: "Horizontal container arranging children left-to-right.", Tags: []string{"row", "horizontal", "container", "layout"}},
 		{ID: "column_demo", Label: "Column", Group: groupLayout, Summary: "Vertical container arranging children top-to-bottom.", Tags: []string{"column", "vertical", "container", "layout"}},

@@ -224,6 +224,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoCommandPalette(w)
 	case "tooltip":
 		return demoTooltip(w)
+	case "inspector":
+		return demoInspector(w)
 	case "rectangle":
 		return demoRectangle(w)
 	case "scrollbar":

@@ -239,6 +239,46 @@ func demoNotification(w *gui.Window) gui.View {
 	})
 }
 
+func demoInspector(w *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.SomeF(16),
+		Padding: gui.NoPadding,
+		Content: []gui.View{
+			w.Markdown(gui.MarkdownCfg{
+				ID:      "inspector-info",
+				Padding: gui.NoPadding,
+				Style:   gui.DefaultMarkdownStyle(),
+				Source: `Press **F12** to toggle the inspector. ` +
+					`Excluded in prod builds (` + "`-tags prod`" + `).
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| F12 | Toggle inspector on/off |
+| Alt+Left / Alt+Right | Resize panel |
+| Alt+Up | Move panel to opposite side |
+
+## Features
+
+- **Layout tree** — navigable tree of every node with type, size, and ID
+- **Property detail** — select a node to see position, size, sizing, ` +
+					`padding, spacing, color, radius, focus, scroll, alignment, ` +
+					`float, clip, opacity, events, and child count
+- **Wireframe highlight** — selected node outlined in cyan; ` +
+					`padding area in green`,
+			}),
+			sectionLabel(t, "Try It"),
+			gui.Text(gui.TextCfg{
+				Text:      "Press F12 to open the inspector now.",
+				TextStyle: t.N3,
+			}),
+		},
+	})
+}
+
 func demoTooltip(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{
