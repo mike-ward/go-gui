@@ -39,11 +39,13 @@ func detailPanel(w *gui.Window) gui.View {
 	case entry.ID == "":
 		content = demoPlaceholder(gui.CurrentTheme(), "No demo configured")
 	case app.ShowDocs && entry.Group != groupWelcome:
+		style := gui.DefaultMarkdownStyle()
+		style.H2 = gui.CurrentTheme().B3
 		content = w.Markdown(gui.MarkdownCfg{
 			ID:      "doc-" + entry.ID,
 			Source:  componentDoc(entry.ID),
 			Padding: gui.NoPadding,
-			Style:   gui.DefaultMarkdownStyle(),
+			Style:   style,
 		})
 	default:
 		content = componentDemo(w, entry.ID)
