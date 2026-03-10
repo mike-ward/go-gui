@@ -108,20 +108,20 @@ func demoThemeGen(w *gui.Window) gui.View {
 												ID:       "theme-gen-radius",
 												IDFocus:  9180,
 												Text:     app.ThemeGenRadiusText,
-												Value:    float64p(float64(app.ThemeGenRadius)),
+												Value:    gui.Some(float64(app.ThemeGenRadius)),
 												Decimals: 1,
-												Min:      float64p(0),
-												Max:      float64p(30),
+												Min:      gui.Some(0.0),
+												Max:      gui.Some(30.0),
 												Width:    80,
 												Sizing:   gui.FixedFit,
 												OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
 													gui.State[ShowcaseApp](w).ThemeGenRadiusText = text
 												},
-												OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+												OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 													app := gui.State[ShowcaseApp](w)
 													app.ThemeGenRadiusText = text
-													if value != nil {
-														app.ThemeGenRadius = float32(*value)
+													if v, ok := value.Value(); ok {
+														app.ThemeGenRadius = float32(v)
 														applyGenTheme(w)
 													}
 												},
@@ -138,20 +138,20 @@ func demoThemeGen(w *gui.Window) gui.View {
 												ID:       "theme-gen-border",
 												IDFocus:  9181,
 												Text:     app.ThemeGenBorderText,
-												Value:    float64p(float64(app.ThemeGenBorder)),
+												Value:    gui.Some(float64(app.ThemeGenBorder)),
 												Decimals: 1,
-												Min:      float64p(0),
-												Max:      float64p(10),
+												Min:      gui.Some(0.0),
+												Max:      gui.Some(10.0),
 												Width:    80,
 												Sizing:   gui.FixedFit,
 												OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
 													gui.State[ShowcaseApp](w).ThemeGenBorderText = text
 												},
-												OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+												OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 													app := gui.State[ShowcaseApp](w)
 													app.ThemeGenBorderText = text
-													if value != nil {
-														app.ThemeGenBorder = float32(*value)
+													if v, ok := value.Value(); ok {
+														app.ThemeGenBorder = float32(v)
 														applyGenTheme(w)
 													}
 												},

@@ -6,7 +6,7 @@ type NumericInputCfg struct {
 	ID          string
 	IDFocus     uint32
 	Text        string
-	Value       *float64
+	Value       Opt[float64]
 	Placeholder string
 	Locale      NumericLocaleCfg
 	StepCfg     NumericStepCfg
@@ -14,8 +14,8 @@ type NumericInputCfg struct {
 	CurrencyCfg NumericCurrencyModeCfg
 	PercentCfg  NumericPercentModeCfg
 	Decimals    int
-	Min         *float64
-	Max         *float64
+	Min         Opt[float64]
+	Max         Opt[float64]
 
 	// Sizing
 	Sizing    Sizing
@@ -42,7 +42,7 @@ type NumericInputCfg struct {
 
 	// Callbacks
 	OnTextChanged func(*Layout, string, *Window)
-	OnValueCommit func(*Layout, *float64, string, *Window)
+	OnValueCommit func(*Layout, Opt[float64], string, *Window)
 
 	// Accessibility
 	A11YLabel       string
@@ -130,8 +130,16 @@ func NumericInput(cfg NumericInputCfg) View {
 
 func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, _ NumericStepCfg, fillParent bool) View {
 	sizing := cfg.Sizing
+	var width, height, minWidth, maxWidth, minHeight, maxHeight float32
 	if fillParent {
 		sizing = FillFill
+	} else {
+		width = cfg.Width
+		height = cfg.Height
+		minWidth = cfg.MinWidth
+		maxWidth = cfg.MaxWidth
+		minHeight = cfg.MinHeight
+		maxHeight = cfg.MaxHeight
 	}
 	inputID := cfg.ID
 	if fillParent && len(cfg.ID) > 0 {
@@ -158,6 +166,12 @@ func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, _ NumericSt
 		Text:             cfg.Text,
 		Placeholder:      cfg.Placeholder,
 		Sizing:           sizing,
+		Width:            width,
+		Height:           height,
+		MinWidth:         minWidth,
+		MaxWidth:         maxWidth,
+		MinHeight:        minHeight,
+		MaxHeight:        maxHeight,
 		Padding:          cfg.Padding,
 		Radius:           radius,
 		SizeBorder:       sizeBorder,
@@ -169,7 +183,19 @@ func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, _ NumericSt
 		PlaceholderStyle: cfg.PlaceholderStyle,
 		Disabled:         cfg.Disabled,
 		Invisible:        cfg.Invisible,
-		OnTextChanged:    cfg.OnTextChanged,
+		OnTextChanged: cfg.OnTextChanged,
+		PreTextChange: func(current, proposed string) (string, bool) {
+			modeCfg := numericModeCfgFromInput(cfg)
+			return numericInputPreCommitTransformMode(
+				current, proposed, cfg.Decimals, locale, modeCfg)
+		},
+		PostCommitNormalize: func(text string, _ InputCommitReason) string {
+			modeCfg := numericModeCfgFromInput(cfg)
+			_, committed := numericInputCommitResultMode(
+				text, cfg.Value, cfg.Min, cfg.Max,
+				cfg.Decimals, locale, modeCfg)
+			return committed
+		},
 		OnTextCommit: func(layout *Layout, text string, _ InputCommitReason, w *Window) {
 			modeCfg := numericModeCfgFromInput(cfg)
 			value, committed := numericInputCommitResultMode(
@@ -315,9 +341,6 @@ func applyNumericInputDefaults(cfg *NumericInputCfg) {
 	}
 	if cfg.PlaceholderStyle == (TextStyle{}) {
 		cfg.PlaceholderStyle = DefaultInputStyle.PlaceholderStyle
-	}
-	if cfg.Decimals == 0 {
-		cfg.Decimals = 2
 	}
 	if cfg.CurrencyCfg == (NumericCurrencyModeCfg{}) {
 		cfg.CurrencyCfg = NumericCurrencyModeCfg{

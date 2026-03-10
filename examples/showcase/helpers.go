@@ -40,10 +40,6 @@ func demoBoxSized(label string, color gui.Color, w, h float32) gui.View {
 	})
 }
 
-func float64p(v float64) *float64 {
-	return &v
-}
-
 func placeholderHeader(text string) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,

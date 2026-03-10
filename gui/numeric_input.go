@@ -344,16 +344,16 @@ func numericParseScaled(raw string, decimals int, locale NumericLocaleCfg) (int6
 	return numericToScaled(parsed, decimals), true
 }
 
-// numericClamp clamps value between optional min and max. nil
-// pointers mean unbounded.
-func numericClamp(value float64, minVal, maxVal *float64) float64 {
+// numericClamp clamps value between optional min and max. Unset
+// Opt means unbounded.
+func numericClamp(value float64, minVal, maxVal Opt[float64]) float64 {
 	lo := math.Inf(-1)
 	hi := math.Inf(1)
-	if minVal != nil {
-		lo = *minVal
+	if v, ok := minVal.Value(); ok {
+		lo = v
 	}
-	if maxVal != nil {
-		hi = *maxVal
+	if v, ok := maxVal.Value(); ok {
+		hi = v
 	}
 	if lo > hi {
 		lo, hi = hi, lo
@@ -463,7 +463,7 @@ func numericModeParseValue(raw string, decimals int, locale NumericLocaleCfg, mc
 	return numericModeFromDisplay(displayValue, mc), true
 }
 
-func numericModeIsTransientInput(raw string, locale NumericLocaleCfg, mc numericModeCfg) bool {
+func numericModeIsTransientInput(raw string, decimals int, locale NumericLocaleCfg, mc numericModeCfg) bool {
 	loc := numericLocaleNormalize(locale)
 	text := strings.TrimSpace(raw)
 	if len(text) == 0 {
@@ -512,6 +512,9 @@ func numericModeIsTransientInput(raw string, locale NumericLocaleCfg, mc numeric
 			}
 		}
 	}
+	if decimals <= 0 {
+		return false
+	}
 	decSep := string(loc.DecimalSep)
 	if len(decSep) == 0 {
 		return false
@@ -553,47 +556,46 @@ func numericStepDelta(cfg NumericStepCfg, modifiers Modifier) float64 {
 	return step
 }
 
-func numericStepSeedMode(text string, value *float64, minVal *float64, decimals int, locale NumericLocaleCfg, mc numericModeCfg) float64 {
-	if value != nil {
-		return *value
+func numericStepSeedMode(text string, value, minVal Opt[float64], decimals int, locale NumericLocaleCfg, mc numericModeCfg) float64 {
+	if v, ok := value.Value(); ok {
+		return v
 	}
 	if parsed, ok := numericModeParseValue(text, decimals, locale, mc); ok {
 		return parsed
 	}
-	if minVal != nil {
-		return *minVal
+	if v, ok := minVal.Value(); ok {
+		return v
 	}
 	return 0.0
 }
 
 // numericInputCommitResult resolves text → (value, formatted).
-func numericInputCommitResult(text string, value *float64, minVal, maxVal *float64, decimals int, locale NumericLocaleCfg) (*float64, string) {
+func numericInputCommitResult(text string, value, minVal, maxVal Opt[float64], decimals int, locale NumericLocaleCfg) (Opt[float64], string) {
 	return numericInputCommitResultMode(text, value, minVal, maxVal, decimals, locale, numericModeCfg{displayMultiplier: 1.0})
 }
 
-func numericInputCommitResultMode(text string, value *float64, minVal, maxVal *float64, decimals int, locale NumericLocaleCfg, mc numericModeCfg) (*float64, string) {
+func numericInputCommitResultMode(text string, value, minVal, maxVal Opt[float64], decimals int, locale NumericLocaleCfg, mc numericModeCfg) (Opt[float64], string) {
 	trimmed := strings.TrimSpace(text)
 	if len(trimmed) == 0 {
-		return nil, ""
+		return Opt[float64]{}, ""
 	}
 	if parsed, ok := numericModeParseValue(trimmed, decimals, locale, mc); ok {
 		clamped := numericClamp(parsed, minVal, maxVal)
-		return &clamped, numericModeFormatValue(clamped, decimals, locale, mc)
+		return Some(clamped), numericModeFormatValue(clamped, decimals, locale, mc)
 	}
-	if value != nil {
-		clamped := numericClamp(*value, minVal, maxVal)
-		return &clamped, numericModeFormatValue(clamped, decimals, locale, mc)
+	if v, ok := value.Value(); ok {
+		clamped := numericClamp(v, minVal, maxVal)
+		return Some(clamped), numericModeFormatValue(clamped, decimals, locale, mc)
 	}
-	return nil, ""
+	return Opt[float64]{}, ""
 }
 
 // numericInputStepResult steps a value in the given direction.
-// numericInputStepResult steps a value in the given direction.
-func numericInputStepResult(text string, value *float64, minVal, maxVal *float64, decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier) (*float64, string) {
+func numericInputStepResult(text string, value, minVal, maxVal Opt[float64], decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier) (Opt[float64], string) {
 	return numericInputStepResultMode(text, value, minVal, maxVal, decimals, stepCfg, locale, direction, modifiers, numericModeCfg{displayMultiplier: 1.0})
 }
 
-func numericInputStepResultMode(text string, value *float64, minVal, maxVal *float64, decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier, mc numericModeCfg) (*float64, string) {
+func numericInputStepResultMode(text string, value, minVal, maxVal Opt[float64], decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier, mc numericModeCfg) (Opt[float64], string) {
 	if direction == 0 {
 		return numericInputCommitResultMode(text, value, minVal, maxVal, decimals, locale, mc)
 	}
@@ -602,7 +604,7 @@ func numericInputStepResultMode(text string, value *float64, minVal, maxVal *flo
 	delta := numericModeStepDelta(stepDisplay, mc)
 	seed := numericStepSeedMode(text, value, minVal, decimals, locale, mc)
 	clamped := numericClamp(seed+(delta*direction), minVal, maxVal)
-	return &clamped, numericModeFormatValue(clamped, decimals, locale, mc)
+	return Some(clamped), numericModeFormatValue(clamped, decimals, locale, mc)
 }
 
 func numericInputPreCommitTransformMode(current, proposed string, decimals int, locale NumericLocaleCfg, mc numericModeCfg) (string, bool) {
@@ -613,11 +615,45 @@ func numericInputPreCommitTransformMode(current, proposed string, decimals int, 
 	if len(trimmed) == 0 {
 		return "", true
 	}
+	loc := numericLocaleNormalize(locale)
+	// Reject decimal separator when no decimals allowed.
+	if decimals <= 0 && strings.ContainsRune(trimmed, loc.DecimalSep) {
+		return "", false
+	}
+	// Try parsing as-is first (handles already-valid formatted text).
 	if _, ok := numericModeParseValue(trimmed, decimals, locale, mc); ok {
 		return proposed, true
 	}
-	if numericModeIsTransientInput(proposed, locale, mc) {
+	// Strip group separators for lenient editing — allows typing
+	// in fields that contain formatted numbers without strict
+	// group validation blocking mid-edit keystrokes.
+	if loc.GroupSep != 0 {
+		stripped := numericStripGroupSep(trimmed, loc.GroupSep)
+		if stripped != trimmed {
+			if _, ok := numericModeParseValue(stripped, decimals, locale, mc); ok {
+				return proposed, true
+			}
+		}
+	}
+	if numericModeIsTransientInput(proposed, decimals, locale, mc) {
 		return proposed, true
 	}
+	// Also check transient with group separators stripped.
+	if loc.GroupSep != 0 {
+		stripped := numericStripGroupSep(proposed, loc.GroupSep)
+		if stripped != proposed && numericModeIsTransientInput(stripped, decimals, locale, mc) {
+			return proposed, true
+		}
+	}
 	return "", false
+}
+
+// numericStripGroupSep removes all group separator runes from s.
+func numericStripGroupSep(s string, groupSep rune) string {
+	return strings.Map(func(r rune) rune {
+		if r == groupSep {
+			return -1
+		}
+		return r
+	}, s)
 }

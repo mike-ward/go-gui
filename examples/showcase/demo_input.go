@@ -77,7 +77,7 @@ func demoInput(w *gui.Window) gui.View {
 
 func demoNumericInput(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
-	titleStyle := gui.CurrentTheme().B1
+	titleStyle := gui.CurrentTheme().B3
 	bodyStyle := gui.CurrentTheme().N3
 
 	return gui.Column(gui.ContainerCfg{
@@ -92,16 +92,16 @@ func demoNumericInput(w *gui.Window) gui.View {
 				Text:     app.NumericENText,
 				Value:    app.NumericENValue,
 				Decimals: 2,
-				Min:      float64p(0),
-				Max:      float64p(10000),
+				Min:      gui.Some(0.0),
+				Max:      gui.Some(10000.0),
 				Width:    220,
 				Sizing:   gui.FixedFit,
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).NumericENText = text
 				},
-				OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+				OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.NumericENValue = cloneFloatPtr(value)
+					app.NumericENValue = value
 					app.NumericENText = text
 				},
 			}),
@@ -118,16 +118,16 @@ func demoNumericInput(w *gui.Window) gui.View {
 					DecimalSep: ',',
 					GroupSep:   '.',
 				},
-				Min:    float64p(0),
-				Max:    float64p(10000),
+				Min:    gui.Some(0.0),
+				Max:    gui.Some(10000.0),
 				Width:  220,
 				Sizing: gui.FixedFit,
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).NumericDEText = text
 				},
-				OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+				OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.NumericDEValue = cloneFloatPtr(value)
+					app.NumericDEValue = value
 					app.NumericDEText = text
 				},
 			}),
@@ -141,16 +141,16 @@ func demoNumericInput(w *gui.Window) gui.View {
 				Value:    app.NumericCurrencyValue,
 				Mode:     gui.NumericCurrency,
 				Decimals: 2,
-				Min:      float64p(0),
-				Max:      float64p(10000),
+				Min:      gui.Some(0.0),
+				Max:      gui.Some(10000.0),
 				Width:    220,
 				Sizing:   gui.FixedFit,
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).NumericCurrencyText = text
 				},
-				OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+				OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.NumericCurrencyValue = cloneFloatPtr(value)
+					app.NumericCurrencyValue = value
 					app.NumericCurrencyText = text
 				},
 			}),
@@ -164,22 +164,22 @@ func demoNumericInput(w *gui.Window) gui.View {
 				Value:    app.NumericPercentValue,
 				Mode:     gui.NumericPercent,
 				Decimals: 2,
-				Min:      float64p(0),
-				Max:      float64p(1),
+				Min:      gui.Some(0.0),
+				Max:      gui.Some(1.0),
 				Width:    220,
 				Sizing:   gui.FixedFit,
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).NumericPercentText = text
 				},
-				OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+				OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.NumericPercentValue = cloneFloatPtr(value)
+					app.NumericPercentValue = value
 					app.NumericPercentText = text
 				},
 			}),
 			gui.Text(gui.TextCfg{Text: "Committed ratio: " + numericValueText(app.NumericPercentValue), TextStyle: bodyStyle}),
 
-			gui.Text(gui.TextCfg{Text: "No buttons (integer)", TextStyle: titleStyle}),
+			gui.Text(gui.TextCfg{Text: "Plain", TextStyle: titleStyle}),
 			gui.NumericInput(gui.NumericInputCfg{
 				ID:       "num-plain",
 				IDFocus:  9172,
@@ -194,9 +194,9 @@ func demoNumericInput(w *gui.Window) gui.View {
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).NumericPlainText = text
 				},
-				OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+				OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.NumericPlainValue = cloneFloatPtr(value)
+					app.NumericPlainValue = value
 					app.NumericPlainText = text
 				},
 			}),
@@ -383,8 +383,8 @@ func demoForms(w *gui.Window) gui.View {
 				Width:    120,
 				Sizing:   gui.FixedFit,
 				Decimals: 0,
-				Min:      float64p(0),
-				Max:      float64p(120),
+				Min:      gui.Some(0.0),
+				Max:      gui.Some(120.0),
 				Text:     form.AgeText,
 				Value:    form.AgeValue,
 				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
@@ -393,9 +393,9 @@ func demoForms(w *gui.Window) gui.View {
 					app.Form.AgeState.Dirty = strings.TrimSpace(text) != ""
 					app.Form.AgeState.Issue = validateAgeSync(text)
 				},
-				OnValueCommit: func(_ *gui.Layout, value *float64, text string, w *gui.Window) {
+				OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.Form.AgeValue = cloneFloatPtr(value)
+					app.Form.AgeValue = value
 					app.Form.AgeText = text
 					app.Form.AgeState.Touched = true
 					app.Form.AgeState.Issue = validateAgeSync(text)
@@ -495,9 +495,10 @@ func showcaseFormIssue(fieldID, text string) gui.View {
 	})
 }
 
-func numericValueText(value *float64) string {
-	if value == nil {
+func numericValueText(value gui.Opt[float64]) string {
+	v, ok := value.Value()
+	if !ok {
 		return "none"
 	}
-	return fmt.Sprintf("%.2f", *value)
+	return fmt.Sprintf("%.2f", v)
 }

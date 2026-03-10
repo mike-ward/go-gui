@@ -12,7 +12,7 @@ type FormModel struct {
 	Username string
 	Email    string
 	AgeText  string
-	AgeValue *float64
+	AgeValue gui.Opt[float64]
 
 	UsernameState ShowcaseFieldState
 	EmailState    ShowcaseFieldState

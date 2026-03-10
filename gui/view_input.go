@@ -46,11 +46,13 @@ type InputCfg struct {
 	IDScroll uint32
 
 	// Callbacks
-	OnTextChanged func(*Layout, string, *Window)
-	OnTextCommit  func(*Layout, string, InputCommitReason, *Window)
-	OnEnter       func(*Layout, *Event, *Window)
-	OnKeyDown     func(*Layout, *Event, *Window)
-	OnBlur        func(*Layout, *Window)
+	OnTextChanged      func(*Layout, string, *Window)
+	OnTextCommit       func(*Layout, string, InputCommitReason, *Window)
+	OnEnter            func(*Layout, *Event, *Window)
+	OnKeyDown          func(*Layout, *Event, *Window)
+	OnBlur             func(*Layout, *Window)
+	PreTextChange      func(current, proposed string) (string, bool)
+	PostCommitNormalize func(text string, reason InputCommitReason) string
 
 	// Accessibility
 	A11YLabel       string
@@ -81,6 +83,7 @@ func Input(cfg InputCfg) View {
 
 	colorBorderFocus := cfg.ColorBorderFocus
 	idFocus := cfg.IDFocus
+	onBlur := cfg.OnBlur
 
 	hcfg := inputHandlerCfg{
 		IDFocus:       cfg.IDFocus,
@@ -90,10 +93,12 @@ func Input(cfg InputCfg) View {
 		Mask:          cfg.Mask,
 		MaskPreset:    cfg.MaskPreset,
 		MaskTokens:    cfg.MaskTokens,
-		OnTextChanged: cfg.OnTextChanged,
-		OnTextCommit:  cfg.OnTextCommit,
-		OnEnter:       cfg.OnEnter,
-		OnKeyDown:     cfg.OnKeyDown,
+		OnTextChanged:       cfg.OnTextChanged,
+		OnTextCommit:        cfg.OnTextCommit,
+		OnEnter:             cfg.OnEnter,
+		OnKeyDown:           cfg.OnKeyDown,
+		PreTextChange:       cfg.PreTextChange,
+		PostCommitNormalize: cfg.PostCommitNormalize,
 	}
 
 	txtSizing := Sizing(FillFill)
@@ -372,6 +377,34 @@ func Input(cfg InputCfg) View {
 			if focused {
 				layout.Shape.ColorBorder = colorBorderFocus
 			}
+
+			// Blur detection: fire commit on focus loss.
+			focusMap := StateMap[uint32, bool](
+				w, nsInputFocus, capMany)
+			wasFocused, _ := focusMap.Get(layout.Shape.IDFocus)
+			focusMap.Set(layout.Shape.IDFocus, focused)
+			if wasFocused && !focused {
+				text := inputTextFromLayout(layout)
+				if hcfg.PostCommitNormalize != nil {
+					normalized := hcfg.PostCommitNormalize(
+						text, CommitBlur)
+					if normalized != text {
+						text = normalized
+						if hcfg.OnTextChanged != nil {
+							hcfg.OnTextChanged(
+								layout, text, w)
+						}
+					}
+				}
+				if hcfg.OnTextCommit != nil {
+					hcfg.OnTextCommit(
+						layout, text, CommitBlur, w)
+				}
+				if onBlur != nil {
+					onBlur(layout, w)
+				}
+			}
+
 			// Propagate selection to inner text shape.
 			if len(layout.Children) > 0 {
 				inner := &layout.Children[0]
@@ -425,17 +458,19 @@ func applyInputDefaults(cfg *InputCfg) {
 // inputHandlerCfg captures the fields shared by OnChar and
 // OnKeyDown handler factories.
 type inputHandlerCfg struct {
-	IDFocus       uint32
-	IDScroll      uint32
-	IsPassword    bool
-	Mode          InputMode
-	Mask          string
-	MaskPreset    InputMaskPreset
-	MaskTokens    []MaskTokenDef
-	OnTextChanged func(*Layout, string, *Window)
-	OnTextCommit  func(*Layout, string, InputCommitReason, *Window)
-	OnEnter       func(*Layout, *Event, *Window)
-	OnKeyDown     func(*Layout, *Event, *Window)
+	IDFocus             uint32
+	IDScroll            uint32
+	IsPassword          bool
+	Mode                InputMode
+	Mask                string
+	MaskPreset          InputMaskPreset
+	MaskTokens          []MaskTokenDef
+	OnTextChanged       func(*Layout, string, *Window)
+	OnTextCommit        func(*Layout, string, InputCommitReason, *Window)
+	OnEnter             func(*Layout, *Event, *Window)
+	OnKeyDown           func(*Layout, *Event, *Window)
+	PreTextChange       func(current, proposed string) (string, bool)
+	PostCommitNormalize func(text string, reason InputCommitReason) string
 }
 
 // compiledMask returns a non-nil *CompiledInputMask if the
@@ -521,8 +556,21 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				text = inputInsert(text, "\n", id, w)
 				changed = true
 			} else {
+				commitText := text
+				if hcfg.PostCommitNormalize != nil {
+					normalized := hcfg.PostCommitNormalize(
+						text, CommitEnter)
+					if normalized != text {
+						commitText = normalized
+						if hcfg.OnTextChanged != nil {
+							hcfg.OnTextChanged(
+								layout, commitText, w)
+						}
+					}
+				}
 				if hcfg.OnTextCommit != nil {
-					hcfg.OnTextCommit(layout, text, CommitEnter, w)
+					hcfg.OnTextCommit(
+						layout, commitText, CommitEnter, w)
 				}
 				if hcfg.OnEnter != nil {
 					hcfg.OnEnter(layout, e, w)
@@ -542,6 +590,12 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
 						CursorPos: res.CursorPos, Undo: is.Undo,
 					})
+					changed = true
+				}
+			} else if hcfg.PreTextChange != nil {
+				proposed := inputProposedText(text, ins, id, w)
+				if _, ok := hcfg.PreTextChange(text, proposed); ok {
+					text = inputInsert(text, ins, id, w)
 					changed = true
 				}
 			} else {
@@ -755,8 +809,21 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				text = inputInsert(text, "\n", id, w)
 				textChanged = true
 			} else {
+				commitText := text
+				if hcfg.PostCommitNormalize != nil {
+					normalized := hcfg.PostCommitNormalize(
+						text, CommitEnter)
+					if normalized != text {
+						commitText = normalized
+						if hcfg.OnTextChanged != nil {
+							hcfg.OnTextChanged(
+								layout, commitText, w)
+						}
+					}
+				}
 				if hcfg.OnTextCommit != nil {
-					hcfg.OnTextCommit(layout, text, CommitEnter, w)
+					hcfg.OnTextCommit(
+						layout, commitText, CommitEnter, w)
 				}
 				if hcfg.OnEnter != nil {
 					hcfg.OnEnter(layout, e, w)
@@ -800,6 +867,15 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 								CursorPos: res.CursorPos,
 								Undo:      cis.Undo,
 							})
+							textChanged = true
+						}
+					} else if hcfg.PreTextChange != nil {
+						proposed := inputProposedText(
+							text, clip, id, w)
+						if _, ok := hcfg.PreTextChange(
+							text, proposed); ok {
+							text = inputInsert(
+								text, clip, id, w)
 							textChanged = true
 						}
 					} else {

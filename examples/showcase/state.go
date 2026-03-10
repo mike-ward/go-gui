@@ -60,11 +60,11 @@ type ShowcaseApp struct {
 	NumericCurrencyText  string
 	NumericPercentText   string
 	NumericPlainText     string
-	NumericENValue       *float64
-	NumericDEValue       *float64
-	NumericCurrencyValue *float64
-	NumericPercentValue  *float64
-	NumericPlainValue    *float64
+	NumericENValue       gui.Opt[float64]
+	NumericDEValue       gui.Opt[float64]
+	NumericCurrencyValue gui.Opt[float64]
+	NumericPercentValue  gui.Opt[float64]
+	NumericPlainValue    gui.Opt[float64]
 
 	DatePickerDates []time.Time
 	InputDate       time.Time
@@ -127,9 +127,6 @@ type ShowcaseApp struct {
 }
 
 func newShowcaseApp() *ShowcaseApp {
-	value1234 := 1234.5
-	valuePct := 0.125
-
 	return &ShowcaseApp{
 		SelectedGroup:        groupAll,
 		SelectedComponent:    "welcome",
@@ -137,13 +134,13 @@ func newShowcaseApp() *ShowcaseApp {
 		RadioValue:           "go",
 		RangeValue:           50,
 		NumericENText:        "1,234.50",
-		NumericENValue:       &value1234,
+		NumericENValue:       gui.Some(1234.5),
 		NumericDEText:        "1.234,50",
-		NumericDEValue:       cloneFloatPtr(&value1234),
+		NumericDEValue:       gui.Some(1234.5),
 		NumericCurrencyText:  "$1,234.50",
-		NumericCurrencyValue: cloneFloatPtr(&value1234),
+		NumericCurrencyValue: gui.Some(1234.5),
 		NumericPercentText:   "12.50%",
-		NumericPercentValue:  &valuePct,
+		NumericPercentValue:  gui.Some(0.125),
 		InputDate:            time.Now(),
 		RollerDate:           time.Now(),
 		ColorPickerColor:     gui.RGBA(255, 85, 0, 255),
@@ -199,13 +196,6 @@ func newShowcaseApp() *ShowcaseApp {
 	}
 }
 
-func cloneFloatPtr(v *float64) *float64 {
-	if v == nil {
-		return nil
-	}
-	copyValue := *v
-	return &copyValue
-}
 
 func demoGroups() []DemoGroup {
 	return []DemoGroup{

@@ -82,6 +82,40 @@ func inputStateFromMemento(m InputMemento, undo, redo *BoundedStack[InputMemento
 	}
 }
 
+// inputProposedText returns the text that would result from
+// inserting insertText at the cursor without modifying state.
+func inputProposedText(text, insertText string, idFocus uint32, w *Window) string {
+	if len(insertText) == 0 {
+		return text
+	}
+	insertRunes := []rune(insertText)
+	if len(insertRunes) > inputMaxInsertRunes {
+		insertRunes = insertRunes[:inputMaxInsertRunes]
+	}
+	runes := []rune(text)
+	is := inputStateOrDefault(idFocus, w)
+	cursorPos := min(is.CursorPos, len(runes))
+	if cursorPos < 0 {
+		return text + string(insertRunes)
+	}
+	if is.SelectBeg != is.SelectEnd {
+		beg, end := u32Sort(is.SelectBeg, is.SelectEnd)
+		if int(beg) >= len(runes) || int(end) > len(runes) {
+			return text
+		}
+		result := make([]rune, 0, int(beg)+len(insertRunes)+(len(runes)-int(end)))
+		result = append(result, runes[:beg]...)
+		result = append(result, insertRunes...)
+		result = append(result, runes[end:]...)
+		return string(result)
+	}
+	result := make([]rune, 0, len(runes)+len(insertRunes))
+	result = append(result, runes[:cursorPos]...)
+	result = append(result, insertRunes...)
+	result = append(result, runes[cursorPos:]...)
+	return string(result)
+}
+
 // inputInsert inserts text at cursor or replaces selection.
 // Returns resulting text.
 func inputInsert(text string, insertText string, idFocus uint32, w *Window) string {

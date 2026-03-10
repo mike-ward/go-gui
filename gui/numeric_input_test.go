@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-func f64Ptr(v float64) *float64 { return &v }
-
 func assertF64Near(t *testing.T, got, want float64) {
 	t.Helper()
 	if math.Abs(got-want) >= 0.000001 {
@@ -72,38 +70,38 @@ func TestNumericFormatGroupSizes(t *testing.T) {
 
 func TestNumericClampUnboundedAllowsLargeValues(t *testing.T) {
 	v := 1.0e308
-	assertF64Near(t, numericClamp(v, nil, nil), v)
+	assertF64Near(t, numericClamp(v, Opt[float64]{}, Opt[float64]{}), v)
 }
 
 func TestNumericCommitResultClamps(t *testing.T) {
 	val, text := numericInputCommitResult(
-		"1,250.30", nil, f64Ptr(0), f64Ptr(1000), 2, NumericLocaleCfg{})
+		"1,250.30", Opt[float64]{}, Some(0.0), Some(1000.0), 2, NumericLocaleCfg{})
 	if text != "1,000.00" {
 		t.Fatalf("got %q, want %q", text, "1,000.00")
 	}
-	if val == nil {
-		t.Fatal("expected non-nil value")
+	if !val.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *val, 1000.0)
+	assertF64Near(t, val.Get(0), 1000.0)
 }
 
 func TestNumericCommitResultInvalidFallbackToValue(t *testing.T) {
 	val, text := numericInputCommitResult(
-		"abc", f64Ptr(12.5), nil, nil, 1, NumericLocaleCfg{})
+		"abc", Some(12.5), Opt[float64]{}, Opt[float64]{}, 1, NumericLocaleCfg{})
 	if text != "12.5" {
 		t.Fatalf("got %q, want %q", text, "12.5")
 	}
-	if val == nil {
-		t.Fatal("expected non-nil value")
+	if !val.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *val, 12.5)
+	assertF64Near(t, val.Get(0), 12.5)
 }
 
 func TestNumericCommitResultInvalidWithoutValue(t *testing.T) {
 	val, text := numericInputCommitResult(
-		"abc", nil, nil, nil, 2, NumericLocaleCfg{})
-	if val != nil {
-		t.Fatal("expected nil value")
+		"abc", Opt[float64]{}, Opt[float64]{}, Opt[float64]{}, 2, NumericLocaleCfg{})
+	if val.IsSet() {
+		t.Fatal("expected unset value")
 	}
 	if text != "" {
 		t.Fatalf("got %q, want empty", text)
@@ -112,15 +110,15 @@ func TestNumericCommitResultInvalidWithoutValue(t *testing.T) {
 
 func TestNumericStepResultUsesMinSeed(t *testing.T) {
 	val, text := numericInputStepResult(
-		"", nil, f64Ptr(10), nil, 2,
+		"", Opt[float64]{}, Some(10.0), Opt[float64]{}, 2,
 		NumericStepCfg{}, NumericLocaleCfg{}, 1.0, ModNone)
 	if text != "11.00" {
 		t.Fatalf("got %q, want %q", text, "11.00")
 	}
-	if val == nil {
-		t.Fatal("expected non-nil value")
+	if !val.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *val, 11.0)
+	assertF64Near(t, val.Get(0), 11.0)
 }
 
 func TestNumericStepResultModifiers(t *testing.T) {
@@ -130,24 +128,24 @@ func TestNumericStepResultModifiers(t *testing.T) {
 		AltMultiplier:   0.1,
 	}
 	valShift, textShift := numericInputStepResult(
-		"5", nil, nil, nil, 2, cfg, NumericLocaleCfg{}, 1.0, ModShift)
+		"5", Opt[float64]{}, Opt[float64]{}, Opt[float64]{}, 2, cfg, NumericLocaleCfg{}, 1.0, ModShift)
 	if textShift != "15.00" {
 		t.Fatalf("shift: got %q, want %q", textShift, "15.00")
 	}
-	if valShift == nil {
-		t.Fatal("expected non-nil value")
+	if !valShift.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *valShift, 15.0)
+	assertF64Near(t, valShift.Get(0), 15.0)
 
 	valAlt, textAlt := numericInputStepResult(
-		"5", nil, nil, nil, 2, cfg, NumericLocaleCfg{}, 1.0, ModAlt)
+		"5", Opt[float64]{}, Opt[float64]{}, Opt[float64]{}, 2, cfg, NumericLocaleCfg{}, 1.0, ModAlt)
 	if textAlt != "5.10" {
 		t.Fatalf("alt: got %q, want %q", textAlt, "5.10")
 	}
-	if valAlt == nil {
-		t.Fatal("expected non-nil value")
+	if !valAlt.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *valAlt, 5.1)
+	assertF64Near(t, valAlt.Get(0), 5.1)
 }
 
 func TestNumericCurrencyCommitResultPrefixSymbol(t *testing.T) {
@@ -158,14 +156,14 @@ func TestNumericCurrencyCommitResultPrefixSymbol(t *testing.T) {
 		displayMultiplier: 1.0,
 	}
 	val, text := numericInputCommitResultMode(
-		"-$1,234.5", nil, nil, nil, 2, NumericLocaleCfg{}, mc)
+		"-$1,234.5", Opt[float64]{}, Opt[float64]{}, Opt[float64]{}, 2, NumericLocaleCfg{}, mc)
 	if text != "-$1,234.50" {
 		t.Fatalf("got %q, want %q", text, "-$1,234.50")
 	}
-	if val == nil {
-		t.Fatal("expected non-nil value")
+	if !val.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *val, -1234.5)
+	assertF64Near(t, val.Get(0), -1234.5)
 }
 
 func TestNumericCurrencyCommitResultSuffixSymbol(t *testing.T) {
@@ -178,14 +176,14 @@ func TestNumericCurrencyCommitResultSuffixSymbol(t *testing.T) {
 		displayMultiplier: 1.0,
 	}
 	val, text := numericInputCommitResultMode(
-		"1.234,5 EUR", nil, nil, nil, 2, locale, mc)
+		"1.234,5 EUR", Opt[float64]{}, Opt[float64]{}, Opt[float64]{}, 2, locale, mc)
 	if text != "1.234,50 EUR" {
 		t.Fatalf("got %q, want %q", text, "1.234,50 EUR")
 	}
-	if val == nil {
-		t.Fatal("expected non-nil value")
+	if !val.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *val, 1234.5)
+	assertF64Near(t, val.Get(0), 1234.5)
 }
 
 func TestNumericPercentCommitRatioValue(t *testing.T) {
@@ -196,14 +194,14 @@ func TestNumericPercentCommitRatioValue(t *testing.T) {
 		displayMultiplier: 100.0,
 	}
 	val, text := numericInputCommitResultMode(
-		"12.5%", nil, nil, nil, 2, NumericLocaleCfg{}, mc)
+		"12.5%", Opt[float64]{}, Opt[float64]{}, Opt[float64]{}, 2, NumericLocaleCfg{}, mc)
 	if text != "12.50%" {
 		t.Fatalf("got %q, want %q", text, "12.50%")
 	}
-	if val == nil {
-		t.Fatal("expected non-nil value")
+	if !val.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *val, 0.125)
+	assertF64Near(t, val.Get(0), 0.125)
 }
 
 func TestNumericPercentStepResultUsesDisplayUnits(t *testing.T) {
@@ -214,15 +212,15 @@ func TestNumericPercentStepResultUsesDisplayUnits(t *testing.T) {
 		displayMultiplier: 100.0,
 	}
 	val, text := numericInputStepResultMode(
-		"12.50%", nil, nil, nil, 2,
+		"12.50%", Opt[float64]{}, Opt[float64]{}, Opt[float64]{}, 2,
 		NumericStepCfg{}, NumericLocaleCfg{}, 1.0, ModNone, mc)
 	if text != "13.50%" {
 		t.Fatalf("got %q, want %q", text, "13.50%")
 	}
-	if val == nil {
-		t.Fatal("expected non-nil value")
+	if !val.IsSet() {
+		t.Fatal("expected set value")
 	}
-	assertF64Near(t, *val, 0.135)
+	assertF64Near(t, val.Get(0), 0.135)
 }
 
 func TestNumericPercentRoundTripCanonical(t *testing.T) {
