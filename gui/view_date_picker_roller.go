@@ -30,9 +30,14 @@ type DatePickerRollerCfg struct {
 	VisibleItems    int // must be odd
 	MinWidth        float32
 	MaxWidth        float32
+	WidthDay        float32
+	WidthMonth      float32
+	WidthYear       float32
 	LongMonths      bool // true = "January", false = "Jan"
+	WrapYear        bool
 	Color           Color
 	ColorBorder     Color
+	ColorBorderFocus Color
 	SizeBorder      Opt[float32]
 	Radius          Opt[float32]
 	Padding         Opt[Padding]
@@ -64,36 +69,36 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 		drums = append(drums,
 			rollerDrum(cfg, "day", sel.Day(), 1,
 				datePickerDaysInMonth(int(sel.Month()), sel.Year()),
-				rollerDayFormat, 38),
+				rollerDayFormat, cfg.WidthDay, true),
 			rollerDrum(cfg, "month", int(sel.Month()), 1, 12,
-				rollerMonthFormat(cfg.LongMonths), 56),
+				rollerMonthFormat(cfg.LongMonths), cfg.WidthMonth, true),
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, cfg.WidthYear, cfg.WrapYear),
 		)
 	case RollerMonthDayYear:
 		drumNames = []string{"month", "day", "year"}
 		drums = append(drums,
 			rollerDrum(cfg, "month", int(sel.Month()), 1, 12,
-				rollerMonthFormat(cfg.LongMonths), 56),
+				rollerMonthFormat(cfg.LongMonths), cfg.WidthMonth, true),
 			rollerDrum(cfg, "day", sel.Day(), 1,
 				datePickerDaysInMonth(int(sel.Month()), sel.Year()),
-				rollerDayFormat, 38),
+				rollerDayFormat, cfg.WidthDay, true),
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, cfg.WidthYear, cfg.WrapYear),
 		)
 	case RollerMonthYear:
 		drumNames = []string{"month", "year"}
 		drums = append(drums,
 			rollerDrum(cfg, "month", int(sel.Month()), 1, 12,
-				rollerMonthFormat(cfg.LongMonths), 56),
+				rollerMonthFormat(cfg.LongMonths), cfg.WidthMonth, true),
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, cfg.WidthYear, cfg.WrapYear),
 		)
 	case RollerYearOnly:
 		drumNames = []string{"year"}
 		drums = append(drums,
 			rollerDrum(cfg, "year", sel.Year(),
-				cfg.MinYear, cfg.MaxYear, rollerYearFormat, 48),
+				cfg.MinYear, cfg.MaxYear, rollerYearFormat, cfg.WidthYear, cfg.WrapYear),
 		)
 	}
 
@@ -101,6 +106,8 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 	minYear := cfg.MinYear
 	maxYear := cfg.MaxYear
 	selectedDate := cfg.SelectedDate
+	mode := cfg.DisplayMode
+	wrapYear := cfg.WrapYear
 
 	return GenerateViewLayout(container(ContainerCfg{
 		ID:          cfg.ID,
@@ -120,9 +127,18 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 		axis:      AxisLeftToRight,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
 			rollerOnKeyDown(onChange, selectedDate,
-				minYear, maxYear, e, w)
+				minYear, maxYear, e, w, mode, wrapYear)
 		},
-		AmendLayout: func(lo *Layout, _ *Window) {
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			if cfg.IDFocus > 0 {
+				w.SetIDFocus(cfg.IDFocus)
+				e.IsHandled = true
+			}
+		},
+		AmendLayout: func(lo *Layout, w *Window) {
+			if cfg.IDFocus > 0 && w.IsFocus(cfg.IDFocus) {
+				lo.Shape.ColorBorder = cfg.ColorBorderFocus
+			}
 			if lo.Shape.Events == nil {
 				lo.Shape.Events = &EventHandlers{}
 			}
@@ -143,7 +159,7 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 							e.MouseX, e.MouseY) {
 						rollerDrumAdjust(drumNames[i],
 							delta, selectedDate,
-							minYear, maxYear, onChange, w)
+							minYear, maxYear, onChange, w, wrapYear)
 						return
 					}
 				}
@@ -158,6 +174,7 @@ func rollerDrum(
 	cfg *DatePickerRollerCfg, name string,
 	value, minVal, maxVal int,
 	format func(int) string, drumWidth float32,
+	wrap bool,
 ) View {
 	vis := cfg.VisibleItems
 	half := vis / 2
@@ -171,16 +188,23 @@ func rollerDrum(
 	for i := range vis {
 		offset := i - half
 		v := value + offset
-		// Wrap within range.
-		span := maxVal - minVal + 1
-		for v < minVal {
-			v += span
-		}
-		for v > maxVal {
-			v -= span
+
+		if wrap {
+			// Wrap within range.
+			span := maxVal - minVal + 1
+			for v < minVal {
+				v += span
+			}
+			for v > maxVal {
+				v -= span
+			}
 		}
 
 		label := format(v)
+		if v < minVal || v > maxVal {
+			label = " "
+		}
+
 		itemTS := ts
 		if offset == 0 {
 			itemTS.Size = ts.Size + 2
@@ -213,14 +237,15 @@ func rollerDrum(
 				}),
 			},
 		}
-		if offset != 0 {
+		itemClickable := offset != 0 && (v >= minVal && v <= maxVal || wrap)
+		if itemClickable {
 			clickDelta := offset
 			itemCfg.OnClick = func(
 				_ *Layout, _ *Event, w *Window,
 			) {
 				rollerDrumAdjust(name, clickDelta,
 					selectedDate, minYear, maxYear,
-					onChange, w)
+					onChange, w, wrap)
 			}
 		}
 		items = append(items, Row(itemCfg))
@@ -237,14 +262,15 @@ func rollerDrumAdjust(
 	name string, delta int, sel time.Time,
 	minYear, maxYear int,
 	onChange func(time.Time, *Window), w *Window,
+	wrapYear bool,
 ) {
 	switch name {
 	case "day":
-		rollerAdjustDay(delta, sel, onChange, w)
+		rollerAdjustDay(delta, sel, minYear, maxYear, onChange, w)
 	case "month":
-		rollerAdjustMonth(delta, sel, onChange, w)
+		rollerAdjustMonth(delta, sel, minYear, maxYear, onChange, w)
 	case "year":
-		rollerAdjustYear(delta, sel, minYear, maxYear, onChange, w)
+		rollerAdjustYear(delta, sel, minYear, maxYear, onChange, w, wrapYear)
 	}
 }
 
@@ -253,61 +279,49 @@ func rollerOnKeyDown(
 	onChange func(time.Time, *Window),
 	sel time.Time, minYear, maxYear int,
 	e *Event, w *Window,
+	mode DatePickerRollerDisplayMode,
+	wrapYear bool,
 ) {
 	if onChange == nil {
 		return
 	}
 	switch {
 	case e.Modifiers == ModNone && e.KeyCode == KeyUp:
-		rollerAdjustMonth(-1, sel, onChange, w)
+		switch mode {
+		case RollerYearOnly:
+			rollerAdjustYear(-1, sel, minYear, maxYear, onChange, w, wrapYear)
+		case RollerMonthYear:
+			rollerAdjustMonth(-1, sel, minYear, maxYear, onChange, w)
+		default:
+			rollerAdjustDay(-1, sel, minYear, maxYear, onChange, w)
+		}
 		e.IsHandled = true
 	case e.Modifiers == ModNone && e.KeyCode == KeyDown:
-		rollerAdjustMonth(1, sel, onChange, w)
+		switch mode {
+		case RollerYearOnly:
+			rollerAdjustYear(1, sel, minYear, maxYear, onChange, w, wrapYear)
+		case RollerMonthYear:
+			rollerAdjustMonth(1, sel, minYear, maxYear, onChange, w)
+		default:
+			rollerAdjustDay(1, sel, minYear, maxYear, onChange, w)
+		}
 		e.IsHandled = true
 	case e.Modifiers == ModShift && e.KeyCode == KeyUp:
-		rollerAdjustYear(-1, sel, minYear, maxYear, onChange, w)
+		rollerAdjustYear(-1, sel, minYear, maxYear, onChange, w, wrapYear)
 		e.IsHandled = true
 	case e.Modifiers == ModShift && e.KeyCode == KeyDown:
-		rollerAdjustYear(1, sel, minYear, maxYear, onChange, w)
+		rollerAdjustYear(1, sel, minYear, maxYear, onChange, w, wrapYear)
 		e.IsHandled = true
 	case e.Modifiers == ModAlt && e.KeyCode == KeyUp:
-		rollerAdjustDay(-1, sel, onChange, w)
+		rollerAdjustMonth(-1, sel, minYear, maxYear, onChange, w)
 		e.IsHandled = true
 	case e.Modifiers == ModAlt && e.KeyCode == KeyDown:
-		rollerAdjustDay(1, sel, onChange, w)
+		rollerAdjustMonth(1, sel, minYear, maxYear, onChange, w)
 		e.IsHandled = true
 	}
 }
 
 func rollerAdjustDay(
-	delta int, sel time.Time,
-	onChange func(time.Time, *Window), w *Window,
-) {
-	if onChange == nil {
-		return
-	}
-	newDate := sel.AddDate(0, 0, delta)
-	onChange(newDate, w)
-}
-
-func rollerAdjustMonth(
-	delta int, sel time.Time,
-	onChange func(time.Time, *Window), w *Window,
-) {
-	if onChange == nil {
-		return
-	}
-	newDate := sel.AddDate(0, delta, 0)
-	// Clamp day to new month's max.
-	dim := datePickerDaysInMonth(int(newDate.Month()), newDate.Year())
-	if newDate.Day() > dim {
-		newDate = time.Date(newDate.Year(), newDate.Month(), dim,
-			0, 0, 0, 0, time.Local)
-	}
-	onChange(newDate, w)
-}
-
-func rollerAdjustYear(
 	delta int, sel time.Time,
 	minYear, maxYear int,
 	onChange func(time.Time, *Window), w *Window,
@@ -315,9 +329,71 @@ func rollerAdjustYear(
 	if onChange == nil {
 		return
 	}
-	newYear := sel.Year() + delta
-	if newYear < minYear || newYear > maxYear {
+	newDate := sel.AddDate(0, 0, delta)
+	if newDate.Year() < minYear || newDate.Year() > maxYear {
 		return
+	}
+	onChange(newDate, w)
+}
+
+func rollerAdjustMonth(
+	delta int, sel time.Time,
+	minYear, maxYear int,
+	onChange func(time.Time, *Window), w *Window,
+) {
+	if onChange == nil {
+		return
+	}
+	// Explicitly calculate to handle month-end clamping (e.g. Jan 31 -> Feb 28).
+	y, m, d := sel.Date()
+	nm := int(m) + delta
+	ny := y
+	for nm < 1 {
+		nm += 12
+		ny--
+	}
+	for nm > 12 {
+		nm -= 12
+		ny++
+	}
+
+	if ny < minYear || ny > maxYear {
+		return
+	}
+
+	dim := datePickerDaysInMonth(nm, ny)
+	nd := d
+	if nd > dim {
+		nd = dim
+	}
+	newDate := time.Date(ny, time.Month(nm), nd,
+		sel.Hour(), sel.Minute(), sel.Second(), sel.Nanosecond(),
+		sel.Location())
+	onChange(newDate, w)
+}
+
+func rollerAdjustYear(
+	delta int, sel time.Time,
+	minYear, maxYear int,
+	onChange func(time.Time, *Window), w *Window,
+	wrap bool,
+) {
+	if onChange == nil {
+		return
+	}
+	newYear := sel.Year() + delta
+	if wrap {
+		span := maxYear - minYear + 1
+		for newYear < minYear {
+			newYear += span
+		}
+		for newYear > maxYear {
+			newYear -= span
+		}
+	} else {
+		if newYear < minYear || newYear > maxYear {
+			return
+		}
 	}
 	dim := datePickerDaysInMonth(int(sel.Month()), newYear)
 	day := sel.Day()
@@ -325,7 +401,8 @@ func rollerAdjustYear(
 		day = dim
 	}
 	newDate := time.Date(newYear, sel.Month(), day,
-		0, 0, 0, 0, time.Local)
+		sel.Hour(), sel.Minute(), sel.Second(), sel.Nanosecond(),
+		sel.Location())
 	onChange(newDate, w)
 }
 
@@ -361,12 +438,28 @@ func applyRollerDefaults(cfg *DatePickerRollerCfg) {
 	if cfg.VisibleItems%2 == 0 {
 		cfg.VisibleItems++
 	}
+	if cfg.WidthDay == 0 {
+		cfg.WidthDay = 40
+	}
+	if cfg.WidthMonth == 0 {
+		if cfg.LongMonths {
+			cfg.WidthMonth = 100
+		} else {
+			cfg.WidthMonth = 64
+		}
+	}
+	if cfg.WidthYear == 0 {
+		cfg.WidthYear = 52
+	}
 	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ColorBackground
 	}
 	d := &DefaultDatePickerStyle
 	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
+	}
+	if !cfg.ColorBorderFocus.IsSet() {
+		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.SizeBorder.IsSet() {
 		cfg.SizeBorder = Some(d.SizeBorder)

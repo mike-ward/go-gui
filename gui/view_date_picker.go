@@ -775,7 +775,7 @@ func isSameDay(a, b time.Time) bool {
 // datePickerViewTime returns a time for the current view month/year.
 func datePickerViewTime(state datePickerState) time.Time {
 	return time.Date(state.ViewYear, time.Month(state.ViewMonth),
-		1, 0, 0, 0, 0, time.Local)
+		1, 0, 0, 0, 0, time.UTC) // Use UTC for internal view time unless we store location
 }
 
 // datePickerGoWeekday converts Go's time.Weekday (Sun=0) to
@@ -806,7 +806,7 @@ func datePickerWeekdayLabel(dow int, wdLen DatePickerWeekdayLen) string {
 
 // datePickerDaysInMonth returns the number of days in a month.
 func datePickerDaysInMonth(month, year int) int {
-	t := time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.Local)
+	t := time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.UTC)
 	return t.Day()
 }
 

@@ -32,6 +32,9 @@ func TestRollerDefaults(t *testing.T) {
 	if cfg.VisibleItems != 3 {
 		t.Errorf("VisibleItems = %d", cfg.VisibleItems)
 	}
+	if !cfg.ColorBorderFocus.IsSet() {
+		t.Error("ColorBorderFocus should have a default value")
+	}
 	if cfg.SelectedDate.IsZero() {
 		t.Error("SelectedDate should default to now")
 	}
@@ -114,12 +117,12 @@ func TestRollerAdjustDay(t *testing.T) {
 	onChange := func(d time.Time, _ *Window) { got = d }
 	w := &Window{}
 
-	rollerAdjustDay(1, sel, onChange, w)
+	rollerAdjustDay(1, sel, 1900, 2100, onChange, w)
 	if got.Day() != 16 {
 		t.Errorf("day+1 = %d", got.Day())
 	}
 
-	rollerAdjustDay(-1, sel, onChange, w)
+	rollerAdjustDay(-1, sel, 1900, 2100, onChange, w)
 	if got.Day() != 14 {
 		t.Errorf("day-1 = %d", got.Day())
 	}
@@ -128,7 +131,7 @@ func TestRollerAdjustDay(t *testing.T) {
 func TestRollerAdjustDayNilOnChange(_ *testing.T) {
 	sel := time.Date(2025, 3, 15, 0, 0, 0, 0, time.Local)
 	// Should not panic.
-	rollerAdjustDay(1, sel, nil, &Window{})
+	rollerAdjustDay(1, sel, 1900, 2100, nil, &Window{})
 }
 
 func TestRollerAdjustMonth(t *testing.T) {
@@ -137,12 +140,12 @@ func TestRollerAdjustMonth(t *testing.T) {
 	onChange := func(d time.Time, _ *Window) { got = d }
 	w := &Window{}
 
-	rollerAdjustMonth(1, sel, onChange, w)
+	rollerAdjustMonth(1, sel, 1900, 2100, onChange, w)
 	if got.Day() != 15 || got.Month() != 2 {
 		t.Errorf("month+1 from Jan 15 = %v", got)
 	}
 
-	rollerAdjustMonth(-1, sel, onChange, w)
+	rollerAdjustMonth(-1, sel, 1900, 2100, onChange, w)
 	if got.Day() != 15 || got.Month() != 12 || got.Year() != 2024 {
 		t.Errorf("month-1 from Jan 15 = %v", got)
 	}
@@ -154,7 +157,7 @@ func TestRollerAdjustYear(t *testing.T) {
 	onChange := func(d time.Time, _ *Window) { got = d }
 	w := &Window{}
 
-	rollerAdjustYear(1, sel, 1900, 2100, onChange, w)
+	rollerAdjustYear(1, sel, 1900, 2100, onChange, w, false)
 	// 2024 leap → 2025 non-leap, Feb 29 clamped to 28.
 	if got.Day() != 28 || got.Month() != 2 || got.Year() != 2025 {
 		t.Errorf("year+1 from leap = %v", got)
@@ -167,14 +170,14 @@ func TestRollerAdjustYearBounds(t *testing.T) {
 	onChange := func(_ time.Time, _ *Window) { called = true }
 	w := &Window{}
 
-	rollerAdjustYear(1, sel, 1900, 2100, onChange, w)
+	rollerAdjustYear(1, sel, 1900, 2100, onChange, w, false)
 	if called {
 		t.Error("should not call onChange beyond maxYear")
 	}
 
 	sel = time.Date(1900, 6, 1, 0, 0, 0, 0, time.Local)
 	called = false
-	rollerAdjustYear(-1, sel, 1900, 2100, onChange, w)
+	rollerAdjustYear(-1, sel, 1900, 2100, onChange, w, false)
 	if called {
 		t.Error("should not call onChange below minYear")
 	}
