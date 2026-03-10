@@ -183,7 +183,7 @@ func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, _ NumericSt
 		PlaceholderStyle: cfg.PlaceholderStyle,
 		Disabled:         cfg.Disabled,
 		Invisible:        cfg.Invisible,
-		OnTextChanged: cfg.OnTextChanged,
+		OnTextChanged:    cfg.OnTextChanged,
 		PreTextChange: func(current, proposed string) (string, bool) {
 			modeCfg := numericModeCfgFromInput(cfg)
 			return numericInputPreCommitTransformMode(
@@ -217,6 +217,15 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 	}
 	baseColor := cfg.Color
 
+	stepUpID := ""
+	if len(cfg.ID) > 0 {
+		stepUpID = cfg.ID + "_step_up"
+	}
+	stepDownID := ""
+	if len(cfg.ID) > 0 {
+		stepDownID = cfg.ID + "_step_down"
+	}
+
 	return Column(ContainerCfg{
 		Spacing:   SomeF(0),
 		Sizing:    FitFill,
@@ -225,7 +234,7 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 		Padding:   Some(NewPadding(0, PadSmall, 0, 0)),
 		Content: []View{
 			Button(ButtonCfg{
-				ID:          cfg.ID + "_step_up",
+				ID:          stepUpID,
 				Sizing:      FillFill,
 				Padding:     NoPadding,
 				Color:       baseColor,
@@ -248,7 +257,7 @@ func numericInputStepButtons(cfg NumericInputCfg, locale NumericLocaleCfg, stepC
 				},
 			}),
 			Button(ButtonCfg{
-				ID:          cfg.ID + "_step_down",
+				ID:          stepDownID,
 				Sizing:      FillFill,
 				Padding:     NoPadding,
 				Color:       baseColor,

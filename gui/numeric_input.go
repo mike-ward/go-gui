@@ -137,23 +137,11 @@ func numericDecimalsClamped(decimals int) int {
 	return decimals
 }
 
-func numericScaleFactor(decimals int) int64 {
+func numericRoundToDecimals(value float64, decimals int) float64 {
 	d := numericDecimalsClamped(decimals)
-	factor := int64(1)
-	for range d {
-		factor *= 10
-	}
-	return factor
-}
-
-func numericToScaled(value float64, decimals int) int64 {
-	factor := float64(numericScaleFactor(decimals))
-	return int64(math.Round(value * factor))
-}
-
-func numericScaledToValue(scaled int64, decimals int) float64 {
-	factor := float64(numericScaleFactor(decimals))
-	return float64(scaled) / factor
+	str := strconv.FormatFloat(value, 'f', d, 64)
+	rounded, _ := strconv.ParseFloat(str, 64)
+	return rounded
 }
 
 func numericGroupSize(groupSizes []int, idx int) int {
@@ -194,33 +182,32 @@ func numericGroupIntegerPart(raw string, groupSep rune, groupSizes []int) string
 	return string(reversed)
 }
 
-func numericFormatScaled(scaled int64, decimals int, locale NumericLocaleCfg) string {
+func numericFormatValue(value float64, decimals int, locale NumericLocaleCfg) string {
 	loc := numericLocaleNormalize(locale)
 	d := numericDecimalsClamped(decimals)
-	scale := numericScaleFactor(d)
-	magnitude := scaled
+	
+	str := strconv.FormatFloat(math.Abs(value), 'f', d, 64)
+	
 	sign := ""
-	if scaled < 0 {
-		magnitude = -scaled
+	if value < 0 {
 		sign = string(loc.MinusSign)
 	}
-	intPart := strconv.FormatInt(magnitude/scale, 10)
+	
+	parts := strings.Split(str, ".")
+	intPart := parts[0]
 	grouped := numericGroupIntegerPart(intPart, loc.GroupSep, loc.GroupSizes)
-	if d == 0 {
+	if d == 0 || len(parts) == 1 {
 		return sign + grouped
 	}
-	fracPart := strconv.FormatInt(magnitude%scale, 10)
-	if len(fracPart) < d {
-		fracPart = strings.Repeat("0", d-len(fracPart)) + fracPart
-	}
+	
+	fracPart := parts[1]
 	return sign + grouped + string(loc.DecimalSep) + fracPart
 }
 
 // numericFormat formats a value with the given decimals and
 // locale.
 func numericFormat(value float64, decimals int, locale NumericLocaleCfg) string {
-	scaled := numericToScaled(value, decimals)
-	return numericFormatScaled(scaled, decimals, locale)
+	return numericFormatValue(value, decimals, locale)
 }
 
 func numericIntegerGroupsValid(intSegment []rune, groupSep rune, groupSizes []int) bool {
@@ -336,13 +323,7 @@ func numericParse(raw string, locale NumericLocaleCfg) (float64, bool) {
 	return number, true
 }
 
-func numericParseScaled(raw string, decimals int, locale NumericLocaleCfg) (int64, bool) {
-	parsed, ok := numericParse(raw, locale)
-	if !ok {
-		return 0, false
-	}
-	return numericToScaled(parsed, decimals), true
-}
+
 
 // numericClamp clamps value between optional min and max. Unset
 // Opt means unbounded.
@@ -438,7 +419,7 @@ func numericApplyAffix(formatted string, locale NumericLocaleCfg, mc numericMode
 		number = number[len(plus):]
 	}
 	space := ""
-	if mc.affixSpacing {
+	if mc.affixSpacing && len(number) > 0 {
 		space = " "
 	}
 	switch mc.affixPosition {
@@ -455,11 +436,11 @@ func numericModeParseValue(raw string, decimals int, locale NumericLocaleCfg, mc
 	if !ok {
 		return 0, false
 	}
-	displayScaled, ok := numericParseScaled(plain, decimals, locale)
+	parsed, ok := numericParse(plain, locale)
 	if !ok {
 		return 0, false
 	}
-	displayValue := numericScaledToValue(displayScaled, decimals)
+	displayValue := numericRoundToDecimals(parsed, decimals)
 	return numericModeFromDisplay(displayValue, mc), true
 }
 
@@ -537,8 +518,8 @@ func numericModeIsTransientInput(raw string, decimals int, locale NumericLocaleC
 
 func numericModeFormatValue(value float64, decimals int, locale NumericLocaleCfg, mc numericModeCfg) string {
 	displayValue := numericModeToDisplay(value, mc)
-	scaled := numericToScaled(displayValue, decimals)
-	formatted := numericFormatScaled(scaled, decimals, locale)
+	displayValueRounded := numericRoundToDecimals(displayValue, decimals)
+	formatted := numericFormatValue(displayValueRounded, decimals, locale)
 	return numericApplyAffix(formatted, locale, mc)
 }
 

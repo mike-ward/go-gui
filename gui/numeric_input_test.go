@@ -320,3 +320,25 @@ func TestNumericPreCommitAcceptsTransientPercentAffix(t *testing.T) {
 		t.Fatalf("got %q, want %q", got, "12.%")
 	}
 }
+
+func TestNumericLargeFloat64Overflow(t *testing.T) {
+	val := 1.5e20
+	formatted := numericFormat(val, 2, NumericLocaleCfg{})
+	if formatted != "150,000,000,000,000,000,000.00" {
+		t.Fatalf("got %q", formatted)
+	}
+}
+
+func TestNumericEmptyPrefixSpacing(t *testing.T) {
+	mc := numericModeCfg{
+		mode:              NumericCurrency,
+		affix:             "$",
+		affixPosition:     AffixPrefix,
+		affixSpacing:      true,
+		displayMultiplier: 1.0,
+	}
+	got := numericApplyAffix("", NumericLocaleCfg{}, mc)
+	if got != "$" {
+		t.Fatalf("got %q, want %q", got, "$")
+	}
+}
