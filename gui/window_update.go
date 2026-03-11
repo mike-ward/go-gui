@@ -158,7 +158,7 @@ func (w *Window) Update() {
 		w.inspectorPropsCache = make(map[string]inspectorNodeProps)
 		selected := inspectorSelectedPath(w)
 		w.inspectorTreeCache = inspectorBuildTreeNodes(
-			&w.layout, selected, w.inspectorPropsCache)
+			w, &w.layout, selected, w.inspectorPropsCache)
 	}
 
 	if len(w.layout.Children) > 0 {

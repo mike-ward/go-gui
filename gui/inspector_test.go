@@ -43,7 +43,7 @@ func TestInspectorBuildTreeNodes(t *testing.T) {
 	}
 
 	props := make(map[string]inspectorNodeProps)
-	nodes := inspectorBuildTreeNodes(&root, "0", props)
+	nodes := inspectorBuildTreeNodes(nil, &root, "0", props)
 	if len(nodes) != 1 {
 		t.Fatalf("len(nodes) = %d, want 1", len(nodes))
 	}
@@ -249,5 +249,40 @@ func TestEventFnInspectorHotkeysAndPick(t *testing.T) {
 	w.EventFn(&Event{Type: EventMouseDown, MouseX: 361, MouseY: 30})
 	if got := inspectorSelectedPath(w); got != "0.0" {
 		t.Fatalf("selected path = %q, want %q", got, "0.0")
+	}
+}
+
+func TestInspectorLazyBuilding(t *testing.T) {
+	requireInspector(t)
+	root := Layout{
+		Shape: &Shape{},
+		Children: []Layout{{
+			Shape: &Shape{ID: "root"},
+			Children: []Layout{
+				{Shape: &Shape{ID: "child1"}},
+				{Shape: &Shape{ID: "child2"}},
+			},
+		}},
+	}
+
+	// Case 1: Collapsed root. Should only see root and a dummy child.
+	props := make(map[string]inspectorNodeProps)
+	nodes := inspectorBuildTreeNodes(nil, &root, "", props)
+	if len(nodes) != 1 {
+		t.Fatalf("len(nodes) = %d, want 1", len(nodes))
+	}
+	if len(nodes[0].Nodes) != 1 {
+		t.Fatalf("collapsed node should have 1 dummy child, got %d", len(nodes[0].Nodes))
+	}
+	if nodes[0].Nodes[0].ID != "0.__dummy__" {
+		t.Fatalf("dummy child ID = %q, want %q", nodes[0].Nodes[0].ID, "0.__dummy__")
+	}
+
+	// Case 2: Expanded root via window state.
+	w := newTestWindow()
+	treeExpandedSet(w, inspectorTreeID, "0", true)
+	nodes = inspectorBuildTreeNodes(w, &root, "", props)
+	if len(nodes[0].Nodes) != 2 {
+		t.Fatalf("expanded node should have 2 children, got %d", len(nodes[0].Nodes))
 	}
 }

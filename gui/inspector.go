@@ -285,6 +285,7 @@ func inspectorSelectedPath(w *Window) string {
 }
 
 func inspectorBuildTreeNodes(
+	w *Window,
 	layout *Layout,
 	selected string,
 	props map[string]inspectorNodeProps,
@@ -292,10 +293,17 @@ func inspectorBuildTreeNodes(
 	if layout == nil || len(layout.Children) == 0 {
 		return nil
 	}
-	return inspectorLayoutToTree(&layout.Children[0], "0", selected, props)
+	var expanded map[string]bool
+	if w != nil {
+		expanded = treeExpandedState(w, inspectorTreeID)
+	}
+	return inspectorLayoutToTree(
+		w, expanded, &layout.Children[0], "0", selected, props)
 }
 
 func inspectorLayoutToTree(
+	w *Window,
+	expanded map[string]bool,
 	layout *Layout,
 	path string,
 	selected string,
@@ -309,18 +317,29 @@ func inspectorLayoutToTree(
 		props[path] = propSnapshot
 	}
 
-	childNodes := make([]TreeNodeCfg, 0, len(layout.Children)+16)
+	childNodes := make([]TreeNodeCfg, 0, 16)
 	if path == selected {
 		childNodes = append(childNodes, inspectorPropsNodes(propSnapshot)...)
 	}
-	for i := range layout.Children {
-		childPath := path + "." + strconv.Itoa(i)
-		childNodes = append(
-			childNodes,
-			inspectorLayoutToTree(
-				&layout.Children[i], childPath, selected, props,
-			)...,
-		)
+
+	isExpanded := expanded != nil && expanded[path]
+	isAncestor := !isExpanded && selected != "" && strings.HasPrefix(selected, path+".")
+
+	if isExpanded || isAncestor {
+		for i := range layout.Children {
+			childPath := path + "." + strconv.Itoa(i)
+			childNodes = append(
+				childNodes,
+				inspectorLayoutToTree(
+					w, expanded, &layout.Children[i], childPath, selected, props,
+				)...,
+			)
+		}
+	} else if len(layout.Children) > 0 {
+		// Add a dummy child to show the arrow icon for collapsed nodes.
+		childNodes = append(childNodes, TreeNodeCfg{
+			ID: path + ".__dummy__",
+		})
 	}
 
 	return []TreeNodeCfg{{
