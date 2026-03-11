@@ -5,8 +5,10 @@ import "math"
 // DrawCanvasCache holds retained tessellation output keyed by
 // widget id + version. Cache hit skips OnDraw entirely.
 type DrawCanvasCache struct {
-	Version uint64
-	Batches []DrawCanvasTriBatch
+	Version    uint64
+	TessWidth  float32
+	TessHeight float32
+	Batches    []DrawCanvasTriBatch
 }
 
 // DrawCanvasTriBatch is one flat-color triangle batch.
@@ -19,9 +21,25 @@ type DrawCanvasTriBatch struct {
 // append tessellated triangle batches which are later emitted as
 // RenderSvg commands.
 type DrawContext struct {
-	Width   float32
-	Height  float32
-	batches []DrawCanvasTriBatch
+	Width  float32
+	Height float32
+
+	lastColor    Color
+	currentBatch *DrawCanvasTriBatch
+	batches      []DrawCanvasTriBatch
+}
+
+func (dc *DrawContext) getBatch(color Color) *DrawCanvasTriBatch {
+	if dc.currentBatch != nil && dc.lastColor == color {
+		return dc.currentBatch
+	}
+	dc.batches = append(dc.batches, DrawCanvasTriBatch{
+		Color:     color,
+		Triangles: make([]float32, 0, 128),
+	})
+	dc.lastColor = color
+	dc.currentBatch = &dc.batches[len(dc.batches)-1]
+	return dc.currentBatch
 }
 
 // FilledRect draws a filled rectangle as two triangles.
@@ -29,17 +47,15 @@ func (dc *DrawContext) FilledRect(x, y, w, h float32, color Color) {
 	if w <= 0 || h <= 0 {
 		return
 	}
-	dc.batches = append(dc.batches, DrawCanvasTriBatch{
-		Triangles: []float32{
-			x, y,
-			x + w, y,
-			x + w, y + h,
-			x, y,
-			x + w, y + h,
-			x, y + h,
-		},
-		Color: color,
-	})
+	b := dc.getBatch(color)
+	b.Triangles = append(b.Triangles,
+		x, y,
+		x+w, y,
+		x+w, y+h,
+		x, y,
+		x+w, y+h,
+		x, y+h,
+	)
 }
 
 // Line draws a single line segment.
@@ -54,7 +70,7 @@ func (dc *DrawContext) Polyline(points []float32, color Color, width float32) {
 		return
 	}
 	hw := width / 2
-	tris := make([]float32, 0, ((len(points)/2)-1)*12)
+	b := dc.getBatch(color)
 	for i := 0; i+3 < len(points); i += 2 {
 		x0, y0 := points[i], points[i+1]
 		x1, y1 := points[i+2], points[i+3]
@@ -68,7 +84,7 @@ func (dc *DrawContext) Polyline(points []float32, color Color, width float32) {
 		nx := -dy / ln * hw
 		ny := dx / ln * hw
 		// Quad as two triangles.
-		tris = append(tris,
+		b.Triangles = append(b.Triangles,
 			x0+nx, y0+ny,
 			x0-nx, y0-ny,
 			x1-nx, y1-ny,
@@ -76,12 +92,6 @@ func (dc *DrawContext) Polyline(points []float32, color Color, width float32) {
 			x1-nx, y1-ny,
 			x1+nx, y1+ny,
 		)
-	}
-	if len(tris) > 0 {
-		dc.batches = append(dc.batches, DrawCanvasTriBatch{
-			Triangles: tris,
-			Color:     color,
-		})
 	}
 }
 
@@ -101,20 +111,14 @@ func (dc *DrawContext) FilledPolygon(points []float32, color Color) {
 		return
 	}
 	n := len(points) / 2
-	tris := make([]float32, 0, (n-2)*6)
+	b := dc.getBatch(color)
 	x0, y0 := points[0], points[1]
 	for i := 1; i < n-1; i++ {
-		tris = append(tris,
+		b.Triangles = append(b.Triangles,
 			x0, y0,
 			points[i*2], points[i*2+1],
 			points[(i+1)*2], points[(i+1)*2+1],
 		)
-	}
-	if len(tris) > 0 {
-		dc.batches = append(dc.batches, DrawCanvasTriBatch{
-			Triangles: tris,
-			Color:     color,
-		})
 	}
 }
 
@@ -145,11 +149,11 @@ func (dc *DrawContext) FilledArc(cx, cy, rx, ry, start, sweep float32, color Col
 	if len(pts) < 4 {
 		return
 	}
-	// Close as pie: center → arc → center.
-	poly := make([]float32, 0, len(pts)+4)
+	// Close as pie: center → arc.
+	// FilledPolygon handles the fan from first vertex (cx, cy).
+	poly := make([]float32, 0, len(pts)+2)
 	poly = append(poly, cx, cy)
 	poly = append(poly, pts...)
-	poly = append(poly, cx, cy)
 	dc.FilledPolygon(poly, color)
 }
 

@@ -12,12 +12,34 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 	// Background, border, effects.
 	renderContainer(shape, ColorTransparent, clip, w)
 
-	sm := StateMapRead[string, DrawCanvasCache](w, nsDrawCanvas)
-	if sm == nil {
-		return
-	}
+	sm := StateMap[string, DrawCanvasCache](w, nsDrawCanvas, capModerate)
 	cached, ok := sm.Get(shape.ID)
-	if !ok {
+
+	// Content dimensions account for padding.
+	cw := shape.Width - shape.PaddingWidth()
+	ch := shape.Height - shape.PaddingHeight()
+
+	var needsDraw bool
+	if !ok || cached.Version != shape.Version || cached.TessWidth != cw || cached.TessHeight != ch {
+		needsDraw = true
+	}
+
+	if needsDraw && shape.Events != nil && shape.Events.OnDraw != nil {
+		dc := DrawContext{
+			Width:  cw,
+			Height: ch,
+		}
+		shape.Events.OnDraw(&dc)
+		cached = DrawCanvasCache{
+			Version:    shape.Version,
+			TessWidth:  cw,
+			TessHeight: ch,
+			Batches:    dc.batches,
+		}
+		sm.Set(shape.ID, cached)
+	}
+
+	if len(cached.Batches) == 0 {
 		return
 	}
 
@@ -31,8 +53,8 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			Kind: RenderClip,
 			X:    ox,
 			Y:    oy,
-			W:    shape.Width - shape.PaddingWidth(),
-			H:    shape.Height - shape.PaddingHeight(),
+			W:    cw,
+			H:    ch,
 		}, w)
 	}
 

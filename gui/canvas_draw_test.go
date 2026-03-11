@@ -71,6 +71,34 @@ func TestDrawContextFilledPolygonDegenerate(t *testing.T) {
 	}
 }
 
+func TestDrawContextBatching(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+
+	// Two same-color rects: 1 batch, 24 floats.
+	dc.FilledRect(0, 0, 10, 10, Red)
+	dc.FilledRect(20, 20, 10, 10, Red)
+	if len(dc.batches) != 1 {
+		t.Fatalf("consecutive same-color: batches = %d, want 1", len(dc.batches))
+	}
+	if len(dc.batches[0].Triangles) != 24 {
+		t.Errorf("consecutive same-color: triangles = %d, want 24", len(dc.batches[0].Triangles))
+	}
+
+	// Different color: new batch.
+	dc.FilledRect(0, 0, 10, 10, Blue)
+	if len(dc.batches) != 2 {
+		t.Fatalf("different color: batches = %d, want 2", len(dc.batches))
+	}
+
+	// Same color again: new batch (not consecutive).
+	// Actually, my implementation currently only batches *consecutive* calls.
+	// Let's verify that.
+	dc.FilledRect(40, 40, 10, 10, Red)
+	if len(dc.batches) != 3 {
+		t.Errorf("non-consecutive same-color: batches = %d, want 3", len(dc.batches))
+	}
+}
+
 func TestArcToPolyline(t *testing.T) {
 	pts := arcToPolyline(50, 50, 25, 25, 0, 2*math.Pi)
 	if len(pts) < 8 {

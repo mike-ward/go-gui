@@ -14,6 +14,8 @@ type Shape struct {
 	ID       string // unique identifier assigned by the user
 	Resource string // image path or SVG source
 
+	Version uint64 // for cache invalidation (DrawCanvas, etc.)
+
 	// Optional sub-structs (nil when unused)
 	Events *EventHandlers   // event handlers
 	TC     *ShapeTextConfig // text/RTF fields
@@ -272,6 +274,7 @@ type EventHandlers struct {
 	AmendLayout   func(*Layout, *Window)
 	OnHover       func(*Layout, *Event, *Window)
 	OnIMECommit   func(*Layout, string, *Window)
+	OnDraw        func(*DrawContext)
 }
 
 // ShapeEffects holds optional visual effect fields.

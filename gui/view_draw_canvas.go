@@ -43,32 +43,14 @@ func (dv *drawCanvasView) Content() []View { return nil }
 
 func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
 	c := &dv.cfg
-	if c.OnDraw != nil {
-		sm := StateMap[string, DrawCanvasCache](w, nsDrawCanvas, capModerate)
-		needsDraw := true
-		if cached, ok := sm.Get(c.ID); ok {
-			needsDraw = cached.Version != c.Version
-		}
-		if needsDraw {
-			pad := c.Padding.Get(Padding{})
-			dc := DrawContext{
-				Width:  c.Width - pad.Left - pad.Right,
-				Height: c.Height - pad.Top - pad.Bottom,
-			}
-			c.OnDraw(&dc)
-			sm.Set(c.ID, DrawCanvasCache{
-				Version: c.Version,
-				Batches: dc.batches,
-			})
-		}
-	}
 
 	var events *EventHandlers
-	if c.OnClick != nil || c.OnHover != nil || c.OnMouseScroll != nil {
+	if c.OnClick != nil || c.OnHover != nil || c.OnMouseScroll != nil || c.OnDraw != nil {
 		events = &EventHandlers{
 			OnClick:       leftClickOnly(c.OnClick),
 			OnHover:       c.OnHover,
 			OnMouseScroll: c.OnMouseScroll,
+			OnDraw:        c.OnDraw,
 		}
 	}
 
@@ -76,6 +58,7 @@ func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
 		Shape: &Shape{
 			ShapeType: ShapeDrawCanvas,
 			ID:        c.ID,
+			Version:   c.Version,
 			A11YRole:  AccessRoleImage,
 			A11Y:      makeA11YInfo(c.A11YLabel, c.A11YDescription),
 			Width:     c.Width,
