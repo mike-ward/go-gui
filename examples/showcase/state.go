@@ -93,6 +93,8 @@ type ShowcaseApp struct {
 	PaletteAction     string
 	ContextMenuResult string
 
+	MenuSearchText string
+
 	AnimTweenX    float32
 	AnimSpringX   float32
 	AnimKeyframeX float32

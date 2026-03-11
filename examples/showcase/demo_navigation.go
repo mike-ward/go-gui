@@ -73,27 +73,125 @@ func demoTabControl(w *gui.Window) gui.View {
 }
 
 func demoMenus(w *gui.Window) gui.View {
+	app := gui.State[ShowcaseApp](w)
+
 	return gui.Menubar(w, gui.MenubarCfg{
-		ID: "menubar-demo",
+		ID:      "menubar-demo",
+		IDFocus: focusMenu,
 		Items: []gui.MenuItemCfg{
-			gui.MenuSubmenu("file", "File", []gui.MenuItemCfg{
-				gui.MenuItemText("new", "New"),
-				gui.MenuItemText("open", "Open"),
-				gui.MenuSeparator(),
-				gui.MenuItemText("save", "Save"),
-				gui.MenuItemText("save-as", "Save As..."),
-			}),
-			gui.MenuSubmenu("edit", "Edit", []gui.MenuItemCfg{
-				gui.MenuItemText("undo", "Undo"),
-				gui.MenuItemText("redo", "Redo"),
-				gui.MenuSeparator(),
-				gui.MenuItemText("cut", "Cut"),
-				gui.MenuItemText("copy", "Copy"),
-				gui.MenuItemText("paste", "Paste"),
-			}),
-			gui.MenuSubmenu("help", "Help", []gui.MenuItemCfg{
-				gui.MenuItemText("about", "About"),
-			}),
+			{
+				ID:   "file",
+				Text: "File",
+				Submenu: []gui.MenuItemCfg{
+					gui.MenuSubmenu("new", "New", []gui.MenuItemCfg{
+						gui.MenuItemText("here", "Here"),
+						gui.MenuItemText("there", "There"),
+					}),
+					gui.MenuSubmenu("open", "Open", []gui.MenuItemCfg{
+						gui.MenuItemText("no-where", "No Where"),
+						gui.MenuItemText("some-where", "Some Where"),
+						gui.MenuSubmenu("keep-going", "Keep Going", []gui.MenuItemCfg{
+							gui.MenuItemText("you-are-done", "OK, you're done"),
+						}),
+					}),
+					gui.MenuSeparator(),
+					gui.MenuItemText("exit", "Exit"),
+				},
+			},
+			{
+				ID:   "edit",
+				Text: "Edit",
+				Submenu: []gui.MenuItemCfg{
+					gui.MenuItemText("cut", "Cut"),
+					gui.MenuItemText("copy", "Copy"),
+					gui.MenuItemText("paste", "Paste"),
+					gui.MenuSeparator(),
+					gui.MenuItemText("emoji", "Emoji & Symbols"),
+					gui.MenuItemText("too-long", "Long menu text item to test line wrapping in menu"),
+				},
+			},
+			{
+				ID:   "view",
+				Text: "View",
+				Submenu: []gui.MenuItemCfg{
+					gui.MenuItemText("zoom-in", "Zoom In"),
+					gui.MenuItemText("zoom-out", "Zoom Out"),
+					gui.MenuItemText("zoom-reset", "Reset Zoom"),
+					gui.MenuSeparator(),
+					gui.MenuItemText("project-panel", "Project Panel"),
+					gui.MenuItemText("outline-panel", "Outline Panel"),
+					gui.MenuItemText("terminal-panel", "Terminal Panel"),
+					gui.MenuSeparator(),
+					gui.MenuItemText("full-screen", "Enter Full Screen"),
+				},
+			},
+			{
+				ID:   "go",
+				Text: "Go",
+				Submenu: []gui.MenuItemCfg{
+					gui.MenuItemText("go-back", "Back"),
+					gui.MenuItemText("go-forward", "Forward"),
+					gui.MenuSeparator(),
+					gui.MenuItemText("go-definition", "Go to Definition"),
+					gui.MenuItemText("go-declaration", "Go to Declaration"),
+					gui.MenuItemText("go-to-moon-alice", "Go to the Moon Alice"),
+				},
+			},
+			{
+				ID:   "window",
+				Text: "Window",
+				Submenu: []gui.MenuItemCfg{
+					gui.MenuItemText("window-fill", "Fill"),
+					gui.MenuItemText("window-center", "Center"),
+					gui.MenuSeparator(),
+					gui.MenuSubmenu("window-move", "Move & Resize", []gui.MenuItemCfg{
+						gui.MenuSubtitle("Halves"),
+						gui.MenuItemText("half-left", "Left"),
+						gui.MenuItemText("half-top", "Top"),
+						gui.MenuItemText("half-right", "Right"),
+						gui.MenuItemText("half-bottom", "Bottom"),
+						gui.MenuSeparator(),
+						gui.MenuSubtitle("Quarters"),
+						gui.MenuItemText("quarter-top-left", "Top Left"),
+						gui.MenuItemText("quarter-top-right", "Top Right"),
+						gui.MenuItemText("quarter-bottom-left", "Bottom Left"),
+						gui.MenuItemText("quarter-bottom-right", "Bottom Right"),
+					}),
+					gui.MenuItemText("window-full-screen-tile", "Full Screen Tile"),
+				},
+			},
+			{
+				ID:   "help",
+				Text: "Help",
+				Submenu: []gui.MenuItemCfg{
+					{
+						ID:      "search",
+						Padding: gui.NoPadding,
+						CustomView: gui.Input(gui.InputCfg{
+							Text:        app.MenuSearchText,
+							IDFocus:     focusMenuSearch,
+							Width:       100,
+							MinWidth:    100,
+							MaxWidth:    100,
+							Sizing:      gui.FixedFill,
+							Placeholder: "Search",
+							Padding: gui.SomeP(2,
+								gui.CurrentTheme().InputStyle.Padding.Right,
+								2,
+								gui.CurrentTheme().InputStyle.Padding.Left),
+							Radius:           gui.Some[float32](0),
+							SizeBorder:       gui.Some[float32](0),
+							TextStyle:        gui.CurrentTheme().MenubarStyle.TextStyle,
+							PlaceholderStyle: gui.CurrentTheme().MenubarStyle.TextStyle,
+							OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
+								gui.State[ShowcaseApp](w).MenuSearchText = s
+							},
+						}),
+					},
+					gui.MenuSeparator(),
+					gui.MenuItemText("help-me", "Help"),
+				},
+			},
 		},
 		Action: func(id string, _ *gui.Event, w *gui.Window) {
 			w.Toast(gui.ToastCfg{Title: "Menu", Body: "Action: " + id})

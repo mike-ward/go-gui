@@ -12,6 +12,8 @@ const (
 	scrollPlaceholderA
 	scrollPlaceholderB
 	focusSearch
+	focusMenu
+	focusMenuSearch
 )
 
 const catalogWidth float32 = 300
