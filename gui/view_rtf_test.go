@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"math"
+	"errors"
 	"testing"
 	"time"
 
@@ -59,37 +59,12 @@ func TestRtfHitTestLogic(t *testing.T) {
 	}
 
 	// Point inside.
-	if !rtfHitTest(item, 30, 15, nil) {
+	if !rtfHitTest(item, 30, 15) {
 		t.Error("expected hit at (30,15)")
 	}
 	// Point outside.
-	if rtfHitTest(item, 5, 5, nil) {
+	if rtfHitTest(item, 5, 5) {
 		t.Error("expected miss at (5,5)")
-	}
-}
-
-func TestRtfAffineInverse(t *testing.T) {
-	// Identity matrix.
-	id := glyph.AffineTransform{
-		XX: 1, XY: 0, YX: 0, YY: 1, X0: 0, Y0: 0,
-	}
-	inv, ok := rtfAffineInverse(id)
-	if !ok {
-		t.Fatal("identity should be invertible")
-	}
-	if math.Abs(float64(inv.XX-1)) > 0.001 ||
-		math.Abs(float64(inv.YY-1)) > 0.001 {
-		t.Fatalf("identity inverse: XX=%v YY=%v",
-			inv.XX, inv.YY)
-	}
-
-	// Singular matrix.
-	singular := glyph.AffineTransform{
-		XX: 0, XY: 0, YX: 0, YY: 0,
-	}
-	_, ok = rtfAffineInverse(singular)
-	if ok {
-		t.Fatal("singular matrix should not be invertible")
 	}
 }
 
@@ -582,5 +557,105 @@ func TestRtfGenerateLayoutAddsTooltipChild(t *testing.T) {
 	child := layout.Children[0]
 	if !child.Shape.Float {
 		t.Error("popup child should be floating")
+	}
+}
+
+func TestRtfGenerateLayoutEmptyRichText(t *testing.T) {
+	w := &Window{
+		textMeasurer: &rtfStubTextMeasurer{
+			layout: glyph.Layout{},
+		},
+	}
+	layout := GenerateViewLayout(RTF(RtfCfg{
+		RichText: RichText{},
+	}), w)
+	if layout.Shape == nil {
+		t.Fatal("expected non-nil shape")
+	}
+	if layout.Shape.ShapeType != ShapeRTF {
+		t.Fatalf("type = %v, want ShapeRTF",
+			layout.Shape.ShapeType)
+	}
+}
+
+type rtfErrorMeasurer struct{ rtfStubTextMeasurer }
+
+func (m *rtfErrorMeasurer) LayoutRichText(
+	_ glyph.RichText, _ glyph.TextConfig,
+) (glyph.Layout, error) {
+	return glyph.Layout{}, errors.New("test error")
+}
+
+func TestRtfGenerateLayoutHandlesError(t *testing.T) {
+	w := &Window{textMeasurer: &rtfErrorMeasurer{}}
+	layout := GenerateViewLayout(RTF(RtfCfg{
+		RichText: RichText{
+			Runs: []RichTextRun{{Text: "hello"}},
+		},
+	}), w)
+	if layout.Shape == nil {
+		t.Fatal("expected non-nil shape")
+	}
+	// Layout should still produce a shape but with no
+	// usable glyph layout dimensions.
+	if layout.Shape.Width != 0 || layout.Shape.Height != 0 {
+		t.Fatalf("expected zero size, got %gx%g",
+			layout.Shape.Width, layout.Shape.Height)
+	}
+}
+
+func TestRtfOnClickIgnoresUnsafeLink(t *testing.T) {
+	w := newTestWindow()
+	rt := RichText{
+		Runs: []RichTextRun{
+			{Text: "evil", Link: "javascript:alert(1)"},
+		},
+	}
+	glyphLayout := glyph.Layout{
+		Width: 100, Height: 20,
+		Items: []glyph.Item{
+			{
+				X: 10, Y: 12, Width: 30,
+				Ascent: 12, Descent: 4,
+				StartIndex: 0,
+			},
+		},
+	}
+	l := &Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRTF,
+			Width:     100, Height: 20,
+			TC: &ShapeTextConfig{
+				RtfLayout: &glyphLayout,
+				RtfRuns:   &rt,
+			},
+		},
+	}
+	e := &Event{MouseX: 20, MouseY: 5}
+	rtfOnClick(l, e, w)
+	if e.IsHandled {
+		t.Fatal("unsafe link should not be handled")
+	}
+}
+
+func TestRtfRunsKeyIncludesLinkAndTooltip(t *testing.T) {
+	rt1 := RichText{Runs: []RichTextRun{
+		{Text: "same", Link: "https://a.com"},
+	}}
+	rt2 := RichText{Runs: []RichTextRun{
+		{Text: "same", Link: "https://b.com"},
+	}}
+	if rtfRunsKey(&rt1) == rtfRunsKey(&rt2) {
+		t.Error("different links should produce different keys")
+	}
+
+	rt3 := RichText{Runs: []RichTextRun{
+		{Text: "same", Tooltip: "tip A"},
+	}}
+	rt4 := RichText{Runs: []RichTextRun{
+		{Text: "same", Tooltip: "tip B"},
+	}}
+	if rtfRunsKey(&rt3) == rtfRunsKey(&rt4) {
+		t.Error("different tooltips should produce different keys")
 	}
 }

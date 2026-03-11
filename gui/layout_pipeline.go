@@ -144,8 +144,13 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	if !ok {
 		return
 	}
-	vgRT := tc.RtfRuns.toGlyphRichTextWithMath(
-		w.viewState.diagramCache)
+	var vgRT glyph.RichText
+	if tc.rtfGlyphRT != nil {
+		vgRT = *tc.rtfGlyphRT
+	} else {
+		vgRT = tc.RtfRuns.toGlyphRichTextWithMath(
+			w.viewState.diagramCache)
+	}
 	cfg := glyph.TextConfig{
 		Style: tc.RtfBaseStyle,
 		Block: glyph.BlockStyle{

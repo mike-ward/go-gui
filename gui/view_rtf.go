@@ -5,7 +5,6 @@ package gui
 // Supports text wrapping, clickable links, and custom runs.
 
 import (
-	"math"
 	"time"
 
 	"github.com/mike-ward/go-glyph"
@@ -110,13 +109,14 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 			RtfBaseStyle:  baseStyle,
 			RtfLayout:     &layout,
 			RtfRuns:       &v.RichText,
+			rtfGlyphRT:    &vgRT,
 		},
 	}
 	l := Layout{Shape: shape}
+	blockKey := rtfRunsKey(shape.TC.RtfRuns)
 	if ts := &w.viewState.tooltip; ts.id != "" &&
 		ts.text != "" && ts.blockKey != 0 &&
-		shape.TC != nil && shape.TC.RtfRuns != nil &&
-		rtfRunsKey(shape.TC.RtfRuns) == ts.blockKey {
+		blockKey == ts.blockKey {
 		l.Children = []Layout{
 			GenerateViewLayout(rtfTooltipView(ts), w),
 		}
@@ -125,7 +125,7 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 	if st := StateReadOr[string, rtfLinkMenuState](
 		w, nsRtfLinkMenu, nsRtfLinkMenu,
 		rtfLinkMenuState{}); st.Open &&
-		st.BlockKey == rtfRunsKey(shape.TC.RtfRuns) {
+		st.BlockKey == blockKey {
 		l.Children = append(l.Children,
 			GenerateViewLayout(rtfLinkMenuView(w, st), w))
 	}
@@ -147,8 +147,6 @@ func RTF(cfg RtfCfg) View {
 
 // --- Hit testing ---
 
-const rtfAffineInverseEpsilon = float32(0.000001)
-
 func rtfRunRect(run glyph.Item) DrawClip {
 	return DrawClip{
 		X:      float32(run.X),
@@ -158,37 +156,10 @@ func rtfRunRect(run glyph.Item) DrawClip {
 	}
 }
 
-func rtfAffineInverse(
-	t glyph.AffineTransform,
-) (glyph.AffineTransform, bool) {
-	det := t.XX*t.YY - t.XY*t.YX
-	if float32(math.Abs(float64(det))) <=
-		rtfAffineInverseEpsilon {
-		return glyph.AffineTransform{}, false
-	}
-	invDet := 1.0 / det
-	xx := t.YY * invDet
-	xy := -t.XY * invDet
-	yx := -t.YX * invDet
-	yy := t.XX * invDet
-	return glyph.AffineTransform{
-		XX: xx, XY: xy, YX: yx, YY: yy,
-		X0: -(xx*t.X0 + xy*t.Y0),
-		Y0: -(yx*t.X0 + yy*t.Y0),
-	}, true
-}
-
-func rtfHitTest(
-	run glyph.Item, mx, my float32,
-	inv *glyph.AffineTransform,
-) bool {
-	tx, ty := mx, my
-	if inv != nil {
-		tx, ty = inv.Apply(mx, my)
-	}
+func rtfHitTest(run glyph.Item, mx, my float32) bool {
 	r := rtfRunRect(run)
-	return tx >= r.X && ty >= r.Y &&
-		tx < r.X+r.Width && ty < r.Y+r.Height
+	return mx >= r.X && my >= r.Y &&
+		mx < r.X+r.Width && my < r.Y+r.Height
 }
 
 func rtfFindRunAtIndex(
@@ -222,7 +193,7 @@ func rtfMouseMove(l *Layout, e *Event, w *Window) {
 		if run.IsObject {
 			continue
 		}
-		if rtfHitTest(run, e.MouseX, e.MouseY, nil) {
+		if rtfHitTest(run, e.MouseX, e.MouseY) {
 			found := rtfFindRunAtIndex(l, run.StartIndex)
 			if found.Tooltip != "" {
 				tipID := found.Tooltip
@@ -298,12 +269,24 @@ func rtfAmendTooltip(_ *Layout, w *Window) {
 }
 
 // rtfRunsKey computes an FNV-1a hash of RichText content
-// for tooltip block matching across frames.
+// including Link and Tooltip for tooltip/menu block matching.
 func rtfRunsKey(rt *RichText) uint64 {
 	h := uint64(14695981039346656037)
 	for _, r := range rt.Runs {
 		for i := 0; i < len(r.Text); i++ {
 			h ^= uint64(r.Text[i])
+			h *= 1099511628211
+		}
+		h ^= 0x1F // field separator
+		h *= 1099511628211
+		for i := 0; i < len(r.Link); i++ {
+			h ^= uint64(r.Link[i])
+			h *= 1099511628211
+		}
+		h ^= 0x1F
+		h *= 1099511628211
+		for i := 0; i < len(r.Tooltip); i++ {
+			h ^= uint64(r.Tooltip[i])
 			h *= 1099511628211
 		}
 	}
@@ -346,7 +329,7 @@ func rtfOnClick(l *Layout, e *Event, w *Window) {
 		if run.IsObject {
 			continue
 		}
-		if rtfHitTest(run, e.MouseX, e.MouseY, nil) {
+		if rtfHitTest(run, e.MouseX, e.MouseY) {
 			found := rtfFindRunAtIndex(l, run.StartIndex)
 			if found.Link != "" && markdown.IsSafeURL(found.Link) {
 				if e.MouseButton == MouseRight {

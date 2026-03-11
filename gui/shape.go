@@ -234,6 +234,7 @@ type ShapeTextConfig struct {
 	RtfRuns           *RichText
 	RtfLayout         *glyph.Layout
 	RtfBaseStyle      glyph.TextStyle
+	rtfGlyphRT        *glyph.RichText // cached conversion
 	wrapCacheWidth    float32
 	wrapCacheValid    bool
 	wrapCacheText     string
