@@ -12,6 +12,9 @@ func charHandler(layout *Layout, e *Event, w *Window) {
 			return
 		}
 	}
+	if layout.Shape == nil {
+		return
+	}
 	var onChar ShapeCallback
 	if layout.Shape.HasEvents() {
 		onChar = layout.Shape.Events.OnChar
@@ -39,7 +42,7 @@ func keydownHandler(layout *Layout, e *Event, w *Window) {
 			return
 		}
 	}
-	if !isFocusedTarget(layout, w) {
+	if layout.Shape == nil || !isFocusedTarget(layout, w) {
 		return
 	}
 	var onKeyDown ShapeCallback
@@ -110,6 +113,9 @@ func mouseDownHandler(
 			return
 		}
 	}
+	if layout.Shape == nil {
+		return
+	}
 	if layout.Shape.PointInShape(e.MouseX, e.MouseY) {
 		if layout.Shape.IDFocus > 0 {
 			w.SetIDFocus(layout.Shape.IDFocus)
@@ -142,6 +148,9 @@ func mouseMoveHandler(layout *Layout, e *Event, w *Window) {
 			return
 		}
 	}
+	if layout.Shape == nil {
+		return
+	}
 	var onMouseMove ShapeCallback
 	if layout.Shape.HasEvents() {
 		onMouseMove = layout.Shape.Events.OnMouseMove
@@ -166,6 +175,9 @@ func mouseUpHandler(layout *Layout, e *Event, w *Window) {
 			return
 		}
 	}
+	if layout.Shape == nil {
+		return
+	}
 	var onMouseUp ShapeCallback
 	if layout.Shape.HasEvents() {
 		onMouseUp = layout.Shape.Events.OnMouseUp
@@ -183,7 +195,8 @@ func focusedScrollTarget(layout *Layout, w *Window) *Layout {
 		return nil
 	}
 	ly, ok := FindLayoutByIDFocus(layout, idFocus)
-	if !ok || !ly.Shape.HasEvents() || ly.Shape.Events.OnMouseScroll == nil {
+	if !ok || ly.Shape == nil || !ly.Shape.HasEvents() ||
+		ly.Shape.Events.OnMouseScroll == nil {
 		return nil
 	}
 	return ly
@@ -211,7 +224,7 @@ func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 			return
 		}
 	}
-	if layout.Shape.Disabled {
+	if layout.Shape == nil || layout.Shape.Disabled {
 		return
 	}
 	// Deliver to OnMouseScroll handler under cursor.

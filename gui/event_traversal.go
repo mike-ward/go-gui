@@ -6,7 +6,7 @@ type ShapeCallback = func(*Layout, *Event, *Window)
 // isFocusedTarget reports whether the layout has keyboard focus
 // (or is the reserved dialog).
 func isFocusedTarget(layout *Layout, w *Window) bool {
-	if layout.Shape.IDFocus == 0 {
+	if layout.Shape == nil || layout.Shape.IDFocus == 0 {
 		return false
 	}
 	if !w.IsFocus(layout.Shape.IDFocus) &&
@@ -37,7 +37,8 @@ func executeMouseCallback(
 	layout *Layout, e *Event, w *Window,
 	callback ShapeCallback, _ string,
 ) bool {
-	if !layout.Shape.PointInShape(e.MouseX, e.MouseY) {
+	if layout.Shape == nil ||
+		!layout.Shape.PointInShape(e.MouseX, e.MouseY) {
 		return false
 	}
 	if callback == nil {
@@ -58,5 +59,5 @@ func executeMouseCallback(
 
 // isChildEnabled checks if a child layout should receive events.
 func isChildEnabled(child *Layout) bool {
-	return !child.Shape.Disabled
+	return child.Shape != nil && !child.Shape.Disabled
 }
