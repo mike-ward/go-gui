@@ -53,7 +53,12 @@ type InputCfg struct {
 	OnEnter            func(*Layout, *Event, *Window)
 	OnKeyDown          func(*Layout, *Event, *Window)
 	OnBlur             func(*Layout, *Window)
-	PreTextChange      func(current, proposed string) (string, bool)
+	// PreTextChange is called before text changes. Return (adjusted, true)
+	// to accept (adjusted may differ from proposed), or ("", false) to
+	// reject. Undo/redo bypass this callback by design — if security
+	// invariants (max length, forbidden chars) must be enforced
+	// unconditionally, use OnTextChanged instead.
+	PreTextChange func(current, proposed string) (string, bool)
 	PostCommitNormalize func(text string, reason InputCommitReason) string
 
 	// Accessibility
@@ -103,6 +108,7 @@ func Input(cfg InputCfg) View {
 		PreTextChange:       cfg.PreTextChange,
 		PostCommitNormalize: cfg.PostCommitNormalize,
 	}
+	hcfg.CompiledMask = hcfg.compiledMask()
 
 	txtSizing := Sizing(FillFill)
 	innerSizing := Sizing(FillFill)
@@ -194,8 +200,9 @@ func Input(cfg InputCfg) View {
 				now-is.LastClickTime <= 400
 			is.LastClickTime = now
 
-			runes := []rune(displayText)
+			var runes []rune
 			if doubleClick {
+				runes = []rune(displayText)
 				beg, end := wordBoundsAt(runes, runePos)
 				is.CursorPos = end
 				is.SelectBeg = uint32(beg)
@@ -469,6 +476,7 @@ type inputHandlerCfg struct {
 	Mask                string
 	MaskPreset          InputMaskPreset
 	MaskTokens          []MaskTokenDef
+	CompiledMask        *CompiledInputMask
 	OnTextChanged       func(*Layout, string, *Window)
 	OnTextCommit        func(*Layout, string, InputCommitReason, *Window)
 	OnEnter             func(*Layout, *Event, *Window)
@@ -496,7 +504,7 @@ func (h *inputHandlerCfg) compiledMask() *CompiledInputMask {
 }
 
 func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
-	mask := hcfg.compiledMask()
+	mask := hcfg.CompiledMask
 	return func(layout *Layout, e *Event, w *Window) {
 		if hcfg.IDFocus == 0 || !w.IsFocus(hcfg.IDFocus) {
 			return
@@ -504,68 +512,44 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		ch := e.CharCode
 		id := hcfg.IDFocus
 
+		// Control characters are handled by OnKeyDown.
+		if ch < CharSpace {
+			e.IsHandled = true
+			return
+		}
+
 		text := inputTextFromLayout(layout)
 		changed := false
 
-		switch {
-		// Skip control characters handled by OnKeyDown.
-		case ch < CharSpace && ch != CharBSP && ch != CharDel &&
-			ch != CharLF && ch != CharCR:
-			e.IsHandled = true
-			return
-		// Backspace.
-		case ch == CharBSP:
-			if newText, ok := inputHandleDelete(
-				text, id, false, mask, layout, w,
-			); ok {
-				text = newText
+		ins := e.IMEText
+		if len(ins) == 0 {
+			ins = string(rune(ch))
+		}
+		if mask != nil {
+			is := inputStateOrDefault(id, w)
+			res := InputMaskInsert(text, is.CursorPos, is.SelectBeg, is.SelectEnd, ins, mask)
+			if res.Changed {
+				text = res.Text
+				StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
+					CursorPos: res.CursorPos, Undo: is.Undo,
+				})
 				changed = true
 			}
-		// Delete.
-		case ch == CharDel:
-			if newText, ok := inputHandleDelete(
-				text, id, true, mask, layout, w,
-			); ok {
-				text = newText
-				changed = true
-			}
-		// Enter / LF.
-		case ch == CharLF || ch == CharCR:
-			if hcfg.Mode == InputMultiline {
-				text = inputInsert(text, "\n", id, w)
-				changed = true
-			} else {
-				inputCommitEnter(hcfg, layout, text, e, w)
-			}
-		// Printable characters.
-		case ch >= CharSpace:
-			ins := e.IMEText
-			if len(ins) == 0 {
-				ins = string(rune(ch))
-			}
-			if mask != nil {
-				is := inputStateOrDefault(id, w)
-				res := InputMaskInsert(text, is.CursorPos, is.SelectBeg, is.SelectEnd, ins, mask)
-				if res.Changed {
-					text = res.Text
-					StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
-						CursorPos: res.CursorPos, Undo: is.Undo,
-					})
-					changed = true
-				}
-			} else if hcfg.PreTextChange != nil {
-				proposed := inputProposedText(text, ins, id, w)
-				if adjusted, ok := hcfg.PreTextChange(text, proposed); ok {
+		} else if hcfg.PreTextChange != nil {
+			proposed := inputProposedText(text, ins, id, w)
+			if adjusted, ok := hcfg.PreTextChange(text, proposed); ok {
+				if adjusted == proposed {
 					text = inputInsert(text, ins, id, w)
-					if adjusted != proposed {
-						text = adjusted
-					}
-					changed = true
+				} else {
+					inputSetTextAndCursorAtEnd(
+						text, adjusted, id, w)
+					text = adjusted
 				}
-			} else {
-				text = inputInsert(text, ins, id, w)
 				changed = true
 			}
+		} else {
+			text = inputInsert(text, ins, id, w)
+			changed = true
 		}
 
 		if changed {
@@ -582,7 +566,7 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 }
 
 func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
-	mask := hcfg.compiledMask()
+	mask := hcfg.CompiledMask
 	return func(layout *Layout, e *Event, w *Window) {
 		if hcfg.IDFocus == 0 || !w.IsFocus(hcfg.IDFocus) {
 			return
@@ -825,9 +809,12 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 							text, clip, id, w)
 						if adjusted, ok := hcfg.PreTextChange(
 							text, proposed); ok {
-							text = inputInsert(
-								text, clip, id, w)
-							if adjusted != proposed {
+							if adjusted == proposed {
+								text = inputInsert(
+									text, clip, id, w)
+							} else {
+								inputSetTextAndCursorAtEnd(
+									text, adjusted, id, w)
 								text = adjusted
 							}
 							textChanged = true

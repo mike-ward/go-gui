@@ -164,6 +164,20 @@ func inputInsert(text string, insertText string, idFocus uint32, w *Window) stri
 	return nextText
 }
 
+// inputSetTextAndCursorAtEnd pushes undo and places cursor at end
+// of newText. Used when PreTextChange returns adjusted text where
+// positional cursor mapping is unreliable.
+func inputSetTextAndCursorAtEnd(oldText, newText string, idFocus uint32, w *Window) {
+	is := inputStateOrDefault(idFocus, w)
+	undo := inputPushUndo(is, oldText)
+	imap := StateMap[uint32, InputState](w, nsInput, capMany)
+	imap.Set(idFocus, InputState{
+		CursorPos:    utf8RuneCount(newText),
+		CursorOffset: -1,
+		Undo:         undo,
+	})
+}
+
 // inputDelete removes text at cursor or selected range.
 // forwardDelete=true for Delete key, false for Backspace.
 func inputDelete(text string, idFocus uint32, forwardDelete bool, w *Window) (string, bool) {

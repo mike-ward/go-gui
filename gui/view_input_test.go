@@ -231,22 +231,6 @@ func TestInputOnCharInsertAtMiddle(t *testing.T) {
 	}
 }
 
-func TestInputOnCharBackspace(t *testing.T) {
-	ctx := newInputTest("abc", 502, 3)
-	ctx.fireChar(CharBSP)
-	if ctx.lastText != "ab" {
-		t.Fatalf("got %q, want %q", ctx.lastText, "ab")
-	}
-}
-
-func TestInputOnCharDelete(t *testing.T) {
-	ctx := newInputTest("abc", 503, 0)
-	ctx.fireChar(CharDel)
-	if ctx.lastText != "bc" {
-		t.Fatalf("got %q, want %q", ctx.lastText, "bc")
-	}
-}
-
 func TestInputKeyDownBackspace(t *testing.T) {
 	ctx := newInputTest("abc", 550, 3)
 	ctx.fireKeyDown(KeyBackspace, 0)
@@ -263,35 +247,6 @@ func TestInputKeyDownDelete(t *testing.T) {
 	}
 }
 
-func TestInputOnCharEnterSingleLine(t *testing.T) {
-	committed := false
-	w := newTestWindow()
-	w.SetIDFocus(504)
-	setInputState(w, 504, InputState{CursorPos: 2})
-	layout := GenerateViewLayout(Input(InputCfg{
-		Text:    "hi",
-		IDFocus: 504,
-		OnTextCommit: func(_ *Layout, _ string, reason InputCommitReason, _ *Window) {
-			committed = true
-			if reason != CommitEnter {
-				t.Fatalf("got reason %d, want CommitEnter", reason)
-			}
-		},
-	}), w)
-	e := &Event{Type: EventChar, CharCode: CharLF}
-	layout.Shape.Events.OnChar(&layout, e, w)
-	if !committed {
-		t.Fatal("OnTextCommit not called")
-	}
-}
-
-func TestInputOnCharEnterMultiline(t *testing.T) {
-	ctx := newInputTestMultiline("ab", 505, 2)
-	ctx.fireChar(CharLF)
-	if ctx.lastText != "ab\n" {
-		t.Fatalf("got %q, want %q", ctx.lastText, "ab\n")
-	}
-}
 
 func TestInputKeyDownEnterMultiline(t *testing.T) {
 	ctx := newInputTestMultiline("ab", 505, 2)
