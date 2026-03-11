@@ -81,6 +81,26 @@ func sanitizeLatex(s string) string {
 	return result
 }
 
+// queueMathError queues a DiagramError cache entry.
+func queueMathError(
+	w *Window, hash int64, requestID uint64, errMsg string,
+) {
+	w.QueueCommand(func(w *Window) {
+		if !diagramCacheShouldApplyResult(
+			w.viewState.diagramCache,
+			hash, requestID) {
+			return
+		}
+		w.viewState.diagramCache.Set(hash,
+			DiagramCacheEntry{
+				State:     DiagramError,
+				Error:     errMsg,
+				RequestID: requestID,
+			})
+		w.UpdateWindow()
+	})
+}
+
 // fetchMathAsync fetches a LaTeX math image from codecogs
 // in a background goroutine.
 //
@@ -113,57 +133,36 @@ func fetchMathAsync(
 		client := &http.Client{Timeout: diagramFetchTimeout}
 		resp, err := client.Get(url)
 		if err != nil {
-			errMsg := err.Error()
-			w.QueueCommand(func(w *Window) {
-				if !diagramCacheShouldApplyResult(
-					w.viewState.diagramCache,
-					hash, requestID) {
-					return
-				}
-				w.viewState.diagramCache.Set(hash,
-					DiagramCacheEntry{
-						State:     DiagramError,
-						Error:     errMsg,
-						RequestID: requestID,
-					})
-				w.UpdateWindow()
-			})
+			queueMathError(w, hash, requestID, err.Error())
 			return
 		}
 		defer func() { _ = resp.Body.Close() }()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			queueMathError(w, hash, requestID,
+				"read body: "+err.Error())
 			return
 		}
 
 		if resp.StatusCode != 200 {
 			preview := truncatePreview(string(body), 200)
-			errMsg := fmt.Sprintf("HTTP %d: %s",
-				resp.StatusCode, preview)
-			w.QueueCommand(func(w *Window) {
-				if !diagramCacheShouldApplyResult(
-					w.viewState.diagramCache,
-					hash, requestID) {
-					return
-				}
-				w.viewState.diagramCache.Set(hash,
-					DiagramCacheEntry{
-						State:     DiagramError,
-						Error:     errMsg,
-						RequestID: requestID,
-					})
-				w.UpdateWindow()
-			})
+			queueMathError(w, hash, requestID,
+				fmt.Sprintf("HTTP %d: %s",
+					resp.StatusCode, preview))
 			return
 		}
 
 		if len(body) > 10*1024*1024 {
+			queueMathError(w, hash, requestID,
+				"response exceeds 10 MB limit")
 			return
 		}
 
 		img, err := png.Decode(bytes.NewReader(body))
 		if err != nil {
+			queueMathError(w, hash, requestID,
+				"decode PNG: "+err.Error())
 			return
 		}
 
@@ -175,12 +174,16 @@ func fetchMathAsync(
 		tmpFile, err := os.CreateTemp("",
 			fmt.Sprintf("math_%d_*.png", hash))
 		if err != nil {
+			queueMathError(w, hash, requestID,
+				"create temp file: "+err.Error())
 			return
 		}
 		tmpPath := tmpFile.Name()
 		if err := png.Encode(tmpFile, img); err != nil {
 			_ = tmpFile.Close()
 			_ = os.Remove(tmpPath)
+			queueMathError(w, hash, requestID,
+				"encode PNG: "+err.Error())
 			return
 		}
 		_ = tmpFile.Close()

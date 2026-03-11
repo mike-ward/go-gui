@@ -116,8 +116,8 @@ type MarkdownCfg struct {
 	Disabled            bool
 	Color               Color
 	ColorBorder         Color
-	SizeBorder          float32
-	Radius              float32
+	SizeBorder          Opt[float32]
+	Radius              Opt[float32]
 	Padding             Opt[Padding]
 	MermaidWidth        int // max pixel width for mermaid diagrams (0 = 600)
 	DisableExternalAPIs bool
@@ -311,19 +311,19 @@ func renderMdMermaid(
 					TextStyle: cfg.Style.Text,
 				})
 			case DiagramReady:
-				w, h := entry.Width, entry.Height
+				imgW, imgH := entry.Width, entry.Height
 				mw := float32(cfg.MermaidWidth)
 				if mw <= 0 {
 					mw = 600
 				}
-				if w > mw {
-					h *= mw / w
-					w = mw
+				if imgW > mw {
+					imgH *= mw / imgW
+					imgW = mw
 				}
 				return Image(ImageCfg{
 					Src:     entry.PNGPath,
-					Width:   w,
-					Height:  h,
+					Width:   imgW,
+					Height:  imgH,
 					BgColor: White,
 				})
 			case DiagramError:
@@ -771,8 +771,8 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		A11YRole:    AccessRoleGroup,
 		Color:       cfg.Color,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(cfg.SizeBorder),
-		Radius:      Some(cfg.Radius),
+		SizeBorder:  cfg.SizeBorder,
+		Radius:      cfg.Radius,
 		Padding:     cfg.Padding,
 		Spacing:     Some(cfg.Style.BlockSpacing),
 		Sizing:      sizing,

@@ -37,7 +37,14 @@ func MarkdownToRichText(
 	source string, style MarkdownStyle,
 ) RichText {
 	blocks := markdownToBlocks(source, style)
-	var allRuns []RichTextRun
+	totalRuns := 0
+	for _, block := range blocks {
+		totalRuns += len(block.Content.Runs)
+	}
+	if n := len(blocks) - 1; n > 0 {
+		totalRuns += n
+	}
+	allRuns := make([]RichTextRun, 0, totalRuns)
 	for i, block := range blocks {
 		allRuns = append(allRuns, block.Content.Runs...)
 		if i < len(blocks)-1 {

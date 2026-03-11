@@ -1061,6 +1061,10 @@ func TestHeadingSlug(t *testing.T) {
 		{"UPPER", "upper"},
 		{"a1b2c3", "a1b2c3"},
 		{"", ""},
+		{"cafébar", "cafbar"},
+		{"日本語", ""},
+		{"hello🌍world", "helloworld"},
+		{"a café", "a-caf"},
 	}
 	for _, tc := range tests {
 		got := HeadingSlug(tc.input)

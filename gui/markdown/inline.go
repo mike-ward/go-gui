@@ -135,16 +135,17 @@ func isSafeImagePath(path string) bool {
 func HeadingSlug(text string) string {
 	var buf []byte
 	prevDash := false
-	for i := 0; i < len(text); i++ {
-		c := text[i]
+	for _, r := range text {
 		switch {
-		case c >= 'A' && c <= 'Z':
-			buf = append(buf, c+32) // lowercase
+		case r >= 'A' && r <= 'Z':
+			buf = append(buf, byte(r+32)) // lowercase
 			prevDash = false
-		case (c >= 'a' && c <= 'z') ||
-			(c >= '0' && c <= '9'):
-			buf = append(buf, c)
+		case (r >= 'a' && r <= 'z') ||
+			(r >= '0' && r <= '9'):
+			buf = append(buf, byte(r))
 			prevDash = false
+		case r > 127:
+			// Drop non-ASCII runes cleanly.
 		default:
 			if len(buf) > 0 && !prevDash {
 				buf = append(buf, '-')

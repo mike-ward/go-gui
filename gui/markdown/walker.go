@@ -1020,7 +1020,6 @@ func mergeAdjacentRuns(runs []Run) []Run {
 	for _, r := range runs[1:] {
 		if canMergeRuns(cur, r) {
 			if !merging {
-				sb.Grow(len(cur.Text) + len(r.Text))
 				sb.WriteString(cur.Text)
 				merging = true
 			}
