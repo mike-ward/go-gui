@@ -223,120 +223,31 @@ func Input(cfg InputCfg) View {
 			e.IsHandled = true
 
 			// Drag-to-select via MouseLock.
-			anchorPos := is.SelectBeg
-			anchorEnd := is.SelectEnd
-			dragGL := gl
-			dragDisplayText := displayText
-			dragTxtOffX := ly.Shape.X - layout.Shape.X
-			dragTxtOffY := ly.Shape.Y - layout.Shape.Y
-			dragIDFocus := ly.Shape.IDFocus
-
-			var lastMouseX, lastMouseY float32
-			dragScrollY0 := float32(0)
-			viewTop := float32(0)
-			viewBot := float32(0)
-			maxScrollNeg := float32(0)
+			ds := &inputDragState{
+				anchorPos:   is.SelectBeg,
+				anchorEnd:   is.SelectEnd,
+				gl:          gl,
+				displayText: displayText,
+				txtOffX:     ly.Shape.X - layout.Shape.X,
+				txtOffY:     ly.Shape.Y - layout.Shape.Y,
+				idFocus:     ly.Shape.IDFocus,
+				idScroll:    idScroll,
+			}
+			if doubleClick {
+				ds.runes = runes
+			}
 			if idScroll > 0 && layout.Parent != nil {
 				sy := StateMap[uint32, float32](
 					w, nsScrollY, capScroll)
-				dragScrollY0, _ = sy.Get(idScroll)
+				ds.scrollY0, _ = sy.Get(idScroll)
 				p := layout.Parent.Shape
-				viewTop = p.Y + p.Padding.Top
+				ds.viewTop = p.Y + p.Padding.Top
 				viewH := p.Height - p.PaddingHeight()
-				viewBot = viewTop + viewH
-				maxScrollNeg = f32Min(0,
+				ds.viewBot = ds.viewTop + viewH
+				ds.maxScrollNeg = f32Min(0,
 					viewH-layout.Shape.Height)
 			}
-
-			computeRunePos := func(mx, my float32, w *Window) int {
-				scrollDelta := float32(0)
-				if idScroll > 0 {
-					sy := StateMap[uint32, float32](
-						w, nsScrollY, capScroll)
-					sNow, _ := sy.Get(idScroll)
-					scrollDelta = sNow - dragScrollY0
-				}
-				relX := mx - dragTxtOffX
-				relY := my - (dragTxtOffY + scrollDelta)
-				byteIdx := dragGL.GetClosestOffset(relX, relY)
-				return byteToRuneIndex(dragDisplayText, byteIdx)
-			}
-
-			updateDragSelection := func(rp int, w *Window) {
-				imap := StateMap[uint32, InputState](
-					w, nsInput, capMany)
-				is, _ := imap.Get(dragIDFocus)
-				if doubleClick {
-					wb, we := wordBoundsAt(runes, rp)
-					if rp < int(anchorPos) {
-						is.SelectBeg = anchorEnd
-						is.SelectEnd = uint32(wb)
-						is.CursorPos = wb
-					} else {
-						is.SelectBeg = anchorPos
-						is.SelectEnd = uint32(we)
-						is.CursorPos = we
-					}
-				} else {
-					is.CursorPos = rp
-					is.SelectBeg = anchorPos
-					is.SelectEnd = uint32(rp)
-				}
-				is.CursorOffset = -1
-				imap.Set(dragIDFocus, is)
-				resetBlinkCursorVisible(w)
-			}
-
-			dragScrollCB := func(_ *Animate, w *Window) {
-				var delta float32
-				if lastMouseY < viewTop {
-					delta = (viewTop - lastMouseY) * 0.3
-				} else if lastMouseY > viewBot {
-					delta = -((lastMouseY - viewBot) * 0.3)
-				} else {
-					w.AnimationRemove(animIDDragScroll)
-					return
-				}
-				sy := StateMap[uint32, float32](
-					w, nsScrollY, capScroll)
-				cur, _ := sy.Get(idScroll)
-				newScroll := f32Clamp(cur+delta, maxScrollNeg, 0)
-				if newScroll == cur {
-					return
-				}
-				sy.Set(idScroll, newScroll)
-				rp := computeRunePos(lastMouseX, lastMouseY, w)
-				updateDragSelection(rp, w)
-			}
-
-			w.MouseLock(MouseLockCfg{
-				MouseMove: func(_ *Layout, e *Event, w *Window) {
-					lastMouseX = e.MouseX
-					lastMouseY = e.MouseY
-					rp := computeRunePos(e.MouseX, e.MouseY, w)
-					updateDragSelection(rp, w)
-					if idScroll > 0 {
-						outside := e.MouseY < viewTop ||
-							e.MouseY > viewBot
-						if outside && !w.HasAnimation(
-							animIDDragScroll) {
-							w.AnimationAdd(&Animate{
-								AnimateID: animIDDragScroll,
-								Delay:     32 * time.Millisecond,
-								Repeat:    true,
-								Refresh:   AnimationRefreshLayout,
-								Callback:  dragScrollCB,
-							})
-						} else if !outside {
-							w.AnimationRemove(animIDDragScroll)
-						}
-					}
-				},
-				MouseUp: func(_ *Layout, _ *Event, w *Window) {
-					w.AnimationRemove(animIDDragScroll)
-					w.MouseUnlock()
-				},
-			})
+			startInputDrag(ds, w)
 		},
 		Content: txtContent,
 	}
@@ -590,7 +501,7 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		textChanged := false
 
 		// Use glyph layout for cursor navigation when available.
-		gl, glOK := inputGlyphLayoutFor(layout, w)
+		gl, glOK := inputGlyphLayoutWithText(text, layout, w)
 
 		switch e.KeyCode {
 		case KeyLeft:
@@ -968,6 +879,16 @@ func inputTextFromLayout(layout *Layout) string {
 // inputGlyphLayoutFor navigates to the inner text shape of an
 // input layout and returns a glyph Layout for cursor navigation.
 func inputGlyphLayoutFor(layout *Layout, w *Window) (glyph.Layout, bool) {
+	return inputGlyphLayoutWithText(
+		inputTextFromLayout(layout), layout, w,
+	)
+}
+
+// inputGlyphLayoutWithText returns a glyph Layout using
+// pre-extracted text, avoiding redundant layout traversal.
+func inputGlyphLayoutWithText(
+	text string, layout *Layout, w *Window,
+) (glyph.Layout, bool) {
 	if w.textMeasurer == nil {
 		return glyph.Layout{}, false
 	}
@@ -983,9 +904,7 @@ func inputGlyphLayoutFor(layout *Layout, w *Window) (glyph.Layout, bool) {
 		return glyph.Layout{}, false
 	}
 	style := textStyleOrDefault(txt.Shape)
-	return inputGlyphLayout(
-		inputTextFromLayout(layout), txt.Shape, style, w,
-	)
+	return inputGlyphLayout(text, txt.Shape, style, w)
 }
 
 // trailingLineStart returns the start of the previous visual line
@@ -1051,6 +970,132 @@ func inputDeleteGrapheme(
 }
 
 // passwordMask replaces each rune with a bullet character.
+// Uses a stack-local buffer for short strings to avoid heap
+// allocation from strings.Repeat.
 func passwordMask(text string) string {
-	return strings.Repeat("•", utf8RuneCount(text))
+	n := utf8RuneCount(text)
+	// "•" (U+2022) = 3 bytes UTF-8: 0xE2 0x80 0xA2
+	const bLen = 3
+	if n <= 64 {
+		var buf [64 * bLen]byte
+		for i := range n {
+			buf[i*bLen] = 0xe2
+			buf[i*bLen+1] = 0x80
+			buf[i*bLen+2] = 0xa2
+		}
+		return string(buf[:n*bLen])
+	}
+	return strings.Repeat("•", n)
+}
+
+// inputDragState holds state for drag-to-select in an input.
+// Replaces ~10 closure-captured locals with explicit fields;
+// runes is non-nil iff the drag started from a double-click.
+type inputDragState struct {
+	anchorPos, anchorEnd   uint32
+	gl                     glyph.Layout
+	displayText            string
+	txtOffX, txtOffY       float32
+	idFocus                uint32
+	idScroll               uint32
+	lastMouseX, lastMouseY float32
+	scrollY0               float32
+	viewTop, viewBot       float32
+	maxScrollNeg           float32
+	runes                  []rune // non-nil = double-click word select
+}
+
+func (d *inputDragState) computeRunePos(
+	mx, my float32, w *Window,
+) int {
+	scrollDelta := float32(0)
+	if d.idScroll > 0 {
+		sy := StateMap[uint32, float32](
+			w, nsScrollY, capScroll)
+		sNow, _ := sy.Get(d.idScroll)
+		scrollDelta = sNow - d.scrollY0
+	}
+	relX := mx - d.txtOffX
+	relY := my - (d.txtOffY + scrollDelta)
+	byteIdx := d.gl.GetClosestOffset(relX, relY)
+	return byteToRuneIndex(d.displayText, byteIdx)
+}
+
+func (d *inputDragState) updateSelection(rp int, w *Window) {
+	imap := StateMap[uint32, InputState](w, nsInput, capMany)
+	is, _ := imap.Get(d.idFocus)
+	if d.runes != nil {
+		wb, we := wordBoundsAt(d.runes, rp)
+		if rp < int(d.anchorPos) {
+			is.SelectBeg = d.anchorEnd
+			is.SelectEnd = uint32(wb)
+			is.CursorPos = wb
+		} else {
+			is.SelectBeg = d.anchorPos
+			is.SelectEnd = uint32(we)
+			is.CursorPos = we
+		}
+	} else {
+		is.CursorPos = rp
+		is.SelectBeg = d.anchorPos
+		is.SelectEnd = uint32(rp)
+	}
+	is.CursorOffset = -1
+	imap.Set(d.idFocus, is)
+	resetBlinkCursorVisible(w)
+}
+
+func (d *inputDragState) scrollCallback(
+	_ *Animate, w *Window,
+) {
+	var delta float32
+	if d.lastMouseY < d.viewTop {
+		delta = (d.viewTop - d.lastMouseY) * 0.3
+	} else if d.lastMouseY > d.viewBot {
+		delta = -((d.lastMouseY - d.viewBot) * 0.3)
+	} else {
+		w.AnimationRemove(animIDDragScroll)
+		return
+	}
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	cur, _ := sy.Get(d.idScroll)
+	newScroll := f32Clamp(cur+delta, d.maxScrollNeg, 0)
+	if newScroll == cur {
+		return
+	}
+	sy.Set(d.idScroll, newScroll)
+	rp := d.computeRunePos(d.lastMouseX, d.lastMouseY, w)
+	d.updateSelection(rp, w)
+}
+
+// startInputDrag sets up MouseLock drag-to-select for an input.
+func startInputDrag(d *inputDragState, w *Window) {
+	w.MouseLock(MouseLockCfg{
+		MouseMove: func(_ *Layout, e *Event, w *Window) {
+			d.lastMouseX = e.MouseX
+			d.lastMouseY = e.MouseY
+			rp := d.computeRunePos(e.MouseX, e.MouseY, w)
+			d.updateSelection(rp, w)
+			if d.idScroll > 0 {
+				outside := e.MouseY < d.viewTop ||
+					e.MouseY > d.viewBot
+				if outside && !w.HasAnimation(
+					animIDDragScroll) {
+					w.AnimationAdd(&Animate{
+						AnimateID: animIDDragScroll,
+						Delay:     32 * time.Millisecond,
+						Repeat:    true,
+						Refresh:   AnimationRefreshLayout,
+						Callback:  d.scrollCallback,
+					})
+				} else if !outside {
+					w.AnimationRemove(animIDDragScroll)
+				}
+			}
+		},
+		MouseUp: func(_ *Layout, _ *Event, w *Window) {
+			w.AnimationRemove(animIDDragScroll)
+			w.MouseUnlock()
+		},
+	})
 }
