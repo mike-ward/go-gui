@@ -329,7 +329,7 @@ func numericModeCfgFromInput(cfg NumericInputCfg) numericModeCfg {
 }
 
 func applyNumericInputDefaults(cfg *NumericInputCfg) {
-	d := &DefaultButtonStyle
+	d := &DefaultInputStyle
 	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}

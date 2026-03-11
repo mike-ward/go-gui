@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"log"
+	"strings"
 	"time"
 
 	"github.com/mike-ward/go-glyph"
@@ -82,6 +84,7 @@ func Input(cfg InputCfg) View {
 	}
 
 	colorBorderFocus := cfg.ColorBorderFocus
+	colorHover := cfg.ColorHover
 	idFocus := cfg.IDFocus
 	onBlur := cfg.OnBlur
 
@@ -363,9 +366,10 @@ func Input(cfg InputCfg) View {
 		Spacing:         SomeF(0),
 		OnChar:          makeInputOnChar(hcfg),
 		OnKeyDown:       makeInputOnKeyDown(hcfg),
-		OnHover: func(_ *Layout, _ *Event, w *Window) {
-			if w.IsFocus(idFocus) {
-				w.SetMouseCursor(CursorIBeam)
+		OnHover: func(layout *Layout, _ *Event, w *Window) {
+			w.SetMouseCursor(CursorIBeam)
+			if !w.IsFocus(idFocus) {
+				layout.Shape.Color = colorHover
 			}
 		},
 		AmendLayout: func(layout *Layout, w *Window) {
@@ -425,7 +429,7 @@ func Input(cfg InputCfg) View {
 }
 
 func applyInputDefaults(cfg *InputCfg) {
-	d := &DefaultButtonStyle
+	d := &DefaultInputStyle
 	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
@@ -485,12 +489,14 @@ func (h *inputHandlerCfg) compiledMask() *CompiledInputMask {
 	}
 	c, err := CompileInputMask(pattern, h.MaskTokens)
 	if err != nil {
+		log.Printf("input: mask compile failed: %v", err)
 		return nil
 	}
 	return &c
 }
 
 func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
+	mask := hcfg.compiledMask()
 	return func(layout *Layout, e *Event, w *Window) {
 		if hcfg.IDFocus == 0 || !w.IsFocus(hcfg.IDFocus) {
 			return
@@ -499,7 +505,6 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		id := hcfg.IDFocus
 
 		text := inputTextFromLayout(layout)
-		mask := hcfg.compiledMask()
 		changed := false
 
 		switch {
@@ -510,45 +515,19 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			return
 		// Backspace.
 		case ch == CharBSP:
-			if mask != nil {
-				is := inputStateOrDefault(id, w)
-				res := InputMaskBackspace(text, is.CursorPos, is.SelectBeg, is.SelectEnd, mask)
-				if res.Changed {
-					text = res.Text
-					StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
-						CursorPos: res.CursorPos, Undo: is.Undo,
-					})
-					changed = true
-				}
-			} else {
-				newText, delChanged := inputDeleteGrapheme(
-					text, id, false, layout, w,
-				)
-				if delChanged {
-					text = newText
-					changed = true
-				}
+			if newText, ok := inputHandleDelete(
+				text, id, false, mask, layout, w,
+			); ok {
+				text = newText
+				changed = true
 			}
 		// Delete.
 		case ch == CharDel:
-			if mask != nil {
-				is := inputStateOrDefault(id, w)
-				res := InputMaskDelete(text, is.CursorPos, is.SelectBeg, is.SelectEnd, mask)
-				if res.Changed {
-					text = res.Text
-					StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
-						CursorPos: res.CursorPos, Undo: is.Undo,
-					})
-					changed = true
-				}
-			} else {
-				newText, delChanged := inputDeleteGrapheme(
-					text, id, true, layout, w,
-				)
-				if delChanged {
-					text = newText
-					changed = true
-				}
+			if newText, ok := inputHandleDelete(
+				text, id, true, mask, layout, w,
+			); ok {
+				text = newText
+				changed = true
 			}
 		// Enter / LF.
 		case ch == CharLF || ch == CharCR:
@@ -556,25 +535,7 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				text = inputInsert(text, "\n", id, w)
 				changed = true
 			} else {
-				commitText := text
-				if hcfg.PostCommitNormalize != nil {
-					normalized := hcfg.PostCommitNormalize(
-						text, CommitEnter)
-					if normalized != text {
-						commitText = normalized
-						if hcfg.OnTextChanged != nil {
-							hcfg.OnTextChanged(
-								layout, commitText, w)
-						}
-					}
-				}
-				if hcfg.OnTextCommit != nil {
-					hcfg.OnTextCommit(
-						layout, commitText, CommitEnter, w)
-				}
-				if hcfg.OnEnter != nil {
-					hcfg.OnEnter(layout, e, w)
-				}
+				inputCommitEnter(hcfg, layout, text, e, w)
 			}
 		// Printable characters.
 		case ch >= CharSpace:
@@ -594,8 +555,11 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				}
 			} else if hcfg.PreTextChange != nil {
 				proposed := inputProposedText(text, ins, id, w)
-				if _, ok := hcfg.PreTextChange(text, proposed); ok {
+				if adjusted, ok := hcfg.PreTextChange(text, proposed); ok {
 					text = inputInsert(text, ins, id, w)
+					if adjusted != proposed {
+						text = adjusted
+					}
 					changed = true
 				}
 			} else {
@@ -618,6 +582,7 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 }
 
 func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
+	mask := hcfg.compiledMask()
 	return func(layout *Layout, e *Event, w *Window) {
 		if hcfg.IDFocus == 0 || !w.IsFocus(hcfg.IDFocus) {
 			return
@@ -813,25 +778,7 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				text = inputInsert(text, "\n", id, w)
 				textChanged = true
 			} else {
-				commitText := text
-				if hcfg.PostCommitNormalize != nil {
-					normalized := hcfg.PostCommitNormalize(
-						text, CommitEnter)
-					if normalized != text {
-						commitText = normalized
-						if hcfg.OnTextChanged != nil {
-							hcfg.OnTextChanged(
-								layout, commitText, w)
-						}
-					}
-				}
-				if hcfg.OnTextCommit != nil {
-					hcfg.OnTextCommit(
-						layout, commitText, CommitEnter, w)
-				}
-				if hcfg.OnEnter != nil {
-					hcfg.OnEnter(layout, e, w)
-				}
+				inputCommitEnter(hcfg, layout, text, e, w)
 			}
 		case KeyEscape:
 			is.SelectBeg = 0
@@ -857,7 +804,6 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
 				clip := w.GetClipboard()
 				if len(clip) > 0 {
-					mask := hcfg.compiledMask()
 					if mask != nil {
 						cis := inputStateOrDefault(id, w)
 						res := InputMaskInsert(text,
@@ -877,10 +823,13 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					} else if hcfg.PreTextChange != nil {
 						proposed := inputProposedText(
 							text, clip, id, w)
-						if _, ok := hcfg.PreTextChange(
+						if adjusted, ok := hcfg.PreTextChange(
 							text, proposed); ok {
 							text = inputInsert(
 								text, clip, id, w)
+							if adjusted != proposed {
+								text = adjusted
+							}
 							textChanged = true
 						}
 					} else {
@@ -920,46 +869,18 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				handled = false
 			}
 		case KeyBackspace:
-			mask := hcfg.compiledMask()
-			if mask != nil {
-				res := InputMaskBackspace(text, is.CursorPos,
-					is.SelectBeg, is.SelectEnd, mask)
-				if res.Changed {
-					text = res.Text
-					imap.Set(id, InputState{
-						CursorPos: res.CursorPos, Undo: is.Undo,
-					})
-					textChanged = true
-				}
-			} else {
-				newText, delChanged := inputDeleteGrapheme(
-					text, id, false, layout, w,
-				)
-				if delChanged {
-					text = newText
-					textChanged = true
-				}
+			if newText, ok := inputHandleDelete(
+				text, id, false, mask, layout, w,
+			); ok {
+				text = newText
+				textChanged = true
 			}
 		case KeyDelete:
-			mask := hcfg.compiledMask()
-			if mask != nil {
-				res := InputMaskDelete(text, is.CursorPos,
-					is.SelectBeg, is.SelectEnd, mask)
-				if res.Changed {
-					text = res.Text
-					imap.Set(id, InputState{
-						CursorPos: res.CursorPos, Undo: is.Undo,
-					})
-					textChanged = true
-				}
-			} else {
-				newText, delChanged := inputDeleteGrapheme(
-					text, id, true, layout, w,
-				)
-				if delChanged {
-					text = newText
-					textChanged = true
-				}
+			if newText, ok := inputHandleDelete(
+				text, id, true, mask, layout, w,
+			); ok {
+				text = newText
+				textChanged = true
 			}
 		default:
 			handled = false
@@ -978,6 +899,63 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			hcfg.OnKeyDown(layout, e, w)
 		}
 	}
+}
+
+// inputCommitEnter handles single-line Enter: normalize, commit,
+// fire OnEnter.
+func inputCommitEnter(
+	hcfg inputHandlerCfg,
+	layout *Layout, text string, e *Event, w *Window,
+) {
+	commitText := text
+	if hcfg.PostCommitNormalize != nil {
+		normalized := hcfg.PostCommitNormalize(
+			text, CommitEnter)
+		if normalized != text {
+			commitText = normalized
+			if hcfg.OnTextChanged != nil {
+				hcfg.OnTextChanged(
+					layout, commitText, w)
+			}
+		}
+	}
+	if hcfg.OnTextCommit != nil {
+		hcfg.OnTextCommit(
+			layout, commitText, CommitEnter, w)
+	}
+	if hcfg.OnEnter != nil {
+		hcfg.OnEnter(layout, e, w)
+	}
+}
+
+// inputHandleDelete handles Backspace/Delete for both masked and
+// unmasked inputs.
+func inputHandleDelete(
+	text string, id uint32, forward bool,
+	mask *CompiledInputMask,
+	layout *Layout, w *Window,
+) (string, bool) {
+	if mask != nil {
+		is := inputStateOrDefault(id, w)
+		var res MaskEditResult
+		if forward {
+			res = InputMaskDelete(text, is.CursorPos,
+				is.SelectBeg, is.SelectEnd, mask)
+		} else {
+			res = InputMaskBackspace(text, is.CursorPos,
+				is.SelectBeg, is.SelectEnd, mask)
+		}
+		if !res.Changed {
+			return text, false
+		}
+		StateMap[uint32, InputState](
+			w, nsInput, capMany,
+		).Set(id, InputState{
+			CursorPos: res.CursorPos, Undo: is.Undo,
+		})
+		return res.Text, true
+	}
+	return inputDeleteGrapheme(text, id, forward, layout, w)
 }
 
 // inputTextFromLayout extracts the current text from the input's
@@ -1087,9 +1065,5 @@ func inputDeleteGrapheme(
 
 // passwordMask replaces each rune with a bullet character.
 func passwordMask(text string) string {
-	runes := []rune(text)
-	for i := range runes {
-		runes[i] = '•'
-	}
-	return string(runes)
+	return strings.Repeat("•", utf8RuneCount(text))
 }
