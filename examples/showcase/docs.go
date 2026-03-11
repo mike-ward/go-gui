@@ -2363,6 +2363,80 @@ downloading.
 | A11YDescription | string | Accessible description               |
 `,
 
+	"draw_canvas": `Procedural 2D drawing canvas with cached tessellation.
+Draw lines, circles, rectangles, polygons, and arcs via the
+` + "`OnDraw`" + ` callback. Output is tessellated into triangles and
+cached by ` + "`Version`" + ` — only re-drawn when the version changes.
+
+## Usage
+
+` + "```go" + `
+gui.DrawCanvas(gui.DrawCanvasCfg{
+    ID:      "my-canvas",
+    Version: 1,
+    Width:   400,
+    Height:  300,
+    Color:   gui.RGBA(30, 30, 40, 255),
+    Radius:  8,
+    Padding: gui.Some(gui.Padding{Top: 20, Right: 20,
+        Bottom: 20, Left: 20}),
+    OnDraw: func(dc *gui.DrawContext) {
+        dc.FilledRect(10, 10, 100, 60, gui.White)
+        dc.Circle(200, 150, 50, gui.White, 2)
+    },
+})
+` + "```" + `
+
+## Drawing API
+
+| Method        | Signature                                                        | Description                   |
+|---------------|------------------------------------------------------------------|-------------------------------|
+| FilledRect    | (x, y, w, h float32, color Color)                               | Filled rectangle              |
+| Rect          | (x, y, w, h float32, color Color, width float32)                | Stroked rectangle             |
+| Line          | (x0, y0, x1, y1 float32, color Color, width float32)            | Single line segment           |
+| Polyline      | (points []float32, color Color, width float32)                   | Stroked open polyline         |
+| FilledPolygon | (points []float32, color Color)                                  | Filled convex polygon         |
+| FilledCircle  | (cx, cy, radius float32, color Color)                            | Filled circle                 |
+| Circle        | (cx, cy, radius float32, color Color, width float32)             | Stroked circle                |
+| FilledArc     | (cx, cy, rx, ry, start, sweep float32, color Color)              | Filled elliptical arc         |
+| Arc           | (cx, cy, rx, ry, start, sweep float32, color Color, width float32) | Stroked elliptical arc      |
+
+## Key Properties
+
+| Property  | Type              | Description                         |
+|-----------|-------------------|-------------------------------------|
+| ID        | string            | Cache key (required)                |
+| Version   | uint64            | Bump to invalidate cache            |
+| Width     | float32           | Canvas width                        |
+| Height    | float32           | Canvas height                       |
+| Color     | Color             | Background fill                     |
+| Radius    | float32           | Corner radius                       |
+| Padding   | Opt[Padding]      | Inner padding (shrinks draw area)   |
+| Clip      | bool              | Clip drawing to bounds              |
+| OnDraw    | func(*DrawContext) | Drawing callback                   |
+
+## Events
+
+| Callback      | Signature                          | Fired when            |
+|---------------|------------------------------------|-----------------------|
+| OnClick       | func(*Layout, *Event, *Window)     | Canvas clicked        |
+| OnHover       | func(*Layout, *Event, *Window)     | Mouse enters canvas   |
+| OnMouseScroll | func(*Layout, *Event, *Window)     | Scroll wheel on canvas |
+
+## Caching
+
+Tessellation is cached per ` + "`ID`" + `. Bump ` + "`Version`" + ` when data
+changes to trigger a re-draw. Same version = same triangles,
+zero cost per frame.
+
+## Accessibility
+
+| Property        | Type   | Description                          |
+|-----------------|--------|--------------------------------------|
+| A11YLabel       | string | Accessible label                     |
+| A11YDescription | string | Accessible description               |
+`,
+
 	"gradient": `Linear and radial gradients with configurable direction
 and color stops. Applied via the ` + "`Gradient`" + ` field on any container
 or rectangle. ` + "`BorderGradient`" + ` applies a gradient to the border.

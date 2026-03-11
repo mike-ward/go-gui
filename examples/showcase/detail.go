@@ -212,6 +212,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoBoxShadows(w)
 	case "shader":
 		return demoShader(w)
+	case "draw_canvas":
+		return demoDrawCanvas(w)
 	case "animations":
 		return demoAnimations(w)
 	case "color_picker":
