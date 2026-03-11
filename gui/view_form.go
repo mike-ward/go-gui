@@ -351,6 +351,10 @@ func formShouldValidate(
 ) bool {
 	switch mode {
 	case FormValidateInherit:
+		// Should not reach here — formResolveValidateOn resolves
+		// Inherit before validation. Treat as BlurSubmit defensively.
+		log.Print("gui: formShouldValidate called with " +
+			"FormValidateInherit; should have been resolved")
 		return trigger == FormTriggerBlur ||
 			trigger == FormTriggerSubmit
 	case FormValidateOnChange:
@@ -375,11 +379,13 @@ func formResolveValidateOn(
 }
 
 func formMergeErrors(field *formFieldRuntime) []FormIssue {
-	n := len(field.syncErrors) + len(field.asyncErrors)
-	if n == 0 {
-		return nil
+	if len(field.syncErrors) == 0 {
+		return field.asyncErrors
 	}
-	merged := make([]FormIssue, 0, n)
+	if len(field.asyncErrors) == 0 {
+		return field.syncErrors
+	}
+	merged := make([]FormIssue, 0, len(field.syncErrors)+len(field.asyncErrors))
 	merged = append(merged, field.syncErrors...)
 	merged = append(merged, field.asyncErrors...)
 	return merged
@@ -430,11 +436,14 @@ func formComputeSummary(
 	state *formRuntimeState,
 ) FormSummaryState {
 	var invalidCount, pendingCount int
-	issues := make(map[string][]FormIssue)
+	var issues map[string][]FormIssue
 	for fieldID, field := range state.fields {
 		merged := formMergeErrors(field)
 		if len(merged) > 0 {
 			invalidCount++
+			if issues == nil {
+				issues = make(map[string][]FormIssue, 4)
+			}
 			issues[fieldID] = merged
 		}
 		if field.pending {
@@ -453,9 +462,12 @@ func formComputeSummary(
 func formComputePending(
 	formID string, state *formRuntimeState,
 ) FormPendingState {
-	ids := make([]string, 0, len(state.fields))
+	var ids []string
 	for fid, field := range state.fields {
 		if field.pending {
+			if ids == nil {
+				ids = make([]string, 0, 4)
+			}
 			ids = append(ids, fid)
 		}
 	}
@@ -627,16 +639,11 @@ func FormRegisterField(
 	FormRegisterFieldByID(w, formID, cfg)
 }
 
-// FormRegisterFieldByID registers a field with a known form ID.
-// Safe to call during view construction when the form ID is
-// known. Must be called every frame to prevent stale cleanup.
-func FormRegisterFieldByID(
-	w *Window, formID string, cfg FormFieldAdapterCfg,
-) {
-	if cfg.FieldID == "" || formID == "" {
-		return
-	}
-	state := formRuntime(w, formID)
+// formEnsureField creates or updates a field's registration in
+// the form state. Returns the field runtime for further mutation.
+func formEnsureField(
+	state *formRuntimeState, cfg FormFieldAdapterCfg,
+) *formFieldRuntime {
 	field, exists := state.fields[cfg.FieldID]
 	if !exists {
 		field = &formFieldRuntime{}
@@ -654,6 +661,20 @@ func FormRegisterFieldByID(
 	field.validateOn = formResolveValidateOn(
 		cfg.ValidateOnOverride, state.validateOn)
 	field.seenGen = state.layoutGen
+	return field
+}
+
+// FormRegisterFieldByID registers a field with a known form ID.
+// Safe to call during view construction when the form ID is
+// known. Must be called every frame to prevent stale cleanup.
+func FormRegisterFieldByID(
+	w *Window, formID string, cfg FormFieldAdapterCfg,
+) {
+	if cfg.FieldID == "" || formID == "" {
+		return
+	}
+	state := formRuntime(w, formID)
+	formEnsureField(state, cfg)
 }
 
 // FormOnFieldEvent triggers validation for a field based on
@@ -692,25 +713,7 @@ func formOnFieldEventForForm(
 	trigger FormValidationTrigger,
 ) {
 	state := formRuntime(w, formID)
-	field, exists := state.fields[cfg.FieldID]
-	if !exists {
-		field = &formFieldRuntime{
-			value: cfg.Value,
-		}
-		if cfg.HasInitialValue {
-			field.initialValue = cfg.InitialValue
-		} else {
-			field.initialValue = cfg.Value
-		}
-		state.fields[cfg.FieldID] = field
-	}
-	field.value = cfg.Value
-	field.dirty = field.value != field.initialValue
-	field.syncVals = cfg.SyncValidators
-	field.asyncVals = cfg.AsyncValidators
-	field.validateOn = formResolveValidateOn(
-		cfg.ValidateOnOverride, state.validateOn)
-	field.seenGen = state.layoutGen
+	field := formEnsureField(state, cfg)
 	if trigger == FormTriggerBlur || trigger == FormTriggerSubmit {
 		field.touched = true
 	}
