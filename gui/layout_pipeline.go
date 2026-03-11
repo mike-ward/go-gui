@@ -166,6 +166,8 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	tc.wrapCacheValid = true
 }
 
+// layoutPlainText computes final text dimensions after sizing.
+// Mirrors the initial estimate in view_text.go:GenerateLayout.
 func layoutPlainText(
 	shape *Shape,
 	tc *ShapeTextConfig,

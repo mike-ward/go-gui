@@ -82,6 +82,8 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 		layout.Shape.Width = float32(utf8RuneCount(c.Text)) * charWidth
 		layout.Shape.Height = ts.Size * 1.4
 	}
+	// Initial multiline estimate; layoutPlainText overwrites with
+	// final values after sizing. See layout_pipeline.go:layoutPlainText.
 	if c.Mode == TextModeMultiline {
 		if l, ok := plainTextLayoutResolved(c.Text, layout.Shape, *ts, w); ok {
 			layout.Shape.Height = l.Height
@@ -138,6 +140,7 @@ func Text(cfg TextCfg) View {
 		cfg.TextStyle.Size = SizeTextMedium
 	}
 	if cfg.Opacity == 0 {
+		// Zero means "not set"; use Invisible for fully transparent.
 		cfg.Opacity = 1.0
 	}
 	return &textView{cfg: cfg, sizing: sizing}
