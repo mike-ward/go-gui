@@ -131,7 +131,7 @@ func sidebarStartAnimation(
 		sm.Set(sidebarID, rt)
 	}
 	if tweenDur > 0 {
-		w.AnimationAdd(&TweenAnimation{
+		w.animationAdd(&TweenAnimation{
 			AnimID:   animID,
 			From:     from,
 			To:       to,
@@ -146,6 +146,6 @@ func sidebarStartAnimation(
 			OnValue: onValue,
 		}
 		sp.SpringTo(from, to)
-		w.AnimationAdd(sp)
+		w.animationAdd(sp)
 	}
 }
