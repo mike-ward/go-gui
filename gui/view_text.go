@@ -32,6 +32,14 @@ type textView struct {
 	sizing Sizing
 }
 
+// textEventHandlers is a shared handler set for focused text
+// widgets, avoiding per-frame heap allocations.
+var textEventHandlers = &EventHandlers{
+	OnClick:     textOnClick,
+	OnKeyDown:   textOnKeyDown,
+	AmendLayout: textAmendLayout,
+}
+
 func (tv *textView) Content() []View { return nil }
 
 func (tv *textView) GenerateLayout(w *Window) Layout {
@@ -65,9 +73,6 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 		},
 	}
 
-	if ts.Size == 0 {
-		ts.Size = SizeTextMedium
-	}
 	if w.textMeasurer != nil {
 		layout.Shape.Width = w.textMeasurer.TextWidth(c.Text, *ts)
 		layout.Shape.Height = w.textMeasurer.FontHeight(*ts)
@@ -100,17 +105,10 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 		)
 		layout.Shape.Height = layout.Shape.MinHeight
 	}
-	if layout.Shape.Opacity == 0 {
-		layout.Shape.Opacity = 1.0
-	}
 	ApplyFixedSizingConstraints(layout.Shape)
 
 	if c.IDFocus > 0 {
-		layout.Shape.Events = &EventHandlers{
-			OnClick:     makeTextOnClick(),
-			OnKeyDown:   makeTextOnKeyDown(),
-			AmendLayout: textAmendLayout,
-		}
+		layout.Shape.Events = textEventHandlers
 	}
 
 	return layout
@@ -135,6 +133,12 @@ func Text(cfg TextCfg) View {
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = DefaultTextStyle
+	}
+	if cfg.TextStyle.Size == 0 {
+		cfg.TextStyle.Size = SizeTextMedium
+	}
+	if cfg.Opacity == 0 {
+		cfg.Opacity = 1.0
 	}
 	return &textView{cfg: cfg, sizing: sizing}
 }
