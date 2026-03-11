@@ -333,17 +333,15 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			},
 		},
 		ListBoxStyle: ListBoxStyle{
-			Color:            cfg.ColorInterior,
-			ColorHover:       cfg.ColorHover,
-			ColorFocus:       cfg.ColorFocus,
-			ColorBorder:      cfg.ColorBorder,
-			ColorBorderFocus: borderFocus,
-			ColorSelect:      cfg.ColorSelect,
-			Padding:          cfg.Padding,
-			SizeBorder:       cfg.SizeBorder,
-			Radius:           cfg.Radius,
-			TextStyleNormal:  ts,
-			SubheadingStyle:  ts,
+			Color:           cfg.ColorInterior,
+			ColorHover:      cfg.ColorHover,
+			ColorBorder:     cfg.ColorBorder,
+			ColorSelect:     cfg.ColorSelect,
+			Padding:         cfg.Padding,
+			SizeBorder:      cfg.SizeBorder,
+			Radius:          cfg.Radius,
+			TextStyleNormal: ts,
+			SubheadingStyle: ts,
 		},
 		TreeStyle: TreeStyle{
 			Color:       ColorTransparent,
@@ -1061,9 +1059,7 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 
 	t.ListBoxStyle.Color = interior
 	t.ListBoxStyle.ColorHover = hover
-	t.ListBoxStyle.ColorFocus = focus
 	t.ListBoxStyle.ColorBorder = border
-	t.ListBoxStyle.ColorBorderFocus = borderFocus
 	t.ListBoxStyle.ColorSelect = sel
 
 	t.TreeStyle.ColorHover = hover

@@ -1,6 +1,9 @@
 package gui
 
-import "sort"
+import (
+	"slices"
+	"sort"
+)
 
 // list_core.go provides pure functions shared by ListBox, Select,
 // and other list widgets. No state, no Window dependency.
@@ -289,7 +292,7 @@ func listCoreContainsSelected(selectedSet map[string]struct{}, selectedIDs []str
 		_, ok := selectedSet[id]
 		return ok
 	}
-	return containsStr(selectedIDs, id)
+	return slices.Contains(selectedIDs, id)
 }
 
 // listCoreViews builds visible item views with virtualization

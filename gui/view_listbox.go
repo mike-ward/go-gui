@@ -1,12 +1,15 @@
 package gui
 
+var listBoxItemPad = PaddingTwoFive
+
 type listBoxView struct {
 	cfg ListBoxCfg
 }
 
 type listBoxCache struct {
-	dataHash uint64
-	itemIDs  []string
+	dataHash        uint64
+	itemIDs         []string
+	itemDataIndices []int
 }
 
 // ListBoxOption represents one row in a ListBox.
@@ -66,7 +69,8 @@ func NewListBoxSubheading(id, title string) ListBoxOption {
 func ListBox(cfg ListBoxCfg) View {
 	applyListBoxDefaults(&cfg)
 	if listBoxCanVirtualize(&cfg) ||
-		(cfg.Reorderable && cfg.OnReorder != nil) {
+		(cfg.Reorderable && cfg.OnReorder != nil) ||
+		cfg.IDFocus > 0 {
 		return &listBoxView{cfg: cfg}
 	}
 
@@ -146,12 +150,15 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	dataHash := listBoxDataHash(cfg.Data)
 	if cache.dataHash != dataHash || len(cache.itemIDs) == 0 {
 		itemIDs := make([]string, 0, len(cfg.Data))
+		indices := make([]int, 0, len(cfg.Data))
 		for i := range cfg.Data {
 			if !cfg.Data[i].IsSubheading {
 				itemIDs = append(itemIDs, cfg.Data[i].ID)
+				indices = append(indices, i)
 			}
 		}
 		cache.itemIDs = itemIDs
+		cache.itemDataIndices = indices
 		cache.dataHash = dataHash
 	}
 
@@ -163,7 +170,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	if listH <= 0 {
 		listH = cfg.MaxHeight
 	}
-	rowH := listCoreRowHeightEstimate(cfg.TextStyle, PaddingTwoFive)
+	rowH := listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
 	if virtualize && listH > 0 && len(cfg.Data) > 0 {
 		scrollY := StateReadOr[uint32, float32](w, nsScrollY, cfg.IDScroll, 0)
 		first, last = listCoreVisibleRange(len(cfg.Data), rowH, listH, scrollY)
@@ -176,18 +183,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	onSelect := cfg.OnSelect
 	selectedIDs := cfg.SelectedIDs
 	itemIDs := cache.itemIDs
-
-	// Map from itemIDs index to full data index (includes subheadings).
-	itemDataIndices := make([]int, len(itemIDs))
-	j := 0
-	for i := range cfg.Data {
-		if !cfg.Data[i].IsSubheading {
-			if j < len(itemDataIndices) {
-				itemDataIndices[j] = i
-			}
-			j++
-		}
-	}
+	itemDataIndices := cache.itemDataIndices
 
 	// Keyboard focus highlight.
 	lbf := StateMap[string, int](w, nsListBoxFocus, capModerate)
@@ -207,7 +203,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	idScroll := cfg.IDScroll
 
 	var dragIdxByRow map[int]int
-	if canReorder {
+	if canReorder && (dragging || drag.started) {
 		dragIdxByRow = make(map[int]int, len(cfg.Data))
 		di := 0
 		for i := range cfg.Data {
@@ -251,7 +247,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	list := make([]View, 0, listCap)
 
 	if virtualize && first > 0 {
-		rowH := listCoreRowHeightEstimate(cfg.TextStyle, PaddingTwoFive)
+		rowH := listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
 		list = append(list, Rectangle(RectangleCfg{
 			Color:  ColorTransparent,
 			Height: float32(first) * rowH,
@@ -288,7 +284,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	}
 
 	if virtualize && last < len(cfg.Data)-1 {
-		rowH := listCoreRowHeightEstimate(cfg.TextStyle, PaddingTwoFive)
+		rowH := listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
 		remaining := len(cfg.Data) - 1 - last
 		list = append(list, Rectangle(RectangleCfg{
 			Color:  ColorTransparent,
@@ -381,7 +377,7 @@ func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]s
 		A11YLabel:  dat.Name,
 		A11YState:  a11yState,
 		Color:      color,
-		Padding:    Some(PaddingTwoFive),
+		Padding:    Some(listBoxItemPad),
 		SizeBorder: NoBorder,
 		Sizing:     FillFit,
 		Content:    []View{content},
@@ -440,7 +436,7 @@ func listBoxReorderItemView(
 		A11YLabel:  dat.Name,
 		A11YState:  a11yState,
 		Color:      color,
-		Padding:    Some(PaddingTwoFive),
+		Padding:    Some(listBoxItemPad),
 		SizeBorder: NoBorder,
 		Sizing:     FillFit,
 		Content:    []View{content},
@@ -449,7 +445,8 @@ func listBoxReorderItemView(
 				DragReorderVertical, itemIDs, onReorder,
 				itemLayoutIDs, midsOffset, idScroll,
 				layout, e, w)
-			if hasOnSelect {
+			ds := dragReorderGet(w, listBoxID)
+			if hasOnSelect && !ds.active {
 				ids := listBoxNextSelectedIDs(
 					selectedIDs, datID, isMultiple)
 				onSelect(ids, e, w)
@@ -557,17 +554,8 @@ func listBoxOnKeyDown(
 	}
 }
 
-func containsStr(ss []string, s string) bool {
-	for _, v := range ss {
-		if v == s {
-			return true
-		}
-	}
-	return false
-}
-
 func applyListBoxDefaults(cfg *ListBoxCfg) {
-	d := &DefaultButtonStyle
+	d := &DefaultListBoxStyle
 	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
@@ -578,22 +566,22 @@ func applyListBoxDefaults(cfg *ListBoxCfg) {
 		cfg.ColorBorder = d.ColorBorder
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = DefaultListBoxStyle.ColorSelect
+		cfg.ColorSelect = d.ColorSelect
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = Some(PaddingTwo)
+		cfg.Padding = Some(d.Padding)
 	}
 
 	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = DefaultTextStyle
+		cfg.TextStyle = d.TextStyleNormal
 	}
 	if cfg.SubheadingStyle == (TextStyle{}) {
-		cfg.SubheadingStyle = DefaultListBoxStyle.SubheadingStyle
+		cfg.SubheadingStyle = d.SubheadingStyle
 	}
 }
 
 func listBoxDataHash(items []ListBoxOption) uint64 {
-	const offset uint64 = 1469598103934665603
+	const offset uint64 = 14695981039346656037
 	const prime uint64 = 1099511628211
 	h := offset
 	for i := range items {

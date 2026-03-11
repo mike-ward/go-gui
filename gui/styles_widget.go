@@ -108,18 +108,15 @@ type SelectStyle struct {
 
 // ListBoxStyle defines list box visual properties.
 type ListBoxStyle struct {
-	Color            Color
-	ColorHover       Color
-	ColorFocus       Color
-	ColorBorder      Color
-	ColorBorderFocus Color
-	ColorSelect      Color
-	Padding          Padding
-	SizeBorder       float32
-	Radius           float32
-	Shadow           *BoxShadow
-	TextStyleNormal  TextStyle
-	SubheadingStyle  TextStyle
+	Color           Color
+	ColorHover      Color
+	ColorBorder     Color
+	ColorSelect     Color
+	Padding         Padding
+	SizeBorder      float32
+	Radius          float32
+	TextStyleNormal TextStyle
+	SubheadingStyle TextStyle
 }
 
 // TreeStyle defines tree view visual properties.
@@ -554,17 +551,15 @@ var (
 	}
 
 	DefaultListBoxStyle = ListBoxStyle{
-		Color:            colorInteriorDark,
-		ColorHover:       colorHoverDark,
-		ColorFocus:       colorFocusDark,
-		ColorBorder:      colorBorderDark,
-		ColorBorderFocus: colorSelectDark,
-		ColorSelect:      colorSelectDark,
-		Padding:          PaddingButton,
-		SizeBorder:       SizeBorderDef,
-		Radius:           RadiusMedium,
-		TextStyleNormal:  DefaultTextStyle,
-		SubheadingStyle:  DefaultTextStyle,
+		Color:           colorInteriorDark,
+		ColorHover:      colorHoverDark,
+		ColorBorder:     colorBorderDark,
+		ColorSelect:     colorSelectDark,
+		Padding:         PaddingButton,
+		SizeBorder:      SizeBorderDef,
+		Radius:          RadiusMedium,
+		TextStyleNormal: DefaultTextStyle,
+		SubheadingStyle: DefaultTextStyle,
 	}
 
 	DefaultTreeStyle = TreeStyle{
