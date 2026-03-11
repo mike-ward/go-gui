@@ -1613,9 +1613,9 @@ gui.RangeSlider(gui.RangeSliderCfg{
 | Property     | Type         | Description                      |
 |--------------|--------------|----------------------------------|
 | Padding      | Opt[Padding] | Inner padding                    |
-| Radius       | float32      | Track corner radius              |
-| RadiusBorder | float32      | Border corner radius             |
-| SizeBorder   | float32      | Border width                     |
+| Radius       | Opt[float32] | Track corner radius              |
+| RadiusBorder | Opt[float32] | Border corner radius             |
+| SizeBorder   | Opt[float32] | Border width                     |
 | Color        | Color        | Track background color           |
 | ColorLeft    | Color        | Filled portion color             |
 | ColorThumb   | Color        | Thumb color                      |

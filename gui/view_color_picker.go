@@ -296,10 +296,10 @@ func cpAlphaSlider(cfg *ColorPickerCfg) View {
 		Step:         1,
 		Sizing:       FillFit,
 		Size:         trackSize,
-		SizeBorder:   1,
+		SizeBorder:   SomeF(1),
 		ThumbSize:    thumbSize,
 		Height:       thumbSize,
-		RadiusBorder: trackSize / 2,
+		RadiusBorder: SomeF(trackSize / 2),
 		OnChange: func(v float32, e *Event, w *Window) {
 			if onChange != nil {
 				nc := c

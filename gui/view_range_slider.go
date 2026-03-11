@@ -17,7 +17,7 @@ type RangeSliderCfg struct {
 	ColorLeft    Color
 	ColorClick   Color
 	Padding      Opt[Padding]
-	SizeBorder   float32
+	SizeBorder   Opt[float32]
 	OnChange     func(float32, *Event, *Window)
 	Value        float32
 	Min          float32
@@ -27,8 +27,8 @@ type RangeSliderCfg struct {
 	Height       float32
 	Size         float32
 	ThumbSize    float32
-	Radius       float32
-	RadiusBorder float32
+	Radius       Opt[float32]
+	RadiusBorder Opt[float32]
 	IDFocus      uint32
 	RoundValue   bool
 	Vertical     bool
@@ -63,21 +63,15 @@ func RangeSlider(cfg RangeSliderCfg) View {
 	if !cfg.ColorClick.IsSet() {
 		cfg.ColorClick = guiTheme.RangeSliderStyle.ColorClick
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = guiTheme.RangeSliderStyle.SizeBorder
-	}
+	sizeBorder := cfg.SizeBorder.Get(guiTheme.RangeSliderStyle.SizeBorder)
 	if cfg.Size == 0 {
 		cfg.Size = guiTheme.RangeSliderStyle.Size
 	}
 	if cfg.ThumbSize == 0 {
 		cfg.ThumbSize = guiTheme.RangeSliderStyle.ThumbSize
 	}
-	if cfg.Radius == 0 {
-		cfg.Radius = guiTheme.RangeSliderStyle.Radius
-	}
-	if cfg.RadiusBorder == 0 {
-		cfg.RadiusBorder = cfg.Radius
-	}
+	radius := cfg.Radius.Get(guiTheme.RangeSliderStyle.Radius)
+	radiusBorder := cfg.RadiusBorder.Get(radius)
 	if cfg.Max == 0 && cfg.Min == 0 {
 		cfg.Max = 100
 	}
@@ -118,7 +112,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 	vertical := cfg.Vertical
 	roundValue := cfg.RoundValue
 	size := cfg.Size
-	szBorder := cfg.SizeBorder
+	szBorder := sizeBorder
 	thumbSize := cfg.ThumbSize
 	colorFocus := cfg.ColorFocus
 	colorHover := cfg.ColorHover
@@ -210,8 +204,8 @@ func RangeSlider(cfg RangeSliderCfg) View {
 				Sizing:      trackSizing,
 				Color:       cfg.Color,
 				ColorBorder: cfg.ColorBorder,
-				SizeBorder:  Some(cfg.SizeBorder),
-				Radius:      Some(cfg.RadiusBorder),
+				SizeBorder:  Some(sizeBorder),
+				Radius:      Some(radiusBorder),
 				Padding:     NoPadding,
 				axis:        trackAxis,
 				Content: []View{
@@ -226,7 +220,7 @@ func RangeSlider(cfg RangeSliderCfg) View {
 						Height:      cfg.ThumbSize,
 						Color:       cfg.ColorThumb,
 						ColorBorder: cfg.ColorBorder,
-						SizeBorder:  Some[float32](1.5),
+						SizeBorder:  Some(sizeBorder),
 						Padding:     NoPadding,
 						AmendLayout: func(
 							layout *Layout, w *Window,
@@ -271,7 +265,7 @@ func rangeSliderAmendLayoutSlide(
 	thumb := &track.Children[1]
 
 	clamped := f32Clamp(value, minVal, maxVal)
-	percent := float32(math.Abs(float64(clamped / (maxVal - minVal))))
+	percent := (clamped - minVal) / (maxVal - minVal)
 
 	if vertical {
 		h := track.Shape.Height
@@ -296,9 +290,9 @@ func rangeSliderAmendLayoutSlide(
 				return
 			}
 		}
-	}
-	if w.IsFocus(idFocus) {
-		thumb.Shape.Color = colorFocus
+		if w.IsFocus(idFocus) {
+			thumb.Shape.Color = colorFocus
+		}
 	}
 }
 
@@ -307,7 +301,7 @@ func rangeSliderAmendLayoutThumb(
 	value, minVal, maxVal, thumbSize float32, vertical bool,
 ) {
 	clamped := f32Clamp(value, minVal, maxVal)
-	percent := float32(math.Abs(float64(clamped / (maxVal - minVal))))
+	percent := (clamped - minVal) / (maxVal - minVal)
 	radius := thumbSize / 2
 
 	if vertical {
@@ -346,16 +340,18 @@ func rangeSliderMouseMove(
 	if vertical {
 		h := shape.Height
 		pct := f32Clamp((e.MouseY-shape.Y)/h, 0, 1)
-		val := (maxVal - minVal) * pct
+		val := minVal + (maxVal-minVal)*pct
 		v := f32Clamp(val, minVal, maxVal)
 		if roundValue {
 			v = float32(math.Round(float64(v)))
 		}
-		onChange(v, e, w)
+		if v != curValue {
+			onChange(v, e, w)
+		}
 	} else {
 		wd := shape.Width
 		pct := f32Clamp((e.MouseX-shape.X)/wd, 0, 1)
-		val := (maxVal - minVal) * pct
+		val := minVal + (maxVal-minVal)*pct
 		v := f32Clamp(val, minVal, maxVal)
 		if roundValue {
 			v = float32(math.Round(float64(v)))
@@ -387,6 +383,7 @@ func rangeSliderOnKeyDown(
 	default:
 		return
 	}
+	e.IsHandled = true
 	if roundValue {
 		v = float32(math.Round(float64(v)))
 	}

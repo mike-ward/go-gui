@@ -126,3 +126,94 @@ func TestRangeSliderRoundValue(t *testing.T) {
 			got, float32(math.Round(50.7)))
 	}
 }
+
+func TestRangeSliderNonZeroMin(t *testing.T) {
+	// B1: percent calc with non-zero Min
+	t.Run("percent", func(t *testing.T) {
+		v := RangeSlider(RangeSliderCfg{
+			ID:       "rs",
+			Value:    60,
+			Min:      10,
+			Max:      110,
+			OnChange: func(float32, *Event, *Window) {},
+		})
+		layout := GenerateViewLayout(v, &Window{})
+		track := layout.Children[0]
+		leftBar := track.Children[0]
+		// value=60, min=10, max=110 → 50% of track width
+		want := track.Shape.Width * 0.5
+		if diff := leftBar.Shape.Width - want; diff > 1 || diff < -1 {
+			t.Errorf("left bar width = %f, want ~%f",
+				leftBar.Shape.Width, want)
+		}
+	})
+	// B2: mouse value with non-zero Min
+	t.Run("mouse_value", func(t *testing.T) {
+		var got float32
+		onChange := func(v float32, _ *Event, _ *Window) { got = v }
+		v := RangeSlider(RangeSliderCfg{
+			ID:       "rs-nz",
+			Value:    10,
+			Min:      10,
+			Max:      110,
+			Sizing:   FixedFit,
+			Width:    100,
+			OnChange: onChange,
+		})
+		w := &Window{}
+		layout := GenerateViewLayout(v, w)
+		// Simulate click at 50% along the slider
+		e := &Event{
+			MouseX: layout.Shape.X + layout.Shape.Width/2,
+			MouseY: layout.Shape.Y + layout.Shape.Height/2,
+		}
+		rangeSliderMouseMove(&layout, e, w,
+			"rs-nz", onChange, 10, 10, 110, false, false)
+		// 50% of [10,110] → 60
+		if got < 59 || got > 61 {
+			t.Errorf("mouse value = %f, want ~60", got)
+		}
+	})
+}
+
+func TestRangeSliderKeyDownHandled(t *testing.T) {
+	onChange := func(float32, *Event, *Window) {}
+	// Recognized key sets IsHandled
+	e := &Event{KeyCode: KeyRight}
+	rangeSliderOnKeyDown(nil, e, &Window{},
+		onChange, 50, 0, 100, 1, false)
+	if !e.IsHandled {
+		t.Error("arrow key should set IsHandled")
+	}
+	// Unrecognized key does not set IsHandled
+	e2 := &Event{KeyCode: KeyA}
+	rangeSliderOnKeyDown(nil, e2, &Window{},
+		onChange, 50, 0, 100, 1, false)
+	if e2.IsHandled {
+		t.Error("unrecognized key should not set IsHandled")
+	}
+}
+
+func TestRangeSliderVerticalMouseDedup(t *testing.T) {
+	callCount := 0
+	onChange := func(float32, *Event, *Window) { callCount++ }
+	v := RangeSlider(RangeSliderCfg{
+		ID:       "rs-vd",
+		Value:    50,
+		Vertical: true,
+		OnChange: onChange,
+	})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	// Mouse position that maps to curValue=50 (50% of 100)
+	e := &Event{
+		MouseX: layout.Shape.X,
+		MouseY: layout.Shape.Y + layout.Shape.Height/2,
+	}
+	rangeSliderMouseMove(&layout, e, w,
+		"rs-vd", onChange, 50, 0, 100, true, true)
+	if callCount != 0 {
+		t.Errorf("onChange called %d times, want 0 (value unchanged)",
+			callCount)
+	}
+}
