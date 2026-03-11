@@ -208,6 +208,7 @@ func demoCombobox(w *gui.Window) gui.View {
 			}),
 			gui.Combobox(gui.ComboboxCfg{
 				ID:          "combobox-demo",
+				IDFocus:     105,
 				IDScroll:    104,
 				Placeholder: "Type to search...",
 				Value:       app.ComboboxValue,

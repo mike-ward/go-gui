@@ -783,6 +783,8 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				}
 				updateCursorAndSelection(imap, id, is,
 					newPos, isShift)
+			} else {
+				handled = false
 			}
 		case KeyDown:
 			if hcfg.Mode == InputMultiline {
@@ -803,6 +805,8 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				}
 				updateCursorAndSelection(imap, id, is,
 					newPos, isShift)
+			} else {
+				handled = false
 			}
 		case KeyEnter:
 			if hcfg.Mode == InputMultiline {
@@ -833,6 +837,7 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			is.SelectBeg = 0
 			is.SelectEnd = 0
 			imap.Set(id, is)
+			handled = false
 		case KeyA:
 			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
 				inputSelectAll(text, id, w)

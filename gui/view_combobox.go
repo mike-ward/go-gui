@@ -112,7 +112,8 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 
 	// Virtualization.
 	rowH := listCoreRowHeightEstimate(cfg.TextStyle, cfg.Padding.Get(Padding{}))
-	listH := cfg.MaxDropdownHeight
+	pad := cfg.Padding.Get(Padding{})
+	listH := cfg.MaxDropdownHeight - 2*sizeBorder - pad.Top - pad.Bottom
 	var scrollY float32
 	if cfg.IDScroll > 0 {
 		scrollY = StateReadOr[uint32, float32](w, nsScrollY, cfg.IDScroll, 0)
@@ -139,14 +140,16 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	content := make([]View, 0, 4)
 
 	if isOpen {
-		content = append(content, Input(InputCfg{
-			ID:            cfg.ID + ".input",
-			IDFocus:       cfg.IDFocus,
-			Text:          query,
-			Placeholder:   cfg.Placeholder,
-			TextStyle:     cfg.TextStyle,
-			OnTextChanged: makeComboboxOnTextChanged(cfg.ID),
-			Sizing:        FillFit,
+		txt := query
+		ts := cfg.TextStyle
+		if len(txt) == 0 {
+			txt = cfg.Placeholder
+			ts = cfg.PlaceholderStyle
+		}
+		content = append(content, Text(TextCfg{
+			Text:      txt,
+			TextStyle: ts,
+			Mode:      TextModeSingleLine,
 		}))
 	} else {
 		empty := len(cfg.Value) == 0
@@ -205,8 +208,6 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			Color:        cfg.Color,
 			MinHeight:    50,
 			MaxHeight:    cfg.MaxDropdownHeight,
-			MinWidth:     cfg.MinWidth,
-			MaxWidth:     cfg.MaxWidth,
 			Float:        true,
 			FloatAnchor:  FloatBottomLeft,
 			FloatTieOff:  FloatTopLeft,
@@ -216,6 +217,22 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 			Padding:      cfg.Padding,
 			Spacing:      SomeF(0),
 			Content:      dropdownContent,
+			AmendLayout: func(layout *Layout, w *Window) {
+				if layout.Parent == nil {
+					return
+				}
+				layout.Shape.Width = layout.Parent.Shape.Width
+				// Re-run OverDraw children's AmendLayout so scrollbars
+				// reposition to the updated width.
+				for i := range layout.Children {
+					c := &layout.Children[i]
+					if c.Shape.OverDraw &&
+						c.Shape.HasEvents() &&
+						c.Shape.Events.AmendLayout != nil {
+						c.Shape.Events.AmendLayout(c, w)
+					}
+				}
+			},
 		}))
 	}
 
@@ -248,9 +265,12 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 					layout.Shape.ColorBorder = colorBorderFocus
 				}
 			},
-			OnKeyDown: makeComboboxOnKeyDown(cfg.ID, onSelect, idFocus, filteredIDs),
+			OnKeyDown: makeComboboxOnKeyDown(cfg.ID, onSelect, idFocus, filteredIDs, cfg.IDScroll, rowH, listH),
+			OnChar:    makeComboboxOnChar(cfg.ID),
 			OnClick: func(_ *Layout, e *Event, w *Window) {
-				if !isOpen {
+				if isOpen {
+					comboboxClose(cfgID, w)
+				} else {
 					comboboxOpen(cfgID, idFocus, w)
 				}
 				e.IsHandled = true
@@ -297,13 +317,35 @@ func makeComboboxOnTextChanged(cfgID string) func(*Layout, string, *Window) {
 	}
 }
 
-func makeComboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idFocus uint32, filteredIDs []string) func(*Layout, *Event, *Window) {
+func makeComboboxOnChar(cfgID string) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
-		comboboxOnKeyDown(cfgID, onSelect, idFocus, filteredIDs, e, w)
+		ss := StateMap[string, bool](w, nsCombobox, capModerate)
+		isOpen, _ := ss.Get(cfgID)
+		if !isOpen {
+			return
+		}
+		ch := rune(e.CharCode)
+		if ch < CharSpace {
+			return
+		}
+		sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
+		query, _ := sq.Get(cfgID)
+		query += string(ch)
+		sq.Set(cfgID, query)
+		sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
+		sh.Set(cfgID, 0)
+		w.UpdateWindow()
+		e.IsHandled = true
 	}
 }
 
-func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idFocus uint32, filteredIDs []string, e *Event, w *Window) {
+func makeComboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idFocus uint32, filteredIDs []string, idScroll uint32, rowH, listH float32) func(*Layout, *Event, *Window) {
+	return func(_ *Layout, e *Event, w *Window) {
+		comboboxOnKeyDown(cfgID, onSelect, idFocus, filteredIDs, idScroll, rowH, listH, e, w)
+	}
+}
+
+func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idFocus uint32, filteredIDs []string, idScroll uint32, rowH, listH float32, e *Event, w *Window) {
 	ss := StateMap[string, bool](w, nsCombobox, capModerate)
 	isOpen, _ := ss.Get(cfgID)
 
@@ -318,6 +360,20 @@ func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idF
 
 	if e.KeyCode == KeyEscape || e.KeyCode == KeyTab {
 		comboboxClose(cfgID, w)
+		e.IsHandled = true
+		return
+	}
+
+	if e.KeyCode == KeyBackspace || e.KeyCode == KeyDelete {
+		sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
+		query, _ := sq.Get(cfgID)
+		if len(query) > 0 {
+			runes := []rune(query)
+			sq.Set(cfgID, string(runes[:len(runes)-1]))
+			sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
+			sh.Set(cfgID, 0)
+			w.UpdateWindow()
+		}
 		e.IsHandled = true
 		return
 	}
@@ -338,8 +394,28 @@ func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idF
 	next, changed := listCoreApplyNav(action, cur, itemCount)
 	if changed {
 		sh.Set(cfgID, next)
+		if idScroll > 0 && rowH > 0 {
+			comboboxEnsureVisible(idScroll, next, rowH, listH, w)
+		}
 		w.UpdateWindow()
 		e.IsHandled = true
+	}
+}
+
+// comboboxEnsureVisible scrolls the dropdown so the highlighted
+// item at index idx is visible.
+func comboboxEnsureVisible(
+	idScroll uint32, idx int, rowH, listH float32, w *Window,
+) {
+	sm := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	scrollY, _ := sm.Get(idScroll)
+	top := float32(idx) * rowH
+	bottom := top + rowH
+	visible := -scrollY
+	if top < visible {
+		sm.Set(idScroll, -top)
+	} else if bottom > visible+listH {
+		sm.Set(idScroll, -(bottom - listH))
 	}
 }
 

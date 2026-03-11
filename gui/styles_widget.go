@@ -811,9 +811,10 @@ var (
 		Padding:          PaddingSmall,
 		SizeBorder:       SizeBorderDef,
 		Radius:           RadiusMedium,
-		MinWidth:         75,
-		MaxWidth:         200,
-		TextStyle:        DefaultTextStyle,
+		MinWidth:          75,
+		MaxWidth:          200,
+		MaxDropdownHeight: 200,
+		TextStyle:         DefaultTextStyle,
 		PlaceholderStyle: TextStyle{
 			Color: RGBA(128, 128, 128, 200),
 			Size:  SizeTextMedium,

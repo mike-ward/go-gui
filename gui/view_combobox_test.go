@@ -59,14 +59,14 @@ func TestComboboxKeyDownOpenClose(t *testing.T) {
 
 	// Open via Enter.
 	e := &Event{KeyCode: KeyEnter}
-	comboboxOnKeyDown("cb-kd", onSel, 0, []string{"x", "y"}, e, w)
+	comboboxOnKeyDown("cb-kd", onSel, 0, []string{"x", "y"}, 0, 0, 0, e, w)
 	if !StateReadOr[string, bool](w, nsCombobox, "cb-kd", false) {
 		t.Error("enter should open")
 	}
 
 	// Select via Enter.
 	e = &Event{KeyCode: KeyEnter}
-	comboboxOnKeyDown("cb-kd", onSel, 0, []string{"x", "y"}, e, w)
+	comboboxOnKeyDown("cb-kd", onSel, 0, []string{"x", "y"}, 0, 0, 0, e, w)
 	if called != "x" {
 		t.Errorf("selected = %q, want x", called)
 	}
