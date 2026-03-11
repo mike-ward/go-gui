@@ -77,7 +77,7 @@ func ListBox(cfg ListBoxCfg) View {
 	selectedSet := listCoreSelectedSet(cfg.SelectedIDs)
 	list := make([]View, 0, len(cfg.Data))
 	for i := range cfg.Data {
-		list = append(list, listBoxItemView(cfg.Data[i], cfg, selectedSet))
+		list = append(list, listBoxItemView(cfg.Data[i], cfg, selectedSet, ""))
 	}
 
 	listBoxID := cfg.ID
@@ -99,7 +99,8 @@ func ListBox(cfg ListBoxCfg) View {
 		IDScroll:  cfg.IDScroll,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
 			listBoxOnKeyDown(listBoxID, itemIDs,
-				isMultiple, onSelect, selectedIDs, e, w)
+				isMultiple, onSelect, selectedIDs,
+				0, 0, 0, nil, e, w)
 		},
 		Width:       cfg.MaxWidth,
 		Height:      cfg.Height,
@@ -162,8 +163,8 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	if listH <= 0 {
 		listH = cfg.MaxHeight
 	}
+	rowH := listCoreRowHeightEstimate(cfg.TextStyle, PaddingTwoFive)
 	if virtualize && listH > 0 && len(cfg.Data) > 0 {
-		rowH := listCoreRowHeightEstimate(cfg.TextStyle, PaddingTwoFive)
 		scrollY := StateReadOr[uint32, float32](w, nsScrollY, cfg.IDScroll, 0)
 		first, last = listCoreVisibleRange(len(cfg.Data), rowH, listH, scrollY)
 	} else {
@@ -175,6 +176,26 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	onSelect := cfg.OnSelect
 	selectedIDs := cfg.SelectedIDs
 	itemIDs := cache.itemIDs
+
+	// Map from itemIDs index to full data index (includes subheadings).
+	itemDataIndices := make([]int, len(itemIDs))
+	j := 0
+	for i := range cfg.Data {
+		if !cfg.Data[i].IsSubheading {
+			if j < len(itemDataIndices) {
+				itemDataIndices[j] = i
+			}
+			j++
+		}
+	}
+
+	// Keyboard focus highlight.
+	lbf := StateMap[string, int](w, nsListBoxFocus, capModerate)
+	focusIdx, _ := lbf.Get(cfg.ID)
+	var focusedID string
+	if focusIdx >= 0 && focusIdx < len(itemIDs) {
+		focusedID = itemIDs[focusIdx]
+	}
 
 	canReorder := cfg.Reorderable && cfg.OnReorder != nil
 	var drag dragReorderState
@@ -262,7 +283,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 				itemIDs, itemLayoutIDs, midsOffset, idScroll))
 		} else {
 			list = append(list,
-				listBoxItemView(cfg.Data[idx], *cfg, selectedSet))
+				listBoxItemView(cfg.Data[idx], *cfg, selectedSet, focusedID))
 		}
 	}
 
@@ -310,7 +331,8 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 				}
 			}
 			listBoxOnKeyDown(listBoxID, itemIDs,
-				isMultiple, onSelect, selectedIDs, e, w)
+				isMultiple, onSelect, selectedIDs,
+				idScroll, rowH, listH, itemDataIndices, e, w)
 		},
 		Width:       cfg.MaxWidth,
 		Height:      cfg.Height,
@@ -331,8 +353,11 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	}), w)
 }
 
-func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]struct{}) View {
+func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]struct{}, focusedID string) View {
 	color := ColorTransparent
+	if dat.ID == focusedID && !dat.IsSubheading {
+		color = cfg.ColorHover
+	}
 	if listCoreContainsSelected(selectedSet, cfg.SelectedIDs, dat.ID) {
 		color = cfg.ColorSelect
 	}
@@ -352,13 +377,14 @@ func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]s
 	}
 
 	return Row(ContainerCfg{
-		A11YRole:  AccessRoleListItem,
-		A11YLabel: dat.Name,
-		A11YState: a11yState,
-		Color:     color,
-		Padding:   Some(PaddingTwoFive),
-		Sizing:    FillFit,
-		Content:   []View{content},
+		A11YRole:   AccessRoleListItem,
+		A11YLabel:  dat.Name,
+		A11YState:  a11yState,
+		Color:      color,
+		Padding:    Some(PaddingTwoFive),
+		SizeBorder: NoBorder,
+		Sizing:     FillFit,
+		Content:    []View{content},
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			if hasOnSelect && !isSub {
 				ids := listBoxNextSelectedIDs(
@@ -409,14 +435,15 @@ func listBoxReorderItemView(
 	}
 
 	return Row(ContainerCfg{
-		ID:        layoutID,
-		A11YRole:  AccessRoleListItem,
-		A11YLabel: dat.Name,
-		A11YState: a11yState,
-		Color:     color,
-		Padding:   Some(PaddingTwoFive),
-		Sizing:    FillFit,
-		Content:   []View{content},
+		ID:         layoutID,
+		A11YRole:   AccessRoleListItem,
+		A11YLabel:  dat.Name,
+		A11YState:  a11yState,
+		Color:      color,
+		Padding:    Some(PaddingTwoFive),
+		SizeBorder: NoBorder,
+		Sizing:     FillFit,
+		Content:    []View{content},
 		OnClick: func(layout *Layout, e *Event, w *Window) {
 			dragReorderStart(listBoxID, dragIdx, datID,
 				DragReorderVertical, itemIDs, onReorder,
@@ -471,12 +498,24 @@ func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 	})
 }
 
+// listBoxDataIndex maps an itemIDs index to the full data index
+// (including subheading rows). Returns dataIdx unchanged if no
+// mapping is provided.
+func listBoxDataIndex(itemDataIndices []int, idx int) int {
+	if idx >= 0 && idx < len(itemDataIndices) {
+		return itemDataIndices[idx]
+	}
+	return idx
+}
+
 func listBoxOnKeyDown(
 	listBoxID string,
 	itemIDs []string,
 	isMultiple bool,
 	onSelect func([]string, *Event, *Window),
 	selectedIDs []string,
+	idScroll uint32, rowH, listH float32,
+	itemDataIndices []int,
 	e *Event,
 	w *Window,
 ) {
@@ -509,6 +548,12 @@ func listBoxOnKeyDown(
 	next, changed := listCoreApplyNav(action, curIdx, len(itemIDs))
 	if changed {
 		lbf.Set(listBoxID, next)
+		if idScroll > 0 && rowH > 0 {
+			scrollEnsureVisible(idScroll,
+				listBoxDataIndex(itemDataIndices, next),
+				rowH, listH, w)
+		}
+		w.UpdateWindow()
 	}
 }
 

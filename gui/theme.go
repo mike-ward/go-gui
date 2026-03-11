@@ -56,6 +56,7 @@ type Theme struct {
 	DatePickerStyle     DatePickerStyle
 	ColorPickerStyle    ColorPickerStyle
 	DataGridStyle       DataGridStyle
+	InspectorStyle      InspectorStyle
 
 	// Text size shortcuts (N = normal, B = bold,
 	// I = italic, M = mono, BI = bold+italic).
@@ -669,6 +670,7 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			},
 			TextStyleFilter: ts,
 		},
+		InspectorStyle: DefaultInspectorStyle,
 
 		// Layout constants.
 		PaddingSmall:  cfg.PaddingSmall,

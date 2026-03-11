@@ -152,8 +152,7 @@ func inspectorFloatingPanel(w *Window) View {
 		Sizing:        FixedFixed,
 		Width:         panelWidth,
 		Height:        panelHeight,
-		Color: RGBA(guiTheme.ColorPanel.R, guiTheme.ColorPanel.G,
-			guiTheme.ColorPanel.B, 245),
+		Color:         guiTheme.InspectorStyle.ColorPanel,
 		Radius:        SomeF(8),
 		Clip:          true,
 		IDScroll:      inspectorIDScrollPanel,
@@ -189,10 +188,8 @@ func inspectorHelpBar() View {
 	return Text(TextCfg{
 		Text: "  F12 toggle  Alt+Left/Right resize  Alt+Up side",
 		TextStyle: TextStyle{
-			Size: guiTheme.SizeTextXSmall,
-			Color: RGBA(guiTheme.TextStyleDef.Color.R,
-				guiTheme.TextStyleDef.Color.G,
-				guiTheme.TextStyleDef.Color.B, 130),
+			Size:  guiTheme.SizeTextXSmall,
+			Color: guiTheme.InspectorStyle.ColorTextHelp,
 		},
 	})
 }
@@ -336,7 +333,7 @@ func inspectorLayoutToTree(
 }
 
 func inspectorPropsNodes(p inspectorNodeProps) []TreeNodeCfg {
-	propColor := RGBA(220, 160, 60, 255)
+	propColor := guiTheme.InspectorStyle.ColorTextProp
 	propStyle := TextStyle{
 		Size:  guiTheme.SizeTextXSmall,
 		Color: propColor,
@@ -609,7 +606,7 @@ func inspectorInjectWireframe(w *Window) {
 		W:         shape.Width,
 		H:         shape.Height,
 		Radius:    shape.Radius,
-		Color:     RGBA(0, 255, 255, 200),
+		Color:     guiTheme.InspectorStyle.ColorWireframe,
 		Thickness: 2,
 	}, w)
 
@@ -622,7 +619,7 @@ func inspectorInjectWireframe(w *Window) {
 		Y:         shape.Y + shape.Padding.Top,
 		W:         f32Max(0, shape.Width-shape.Padding.Left-shape.Padding.Right),
 		H:         f32Max(0, shape.Height-shape.Padding.Top-shape.Padding.Bottom),
-		Color:     RGBA(0, 200, 0, 150),
+		Color:     guiTheme.InspectorStyle.ColorPadding,
 		Thickness: 1,
 	}, w)
 }

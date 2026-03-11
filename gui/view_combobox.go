@@ -395,16 +395,15 @@ func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idF
 	if changed {
 		sh.Set(cfgID, next)
 		if idScroll > 0 && rowH > 0 {
-			comboboxEnsureVisible(idScroll, next, rowH, listH, w)
+			scrollEnsureVisible(idScroll, next, rowH, listH, w)
 		}
 		w.UpdateWindow()
 		e.IsHandled = true
 	}
 }
 
-// comboboxEnsureVisible scrolls the dropdown so the highlighted
-// item at index idx is visible.
-func comboboxEnsureVisible(
+// scrollEnsureVisible scrolls so the item at index idx is visible.
+func scrollEnsureVisible(
 	idScroll uint32, idx int, rowH, listH float32, w *Window,
 ) {
 	sm := StateMap[uint32, float32](w, nsScrollY, capScroll)

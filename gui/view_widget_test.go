@@ -386,7 +386,8 @@ func TestListBoxOnKeyDownHandled(t *testing.T) {
 	itemIDs := []string{"a", "b"}
 	e := &Event{KeyCode: KeyDown}
 	listBoxOnKeyDown("lb", itemIDs, false,
-		func(_ []string, _ *Event, _ *Window) {}, nil, e, w)
+		func(_ []string, _ *Event, _ *Window) {}, nil,
+		0, 0, 0, nil, e, w)
 	if !e.IsHandled {
 		t.Fatal("expected key navigation event to be handled")
 	}
@@ -395,11 +396,52 @@ func TestListBoxOnKeyDownHandled(t *testing.T) {
 	called := false
 	listBoxOnKeyDown("lb", itemIDs, false,
 		func(_ []string, _ *Event, _ *Window) { called = true },
-		nil, e, w)
+		nil, 0, 0, 0, nil, e, w)
 	if !e.IsHandled {
 		t.Fatal("expected key select event to be handled")
 	}
 	if !called {
 		t.Fatal("expected select callback to run")
+	}
+}
+
+func TestListBoxDataIndex(t *testing.T) {
+	// Data: [sub, a, b, sub, c] → itemIDs=[a,b,c], indices=[1,2,4]
+	indices := []int{1, 2, 4}
+	if got := listBoxDataIndex(indices, 0); got != 1 {
+		t.Errorf("idx 0 → %d, want 1", got)
+	}
+	if got := listBoxDataIndex(indices, 2); got != 4 {
+		t.Errorf("idx 2 → %d, want 4", got)
+	}
+	// Out of range falls through.
+	if got := listBoxDataIndex(indices, 5); got != 5 {
+		t.Errorf("idx 5 → %d, want 5", got)
+	}
+	// Nil mapping returns idx unchanged.
+	if got := listBoxDataIndex(nil, 3); got != 3 {
+		t.Errorf("nil idx 3 → %d, want 3", got)
+	}
+}
+
+func TestListBoxScrollWithSubheadings(t *testing.T) {
+	w := &Window{}
+	var idScroll uint32 = 90
+	rowH := float32(26)
+	listH := float32(187)
+
+	// Data: [sub, a, b, c, d, e, f, g, sub, h, i, j]
+	// itemIDs index 7 = "h" → data index 9 (after 2 subheadings).
+	itemDataIndices := []int{1, 2, 3, 4, 5, 6, 7, 9, 10, 11}
+
+	// Scroll to item at itemIDs index 7 using data index.
+	dataIdx := listBoxDataIndex(itemDataIndices, 7)
+	scrollEnsureVisible(idScroll, dataIdx, rowH, listH, w)
+
+	sy := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	// Data index 9: bottom = 10*26 = 260 > 187 → scroll = -(260-187) = -73
+	want := -(float32(10)*rowH - listH)
+	if sy != want {
+		t.Fatalf("scrollY = %f, want %f", sy, want)
 	}
 }

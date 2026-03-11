@@ -217,3 +217,20 @@ type DataGridStyle struct {
 	TextStyleHeader   TextStyle
 	TextStyleFilter   TextStyle
 }
+
+// InspectorStyle defines the look and feel of the GUI inspector.
+type InspectorStyle struct {
+	ColorPanel     Color
+	ColorTextHelp  Color
+	ColorTextProp  Color
+	ColorWireframe Color
+	ColorPadding   Color
+}
+
+var DefaultInspectorStyle = InspectorStyle{
+	ColorPanel:     RGBA(64, 64, 64, 245),
+	ColorTextHelp:  RGBA(225, 225, 225, 130),
+	ColorTextProp:  RGBA(220, 160, 60, 255),
+	ColorWireframe: RGBA(0, 255, 255, 200),
+	ColorPadding:   RGBA(0, 200, 0, 150),
+}

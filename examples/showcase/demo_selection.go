@@ -170,6 +170,7 @@ func demoListBox(w *gui.Window) gui.View {
 			}),
 			gui.ListBox(gui.ListBoxCfg{
 				ID:          "listbox-demo",
+				IDFocus:     106,
 				IDScroll:    103,
 				Sizing:      gui.FillFit,
 				MaxHeight:   200,
@@ -181,10 +182,15 @@ func demoListBox(w *gui.Window) gui.View {
 					gui.NewListBoxOption("rust", "Rust", "rust"),
 					gui.NewListBoxOption("zig", "Zig", "zig"),
 					gui.NewListBoxOption("c", "C", "c"),
+					gui.NewListBoxOption("cpp", "C++", "cpp"),
+					gui.NewListBoxOption("swift", "Swift", "swift"),
 					gui.NewListBoxSubheading("h-interp", "Interpreted"),
 					gui.NewListBoxOption("python", "Python", "python"),
 					gui.NewListBoxOption("js", "JavaScript", "js"),
+					gui.NewListBoxOption("ts", "TypeScript", "ts"),
 					gui.NewListBoxOption("ruby", "Ruby", "ruby"),
+					gui.NewListBoxOption("elixir", "Elixir", "elixir"),
+					gui.NewListBoxOption("lua", "Lua", "lua"),
 				},
 				OnSelect: func(ids []string, _ *gui.Event, w *gui.Window) {
 					gui.State[ShowcaseApp](w).ListBoxSelected = ids

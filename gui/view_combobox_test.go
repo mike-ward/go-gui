@@ -72,6 +72,34 @@ func TestComboboxKeyDownOpenClose(t *testing.T) {
 	}
 }
 
+func TestComboboxKeyNavScrolls(t *testing.T) {
+	w := &Window{}
+	var idScroll uint32 = 77
+	rowH := float32(26)
+	listH := float32(187)
+	ids := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
+	onSel := func(_ string, _ *Event, _ *Window) {}
+
+	// Open the combobox.
+	comboboxOpen("cb-nav", 0, w)
+
+	// Navigate down 8 times (past visible ~7 items).
+	for i := 0; i < 8; i++ {
+		e := &Event{KeyCode: KeyDown}
+		comboboxOnKeyDown("cb-nav", onSel, 0, ids, idScroll, rowH, listH, e, w)
+	}
+
+	hl := StateReadOr[string, int](w, nsComboboxHighlight, "cb-nav", -1)
+	if hl != 8 {
+		t.Fatalf("highlight = %d, want 8", hl)
+	}
+
+	sy := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	if sy >= 0 {
+		t.Fatalf("scrollY = %f, want negative (scrolled down)", sy)
+	}
+}
+
 func TestComboboxDefaults(t *testing.T) {
 	cfg := ComboboxCfg{}
 	applyComboboxDefaults(&cfg)
@@ -83,6 +111,31 @@ func TestComboboxDefaults(t *testing.T) {
 	}
 }
 
+func TestScrollEnsureVisible(t *testing.T) {
+	w := &Window{}
+	var idScroll uint32 = 50
+	rowH := float32(26)
+	listH := float32(187)
+
+	// Initially scrollY = 0. Item 7: bottom = 208 > 187. Should scroll.
+	scrollEnsureVisible(idScroll, 7, rowH, listH, w)
+	sy := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	if sy >= 0 {
+		t.Errorf("expected negative scrollY, got %f", sy)
+	}
+	want := -(float32(8)*rowH - listH) // -(208-187) = -21
+	if sy != want {
+		t.Errorf("scrollY = %f, want %f", sy, want)
+	}
+
+	// Scroll back up to item 0.
+	scrollEnsureVisible(idScroll, 0, rowH, listH, w)
+	sy = StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	if sy != 0 {
+		t.Errorf("scrollY = %f, want 0", sy)
+	}
+}
+
 func TestComboboxTextChanged(t *testing.T) {
 	w := &Window{}
 	fn := makeComboboxOnTextChanged("cb-tc")
@@ -90,6 +143,188 @@ func TestComboboxTextChanged(t *testing.T) {
 	q := StateReadOr[string, string](w, nsComboboxQuery, "cb-tc", "")
 	if q != "hello" {
 		t.Errorf("query = %q", q)
+	}
+}
+
+func TestScrollEnsureVisibleSurvivesPipeline(t *testing.T) {
+	w := &Window{}
+	var idScroll uint32 = 60
+	rowH := float32(26)
+	listH := float32(187)
+
+	// Set scroll state (simulates scrollEnsureVisible after key nav).
+	scrollEnsureVisible(idScroll, 7, rowH, listH, w)
+	want := -(float32(8)*rowH - listH) // -21
+
+	// Build a layout tree mimicking the dropdown Column.
+	// 10 children at 26px each = 260px total content.
+	children := make([]Layout, 10)
+	for i := range children {
+		children[i] = Layout{Shape: &Shape{
+			Height:    rowH,
+			ShapeType: ShapeRectangle,
+			Sizing:    FillFixed,
+		}}
+	}
+	dropdown := Layout{
+		Shape: &Shape{
+			IDScroll:  idScroll,
+			Height:    200, // MaxHeight clamped
+			Axis:      AxisTopToBottom,
+			Padding:   Padding{Top: 5, Right: 5, Bottom: 5, Left: 5},
+			SizeBorder: 1.5,
+		},
+		Children: children,
+	}
+
+	// Run the scroll offset adjustment.
+	layoutAdjustScrollOffsets(&dropdown, w)
+
+	sy := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	if sy != want {
+		t.Fatalf("scrollY after pipeline = %f, want %f", sy, want)
+	}
+}
+
+func TestScrollPositionsShiftChildren(t *testing.T) {
+	w := &Window{}
+	var idScroll uint32 = 61
+	rowH := float32(26)
+
+	// Set scroll state to -21 (scrolled down).
+	sm := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	sm.Set(idScroll, -21)
+
+	// Build dropdown layout.
+	children := make([]Layout, 10)
+	for i := range children {
+		children[i] = Layout{Shape: &Shape{
+			Height:    rowH,
+			ShapeType: ShapeRectangle,
+			Sizing:    FillFixed,
+		}}
+	}
+	dropdown := Layout{
+		Shape: &Shape{
+			IDScroll:   idScroll,
+			Height:     200,
+			Axis:       AxisTopToBottom,
+			Padding:    Padding{Top: 5, Right: 5, Bottom: 5, Left: 5},
+			SizeBorder: 1.5,
+		},
+		Children: children,
+	}
+
+	layoutAdjustScrollOffsets(&dropdown, w)
+	layoutPositions(&dropdown, 0, 0, w)
+
+	// First child Y should be negative (shifted up by scroll).
+	firstY := dropdown.Children[0].Shape.Y
+	expectedFirstY := float32(5 + 1.5 - 21) // paddingTop + sizeBorder + scrollY
+	if firstY != expectedFirstY {
+		t.Fatalf("first child Y = %f, want %f", firstY, expectedFirstY)
+	}
+}
+
+func TestListCoreRowHeightEstimate(t *testing.T) {
+	w := &Window{}
+	items := []ListCoreItem{{ID: "a", Label: "Test"}}
+	cfg := ListCoreCfg{
+		TextStyle:   DefaultTextStyle,
+		PaddingItem: PaddingSmall,
+	}
+	views := listCoreViews(items, cfg, 0, 0, -1, nil, 26)
+	if len(views) == 0 {
+		t.Fatal("no views")
+	}
+	layout := GenerateViewLayout(views[0], w)
+	layoutWidths(&layout)
+	layoutHeights(&layout)
+	est := listCoreRowHeightEstimate(DefaultTextStyle, PaddingSmall)
+	actual := layout.Shape.Height
+	if est != actual {
+		t.Errorf("estimate=%f, actual=%f", est, actual)
+	}
+}
+
+func TestComboboxScrollEndToEnd(t *testing.T) {
+	w := &Window{}
+	w.windowWidth = 800
+	w.windowHeight = 600
+
+	var idScroll uint32 = 88
+	options := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
+
+	// Open the combobox.
+	comboboxOpen("cb-e2e", 0, w)
+
+	// Navigate down 8 times to trigger scroll.
+	for i := 0; i < 8; i++ {
+		e := &Event{KeyCode: KeyDown}
+		comboboxOnKeyDown("cb-e2e", func(_ string, _ *Event, _ *Window) {},
+			0, options, idScroll, 26, 187, e, w)
+	}
+
+	// Verify scroll state was set.
+	syBefore := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	if syBefore >= 0 {
+		t.Fatalf("scrollY before = %f, want negative", syBefore)
+	}
+
+	// Generate the layout (simulates next frame).
+	v := Combobox(ComboboxCfg{
+		ID:       "cb-e2e",
+		IDScroll: idScroll,
+		Options:  options,
+		OnSelect: func(_ string, _ *Event, _ *Window) {},
+	})
+	layout := GenerateViewLayout(v, w)
+
+	// Set parent pointers.
+	layoutParents(&layout, nil)
+
+	// Extract float (dropdown) like layoutArrange does.
+	var floats []*Layout
+	layoutRemoveFloatingLayouts(&layout, nil, &floats)
+	if len(floats) == 0 {
+		t.Fatal("no floats extracted")
+	}
+
+	// Find the dropdown float (has IDScroll).
+	var dropdown *Layout
+	for _, f := range floats {
+		if f.Shape.IDScroll == idScroll {
+			dropdown = f
+			break
+		}
+	}
+	if dropdown == nil {
+		t.Fatal("dropdown float not found")
+	}
+
+	// Run pipeline on the float like the real renderer does.
+	layoutPipeline(dropdown, w)
+
+	// Check scroll state survived pipeline.
+	syAfter := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	t.Logf("scrollY: before=%f, after=%f, dropdownH=%f, contentH=%f",
+		syBefore, syAfter, dropdown.Shape.Height,
+		contentHeight(dropdown))
+
+	if syAfter >= 0 {
+		t.Fatalf("scrollY after pipeline = %f, want negative (clamped to 0!)", syAfter)
+	}
+
+	// Verify children are positioned with scroll offset.
+	if len(dropdown.Children) < 2 {
+		t.Fatalf("dropdown children = %d", len(dropdown.Children))
+	}
+	// With scroll, the first non-overdraw child's Y should be < dropdown.Shape.Y + padding.
+	for i, c := range dropdown.Children {
+		if !c.Shape.OverDraw {
+			t.Logf("child[%d] Y=%f, dropdown Y=%f", i, c.Shape.Y, dropdown.Shape.Y)
+			break
+		}
 	}
 }
 

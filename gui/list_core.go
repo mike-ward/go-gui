@@ -136,9 +136,10 @@ func listCoreVisibleRange(itemCount int, rowHeight, listHeight, scrollY float32)
 }
 
 // listCoreRowHeightEstimate estimates row height from text
-// style + padding. No Window needed.
+// style + padding. No Window needed. Uses the same 1.4×
+// line-height factor as text shape layout.
 func listCoreRowHeightEstimate(style TextStyle, pad Padding) float32 {
-	return style.Size + pad.Height()
+	return style.Size*1.4 + pad.Height()
 }
 
 // listCoreFuzzyScore scores a candidate against a query.
@@ -382,10 +383,11 @@ func listCoreItemView(item ListCoreItem, index int, isHighlighted, isSelected bo
 	itemID := item.ID
 
 	return Row(ContainerCfg{
-		Color:   bg,
-		Padding: Some(cfg.PaddingItem),
-		Sizing:  FillFit,
-		Content: content,
+		Color:      bg,
+		Padding:    Some(cfg.PaddingItem),
+		SizeBorder: NoBorder,
+		Sizing:     FillFit,
+		Content:    content,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			if hasClick && !isDisabled {
 				onItemClick(itemID, index, e, w)
