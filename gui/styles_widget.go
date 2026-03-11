@@ -675,7 +675,7 @@ var (
 	}
 
 	DefaultRangeSliderStyle = RangeSliderStyle{
-		Size:             20,
+		Size:             6,
 		ThumbSize:        16,
 		Color:            colorInteriorDark,
 		ColorClick:       colorActiveDark,
@@ -686,8 +686,8 @@ var (
 		ColorBorder:      colorBorderDark,
 		ColorBorderFocus: colorSelectDark,
 		Padding:          PaddingNone,
-		SizeBorder:       SizeBorderDef,
-		Radius:           RadiusSmall,
+		SizeBorder:       1,
+		Radius:           3,
 	}
 
 	DefaultTabControlStyle = TabControlStyle{

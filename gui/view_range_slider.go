@@ -75,6 +75,9 @@ func RangeSlider(cfg RangeSliderCfg) View {
 	if cfg.Radius == 0 {
 		cfg.Radius = guiTheme.RangeSliderStyle.Radius
 	}
+	if cfg.RadiusBorder == 0 {
+		cfg.RadiusBorder = cfg.Radius
+	}
 	if cfg.Max == 0 && cfg.Min == 0 {
 		cfg.Max = 100
 	}

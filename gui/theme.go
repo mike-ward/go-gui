@@ -452,8 +452,8 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			ColorBorder:      cfg.ColorBorder,
 			ColorBorderFocus: borderFocus,
 			Padding:          PaddingNone,
-			SizeBorder:       cfg.SizeBorder,
-			Radius:           cfg.RadiusSmall,
+			SizeBorder:       1,
+			Radius:           cfg.SizeRangeSlider / 2,
 		},
 		TabControlStyle: TabControlStyle{
 			Color:               cfg.ColorPanel,
