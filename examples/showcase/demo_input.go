@@ -335,17 +335,39 @@ func demoInputDate(w *gui.Window) gui.View {
 func demoForms(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	form := &app.Form
-	summary := formSummary(*form)
-	pendingFields := formPendingFields(*form)
+
+	// Register fields each frame so the form runtime tracks them.
+	gui.FormRegisterFieldByID(w, showcaseFormID, usernameAdapterCfg(form.Username))
+	gui.FormRegisterFieldByID(w, showcaseFormID, emailAdapterCfg(form.Email))
+	gui.FormRegisterFieldByID(w, showcaseFormID, ageAdapterCfg(form.AgeText))
+
+	summary := w.FormSummary(showcaseFormID)
+	pending := w.FormPendingState(showcaseFormID)
 	pendingText := ""
-	if len(pendingFields) > 0 {
-		pendingText = "Validating: " + strings.Join(pendingFields, ", ")
+	if len(pending.FieldIDs) > 0 {
+		pendingText = "Validating: " + strings.Join(pending.FieldIDs, ", ")
 	}
 
-	return gui.Column(gui.ContainerCfg{
+	return gui.Form(gui.FormCfg{
+		ID:      showcaseFormID,
 		Sizing:  gui.FillFit,
 		Spacing: gui.SomeF(12),
 		Padding: gui.NoPadding,
+		OnSubmit: func(e gui.FormSubmitEvent, w *gui.Window) {
+			app := gui.State[ShowcaseApp](w)
+			app.Form.SubmitMessage = fmt.Sprintf(
+				"Submitted username=%s, email=%s",
+				strings.TrimSpace(e.Values["username"]),
+				strings.TrimSpace(e.Values["email"]))
+		},
+		OnReset: func(e gui.FormResetEvent, w *gui.Window) {
+			app := gui.State[ShowcaseApp](w)
+			app.Form.Username = e.Values["username"]
+			app.Form.Email = e.Values["email"]
+			app.Form.AgeText = e.Values["age"]
+			app.Form.AgeValue = gui.Opt[float64]{}
+			app.Form.SubmitMessage = "Form reset"
+		},
 		Content: []gui.View{
 			showcaseFormRow("Username", gui.Input(gui.InputCfg{
 				ID:          "showcase-form-username",
@@ -354,21 +376,17 @@ func demoForms(w *gui.Window) gui.View {
 				Sizing:      gui.FixedFit,
 				Text:        form.Username,
 				Placeholder: "username",
-				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-					app := gui.State[ShowcaseApp](w)
-					app.Form.Username = s
-					app.Form.UsernameState.Dirty = strings.TrimSpace(s) != ""
-					app.Form.UsernameState.Issue = validateUsernameSync(s)
-					startUsernameAsyncValidation(s, w)
+				OnTextChanged: func(l *gui.Layout, s string, w *gui.Window) {
+					gui.State[ShowcaseApp](w).Form.Username = s
+					gui.FormOnFieldEvent(w, l, usernameAdapterCfg(s), gui.FormTriggerChange)
 				},
-				OnBlur: func(_ *gui.Layout, w *gui.Window) {
+				OnBlur: func(l *gui.Layout, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.Form.UsernameState.Touched = true
-					app.Form.UsernameState.Issue = validateUsernameSync(app.Form.Username)
+					gui.FormOnFieldEvent(w, l, usernameAdapterCfg(app.Form.Username), gui.FormTriggerBlur)
 				},
 			})),
-			showcaseFormState("Username", form.UsernameState),
-			showcaseFormIssue("username", form.UsernameState.Issue),
+			showcaseFormFieldState(w, "username"),
+			showcaseFormFieldIssues(w, "username"),
 
 			showcaseFormRow("Email", gui.Input(gui.InputCfg{
 				ID:          "showcase-form-email",
@@ -377,20 +395,17 @@ func demoForms(w *gui.Window) gui.View {
 				Sizing:      gui.FixedFit,
 				Text:        form.Email,
 				Placeholder: "user@example.com",
-				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-					app := gui.State[ShowcaseApp](w)
-					app.Form.Email = s
-					app.Form.EmailState.Dirty = strings.TrimSpace(s) != ""
-					app.Form.EmailState.Issue = validateEmailSync(s)
+				OnTextChanged: func(l *gui.Layout, s string, w *gui.Window) {
+					gui.State[ShowcaseApp](w).Form.Email = s
+					gui.FormOnFieldEvent(w, l, emailAdapterCfg(s), gui.FormTriggerChange)
 				},
-				OnBlur: func(_ *gui.Layout, w *gui.Window) {
+				OnBlur: func(l *gui.Layout, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
-					app.Form.EmailState.Touched = true
-					app.Form.EmailState.Issue = validateEmailSync(app.Form.Email)
+					gui.FormOnFieldEvent(w, l, emailAdapterCfg(app.Form.Email), gui.FormTriggerBlur)
 				},
 			})),
-			showcaseFormState("Email", form.EmailState),
-			showcaseFormIssue("email", form.EmailState.Issue),
+			showcaseFormFieldState(w, "email"),
+			showcaseFormFieldIssues(w, "email"),
 
 			showcaseFormRow("Age", gui.NumericInput(gui.NumericInputCfg{
 				ID:       "showcase-form-age",
@@ -402,22 +417,19 @@ func demoForms(w *gui.Window) gui.View {
 				Max:      gui.Some(120.0),
 				Text:     form.AgeText,
 				Value:    form.AgeValue,
-				OnTextChanged: func(_ *gui.Layout, text string, w *gui.Window) {
-					app := gui.State[ShowcaseApp](w)
-					app.Form.AgeText = text
-					app.Form.AgeState.Dirty = strings.TrimSpace(text) != ""
-					app.Form.AgeState.Issue = validateAgeSync(text)
+				OnTextChanged: func(l *gui.Layout, text string, w *gui.Window) {
+					gui.State[ShowcaseApp](w).Form.AgeText = text
+					gui.FormOnFieldEvent(w, l, ageAdapterCfg(text), gui.FormTriggerChange)
 				},
-				OnValueCommit: func(_ *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
+				OnValueCommit: func(l *gui.Layout, value gui.Opt[float64], text string, w *gui.Window) {
 					app := gui.State[ShowcaseApp](w)
 					app.Form.AgeValue = value
 					app.Form.AgeText = text
-					app.Form.AgeState.Touched = true
-					app.Form.AgeState.Issue = validateAgeSync(text)
+					gui.FormOnFieldEvent(w, l, ageAdapterCfg(text), gui.FormTriggerBlur)
 				},
 			})),
-			showcaseFormState("Age", form.AgeState),
-			showcaseFormIssue("age", form.AgeState.Issue),
+			showcaseFormFieldState(w, "age"),
+			showcaseFormFieldIssues(w, "age"),
 
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
@@ -429,7 +441,7 @@ func demoForms(w *gui.Window) gui.View {
 						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{gui.Text(gui.TextCfg{Text: gui.CurrentLocale().StrSubmit, TextStyle: gui.CurrentTheme().B3})},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-							submitShowcaseForm(w)
+							gui.FormRequestSubmit(w, showcaseFormID)
 							e.IsHandled = true
 						},
 					}),
@@ -438,20 +450,26 @@ func demoForms(w *gui.Window) gui.View {
 						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{gui.Text(gui.TextCfg{Text: gui.CurrentLocale().StrReset, TextStyle: gui.CurrentTheme().N3})},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-							resetShowcaseForm(gui.State[ShowcaseApp](w))
+							gui.FormRequestReset(w, showcaseFormID)
 							e.IsHandled = true
 						},
 					}),
 				},
 			}),
-			showcaseFormIssue("", fmt.Sprintf("Validation summary: invalid=%d, pending=%d", summary.InvalidCount, summary.PendingCount)),
-			showcaseFormIssue("", pendingText),
-			showcaseFormIssue("", func() string {
-				if form.SubmitMessage != "" {
-					return form.SubmitMessage
-				}
-				return "Submit form to view committed values"
-			}()),
+			gui.Text(gui.TextCfg{
+				Text:      fmt.Sprintf("Validation summary: invalid=%d, pending=%d", summary.InvalidCount, summary.PendingCount),
+				TextStyle: gui.CurrentTheme().N3,
+			}),
+			gui.Text(gui.TextCfg{Text: pendingText, TextStyle: gui.CurrentTheme().N3}),
+			gui.Text(gui.TextCfg{
+				Text: func() string {
+					if form.SubmitMessage != "" {
+						return form.SubmitMessage
+					}
+					return "Submit form to view committed values"
+				}(),
+				TextStyle: gui.CurrentTheme().N3,
+			}),
 		},
 	})
 }
@@ -492,21 +510,32 @@ func showcaseFormRow(label string, field gui.View) gui.View {
 	})
 }
 
-func showcaseFormState(label string, state ShowcaseFieldState) gui.View {
+func showcaseFormFieldState(w *gui.Window, fieldID string) gui.View {
+	fs, ok := w.FormFieldState(showcaseFormID, fieldID)
+	text := fieldID + ": (not registered)"
+	if ok {
+		text = fmt.Sprintf("%s: touched=%t, dirty=%t, pending=%t",
+			fieldID, fs.Touched, fs.Dirty, fs.Pending)
+	}
 	return gui.Text(gui.TextCfg{
-		Text:      fmt.Sprintf("%s: touched=%t, dirty=%t, pending=%t", label, state.Touched, state.Dirty, state.Pending),
+		Text:      text,
 		TextStyle: gui.CurrentTheme().N3,
 	})
 }
 
-func showcaseFormIssue(fieldID, text string) gui.View {
-	style := gui.CurrentTheme().N3
-	if fieldID != "" && text != "" {
-		style.Color = gui.RGB(219, 87, 87)
-		text = fieldID + ": " + text
+func showcaseFormFieldIssues(w *gui.Window, fieldID string) gui.View {
+	issues := w.FormFieldErrors(showcaseFormID, fieldID)
+	if len(issues) == 0 {
+		return gui.Text(gui.TextCfg{TextStyle: gui.CurrentTheme().N3})
 	}
+	msgs := make([]string, len(issues))
+	for i, issue := range issues {
+		msgs[i] = issue.Msg
+	}
+	style := gui.CurrentTheme().N3
+	style.Color = gui.RGB(219, 87, 87)
 	return gui.Text(gui.TextCfg{
-		Text:      text,
+		Text:      fieldID + ": " + strings.Join(msgs, "; "),
 		TextStyle: style,
 	})
 }

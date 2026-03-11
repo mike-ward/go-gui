@@ -338,25 +338,35 @@ func TestDemoTextLayout(t *testing.T) {
 }
 
 func TestFormValidationHelpers(t *testing.T) {
-	if got := validateUsernameSync(""); got != "username required" {
-		t.Fatalf("unexpected username required result: %q", got)
+	snap := func(v string) gui.FormFieldSnapshot {
+		return gui.FormFieldSnapshot{Value: v}
 	}
-	if got := validateUsernameSync("ab"); got != "username min length is 3" {
-		t.Fatalf("unexpected username length result: %q", got)
+	fs := gui.FormSnapshot{}
+
+	if issues := validateUsernameFormSync(snap(""), fs); len(issues) == 0 || issues[0].Msg != "username required" {
+		t.Fatalf("unexpected username required result: %v", issues)
 	}
-	if got := validateEmailSync("userexample.com"); got != "email must contain @" {
-		t.Fatalf("unexpected email validation result: %q", got)
+	if issues := validateUsernameFormSync(snap("ab"), fs); len(issues) == 0 || issues[0].Msg != "username min length is 3" {
+		t.Fatalf("unexpected username length result: %v", issues)
 	}
-	if got := validateAgeSync(""); got != "age required" {
-		t.Fatalf("unexpected age validation result: %q", got)
+	if issues := validateEmailFormSync(snap("userexample.com"), fs); len(issues) == 0 || issues[0].Msg != "email must contain @" {
+		t.Fatalf("unexpected email validation result: %v", issues)
+	}
+	if issues := validateAgeFormSync(snap(""), fs); len(issues) == 0 || issues[0].Msg != "age required" {
+		t.Fatalf("unexpected age validation result: %v", issues)
 	}
 }
 
 func TestValidateUsernameReserved(t *testing.T) {
-	if got := validateUsernameReserved("admin"); got != "username already taken" {
-		t.Fatalf("unexpected reserved username result: %q", got)
+	snap := func(v string) gui.FormFieldSnapshot {
+		return gui.FormFieldSnapshot{Value: v}
 	}
-	if got := validateUsernameReserved("available"); got != "" {
-		t.Fatalf("expected no issue for available, got %q", got)
+	fs := gui.FormSnapshot{}
+
+	if issues := validateUsernameFormAsync(snap("admin"), fs, nil); len(issues) == 0 || issues[0].Msg != "username already taken" {
+		t.Fatalf("unexpected reserved username result: %v", issues)
+	}
+	if issues := validateUsernameFormAsync(snap("available"), fs, nil); len(issues) != 0 {
+		t.Fatalf("expected no issue for available, got %v", issues)
 	}
 }

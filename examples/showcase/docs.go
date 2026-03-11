@@ -12,6 +12,8 @@ func componentDoc(id string) string {
 		id = "notification"
 	case "column_demo":
 		id = "column"
+	case "doc_forms":
+		id = "forms"
 	}
 	if doc, ok := widgetDocs[id]; ok {
 		return doc
@@ -907,148 +909,124 @@ gui.InputDate(gui.InputDateCfg{
 | A11YDescription | string | Accessible description             |
 `,
 
-	"forms": `Compose inputs, labels, and buttons into form layouts using
-Row/Column containers. No dedicated Form widget exists -- forms are
-built from standard layout primitives and validation patterns.
+	"forms": `Form container with built-in runtime validation,
+submit/reset semantics, per-field state tracking (touched, dirty,
+pending), configurable validation triggers, and stale field cleanup.
 
-## Labeled Row Pattern
-
-` + "```go" + `
-func labeledRow(t gui.Theme, label string, input gui.View) gui.View {
-    return gui.Row(gui.ContainerCfg{
-        Sizing:  gui.FillFit,
-        VAlign:  gui.VAlignMiddle,
-        Spacing: gui.SomeF(8),
-        Content: []gui.View{
-            gui.Text(gui.TextCfg{
-                Text:      label,
-                TextStyle: t.B3,
-                MinWidth:  90,
-                Sizing:    gui.FixedFit,
-            }),
-            input,
-        },
-    })
-}
-` + "```" + `
-
-## Form Layout
+## Basic Usage
 
 ` + "```go" + `
-gui.Column(gui.ContainerCfg{
-    Sizing:  gui.FillFit,
-    Spacing: gui.SomeF(12),
-    Content: []gui.View{
-        labeledRow(t, "Username", gui.Input(gui.InputCfg{
-            ID: "username", IDFocus: 100, Sizing: gui.FillFit,
-            Text: app.Username,
-            OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-                gui.State[App](w).Username = s
-            },
-        })),
-        labeledRow(t, "Email", gui.Input(gui.InputCfg{
-            ID: "email", IDFocus: 101, Sizing: gui.FillFit,
-            Text: app.Email,
-            OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-                gui.State[App](w).Email = s
-            },
-        })),
+gui.Form(gui.FormCfg{
+    ID:     "my-form",
+    Sizing: gui.FillFit,
+    OnSubmit: func(e gui.FormSubmitEvent, w *gui.Window) {
+        fmt.Println("values:", e.Values)
     },
+    Content: []gui.View{ /* inputs, buttons, etc. */ },
 })
 ` + "```" + `
 
-## Validation Pattern
+## Field Registration
 
-Track field state with a simple struct:
+Register fields each frame so the form runtime tracks them.
+Call FormRegisterFieldByID during view construction (form ID
+is known), or FormRegisterField from event handlers (walks
+the parent chain).
 
 ` + "```go" + `
-type FieldState struct {
-    Touched bool   // true after first blur
-    Dirty   bool   // true after first edit
-    Pending bool   // true during async validation
-    Issue   string // non-empty = validation error
+gui.FormRegisterFieldByID(w, "my-form", gui.FormFieldAdapterCfg{
+    FieldID:        "email",
+    Value:          app.Email,
+    SyncValidators: []gui.FormSyncValidator{validateEmail},
+})
+` + "```" + `
+
+## Sync Validators
+
+` + "```go" + `
+func validateEmail(
+    f gui.FormFieldSnapshot, _ gui.FormSnapshot,
+) []gui.FormIssue {
+    if !strings.Contains(f.Value, "@") {
+        return []gui.FormIssue{{Msg: "must contain @"}}
+    }
+    return nil
 }
 ` + "```" + `
 
-Update on input events:
+## Async Validators
+
+` + "```go" + `
+func checkUnique(
+    f gui.FormFieldSnapshot, _ gui.FormSnapshot,
+    signal *gui.GridAbortSignal,
+) []gui.FormIssue {
+    // Check signal.IsAborted() periodically.
+    resp := fetchAPI(f.Value)
+    if resp.Taken {
+        return []gui.FormIssue{{Msg: "already taken"}}
+    }
+    return nil
+}
+` + "```" + `
+
+## Event Wiring
+
+In input callbacks, trigger validation via FormOnFieldEvent:
 
 ` + "```go" + `
 gui.Input(gui.InputCfg{
-    OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
-        app := gui.State[App](w)
-        app.Username = s
-        app.UsernameState.Dirty = strings.TrimSpace(s) != ""
-        app.UsernameState.Issue = validateUsername(s)
+    OnTextChanged: func(l *gui.Layout, s string, w *gui.Window) {
+        gui.State[App](w).Email = s
+        gui.FormOnFieldEvent(w, l, emailCfg(s),
+            gui.FormTriggerChange)
     },
-    OnBlur: func(_ *gui.Layout, w *gui.Window) {
-        gui.State[App](w).UsernameState.Touched = true
+    OnBlur: func(l *gui.Layout, w *gui.Window) {
+        gui.FormOnFieldEvent(w, l, emailCfg(app.Email),
+            gui.FormTriggerBlur)
     },
-})
-` + "```" + `
-
-Show errors only after the field is touched:
-
-` + "```go" + `
-if state.Touched && state.Issue != "" {
-    gui.Text(gui.TextCfg{
-        Text:      state.Issue,
-        TextStyle: gui.TextStyle{Color: t.ColorError},
-    })
-}
-` + "```" + `
-
-## Fieldset Grouping
-
-Use ` + "`ContainerCfg.Title`" + ` for HTML-fieldset-style group boxes:
-
-` + "```go" + `
-gui.Column(gui.ContainerCfg{
-    Title:       "Personal Info",
-    TitleBG:     t.ColorBackground,
-    ColorBorder: t.ColorBorder,
-    SizeBorder:  gui.SomeF(1),
-    Content:     []gui.View{ /* fields */ },
 })
 ` + "```" + `
 
 ## Submit / Reset
 
 ` + "```go" + `
-gui.Row(gui.ContainerCfg{
-    Spacing: gui.SomeF(8),
-    Content: []gui.View{
-        gui.Button(gui.ButtonCfg{
-            ID: "submit", Disabled: !formValid,
-            Content: []gui.View{gui.Text(gui.TextCfg{Text: "Submit"})},
-            OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-                e.IsHandled = true
-                submitForm(w)
-            },
-        }),
-        gui.Button(gui.ButtonCfg{
-            ID: "reset",
-            Content: []gui.View{gui.Text(gui.TextCfg{Text: "Reset"})},
-            OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
-                e.IsHandled = true
-                gui.State[App](w).Form = FormData{}
-            },
-        }),
-    },
-})
+gui.FormRequestSubmit(w, "my-form")
+gui.FormRequestReset(w, "my-form")
 ` + "```" + `
 
-## Masked Input in Forms
+## Querying State
 
 ` + "```go" + `
-labeledRow(t, "Phone", gui.Input(gui.InputCfg{
-    ID:          "phone",
-    MaskPreset:  gui.MaskPhoneUS,
-    Placeholder: "(555) 000-0000",
-}))
+summary := w.FormSummary("my-form")
+fs, ok := w.FormFieldState("my-form", "email")
+issues := w.FormFieldErrors("my-form", "email")
+pending := w.FormPendingState("my-form")
 ` + "```" + `
 
-Presets: MaskPhoneUS, MaskCreditCard16, MaskCreditCardAmex,
-MaskExpiryMMYY, MaskCVC.
+## Key Properties
+
+| Property           | Type             | Description                        |
+|--------------------|------------------|------------------------------------|
+| ID                 | string           | Required form identifier           |
+| ValidateOn         | FormValidateOn   | When to trigger (default BlurSubmit)|
+| NoSubmitOnEnter    | bool             | Disable enter-key submit           |
+| AllowInvalidSubmit | bool             | Permit submit with errors          |
+| AllowPendingSubmit | bool             | Permit submit while async pending  |
+| OnSubmit           | func             | Called on successful submit         |
+| OnReset            | func             | Called after reset                  |
+| ErrorSlot          | func             | Custom per-field error view         |
+| SummarySlot        | func             | Custom summary view                 |
+| PendingSlot        | func             | Custom pending indicator view       |
+
+## Validation Modes
+
+| Mode           | Change | Blur | Submit |
+|----------------|--------|------|--------|
+| OnChange       | yes    | yes  | yes    |
+| OnBlur         | no     | yes  | yes    |
+| OnBlurSubmit   | no     | yes  | yes    |
+| OnSubmit       | no     | no   | yes    |
 `,
 
 	// Selection
