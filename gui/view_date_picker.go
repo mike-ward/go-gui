@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"fmt"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -358,7 +358,7 @@ func datePickerMonth(
 	year, month := viewTime.Year(), viewTime.Month()
 	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
 	daysInMonth := datePickerDaysInMonth(int(month), year)
-	startDOW := datePickerGoWeekday(firstDay.Weekday())
+	startDOW := int(firstDay.Weekday())
 	if cfg.MondayFirstDayOfWeek {
 		startDOW = (startDOW + 6) % 7 // shift Sunday from 0 to 6
 	}
@@ -420,7 +420,7 @@ func datePickerMonth(
 			dayVal := d
 			cfgID := cfg.ID
 			cells = append(cells, Button(ButtonCfg{
-				ID:          fmt.Sprintf("%s.day.%d", cfg.ID, d),
+				ID:          cfg.ID + ".day." + strconv.Itoa(d),
 				MinWidth:    cellSize,
 				MaxWidth:    cellSize,
 				MaxHeight:   cellSize,
@@ -501,7 +501,7 @@ func datePickerAdjacentCell(
 	}
 
 	return Button(ButtonCfg{
-		ID:          fmt.Sprintf("%s.day.%s.%d", cfg.ID, idSuffix, adjDay),
+		ID:          cfg.ID + ".day." + idSuffix + "." + strconv.Itoa(adjDay),
 		Color:       ColorTransparent,
 		ColorBorder: ColorTransparent,
 		MinWidth:    cellSize,
@@ -691,7 +691,9 @@ func datePickerUpdateSelections(
 	// Toggle in multi-select mode.
 	for i, d := range current {
 		if isSameDay(d, sel) {
-			return append(current[:i], current[i+1:]...)
+			result := make([]time.Time, 0, len(current)-1)
+			result = append(result, current[:i]...)
+			return append(result, current[i+1:]...)
 		}
 	}
 	return append(current, sel)
@@ -709,58 +711,25 @@ func datePickerIsSelected(d time.Time, dates []time.Time) bool {
 
 // datePickerIsDisabled checks if a date is disallowed.
 func datePickerIsDisabled(d time.Time, cfg *DatePickerCfg) bool {
-	if len(cfg.AllowedDates) > 0 {
-		found := false
-		for _, ad := range cfg.AllowedDates {
-			if isSameDay(ad, d) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return true
-		}
+	if len(cfg.AllowedDates) > 0 &&
+		!slices.ContainsFunc(cfg.AllowedDates, func(ad time.Time) bool {
+			return isSameDay(ad, d)
+		}) {
+		return true
 	}
 	if len(cfg.AllowedWeekdays) > 0 {
-		dow := datePickerGoWeekday(d.Weekday())
-		// Convert to 1-based Mon=1..Sun=7.
-		dpDOW := DatePickerWeekdays((dow+6)%7 + 1)
-		found := false
-		for _, aw := range cfg.AllowedWeekdays {
-			if aw == dpDOW {
-				found = true
-				break
-			}
-		}
-		if !found {
+		dpDOW := DatePickerWeekdays((int(d.Weekday())+6)%7 + 1)
+		if !slices.Contains(cfg.AllowedWeekdays, dpDOW) {
 			return true
 		}
 	}
-	if len(cfg.AllowedMonths) > 0 {
-		m := DatePickerMonths(d.Month())
-		found := false
-		for _, am := range cfg.AllowedMonths {
-			if am == m {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return true
-		}
+	if len(cfg.AllowedMonths) > 0 &&
+		!slices.Contains(cfg.AllowedMonths, DatePickerMonths(d.Month())) {
+		return true
 	}
-	if len(cfg.AllowedYears) > 0 {
-		y := d.Year()
-		found := false
-		for _, ay := range cfg.AllowedYears {
-			if ay == y {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return true
-		}
+	if len(cfg.AllowedYears) > 0 &&
+		!slices.Contains(cfg.AllowedYears, d.Year()) {
+		return true
 	}
 	return false
 }
@@ -775,13 +744,7 @@ func isSameDay(a, b time.Time) bool {
 // datePickerViewTime returns a time for the current view month/year.
 func datePickerViewTime(state datePickerState) time.Time {
 	return time.Date(state.ViewYear, time.Month(state.ViewMonth),
-		1, 0, 0, 0, 0, time.UTC) // Use UTC for internal view time unless we store location
-}
-
-// datePickerGoWeekday converts Go's time.Weekday (Sun=0) to
-// 0=Sunday..6=Saturday.
-func datePickerGoWeekday(wd time.Weekday) int {
-	return int(wd)
+		1, 0, 0, 0, 0, time.Local)
 }
 
 // datePickerWeekdayIndex returns the weekday index for column i.

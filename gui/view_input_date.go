@@ -16,7 +16,6 @@ type InputDateCfg struct {
 	AllowedYears         []int
 	AllowedDates         []time.Time
 	OnSelect             func([]time.Time, *Event, *Window)
-	OnEnter              func(*Layout, *Event, *Window)
 	WeekdaysLen          DatePickerWeekdayLen
 	TextStyle            TextStyle
 	PlaceholderStyle     TextStyle
@@ -117,14 +116,29 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 		}),
 	)
 
-	// Floating date picker.
+	// Floating date picker with click-outside-to-close backdrop.
 	if isOpen {
+		content = append(content, Column(ContainerCfg{
+			Float:      true,
+			Sizing:     FillFill,
+			Color:      ColorTransparent,
+			Padding:    NoPadding,
+			SizeBorder: NoBorder,
+			OnClick: func(_ *Layout, e *Event, w *Window) {
+				inputDateClose(cfgID, w)
+				e.IsHandled = true
+			},
+		}))
 		content = append(content, Column(ContainerCfg{
 			Float:        true,
 			FloatAnchor:  FloatBottomLeft,
 			FloatTieOff:  FloatTopLeft,
 			Padding:      NoPadding,
+			SizeBorder:   NoBorder,
 			FloatOffsetY: -cfg.SizeBorder.Get(0),
+			OnClick: func(_ *Layout, e *Event, _ *Window) {
+				e.IsHandled = true
+			},
 			Content: []View{
 				DatePicker(DatePickerCfg{
 					ID:                   cfgID + ".picker",

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -138,9 +139,6 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 		AmendLayout: func(lo *Layout, w *Window) {
 			if cfg.IDFocus > 0 && w.IsFocus(cfg.IDFocus) {
 				lo.Shape.ColorBorder = cfg.ColorBorderFocus
-			}
-			if lo.Shape.Events == nil {
-				lo.Shape.Events = &EventHandlers{}
 			}
 			lo.Shape.Events.OnMouseScroll = func(
 				_ *Layout, e *Event, w *Window,
@@ -407,7 +405,7 @@ func rollerAdjustYear(
 }
 
 func rollerDayFormat(v int) string  { return fmt.Sprintf("%02d", v) }
-func rollerYearFormat(v int) string { return fmt.Sprintf("%d", v) }
+func rollerYearFormat(v int) string { return strconv.Itoa(v) }
 
 func rollerMonthFormat(long bool) func(int) string {
 	return func(v int) string {
