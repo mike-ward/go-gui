@@ -170,6 +170,7 @@ func demoListBox(w *gui.Window) gui.View {
 			}),
 			gui.ListBox(gui.ListBoxCfg{
 				ID:          "listbox-demo",
+				IDScroll:    103,
 				Sizing:      gui.FillFit,
 				MaxHeight:   200,
 				Multiple:    true,
@@ -207,6 +208,7 @@ func demoCombobox(w *gui.Window) gui.View {
 			}),
 			gui.Combobox(gui.ComboboxCfg{
 				ID:          "combobox-demo",
+				IDScroll:    104,
 				Placeholder: "Type to search...",
 				Value:       app.ComboboxValue,
 				Options:     []string{"Go", "Rust", "Zig", "C", "C++", "Python", "TypeScript", "JavaScript", "Ruby", "Elixir"},
