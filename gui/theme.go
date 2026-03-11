@@ -632,7 +632,6 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 		},
 		ColorPickerStyle: ColorPickerStyle{
 			Color:            cfg.ColorInterior,
-			ColorHover:       cfg.ColorHover,
 			ColorBorder:      cfg.ColorBorder,
 			ColorBorderFocus: borderFocus,
 			Padding:          cfg.PaddingSmall,
@@ -1164,7 +1163,6 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.DatePickerStyle.ColorSelect = sel
 
 	t.ColorPickerStyle.Color = interior
-	t.ColorPickerStyle.ColorHover = hover
 	t.ColorPickerStyle.ColorBorder = border
 	t.ColorPickerStyle.ColorBorderFocus = borderFocus
 

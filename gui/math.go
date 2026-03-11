@@ -35,6 +35,11 @@ func f32AreClose(a, b float32) bool {
 	return d <= f32Tolerance
 }
 
+// f32Mod returns x mod y without float64 round-trip.
+func f32Mod(x, y float32) float32 {
+	return x - y*float32(int(x/y))
+}
+
 // f32Abs returns absolute value of x.
 func f32Abs(x float32) float32 {
 	if x < 0 {

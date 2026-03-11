@@ -440,7 +440,6 @@ type DatePickerStyle struct {
 // ColorPickerStyle defines color picker visual properties.
 type ColorPickerStyle struct {
 	Color            Color
-	ColorHover       Color
 	ColorBorder      Color
 	ColorBorderFocus Color
 	Padding          Padding
@@ -850,7 +849,6 @@ var (
 
 	DefaultColorPickerStyle = ColorPickerStyle{
 		Color:            colorInteriorDark,
-		ColorHover:       colorHoverDark,
 		ColorBorder:      colorBorderDark,
 		ColorBorderFocus: colorSelectDark,
 		Padding:          PaddingSmall,

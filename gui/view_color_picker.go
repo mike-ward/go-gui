@@ -60,7 +60,7 @@ func (cv *colorPickerView) GenerateLayout(w *Window) Layout {
 	sliderH := style.SliderHeight
 	indicatorSize := style.IndicatorSize
 
-	var content []View
+	content := make([]View, 0, 5)
 
 	// SV area + hue slider side by side.
 	content = append(content, cpSVAndHueRow(cfg, hsv,
@@ -95,8 +95,13 @@ func (cv *colorPickerView) GenerateLayout(w *Window) Layout {
 			Sizing:      cfg.Sizing,
 			Width:       cfg.Width,
 			Height:      cfg.Height,
-			Content:     content,
-			axis:        AxisTopToBottom,
+			Content: content,
+			axis:    AxisTopToBottom,
+			AmendLayout: func(layout *Layout, w *Window) {
+				if cfg.IDFocus > 0 && w.IsFocus(cfg.IDFocus) {
+					layout.Shape.ColorBorder = style.ColorBorderFocus
+				}
+			},
 		},
 		content:   content,
 		shapeType: ShapeRectangle,
@@ -175,6 +180,7 @@ func cpSVArea(
 				OnClick: func(
 					layout *Layout, e *Event, w *Window,
 				) {
+					// Convert local mouse coords to absolute.
 					ev := *e
 					ev.MouseX += layout.Shape.X
 					ev.MouseY += layout.Shape.Y
@@ -254,6 +260,7 @@ func cpHueSlider(
 		OnClick: func(
 			layout *Layout, e *Event, w *Window,
 		) {
+			// Convert local mouse coords to absolute.
 			ev := *e
 			ev.MouseX += layout.Shape.X
 			ev.MouseY += layout.Shape.Y
@@ -370,11 +377,12 @@ func cpHSVInputs(
 		Padding: NoPadding,
 		Spacing: Some(SpacingSmall),
 		Content: []View{
-			cpHSVChannelInput(cfg, "Hue", int(hsv.H), 360, 0),
+			cpHSVChannelInput(cfg, "Hue",
+				int(hsv.H+0.5), 360, 0),
 			cpHSVChannelInput(cfg, "Sat",
-				int(hsv.S*100), 100, 1),
+				int(hsv.S*100+0.5), 100, 1),
 			cpHSVChannelInput(cfg, "Value",
-				int(hsv.V*100), 100, 2),
+				int(hsv.V*100+0.5), 100, 2),
 		},
 	})
 }
@@ -387,6 +395,7 @@ func cpChannelInput(
 	cfgID := cfg.ID
 	c := cfg.Color
 
+	inputID := fmt.Sprintf("%s.rgb.%d", cfgID, idx)
 	return Column(ContainerCfg{
 		Padding: NoPadding,
 		Spacing: SomeF(2),
@@ -400,8 +409,8 @@ func cpChannelInput(
 				},
 			}),
 			Input(InputCfg{
-				ID:        fmt.Sprintf("%s.rgb.%d", cfgID, idx),
-				IDFocus:   fnvSum32(fmt.Sprintf("%s.rgb.%d", cfgID, idx)),
+				ID:        inputID,
+				IDFocus:   fnvSum32(inputID),
 				Text:      fmt.Sprintf("%d", val),
 				TextStyle: cfg.Style.TextStyle,
 				Width:     50,
@@ -427,6 +436,7 @@ func cpHSVChannelInput(
 	onChange := cfg.OnColorChange
 	cfgID := cfg.ID
 
+	inputID := fmt.Sprintf("%s.hsv.%d", cfgID, idx)
 	return Column(ContainerCfg{
 		Padding: NoPadding,
 		Spacing: SomeF(2),
@@ -440,8 +450,8 @@ func cpHSVChannelInput(
 				},
 			}),
 			Input(InputCfg{
-				ID:        fmt.Sprintf("%s.hsv.%d", cfgID, idx),
-				IDFocus:   fnvSum32(fmt.Sprintf("%s.hsv.%d", cfgID, idx)),
+				ID:        inputID,
+				IDFocus:   fnvSum32(inputID),
 				Text:      fmt.Sprintf("%d", val),
 				TextStyle: cfg.Style.TextStyle,
 				Width:     50,
@@ -467,7 +477,8 @@ func cpSVMouseAction(
 	onChange func(Color, *Event, *Window),
 	shape *Shape, e *Event, w *Window,
 ) {
-	if onChange == nil {
+	if onChange == nil ||
+		shape.Width <= 0 || shape.Height <= 0 {
 		return
 	}
 	s := f32Clamp((e.MouseX-shape.X)/shape.Width, 0, 1)
@@ -490,7 +501,7 @@ func cpHueMouseAction(
 	onChange func(Color, *Event, *Window),
 	shape *Shape, e *Event, w *Window,
 ) {
-	if onChange == nil {
+	if onChange == nil || shape.Height <= 0 {
 		return
 	}
 	h := f32Clamp(
@@ -548,7 +559,7 @@ func applyColorPickerDefaults(cfg *ColorPickerCfg) {
 	}
 }
 
-// cpParseUint8 parses a string as a uint8 value.
+// cpApplyRGB applies an RGB channel change from text input.
 func cpApplyRGB(
 	text string, idx int, c Color, cfgID string,
 	onChange func(Color, *Event, *Window), w *Window,
@@ -619,6 +630,7 @@ func cpApplyHex(
 	onChange(nc, nil, w)
 }
 
+// cpParseUint8 parses a string as a uint8 (0–255).
 func cpParseUint8(s string) (uint8, bool) {
 	n, err := strconv.Atoi(s)
 	if err != nil || n < 0 || n > 255 {

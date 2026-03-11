@@ -1,9 +1,6 @@
 package gui
 
-import (
-	"fmt"
-	"math"
-)
+import "fmt"
 
 // ToHSV converts an RGB Color to HSV components.
 // Returns h (0–360), s (0–1), v (0–1).
@@ -26,7 +23,7 @@ func (c Color) ToHSV() (h, s, v float32) {
 	if delta != 0 {
 		switch {
 		case mx == r:
-			h = 60.0 * float32(math.Mod(float64((g-b)/delta), 6))
+			h = 60.0 * f32Mod((g-b)/delta, 6)
 		case mx == g:
 			h = 60.0 * (((b - r) / delta) + 2.0)
 		default:
@@ -49,8 +46,8 @@ func ColorFromHSV(h, s, v float32) Color {
 // h: 0–360, s: 0–1, v: 0–1, a: 0–255.
 func ColorFromHSVA(h, s, v float32, a uint8) Color {
 	c := v * s
-	hh := float32(math.Mod(float64(h)/60.0, 6))
-	x := c * (1.0 - float32(math.Abs(math.Mod(float64(hh), 2)-1.0)))
+	hh := f32Mod(h/60.0, 6)
+	x := c * (1.0 - f32Abs(f32Mod(hh, 2)-1.0))
 	m := v - c
 
 	var r, g, b float32
