@@ -1,5 +1,7 @@
 package gui
 
+import "unicode/utf8"
+
 type comboboxItemsCache struct {
 	optionsHash uint64
 	items       []ListCoreItem
@@ -307,16 +309,6 @@ func comboboxClose(id string, w *Window) {
 	w.UpdateWindow()
 }
 
-func makeComboboxOnTextChanged(cfgID string) func(*Layout, string, *Window) {
-	return func(_ *Layout, newText string, w *Window) {
-		sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
-		sq.Set(cfgID, newText)
-		sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
-		sh.Set(cfgID, 0)
-		w.UpdateWindow()
-	}
-}
-
 func makeComboboxOnChar(cfgID string) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
 		ss := StateMap[string, bool](w, nsCombobox, capModerate)
@@ -364,12 +356,12 @@ func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idF
 		return
 	}
 
-	if e.KeyCode == KeyBackspace || e.KeyCode == KeyDelete {
+	if e.KeyCode == KeyBackspace {
 		sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
 		query, _ := sq.Get(cfgID)
 		if len(query) > 0 {
-			runes := []rune(query)
-			sq.Set(cfgID, string(runes[:len(runes)-1]))
+			_, sz := utf8.DecodeLastRuneInString(query)
+			sq.Set(cfgID, query[:len(query)-sz])
 			sh := StateMap[string, int](w, nsComboboxHighlight, capModerate)
 			sh.Set(cfgID, 0)
 			w.UpdateWindow()
@@ -459,7 +451,7 @@ func applyComboboxDefaults(cfg *ComboboxCfg) {
 }
 
 func comboboxOptionsHash(options []string) uint64 {
-	const offset uint64 = 1469598103934665603
+	const offset uint64 = 14695981039346656037
 	const prime uint64 = 1099511628211
 	h := offset
 	for i := range options {

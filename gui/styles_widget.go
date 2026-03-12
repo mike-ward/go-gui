@@ -815,7 +815,7 @@ var (
 		MaxDropdownHeight: 200,
 		TextStyle:         DefaultTextStyle,
 		PlaceholderStyle: TextStyle{
-			Color: RGBA(128, 128, 128, 200),
+			Color: RGBA(colorTextDark.R, colorTextDark.G, colorTextDark.B, 100),
 			Size:  SizeTextMedium,
 		},
 	}

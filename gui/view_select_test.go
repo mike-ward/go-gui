@@ -91,7 +91,7 @@ func TestSelectOptionViewOnClickFires(t *testing.T) {
 		TextStyle: DefaultTextStyle,
 	}
 	applySelectDefaults(cfg)
-	v := selectOptionView(cfg, "B", 1, false, 0)
+	v := selectOptionView(cfg, "B", 1, false)
 	cv := v.(*containerView)
 
 	w := &Window{}
@@ -132,7 +132,7 @@ func TestSelectKeyboardNavigation(t *testing.T) {
 		OnSelect: func([]string, *Event, *Window) {},
 	}
 	applySelectDefaults(&cfg)
-	idScroll := fnvSum32(cfg.ID + "dropdown")
+	idScroll := fnvSum32(cfg.ID + ".dropdown")
 
 	// Open via space.
 	e := &Event{KeyCode: KeySpace}
@@ -181,7 +181,7 @@ func TestSelectKeyboardSelectItem(t *testing.T) {
 		},
 	}
 	applySelectDefaults(&cfg)
-	idScroll := fnvSum32(cfg.ID + "dropdown")
+	idScroll := fnvSum32(cfg.ID + ".dropdown")
 
 	// Open.
 	e := &Event{KeyCode: KeySpace}
@@ -206,7 +206,7 @@ func TestSelectSkipsSubHeaders(t *testing.T) {
 		OnSelect: func([]string, *Event, *Window) {},
 	}
 	applySelectDefaults(&cfg)
-	idScroll := fnvSum32(cfg.ID + "dropdown")
+	idScroll := fnvSum32(cfg.ID + ".dropdown")
 
 	// Open.
 	e := &Event{KeyCode: KeySpace}

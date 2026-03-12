@@ -136,13 +136,29 @@ func TestScrollEnsureVisible(t *testing.T) {
 	}
 }
 
-func TestComboboxTextChanged(t *testing.T) {
+func TestComboboxBackspaceNotDelete(t *testing.T) {
 	w := &Window{}
-	fn := makeComboboxOnTextChanged("cb-tc")
-	fn(nil, "hello", w)
-	q := StateReadOr[string, string](w, nsComboboxQuery, "cb-tc", "")
-	if q != "hello" {
-		t.Errorf("query = %q", q)
+	id := "cb-del"
+
+	// Open and set a query.
+	comboboxOpen(id, 0, w)
+	sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
+	sq.Set(id, "abc")
+
+	// Delete key should not remove characters.
+	e := &Event{KeyCode: KeyDelete}
+	comboboxOnKeyDown(id, nil, 0, []string{"a"}, 0, 0, 0, e, w)
+	q, _ := sq.Get(id)
+	if q != "abc" {
+		t.Errorf("Delete modified query: got %q, want abc", q)
+	}
+
+	// Backspace should remove the last character.
+	e = &Event{KeyCode: KeyBackspace}
+	comboboxOnKeyDown(id, nil, 0, []string{"a"}, 0, 0, 0, e, w)
+	q, _ = sq.Get(id)
+	if q != "ab" {
+		t.Errorf("Backspace: got %q, want ab", q)
 	}
 }
 

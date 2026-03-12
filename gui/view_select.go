@@ -1,9 +1,6 @@
 package gui
 
-import (
-	"hash/fnv"
-	"strings"
-)
+import "strings"
 
 // SelectCfg configures a select (dropdown) view.
 type SelectCfg struct {
@@ -56,7 +53,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	radius := cfg.Radius.Get(dn.Radius)
 	isOpen := StateReadOr[string, bool](w, nsSelect, cfg.ID, false)
-	idScroll := fnvSum32(cfg.ID + "dropdown")
+	idScroll := fnvSum32(cfg.ID + ".dropdown")
 
 	empty := len(cfg.Selected) == 0 || len(cfg.Selected[0]) == 0
 	clip := cfg.SelectMultiple && cfg.NoWrap
@@ -112,11 +109,11 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			} else {
 				options = append(options,
 					selectOptionView(cfg, option, i,
-						i == highlightedIdx, idScroll))
+						i == highlightedIdx))
 			}
 		}
 		content = append(content, Column(ContainerCfg{
-			ID:            cfg.ID + "dropdown",
+			ID:            cfg.ID + ".dropdown",
 			SizeBorder:    Some(sizeBorder),
 			Radius:        Some(radius),
 			ColorBorder:   cfg.ColorBorder,
@@ -175,9 +172,8 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			OnClick: func(_ *Layout, e *Event, w *Window) {
 				ss := StateMap[string, bool](
 					w, nsSelect, capModerate)
+				cur, _ := ss.Get(id)
 				ss.Clear()
-				cur := StateReadOr[string, bool](
-					w, nsSelect, id, false)
 				ss.Set(id, !cur)
 				e.IsHandled = true
 			},
@@ -192,7 +188,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 }
 
 // selectOptionView builds a single option row.
-func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool, _ uint32) View {
+func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool) View {
 	selectMultiple := cfg.SelectMultiple
 	onSelect := cfg.OnSelect
 	selectArray := cfg.Selected
@@ -343,8 +339,8 @@ func selectOnKeyDown(cfg SelectCfg, idScroll uint32, e *Event, w *Window) {
 		return
 	}
 
-	// Close on escape.
-	if e.KeyCode == KeyEscape && isOpen {
+	// Close on escape or tab.
+	if (e.KeyCode == KeyEscape || e.KeyCode == KeyTab) && isOpen {
 		ss.Clear()
 		e.IsHandled = true
 		return
@@ -410,10 +406,10 @@ func selectOnKeyDown(cfg SelectCfg, idScroll uint32, e *Event, w *Window) {
 				!strings.HasPrefix(cfg.Options[nextIdx], "---") {
 				sh.Set(cfg.ID, nextIdx)
 				rowH := cfg.TextStyle.Size + 4
-				scrollSY := StateMap[uint32, float32](
-					w, nsScrollY, capScroll)
-				scrollSY.Set(idScroll,
-					float32(nextIdx)*rowH)
+				listH := float32(200) - 2*cfg.SizeBorder.Get(
+					DefaultSelectStyle.SizeBorder)
+				scrollEnsureVisible(
+					idScroll, nextIdx, rowH, listH, w)
 				e.IsHandled = true
 			}
 		}
@@ -421,13 +417,18 @@ func selectOnKeyDown(cfg SelectCfg, idScroll uint32, e *Event, w *Window) {
 }
 
 func fnvSum32(s string) uint32 {
-	h := fnv.New32a()
-	h.Write([]byte(s))
-	return h.Sum32()
+	const offset uint32 = 2166136261
+	const prime uint32 = 16777619
+	h := offset
+	for i := 0; i < len(s); i++ {
+		h ^= uint32(s[i])
+		h *= prime
+	}
+	return h
 }
 
 func applySelectDefaults(cfg *SelectCfg) {
-	d := &DefaultButtonStyle
+	d := &DefaultSelectStyle
 	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
@@ -441,19 +442,19 @@ func applySelectDefaults(cfg *SelectCfg) {
 		cfg.ColorFocus = d.ColorFocus
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = DefaultSelectStyle.ColorSelect
+		cfg.ColorSelect = d.ColorSelect
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = Some(PaddingTwoFour)
+		cfg.Padding = Some(d.Padding)
 	}
 
 	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = DefaultTextStyle
+		cfg.TextStyle = d.TextStyleNormal
 	}
 	if cfg.SubheadingStyle == (TextStyle{}) {
-		cfg.SubheadingStyle = DefaultSelectStyle.SubheadingStyle
+		cfg.SubheadingStyle = d.SubheadingStyle
 	}
 	if cfg.PlaceholderStyle == (TextStyle{}) {
-		cfg.PlaceholderStyle = DefaultSelectStyle.PlaceholderStyle
+		cfg.PlaceholderStyle = d.PlaceholderStyle
 	}
 }
