@@ -246,6 +246,81 @@ func demoGradient(_ *gui.Window) gui.View {
 					}),
 				},
 			}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(12),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Width:      120,
+						Height:     80,
+						Sizing:     gui.FixedFixed,
+						SizeBorder: gui.SomeF(2),
+						BorderGradient: &gui.GradientDef{
+							Direction: gui.GradientToRight,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#3b82f6")},
+								{Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Border H",
+								TextStyle: gui.TextStyle{Size: 14},
+							}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:      120,
+						Height:     80,
+						Sizing:     gui.FixedFixed,
+						SizeBorder: gui.SomeF(2),
+						BorderGradient: &gui.GradientDef{
+							Direction: gui.GradientToBottom,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#f97316")},
+								{Pos: 1, Color: gui.ColorFromString("#ef4444")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Border V",
+								TextStyle: gui.TextStyle{Size: 14},
+							}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:      120,
+						Height:     80,
+						Sizing:     gui.FixedFixed,
+						SizeBorder: gui.SomeF(2),
+						BorderGradient: &gui.GradientDef{
+							Direction: gui.GradientToTopRight,
+							Stops: []gui.GradientStop{
+								{Pos: 0, Color: gui.ColorFromString("#10b981")},
+								{Pos: 0.5, Color: gui.ColorFromString("#3b82f6")},
+								{Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
+							},
+						},
+						Radius: gui.SomeF(8),
+						HAlign: gui.HAlignCenter,
+						VAlign: gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{
+								Text:      "Border Diag",
+								TextStyle: gui.TextStyle{Size: 14},
+							}),
+						},
+					}),
+				},
+			}),
 		},
 	})
 }

@@ -2447,6 +2447,21 @@ gui.Column(gui.ContainerCfg{
 })
 ` + "```" + `
 
+## Border Gradient
+
+` + "```go" + `
+gui.Column(gui.ContainerCfg{
+    SizeBorder: gui.SomeF(2),
+    BorderGradient: &gui.GradientDef{
+        Direction: gui.GradientToRight,
+        Stops: []gui.GradientStop{
+            {Pos: 0, Color: gui.ColorFromString("#3b82f6")},
+            {Pos: 1, Color: gui.ColorFromString("#8b5cf6")},
+        },
+    },
+})
+` + "```" + `
+
 ## Custom Angle
 
 ` + "```go" + `
