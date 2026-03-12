@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"os"
 	"testing"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -242,6 +243,20 @@ func TestXmlParseSvgEmpty(t *testing.T) {
 	}
 	if len(vg.Paths) != 0 {
 		t.Fatalf("expected 0 paths, got %d", len(vg.Paths))
+	}
+}
+
+func TestXmlParseSvgFileTooLarge(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/huge.svg"
+	// Create file just over the 4MB limit.
+	data := make([]byte, maxSvgFileSize+1)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	_, err := parseSvgFile(path)
+	if err == nil {
+		t.Fatal("expected error for oversized file")
 	}
 }
 

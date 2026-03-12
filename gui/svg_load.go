@@ -93,13 +93,12 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 		if len(p.VertexColors) != 0 {
 			vcols = make([]Color, len(p.VertexColors))
 			for j := range p.VertexColors {
-				vc := p.VertexColors[j]
-				vcols[j] = Color{vc.R, vc.G, vc.B, vc.A, true}
+				vcols[j] = svgToColor(p.VertexColors[j])
 			}
 		}
 		out[i] = CachedSvgPath{
 			Triangles:    p.Triangles,
-			Color:        Color{p.Color.R, p.Color.G, p.Color.B, p.Color.A, true},
+			Color:        svgToColor(p.Color),
 			VertexColors: vcols,
 			IsClipMask:   p.IsClipMask,
 			ClipGroup:    p.ClipGroup,
@@ -121,6 +120,8 @@ func cachedSvgTextDraws(texts []SvgText, scale float32,
 		fontName := t.FontFamily
 		if wn := pangoWeightName(t.FontWeight); wn != "" {
 			fontName += " " + wn
+		} else if t.IsBold {
+			fontName += " Bold"
 		}
 		typeface := glyph.TypefaceRegular
 		if t.IsItalic {
@@ -138,7 +139,7 @@ func cachedSvgTextDraws(texts []SvgText, scale float32,
 		}
 		if t.Opacity < 1.0 {
 			ts.Color = Color{t.Color.R, t.Color.G, t.Color.B,
-				uint8(float32(t.Color.A) * t.Opacity), true}
+				uint8(float32(t.Color.A)*t.Opacity + 0.5), true}
 		} else {
 			ts.Color = svgToColor(t.Color)
 		}
@@ -206,6 +207,8 @@ func cachedSvgTextPathDraws(textPaths []SvgTextPath,
 		fontName := tp.FontFamily
 		if wn := pangoWeightName(tp.FontWeight); wn != "" {
 			fontName += " " + wn
+		} else if tp.IsBold {
+			fontName += " Bold"
 		}
 		typeface := glyph.TypefaceRegular
 		if tp.IsItalic {
@@ -224,7 +227,7 @@ func cachedSvgTextPathDraws(textPaths []SvgTextPath,
 				tp.Color.R,
 				tp.Color.G,
 				tp.Color.B,
-				uint8(float32(tp.Color.A) * tp.Opacity),
+				uint8(float32(tp.Color.A)*tp.Opacity + 0.5),
 				true,
 			}
 		} else {
@@ -293,7 +296,10 @@ func svgGradientToGlyph(g SvgGradientDef) *glyph.GradientConfig {
 		}
 	}
 	dir := glyph.GradientHorizontal
-	// Determine direction from gradient vector.
+	// Determine direction from gradient vector. Diagonal gradients
+	// are forced to H or V — glyph does not support arbitrary
+	// angles yet.
+	// TODO: support diagonal gradients when glyph adds angle support
 	dx := g.X2 - g.X1
 	dy := g.Y2 - g.Y1
 	if dy*dy > dx*dx {

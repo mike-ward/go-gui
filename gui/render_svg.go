@@ -227,6 +227,7 @@ type svgAnimState struct {
 	RotCX    float32 // rotation center X (SVG space)
 	RotCY    float32 // rotation center Y (SVG space)
 	Opacity  float32 // 0..1
+	Inited   bool
 }
 
 // computeSvgAnimations builds a map of per-group animation
@@ -245,8 +246,9 @@ func computeSvgAnimations(
 			continue
 		}
 		st := states[a.GroupID]
-		if st.Opacity == 0 {
-			st.Opacity = 1 // init
+		if !st.Inited {
+			st.Opacity = 1
+			st.Inited = true
 		}
 		adj := elapsedSec - a.BeginSec
 		if adj < 0 {

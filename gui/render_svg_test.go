@@ -258,6 +258,39 @@ func TestEmitCachedSvgTextPathDraw(t *testing.T) {
 	}
 }
 
+func TestComputeSvgAnimationsOpacityZeroPreserved(t *testing.T) {
+	// Animation A sets opacity=0 on group "g1".
+	// Animation B is a rotate on the same group.
+	// Opacity must stay 0, not reset to 1.
+	anims := []SvgAnimation{
+		{
+			GroupID: "g1",
+			Kind:    SvgAnimOpacity,
+			DurSec:  1,
+			Values:  []float32{0, 0}, // constant 0
+		},
+		{
+			GroupID: "g1",
+			Kind:    SvgAnimRotate,
+			DurSec:  2,
+			Values:  []float32{0, 360},
+			CenterX: 50,
+			CenterY: 50,
+		},
+	}
+	states := computeSvgAnimations(anims, 0.5, nil)
+	st, ok := states["g1"]
+	if !ok {
+		t.Fatal("expected state for g1")
+	}
+	if st.Opacity != 0 {
+		t.Fatalf("expected opacity 0, got %f", st.Opacity)
+	}
+	if st.RotAngle == 0 {
+		t.Fatal("expected non-zero rotation")
+	}
+}
+
 func TestEmitErrorPlaceholder(t *testing.T) {
 	w := &Window{}
 	emitErrorPlaceholder(10, 20, 50, 30, w)

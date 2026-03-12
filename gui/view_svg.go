@@ -3,6 +3,8 @@ package gui
 import (
 	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -128,11 +130,16 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 }
 
 // svgErrorLayout returns a magenta error text for missing SVGs.
+// Uses basename only to avoid leaking filesystem paths.
 func svgErrorLayout(src string, w *Window) Layout {
+	name := src
+	if !strings.HasPrefix(src, "<") {
+		name = filepath.Base(src)
+	}
 	ts := guiTheme.TextStyleDef
 	ts.Color = Magenta
 	tv := Text(TextCfg{
-		Text:      fmt.Sprintf("[missing: %s]", src),
+		Text:      fmt.Sprintf("[missing: %s]", name),
 		TextStyle: ts,
 	})
 	return tv.GenerateLayout(w)

@@ -303,8 +303,8 @@ func TestCachedSvgTextDrawsOpacity(t *testing.T) {
 	if len(result) != 1 {
 		t.Fatalf("expected 1 draw, got %d", len(result))
 	}
-	if result[0].TextStyle.Color.A != 127 {
-		t.Fatalf("expected alpha 127, got %d",
+	if result[0].TextStyle.Color.A != 128 {
+		t.Fatalf("expected alpha 128, got %d",
 			result[0].TextStyle.Color.A)
 	}
 }
@@ -329,6 +329,84 @@ func TestCachedSvgTextDrawsAnchorMiddle(t *testing.T) {
 	if result[0].X != 100 {
 		t.Fatalf("expected X=100 without measurer, got %f",
 			result[0].X)
+	}
+}
+
+func TestCachedSvgTextDrawsIsBoldNoWeight(t *testing.T) {
+	texts := []SvgText{{
+		Text:     "bold",
+		FontSize: 12,
+		IsBold:   true,
+		Color:    SvgColor{0, 0, 0, 255},
+		Opacity:  1.0,
+	}}
+	result := cachedSvgTextDraws(texts, 1.0, nil, &Window{})
+	if len(result) != 1 {
+		t.Fatalf("expected 1 draw, got %d", len(result))
+	}
+	if result[0].TextStyle.Family != " Bold" {
+		t.Fatalf("expected family ' Bold', got %q",
+			result[0].TextStyle.Family)
+	}
+}
+
+func TestCachedSvgTextDrawsIsBoldWithWeight700(t *testing.T) {
+	texts := []SvgText{{
+		Text:       "bold",
+		FontSize:   12,
+		FontWeight: 700,
+		IsBold:     true,
+		Color:      SvgColor{0, 0, 0, 255},
+		Opacity:    1.0,
+	}}
+	result := cachedSvgTextDraws(texts, 1.0, nil, &Window{})
+	if len(result) != 1 {
+		t.Fatalf("expected 1 draw, got %d", len(result))
+	}
+	// FontWeight 700 → pangoWeightName returns "Bold", so IsBold
+	// fallback should NOT append a second "Bold".
+	if result[0].TextStyle.Family != " Bold" {
+		t.Fatalf("expected family ' Bold', got %q",
+			result[0].TextStyle.Family)
+	}
+}
+
+func TestCachedSvgTextPathDrawsIsBoldNoWeight(t *testing.T) {
+	defs := map[string]string{"p1": "M 0 0 L 100 0"}
+	cache := buildDefsPathDataCache(
+		[]SvgTextPath{{PathID: "p1", IsBold: true,
+			FontSize: 12, Color: SvgColor{0, 0, 0, 255},
+			Opacity: 1.0, Text: "bold"}},
+		nil, defs, 1.0)
+	result := cachedSvgTextPathDraws(
+		[]SvgTextPath{{PathID: "p1", IsBold: true,
+			FontSize: 12, Color: SvgColor{0, 0, 0, 255},
+			Opacity: 1.0, Text: "bold"}},
+		cache, 1.0)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 draw, got %d", len(result))
+	}
+	if result[0].TextStyle.Family != " Bold" {
+		t.Fatalf("expected family ' Bold', got %q",
+			result[0].TextStyle.Family)
+	}
+}
+
+func TestCachedSvgTextDrawsOpacityRounding(t *testing.T) {
+	texts := []SvgText{{
+		Text:     "hi",
+		FontSize: 12,
+		Color:    SvgColor{255, 255, 255, 255},
+		Opacity:  0.999,
+	}}
+	result := cachedSvgTextDraws(texts, 1.0, nil, &Window{})
+	if len(result) != 1 {
+		t.Fatalf("expected 1 draw, got %d", len(result))
+	}
+	// 255 * 0.999 = 254.745 → should round to 255, not truncate to 254.
+	if result[0].TextStyle.Color.A != 255 {
+		t.Fatalf("expected alpha 255 (rounded), got %d",
+			result[0].TextStyle.Color.A)
 	}
 }
 

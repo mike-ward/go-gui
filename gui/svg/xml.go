@@ -100,8 +100,17 @@ func parseSvg(content string) (*VectorGraphic, error) {
 	return vg, nil
 }
 
+const maxSvgFileSize = 4 << 20 // 4 MB
+
 // parseSvgFile loads and parses an SVG file.
 func parseSvgFile(path string) (*VectorGraphic, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("read SVG file: %w", err)
+	}
+	if info.Size() > maxSvgFileSize {
+		return nil, fmt.Errorf("SVG file too large: %d bytes", info.Size())
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read SVG file: %w", err)

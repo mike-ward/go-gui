@@ -22,8 +22,10 @@ func flattenDefsPath(d string, scale float32) []float32 {
 	}
 
 	var out []float32
-	var cx, cy float32 // current position
+	var cx, cy float32       // current position
 	var startX, startY float32
+	var lastCtrlX, lastCtrlY float32
+	var lastCmd string
 	i := 0
 
 	for i < len(tokens) {
@@ -103,6 +105,37 @@ func flattenDefsPath(d string, scale float32) []float32 {
 					y += cy
 				}
 				flattenCubic(&out, cx, cy, x1, y1, x2, y2, x, y, scale)
+				lastCtrlX, lastCtrlY = x2, y2
+				cx, cy = x, y
+			}
+
+		case "S", "s":
+			rel := cmd == "s"
+			for i+3 < len(tokens) && !isSvgCommand(tokens[i]) {
+				// Reflect control point from previous C/c/S/s.
+				var c1x, c1y float32
+				if lastCmd == "C" || lastCmd == "c" ||
+					lastCmd == "S" || lastCmd == "s" {
+					c1x = cx*2 - lastCtrlX
+					c1y = cy*2 - lastCtrlY
+				} else {
+					c1x = cx
+					c1y = cy
+				}
+				c2x := parseFloat(tokens[i])
+				c2y := parseFloat(tokens[i+1])
+				x := parseFloat(tokens[i+2])
+				y := parseFloat(tokens[i+3])
+				i += 4
+				if rel {
+					c2x += cx
+					c2y += cy
+					x += cx
+					y += cy
+				}
+				flattenCubic(&out, cx, cy, c1x, c1y,
+					c2x, c2y, x, y, scale)
+				lastCtrlX, lastCtrlY = c2x, c2y
 				cx, cy = x, y
 			}
 
@@ -121,6 +154,33 @@ func flattenDefsPath(d string, scale float32) []float32 {
 					y += cy
 				}
 				flattenQuadratic(&out, cx, cy, x1, y1, x, y, scale)
+				lastCtrlX, lastCtrlY = x1, y1
+				cx, cy = x, y
+			}
+
+		case "T", "t":
+			rel := cmd == "t"
+			for i+1 < len(tokens) && !isSvgCommand(tokens[i]) {
+				// Reflect control point from previous Q/q/T/t.
+				var c1x, c1y float32
+				if lastCmd == "Q" || lastCmd == "q" ||
+					lastCmd == "T" || lastCmd == "t" {
+					c1x = cx*2 - lastCtrlX
+					c1y = cy*2 - lastCtrlY
+				} else {
+					c1x = cx
+					c1y = cy
+				}
+				x := parseFloat(tokens[i])
+				y := parseFloat(tokens[i+1])
+				i += 2
+				if rel {
+					x += cx
+					y += cy
+				}
+				flattenQuadratic(&out, cx, cy, c1x, c1y,
+					x, y, scale)
+				lastCtrlX, lastCtrlY = c1x, c1y
 				cx, cy = x, y
 			}
 
@@ -151,6 +211,7 @@ func flattenDefsPath(d string, scale float32) []float32 {
 		default:
 			// Skip unknown commands.
 		}
+		lastCmd = cmd
 	}
 	return out
 }
@@ -234,11 +295,13 @@ func parseFloat(s string) float32 {
 }
 
 // flattenCubic approximates a cubic Bezier with line segments.
+// Step count adapts to chord length for accuracy on large curves
+// without over-tessellating small ones.
 func flattenCubic(out *[]float32,
 	x0, y0, x1, y1, x2, y2, x3, y3, scale float32) {
-	const steps = 16
+	steps := adaptiveSteps(x0, y0, x3, y3, scale)
 	for i := 1; i <= steps; i++ {
-		t := float32(i) / steps
+		t := float32(i) / float32(steps)
 		t2 := t * t
 		t3 := t2 * t
 		mt := 1 - t
@@ -251,17 +314,33 @@ func flattenCubic(out *[]float32,
 }
 
 // flattenQuadratic approximates a quadratic Bezier with line
-// segments.
+// segments. Step count adapts to chord length.
 func flattenQuadratic(out *[]float32,
 	x0, y0, x1, y1, x2, y2, scale float32) {
-	const steps = 12
+	steps := adaptiveSteps(x0, y0, x2, y2, scale)
 	for i := 1; i <= steps; i++ {
-		t := float32(i) / steps
+		t := float32(i) / float32(steps)
 		mt := 1 - t
 		x := mt*mt*x0 + 2*mt*t*x1 + t*t*x2
 		y := mt*mt*y0 + 2*mt*t*y1 + t*t*y2
 		*out = append(*out, x*scale, y*scale)
 	}
+}
+
+// adaptiveSteps computes the number of line segments for curve
+// flattening based on the chord length between endpoints.
+func adaptiveSteps(x0, y0, x1, y1, scale float32) int {
+	dx := (x1 - x0) * scale
+	dy := (y1 - y0) * scale
+	dist := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+	steps := int(dist / 4)
+	if steps < 4 {
+		return 4
+	}
+	if steps > 64 {
+		return 64
+	}
+	return steps
 }
 
 // flattenArc approximates an SVG arc with line segments using

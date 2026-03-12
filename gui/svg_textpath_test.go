@@ -76,8 +76,8 @@ func TestFlattenDefsPathHV(t *testing.T) {
 func TestFlattenDefsPathCubic(t *testing.T) {
 	result := flattenDefsPath(
 		"M 0 0 C 10 0 10 10 0 10", 1.0)
-	// Should have M + 16 cubic steps = 34 coords.
-	if len(result) < 20 {
+	// Should have M(2) + adaptive cubic steps (min 4 → 8 coords).
+	if len(result) < 10 {
 		t.Fatalf("expected many coords for cubic, got %d",
 			len(result))
 	}
@@ -127,6 +127,88 @@ func TestFlattenDefsPathArc(t *testing.T) {
 	if f32Abs(lastX-100) > 1 || f32Abs(lastY) > 1 {
 		t.Fatalf("expected end near (100,0), got (%f,%f)",
 			lastX, lastY)
+	}
+}
+
+func TestFlattenDefsPathSmoothCubic(t *testing.T) {
+	// C then S: S reflects last control point of C through
+	// current point.
+	result := flattenDefsPath(
+		"M 0 0 C 0 10 10 10 10 0 S 20 -10 20 0", 1.0)
+	if len(result) < 10 {
+		t.Fatalf("expected many coords for C+S, got %d",
+			len(result))
+	}
+	// Last point should be near (20,0).
+	lastX := result[len(result)-2]
+	lastY := result[len(result)-1]
+	if f32Abs(lastX-20) > 0.01 || f32Abs(lastY) > 0.01 {
+		t.Fatalf("expected end near (20,0), got (%f,%f)",
+			lastX, lastY)
+	}
+}
+
+func TestFlattenDefsPathRelativeSmoothCubic(t *testing.T) {
+	result := flattenDefsPath(
+		"M 0 0 c 0 10 10 10 10 0 s 10 -10 10 0", 1.0)
+	if len(result) < 10 {
+		t.Fatalf("expected many coords, got %d", len(result))
+	}
+	lastX := result[len(result)-2]
+	lastY := result[len(result)-1]
+	if f32Abs(lastX-20) > 0.01 || f32Abs(lastY) > 0.01 {
+		t.Fatalf("expected end near (20,0), got (%f,%f)",
+			lastX, lastY)
+	}
+}
+
+func TestFlattenDefsPathSmoothQuadratic(t *testing.T) {
+	// Q then T: T reflects control point of Q.
+	result := flattenDefsPath(
+		"M 0 0 Q 5 10 10 0 T 20 0", 1.0)
+	if len(result) < 8 {
+		t.Fatalf("expected many coords for Q+T, got %d",
+			len(result))
+	}
+	lastX := result[len(result)-2]
+	lastY := result[len(result)-1]
+	if f32Abs(lastX-20) > 0.01 || f32Abs(lastY) > 0.01 {
+		t.Fatalf("expected end near (20,0), got (%f,%f)",
+			lastX, lastY)
+	}
+}
+
+func TestFlattenDefsPathRelativeSmoothQuadratic(t *testing.T) {
+	result := flattenDefsPath(
+		"M 0 0 q 5 10 10 0 t 10 0", 1.0)
+	if len(result) < 8 {
+		t.Fatalf("expected many coords, got %d", len(result))
+	}
+	lastX := result[len(result)-2]
+	lastY := result[len(result)-1]
+	if f32Abs(lastX-20) > 0.01 || f32Abs(lastY) > 0.01 {
+		t.Fatalf("expected end near (20,0), got (%f,%f)",
+			lastX, lastY)
+	}
+}
+
+func TestAdaptiveStepsLargeCurveMoreSegments(t *testing.T) {
+	small := adaptiveSteps(0, 0, 10, 0, 1.0)
+	large := adaptiveSteps(0, 0, 500, 0, 1.0)
+	if large <= small {
+		t.Fatalf("large curve (%d) should have more segments "+
+			"than small (%d)", large, small)
+	}
+}
+
+func TestAdaptiveStepsClampRange(t *testing.T) {
+	tiny := adaptiveSteps(0, 0, 1, 0, 1.0)
+	if tiny < 4 {
+		t.Fatalf("minimum steps should be 4, got %d", tiny)
+	}
+	huge := adaptiveSteps(0, 0, 10000, 0, 1.0)
+	if huge > 64 {
+		t.Fatalf("maximum steps should be 64, got %d", huge)
 	}
 }
 
