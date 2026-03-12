@@ -333,6 +333,120 @@ func TestTableFromCSVError(t *testing.T) {
 	}
 }
 
+func TestTableFreezeHeader(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+	v := w.Table(TableCfg{
+		ID:           "freeze-test",
+		IDScroll:     8800,
+		MaxHeight:    200,
+		FreezeHeader: true,
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{TH("Name"), TH("Age")}),
+			TR([]TableCellCfg{TD("Alice"), TD("30")}),
+			TR([]TableCellCfg{TD("Bob"), TD("25")}),
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+	// Outer has 2 children: header zone, body zone.
+	if len(layout.Children) != 2 {
+		t.Fatalf("outer children = %d, want 2", len(layout.Children))
+	}
+	headerZone := layout.Children[0]
+	bodyZone := layout.Children[1]
+	// Header zone: 1 row (no separator for BorderNone default).
+	if len(headerZone.Children) != 1 {
+		t.Errorf("header zone children = %d, want 1",
+			len(headerZone.Children))
+	}
+	// Body zone: 2 data rows + scrollbar.
+	if len(bodyZone.Children) != 3 {
+		t.Errorf("body zone children = %d, want 3",
+			len(bodyZone.Children))
+	}
+}
+
+func TestTableFreezeHeaderWithSeparator(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+	v := w.Table(TableCfg{
+		ID:           "freeze-sep-test",
+		IDScroll:     8801,
+		MaxHeight:    200,
+		FreezeHeader: true,
+		BorderStyle:  TableBorderHeaderOnly,
+		SizeBorder:   2,
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{TH("H")}),
+			TR([]TableCellCfg{TD("a")}),
+			TR([]TableCellCfg{TD("b")}),
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+	if len(layout.Children) != 2 {
+		t.Fatalf("outer children = %d, want 2", len(layout.Children))
+	}
+	headerZone := layout.Children[0]
+	bodyZone := layout.Children[1]
+	// Header zone: 1 row + 1 separator.
+	if len(headerZone.Children) != 2 {
+		t.Errorf("header zone children = %d, want 2",
+			len(headerZone.Children))
+	}
+	// Body zone: 2 body rows + scrollbar.
+	if len(bodyZone.Children) != 3 {
+		t.Errorf("body zone children = %d, want 3",
+			len(bodyZone.Children))
+	}
+}
+
+func TestTableFreezeHeaderNoScroll(t *testing.T) {
+	// FreezeHeader=true but IDScroll=0 → falls back to single Column.
+	v := Table(TableCfg{
+		FreezeHeader: true,
+		Data: []TableRowCfg{
+			TR([]TableCellCfg{TH("H")}),
+			TR([]TableCellCfg{TD("a")}),
+			TR([]TableCellCfg{TD("b")}),
+		},
+	})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	// Same as non-frozen: 3 rows, single Column.
+	if len(layout.Children) != 3 {
+		t.Errorf("children = %d, want 3", len(layout.Children))
+	}
+}
+
+func TestTableFreezeHeaderVirtualization(t *testing.T) {
+	w := &Window{}
+	w.textMeasurer = &tableTestMeasurer{}
+
+	data := make([]TableRowCfg, 0, 101)
+	data = append(data, TR([]TableCellCfg{TH("Col")}))
+	for i := 0; i < 100; i++ {
+		data = append(data, TR([]TableCellCfg{TD("row")}))
+	}
+
+	v := w.Table(TableCfg{
+		ID:           "freeze-virtual-test",
+		IDScroll:     8802,
+		MaxHeight:    200,
+		FreezeHeader: true,
+		Data:         data,
+	})
+	layout := GenerateViewLayout(v, w)
+	if len(layout.Children) != 2 {
+		t.Fatalf("outer children = %d, want 2", len(layout.Children))
+	}
+	bodyZone := layout.Children[1]
+	// Body should have fewer than 100 children due to virtualization.
+	if len(bodyZone.Children) >= 100 {
+		t.Errorf("body children = %d, want < 100",
+			len(bodyZone.Children))
+	}
+}
+
 func TestTableRichTextCell(t *testing.T) {
 	v := Table(TableCfg{
 		Data: []TableRowCfg{

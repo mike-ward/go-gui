@@ -224,6 +224,23 @@ window.table(
 Virtualization automatically renders only visible rows, maintaining 60 FPS even with thousands of
 rows. The table estimates row height and renders a buffer of rows above/below the viewport.
 
+### Frozen Header
+
+Keep the header row fixed while the body scrolls:
+
+```v ignore
+window.table(
+    id: 'frozen-table'
+    id_scroll: 1
+    max_height: 400
+    freeze_header: true
+    data: rows
+)
+```
+
+When `freeze_header` is true and `id_scroll` is set, the header row stays pinned above the
+scrollable body. Requires at least two rows (header + data).
+
 ### Scrollbar Control
 
 ```v ignore
@@ -322,7 +339,7 @@ See `examples/table_demo.v` for a complete demonstration including:
 - Single and multi-select
 - CSV data loading
 - Sortable columns
-- Scrollable large tables
+- Scrollable large tables with frozen header
 
 ## TableCfg Reference
 
@@ -353,6 +370,7 @@ pub:
     sizing               Sizing
     id_scroll            u32
     scrollbar            ScrollbarOverflow
+    freeze_header        bool
     multi_select         bool
     selected             map[int]bool
     on_select            fn (map[int]bool, int, mut Event, mut Window)

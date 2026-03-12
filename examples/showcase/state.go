@@ -103,7 +103,8 @@ type ShowcaseApp struct {
 	DataGridSelection   gui.GridSelection
 	TableSortBy      int
 	TableBorderStyle string
-	TableMultiSelect bool
+	TableMultiSelect    bool
+	TableFreezeHeader   bool
 	TableSelected    map[int]bool
 	DataSourceQuery     gui.GridQueryState
 	DataSourceSelection gui.GridSelection

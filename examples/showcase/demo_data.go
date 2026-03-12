@@ -35,6 +35,7 @@ func demoTable(w *gui.Window) gui.View {
 	cfg.ColorBorder = gui.Gray
 	cfg.TextStyleHead = gui.CurrentTheme().B4
 	cfg.MultiSelect = app.TableMultiSelect
+	cfg.FreezeHeader = app.TableFreezeHeader
 	cfg.Selected = app.TableSelected
 	cfg.OnSelect = func(sel map[int]bool, _ int, _ *gui.Event, w *gui.Window) {
 		gui.State[ShowcaseApp](w).TableSelected = sel
@@ -110,14 +111,29 @@ func demoTable(w *gui.Window) gui.View {
 							gui.State[ShowcaseApp](w).TableBorderStyle = value
 						},
 					}),
-					gui.Toggle(gui.ToggleCfg{
-						IDFocus:  9109,
-						Label:    "Multi-select",
-						Selected: app.TableMultiSelect,
-						OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
-							a := gui.State[ShowcaseApp](w)
-							a.TableMultiSelect = !a.TableMultiSelect
-							a.TableSelected = nil
+					gui.Column(gui.ContainerCfg{
+						Padding:    gui.NoPadding,
+						SizeBorder: gui.NoBorder,
+						Spacing:    gui.SomeF(6),
+						Content: []gui.View{
+							gui.Toggle(gui.ToggleCfg{
+								IDFocus:  9109,
+								Label:    "Multi-select",
+								Selected: app.TableMultiSelect,
+								OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
+									a := gui.State[ShowcaseApp](w)
+									a.TableMultiSelect = !a.TableMultiSelect
+									a.TableSelected = nil
+								},
+							}),
+							gui.Toggle(gui.ToggleCfg{
+								IDFocus:  9111,
+								Label:    "Freeze header",
+								Selected: app.TableFreezeHeader,
+								OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
+									gui.State[ShowcaseApp](w).TableFreezeHeader = !app.TableFreezeHeader
+								},
+							}),
 						},
 					}),
 				},
