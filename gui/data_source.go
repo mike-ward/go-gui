@@ -2,6 +2,7 @@ package gui
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"sort"
@@ -180,6 +181,8 @@ func (s *InMemoryDataSource) FetchData(req GridDataRequest) (GridDataResult, err
 	defaultLimit := s.DefaultLimit
 	rowCountKnown := s.RowCountKnown
 	s.mu.RUnlock()
+	// latencyMs=0: sleep already applied above; inner call
+	// degenerates to abort-check only.
 	return dataGridSourceInMemoryFetch(
 		rows, defaultLimit, 0, rowCountKnown, req)
 }
@@ -504,6 +507,9 @@ func dataGridSourceRowMatchesQuery(
 }
 
 // gridLowerByte returns ASCII lowercase (a-z, A-Z only).
+// Non-ASCII bytes pass through unchanged — intentional
+// trade-off to avoid strings.ToLower allocations in the
+// hot filter path.
 func gridLowerByte(c byte) byte {
 	if c >= 'A' && c <= 'Z' {
 		return c | 0x20
@@ -759,9 +765,6 @@ func dataGridSourceApplyUpdate(
 	sort.Strings(pendingIDs)
 	for _, rowID := range pendingIDs {
 		rowEdits := editsByRow[rowID]
-		if updatedIDs[rowID] {
-			continue
-		}
 		idx, ok := rowIdx[rowID]
 		if !ok {
 			return gridMutationApplyResult{},
@@ -850,10 +853,7 @@ func dataGridSourceNextCreateRowID(
 				"grid: random id generation failed: %w", err)
 		}
 		candidate := fmt.Sprintf("__gen_%016x",
-			uint64(buf[0])<<56|uint64(buf[1])<<48|
-				uint64(buf[2])<<40|uint64(buf[3])<<32|
-				uint64(buf[4])<<24|uint64(buf[5])<<16|
-				uint64(buf[6])<<8|uint64(buf[7]))
+			binary.BigEndian.Uint64(buf[:]))
 		if !existing[candidate] {
 			return candidate, nil
 		}

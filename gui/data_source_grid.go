@@ -100,7 +100,7 @@ func dataGridResolveSourceCfg(cfg DataGridCfg, w *Window) (DataGridCfg, dataGrid
 		caps = source.Capabilities()
 	}
 	wasDirty := existing.RowsDirty
-	state := dataGridSourceResolveState(cfg, caps, w)
+	state := dataGridSourceResolveState(cfg, caps, dgSrc, w)
 
 	rowCount := cfg.RowCount
 	if state.RowCount != nil {
@@ -124,8 +124,7 @@ func dataGridResolveSourceCfg(cfg DataGridCfg, w *Window) (DataGridCfg, dataGrid
 	return resolved, state, true, caps
 }
 
-func dataGridSourceResolveState(cfg DataGridCfg, caps GridDataCapabilities, w *Window) dataGridSourceState {
-	dgSrc := StateMap[string, dataGridSourceState](w, nsDgSource, capModerate)
+func dataGridSourceResolveState(cfg DataGridCfg, caps GridDataCapabilities, dgSrc *BoundedMap[string, dataGridSourceState], w *Window) dataGridSourceState {
 	state, ok := dgSrc.Get(cfg.ID)
 	if !ok {
 		state = dataGridSourceState{
@@ -745,7 +744,6 @@ func dataGridSourcePagerRow(cfg *DataGridCfg, focusID uint32, state dataGridSour
 					loadError, kind, pageLimit, gridID, focusID, e, w)
 			},
 		}))
-		_ = jumpEnabled // used in Disabled
 	}
 	return Row(ContainerCfg{
 		Height:      dataGridPagerHeight(cfg),

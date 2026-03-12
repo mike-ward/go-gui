@@ -354,7 +354,7 @@ func gridOrmResolvePage(
 			1, dataGridSourceMaxPageLimit)
 		offset = intMax(0,
 			dataGridSourceCursorToIndex(p.Cursor))
-		cursor = dataGridSourceCursorFromIndex(offset)
+		cursor = p.Cursor
 	case GridOffsetPageReq:
 		offset = intMax(0, p.StartIndex)
 		limit = intClamp(nonZero(
