@@ -197,6 +197,20 @@ func (b *Backend) drawLine(r *gui.RenderCmd) {
 
 func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	s := b.dpiScale
+	// Hard shadow: single offset rect, no blur.
+	if r.BlurRadius == 0 {
+		x := (r.X + r.OffsetX) * s
+		y := (r.Y + r.OffsetY) * s
+		w := r.W * s
+		h := r.H * s
+		if r.Radius > 0 {
+			b.fillRoundedRect(x, y, w, h, r.Radius*s, r.Color)
+		} else {
+			_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
+			_ = b.renderer.FillRectF(&sdl.FRect{X: x, Y: y, W: w, H: h})
+		}
+		return
+	}
 	// 3 concentric offset rects at decreasing alpha.
 	for i := range 3 {
 		off := float32(i+1) * r.BlurRadius * 0.5 * s

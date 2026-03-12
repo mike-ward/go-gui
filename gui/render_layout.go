@@ -145,7 +145,8 @@ func renderContainer(shape *Shape, _ Color, clip DrawClip, w *Window) {
 
 	// Shadow
 	if hasFX && fx.Shadow != nil &&
-		fx.Shadow.Color.A > 0 && fx.Shadow.BlurRadius > 0 {
+		fx.Shadow.Color.A > 0 &&
+		(fx.Shadow.BlurRadius > 0 || fx.Shadow.OffsetX != 0 || fx.Shadow.OffsetY != 0) {
 		emitRenderer(RenderCmd{
 			Kind:       RenderShadow,
 			X:          shape.X,

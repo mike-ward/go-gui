@@ -145,6 +145,7 @@ const (
 
         frag_color = vec4(color.rgb, color.a * alpha);
 
+        // sgl workaround: dummy texture sample to keep sampler bound.
         if (frag_color.a < 0.0) {
             frag_color += texture(tex, uv);
         }

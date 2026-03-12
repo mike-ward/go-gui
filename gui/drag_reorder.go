@@ -97,12 +97,12 @@ const (
 	dragReorderScrollZone      = float32(40.0)
 	dragReorderScrollSpeed     = float32(4.0)
 	dragReorderScrollAnimID    = "gui.drag_reorder.scroll"
-	dragReorderGhostOpacity    = float32(0.85)
-	dragReorderGhostShadowBlur = float32(8.0)
-	dragReorderGhostShadowOffY = float32(2.0)
+	dragGhostOpacity    = float32(0.85)
+	dragGhostShadowBlur = float32(8.0)
+	dragGhostShadowOffY = float32(2.0)
 )
 
-var dragReorderGhostShadowColor = Color{R: 0, G: 0, B: 0, A: 60, set: true}
+var dragGhostShadowColor = Color{R: 0, G: 0, B: 0, A: 60, set: true}
 
 // DragReorderAxis selects the primary drag axis.
 type DragReorderAxis uint8
@@ -643,7 +643,7 @@ func dragReorderGhostView(state dragReorderState, content View) View {
 		FloatOffsetY: ghostY - state.parentY,
 		Width:        state.itemWidth,
 		Height:       state.itemHeight,
-		Opacity:      dragReorderGhostOpacity,
+		Opacity:      dragGhostOpacity,
 		Sizing:       FixedFixed,
 		Clip:         true,
 		Padding:      NoPadding,
@@ -651,9 +651,9 @@ func dragReorderGhostView(state dragReorderState, content View) View {
 		VAlign:       VAlignMiddle,
 		Color:        guiTheme.ColorBackground,
 		Shadow: &BoxShadow{
-			Color:      dragReorderGhostShadowColor,
-			OffsetY:    dragReorderGhostShadowOffY,
-			BlurRadius: dragReorderGhostShadowBlur,
+			Color:      dragGhostShadowColor,
+			OffsetY:    dragGhostShadowOffY,
+			BlurRadius: dragGhostShadowBlur,
 		},
 		Content: []View{content},
 	})

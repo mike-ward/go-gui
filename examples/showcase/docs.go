@@ -2526,7 +2526,6 @@ gui.Column(gui.ContainerCfg{
         OffsetX:      0,
         OffsetY:      2,
         BlurRadius:   8,
-        SpreadRadius: 1,
         Color:        gui.RGBA(0, 0, 0, 60),
     },
     Content: []gui.View{ /* ... */ },
@@ -2540,12 +2539,9 @@ gui.Column(gui.ContainerCfg{
 | OffsetX      | float32 | Horizontal shadow offset                 |
 | OffsetY      | float32 | Vertical shadow offset                   |
 | BlurRadius   | float32 | Shadow blur amount                       |
-| SpreadRadius | float32 | Shadow spread distance                   |
 | Color        | Color   | Shadow color (use RGBA for transparency) |
 
 Positive OffsetX shifts right, positive OffsetY shifts down.
-SpreadRadius expands (positive) or contracts (negative) the
-shadow beyond the element boundary.
 `,
 
 	"rectangle": `Standalone visual shape — sharp, rounded, bordered, or pill.

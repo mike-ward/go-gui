@@ -289,11 +289,10 @@ type ShapeEffects struct {
 
 // BoxShadow defines drop shadow properties.
 type BoxShadow struct {
-	Color        Color
-	OffsetX      float32
-	OffsetY      float32
-	BlurRadius   float32
-	SpreadRadius float32
+	Color      Color
+	OffsetX    float32
+	OffsetY    float32
+	BlurRadius float32
 }
 
 // GradientType specifies the gradient algorithm.

@@ -4,15 +4,10 @@ package gui
 // rendering, and overlay drawing for docking panel drag operations.
 
 const (
-	dockDragThreshold       = float32(5.0)
-	dockDragGhostOpacity    = float32(0.85)
-	dockDragWindowEdgeZone  = float32(20.0)
-	dockDragEdgeRatio       = float32(0.25)
-	dockDragGhostShadowBlur = float32(8.0)
-	dockDragGhostShadowOffY = float32(2.0)
+	dockDragThreshold      = float32(5.0)
+	dockDragWindowEdgeZone = float32(20.0)
+	dockDragEdgeRatio      = float32(0.25)
 )
-
-var dockDragGhostShadowColor = Color{0, 0, 0, 60, true}
 
 // DockDropZone identifies where a panel will be inserted on drop.
 type DockDropZone uint8
@@ -264,15 +259,15 @@ func dockDragGhostView(state dockDragState, label string) View {
 		FloatOffsetY: ghostY - state.parentY,
 		Width:        state.ghostW,
 		Height:       state.ghostH,
-		Opacity:      float32(dockDragGhostOpacity),
+		Opacity:      float32(dragGhostOpacity),
 		Sizing:       FixedFixed,
 		Clip:         true,
 		Padding:      SomeP(6, 12, 6, 12),
 		Color:        guiTheme.ColorPanel,
 		Shadow: &BoxShadow{
-			Color:      dockDragGhostShadowColor,
-			OffsetY:    dockDragGhostShadowOffY,
-			BlurRadius: dockDragGhostShadowBlur,
+			Color:      dragGhostShadowColor,
+			OffsetY:    dragGhostShadowOffY,
+			BlurRadius: dragGhostShadowBlur,
 		},
 		Content: []View{Text(TextCfg{Text: label})},
 	})

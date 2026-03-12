@@ -247,6 +247,104 @@ func TestRenderContainerShadowUsesBasePositionAndSeparateOffset(t *testing.T) {
 	}
 }
 
+func TestRenderContainerShadowZeroAlphaSkipped(t *testing.T) {
+	w := makeWindow()
+	s := &Shape{
+		ShapeType: ShapeRectangle,
+		X:         10, Y: 10,
+		Width: 50, Height: 50,
+		Color: RGB(200, 200, 200),
+		FX: &ShapeEffects{
+			Shadow: &BoxShadow{
+				Color:      RGBA(0, 0, 0, 0),
+				OffsetY:    5,
+				BlurRadius: 10,
+			},
+		},
+	}
+	renderContainer(s, ColorTransparent, makeClip(0, 0, 500, 500), w)
+	for _, r := range w.renderers {
+		if r.Kind == RenderShadow {
+			t.Error("zero-alpha shadow should be skipped")
+		}
+	}
+}
+
+func TestRenderContainerShadowNegativeBlurSkipped(t *testing.T) {
+	w := makeWindow()
+	s := &Shape{
+		ShapeType: ShapeRectangle,
+		X:         10, Y: 10,
+		Width: 50, Height: 50,
+		Color: RGB(200, 200, 200),
+		FX: &ShapeEffects{
+			Shadow: &BoxShadow{
+				Color:      RGBA(0, 0, 0, 80),
+				BlurRadius: -5,
+			},
+		},
+	}
+	renderContainer(s, ColorTransparent, makeClip(0, 0, 500, 500), w)
+	for _, r := range w.renderers {
+		if r.Kind == RenderShadow {
+			t.Error("negative-blur shadow should be skipped")
+		}
+	}
+}
+
+func TestRenderContainerShadowHardShadow(t *testing.T) {
+	w := makeWindow()
+	s := &Shape{
+		ShapeType: ShapeRectangle,
+		X:         10, Y: 10,
+		Width: 50, Height: 50,
+		Color: ColorTransparent,
+		FX: &ShapeEffects{
+			Shadow: &BoxShadow{
+				Color:   RGBA(0, 0, 0, 80),
+				OffsetY: 5,
+			},
+		},
+	}
+	renderContainer(s, ColorTransparent, makeClip(0, 0, 500, 500), w)
+	found := false
+	for _, r := range w.renderers {
+		if r.Kind == RenderShadow {
+			found = true
+			if r.BlurRadius != 0 {
+				t.Errorf("blur: got %f, want 0", r.BlurRadius)
+			}
+			if r.OffsetY != 5 {
+				t.Errorf("offsetY: got %f, want 5", r.OffsetY)
+			}
+		}
+	}
+	if !found {
+		t.Error("hard shadow (blur=0, offset!=0) should emit RenderShadow")
+	}
+}
+
+func TestRenderContainerNoShadowWhenAllZero(t *testing.T) {
+	w := makeWindow()
+	s := &Shape{
+		ShapeType: ShapeRectangle,
+		X:         10, Y: 10,
+		Width: 50, Height: 50,
+		Color: RGB(200, 200, 200),
+		FX: &ShapeEffects{
+			Shadow: &BoxShadow{
+				Color: RGBA(0, 0, 0, 80),
+			},
+		},
+	}
+	renderContainer(s, ColorTransparent, makeClip(0, 0, 500, 500), w)
+	for _, r := range w.renderers {
+		if r.Kind == RenderShadow {
+			t.Error("all-zero shadow should be skipped")
+		}
+	}
+}
+
 // --- renderCircle ---
 
 func TestRenderCircleInsideClip(t *testing.T) {

@@ -263,18 +263,13 @@ func demoBoxShadows(_ *gui.Window) gui.View {
 				TextStyle: t.N5,
 				Mode:      gui.TextModeWrap,
 			}),
-			gui.Text(gui.TextCfg{
-				Text:      "spread_radius exists in gui.BoxShadow, but this render path does not apply it.",
-				TextStyle: t.N5,
-				Mode:      gui.TextModeWrap,
-			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFit,
 				Spacing: gui.SomeF(40),
 				Padding: gui.NoPadding,
 				Content: []gui.View{
-					showcaseShadowCard("Soft depth", "Blur 12, Y 3", cardColor, gui.RGBA(0, 0, 0, 40), 0, 3, 12, 0),
-					showcaseShadowCard("Elevated", "Blur 22, Y 10", cardColor, gui.RGBA(0, 0, 0, 55), 0, 10, 22, 0),
+					showcaseShadowCard("Soft depth", "Blur 12, Y 3", cardColor, gui.RGBA(0, 0, 0, 40), 0, 3, 12),
+					showcaseShadowCard("Elevated", "Blur 22, Y 10", cardColor, gui.RGBA(0, 0, 0, 55), 0, 10, 22),
 				},
 			}),
 			gui.Row(gui.ContainerCfg{
@@ -282,29 +277,15 @@ func demoBoxShadows(_ *gui.Window) gui.View {
 				Spacing: gui.SomeF(40),
 				Padding: gui.NoPadding,
 				Content: []gui.View{
-					showcaseShadowCard("Directional", "Blur 10, X 8, Y 8", cardColor, gui.RGBA(0, 0, 0, 65), 8, 8, 10, 0),
-					showcaseShadowCard("Blue glow", "Blur 24, no offset", cardColor, gui.RGBA(80, 120, 255, 85), 0, 0, 24, 0),
-				},
-			}),
-			gui.Text(gui.TextCfg{
-				Text:      "spread_radius compare: cards below should match today.",
-				TextStyle: t.N5,
-				Mode:      gui.TextModeWrap,
-			}),
-			gui.Row(gui.ContainerCfg{
-				Sizing:  gui.FillFit,
-				Spacing: gui.SomeF(40),
-				Padding: gui.NoPadding,
-				Content: []gui.View{
-					showcaseShadowCard("Spread 0", "spread_radius: 0", cardColor, gui.RGBA(0, 0, 0, 70), 4, 6, 14, 0),
-					showcaseShadowCard("Spread 16", "spread_radius: 16", cardColor, gui.RGBA(0, 0, 0, 70), 4, 6, 14, 16),
+					showcaseShadowCard("Directional", "Blur 10, X 8, Y 8", cardColor, gui.RGBA(0, 0, 0, 65), 8, 8, 10),
+					showcaseShadowCard("Blue glow", "Blur 24, no offset", cardColor, gui.RGBA(80, 120, 255, 85), 0, 0, 24),
 				},
 			}),
 		},
 	})
 }
 
-func showcaseShadowCard(title, note string, bg, shadowColor gui.Color, shadowOffsetX, shadowOffsetY, shadowBlur, shadowSpread float32) gui.View {
+func showcaseShadowCard(title, note string, bg, shadowColor gui.Color, shadowOffsetX, shadowOffsetY, shadowBlur float32) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{
 		Width:       170,
@@ -317,11 +298,10 @@ func showcaseShadowCard(title, note string, bg, shadowColor gui.Color, shadowOff
 		ColorBorder: t.ColorBorder,
 		SizeBorder:  gui.SomeF(1),
 		Shadow: &gui.BoxShadow{
-			Color:        shadowColor,
-			OffsetX:      shadowOffsetX,
-			OffsetY:      shadowOffsetY,
-			BlurRadius:   shadowBlur,
-			SpreadRadius: shadowSpread,
+			Color:      shadowColor,
+			OffsetX:    shadowOffsetX,
+			OffsetY:    shadowOffsetY,
+			BlurRadius: shadowBlur,
 		},
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: title, TextStyle: t.B5}),
