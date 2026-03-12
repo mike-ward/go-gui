@@ -88,7 +88,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 		case RenderRect:
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
 			pdf.SetFillColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color)
+			alphaSet := setAlpha(pdf, cmd.Color)
 			if cmd.Radius > 0 {
 				pdf.RoundedRect(px(cmd.X), py(cmd.Y),
 					pw(cmd.W), ph(cmd.H),
@@ -97,12 +97,14 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.Rect(px(cmd.X), py(cmd.Y),
 					pw(cmd.W), ph(cmd.H), "F")
 			}
-			resetAlpha(pdf)
+			if alphaSet {
+				resetAlpha(pdf)
+			}
 
 		case RenderStrokeRect:
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
 			pdf.SetDrawColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color)
+			alphaSet := setAlpha(pdf, cmd.Color)
 			lw := max(cmd.Thickness, 1)
 			pdf.SetLineWidth(float64(lw * scale))
 			if cmd.Radius > 0 {
@@ -113,7 +115,9 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.Rect(px(cmd.X), py(cmd.Y),
 					pw(cmd.W), ph(cmd.H), "D")
 			}
-			resetAlpha(pdf)
+			if alphaSet {
+				resetAlpha(pdf)
+			}
 
 		case RenderText:
 			text := tr(stripUnprintable(cmd.Text))
@@ -131,7 +135,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			}
 			r, g, b := tc.R, tc.G, tc.B
 			pdf.SetTextColor(int(r), int(g), int(b))
-			setAlpha(pdf, tc)
+			alphaSet := setAlpha(pdf, tc)
 			family := pdfFontName(cmd.FontName)
 			style := pdfFontStyle(cmd.TextStylePtr)
 			size := float64(cmd.FontSize * scale / ptToMM)
@@ -170,23 +174,27 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.SetDrawColor(int(r), int(g), int(b))
 				lw := max(float64(scale)*0.5, 0.1)
 				pdf.SetLineWidth(lw)
-				textW := pdf.GetStringWidth(text)
-				for i := range lines {
+				for i, line := range lines {
+					lineW := pdf.GetStringWidth(line)
 					sy := py(cmd.Y) + ascent*0.65 + float64(i)*lineH
-					pdf.Line(px(cmd.X), sy, px(cmd.X)+textW, sy)
+					pdf.Line(px(cmd.X), sy, px(cmd.X)+lineW, sy)
 				}
 			}
-			resetAlpha(pdf)
+			if alphaSet {
+				resetAlpha(pdf)
+			}
 
 		case RenderLine:
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
 			pdf.SetDrawColor(int(r), int(g), int(b))
-			setAlpha(pdf, cmd.Color)
+			alphaSet := setAlpha(pdf, cmd.Color)
 			lw := max(cmd.Thickness, 1)
 			pdf.SetLineWidth(float64(lw * scale))
 			pdf.Line(px(cmd.X), py(cmd.Y),
 				px(cmd.OffsetX), py(cmd.OffsetY))
-			resetAlpha(pdf)
+			if alphaSet {
+				resetAlpha(pdf)
+			}
 
 		case RenderCircle:
 			r, g, b := cmd.Color.R, cmd.Color.G, cmd.Color.B
@@ -200,9 +208,11 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.SetDrawColor(int(r), int(g), int(b))
 				style = "D"
 			}
-			setAlpha(pdf, cmd.Color)
+			alphaSet := setAlpha(pdf, cmd.Color)
 			pdf.Circle(px(cx), py(cy), pw(radius), style)
-			resetAlpha(pdf)
+			if alphaSet {
+				resetAlpha(pdf)
+			}
 
 		case RenderImage:
 			path := cmd.Resource
@@ -217,14 +227,13 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pw(cmd.W), ph(cmd.H), false, opts, 0, "")
 
 		case RenderClip:
-			if cmd.W == 0 && cmd.H == 0 {
-				// End clip.
-				if len(clipStack) > 0 {
-					clipStack = clipStack[:len(clipStack)-1]
-					pdf.ClipEnd()
-				}
-			} else {
-				// Begin clip.
+			// Each RenderClip replaces the current clip (not
+			// nested). Close previous before opening a new one.
+			if len(clipStack) > 0 {
+				pdf.ClipEnd()
+				clipStack = clipStack[:len(clipStack)-1]
+			}
+			if cmd.W > 0 && cmd.H > 0 {
 				pdf.ClipRect(px(cmd.X), py(cmd.Y),
 					pw(cmd.W), ph(cmd.H), false)
 				clipStack = append(clipStack, clipEntry{})
@@ -257,6 +266,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			}
 			c := cmd.Gradient.Stops[0].Color
 			pdf.SetDrawColor(int(c.R), int(c.G), int(c.B))
+			alphaSet := setAlpha(pdf, Color{c.R, c.G, c.B, c.A, true})
 			lw := max(cmd.Thickness, 1)
 			pdf.SetLineWidth(float64(lw * scale))
 			if cmd.Radius > 0 {
@@ -266,6 +276,9 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			} else {
 				pdf.Rect(px(cmd.X), py(cmd.Y),
 					pw(cmd.W), ph(cmd.H), "D")
+			}
+			if alphaSet {
+				resetAlpha(pdf)
 			}
 
 		case RenderSvg:
@@ -298,7 +311,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.SetFillColor(int(vc.R), int(vc.G), int(vc.B))
 				pdf.SetDrawColor(int(vc.R), int(vc.G), int(vc.B))
 				pdf.SetLineWidth(0.1)
-				setAlpha(pdf, vc)
+				alphaSet := setAlpha(pdf, vc)
 
 				pts := []fpdf.PointType{
 					{X: px(x1), Y: py(y1)},
@@ -306,12 +319,23 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 					{X: px(x3), Y: py(y3)},
 				}
 				pdf.Polygon(pts, "FD")
-				resetAlpha(pdf)
+				if alphaSet {
+					resetAlpha(pdf)
+				}
 			}
 
-		case RenderRTF:
+		case RenderLayout, RenderLayoutTransformed,
+			RenderRTF:
 			if cmd.LayoutPtr == nil {
 				continue
+			}
+			// RenderLayout/Transformed use TextStylePtr for
+			// font family/style; RenderRTF uses plain Helvetica.
+			family := "Helvetica"
+			fontStyle := ""
+			if cmd.Kind != RenderRTF && cmd.TextStylePtr != nil {
+				family = pdfFontName(cmd.TextStylePtr.Family)
+				fontStyle = pdfFontStyle(cmd.TextStylePtr)
 			}
 			layoutText := cmd.LayoutPtr.Text
 			for i := range cmd.LayoutPtr.Items {
@@ -332,14 +356,15 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				}
 				r, g, b := item.Color.R, item.Color.G, item.Color.B
 				pdf.SetTextColor(int(r), int(g), int(b))
-				if item.Color.A < 255 {
+				itemAlpha := item.Color.A < 255
+				if itemAlpha {
 					pdf.SetAlpha(float64(item.Color.A)/255.0, "Normal")
 				}
 				// Derive font size from ascent (≈75% of em for
 				// standard PDF fonts).
 				srcSize := item.Ascent / 0.75
 				size := srcSize * float64(scale) / float64(ptToMM)
-				pdf.SetFont("Helvetica", "", size)
+				pdf.SetFont(family, fontStyle, size)
 
 				// Scale font so PDF text width matches the
 				// glyph-computed item width. Built-in PDF
@@ -349,7 +374,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdfW := pdf.GetStringWidth(text)
 				if pdfW > 0 && wantW > 0 {
 					size *= wantW / pdfW
-					pdf.SetFont("Helvetica", "", size)
+					pdf.SetFont(family, fontStyle, size)
 				}
 
 				ix := px(cmd.X + float32(item.X))
@@ -372,7 +397,9 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 					pdf.Line(ix, sy,
 						ix+pw(float32(item.Width)), sy)
 				}
-				resetAlpha(pdf)
+				if itemAlpha {
+					resetAlpha(pdf)
+				}
 			}
 
 		case RenderTextPath:
@@ -387,7 +414,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			ts := cmd.TextStylePtr
 			r, g, b := ts.Color.R, ts.Color.G, ts.Color.B
 			pdf.SetTextColor(int(r), int(g), int(b))
-			setAlpha(pdf, ts.Color)
+			alphaSet := setAlpha(pdf, ts.Color)
 			family := pdfFontName(ts.Family)
 			style := pdfFontStyle(ts)
 			size := float64(ts.Size * scale / ptToMM)
@@ -441,13 +468,14 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				pdf.TransformEnd()
 				cumAdv += adv
 			}
-			resetAlpha(pdf)
+			if alphaSet {
+				resetAlpha(pdf)
+			}
 
 		// Unsupported kinds — skip silently.
 		case RenderShadow, RenderBlur, RenderFilterBegin,
 			RenderFilterEnd, RenderFilterComposite,
 			RenderCustomShader,
-			RenderLayout, RenderLayoutTransformed,
 			RenderLayoutPlaced, RenderNone:
 			continue
 		}
@@ -535,15 +563,15 @@ func stripUnprintable(s string) string {
 // ptToMM64 returns ptToMM as float64 (used for font baseline).
 func ptToMM64() float64 { return float64(ptToMM) }
 
-// setAlpha applies alpha transparency to the PDF state. Unset colors
+// setAlpha applies alpha transparency to the PDF state. Returns true
+// if state was changed (caller should call resetAlpha). Unset colors
 // (Color.IsSet() == false) are treated as fully opaque.
-func setAlpha(pdf *fpdf.Fpdf, c Color) {
-	if !c.IsSet() {
-		return
-	}
-	if c.A < 255 {
+func setAlpha(pdf *fpdf.Fpdf, c Color) bool {
+	if c.IsSet() && c.A < 255 {
 		pdf.SetAlpha(float64(c.A)/255.0, "Normal")
+		return true
 	}
+	return false
 }
 
 // resetAlpha restores full opacity.

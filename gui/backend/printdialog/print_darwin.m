@@ -23,8 +23,9 @@ PrintResult printdialogShow(PrintParams p) {
             return result;
         }
 
-        // Configure print info.
-        NSPrintInfo *info = [NSPrintInfo sharedPrintInfo];
+        // Configure print info (copy to avoid mutating the
+        // process-global singleton).
+        NSPrintInfo *info = [[NSPrintInfo sharedPrintInfo] copy];
         [info setTopMargin:p.marginTop];
         [info setRightMargin:p.marginRight];
         [info setBottomMargin:p.marginBottom];
@@ -41,12 +42,6 @@ PrintResult printdialogShow(PrintParams p) {
             [info setOrientation:NSPaperOrientationPortrait];
         }
 
-        if (p.jobName != NULL && p.jobName[0] != '\0') {
-            [[info dictionary] setObject:
-                [NSString stringWithUTF8String:p.jobName]
-                forKey:NSPrintJobDisposition];
-        }
-
         // Create print operation from the PDF document.
         NSPrintOperation *op =
             [doc printOperationForPrintInfo:info
@@ -54,6 +49,11 @@ PrintResult printdialogShow(PrintParams p) {
                                 autoRotate:YES];
         [op setShowsPrintPanel:YES];
         [op setShowsProgressPanel:YES];
+
+        if (p.jobName != NULL && p.jobName[0] != '\0') {
+            [op setJobTitle:
+                [NSString stringWithUTF8String:p.jobName]];
+        }
 
         if (p.copies > 1) {
             [[info dictionary] setObject:@(p.copies)

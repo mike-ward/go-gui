@@ -68,8 +68,14 @@ func ShowPrintDialog(cfg gui.NativePrintParams) gui.PrintRunResult {
 		pdfPath = C.GoString(r.pdfPath)
 	}
 
+	var errCode string
+	if status == gui.PrintRunError {
+		errCode = "print_error"
+	}
+
 	return gui.PrintRunResult{
 		Status:       status,
+		ErrorCode:    errCode,
 		ErrorMessage: errMsg,
 		PDFPath:      pdfPath,
 	}

@@ -103,6 +103,8 @@ func printViaXdgOpen(cfg gui.NativePrintParams) gui.PrintRunResult {
 			ErrorMessage: err.Error(),
 		}
 	}
+	// Reap child to avoid zombie process.
+	go cmd.Wait() //nolint:errcheck
 	return gui.PrintRunResult{
 		Status:  gui.PrintRunOK,
 		PDFPath: cfg.PDFPath,
