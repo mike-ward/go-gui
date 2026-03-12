@@ -247,6 +247,11 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 	}
 	s := b.dpiScale
 	dx, dy := gui.GradientDir(r.Gradient, r.W, r.H)
+	stops := gui.NormalizeGradientStopsInto(
+		r.Gradient.Stops, &b.normBuf, &b.sampledBuf)
+	if len(stops) == 0 {
+		return
+	}
 
 	const bands = 32
 	// Determine if gradient is more horizontal or vertical.
@@ -255,7 +260,7 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 	for i := range bands {
 		t := float32(i) / float32(bands)
 		t2 := float32(i+1) / float32(bands)
-		c := gui.SampleGradientStopColor(r.Gradient.Stops, (t+t2)/2)
+		c := gui.SampleGradientStopColor(stops, (t+t2)/2)
 		_ = b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
 		var rect sdl.FRect
 		if horizontal {
@@ -281,6 +286,11 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 	if r.Gradient == nil || len(r.Gradient.Stops) == 0 {
 		return
 	}
+	stops := gui.NormalizeGradientStopsInto(
+		r.Gradient.Stops, &b.normBuf, &b.sampledBuf)
+	if len(stops) == 0 {
+		return
+	}
 	s := b.dpiScale
 	th := r.Thickness * s
 	// 4 border rects with sampled colors at 0.0, 0.25, 0.5, 0.75.
@@ -292,7 +302,7 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 		{X: (r.X+r.W)*s - th, Y: r.Y * s, W: th, H: r.H * s}, // right
 	}
 	for i := range 4 {
-		c := gui.SampleGradientStopColor(r.Gradient.Stops, positions[i])
+		c := gui.SampleGradientStopColor(stops, positions[i])
 		_ = b.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
 		_ = b.renderer.FillRectF(&rects[i])
 	}

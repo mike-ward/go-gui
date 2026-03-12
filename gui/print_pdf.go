@@ -231,6 +231,8 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 			}
 
 		case RenderGradient:
+			// fpdf only supports two-color linear gradients;
+			// use first and last stop colors as approximation.
 			if cmd.Gradient == nil || len(cmd.Gradient.Stops) == 0 {
 				continue
 			}
@@ -248,6 +250,8 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				gx1, gy1, gx2, gy2)
 
 		case RenderGradientBorder:
+			// fpdf has no gradient stroke; use first stop color
+			// as a solid border approximation.
 			if cmd.Gradient == nil || len(cmd.Gradient.Stops) == 0 {
 				continue
 			}

@@ -27,8 +27,22 @@ func angleToDirection(cssDeg float32) (dx, dy float32) {
 	return float32(math.Cos(float64(rad))), -float32(math.Sin(float64(rad)))
 }
 
+// compareStops orders gradient stops by position.
+func compareStops(a, b GradientStop) int {
+	if a.Pos < b.Pos {
+		return -1
+	}
+	if a.Pos > b.Pos {
+		return 1
+	}
+	return 0
+}
+
 // GradientDir computes direction vector from GradientDef.
 func GradientDir(g *GradientDef, w, h float32) (dx, dy float32) {
+	if g == nil {
+		return 0, -1 // default: top
+	}
 	if g.HasAngle {
 		return angleToDirection(g.Angle)
 	}
@@ -126,39 +140,6 @@ func SampleGradientStopColor(stops []GradientStop, pos float32) Color {
 	return stops[len(stops)-1].Color
 }
 
-// normalizeGradientStops clamps, sorts, and down-samples stops
-// to gradientShaderStopLimit if needed.
-func normalizeGradientStops(stops []GradientStop) []GradientStop {
-	if len(stops) == 0 {
-		return nil
-	}
-	normalized := make([]GradientStop, len(stops))
-	for i, s := range stops {
-		normalized[i] = GradientStop{Color: s.Color, Pos: clampUnit(s.Pos)}
-	}
-	slices.SortFunc(normalized, func(a, b GradientStop) int {
-		if a.Pos < b.Pos {
-			return -1
-		}
-		if a.Pos > b.Pos {
-			return 1
-		}
-		return 0
-	})
-	if len(normalized) <= gradientShaderStopLimit {
-		return normalized
-	}
-	sampled := make([]GradientStop, gradientShaderStopLimit)
-	for i := range gradientShaderStopLimit {
-		samplePos := float32(i) / float32(gradientShaderStopLimit-1)
-		sampled[i] = GradientStop{
-			Color: SampleGradientStopColor(normalized, samplePos),
-			Pos:   samplePos,
-		}
-	}
-	return sampled
-}
-
 // NormalizeGradientStopsInto is the non-allocating variant that
 // reuses caller-provided slices.
 func NormalizeGradientStopsInto(stops []GradientStop, norm, sampled *[]GradientStop) []GradientStop {
@@ -174,15 +155,7 @@ func NormalizeGradientStopsInto(stops []GradientStop, norm, sampled *[]GradientS
 	for _, s := range stops {
 		*norm = append(*norm, GradientStop{Color: s.Color, Pos: clampUnit(s.Pos)})
 	}
-	slices.SortFunc(*norm, func(a, b GradientStop) int {
-		if a.Pos < b.Pos {
-			return -1
-		}
-		if a.Pos > b.Pos {
-			return 1
-		}
-		return 0
-	})
+	slices.SortFunc(*norm, compareStops)
 	if len(*norm) <= gradientShaderStopLimit {
 		*sampled = (*sampled)[:0]
 		return *norm

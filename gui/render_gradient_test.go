@@ -185,24 +185,28 @@ func TestSampleGradientStopColorBoundary(t *testing.T) {
 	}
 }
 
-func TestNormalizeGradientStopsEmpty(t *testing.T) {
-	if got := normalizeGradientStops(nil); got != nil {
+func TestNormalizeGradientStopsIntoEmpty(t *testing.T) {
+	norm := make([]GradientStop, 0)
+	sampled := make([]GradientStop, 0)
+	if got := NormalizeGradientStopsInto(nil, &norm, &sampled); got != nil {
 		t.Errorf("want nil, got %v", got)
 	}
 }
 
-func TestNormalizeGradientStopsSorted(t *testing.T) {
+func TestNormalizeGradientStopsIntoSorted(t *testing.T) {
 	stops := []GradientStop{
 		{Color: Color{R: 255, A: 255, set: true}, Pos: 0.8},
 		{Color: Color{R: 0, A: 255, set: true}, Pos: 0.2},
 	}
-	norm := normalizeGradientStops(stops)
-	if norm[0].Pos > norm[1].Pos {
+	norm := make([]GradientStop, 0, 8)
+	sampled := make([]GradientStop, 0, 8)
+	result := NormalizeGradientStopsInto(stops, &norm, &sampled)
+	if result[0].Pos > result[1].Pos {
 		t.Error("should be sorted")
 	}
 }
 
-func TestNormalizeGradientStopsOverLimit(t *testing.T) {
+func TestNormalizeGradientStopsIntoOverLimit(t *testing.T) {
 	stops := make([]GradientStop, 10)
 	for i := range stops {
 		stops[i] = GradientStop{
@@ -210,9 +214,18 @@ func TestNormalizeGradientStopsOverLimit(t *testing.T) {
 			Pos:   float32(i) / 9.0,
 		}
 	}
-	norm := normalizeGradientStops(stops)
-	if len(norm) != gradientShaderStopLimit {
-		t.Fatalf("want %d, got %d", gradientShaderStopLimit, len(norm))
+	norm := make([]GradientStop, 0, 16)
+	sampled := make([]GradientStop, 0, 8)
+	result := NormalizeGradientStopsInto(stops, &norm, &sampled)
+	if len(result) != gradientShaderStopLimit {
+		t.Fatalf("want %d stops, got %d", gradientShaderStopLimit, len(result))
+	}
+	// First and last sampled positions must be 0.0 and 1.0.
+	if result[0].Pos != 0.0 {
+		t.Errorf("first pos: got %v, want 0.0", result[0].Pos)
+	}
+	if result[len(result)-1].Pos != 1.0 {
+		t.Errorf("last pos: got %v, want 1.0", result[len(result)-1].Pos)
 	}
 }
 
@@ -226,5 +239,52 @@ func TestNormalizeGradientStopsIntoReuse(t *testing.T) {
 	result := NormalizeGradientStopsInto(stops, &norm, &sampled)
 	if len(result) != 2 {
 		t.Fatalf("want 2, got %d", len(result))
+	}
+}
+
+func TestGradientDirNil(t *testing.T) {
+	dx, dy := GradientDir(nil, 100, 100)
+	if dx != 0 || dy != -1 {
+		t.Errorf("nil GradientDef: got (%v,%v), want (0,-1)", dx, dy)
+	}
+}
+
+func TestGradientDirectionDiagonals(t *testing.T) {
+	const eps = 1e-4
+	// Square: all diagonals should be ±√2/2 ≈ ±0.7071.
+	sq := float32(math.Sqrt(2) / 2)
+	cases := []struct {
+		dir  GradientDirection
+		wDx  float32
+		wDy  float32
+		w, h float32
+		name string
+	}{
+		{GradientToTopRight, sq, -sq, 100, 100, "top-right 100x100"},
+		{GradientToBottomRight, sq, sq, 100, 100, "bottom-right 100x100"},
+		{GradientToBottomLeft, -sq, sq, 100, 100, "bottom-left 100x100"},
+		{GradientToTopLeft, -sq, -sq, 100, 100, "top-left 100x100"},
+	}
+	g := &GradientDef{}
+	for _, c := range cases {
+		g.Direction = c.dir
+		dx, dy := GradientDir(g, c.w, c.h)
+		if math.Abs(float64(dx-c.wDx)) > eps ||
+			math.Abs(float64(dy-c.wDy)) > eps {
+			t.Errorf("%s: got (%v,%v), want (%v,%v)",
+				c.name, dx, dy, c.wDx, c.wDy)
+		}
+	}
+	// Non-square (200×100): atan2(100,200) ≈ 26.57°, not 45°.
+	g.Direction = GradientToTopRight
+	dx, dy := GradientDir(g, 200, 100)
+	// CSS angle = 90 - atan2(100,200)°, so dx > dy magnitude.
+	if math.Abs(float64(dx)) < math.Abs(float64(dy)) {
+		t.Errorf("non-square: expected |dx| > |dy|, got (%v,%v)",
+			dx, dy)
+	}
+	if dx <= 0 || dy >= 0 {
+		t.Errorf("non-square top-right: expected dx>0, dy<0, got (%v,%v)",
+			dx, dy)
 	}
 }

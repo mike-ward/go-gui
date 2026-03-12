@@ -36,6 +36,8 @@ type Backend struct {
 	imagePathCache     map[string]string
 	maxImageBytes      int64
 	maxImagePixels     int64
+	normBuf            []gui.GradientStop // reusable buffer for gradient normalization
+	sampledBuf         []gui.GradientStop // reusable buffer for downsampled stops
 }
 
 // New creates an SDL2 backend and initializes the window.
