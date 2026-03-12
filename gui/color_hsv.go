@@ -67,9 +67,9 @@ func ColorFromHSVA(h, s, v float32, a uint8) Color {
 	}
 
 	return Color{
-		R:   uint8((r + m) * 255.0),
-		G:   uint8((g + m) * 255.0),
-		B:   uint8((b + m) * 255.0),
+		R:   uint8((r+m)*255.0 + 0.5),
+		G:   uint8((g+m)*255.0 + 0.5),
+		B:   uint8((b+m)*255.0 + 0.5),
 		A:   a,
 		set: true,
 	}
