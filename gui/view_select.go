@@ -2,6 +2,8 @@ package gui
 
 import "strings"
 
+const selectDropdownMaxH float32 = 200
+
 // SelectCfg configures a select (dropdown) view.
 type SelectCfg struct {
 	ID               string
@@ -119,7 +121,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			ColorBorder:   cfg.ColorBorder,
 			Color:         cfg.Color,
 			MinHeight:     50,
-			MaxHeight:     200,
+			MaxHeight:     selectDropdownMaxH,
 			MinWidth:      cfg.MinWidth,
 			MaxWidth:      cfg.MaxWidth,
 			Float:         true,
@@ -168,13 +170,19 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 					layout.Shape.ColorBorder = colorBorderFocus
 				}
 			},
-			OnKeyDown: makeSelectOnKeyDown(sv.cfg, idScroll),
+			OnKeyDown: makeSelectOnKeyDown(&sv.cfg, idScroll),
 			OnClick: func(_ *Layout, e *Event, w *Window) {
 				ss := StateMap[string, bool](
 					w, nsSelect, capModerate)
 				cur, _ := ss.Get(id)
 				ss.Clear()
-				ss.Set(id, !cur)
+				if !cur {
+					ss.Set(id, true)
+					sh := StateMap[string, int](
+						w, nsSelectHL, capModerate)
+					sh.Set(id, selectInitialHighlight(
+						cfg.Selected, cfg.Options))
+				}
 				e.IsHandled = true
 			},
 			Opacity: 1.0,
@@ -231,14 +239,12 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 			}),
 		},
 		OnClick: func(_ *Layout, e *Event, w *Window) {
+			e.IsHandled = true
 			if onSelect == nil {
 				return
 			}
 			ss := StateMap[string, bool](
 				w, nsSelect, capModerate)
-			if !selectMultiple {
-				ss.Clear()
-			}
 			var s []string
 			if selectMultiple {
 				s = listBoxNextSelectedIDs(
@@ -248,7 +254,6 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 				s = []string{option}
 			}
 			onSelect(s, e, w)
-			e.IsHandled = true
 		},
 		OnHover: func(layout *Layout, _ *Event, w *Window) {
 			w.SetMouseCursor(CursorPointingHand)
@@ -307,13 +312,26 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 	})
 }
 
-func makeSelectOnKeyDown(cfg SelectCfg, idScroll uint32) func(*Layout, *Event, *Window) {
+func makeSelectOnKeyDown(cfg *SelectCfg, idScroll uint32) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
 		selectOnKeyDown(cfg, idScroll, e, w)
 	}
 }
 
-func selectOnKeyDown(cfg SelectCfg, idScroll uint32, e *Event, w *Window) {
+// selectInitialHighlight returns the index of the first selected
+// option, or 0 if none match.
+func selectInitialHighlight(selected, options []string) int {
+	if len(selected) > 0 {
+		for i, opt := range options {
+			if opt == selected[0] {
+				return i
+			}
+		}
+	}
+	return 0
+}
+
+func selectOnKeyDown(cfg *SelectCfg, idScroll uint32, e *Event, w *Window) {
 	if len(cfg.Options) == 0 {
 		return
 	}
@@ -325,16 +343,8 @@ func selectOnKeyDown(cfg SelectCfg, idScroll uint32, e *Event, w *Window) {
 	// Open on space/enter.
 	if (e.KeyCode == KeySpace || e.KeyCode == KeyEnter) && !isOpen {
 		ss.Set(cfg.ID, true)
-		initialIdx := 0
-		if len(cfg.Selected) > 0 {
-			for i, opt := range cfg.Options {
-				if opt == cfg.Selected[0] {
-					initialIdx = i
-					break
-				}
-			}
-		}
-		sh.Set(cfg.ID, initialIdx)
+		sh.Set(cfg.ID, selectInitialHighlight(
+			cfg.Selected, cfg.Options))
 		e.IsHandled = true
 		return
 	}
@@ -346,74 +356,81 @@ func selectOnKeyDown(cfg SelectCfg, idScroll uint32, e *Event, w *Window) {
 		return
 	}
 
-	if isOpen {
-		currentIdx, _ := sh.Get(cfg.ID)
-		action := listCoreNavigate(e.KeyCode, len(cfg.Options))
+	if !isOpen {
+		return
+	}
 
-		if action == ListCoreSelectItem {
-			if currentIdx >= 0 && currentIdx < len(cfg.Options) {
-				option := cfg.Options[currentIdx]
-				if !strings.HasPrefix(option, "---") {
-					if !cfg.SelectMultiple {
-						ss.Clear()
-					}
-					var s []string
-					if cfg.SelectMultiple {
-						s = listBoxNextSelectedIDs(
-							cfg.Selected, option,
-							true)
-					} else {
-						ss.Clear()
-						s = []string{option}
-					}
-					if cfg.OnSelect != nil {
-						cfg.OnSelect(s, e, w)
-					}
+	currentIdx, _ := sh.Get(cfg.ID)
+	action := listCoreNavigate(e.KeyCode, len(cfg.Options))
+
+	if action == ListCoreSelectItem {
+		if currentIdx >= 0 && currentIdx < len(cfg.Options) {
+			option := cfg.Options[currentIdx]
+			if !strings.HasPrefix(option, "---") {
+				var s []string
+				if cfg.SelectMultiple {
+					s = listBoxNextSelectedIDs(
+						cfg.Selected, option, true)
+				} else {
+					ss.Clear()
+					s = []string{option}
+				}
+				if cfg.OnSelect != nil {
+					cfg.OnSelect(s, e, w)
 				}
 			}
-			e.IsHandled = true
-			return
 		}
+		e.IsHandled = true
+		return
+	}
 
-		if action == ListCoreMoveUp || action == ListCoreMoveDown {
-			dir := 1
-			if action == ListCoreMoveUp {
-				dir = -1
-			}
-			nextIdx := currentIdx + dir
-			// Skip subheaders.
-			for nextIdx >= 0 && nextIdx < len(cfg.Options) {
-				if !strings.HasPrefix(cfg.Options[nextIdx], "---") {
-					break
-				}
-				nextIdx += dir
-			}
-			// Clamp.
-			if nextIdx < 0 {
-				nextIdx = 0
-				for nextIdx < len(cfg.Options) &&
-					strings.HasPrefix(cfg.Options[nextIdx], "---") {
-					nextIdx++
-				}
-			} else if nextIdx >= len(cfg.Options) {
-				nextIdx = len(cfg.Options) - 1
-				for nextIdx >= 0 &&
-					strings.HasPrefix(cfg.Options[nextIdx], "---") {
-					nextIdx--
-				}
-			}
-			if nextIdx >= 0 && nextIdx < len(cfg.Options) &&
-				!strings.HasPrefix(cfg.Options[nextIdx], "---") {
-				sh.Set(cfg.ID, nextIdx)
-				rowH := cfg.TextStyle.Size + 4
-				listH := float32(200) - 2*cfg.SizeBorder.Get(
-					DefaultSelectStyle.SizeBorder)
-				scrollEnsureVisible(
-					idScroll, nextIdx, rowH, listH, w)
-				e.IsHandled = true
-			}
+	if action == ListCoreFirst || action == ListCoreLast {
+		var nextIdx int
+		if action == ListCoreFirst {
+			nextIdx = selectNextSelectable(cfg.Options, 0, 1)
+		} else {
+			nextIdx = selectNextSelectable(
+				cfg.Options, len(cfg.Options)-1, -1)
+		}
+		if nextIdx >= 0 {
+			sh.Set(cfg.ID, nextIdx)
+			selectScrollTo(cfg, idScroll, nextIdx, w)
+			e.IsHandled = true
+		}
+		return
+	}
+
+	if action == ListCoreMoveUp || action == ListCoreMoveDown {
+		dir := 1
+		if action == ListCoreMoveUp {
+			dir = -1
+		}
+		nextIdx := selectNextSelectable(
+			cfg.Options, currentIdx+dir, dir)
+		if nextIdx >= 0 {
+			sh.Set(cfg.ID, nextIdx)
+			selectScrollTo(cfg, idScroll, nextIdx, w)
+			e.IsHandled = true
 		}
 	}
+}
+
+// selectNextSelectable finds the next non-subheader option starting
+// at start, stepping by dir (+1 or -1). Returns -1 if none found.
+func selectNextSelectable(options []string, start, dir int) int {
+	for i := start; i >= 0 && i < len(options); i += dir {
+		if !strings.HasPrefix(options[i], "---") {
+			return i
+		}
+	}
+	return -1
+}
+
+func selectScrollTo(cfg *SelectCfg, idScroll uint32, idx int, w *Window) {
+	rowH := cfg.TextStyle.Size + 4
+	listH := selectDropdownMaxH - 2*cfg.SizeBorder.Get(
+		DefaultSelectStyle.SizeBorder)
+	scrollEnsureVisible(idScroll, idx, rowH, listH, w)
 }
 
 func fnvSum32(s string) uint32 {
@@ -446,6 +463,12 @@ func applySelectDefaults(cfg *SelectCfg) {
 	}
 	if !cfg.Padding.IsSet() {
 		cfg.Padding = Some(d.Padding)
+	}
+	if cfg.MinWidth == 0 {
+		cfg.MinWidth = d.MinWidth
+	}
+	if cfg.MaxWidth == 0 {
+		cfg.MaxWidth = d.MaxWidth
 	}
 
 	if cfg.TextStyle == (TextStyle{}) {

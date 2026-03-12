@@ -105,7 +105,6 @@ type SelectStyle struct {
 	Padding          Padding
 	SizeBorder       float32
 	Radius           float32
-	Shadow           *BoxShadow
 	TextStyleNormal  TextStyle
 	SubheadingStyle  TextStyle
 	PlaceholderStyle TextStyle

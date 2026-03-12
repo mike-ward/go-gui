@@ -22,7 +22,6 @@ func TestSelectGeneratesClosedLayout(t *testing.T) {
 }
 
 func TestSelectGeneratesDropdownWhenOpen(t *testing.T) {
-	_ = t
 	w := &Window{}
 	ss := StateMap[string, bool](w, nsSelect, capModerate)
 	ss.Set("s2", true)
@@ -37,29 +36,19 @@ func TestSelectGeneratesDropdownWhenOpen(t *testing.T) {
 	sv := v.(*selectView)
 	layout := sv.GenerateLayout(w)
 
-	// The layout should have children including the dropdown.
-	// Count children — look for one with Float=true.
-	found := false
-	for i := range layout.Children {
-		if layout.Children[i].Shape != nil &&
-			layout.Children[i].Shape.Float {
-			found = true
-			break
-		}
+	// When open, layout should have 4 children: text, spacer,
+	// arrow, and the float dropdown.
+	if len(layout.Children) != 4 {
+		t.Errorf("expected 4 children when open, got %d",
+			len(layout.Children))
 	}
-	// Note: children are populated by view tree building,
-	// but GenerateLayout returns the outer shape. The float
-	// child is in Content. Check the selectView produces
-	// content with 4 items when open.
-	_ = found
-	// The returned layout is from containerView.GenerateLayout
-	// which does not build children — that happens in layout
-	// pipeline. Instead, verify the selectView.Content()
-	// returns nil (children are built in GenerateLayout).
+	last := layout.Children[len(layout.Children)-1]
+	if last.Shape == nil || !last.Shape.Float {
+		t.Error("expected last child to be a float dropdown")
+	}
 }
 
 func TestSelectArrowChangesWithState(t *testing.T) {
-	_ = t
 	w := &Window{}
 	v := Select(SelectCfg{
 		ID:       "s3",
@@ -68,14 +57,21 @@ func TestSelectArrowChangesWithState(t *testing.T) {
 	})
 	sv := v.(*selectView)
 
-	// Closed state.
-	_ = sv.GenerateLayout(w)
+	// Closed: 3 children (text, spacer, arrow).
+	layout := sv.GenerateLayout(w)
+	if len(layout.Children) != 3 {
+		t.Fatalf("expected 3 children when closed, got %d",
+			len(layout.Children))
+	}
 
-	// Open state.
+	// Open: 4 children (text, spacer, arrow, dropdown).
 	ss := StateMap[string, bool](w, nsSelect, capModerate)
 	ss.Set("s3", true)
-	_ = sv.GenerateLayout(w)
-	// Arrow text is embedded in content views — verify no panic.
+	layout = sv.GenerateLayout(w)
+	if len(layout.Children) != 4 {
+		t.Errorf("expected 4 children when open, got %d",
+			len(layout.Children))
+	}
 }
 
 func TestSelectOptionViewOnClickFires(t *testing.T) {
@@ -136,7 +132,7 @@ func TestSelectKeyboardNavigation(t *testing.T) {
 
 	// Open via space.
 	e := &Event{KeyCode: KeySpace}
-	selectOnKeyDown(cfg, idScroll, e, w)
+	selectOnKeyDown(&cfg, idScroll, e, w)
 	if !e.IsHandled {
 		t.Error("expected space open to be handled")
 	}
@@ -148,7 +144,7 @@ func TestSelectKeyboardNavigation(t *testing.T) {
 
 	// Navigate down.
 	e = &Event{KeyCode: KeyDown}
-	selectOnKeyDown(cfg, idScroll, e, w)
+	selectOnKeyDown(&cfg, idScroll, e, w)
 	if !e.IsHandled {
 		t.Error("expected down navigation to be handled")
 	}
@@ -160,7 +156,7 @@ func TestSelectKeyboardNavigation(t *testing.T) {
 
 	// Close via escape.
 	e = &Event{KeyCode: KeyEscape}
-	selectOnKeyDown(cfg, idScroll, e, w)
+	selectOnKeyDown(&cfg, idScroll, e, w)
 	if !e.IsHandled {
 		t.Error("expected escape close to be handled")
 	}
@@ -185,11 +181,11 @@ func TestSelectKeyboardSelectItem(t *testing.T) {
 
 	// Open.
 	e := &Event{KeyCode: KeySpace}
-	selectOnKeyDown(cfg, idScroll, e, w)
+	selectOnKeyDown(&cfg, idScroll, e, w)
 
 	// Select current (A at index 0).
 	e = &Event{KeyCode: KeyEnter}
-	selectOnKeyDown(cfg, idScroll, e, w)
+	selectOnKeyDown(&cfg, idScroll, e, w)
 	if !e.IsHandled {
 		t.Error("expected enter select to be handled")
 	}
@@ -210,11 +206,11 @@ func TestSelectSkipsSubHeaders(t *testing.T) {
 
 	// Open.
 	e := &Event{KeyCode: KeySpace}
-	selectOnKeyDown(cfg, idScroll, e, w)
+	selectOnKeyDown(&cfg, idScroll, e, w)
 
 	// Navigate down past subheader.
 	e = &Event{KeyCode: KeyDown}
-	selectOnKeyDown(cfg, idScroll, e, w)
+	selectOnKeyDown(&cfg, idScroll, e, w)
 	if !e.IsHandled {
 		t.Error("expected navigation to be handled")
 	}
@@ -223,6 +219,81 @@ func TestSelectSkipsSubHeaders(t *testing.T) {
 	// Should skip "---Section" and land on "B" (index 2).
 	if idx != 2 {
 		t.Errorf("expected 2 (skip subheader), got %d", idx)
+	}
+}
+
+func TestSelectHomeEndKeys(t *testing.T) {
+	w := &Window{}
+	cfg := SelectCfg{
+		ID:       "she",
+		Options:  []string{"A", "---S", "B", "C"},
+		OnSelect: func([]string, *Event, *Window) {},
+	}
+	applySelectDefaults(&cfg)
+	idScroll := fnvSum32(cfg.ID + ".dropdown")
+
+	// Open.
+	e := &Event{KeyCode: KeySpace}
+	selectOnKeyDown(&cfg, idScroll, e, w)
+
+	// End → last selectable (C at index 3).
+	e = &Event{KeyCode: KeyEnd}
+	selectOnKeyDown(&cfg, idScroll, e, w)
+	if !e.IsHandled {
+		t.Error("expected End to be handled")
+	}
+	sh := StateMap[string, int](w, nsSelectHL, capModerate)
+	idx, _ := sh.Get("she")
+	if idx != 3 {
+		t.Errorf("expected 3 (C), got %d", idx)
+	}
+
+	// Home → first selectable (A at index 0).
+	e = &Event{KeyCode: KeyHome}
+	selectOnKeyDown(&cfg, idScroll, e, w)
+	if !e.IsHandled {
+		t.Error("expected Home to be handled")
+	}
+	idx, _ = sh.Get("she")
+	if idx != 0 {
+		t.Errorf("expected 0 (A), got %d", idx)
+	}
+}
+
+func TestSelectClickOpenResetsHighlight(t *testing.T) {
+	w := &Window{}
+	cfg := SelectCfg{
+		ID:       "scr",
+		Options:  []string{"A", "B", "C"},
+		Selected: []string{"B"},
+		OnSelect: func([]string, *Event, *Window) {},
+	}
+	applySelectDefaults(&cfg)
+	v := Select(cfg)
+	sv := v.(*selectView)
+	layout := sv.GenerateLayout(w)
+
+	// Simulate click to open.
+	e := &Event{MouseButton: MouseLeft}
+	layout.Shape.Events.OnClick(&layout, e, w)
+
+	sh := StateMap[string, int](w, nsSelectHL, capModerate)
+	idx, _ := sh.Get("scr")
+	if idx != 1 {
+		t.Errorf("expected highlight 1 (B), got %d", idx)
+	}
+}
+
+func TestSelectDefaultMinMaxWidth(t *testing.T) {
+	cfg := SelectCfg{ID: "sdm"}
+	applySelectDefaults(&cfg)
+	if cfg.MinWidth != DefaultSelectStyle.MinWidth {
+		t.Errorf("expected MinWidth %v, got %v",
+			DefaultSelectStyle.MinWidth, cfg.MinWidth)
+	}
+	if cfg.MaxWidth != DefaultSelectStyle.MaxWidth {
+		t.Errorf("expected MaxWidth %v, got %v",
+			DefaultSelectStyle.MaxWidth, cfg.MaxWidth)
 	}
 }
 
@@ -238,7 +309,6 @@ func TestFnvSum32Consistency(t *testing.T) {
 }
 
 func TestSelectPlaceholderWhenEmpty(t *testing.T) {
-	_ = t
 	w := &Window{}
 	v := Select(SelectCfg{
 		ID:          "s9",
@@ -248,8 +318,14 @@ func TestSelectPlaceholderWhenEmpty(t *testing.T) {
 	})
 	sv := v.(*selectView)
 	layout := sv.GenerateLayout(w)
-	_ = layout
-	// Verify it doesn't panic with empty selection.
+	// First child is the text; should show placeholder.
+	if len(layout.Children) < 1 || layout.Children[0].Shape == nil {
+		t.Fatal("expected text child")
+	}
+	if layout.Children[0].Shape.TC == nil ||
+		layout.Children[0].Shape.TC.Text != "Choose..." {
+		t.Error("expected placeholder text 'Choose...'")
+	}
 }
 
 func TestSelectMultipleJoinsSelected(t *testing.T) {
