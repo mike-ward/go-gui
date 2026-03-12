@@ -203,7 +203,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	idScroll := cfg.IDScroll
 
 	var dragIdxByRow map[int]int
-	if canReorder && (dragging || drag.started) {
+	if canReorder {
 		dragIdxByRow = make(map[int]int, len(cfg.Data))
 		di := 0
 		for i := range cfg.Data {
