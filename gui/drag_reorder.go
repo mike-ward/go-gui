@@ -1,9 +1,6 @@
 package gui
 
-import (
-	"hash/fnv"
-	"time"
-)
+import "time"
 
 // drag_reorder.go provides shared drag-to-reorder infrastructure
 // for ListBox, TabControl, and Tree widgets. One active drag at
@@ -201,23 +198,36 @@ func dragReorderIDsChanged(state dragReorderState, meta dragReorderIDsMeta) bool
 
 // --- lifecycle functions ---
 
+// dragReorderStartCfg groups parameters for dragReorderStart.
+type dragReorderStartCfg struct {
+	DragKey       string
+	Index         int
+	ItemID        string
+	Axis          DragReorderAxis
+	ItemIDs       []string
+	OnReorder     func(string, string, *Window)
+	ItemLayoutIDs []string
+	MidsOffset    int
+	IDScroll      uint32
+	Layout        *Layout
+	Event         *Event
+}
+
 // dragReorderStart initiates a drag-reorder from an OnClick
 // handler. Captures initial mouse/item positions and locks
 // the mouse.
-func dragReorderStart(
-	dragKey string,
-	index int,
-	itemID string,
-	axis DragReorderAxis,
-	itemIDs []string,
-	onReorder func(string, string, *Window),
-	itemLayoutIDs []string,
-	midsOffset int,
-	idScroll uint32,
-	layout *Layout,
-	e *Event,
-	w *Window,
-) {
+func dragReorderStart(cfg dragReorderStartCfg, w *Window) {
+	dragKey := cfg.DragKey
+	index := cfg.Index
+	itemID := cfg.ItemID
+	axis := cfg.Axis
+	itemIDs := cfg.ItemIDs
+	onReorder := cfg.OnReorder
+	itemLayoutIDs := cfg.ItemLayoutIDs
+	midsOffset := cfg.MidsOffset
+	idScroll := cfg.IDScroll
+	layout := cfg.Layout
+	e := cfg.Event
 	var parentX, parentY float32
 	if layout.Parent != nil {
 		parentX = layout.Parent.Shape.X
@@ -504,6 +514,8 @@ func dragReorderCancel(dragKey string, w *Window) {
 	dragReorderSet(w, dragKey, state)
 	w.MouseUnlock()
 	w.AnimationRemove(dragReorderScrollAnimID)
+	// UpdateWindow before Clear: the rebuild sees cancelled=true,
+	// hides ghost/gap, then Clear removes state for next frame.
 	w.UpdateWindow()
 	dragReorderClear(w, dragKey)
 }
@@ -785,11 +797,19 @@ func ReorderIndices(
 
 // dragReorderIDsSignature computes a stable FNV-1a signature
 // of the item IDs to detect mid-drag list mutations.
+// Inlined to avoid fnv.New64a() interface alloc and per-id
+// string→[]byte conversions (called every frame during drag).
 func dragReorderIDsSignature(ids []string) uint64 {
-	h := fnv.New64a()
+	const offset = uint64(14695981039346656037)
+	const prime = uint64(1099511628211)
+	h := offset
 	for _, id := range ids {
-		h.Write([]byte(id))   //nolint:errcheck
-		h.Write([]byte{0x1f}) //nolint:errcheck
+		for i := range len(id) {
+			h ^= uint64(id[i])
+			h *= prime
+		}
+		h ^= 0x1f
+		h *= prime
 	}
-	return h.Sum64()
+	return h
 }

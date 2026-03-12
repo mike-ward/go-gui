@@ -658,10 +658,19 @@ func treeDragRowView(
 			}),
 		},
 		OnClick: func(layout *Layout, e *Event, w *Window) {
-			dragReorderStart(treeID, sibIdx, rowID,
-				DragReorderVertical, siblingIDs, onReorder,
-				itemLayoutIDs, midsOffset, idScroll,
-				layout, e, w)
+			dragReorderStart(dragReorderStartCfg{
+				DragKey:       treeID,
+				Index:         sibIdx,
+				ItemID:        rowID,
+				Axis:          DragReorderVertical,
+				ItemIDs:       siblingIDs,
+				OnReorder:     onReorder,
+				ItemLayoutIDs: itemLayoutIDs,
+				MidsOffset:    midsOffset,
+				IDScroll:      idScroll,
+				Layout:        layout,
+				Event:         e,
+			}, w)
 			treeRowClick(
 				treeID, row, rootFocusID, onSelect, onLazyLoad, e, w)
 		},

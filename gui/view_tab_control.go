@@ -337,9 +337,17 @@ func makeTabDragClick(
 	idFocus uint32,
 ) func(*Layout, *Event, *Window) {
 	return func(layout *Layout, e *Event, w *Window) {
-		dragReorderStart(controlID, dragIdx, itemID,
-			DragReorderHorizontal, tabIDs, onReorder,
-			tabLayoutIDs, 0, 0, layout, e, w)
+		dragReorderStart(dragReorderStartCfg{
+			DragKey:       controlID,
+			Index:         dragIdx,
+			ItemID:        itemID,
+			Axis:          DragReorderHorizontal,
+			ItemIDs:       tabIDs,
+			OnReorder:     onReorder,
+			ItemLayoutIDs: tabLayoutIDs,
+			Layout:        layout,
+			Event:         e,
+		}, w)
 		if onSelect != nil {
 			onSelect(itemID, e, w)
 		}
@@ -512,6 +520,8 @@ func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
+			// canReorder always true in this path (non-reorderable
+			// tabs use the static branch above).
 			if dragReorderEscape(
 				controlID, e.KeyCode, w) {
 				e.IsHandled = true

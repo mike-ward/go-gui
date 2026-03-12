@@ -176,9 +176,12 @@ func TestDragReorderStartSetsLayoutValidity(t *testing.T) {
 	noop := func(string, string, *Window) {}
 
 	dragKeyOK := "drag_layout_ok"
-	dragReorderStart(dragKeyOK, 0, "a", DragReorderVertical,
-		[]string{"a", "b"}, noop, []string{"a", "b"}, 0, 0,
-		item, e, w)
+	dragReorderStart(dragReorderStartCfg{
+		DragKey: dragKeyOK, Index: 0, ItemID: "a",
+		Axis: DragReorderVertical, ItemIDs: []string{"a", "b"},
+		OnReorder: noop, ItemLayoutIDs: []string{"a", "b"},
+		Layout: item, Event: e,
+	}, w)
 	stateOK := dragReorderGet(w, dragKeyOK)
 	if !stateOK.started || !stateOK.layoutsValid {
 		t.Error("valid layouts should set layoutsValid=true")
@@ -186,9 +189,12 @@ func TestDragReorderStartSetsLayoutValidity(t *testing.T) {
 
 	w.MouseUnlock()
 	dragKeyMissing := "drag_layout_missing"
-	dragReorderStart(dragKeyMissing, 0, "a", DragReorderVertical,
-		[]string{"a", "b"}, noop, []string{"a", "missing"}, 0, 0,
-		item, e, w)
+	dragReorderStart(dragReorderStartCfg{
+		DragKey: dragKeyMissing, Index: 0, ItemID: "a",
+		Axis: DragReorderVertical, ItemIDs: []string{"a", "b"},
+		OnReorder: noop, ItemLayoutIDs: []string{"a", "missing"},
+		Layout: item, Event: e,
+	}, w)
 	stateMissing := dragReorderGet(w, dragKeyMissing)
 	if !stateMissing.started || stateMissing.layoutsValid {
 		t.Error("missing layout should set layoutsValid=false")
@@ -327,10 +333,13 @@ func TestDragReorderCancelsOnMidDragMutation(t *testing.T) {
 	e := &Event{MouseX: 1, MouseY: 1}
 	dragKey := "drag_mutation"
 	called := false
-	dragReorderStart(dragKey, 0, "a", DragReorderVertical,
-		[]string{"a", "b", "c"},
-		func(string, string, *Window) { called = true },
-		[]string{"a", "b", "c"}, 0, 0, item, e, w)
+	dragReorderStart(dragReorderStartCfg{
+		DragKey: dragKey, Index: 0, ItemID: "a",
+		Axis: DragReorderVertical, ItemIDs: []string{"a", "b", "c"},
+		OnReorder:     func(string, string, *Window) { called = true },
+		ItemLayoutIDs: []string{"a", "b", "c"},
+		Layout: item, Event: e,
+	}, w)
 	dragReorderIDsMetaSet(w, dragKey, []string{"a", "b", "c"})
 
 	// Simulate list mutation before mouse-up.
@@ -370,6 +379,71 @@ func TestDragReorderCancelsOnMidDragMoveMutation(t *testing.T) {
 	newState := dragReorderGet(w, dragKey)
 	if newState.started || newState.active {
 		t.Error("state should be cleared after move mutation")
+	}
+}
+
+func TestDragReorderGhostViewOffset(t *testing.T) {
+	w := &Window{}
+	w.layout = Layout{Shape: &Shape{ID: "root"}}
+	state := dragReorderState{
+		startMouseX: 50, startMouseY: 100,
+		mouseX: 70, mouseY: 130,
+		itemX: 10, itemY: 80,
+		itemWidth: 200, itemHeight: 30,
+		parentX: 5, parentY: 5,
+	}
+	ghost := dragReorderGhostView(state, Rectangle(RectangleCfg{}))
+	ly := GenerateViewLayout(ghost, w)
+
+	// ghostX = mouseX - (startMouseX - itemX) = 70 - (50-10) = 30
+	// floatOffsetX = ghostX - parentX = 30 - 5 = 25
+	wantOffX := float32(25)
+	if ly.Shape.FloatOffsetX != wantOffX {
+		t.Errorf("FloatOffsetX = %v, want %v",
+			ly.Shape.FloatOffsetX, wantOffX)
+	}
+
+	// ghostY = mouseY - (startMouseY - itemY) = 130 - (100-80) = 110
+	// floatOffsetY = ghostY - parentY = 110 - 5 = 105
+	wantOffY := float32(105)
+	if ly.Shape.FloatOffsetY != wantOffY {
+		t.Errorf("FloatOffsetY = %v, want %v",
+			ly.Shape.FloatOffsetY, wantOffY)
+	}
+
+	if ly.Shape.Width != 200 || ly.Shape.Height != 30 {
+		t.Errorf("ghost size = %vx%v, want 200x30",
+			ly.Shape.Width, ly.Shape.Height)
+	}
+}
+
+func TestDragReorderGapViewSizing(t *testing.T) {
+	w := &Window{}
+	w.layout = Layout{Shape: &Shape{ID: "root"}}
+	state := dragReorderState{
+		itemWidth: 120, itemHeight: 40,
+	}
+
+	vGap := dragReorderGapView(state, DragReorderVertical)
+	vLy := GenerateViewLayout(vGap, w)
+	if vLy.Shape.Width != 120 || vLy.Shape.Height != 40 {
+		t.Errorf("vertical gap = %vx%v, want 120x40",
+			vLy.Shape.Width, vLy.Shape.Height)
+	}
+	if vLy.Shape.Sizing != FillFixed {
+		t.Errorf("vertical gap sizing = %v, want FillFixed",
+			vLy.Shape.Sizing)
+	}
+
+	hGap := dragReorderGapView(state, DragReorderHorizontal)
+	hLy := GenerateViewLayout(hGap, w)
+	if hLy.Shape.Width != 120 || hLy.Shape.Height != 40 {
+		t.Errorf("horizontal gap = %vx%v, want 120x40",
+			hLy.Shape.Width, hLy.Shape.Height)
+	}
+	if hLy.Shape.Sizing != FixedFit {
+		t.Errorf("horizontal gap sizing = %v, want FixedFit",
+			hLy.Shape.Sizing)
 	}
 }
 

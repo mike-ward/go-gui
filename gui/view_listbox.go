@@ -202,14 +202,16 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	onReorder := cfg.OnReorder
 	idScroll := cfg.IDScroll
 
-	var dragIdxByRow map[int]int
+	var dragIdxByRow []int
 	if canReorder {
-		dragIdxByRow = make(map[int]int, len(cfg.Data))
+		dragIdxByRow = make([]int, len(cfg.Data))
 		di := 0
 		for i := range cfg.Data {
 			if !cfg.Data[i].IsSubheading {
 				dragIdxByRow[i] = di
 				di++
+			} else {
+				dragIdxByRow[i] = -1
 			}
 		}
 	}
@@ -260,7 +262,12 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 		if idx < 0 || idx >= len(cfg.Data) {
 			continue
 		}
-		di, isDraggable := dragIdxByRow[idx]
+		di := -1
+		isDraggable := false
+		if dragIdxByRow != nil && idx < len(dragIdxByRow) {
+			di = dragIdxByRow[idx]
+			isDraggable = di >= 0
+		}
 
 		if dragging && isDraggable && di == drag.currentIndex {
 			list = append(list,
@@ -441,12 +448,20 @@ func listBoxReorderItemView(
 		Sizing:     FillFit,
 		Content:    []View{content},
 		OnClick: func(layout *Layout, e *Event, w *Window) {
-			dragReorderStart(listBoxID, dragIdx, datID,
-				DragReorderVertical, itemIDs, onReorder,
-				itemLayoutIDs, midsOffset, idScroll,
-				layout, e, w)
-			ds := dragReorderGet(w, listBoxID)
-			if hasOnSelect && !ds.active {
+			dragReorderStart(dragReorderStartCfg{
+				DragKey:       listBoxID,
+				Index:         dragIdx,
+				ItemID:        datID,
+				Axis:          DragReorderVertical,
+				ItemIDs:       itemIDs,
+				OnReorder:     onReorder,
+				ItemLayoutIDs: itemLayoutIDs,
+				MidsOffset:    midsOffset,
+				IDScroll:      idScroll,
+				Layout:        layout,
+				Event:         e,
+			}, w)
+			if hasOnSelect {
 				ids := listBoxNextSelectedIDs(
 					selectedIDs, datID, isMultiple)
 				onSelect(ids, e, w)
