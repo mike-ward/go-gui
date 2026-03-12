@@ -123,7 +123,8 @@ func demoDialog(w *gui.Window) gui.View {
 						ID:      "btn-open-file",
 						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
-							gui.Text(gui.TextCfg{Text: gui.IconFolder + " Open", TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: gui.IconFolder, TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: "Open", TextStyle: t.N3}),
 						},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 							np := w.NativePlatformBackend()
@@ -146,7 +147,8 @@ func demoDialog(w *gui.Window) gui.View {
 						ID:      "btn-save-file",
 						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
-							gui.Text(gui.TextCfg{Text: gui.IconDownload + " Save", TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: gui.IconDownload, TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: "Save", TextStyle: t.N3}),
 						},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 							np := w.NativePlatformBackend()
@@ -169,7 +171,8 @@ func demoDialog(w *gui.Window) gui.View {
 						ID:      "btn-folder",
 						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
-							gui.Text(gui.TextCfg{Text: gui.IconFolder + " Folder", TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: gui.IconFolder, TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: "Folder", TextStyle: t.N3}),
 						},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 							np := w.NativePlatformBackend()
@@ -210,7 +213,8 @@ func demoNotification(w *gui.Window) gui.View {
 				ID:      "btn-notify",
 				Padding: gui.SomeP(8, 16, 8, 16),
 				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: gui.IconBell + " Send Notification", TextStyle: t.N3}),
+					gui.Text(gui.TextCfg{Text: gui.IconBell, TextStyle: t.N3}),
+					gui.Text(gui.TextCfg{Text: "Send Notification", TextStyle: t.N3}),
 				},
 				OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 					w.NativeNotification(gui.NativeNotificationCfg{

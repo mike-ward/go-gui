@@ -16,7 +16,7 @@ func demoRectangle(_ *gui.Window) gui.View {
 		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Column(gui.ContainerCfg{
-				Width:   80,
+				Width:   100,
 				Height:  60,
 				Sizing:  gui.FixedFixed,
 				Color:   t.ColorActive,
@@ -26,7 +26,7 @@ func demoRectangle(_ *gui.Window) gui.View {
 				Content: []gui.View{gui.Text(gui.TextCfg{Text: "Sharp", TextStyle: t.N2})},
 			}),
 			gui.Column(gui.ContainerCfg{
-				Width:   80,
+				Width:   100,
 				Height:  60,
 				Sizing:  gui.FixedFixed,
 				Color:   t.ColorSelect,
@@ -36,7 +36,7 @@ func demoRectangle(_ *gui.Window) gui.View {
 				Content: []gui.View{gui.Text(gui.TextCfg{Text: "Rounded", TextStyle: t.N2})},
 			}),
 			gui.Column(gui.ContainerCfg{
-				Width:       80,
+				Width:       100,
 				Height:      60,
 				Sizing:      gui.FixedFixed,
 				Color:       gui.ColorTransparent,
@@ -48,7 +48,7 @@ func demoRectangle(_ *gui.Window) gui.View {
 				Content:     []gui.View{gui.Text(gui.TextCfg{Text: "Border", TextStyle: t.N2})},
 			}),
 			gui.Column(gui.ContainerCfg{
-				Width:  80,
+				Width:  100,
 				Height: 60,
 				Sizing: gui.FixedFixed,
 				Color:  t.ColorHover,

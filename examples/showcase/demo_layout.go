@@ -426,7 +426,8 @@ func demoPrinting(w *gui.Window) gui.View {
 						ID:      "btn-export-pdf",
 						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
-							gui.Text(gui.TextCfg{Text: gui.IconDownload + " Export PDF", TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: gui.IconExport, TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: "Export PDF", TextStyle: t.N3}),
 						},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 							a := gui.State[ShowcaseApp](w)
@@ -448,7 +449,8 @@ func demoPrinting(w *gui.Window) gui.View {
 						ID:      "btn-print",
 						Padding: gui.SomeP(8, 16, 8, 16),
 						Content: []gui.View{
-							gui.Text(gui.TextCfg{Text: gui.IconLayout + " Print", TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: gui.IconPrint, TextStyle: t.N3}),
+							gui.Text(gui.TextCfg{Text: "Print", TextStyle: t.N3}),
 						},
 						OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 							a := gui.State[ShowcaseApp](w)
