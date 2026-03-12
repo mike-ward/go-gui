@@ -8,7 +8,7 @@ import (
 
 // ValidImageExtensions lists supported image file extensions.
 var ValidImageExtensions = []string{
-	".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp",
+	".png", ".jpg", ".jpeg",
 }
 
 // ValidateImageExtension checks that the file has a supported
@@ -24,10 +24,14 @@ func ValidateImageExtension(fileName string) error {
 }
 
 // ValidateImagePath checks that the file path is safe and has a
-// valid extension. Rejects paths containing "..".
+// valid extension. Rejects paths with ".." path components.
+// After filepath.Clean, ".." only survives as a leading component
+// (e.g. "../foo"), so a prefix check suffices.
 func ValidateImagePath(fileName string) error {
-	if strings.Contains(fileName, "..") {
+	clean := filepath.Clean(fileName)
+	if clean == ".." ||
+		strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("invalid image path: contains ..")
 	}
-	return ValidateImageExtension(fileName)
+	return ValidateImageExtension(clean)
 }

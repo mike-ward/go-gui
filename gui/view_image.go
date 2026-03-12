@@ -170,9 +170,18 @@ func errorTextLayout(src string, w *Window) Layout {
 	return tv.GenerateLayout(w)
 }
 
+// defaultMaxDownloadBytes is the download size limit when
+// WindowCfg.MaxImageBytes is not set.
+const defaultMaxDownloadBytes = int64(16 * 1024 * 1024)
+
 // downloadImage fetches a remote image to a local cache path.
-// Validates size (<50MB) and content type (image/*).
+// Respects WindowCfg.MaxImageBytes (default 16MB).
 func downloadImage(url, basePath string, w *Window) {
+	maxSize := w.Config.MaxImageBytes
+	if maxSize <= 0 {
+		maxSize = defaultMaxDownloadBytes
+	}
+
 	ctx, cancel := context.WithTimeout(
 		context.Background(), 30*time.Second)
 	defer cancel()
@@ -193,7 +202,6 @@ func downloadImage(url, basePath string, w *Window) {
 	_ = resp.Body.Close()
 
 	// Validate content length.
-	const maxSize = 50 * 1024 * 1024
 	if resp.ContentLength > maxSize {
 		log.Printf("image too large (%d bytes): %s",
 			resp.ContentLength, url)
@@ -234,11 +242,17 @@ func downloadImage(url, basePath string, w *Window) {
 		removeDownload(url, w)
 		return
 	}
-	_, err = io.Copy(f, resp2.Body)
+	written, err := io.Copy(f, io.LimitReader(resp2.Body, maxSize))
 	_ = f.Close()
 	if err != nil {
 		_ = os.Remove(path)
 		log.Printf("image download write: %v", err)
+		removeDownload(url, w)
+		return
+	}
+	if written >= maxSize {
+		_ = os.Remove(path)
+		log.Printf("image download body exceeds limit: %s", url)
 		removeDownload(url, w)
 		return
 	}
@@ -270,12 +284,6 @@ func contentTypeToExt(ct string) string {
 		return ".png"
 	case strings.HasPrefix(ct, "image/jpeg"):
 		return ".jpg"
-	case strings.HasPrefix(ct, "image/gif"):
-		return ".gif"
-	case strings.HasPrefix(ct, "image/webp"):
-		return ".webp"
-	case strings.HasPrefix(ct, "image/bmp"):
-		return ".bmp"
 	default:
 		return ".png"
 	}
@@ -285,7 +293,7 @@ func contentTypeToExt(ct string) string {
 // extension matching the given base path.
 func findCachedImage(basePath string) string {
 	for _, ext := range []string{
-		".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg",
+		".png", ".jpg", ".jpeg", ".svg",
 	} {
 		candidate := basePath + ext
 		if _, err := os.Stat(candidate); err == nil {

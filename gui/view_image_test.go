@@ -126,9 +126,6 @@ func TestContentTypeToExt(t *testing.T) {
 	}{
 		{"image/png", ".png"},
 		{"image/jpeg", ".jpg"},
-		{"image/gif", ".gif"},
-		{"image/webp", ".webp"},
-		{"image/bmp", ".bmp"},
 		{"image/svg+xml", ".svg"},
 		{"image/unknown", ".png"},
 	}

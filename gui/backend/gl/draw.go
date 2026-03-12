@@ -284,6 +284,9 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 			log.Printf("gl: drawImage: %v", err)
 			return
 		}
+		if len(b.imagePathCache) >= 1024 {
+			clear(b.imagePathCache)
+		}
 		b.imagePathCache[r.Resource] = path
 	}
 	if path == "" {

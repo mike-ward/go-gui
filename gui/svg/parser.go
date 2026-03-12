@@ -143,6 +143,9 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 	if len(p.order) > maxParsedRetained {
 		evictHash := p.order[0]
 		p.order = p.order[1:]
+		if len(p.order) < cap(p.order)/2 {
+			p.order = append([]uint64(nil), p.order...)
+		}
 		if entry, ok := p.byHash[evictHash]; ok {
 			delete(p.byParsed, entry.parsed)
 			delete(p.byHash, evictHash)

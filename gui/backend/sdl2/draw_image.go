@@ -14,6 +14,7 @@ import (
 	"unsafe"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -46,7 +47,23 @@ func newTexCache(maxSize int) texCache {
 
 func (c *texCache) get(path string) (texCacheEntry, bool) {
 	e, ok := c.data[path]
+	if ok {
+		c.promote(path)
+	}
 	return e, ok
+}
+
+// promote moves path to the end of the order slice (most
+// recently used).
+func (c *texCache) promote(path string) {
+	for i, k := range c.order {
+		if k == path {
+			c.order = append(
+				c.order[:i], c.order[i+1:]...)
+			c.order = append(c.order, path)
+			return
+		}
+	}
 }
 
 func (c *texCache) set(path string, entry texCacheEntry) {
@@ -57,6 +74,9 @@ func (c *texCache) set(path string, entry texCacheEntry) {
 	if len(c.order) >= c.maxSize {
 		evict := c.order[0]
 		c.order = c.order[1:]
+		if len(c.order) < cap(c.order)/2 {
+			c.order = append([]string(nil), c.order...)
+		}
 		if old, ok := c.data[evict]; ok {
 			if old.tex != nil {
 				_ = old.tex.Destroy()
@@ -142,6 +162,9 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 			log.Printf("sdl2: drawImage: %v", err)
 			return
 		}
+		if len(b.imagePathCache) >= 1024 {
+			clear(b.imagePathCache)
+		}
 		b.imagePathCache[r.Resource] = path
 	}
 	if path == "" {
@@ -150,7 +173,8 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 
 	entry, ok := b.texCache.get(path)
 	if !ok {
-		entry, err := b.loadTexture(path)
+		var err error
+		entry, err = b.loadTexture(path)
 		if err != nil {
 			log.Printf("sdl2: drawImage: %v", err)
 			// Cache nil sentinel to avoid repeated load attempts.
@@ -262,63 +286,18 @@ func (b *Backend) validateImageFile(path string, f *os.File) error {
 	return nil
 }
 
+// Delegating wrappers — shared implementation in imgpath.
+
 func resolvePathWithParentFallback(path string) string {
-	if p, err := filepath.EvalSymlinks(path); err == nil {
-		return p
-	}
-	dir := filepath.Dir(path)
-	if d, err := filepath.EvalSymlinks(dir); err == nil {
-		return filepath.Join(d, filepath.Base(path))
-	}
-	return path
+	return imgpath.ResolveWithParentFallback(path)
 }
 
 func validatePathAllowed(path string, allowedRoots []string) error {
-	for i := range allowedRoots {
-		root := strings.TrimSpace(allowedRoots[i])
-		if root == "" {
-			continue
-		}
-		if pathWithinRoot(path, root) {
-			return nil
-		}
-		rootAbs, err := filepath.Abs(root)
-		if err != nil {
-			continue
-		}
-		if pathWithinRoot(path, resolvePathWithParentFallback(rootAbs)) {
-			return nil
-		}
-	}
-	return fmt.Errorf("image path not allowed: %s", path)
+	return imgpath.ValidateAllowed(path, allowedRoots)
 }
 
 func normalizeAllowedRoots(allowedRoots []string) []string {
-	if len(allowedRoots) == 0 {
-		return nil
-	}
-	roots := make([]string, 0, len(allowedRoots))
-	for i := range allowedRoots {
-		root := strings.TrimSpace(allowedRoots[i])
-		if root == "" {
-			continue
-		}
-		rootAbs, err := filepath.Abs(root)
-		if err != nil {
-			continue
-		}
-		roots = append(roots, resolvePathWithParentFallback(rootAbs))
-	}
-	return roots
-}
-
-func pathWithinRoot(path, root string) bool {
-	rel, err := filepath.Rel(root, path)
-	if err != nil {
-		return false
-	}
-	return rel == "." || (rel != ".." &&
-		!strings.HasPrefix(rel, ".."+string(filepath.Separator)))
+	return imgpath.NormalizeRoots(allowedRoots)
 }
 
 // drawImageRounded renders a textured rounded rectangle using

@@ -97,6 +97,9 @@ func (c *BoundedDiagramCache) Set(
 			}
 			delete(c.data, oldest)
 			c.order = c.order[1:]
+			if len(c.order) < cap(c.order)/2 {
+				c.order = append([]int64(nil), c.order...)
+			}
 		}
 		c.order = append(c.order, key)
 	}
