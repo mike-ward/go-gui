@@ -45,6 +45,7 @@ func demoSwitch(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Switch(gui.SwitchCfg{
 				ID:       "switch-a",
+				IDFocus:  107,
 				Label:    "Enable feature",
 				Selected: app.SwitchA,
 				OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {

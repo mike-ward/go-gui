@@ -89,6 +89,9 @@ func Switch(cfg SwitchCfg) View {
 
 	return Row(ContainerCfg{
 		IDFocus:         cfg.IDFocus,
+		Disabled:        cfg.Disabled,
+		Invisible:       cfg.Invisible,
+		SizeBorder:      NoBorder,
 		Padding:         NoPadding,
 		A11YRole:        AccessRoleSwitchToggle,
 		A11YState:       a11yState,
@@ -97,6 +100,11 @@ func Switch(cfg SwitchCfg) View {
 		OnChar:          spacebarToClick(cfg.OnClick),
 		OnClick:         leftClickOnly(cfg.OnClick),
 		OnHover: func(layout *Layout, e *Event, w *Window) {
+			if layout.Shape.Disabled ||
+				!layout.Shape.HasEvents() ||
+				layout.Shape.Events.OnClick == nil {
+				return
+			}
 			w.SetMouseCursor(CursorPointingHand)
 			if len(layout.Children) > 0 {
 				layout.Children[0].Shape.Color = colorHover

@@ -206,6 +206,120 @@ func TestSwitchNoLabel(t *testing.T) {
 	}
 }
 
+func TestSwitchDisabledSuppressesHover(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{OnClick: noop, Disabled: true})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Shape.Disabled {
+		t.Fatal("outer row should be disabled")
+	}
+	origColor := layout.Children[0].Shape.Color
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.Color != origColor {
+		t.Error("hover should not change pill color when disabled")
+	}
+}
+
+func TestSwitchNilOnClickSuppressesHover(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{})
+	layout := GenerateViewLayout(v, w)
+	origColor := layout.Children[0].Shape.Color
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.Color != origColor {
+		t.Error("hover should not change pill color without OnClick")
+	}
+}
+
+func TestSwitchHoverChangesColor(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	origColor := layout.Children[0].Shape.Color
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.Color == origColor {
+		t.Error("hover should change pill color")
+	}
+}
+
+func TestSwitchClickHoverChangesColor(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	clickColor := DefaultSwitchStyle.ColorClick
+	e := &Event{MouseButton: MouseLeft}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	got := layout.Children[0].Shape.Color
+	if got != clickColor {
+		t.Errorf("got %v, want click color %v", got, clickColor)
+	}
+}
+
+func TestSwitchFocusBorder(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{OnClick: noop, IDFocus: 5})
+	layout := GenerateViewLayout(v, w)
+	w.SetIDFocus(5)
+	layout.Shape.Events.AmendLayout(&layout, w)
+	if layout.Shape.ColorBorder != DefaultSwitchStyle.ColorBorderFocus {
+		t.Error("focused switch should have focus border color")
+	}
+}
+
+func TestSwitchInvisibleHidesWidget(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{OnClick: noop, Invisible: true})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Shape.Disabled || !layout.Shape.OverDraw {
+		t.Error("invisible switch should be disabled+overdraw")
+	}
+}
+
+func TestSwitchDefaultStyles(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	d := &DefaultSwitchStyle
+	pill := layout.Children[0].Shape
+	if pill.Color != d.Color {
+		t.Errorf("pill color: got %v, want %v", pill.Color, d.Color)
+	}
+	if pill.ColorBorder != d.ColorBorder {
+		t.Errorf("border color: got %v, want %v", pill.ColorBorder, d.ColorBorder)
+	}
+}
+
+func TestSwitchThumbColor(t *testing.T) {
+	w := newTestWindow()
+	d := &DefaultSwitchStyle
+
+	off := Switch(SwitchCfg{OnClick: noop})
+	lo := GenerateViewLayout(off, w)
+	thumb := lo.Children[0].Children[0].Shape
+	if thumb.Color != d.ColorUnselect {
+		t.Errorf("unselected thumb: got %v, want %v", thumb.Color, d.ColorUnselect)
+	}
+
+	on := Switch(SwitchCfg{OnClick: noop, Selected: true})
+	lo = GenerateViewLayout(on, w)
+	thumb = lo.Children[0].Children[0].Shape
+	if thumb.Color != d.ColorSelect {
+		t.Errorf("selected thumb: got %v, want %v", thumb.Color, d.ColorSelect)
+	}
+}
+
+func TestSwitchOuterRowNoBorder(t *testing.T) {
+	w := newTestWindow()
+	v := Switch(SwitchCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.SizeBorder != 0 {
+		t.Errorf("outer row SizeBorder: got %v, want 0", layout.Shape.SizeBorder)
+	}
+}
+
 // --- Select ---
 
 func TestSelectGeneratesLayout(t *testing.T) {
