@@ -43,7 +43,7 @@ func EaseInOutCubic(t float32) float32 {
 		return 4 * t * t * t
 	}
 	v := -2*t + 2
-	return 1 - float32(math.Pow(float64(v), 3))/2
+	return 1 - v*v*v/2
 }
 
 // EaseInBack pulls back slightly before accelerating forward.

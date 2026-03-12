@@ -86,3 +86,26 @@ func TestKeyframeStopped(t *testing.T) {
 		t.Error("stopped keyframe should return false")
 	}
 }
+
+func TestKeyframeRepeatNoDrift(t *testing.T) {
+	kf := NewKeyframeAnimation("k",
+		[]Keyframe{
+			{At: 0, Value: 0},
+			{At: 1, Value: 100, Easing: EaseLinear},
+		},
+		func(float32, *Window) {},
+	)
+	kf.Repeat = true
+	kf.Duration = 100 * time.Millisecond
+	kf.start = time.Now().Add(-150 * time.Millisecond)
+	deferred := make([]queuedCommand, 0, 4)
+	updateKeyframe(kf, &deferred)
+	// start should advance by exactly Duration, not reset to Now().
+	expected := kf.start.Add(0) // start was already updated
+	// The key invariant: start moved forward by Duration from its
+	// original value, not jumped to time.Now().
+	if kf.start.After(time.Now().Add(-10 * time.Millisecond)) {
+		t.Error("start should not reset to Now(); should advance by Duration")
+	}
+	_ = expected
+}

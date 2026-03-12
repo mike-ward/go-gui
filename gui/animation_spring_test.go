@@ -56,14 +56,23 @@ func TestSpringStoppedSkips(t *testing.T) {
 	}
 }
 
-func TestSpringDelaySkips(t *testing.T) {
-	sp := NewSpringAnimation("s", func(float32, *Window) {})
-	sp.SpringTo(0, 100)
-	sp.delay = time.Hour
-	sp.start = time.Now()
+func TestSpringThresholdUsesUpdatedPosition(t *testing.T) {
+	var got float32
+	sp := NewSpringAnimation("s", func(v float32, _ *Window) { got = v })
+	sp.Config = SpringCfg{Stiffness: 100, Damping: 10, Mass: 1, Threshold: 0.01}
+	// Position very close to target: pre-update displacement is tiny,
+	// but velocity will carry position past threshold after integration.
+	sp.state.position = 100.005
+	sp.state.velocity = -5
+	sp.state.target = 100
+	sp.state.atRest = false
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateSpring(sp, 0.016, &deferred)
-	if ok {
-		t.Error("should skip during delay")
+	updateSpring(sp, 0.016, &deferred)
+	// The spring should NOT be at rest because displacement is recomputed
+	// after the position update.
+	if sp.stopped && got == sp.state.target {
+		// If stopped with exact target, the old (stale) displacement
+		// was used. The fix ensures the post-update displacement is checked.
+		t.Error("threshold should use post-update displacement")
 	}
 }

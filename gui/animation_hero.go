@@ -11,6 +11,7 @@ type heroSnapshot struct {
 type HeroTransitionCfg struct {
 	Duration time.Duration
 	Easing   EasingFn // nil → EaseOutCubic
+	OnDone   func(*Window)
 }
 
 const heroTransitionID = "__hero_transition__"
@@ -21,7 +22,6 @@ type HeroTransition struct {
 	duration time.Duration
 	easing   EasingFn
 	OnDone   func(*Window)
-	delay    time.Duration
 	start    time.Time
 	stopped  bool
 	outgoing map[string]heroSnapshot
@@ -59,6 +59,7 @@ func NewHeroTransition(cfg HeroTransitionCfg) *HeroTransition {
 	return &HeroTransition{
 		duration: dur,
 		easing:   eas,
+		OnDone:   cfg.OnDone,
 	}
 }
 
@@ -67,11 +68,7 @@ func updateHeroTransition(ht *HeroTransition, deferred *[]queuedCommand) bool {
 		return false
 	}
 	elapsed := time.Since(ht.start)
-	if elapsed < ht.delay {
-		return false
-	}
-	animElapsed := elapsed - ht.delay
-	if animElapsed >= ht.duration {
+	if elapsed >= ht.duration {
 		ht.progress = 1.0
 		ht.stopped = true
 		if ht.OnDone != nil {
@@ -82,7 +79,7 @@ func updateHeroTransition(ht *HeroTransition, deferred *[]queuedCommand) bool {
 		}
 		return true
 	}
-	progress := float32(animElapsed) / float32(ht.duration)
+	progress := float32(elapsed) / float32(ht.duration)
 	easing := ht.easing
 	if easing == nil {
 		easing = EaseOutCubic

@@ -3,7 +3,7 @@ package gui
 import "testing"
 
 func TestUpdateAnimateNilCallbackStops(t *testing.T) {
-	a := &Animate{AnimateID: "a"}
+	a := &Animate{AnimID: "a"}
 	deferred := make([]queuedCommand, 0, 1)
 	ok := updateAnimate(a, &deferred)
 	if ok {

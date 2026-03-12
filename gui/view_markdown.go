@@ -392,7 +392,7 @@ func renderMdCode(
 			plain := richTextPlain(block.Content)
 			w.SetClipboard(plain)
 			w.AnimationAdd(&Animate{
-				AnimateID: animID,
+				AnimID: animID,
 				Delay:     2 * time.Second,
 				Callback:  func(*Animate, *Window) {},
 			})
@@ -758,7 +758,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			w.SetClipboard(source)
 			w.AnimationAdd(&Animate{
-				AnimateID: docAnimID,
+				AnimID: docAnimID,
 				Delay:     2 * time.Second,
 				Callback:  func(*Animate, *Window) {},
 			})

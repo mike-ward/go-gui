@@ -43,16 +43,6 @@ func TestTweenOnDoneCalled(t *testing.T) {
 	}
 }
 
-func TestTweenDelaySkips(t *testing.T) {
-	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
-	tw.delay = time.Hour
-	tw.start = time.Now()
-	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTween(tw, &deferred)
-	if ok {
-		t.Error("should not update during delay")
-	}
-}
 
 func TestTweenStopped(t *testing.T) {
 	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})

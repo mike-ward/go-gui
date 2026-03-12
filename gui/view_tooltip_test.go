@@ -50,9 +50,9 @@ func TestAnimationTooltipReturnsAnimate(t *testing.T) {
 	if a == nil {
 		t.Fatal("expected non-nil Animate")
 	}
-	if a.AnimateID != "___tooltip___" {
+	if a.AnimID != "___tooltip___" {
 		t.Errorf("expected ___tooltip___ id, got %q",
-			a.AnimateID)
+			a.AnimID)
 	}
 }
 

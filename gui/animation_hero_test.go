@@ -55,3 +55,17 @@ func TestApplyHeroRecursive(t *testing.T) {
 		t.Errorf("X = %f, want 0", layout.Shape.X)
 	}
 }
+
+func TestHeroTransitionOnDone(t *testing.T) {
+	done := false
+	ht := NewHeroTransition(HeroTransitionCfg{
+		OnDone: func(*Window) { done = true },
+	})
+	ht.start = time.Now().Add(-time.Second)
+	deferred := make([]queuedCommand, 0, 4)
+	updateHeroTransition(ht, &deferred)
+	runQueuedCommands(deferred)
+	if !done {
+		t.Error("OnDone not called")
+	}
+}

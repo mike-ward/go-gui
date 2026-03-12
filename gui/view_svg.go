@@ -75,7 +75,7 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 		animID := "svg_anim:" + animHash
 		if !w.hasAnimationLocked(animID) {
 			w.animationAdd(&Animate{
-				AnimateID: animID,
+				AnimID: animID,
 				Delay:     animationCycle,
 				Repeat:    true,
 				Refresh:   AnimationRefreshRenderOnly,

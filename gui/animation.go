@@ -68,8 +68,8 @@ func (a *BlinkCursorAnimation) Update(w *Window, _ float32, _ *[]queuedCommand) 
 
 // Animate waits the specified delay then executes the callback.
 type Animate struct {
-	AnimateID string
-	Callback  func(*Animate, *Window)
+	AnimID   string
+	Callback func(*Animate, *Window)
 	Delay     time.Duration
 	Repeat    bool
 	Refresh   AnimationRefreshKind // 0 defaults to layout
@@ -78,7 +78,7 @@ type Animate struct {
 }
 
 // ID implements Animation.
-func (a *Animate) ID() string { return a.AnimateID }
+func (a *Animate) ID() string { return a.AnimID }
 
 // RefreshKind implements Animation.
 func (a *Animate) RefreshKind() AnimationRefreshKind {

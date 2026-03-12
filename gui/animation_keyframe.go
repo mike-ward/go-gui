@@ -18,26 +18,25 @@ type KeyframeAnimation struct {
 	OnValue   func(float32, *Window)
 	OnDone    func(*Window)
 	Repeat    bool
-	delay     time.Duration
 	start     time.Time
 	stopped   bool
 }
 
 const keyframeDefaultDuration = 500 * time.Millisecond
 
-// ID returns the animation identifier.
+// ID implements Animation.
 func (k *KeyframeAnimation) ID() string { return k.AnimID }
 
-// RefreshKind returns the refresh strategy.
+// RefreshKind implements Animation.
 func (k *KeyframeAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
 
-// IsStopped reports whether the animation has finished.
+// IsStopped implements Animation.
 func (k *KeyframeAnimation) IsStopped() bool { return k.stopped }
 
-// SetStart sets the animation start time.
+// SetStart implements Animation.
 func (k *KeyframeAnimation) SetStart(now time.Time) { k.start = now }
 
-// Update advances the animation by one tick.
+// Update implements Animation.
 func (k *KeyframeAnimation) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
 	return updateKeyframe(k, deferred)
 }
@@ -61,14 +60,10 @@ func updateKeyframe(kf *KeyframeAnimation, deferred *[]queuedCommand) bool {
 		return false
 	}
 	elapsed := time.Since(kf.start)
-	if elapsed < kf.delay {
-		return false
-	}
-	animElapsed := elapsed - kf.delay
 	if kf.Duration <= 0 {
-		animElapsed = kf.Duration
+		elapsed = kf.Duration
 	}
-	if animElapsed >= kf.Duration {
+	if elapsed >= kf.Duration {
 		if len(kf.Keyframes) > 0 {
 			val := kf.Keyframes[len(kf.Keyframes)-1].Value
 			*deferred = append(*deferred, queuedCommand{
@@ -78,7 +73,7 @@ func updateKeyframe(kf *KeyframeAnimation, deferred *[]queuedCommand) bool {
 			})
 		}
 		if kf.Repeat {
-			kf.start = time.Now()
+			kf.start = kf.start.Add(kf.Duration)
 			return true
 		}
 		if kf.OnDone != nil {
@@ -90,7 +85,7 @@ func updateKeyframe(kf *KeyframeAnimation, deferred *[]queuedCommand) bool {
 		kf.stopped = true
 		return true
 	}
-	progress := float32(animElapsed) / float32(kf.Duration)
+	progress := float32(elapsed) / float32(kf.Duration)
 	value := interpolateKeyframes(kf.Keyframes, progress)
 	*deferred = append(*deferred, queuedCommand{
 		kind:    queuedCommandValueFn,

@@ -82,7 +82,7 @@ func AnimationTooltip(cfg TooltipCfg) *Animate {
 	}
 	id := cfg.ID
 	return &Animate{
-		AnimateID: "___tooltip___",
+		AnimID: "___tooltip___",
 		Delay:     delay,
 		Callback: func(_ *Animate, w *Window) {
 			b := w.viewState.tooltip.bounds
@@ -215,7 +215,7 @@ func withTooltipAmend(
 			ts.hoverID = tipID
 			ts.hoverStart = time.Now()
 			w.animationAdd(&Animate{
-				AnimateID: "___tooltip___",
+				AnimID: "___tooltip___",
 				Delay:     delay,
 				Callback: func(_ *Animate, w *Window) {
 					if w.viewState.tooltip.hoverID == tipID {

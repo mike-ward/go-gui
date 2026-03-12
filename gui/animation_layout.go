@@ -11,6 +11,7 @@ type layoutSnapshot struct {
 type LayoutTransitionCfg struct {
 	Duration time.Duration
 	Easing   EasingFn // nil → EaseOutCubic
+	OnDone   func(*Window)
 }
 
 const layoutTransitionID = "__layout_transition__"
@@ -21,7 +22,6 @@ type LayoutTransition struct {
 	duration  time.Duration
 	easing    EasingFn
 	OnDone    func(*Window)
-	delay     time.Duration
 	start     time.Time
 	stopped   bool
 	snapshots map[string]layoutSnapshot
@@ -59,6 +59,7 @@ func (w *Window) AnimateLayout(cfg LayoutTransitionCfg) {
 	lt := &LayoutTransition{
 		duration:  dur,
 		easing:    eas,
+		OnDone:    cfg.OnDone,
 		snapshots: captureLayoutSnapshots(w.layout),
 	}
 	w.AnimationAdd(lt)
@@ -69,11 +70,7 @@ func updateLayoutTransition(lt *LayoutTransition, deferred *[]queuedCommand) boo
 		return false
 	}
 	elapsed := time.Since(lt.start)
-	if elapsed < lt.delay {
-		return false
-	}
-	animElapsed := elapsed - lt.delay
-	if animElapsed >= lt.duration {
+	if elapsed >= lt.duration {
 		lt.progress = 1.0
 		lt.stopped = true
 		if lt.OnDone != nil {
@@ -84,7 +81,7 @@ func updateLayoutTransition(lt *LayoutTransition, deferred *[]queuedCommand) boo
 		}
 		return true
 	}
-	progress := float32(animElapsed) / float32(lt.duration)
+	progress := float32(elapsed) / float32(lt.duration)
 	easing := lt.easing
 	if easing == nil {
 		easing = EaseOutCubic

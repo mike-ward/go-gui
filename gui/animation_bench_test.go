@@ -17,7 +17,7 @@ func benchAnimationOnAnimate(_ *Animate, _ *Window) {}
 
 func BenchmarkUpdateAnimate(b *testing.B) {
 	a := &Animate{
-		AnimateID: "bench:animate",
+		AnimID: "bench:animate",
 		Callback:  benchAnimationOnAnimate,
 		Delay:     0,
 		Repeat:    true,

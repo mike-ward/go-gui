@@ -97,7 +97,7 @@ func main() {
 func startAnimation(w *gui.Window) {
 	gui.State[App](w).LastFrame = time.Now()
 	w.AnimationAdd(&gui.Animate{
-		AnimateID: animID,
+		AnimID: animID,
 		Delay:     0,
 		Repeat:    true,
 		Callback: func(_ *gui.Animate, w *gui.Window) {

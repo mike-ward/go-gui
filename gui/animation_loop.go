@@ -123,7 +123,7 @@ func updateAnimate(a *Animate, deferred *[]queuedCommand) bool {
 			animate:   a,
 		})
 		if a.Repeat {
-			a.start = time.Now()
+			a.start = a.start.Add(a.Delay)
 		} else {
 			a.stopped = true
 		}
@@ -138,7 +138,7 @@ func updateBlinkCursor(b *BlinkCursorAnimation, w *Window) bool {
 	}
 	if time.Since(b.start) > b.delay {
 		w.viewState.inputCursorOn = !w.viewState.inputCursorOn
-		b.start = time.Now()
+		b.start = b.start.Add(b.delay)
 		return true
 	}
 	return false

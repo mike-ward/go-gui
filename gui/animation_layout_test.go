@@ -55,3 +55,20 @@ func TestApplyTransitionRecursive(t *testing.T) {
 		t.Errorf("X = %f, want 50", layout.Shape.X)
 	}
 }
+
+func TestLayoutTransitionOnDone(t *testing.T) {
+	done := false
+	lt := &LayoutTransition{
+		duration:  200 * time.Millisecond,
+		easing:    EaseOutCubic,
+		OnDone:    func(*Window) { done = true },
+		snapshots: make(map[string]layoutSnapshot),
+	}
+	lt.start = time.Now().Add(-time.Second)
+	deferred := make([]queuedCommand, 0, 4)
+	updateLayoutTransition(lt, &deferred)
+	runQueuedCommands(deferred)
+	if !done {
+		t.Error("OnDone not called")
+	}
+}

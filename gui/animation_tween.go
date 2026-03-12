@@ -12,7 +12,6 @@ type TweenAnimation struct {
 	To       float32
 	OnValue  func(float32, *Window)
 	OnDone   func(*Window)
-	delay    time.Duration
 	start    time.Time
 	stopped  bool
 }
@@ -57,14 +56,10 @@ func updateTween(tw *TweenAnimation, deferred *[]queuedCommand) bool {
 		return false
 	}
 	elapsed := time.Since(tw.start)
-	if elapsed < tw.delay {
-		return false
-	}
-	animElapsed := elapsed - tw.delay
 	if tw.Duration <= 0 {
-		animElapsed = tw.Duration
+		elapsed = tw.Duration
 	}
-	if animElapsed >= tw.Duration {
+	if elapsed >= tw.Duration {
 		val := tw.To
 		*deferred = append(*deferred, queuedCommand{
 			kind:    queuedCommandValueFn,
@@ -80,7 +75,7 @@ func updateTween(tw *TweenAnimation, deferred *[]queuedCommand) bool {
 		tw.stopped = true
 		return true
 	}
-	progress := float32(animElapsed) / float32(tw.Duration)
+	progress := float32(elapsed) / float32(tw.Duration)
 	easing := tw.Easing
 	if easing == nil {
 		easing = EaseLinear

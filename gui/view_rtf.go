@@ -233,7 +233,7 @@ func rtfMouseMove(l *Layout, e *Event, w *Window) {
 // the RTF tooltip after the configured delay.
 func rtfTooltipAnimation(tipID string) *Animate {
 	return &Animate{
-		AnimateID: "___tooltip___",
+		AnimID: "___tooltip___",
 		Delay:     DefaultTooltipStyle.Delay,
 		Callback: func(_ *Animate, w *Window) {
 			ts := &w.viewState.tooltip

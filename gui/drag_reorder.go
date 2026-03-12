@@ -427,7 +427,7 @@ func dragReorderOnMouseMove(
 	if didScroll && !state.scrollTimerActive {
 		state.scrollTimerActive = true
 		w.AnimationAdd(&Animate{
-			AnimateID: dragReorderScrollAnimID,
+			AnimID: dragReorderScrollAnimID,
 			Repeat:    true,
 			Delay:     16 * time.Millisecond,
 			Callback: func(an *Animate, w *Window) {

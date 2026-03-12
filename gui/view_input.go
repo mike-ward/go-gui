@@ -1082,7 +1082,7 @@ func startInputDrag(d *inputDragState, w *Window) {
 				if outside && !w.HasAnimation(
 					animIDDragScroll) {
 					w.AnimationAdd(&Animate{
-						AnimateID: animIDDragScroll,
+						AnimID: animIDDragScroll,
 						Delay:     32 * time.Millisecond,
 						Repeat:    true,
 						Refresh:   AnimationRefreshLayout,

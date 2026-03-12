@@ -32,25 +32,24 @@ type SpringAnimation struct {
 	Config  SpringCfg
 	OnValue func(float32, *Window)
 	OnDone  func(*Window)
-	delay   time.Duration
 	start   time.Time
 	stopped bool
 	state   springState
 }
 
-// ID returns the animation identifier.
+// ID implements Animation.
 func (s *SpringAnimation) ID() string { return s.AnimID }
 
-// RefreshKind returns the refresh strategy.
+// RefreshKind implements Animation.
 func (s *SpringAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
 
-// IsStopped reports whether the animation has finished.
+// IsStopped implements Animation.
 func (s *SpringAnimation) IsStopped() bool { return s.stopped }
 
-// SetStart sets the animation start time.
+// SetStart implements Animation.
 func (s *SpringAnimation) SetStart(now time.Time) { s.start = now }
 
-// Update advances the animation by one tick.
+// Update implements Animation.
 func (s *SpringAnimation) Update(_ *Window, dt float32, deferred *[]queuedCommand) bool {
 	return updateSpring(s, dt, deferred)
 }
@@ -88,11 +87,6 @@ func updateSpring(sp *SpringAnimation, dt float32, deferred *[]queuedCommand) bo
 		sp.stopped = true
 		return false
 	}
-	elapsed := time.Since(sp.start)
-	if elapsed < sp.delay {
-		return false
-	}
-
 	cfg := sp.Config
 	if cfg.Mass <= 0 {
 		cfg.Mass = SpringDefault.Mass
@@ -107,6 +101,7 @@ func updateSpring(sp *SpringAnimation, dt float32, deferred *[]queuedCommand) bo
 
 	sp.state.velocity += acceleration * dt
 	sp.state.position += sp.state.velocity * dt
+	displacement = sp.state.position - sp.state.target
 
 	if f32Abs(sp.state.velocity) < cfg.Threshold && f32Abs(displacement) < cfg.Threshold {
 		sp.state.position = sp.state.target

@@ -179,7 +179,7 @@ the frame loop hot, then update `Params` each frame:
 
 ```go
 w.AnimationAdd(&gui.Animate{
-    AnimateID: "shader_tick",
+    AnimID: "shader_tick",
     Repeat:    true,
     Callback:  func(_ *gui.Animate, _ *gui.Window) {},
 })

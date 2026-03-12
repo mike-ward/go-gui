@@ -39,7 +39,7 @@ func TestAnimationReplace(t *testing.T) {
 func TestUpdateAnimate(t *testing.T) {
 	called := false
 	a := &Animate{
-		AnimateID: "a",
+		AnimID: "a",
 		Callback: func(_ *Animate, _ *Window) {
 			called = true
 		},
@@ -67,5 +67,21 @@ func TestUpdateBlinkCursor(t *testing.T) {
 	ok := updateBlinkCursor(b, w)
 	if !ok {
 		t.Error("should return true after delay")
+	}
+}
+
+func TestAnimateRepeatNoDrift(t *testing.T) {
+	a := &Animate{
+		AnimID:   "drift",
+		Delay:    100 * time.Millisecond,
+		Repeat:   true,
+		Callback: func(*Animate, *Window) {},
+	}
+	a.start = time.Now().Add(-150 * time.Millisecond)
+	deferred := make([]queuedCommand, 0, 4)
+	updateAnimate(a, &deferred)
+	// start should advance by Delay, not reset to Now().
+	if a.start.After(time.Now().Add(-10 * time.Millisecond)) {
+		t.Error("start should not reset to Now(); should advance by Delay")
 	}
 }
