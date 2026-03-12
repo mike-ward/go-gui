@@ -5,20 +5,6 @@ import (
 	"testing"
 )
 
-func TestBuildMetalFragment(t *testing.T) {
-	body := "float4 frag_color = in.color;"
-	result := BuildMetalFragment(body)
-	if !strings.Contains(result, body) {
-		t.Error("body not found in output")
-	}
-	if !strings.Contains(result, "metal_stdlib") {
-		t.Error("missing Metal preamble")
-	}
-	if !strings.Contains(result, "sdf_alpha") {
-		t.Error("missing SDF clipping")
-	}
-}
-
 func TestBuildGLSLFragment(t *testing.T) {
 	body := "vec4 frag_color = color;"
 	result := BuildGLSLFragment(body)

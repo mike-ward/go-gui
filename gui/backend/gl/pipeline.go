@@ -44,7 +44,7 @@ func (b *Backend) initPipelines() error {
 	entries := []entry{
 		{&b.pipelines.solid, gui.VsGLSL, gui.FsGLSL, "solid"},
 		{&b.pipelines.shadow, gui.VsShadowGLSL, gui.FsShadowGLSL, "shadow"},
-		{&b.pipelines.blur, gui.VsShadowGLSL, gui.FsBlurGLSL, "blur"},
+		{&b.pipelines.blur, gui.VsBlurGLSL, gui.FsBlurGLSL, "blur"},
 		{&b.pipelines.gradient, gui.VsGradientGLSL, gui.FsGradientGLSL, "gradient"},
 		{&b.pipelines.imageClip, gui.VsGLSL, gui.FsImageClipGLSL, "imageClip"},
 		{&b.pipelines.filterBlurH, gui.VsFilterBlurGLSL, gui.FsFilterBlurHGLSL, "filterBlurH"},

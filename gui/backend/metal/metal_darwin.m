@@ -70,6 +70,13 @@ struct ShadowOut {
     float2 offset;
 };
 
+struct BlurOut {
+    float4 position [[position]];
+    float2 uv;
+    float4 color;
+    float  params;
+};
+
 struct GradientOut {
     float4 position [[position]];
     float2 uv;
@@ -221,7 +228,19 @@ fragment float4 fs_shadow(ShadowOut in [[stage_in]]) {
     return float4(in.color.rgb, in.color.a * alpha);
 }
 
-fragment float4 fs_blur(ShadowOut in [[stage_in]]) {
+vertex BlurOut vs_blur(
+    VertexIn in [[stage_in]],
+    constant float4x4 &mvp [[buffer(1)]]
+) {
+    BlurOut out;
+    out.position = mvp * float4(in.position.xy, 0.0, 1.0);
+    out.uv       = in.texcoord;
+    out.color    = in.color;
+    out.params   = in.position.z;
+    return out;
+}
+
+fragment float4 fs_blur(BlurOut in [[stage_in]]) {
     float radius = floor(in.params / 4096.0) / 4.0;
     float blur   = fmod(in.params, 4096.0) / 4.0;
 
@@ -252,7 +271,10 @@ fragment float4 fs_gradient(GradientOut in [[stage_in]]) {
     float2 q = abs(pos) - float2(hw, hh) + float2(radius);
     float d = length(max(q, float2(0.0)))
             + min(max(q.x, q.y), 0.0) - radius;
-    float sdf_alpha = 1.0 - smoothstep(-0.5, 0.5, d);
+
+    float grad_len = length(float2(dfdx(d), dfdy(d)));
+    d = d / max(grad_len, 0.001);
+    float sdf_alpha = 1.0 - smoothstep(-0.59, 0.59, d);
 
     float t;
     if (grad_type > 0.5) {
@@ -626,7 +648,7 @@ int metalInit(void* layerPtr) {
     _pipelines[PIPE_SHADOW] =
         makePipeline(lib, @"vs_shadow", @"fs_shadow", mvd, pf);
     _pipelines[PIPE_BLUR] =
-        makePipeline(lib, @"vs_shadow", @"fs_blur", mvd, pf);
+        makePipeline(lib, @"vs_blur", @"fs_blur", mvd, pf);
     _pipelines[PIPE_GRADIENT] =
         makePipeline(lib, @"vs_gradient", @"fs_gradient",
                      mvd, pf);

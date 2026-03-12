@@ -158,7 +158,6 @@ const (
     in vec2 uv;
     in vec4 color;
     in float params;
-    in vec2 offset;
 
     out vec4 frag_color;
 
@@ -180,6 +179,26 @@ const (
         if (frag_color.a < 0.0) {
             frag_color += texture(tex, uv);
         }
+    }
+`
+
+	VsBlurGLSL = `
+    #version 330
+    layout(location=0) in vec3 position;
+    layout(location=1) in vec2 texcoord0;
+    layout(location=2) in vec4 color0;
+
+    uniform mat4 mvp;
+
+    out vec2 uv;
+    out vec4 color;
+    out float params; // z stores packed radius and blur
+
+    void main() {
+        gl_Position = mvp * vec4(position.xy, 0.0, 1.0);
+        uv = texcoord0;
+        color = color0;
+        params = position.z;
     }
 `
 
@@ -256,8 +275,10 @@ const (
         vec2 q = abs(pos) - vec2(hw, hh) + vec2(radius);
         float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
 
-        // Anti-aliasing (d is already in pixel units)
-        float sdf_alpha = 1.0 - smoothstep(-0.5, 0.5, d);
+        // Normalize by gradient length for uniform anti-aliasing
+        float grad_len = length(vec2(dFdx(d), dFdy(d)));
+        d = d / max(grad_len, 0.001);
+        float sdf_alpha = 1.0 - smoothstep(-0.59, 0.59, d);
 
         // Unified gradient t calculation
         float t;

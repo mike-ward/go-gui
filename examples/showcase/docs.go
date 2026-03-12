@@ -4260,7 +4260,7 @@ w.NativeNotification(gui.NativeNotificationCfg{
 	"shader": `Apply custom fragment shaders (Metal + GLSL) to any container.
 Write only the color-computation body — the framework wraps it with
 struct definitions, SDF round-rect clipping, and pipeline caching
-via ` + "`BuildMetalFragment`" + ` / ` + "`BuildGLSLFragment`" + `.
+via ` + "`BuildGLSLFragment`" + `.
 
 ## Static Shader
 

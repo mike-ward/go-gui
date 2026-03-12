@@ -563,6 +563,12 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 	h := gui.ShaderHash(r.Shader)
 	idx, ok := b.customCache[h]
 	if !ok {
+		// Flush cache when limit reached to prevent unbounded growth.
+		if len(b.customCache) >= 32 {
+			for k := range b.customCache {
+				delete(b.customCache, k)
+			}
+		}
 		msl := buildCustomMSL(r.Shader.Metal)
 		cmsl := C.CString(msl)
 		idx = C.int(C.metalBuildCustomPipeline(cmsl))
@@ -590,6 +596,10 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 
 // buildCustomMSL produces a complete MSL source with vertex and
 // fragment shaders for a custom shader body.
+// NOTE: The custom VS uses standalone buffer(1)/buffer(2) bindings
+// instead of the Uniforms struct at buffer(0) used by built-in
+// shaders. The C layer (metalSetCustomPipeline) sets up matching
+// bindings for custom pipelines.
 func buildCustomMSL(body string) string {
 	return `#include <metal_stdlib>
 using namespace metal;
