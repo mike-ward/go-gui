@@ -238,7 +238,7 @@ func dataGridRowClick(rows []GridRow, selection GridSelection, gridID string, mu
 }
 
 func dataGridToggleSelectedRowIDs(selectedRowIDs map[string]bool, rowID string) map[string]bool {
-	next := map[string]bool{}
+	next := make(map[string]bool, len(selectedRowIDs)+1)
 	if selectedRowIDs[rowID] {
 		for id, enabled := range selectedRowIDs {
 			if id != rowID && enabled {
@@ -267,7 +267,7 @@ func dataGridComputeRowSelection(rows []GridRow, selection GridSelection, gridID
 	if multiSelect && rangeSelect && isShift {
 		anchor := dataGridAnchorRowIDEx(selection, gridID, rows, w, rowID)
 		start, end := dataGridRangeIndices(rows, anchor, rowID)
-		selected := map[string]bool{}
+		selected := make(map[string]bool, max(end-start+1, 1))
 		if start >= 0 && end >= start {
 			for idx := start; idx <= end; idx++ {
 				selected[dataGridRowID(rows[idx], idx)] = true

@@ -52,7 +52,7 @@ type TableCfg struct {
 	CellPadding        Opt[Padding]
 	TextStyle          TextStyle
 	TextStyleHead      TextStyle
-	AlignHead          HorizontalAlign
+	AlignHead          *HorizontalAlign
 	ColumnAlignments   []HorizontalAlign
 	ColumnWidthDefault float32
 	ColumnWidthMin     float32
@@ -99,8 +99,8 @@ func applyTableDefaults(cfg *TableCfg) {
 	if cfg.TextStyleHead == (TextStyle{}) {
 		cfg.TextStyleHead = s.TextStyleHead
 	}
-	if cfg.AlignHead == HAlignStart {
-		cfg.AlignHead = s.AlignHead
+	if cfg.AlignHead == nil {
+		cfg.AlignHead = &s.AlignHead
 	}
 	if cfg.ColumnWidthDefault == 0 {
 		cfg.ColumnWidthDefault = s.ColumnWidthDefault
@@ -214,7 +214,7 @@ func tableView(cfg TableCfg, w *Window) View {
 			if cell.HAlign != nil {
 				hAlign = *cell.HAlign
 			} else if cell.HeadCell {
-				hAlign = cfg.AlignHead
+				hAlign = *cfg.AlignHead
 			} else if colIdx < len(cfg.ColumnAlignments) {
 				hAlign = cfg.ColumnAlignments[colIdx]
 			}
@@ -475,6 +475,7 @@ func tableRichTextWidth(rt *RichText, tm TextMeasurer) float32 {
 func tableColumnWidthHash(cfg *TableCfg) uint64 {
 	h := fnv.New64a()
 	n := len(cfg.Data)
+	h.Write([]byte{byte(n), byte(n >> 8), byte(n >> 16), byte(n >> 24)})
 	indices := make([]int, 0, 3)
 	if n > 0 {
 		indices = append(indices, 0)

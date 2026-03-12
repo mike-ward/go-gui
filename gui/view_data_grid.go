@@ -1017,15 +1017,6 @@ func dataGridVisibleRowIndices(rowCount int, pageIndices []int) []int {
 	return dataGridPageRowIndices(0, intMax(0, rowCount))
 }
 
-func dataGridIndexInList(values []int, target int) int {
-	for idx, v := range values {
-		if v == target {
-			return idx
-		}
-	}
-	return -1
-}
-
 func dataGridHasRowID(rows []GridRow, rowID string) bool {
 	if rowID == "" {
 		return false

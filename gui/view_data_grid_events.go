@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 )
 
@@ -587,7 +588,9 @@ func dataGridHandleEscapeKey(kc dataGridKeydownContext, e *Event, w *Window) boo
 	if kc.crudEnabled {
 		e.IsHandled = true
 		dataGridCrudCancel(kc.gridID, 0, e, w)
+		return true
 	}
+	e.IsHandled = true
 	return true
 }
 
@@ -598,9 +601,11 @@ func dataGridHandleCrudKeys(kc dataGridKeydownContext, e *Event, w *Window) bool
 	switch e.KeyCode {
 	case KeyInsert:
 		dataGridCrudAddRow(kc.gridID, kc.columns, kc.onSelectionChange, 0, kc.scrollID, kc.pageSize, kc.pageIndex, kc.onPageChange, e, w)
+		e.IsHandled = true
 		return true
 	case KeyDelete:
 		dataGridCrudDeleteSelected(kc.gridID, kc.selection, kc.onSelectionChange, 0, e, w)
+		e.IsHandled = true
 		return true
 	}
 	return false
@@ -648,7 +653,7 @@ func dataGridHandleSelectAllShortcut(kc dataGridKeydownContext, e *Event, w *Win
 	if !dataGridIsSelectAllShortcut(e) || !kc.multiSelect {
 		return false
 	}
-	selected := map[string]bool{}
+	selected := make(map[string]bool, len(kc.rows))
 	for rowIdx, rowData := range kc.rows {
 		selected[dataGridRowID(rowData, rowIdx)] = true
 	}
@@ -675,6 +680,7 @@ func dataGridHandleEnterKey(kc dataGridKeydownContext, e *Event, w *Window) bool
 		return true
 	}
 	if kc.onRowActivate == nil {
+		e.IsHandled = true
 		return true
 	}
 	rowIdx := dataGridActiveRowIndex(kc.rows, kc.selection)
@@ -691,7 +697,7 @@ func dataGridHandleRowNavigationKeys(kc dataGridKeydownContext, visibleIndices [
 		return
 	}
 	currentIdx := dataGridActiveRowIndex(kc.rows, kc.selection)
-	currentPos := dataGridIndexInList(visibleIndices, currentIdx)
+	currentPos := slices.Index(visibleIndices, currentIdx)
 	targetPos := currentPos
 	if currentPos < 0 {
 		targetPos = 0
@@ -714,6 +720,7 @@ func dataGridHandleRowNavigationKeys(kc dataGridKeydownContext, visibleIndices [
 		return
 	}
 	if kc.onSelectionChange == nil {
+		e.IsHandled = true
 		return
 	}
 	targetPos = intClamp(targetPos, 0, len(visibleIndices)-1)
@@ -755,7 +762,7 @@ func dataGridSelectionForTargetRow(kc dataGridKeydownContext, targetRowID string
 }
 
 func dataGridRangeSelectedRows(rows []GridRow, start, end int, targetRowID string) map[string]bool {
-	selected := map[string]bool{}
+	selected := make(map[string]bool, max(end-start+1, 1))
 	if start >= 0 && end >= start {
 		for rowIdx := start; rowIdx <= end; rowIdx++ {
 			selected[dataGridRowID(rows[rowIdx], rowIdx)] = true
