@@ -85,7 +85,7 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 	expanded := treeExpandedState(w, cfg.ID)
 	lazyState := StateMap[string, bool](w, nsTreeLazy, capMany)
 
-	flatRows := make([]treeFlatRow, 0, treeMaxInt(8, len(cfg.Nodes)*2))
+	flatRows := make([]treeFlatRow, 0, max(8, len(cfg.Nodes)*2))
 	treeCollectFlatRows(
 		cfg.Nodes, expanded, cfg.ID, lazyState, &flatRows, 0, "")
 
@@ -205,7 +205,10 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 			continue
 		}
 		row := flatRows[i]
-		rowParent := parentOf[row.ID]
+		var rowParent string
+		if canReorder {
+			rowParent = parentOf[row.ID]
+		}
 		isDragSibling := dragging && rowParent == dragParent
 
 		if isDragSibling {
@@ -228,10 +231,10 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 				siblingsByParent[rowParent],
 				parentLayoutIDs[rowParent],
 				parentMidsOff[rowParent],
-				idScroll, w))
+				idScroll))
 		} else {
 			rows = append(rows, treeRowView(
-				*cfg, row, iconWidth, focusedID, w))
+				*cfg, row, iconWidth, focusedID))
 		}
 	}
 
@@ -291,7 +294,8 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 				}
 			}
 			treeOnKeyDown(cfg.ID, visibleIDs, rowByID,
-				cfg.OnSelect, cfg.OnLazyLoad, e, w)
+				cfg.OnSelect, cfg.OnLazyLoad,
+				idScroll, rowHeight, listHeight, e, w)
 		},
 		Sizing:      cfg.Sizing,
 		Width:       cfg.Width,
@@ -313,12 +317,12 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 }
 
 func applyTreeDefaults(cfg *TreeCfg) {
-	if cfg == nil {
-		return
-	}
 	d := &DefaultTreeStyle
 	if cfg.Indent == 0 {
 		cfg.Indent = d.Indent
+	}
+	if cfg.Spacing == 0 {
+		cfg.Spacing = d.Spacing
 	}
 	if cfg.Color == (Color{}) {
 		cfg.Color = d.Color
@@ -380,7 +384,7 @@ func treeFocusedSet(w *Window, treeID, nodeID string) {
 }
 
 func treeLazyKey(treeID, nodeID string) string {
-	return treeID + "\t" + nodeID
+	return treeID + "\x1e" + nodeID
 }
 
 func treeCollectFlatRows(
@@ -496,7 +500,7 @@ func treeIconWidth(cfg *TreeCfg, w *Window) float32 {
 		style = treeNodeTextStyleIcon(cfg.Nodes[0])
 	}
 	if w != nil && w.textMeasurer != nil {
-		return treeMaxFloat(
+		return max(
 			w.textMeasurer.TextWidth(IconDropDown+" ", style),
 			style.Size+4,
 		)
@@ -522,7 +526,6 @@ func treeRowView(
 	row treeFlatRow,
 	iconWidth float32,
 	focusedID string,
-	_ *Window,
 ) View {
 	if row.IsLoading {
 		return Row(ContainerCfg{
@@ -566,22 +569,7 @@ func treeRowView(
 		),
 		Sizing:  FillFit,
 		Spacing: NoSpacing,
-		Content: []View{
-			Text(TextCfg{
-				Text:      treeArrowIcon(row) + " ",
-				MinWidth:  iconWidth,
-				TextStyle: row.TextStyleIcon,
-			}),
-			Text(TextCfg{
-				Text:      treeIconText(row.Icon),
-				MinWidth:  iconWidth,
-				TextStyle: row.TextStyleIcon,
-			}),
-			Text(TextCfg{
-				Text:      row.Text,
-				TextStyle: row.TextStyle,
-			}),
-		},
+		Content: treeRowContentViews(row, iconWidth),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			treeRowClick(
 				cfg.ID, row, rootFocusID, onSelect, onLazyLoad, e, w)
@@ -605,10 +593,9 @@ func treeDragRowView(
 	itemLayoutIDs []string,
 	midsOffset int,
 	idScroll uint32,
-	_ *Window,
 ) View {
 	if row.IsLoading {
-		return treeRowView(cfg, row, iconWidth, focusedID, nil)
+		return treeRowView(cfg, row, iconWidth, focusedID)
 	}
 
 	rowID := row.ID
@@ -641,22 +628,7 @@ func treeDragRowView(
 		),
 		Sizing:  FillFit,
 		Spacing: NoSpacing,
-		Content: []View{
-			Text(TextCfg{
-				Text:      treeArrowIcon(row) + " ",
-				MinWidth:  iconWidth,
-				TextStyle: row.TextStyleIcon,
-			}),
-			Text(TextCfg{
-				Text:      treeIconText(row.Icon),
-				MinWidth:  iconWidth,
-				TextStyle: row.TextStyleIcon,
-			}),
-			Text(TextCfg{
-				Text:      row.Text,
-				TextStyle: row.TextStyle,
-			}),
-		},
+		Content: treeRowContentViews(row, iconWidth),
 		OnClick: func(layout *Layout, e *Event, w *Window) {
 			dragReorderStart(dragReorderStartCfg{
 				DragKey:       treeID,
@@ -704,23 +676,27 @@ func treeRowContent(
 		),
 		Sizing:  FillFit,
 		Spacing: NoSpacing,
-		Content: []View{
-			Text(TextCfg{
-				Text:      treeArrowIcon(row) + " ",
-				MinWidth:  iconWidth,
-				TextStyle: row.TextStyleIcon,
-			}),
-			Text(TextCfg{
-				Text:      treeIconText(row.Icon),
-				MinWidth:  iconWidth,
-				TextStyle: row.TextStyleIcon,
-			}),
-			Text(TextCfg{
-				Text:      row.Text,
-				TextStyle: row.TextStyle,
-			}),
-		},
+		Content: treeRowContentViews(row, iconWidth),
 	})
+}
+
+func treeRowContentViews(row treeFlatRow, iconWidth float32) []View {
+	return []View{
+		Text(TextCfg{
+			Text:      treeArrowIcon(row) + " ",
+			MinWidth:  iconWidth,
+			TextStyle: row.TextStyleIcon,
+		}),
+		Text(TextCfg{
+			Text:      treeIconText(row.Icon),
+			MinWidth:  iconWidth,
+			TextStyle: row.TextStyleIcon,
+		}),
+		Text(TextCfg{
+			Text:      row.Text,
+			TextStyle: row.TextStyle,
+		}),
+	}
 }
 
 func treeSiblingIndex(siblings []string, id string) int {
@@ -774,6 +750,9 @@ func treeOnKeyDown(
 	rowByID map[string]treeFlatRow,
 	onSelect func(string, *Event, *Window),
 	onLazyLoad func(string, string, *Window),
+	idScroll uint32,
+	rowHeight float32,
+	listHeight float32,
 	e *Event,
 	w *Window,
 ) {
@@ -791,6 +770,7 @@ func treeOnKeyDown(
 			next = cur - 1
 		}
 		focusMap.Set(treeID, visibleIDs[next])
+		treeScrollTo(idScroll, next, rowHeight, listHeight, w)
 		e.IsHandled = true
 	case KeyDown:
 		next := 0
@@ -798,24 +778,39 @@ func treeOnKeyDown(
 			next = min(cur+1, len(visibleIDs)-1)
 		}
 		focusMap.Set(treeID, visibleIDs[next])
+		treeScrollTo(idScroll, next, rowHeight, listHeight, w)
 		e.IsHandled = true
 	case KeyHome:
 		focusMap.Set(treeID, visibleIDs[0])
+		treeScrollTo(idScroll, 0, rowHeight, listHeight, w)
 		e.IsHandled = true
 	case KeyEnd:
-		focusMap.Set(treeID, visibleIDs[len(visibleIDs)-1])
+		last := len(visibleIDs) - 1
+		focusMap.Set(treeID, visibleIDs[last])
+		treeScrollTo(idScroll, last, rowHeight, listHeight, w)
 		e.IsHandled = true
 	case KeyLeft:
 		if cur < 0 {
 			return
 		}
 		row, ok := rowByID[focusedID]
-		if !ok || !row.HasChildren || !row.IsExpanded {
+		if !ok {
 			return
 		}
-		treeExpandedSet(w, treeID, focusedID, false)
-		treeClearLoading(treeID, focusedID, w)
-		e.IsHandled = true
+		if row.HasChildren && row.IsExpanded {
+			treeExpandedSet(w, treeID, focusedID, false)
+			treeClearLoading(treeID, focusedID, w)
+			e.IsHandled = true
+			return
+		}
+		if row.ParentID != "" {
+			pi := treeFocusedIndex(visibleIDs, row.ParentID)
+			if pi >= 0 {
+				focusMap.Set(treeID, row.ParentID)
+				treeScrollTo(idScroll, pi, rowHeight, listHeight, w)
+				e.IsHandled = true
+			}
+		}
 	case KeyRight:
 		if cur < 0 {
 			return
@@ -872,16 +867,11 @@ func treeClearLoading(treeID, nodeID string, w *Window) {
 	lazyState.Delete(key)
 }
 
-func treeMaxFloat(a, b float32) float32 {
-	if a > b {
-		return a
+func treeScrollTo(
+	idScroll uint32, idx int, rowH, listH float32, w *Window,
+) {
+	if idScroll > 0 && rowH > 0 {
+		scrollEnsureVisible(idScroll, idx, rowH, listH, w)
 	}
-	return b
 }
 
-func treeMaxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
