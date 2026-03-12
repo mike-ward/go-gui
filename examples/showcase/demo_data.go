@@ -123,8 +123,7 @@ func demoTable(w *gui.Window) gui.View {
 				},
 			}),
 			gui.Text(gui.TextCfg{
-				Text:      "Selected: " + selectedText,
-				TextStyle: gui.CurrentTheme().N2,
+				Text: "Selected: " + selectedText,
 			}),
 			gui.Text(gui.TextCfg{
 				Text:      "Click a column header to sort. Scroll to see all rows.",
@@ -148,8 +147,7 @@ func demoDataGrid(w *gui.Window) gui.View {
 				TextStyle: gui.CurrentTheme().N3,
 			}),
 			gui.Text(gui.TextCfg{
-				Text:      fmt.Sprintf("Rows: %d  Selected: %d", len(rows), len(app.DataGridSelection.SelectedRowIDs)),
-				TextStyle: gui.CurrentTheme().N2,
+				Text: fmt.Sprintf("Rows: %d  Selected: %d", len(rows), len(app.DataGridSelection.SelectedRowIDs)),
 			}),
 			w.DataGrid(gui.DataGridCfg{
 				ID:                "catalog-data-grid",
@@ -197,8 +195,7 @@ func demoDataSource(w *gui.Window) gui.View {
 		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      fmt.Sprintf("loading=%t  req=%d  rows=%d/%s", stats.Loading, stats.RequestCount, stats.ReceivedCount, countText),
-				TextStyle: gui.CurrentTheme().N2,
+				Text: fmt.Sprintf("loading=%t  req=%d  rows=%d/%s", stats.Loading, stats.RequestCount, stats.ReceivedCount, countText),
 			}),
 			w.DataGrid(gui.DataGridCfg{
 				ID:              "catalog-data-source",
@@ -220,9 +217,9 @@ func demoDataSource(w *gui.Window) gui.View {
 					gui.State[ShowcaseApp](w).DataSourceSelection = selection
 				},
 			}),
-			gui.Text(gui.TextCfg{Text: "- DataGridDataSource interface for async backends", TextStyle: gui.CurrentTheme().N2}),
-			gui.Text(gui.TextCfg{Text: "- InMemoryDataSource for cursor and offset pagination", TextStyle: gui.CurrentTheme().N2}),
-			gui.Text(gui.TextCfg{Text: "- CRUD mutations and simulated loading states", TextStyle: gui.CurrentTheme().N2}),
+			gui.Text(gui.TextCfg{Text: "- DataGridDataSource interface for async backends"}),
+			gui.Text(gui.TextCfg{Text: "- InMemoryDataSource for cursor and offset pagination"}),
+			gui.Text(gui.TextCfg{Text: "- CRUD mutations and simulated loading states"}),
 		},
 	})
 }
@@ -236,9 +233,8 @@ func demoTree(w *gui.Window) gui.View {
 		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      "Selected: " + treeSelectedText(app.TreeSelected),
-				TextStyle: gui.CurrentTheme().N2,
-				Mode:      gui.TextModeWrap,
+				Text: "Selected: " + treeSelectedText(app.TreeSelected),
+				Mode: gui.TextModeWrap,
 			}),
 			gui.Text(gui.TextCfg{
 				Text:      "Expand folders with the mouse or keyboard. The second tree enables virtualization, and the third simulates lazy loading.",
