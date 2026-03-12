@@ -140,6 +140,105 @@ func TestRenderDrawCanvas(t *testing.T) {
 	renderDrawCanvas(layout.Shape, clip, w)
 	// Should have: container + clip + svg + restore clip.
 	if len(w.renderers) < 3 {
-		t.Errorf("renderers = %d, want >= 3", len(w.renderers))
+		t.Fatalf("renderers = %d, want >= 3", len(w.renderers))
+	}
+
+	// Assert clip restore values.
+	var clips []RenderCmd
+	for _, r := range w.renderers {
+		if r.Kind == RenderClip {
+			clips = append(clips, r)
+		}
+	}
+	if len(clips) != 2 {
+		t.Fatalf("clip commands = %d, want 2", len(clips))
+	}
+	// First clip: content area.
+	if clips[0].W != 100 || clips[0].H != 80 {
+		t.Errorf("content clip = (%g, %g), want (100, 80)",
+			clips[0].W, clips[0].H)
+	}
+	// Restore clip: parent clip.
+	if clips[1].X != 0 || clips[1].Y != 0 ||
+		clips[1].W != 800 || clips[1].H != 600 {
+		t.Errorf("restore clip = (%g, %g, %g, %g), want (0, 0, 800, 600)",
+			clips[1].X, clips[1].Y, clips[1].W, clips[1].H)
+	}
+}
+
+func TestDrawCanvasOffScreenSkip(t *testing.T) {
+	w := &Window{}
+	callCount := 0
+	v := DrawCanvas(DrawCanvasCfg{
+		Width: 50, Height: 50,
+		OnDraw: func(dc *DrawContext) {
+			callCount++
+			dc.FilledRect(0, 0, 10, 10, Red)
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+	// Place canvas at (200, 200); clip region doesn't overlap.
+	layout.Shape.X = 200
+	layout.Shape.Y = 200
+	clip := DrawClip{X: 0, Y: 0, Width: 100, Height: 100}
+
+	w.renderers = w.renderers[:0]
+	renderDrawCanvas(layout.Shape, clip, w)
+
+	if callCount != 0 {
+		t.Errorf("off-screen canvas called OnDraw %d times", callCount)
+	}
+	// No render commands should be emitted (not even container).
+	for _, r := range w.renderers {
+		if r.Kind == RenderSvg {
+			t.Error("off-screen canvas emitted RenderSvg")
+		}
+	}
+}
+
+func TestDrawCanvasEmptyIDNoCollision(t *testing.T) {
+	w := &Window{}
+	clip := DrawClip{Width: 200, Height: 200}
+
+	v1 := DrawCanvas(DrawCanvasCfg{
+		Width: 50, Height: 50,
+		OnDraw: func(dc *DrawContext) {
+			dc.FilledRect(0, 0, 10, 10, Red)
+		},
+	})
+	v2 := DrawCanvas(DrawCanvasCfg{
+		Width: 50, Height: 50,
+		OnDraw: func(dc *DrawContext) {
+			dc.FilledRect(0, 0, 20, 20, Blue)
+			dc.FilledRect(20, 20, 10, 10, Green)
+		},
+	})
+
+	l1 := GenerateViewLayout(v1, w)
+	l2 := GenerateViewLayout(v2, w)
+
+	w.renderers = w.renderers[:0]
+	renderDrawCanvas(l1.Shape, clip, w)
+	var svg1 int
+	for _, r := range w.renderers {
+		if r.Kind == RenderSvg {
+			svg1++
+		}
+	}
+
+	w.renderers = w.renderers[:0]
+	renderDrawCanvas(l2.Shape, clip, w)
+	var svg2 int
+	for _, r := range w.renderers {
+		if r.Kind == RenderSvg {
+			svg2++
+		}
+	}
+
+	if svg1 != 1 {
+		t.Errorf("canvas 1: RenderSvg count = %d, want 1", svg1)
+	}
+	if svg2 != 2 {
+		t.Errorf("canvas 2: RenderSvg count = %d, want 2", svg2)
 	}
 }

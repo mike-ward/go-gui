@@ -24,22 +24,23 @@ type DrawContext struct {
 	Width  float32
 	Height float32
 
-	lastColor    Color
-	currentBatch *DrawCanvasTriBatch
-	batches      []DrawCanvasTriBatch
+	lastColor       Color
+	currentBatchIdx int
+	batches         []DrawCanvasTriBatch
+	arcBuf          []float32
 }
 
 func (dc *DrawContext) getBatch(color Color) *DrawCanvasTriBatch {
-	if dc.currentBatch != nil && dc.lastColor == color {
-		return dc.currentBatch
+	if len(dc.batches) > 0 && dc.lastColor == color {
+		return &dc.batches[dc.currentBatchIdx]
 	}
 	dc.batches = append(dc.batches, DrawCanvasTriBatch{
 		Color:     color,
 		Triangles: make([]float32, 0, 128),
 	})
 	dc.lastColor = color
-	dc.currentBatch = &dc.batches[len(dc.batches)-1]
-	return dc.currentBatch
+	dc.currentBatchIdx = len(dc.batches) - 1
+	return &dc.batches[dc.currentBatchIdx]
 }
 
 // FilledRect draws a filled rectangle as two triangles.
@@ -95,13 +96,35 @@ func (dc *DrawContext) Polyline(points []float32, color Color, width float32) {
 	}
 }
 
-// Rect draws a stroked rectangle.
+// Rect draws a stroked rectangle using four axis-aligned quads
+// with overlap at corners. Overlap may cause alpha artifacts
+// with transparent colors.
 func (dc *DrawContext) Rect(x, y, w, h float32, color Color, width float32) {
 	if w <= 0 || h <= 0 || width <= 0 {
 		return
 	}
-	pts := []float32{x, y, x + w, y, x + w, y + h, x, y + h, x, y}
-	dc.Polyline(pts, color, width)
+	hw := width / 2
+	b := dc.getBatch(color)
+	// Top.
+	b.Triangles = append(b.Triangles,
+		x-hw, y-hw, x+w+hw, y-hw, x+w+hw, y+hw,
+		x-hw, y-hw, x+w+hw, y+hw, x-hw, y+hw,
+	)
+	// Bottom.
+	b.Triangles = append(b.Triangles,
+		x-hw, y+h-hw, x+w+hw, y+h-hw, x+w+hw, y+h+hw,
+		x-hw, y+h-hw, x+w+hw, y+h+hw, x-hw, y+h+hw,
+	)
+	// Left.
+	b.Triangles = append(b.Triangles,
+		x-hw, y-hw, x+hw, y-hw, x+hw, y+h+hw,
+		x-hw, y-hw, x+hw, y+h+hw, x-hw, y+h+hw,
+	)
+	// Right.
+	b.Triangles = append(b.Triangles,
+		x+w-hw, y-hw, x+w+hw, y-hw, x+w+hw, y+h+hw,
+		x+w-hw, y-hw, x+w+hw, y+h+hw, x+w-hw, y+h+hw,
+	)
 }
 
 // FilledPolygon draws a filled convex polygon using fan from
@@ -137,24 +160,28 @@ func (dc *DrawContext) Arc(cx, cy, rx, ry, start, sweep float32, color Color, wi
 	if width <= 0 {
 		return
 	}
-	pts := arcToPolyline(cx, cy, rx, ry, start, sweep)
+	pts := dc.arcPoints(cx, cy, rx, ry, start, sweep)
 	if len(pts) >= 4 {
 		dc.Polyline(pts, color, width)
 	}
 }
 
 // FilledArc draws a filled elliptical arc (pie slice).
+// Emits fan triangles directly from center to arc points,
+// avoiding an intermediate polygon allocation.
 func (dc *DrawContext) FilledArc(cx, cy, rx, ry, start, sweep float32, color Color) {
-	pts := arcToPolyline(cx, cy, rx, ry, start, sweep)
+	pts := dc.arcPoints(cx, cy, rx, ry, start, sweep)
 	if len(pts) < 4 {
 		return
 	}
-	// Close as pie: center → arc.
-	// FilledPolygon handles the fan from first vertex (cx, cy).
-	poly := make([]float32, 0, len(pts)+2)
-	poly = append(poly, cx, cy)
-	poly = append(poly, pts...)
-	dc.FilledPolygon(poly, color)
+	b := dc.getBatch(color)
+	for i := 0; i+3 < len(pts); i += 2 {
+		b.Triangles = append(b.Triangles,
+			cx, cy,
+			pts[i], pts[i+1],
+			pts[i+2], pts[i+3],
+		)
+	}
 }
 
 // arcToPolyline converts an elliptical arc to a flat x,y
@@ -182,4 +209,35 @@ func arcToPolyline(cx, cy, rx, ry, start, sweep float32) []float32 {
 			cy+ry*float32(math.Sin(a)))
 	}
 	return pts
+}
+
+// arcPoints is the buffer-reusing version of arcToPolyline.
+// Writes into dc.arcBuf and returns the populated slice.
+func (dc *DrawContext) arcPoints(cx, cy, rx, ry, start, sweep float32) []float32 {
+	r := rx
+	if ry > r {
+		r = ry
+	}
+	if r <= 0 {
+		return nil
+	}
+	n := int(math.Ceil(
+		float64(f32Abs(sweep)) / (2 * math.Pi) * 64 *
+			math.Sqrt(float64(r)/50+1)))
+	if n < 4 {
+		n = 4
+	}
+	need := (n + 1) * 2
+	if cap(dc.arcBuf) < need {
+		dc.arcBuf = make([]float32, 0, need)
+	}
+	dc.arcBuf = dc.arcBuf[:0]
+	step := sweep / float32(n)
+	for i := 0; i <= n; i++ {
+		a := float64(start + step*float32(i))
+		dc.arcBuf = append(dc.arcBuf,
+			cx+rx*float32(math.Cos(a)),
+			cy+ry*float32(math.Sin(a)))
+	}
+	return dc.arcBuf
 }

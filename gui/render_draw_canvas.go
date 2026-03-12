@@ -13,15 +13,23 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 	renderContainer(shape, ColorTransparent, clip, w)
 
 	sm := StateMap[string, DrawCanvasCache](w, nsDrawCanvas, capModerate)
-	cached, ok := sm.Get(shape.ID)
 
 	// Content dimensions account for padding.
 	cw := shape.Width - shape.PaddingWidth()
 	ch := shape.Height - shape.PaddingHeight()
 
-	var needsDraw bool
-	if !ok || cached.Version != shape.Version || cached.TessWidth != cw || cached.TessHeight != ch {
-		needsDraw = true
+	var cached DrawCanvasCache
+	needsDraw := true
+
+	// Skip cache when ID is empty to avoid collisions between
+	// multiple ID-less DrawCanvas widgets.
+	if shape.ID != "" {
+		var ok bool
+		cached, ok = sm.Get(shape.ID)
+		if ok && cached.Version == shape.Version &&
+			cached.TessWidth == cw && cached.TessHeight == ch {
+			needsDraw = false
+		}
 	}
 
 	if needsDraw && shape.Events != nil && shape.Events.OnDraw != nil {
@@ -36,7 +44,9 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			TessHeight: ch,
 			Batches:    dc.batches,
 		}
-		sm.Set(shape.ID, cached)
+		if shape.ID != "" {
+			sm.Set(shape.ID, cached)
+		}
 	}
 
 	if len(cached.Batches) == 0 {

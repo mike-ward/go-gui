@@ -119,3 +119,71 @@ func TestArcToPolylineDegenerate(t *testing.T) {
 		t.Errorf("zero radius should return nil, got %d", len(pts))
 	}
 }
+
+func TestDrawContextFilledCircle(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.FilledCircle(50, 50, 25, Red)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// Full circle fan: n segments × 6 floats each.
+	if len(dc.batches[0].Triangles) < 24 {
+		t.Errorf("too few triangle floats: %d", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextCircle(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.Circle(50, 50, 25, Blue, 2)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	if len(dc.batches[0].Triangles) < 24 {
+		t.Errorf("too few triangle floats: %d", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextArc(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.Arc(50, 50, 25, 25, 0, math.Pi, Green, 2)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	if len(dc.batches[0].Triangles) < 12 {
+		t.Errorf("too few triangle floats: %d", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextFilledArc(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.FilledArc(50, 50, 25, 25, 0, math.Pi, Red)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// Half-circle fan: at least 3 triangles.
+	if len(dc.batches[0].Triangles) < 18 {
+		t.Errorf("too few triangle floats: %d", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextRect(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.Rect(10, 20, 50, 30, Red, 2)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// 4 edge quads × 2 triangles × 6 floats = 48.
+	if len(dc.batches[0].Triangles) != 48 {
+		t.Errorf("triangles = %d, want 48", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextRectDegenerate(t *testing.T) {
+	dc := DrawContext{}
+	dc.Rect(0, 0, 0, 10, Red, 1)
+	dc.Rect(0, 0, 10, 0, Red, 1)
+	dc.Rect(0, 0, 10, 10, Red, 0)
+	if len(dc.batches) != 0 {
+		t.Errorf("degenerate rects: batches = %d, want 0", len(dc.batches))
+	}
+}
