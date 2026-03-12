@@ -66,15 +66,29 @@ type numericModeCfg struct {
 	displayMultiplier float64
 }
 
+var defaultGroupSizes = []int{3}
+
 func numericLocaleNormalize(cfg NumericLocaleCfg) NumericLocaleCfg {
-	sizes := make([]int, 0)
-	for _, s := range cfg.GroupSizes {
-		if s > 0 {
-			sizes = append(sizes, s)
+	// Fast path: reuse slice when all sizes are already positive.
+	sizes := cfg.GroupSizes
+	allPositive := len(sizes) > 0
+	for _, s := range sizes {
+		if s <= 0 {
+			allPositive = false
+			break
 		}
 	}
+	if !allPositive {
+		filtered := make([]int, 0, len(sizes))
+		for _, s := range sizes {
+			if s > 0 {
+				filtered = append(filtered, s)
+			}
+		}
+		sizes = filtered
+	}
 	if len(sizes) == 0 {
-		sizes = append(sizes, 3)
+		sizes = defaultGroupSizes
 	}
 	groupSep := cfg.GroupSep
 	if groupSep == 0 {
@@ -156,7 +170,7 @@ func numericGroupIntegerPart(raw string, groupSep rune, groupSizes []int) string
 		return raw
 	}
 	digits := []rune(raw)
-	if len(digits) <= 3 {
+	if len(digits) <= numericGroupSize(groupSizes, 0) {
 		return raw
 	}
 	var reversed []rune
@@ -182,8 +196,7 @@ func numericGroupIntegerPart(raw string, groupSep rune, groupSizes []int) string
 	return string(reversed)
 }
 
-func numericFormatValue(value float64, decimals int, locale NumericLocaleCfg) string {
-	loc := numericLocaleNormalize(locale)
+func numericFormatValue(value float64, decimals int, loc NumericLocaleCfg) string {
 	d := numericDecimalsClamped(decimals)
 	
 	str := strconv.FormatFloat(math.Abs(value), 'f', d, 64)
@@ -204,10 +217,14 @@ func numericFormatValue(value float64, decimals int, locale NumericLocaleCfg) st
 	return sign + grouped + string(loc.DecimalSep) + fracPart
 }
 
-// numericFormat formats a value with the given decimals and
-// locale.
+// numericFormat is the test-facing entry point. It normalizes
+// the locale once, then delegates to numericFormatValue.
 func numericFormat(value float64, decimals int, locale NumericLocaleCfg) string {
-	return numericFormatValue(value, decimals, locale)
+	loc := numericLocaleNormalize(locale)
+	if value == 0 {
+		value = 0 // collapse -0.0 → 0.0
+	}
+	return numericFormatValue(value, decimals, loc)
 }
 
 func numericIntegerGroupsValid(intSegment []rune, groupSep rune, groupSizes []int) bool {
@@ -249,8 +266,8 @@ func numericIntegerGroupsValid(intSegment []rune, groupSep rune, groupSizes []in
 }
 
 // numericParse parses a locale-formatted number string.
-func numericParse(raw string, locale NumericLocaleCfg) (float64, bool) {
-	loc := numericLocaleNormalize(locale)
+// Caller must pass a normalized locale.
+func numericParse(raw string, loc NumericLocaleCfg) (float64, bool) {
 	if len(raw) == 0 {
 		return 0, false
 	}
@@ -323,8 +340,6 @@ func numericParse(raw string, locale NumericLocaleCfg) (float64, bool) {
 	return number, true
 }
 
-
-
 // numericClamp clamps value between optional min and max. Unset
 // Opt means unbounded.
 func numericClamp(value float64, minVal, maxVal Opt[float64]) float64 {
@@ -365,8 +380,7 @@ func numericModeStepDelta(stepDisplay float64, mc numericModeCfg) float64 {
 	return numericModeFromDisplay(stepDisplay, mc)
 }
 
-func numericStripAffix(raw string, locale NumericLocaleCfg, mc numericModeCfg) (string, bool) {
-	loc := numericLocaleNormalize(locale)
+func numericStripAffix(raw string, loc NumericLocaleCfg, mc numericModeCfg) (string, bool) {
 	text := strings.TrimSpace(raw)
 	if len(text) == 0 {
 		return "", false
@@ -402,11 +416,10 @@ func numericStripAffix(raw string, locale NumericLocaleCfg, mc numericModeCfg) (
 	return sign + text, true
 }
 
-func numericApplyAffix(formatted string, locale NumericLocaleCfg, mc numericModeCfg) string {
+func numericApplyAffix(formatted string, loc NumericLocaleCfg, mc numericModeCfg) string {
 	if len(mc.affix) == 0 {
 		return formatted
 	}
-	loc := numericLocaleNormalize(locale)
 	minus := string(loc.MinusSign)
 	plus := string(loc.PlusSign)
 	sign := ""
@@ -431,12 +444,12 @@ func numericApplyAffix(formatted string, locale NumericLocaleCfg, mc numericMode
 	return formatted
 }
 
-func numericModeParseValue(raw string, decimals int, locale NumericLocaleCfg, mc numericModeCfg) (float64, bool) {
-	plain, ok := numericStripAffix(strings.TrimSpace(raw), locale, mc)
+func numericModeParseValue(raw string, decimals int, loc NumericLocaleCfg, mc numericModeCfg) (float64, bool) {
+	plain, ok := numericStripAffix(strings.TrimSpace(raw), loc, mc)
 	if !ok {
 		return 0, false
 	}
-	parsed, ok := numericParse(plain, locale)
+	parsed, ok := numericParse(plain, loc)
 	if !ok {
 		return 0, false
 	}
@@ -444,8 +457,7 @@ func numericModeParseValue(raw string, decimals int, locale NumericLocaleCfg, mc
 	return numericModeFromDisplay(displayValue, mc), true
 }
 
-func numericModeIsTransientInput(raw string, decimals int, locale NumericLocaleCfg, mc numericModeCfg) bool {
-	loc := numericLocaleNormalize(locale)
+func numericModeIsTransientInput(raw string, decimals int, loc NumericLocaleCfg, mc numericModeCfg) bool {
 	text := strings.TrimSpace(raw)
 	if len(text) == 0 {
 		return true
@@ -516,11 +528,11 @@ func numericModeIsTransientInput(raw string, decimals int, locale NumericLocaleC
 	return false
 }
 
-func numericModeFormatValue(value float64, decimals int, locale NumericLocaleCfg, mc numericModeCfg) string {
+func numericModeFormatValue(value float64, decimals int, loc NumericLocaleCfg, mc numericModeCfg) string {
 	displayValue := numericModeToDisplay(value, mc)
 	displayValueRounded := numericRoundToDecimals(displayValue, decimals)
-	formatted := numericFormatValue(displayValueRounded, decimals, locale)
-	return numericApplyAffix(formatted, locale, mc)
+	formatted := numericFormatValue(displayValueRounded, decimals, loc)
+	return numericApplyAffix(formatted, loc, mc)
 }
 
 func numericStepDelta(cfg NumericStepCfg, modifiers Modifier) float64 {
@@ -537,11 +549,11 @@ func numericStepDelta(cfg NumericStepCfg, modifiers Modifier) float64 {
 	return step
 }
 
-func numericStepSeedMode(text string, value, minVal Opt[float64], decimals int, locale NumericLocaleCfg, mc numericModeCfg) float64 {
+func numericStepSeedMode(text string, value, minVal Opt[float64], decimals int, loc NumericLocaleCfg, mc numericModeCfg) float64 {
 	if v, ok := value.Value(); ok {
 		return v
 	}
-	if parsed, ok := numericModeParseValue(text, decimals, locale, mc); ok {
+	if parsed, ok := numericModeParseValue(text, decimals, loc, mc); ok {
 		return parsed
 	}
 	if v, ok := minVal.Value(); ok {
@@ -556,17 +568,18 @@ func numericInputCommitResult(text string, value, minVal, maxVal Opt[float64], d
 }
 
 func numericInputCommitResultMode(text string, value, minVal, maxVal Opt[float64], decimals int, locale NumericLocaleCfg, mc numericModeCfg) (Opt[float64], string) {
+	loc := numericLocaleNormalize(locale)
 	trimmed := strings.TrimSpace(text)
 	if len(trimmed) == 0 {
 		return Opt[float64]{}, ""
 	}
-	if parsed, ok := numericModeParseValue(trimmed, decimals, locale, mc); ok {
+	if parsed, ok := numericModeParseValue(trimmed, decimals, loc, mc); ok {
 		clamped := numericClamp(parsed, minVal, maxVal)
-		return Some(clamped), numericModeFormatValue(clamped, decimals, locale, mc)
+		return Some(clamped), numericModeFormatValue(clamped, decimals, loc, mc)
 	}
 	if v, ok := value.Value(); ok {
 		clamped := numericClamp(v, minVal, maxVal)
-		return Some(clamped), numericModeFormatValue(clamped, decimals, locale, mc)
+		return Some(clamped), numericModeFormatValue(clamped, decimals, loc, mc)
 	}
 	return Opt[float64]{}, ""
 }
@@ -577,15 +590,16 @@ func numericInputStepResult(text string, value, minVal, maxVal Opt[float64], dec
 }
 
 func numericInputStepResultMode(text string, value, minVal, maxVal Opt[float64], decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier, mc numericModeCfg) (Opt[float64], string) {
+	loc := numericLocaleNormalize(locale)
 	if direction == 0 {
-		return numericInputCommitResultMode(text, value, minVal, maxVal, decimals, locale, mc)
+		return numericInputCommitResultMode(text, value, minVal, maxVal, decimals, loc, mc)
 	}
 	normalized := numericStepCfgNormalize(stepCfg)
 	stepDisplay := numericStepDelta(normalized, modifiers)
 	delta := numericModeStepDelta(stepDisplay, mc)
-	seed := numericStepSeedMode(text, value, minVal, decimals, locale, mc)
+	seed := numericStepSeedMode(text, value, minVal, decimals, loc, mc)
 	clamped := numericClamp(seed+(delta*direction), minVal, maxVal)
-	return Some(clamped), numericModeFormatValue(clamped, decimals, locale, mc)
+	return Some(clamped), numericModeFormatValue(clamped, decimals, loc, mc)
 }
 
 func numericInputPreCommitTransformMode(current, proposed string, decimals int, locale NumericLocaleCfg, mc numericModeCfg) (string, bool) {
@@ -602,7 +616,7 @@ func numericInputPreCommitTransformMode(current, proposed string, decimals int, 
 		return "", false
 	}
 	// Try parsing as-is first (handles already-valid formatted text).
-	if _, ok := numericModeParseValue(trimmed, decimals, locale, mc); ok {
+	if _, ok := numericModeParseValue(trimmed, decimals, loc, mc); ok {
 		return proposed, true
 	}
 	// Strip group separators for lenient editing — allows typing
@@ -611,18 +625,18 @@ func numericInputPreCommitTransformMode(current, proposed string, decimals int, 
 	if loc.GroupSep != 0 {
 		stripped := numericStripGroupSep(trimmed, loc.GroupSep)
 		if stripped != trimmed {
-			if _, ok := numericModeParseValue(stripped, decimals, locale, mc); ok {
+			if _, ok := numericModeParseValue(stripped, decimals, loc, mc); ok {
 				return proposed, true
 			}
 		}
 	}
-	if numericModeIsTransientInput(proposed, decimals, locale, mc) {
+	if numericModeIsTransientInput(proposed, decimals, loc, mc) {
 		return proposed, true
 	}
 	// Also check transient with group separators stripped.
 	if loc.GroupSep != 0 {
 		stripped := numericStripGroupSep(proposed, loc.GroupSep)
-		if stripped != proposed && numericModeIsTransientInput(stripped, decimals, locale, mc) {
+		if stripped != proposed && numericModeIsTransientInput(stripped, decimals, loc, mc) {
 			return proposed, true
 		}
 	}

@@ -13,7 +13,8 @@ func assertF64Near(t *testing.T, got, want float64) {
 }
 
 func TestNumericParseENLocale(t *testing.T) {
-	v, ok := numericParse("1,234.50", NumericLocaleCfg{})
+	loc := numericLocaleNormalize(NumericLocaleCfg{})
+	v, ok := numericParse("1,234.50", loc)
 	if !ok {
 		t.Fatal("parse failed")
 	}
@@ -21,8 +22,8 @@ func TestNumericParseENLocale(t *testing.T) {
 }
 
 func TestNumericParseDELocale(t *testing.T) {
-	locale := NumericLocaleCfg{DecimalSep: ',', GroupSep: '.'}
-	v, ok := numericParse("1.234,50", locale)
+	loc := numericLocaleNormalize(NumericLocaleCfg{DecimalSep: ',', GroupSep: '.'})
+	v, ok := numericParse("1.234,50", loc)
 	if !ok {
 		t.Fatal("parse failed")
 	}
@@ -30,17 +31,18 @@ func TestNumericParseDELocale(t *testing.T) {
 }
 
 func TestNumericParseInvalidString(t *testing.T) {
-	if _, ok := numericParse("1,,234", NumericLocaleCfg{}); ok {
+	loc := numericLocaleNormalize(NumericLocaleCfg{})
+	if _, ok := numericParse("1,,234", loc); ok {
 		t.Fatal("expected failure")
 	}
-	if _, ok := numericParse("abc", NumericLocaleCfg{}); ok {
+	if _, ok := numericParse("abc", loc); ok {
 		t.Fatal("expected failure")
 	}
 }
 
 func TestNumericParseInvalidGrouping(t *testing.T) {
-	locale := NumericLocaleCfg{GroupSizes: []int{3, 2}}
-	if _, ok := numericParse("12,345,67", locale); ok {
+	loc := numericLocaleNormalize(NumericLocaleCfg{GroupSizes: []int{3, 2}})
+	if _, ok := numericParse("12,345,67", loc); ok {
 		t.Fatal("expected failure")
 	}
 }
@@ -230,12 +232,13 @@ func TestNumericPercentRoundTripCanonical(t *testing.T) {
 		affixPosition:     AffixSuffix,
 		displayMultiplier: 100.0,
 	}
+	loc := numericLocaleNormalize(NumericLocaleCfg{})
 	source := -0.125
-	formatted := numericModeFormatValue(source, 2, NumericLocaleCfg{}, mc)
+	formatted := numericModeFormatValue(source, 2, loc, mc)
 	if formatted != "-12.50%" {
 		t.Fatalf("formatted: got %q, want %q", formatted, "-12.50%")
 	}
-	parsed, ok := numericModeParseValue(formatted, 2, NumericLocaleCfg{}, mc)
+	parsed, ok := numericModeParseValue(formatted, 2, loc, mc)
 	if !ok {
 		t.Fatal("parse failed")
 	}
@@ -337,8 +340,46 @@ func TestNumericEmptyPrefixSpacing(t *testing.T) {
 		affixSpacing:      true,
 		displayMultiplier: 1.0,
 	}
-	got := numericApplyAffix("", NumericLocaleCfg{}, mc)
+	got := numericApplyAffix("", numericLocaleNormalize(NumericLocaleCfg{}), mc)
 	if got != "$" {
 		t.Fatalf("got %q, want %q", got, "$")
 	}
+}
+
+func TestNumericFormatNegativeZero(t *testing.T) {
+	negZero := math.Copysign(0, -1)
+	got := numericFormat(negZero, 2, NumericLocaleCfg{})
+	if got != "0.00" {
+		t.Fatalf("got %q, want %q", got, "0.00")
+	}
+}
+
+func TestNumericGroupIntegerPartNonStandard(t *testing.T) {
+	got := numericGroupIntegerPart("100", ',', []int{2})
+	if got != "1,00" {
+		t.Fatalf("got %q, want %q", got, "1,00")
+	}
+}
+
+func TestNumericParseCollidingSeparators(t *testing.T) {
+	loc := numericLocaleNormalize(NumericLocaleCfg{
+		DecimalSep: '.', GroupSep: '.',
+	})
+	// When separators collide, groupSep is disabled; '.' is decimal.
+	v, ok := numericParse("1.234", loc)
+	if !ok {
+		t.Fatal("parse failed")
+	}
+	assertF64Near(t, v, 1.234)
+}
+
+func TestNumericParseIndianNumbering(t *testing.T) {
+	loc := numericLocaleNormalize(NumericLocaleCfg{
+		GroupSizes: []int{3, 2},
+	})
+	v, ok := numericParse("12,34,567", loc)
+	if !ok {
+		t.Fatal("parse failed")
+	}
+	assertF64Near(t, v, 1234567)
 }

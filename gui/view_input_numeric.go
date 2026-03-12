@@ -160,6 +160,8 @@ func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, _ NumericSt
 		radius = Opt[float32]{}
 	}
 
+	modeCfg := numericModeCfgFromInput(cfg)
+
 	return Input(InputCfg{
 		ID:               inputID,
 		IDFocus:          cfg.IDFocus,
@@ -185,19 +187,16 @@ func numericInputField(cfg NumericInputCfg, locale NumericLocaleCfg, _ NumericSt
 		Invisible:        cfg.Invisible,
 		OnTextChanged:    cfg.OnTextChanged,
 		PreTextChange: func(current, proposed string) (string, bool) {
-			modeCfg := numericModeCfgFromInput(cfg)
 			return numericInputPreCommitTransformMode(
 				current, proposed, cfg.Decimals, locale, modeCfg)
 		},
 		PostCommitNormalize: func(text string, _ InputCommitReason) string {
-			modeCfg := numericModeCfgFromInput(cfg)
 			_, committed := numericInputCommitResultMode(
 				text, cfg.Value, cfg.Min, cfg.Max,
 				cfg.Decimals, locale, modeCfg)
 			return committed
 		},
 		OnTextCommit: func(layout *Layout, text string, _ InputCommitReason, w *Window) {
-			modeCfg := numericModeCfgFromInput(cfg)
 			value, committed := numericInputCommitResultMode(
 				text, cfg.Value, cfg.Min, cfg.Max,
 				cfg.Decimals, locale, modeCfg)
