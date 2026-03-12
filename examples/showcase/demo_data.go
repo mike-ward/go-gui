@@ -321,9 +321,9 @@ func demoTree(w *gui.Window) gui.View {
 
 func showcaseDataGridColumns() []gui.GridColumnCfg {
 	return []gui.GridColumnCfg{
-		{ID: "name", Title: "Name", Width: 180, Sortable: true, Filterable: true, Reorderable: true},
-		{ID: "team", Title: "Team", Width: 140, Sortable: true, Filterable: true, Reorderable: true},
-		{ID: "status", Title: "Status", Width: 120, Sortable: true, Filterable: true, Reorderable: true},
+		{ID: "name", Title: "Name", Width: gui.SomeF(180), Sortable: true, Filterable: true, Reorderable: true},
+		{ID: "team", Title: "Team", Width: gui.SomeF(140), Sortable: true, Filterable: true, Reorderable: true},
+		{ID: "status", Title: "Status", Width: gui.SomeF(120), Sortable: true, Filterable: true, Reorderable: true},
 	}
 }
 

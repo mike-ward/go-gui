@@ -381,7 +381,7 @@ func TestClampWidthDefaults(t *testing.T) {
 }
 
 func TestClampWidthBelowMin(t *testing.T) {
-	col := GridColumnCfg{ID: "a", MinWidth: 80}
+	col := GridColumnCfg{ID: "a", MinWidth: SomeF(80)}
 	got := dataGridClampWidth(col, 50)
 	if got != 80 {
 		t.Fatalf("expected 80, got %f", got)
@@ -389,7 +389,7 @@ func TestClampWidthBelowMin(t *testing.T) {
 }
 
 func TestClampWidthAboveMax(t *testing.T) {
-	col := GridColumnCfg{ID: "a", MaxWidth: 200}
+	col := GridColumnCfg{ID: "a", MaxWidth: SomeF(200)}
 	got := dataGridClampWidth(col, 300)
 	if got != 200 {
 		t.Fatalf("expected 200, got %f", got)
@@ -398,7 +398,7 @@ func TestClampWidthAboveMax(t *testing.T) {
 
 func TestClampWidthMaxBelowMin(t *testing.T) {
 	// When MaxWidth < MinWidth, max is raised to min.
-	col := GridColumnCfg{ID: "a", MinWidth: 100, MaxWidth: 50}
+	col := GridColumnCfg{ID: "a", MinWidth: SomeF(100), MaxWidth: SomeF(50)}
 	got := dataGridClampWidth(col, 80)
 	// maxW becomes 100 (=minW), so clamped to [100,100].
 	if got != 100 {

@@ -140,7 +140,7 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 	content = append(content, Row(ContainerCfg{
 		Height:  rowH,
 		Sizing:  FillFixed,
-		Padding: Some(cfg.PaddingFilter),
+		Padding: cfg.PaddingFilter,
 		Spacing: SomeF(6),
 		VAlign:  VAlignMiddle,
 		Content: []View{
@@ -174,7 +174,7 @@ func dataGridColumnChooserRow(cfg *DataGridCfg, isOpen bool, focusID uint32) Vie
 		content = append(content, Row(ContainerCfg{
 			Height:      rowH,
 			Sizing:      FillFixed,
-			Padding:     Some(cfg.PaddingFilter),
+			Padding:     cfg.PaddingFilter,
 			Spacing:     SomeF(8),
 			Color:       ColorTransparent,
 			ColorBorder: cfg.ColorBorder,
@@ -585,6 +585,7 @@ func dataGridHandleEscapeKey(kc dataGridKeydownContext, e *Event, w *Window) boo
 		return true
 	}
 	if kc.crudEnabled {
+		e.IsHandled = true
 		dataGridCrudCancel(kc.gridID, 0, e, w)
 	}
 	return true

@@ -627,7 +627,7 @@ func gridOrmBuildOrder(
 	var parts []string
 	for _, s := range sorts {
 		col, ok := colMap[s.ColID]
-		if !ok || !col.Sortable {
+		if !ok || !col.Sortable || !GridOrmValidDBField(col.DBField) {
 			continue
 		}
 		dir := "asc"

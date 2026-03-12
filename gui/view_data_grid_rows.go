@@ -23,7 +23,7 @@ func dataGridGroupHeaderRowView(cfg *DataGridCfg, entry dataGridDisplayRow, rowH
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
 		Padding:     SomeP(pc.Top, pc.Right, pc.Bottom, pc.Left+depthPad),
-		Spacing:     Some(-cfg.SizeBorder),
+		Spacing:     Some(-cfg.SizeBorder.Get(0)),
 		Content: []View{
 			Text(TextCfg{
 				Text:      label,
@@ -53,7 +53,7 @@ func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, column
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
 		Padding:     SomeP(pc.Top, pc.Right, pc.Bottom, pc.Left+dataGridDetailIndent()),
-		Spacing:     Some(-cfg.SizeBorder),
+		Spacing:     Some(-cfg.SizeBorder.Get(0)),
 		Content: []View{
 			Row(ContainerCfg{
 				Width:       dataGridColumnsTotalWidth(columns, columnWidths),
@@ -139,7 +139,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 			Padding:     cellPadding,
 			Color:       cellColor,
 			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  Some(cfg.SizeBorder),
+			SizeBorder:  cfg.SizeBorder,
 			HAlign:      cellHAlign,
 			VAlign:      VAlignMiddle,
 			Spacing:     Some(cellSpacing),
@@ -189,7 +189,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
 		Padding:     NoPadding,
-		Spacing:     Some(-cfg.SizeBorder),
+		Spacing:     Some(-cfg.SizeBorder.Get(0)),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			dataGridRowClick(rows, selection, gridID, multiSelect, rangeSelect,
 				onSelectionChange, editEnabled, editorFocusBase, colCount,

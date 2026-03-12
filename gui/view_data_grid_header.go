@@ -3,6 +3,7 @@ package gui
 import (
 	"fmt"
 	"math"
+	"slices"
 )
 
 // dataGridHeaderRow builds the header row with all column
@@ -21,7 +22,7 @@ func dataGridHeaderRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
 		Padding:     NoPadding,
-		Spacing:     Some(-cfg.SizeBorder),
+		Spacing:     Some(-cfg.SizeBorder.Get(0)),
 		Content:     cells,
 	})
 }
@@ -98,7 +99,7 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 		Clip:        true,
 		Color:       cfg.ColorHeader,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(cfg.SizeBorder),
+		SizeBorder:  cfg.SizeBorder,
 		Spacing:     SomeF(0),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			e.IsHandled = true
@@ -187,7 +188,7 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 						return
 					}
 					nextOrder := DataGridColumnOrderMove(baseOrder, colID, -1)
-					if len(nextOrder) == len(baseOrder) && dataGridStringSliceEqual(nextOrder, baseOrder) {
+					if len(nextOrder) == len(baseOrder) && slices.Equal(nextOrder, baseOrder) {
 						e.IsHandled = true
 						return
 					}
@@ -201,7 +202,7 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 						return
 					}
 					nextOrder := DataGridColumnOrderMove(baseOrder, colID, 1)
-					if len(nextOrder) == len(baseOrder) && dataGridStringSliceEqual(nextOrder, baseOrder) {
+					if len(nextOrder) == len(baseOrder) && slices.Equal(nextOrder, baseOrder) {
 						e.IsHandled = true
 						return
 					}
@@ -212,17 +213,6 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 	})
 }
 
-func dataGridStringSliceEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
 
 func dataGridOrderButton(label string, baseStyle TextStyle, hoverColor Color, cb func(*Event, *Window)) View {
 	return dataGridIndicatorButton(label, baseStyle, hoverColor, false, dataGridHeaderControlWidth,
@@ -295,8 +285,8 @@ func dataGridFilterRow(cfg *DataGridCfg, columns []GridColumnCfg, columnWidths m
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
-		Padding:     Some(cfg.PaddingFilter),
-		Spacing:     Some(-cfg.SizeBorder),
+		Padding:     cfg.PaddingFilter,
+		Spacing:     Some(-cfg.SizeBorder.Get(0)),
 		Content:     cells,
 	})
 }
@@ -316,10 +306,10 @@ func dataGridFilterCell(cfg *DataGridCfg, col GridColumnCfg, width float32) View
 		ID:          cfg.ID + ":filter_cell:" + col.ID,
 		Width:       width,
 		Sizing:      FixedFill,
-		Padding:     Some(cfg.PaddingFilter),
+		Padding:     cfg.PaddingFilter,
 		Color:       ColorTransparent,
 		ColorBorder: cfg.ColorBorder,
-		SizeBorder:  Some(cfg.SizeBorder),
+		SizeBorder:  cfg.SizeBorder,
 		Spacing:     SomeF(0),
 		Content: []View{
 			Input(InputCfg{
@@ -415,6 +405,9 @@ func dataGridEndResize(gridID string, w *Window) {
 }
 
 func dataGridAutoFitWidth(rows []GridRow, textStyleHeader, textStyle TextStyle, paddingCell Padding, col GridColumnCfg, w *Window) float32 {
+	if w.textMeasurer == nil {
+		return dataGridColumnWidthFor(col, nil)
+	}
 	longest := w.textMeasurer.TextWidth(col.Title, textStyleHeader)
 	style := textStyle
 	if col.TextStyle != nil {

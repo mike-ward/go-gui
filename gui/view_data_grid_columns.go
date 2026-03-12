@@ -376,22 +376,13 @@ func dataGridSetColumnWidth(gridID string, col GridColumnCfg, width float32, w *
 }
 
 func dataGridInitialWidth(col GridColumnCfg) float32 {
-	base := col.Width
-	if base <= 0 {
-		base = 120
-	}
+	base := col.Width.Get(120)
 	return dataGridClampWidth(col, base)
 }
 
 func dataGridClampWidth(col GridColumnCfg, width float32) float32 {
-	minW := col.MinWidth
-	if minW <= 0 {
-		minW = 60
-	}
-	maxW := col.MaxWidth
-	if maxW <= 0 {
-		maxW = 600
-	}
+	minW := col.MinWidth.Get(60)
+	maxW := col.MaxWidth.Get(600)
 	if maxW < minW {
 		maxW = minW
 	}

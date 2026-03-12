@@ -767,7 +767,7 @@ func dataGridSourceStatusRow(cfg *DataGridCfg, message string) View {
 		Color:       cfg.ColorFilter,
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  SomeF(0),
-		Padding:     Some(cfg.PaddingFilter),
+		Padding:     cfg.PaddingFilter,
 		VAlign:      VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{

@@ -3,6 +3,7 @@ package gui
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -97,9 +98,9 @@ const (
 type GridColumnCfg struct {
 	ID               string
 	Title            string
-	Width            float32
-	MinWidth         float32
-	MaxWidth         float32
+	Width            Opt[float32]
+	MinWidth         Opt[float32]
+	MaxWidth         Opt[float32]
 	Resizable        bool
 	Reorderable      bool
 	Sortable         bool
@@ -118,14 +119,14 @@ type GridColumnCfg struct {
 // gridColumnCfgDefaults applies V-style defaults to a
 // GridColumnCfg zero value. Called once per cfg construction.
 func gridColumnCfgDefaults(c *GridColumnCfg) {
-	if c.Width == 0 {
-		c.Width = 120
+	if !c.Width.IsSet() {
+		c.Width = SomeF(120)
 	}
-	if c.MinWidth == 0 {
-		c.MinWidth = 60
+	if !c.MinWidth.IsSet() {
+		c.MinWidth = SomeF(60)
 	}
-	if c.MaxWidth == 0 {
-		c.MaxWidth = 600
+	if !c.MaxWidth.IsSet() {
+		c.MaxWidth = SomeF(600)
 	}
 	if c.EditorTrueValue == "" {
 		c.EditorTrueValue = "true"
@@ -235,12 +236,12 @@ type DataGridCfg struct {
 	ColorResizeActive      Color
 	PaddingCell            Opt[Padding]
 	PaddingHeader          Opt[Padding]
-	PaddingFilter          Padding
+	PaddingFilter          Opt[Padding]
 	TextStyle              TextStyle
 	TextStyleHeader        TextStyle
 	TextStyleFilter        TextStyle
-	Radius                 float32
-	SizeBorder             float32
+	Radius                 Opt[float32]
+	SizeBorder             Opt[float32]
 	Scrollbar              ScrollbarOverflow
 	Sizing                 Sizing
 	Width                  float32
@@ -344,11 +345,14 @@ func applyDataGridDefaults(cfg *DataGridCfg) {
 	if cfg.TextStyleFilter == (TextStyle{}) {
 		cfg.TextStyleFilter = s.TextStyleFilter
 	}
-	if cfg.Radius == 0 {
-		cfg.Radius = s.Radius
+	if !cfg.PaddingFilter.IsSet() {
+		cfg.PaddingFilter = Some(s.PaddingFilter)
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = s.SizeBorder
+	if !cfg.Radius.IsSet() {
+		cfg.Radius = SomeF(s.Radius)
+	}
+	if !cfg.SizeBorder.IsSet() {
+		cfg.SizeBorder = SomeF(s.SizeBorder)
 	}
 	for i := range cfg.Columns {
 		gridColumnCfgDefaults(&cfg.Columns[i])
@@ -462,12 +466,7 @@ func dataGridRowAutoID(row GridRow) string {
 	for k := range row.Cells {
 		keys = append(keys, k)
 	}
-	// Sort for stability.
-	for i := 1; i < len(keys); i++ {
-		for j := i; j > 0 && keys[j] < keys[j-1]; j-- {
-			keys[j], keys[j-1] = keys[j-1], keys[j]
-		}
-	}
+	slices.Sort(keys)
 	h := dataGridFnv64Offset
 	for i, key := range keys {
 		if i > 0 {
@@ -503,9 +502,10 @@ func dataGridPagerHeight(cfg *DataGridCfg) float32 {
 
 func dataGridPagerPadding(cfg *DataGridCfg) Padding {
 	pc := cfg.PaddingCell.Get(Padding{})
-	left := f32Max(cfg.PaddingFilter.Left, pc.Left)
-	right := f32Max(cfg.PaddingFilter.Right, pc.Right)
-	return NewPadding(cfg.PaddingFilter.Top, right, cfg.PaddingFilter.Bottom, left)
+	pf := cfg.PaddingFilter.Get(Padding{})
+	left := f32Max(pf.Left, pc.Left)
+	right := f32Max(pf.Right, pc.Right)
+	return NewPadding(pf.Top, right, pf.Bottom, left)
 }
 
 func dataGridHeaderHeight(cfg *DataGridCfg) float32 {
@@ -527,7 +527,7 @@ func dataGridRowHeight(cfg *DataGridCfg, _ *Window) float32 {
 	if cfg.RowHeight > 0 {
 		return cfg.RowHeight
 	}
-	return cfg.TextStyle.Size + cfg.PaddingCell.Get(Padding{}).Height() + cfg.SizeBorder
+	return cfg.TextStyle.Size + cfg.PaddingCell.Get(Padding{}).Height() + cfg.SizeBorder.Get(0)
 }
 
 func dataGridStaticTopHeight(cfg *DataGridCfg, _ float32, chooserOpen bool, includeHeader bool) float32 {
@@ -707,12 +707,7 @@ func dataGridPresentationValueCols(groupCols []string, aggregates []GridAggregat
 		seen[agg.ColID] = true
 		cols = append(cols, agg.ColID)
 	}
-	// Sort for stability.
-	for i := 1; i < len(cols); i++ {
-		for j := i; j > 0 && cols[j] < cols[j-1]; j-- {
-			cols[j], cols[j-1] = cols[j-1], cols[j]
-		}
-	}
+	slices.Sort(cols)
 	return cols
 }
 
@@ -1371,8 +1366,8 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		OnMouseMove: dataGridMakeOnMouseMove(resolvedCfg.ID),
 		Color:       resolvedCfg.ColorBackground,
 		ColorBorder: resolvedCfg.ColorBorder,
-		SizeBorder:  Some(resolvedCfg.SizeBorder),
-		Radius:      Some(resolvedCfg.Radius),
+		SizeBorder:  resolvedCfg.SizeBorder,
+		Radius:      resolvedCfg.Radius,
 		Padding:     NoPadding,
 		Spacing:     SomeF(0),
 		Sizing:      resolvedCfg.Sizing,

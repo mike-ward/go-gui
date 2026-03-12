@@ -20,6 +20,18 @@ const (
 	dataGridPdfMargin     = float32(40)
 	dataGridPdfFontSize   = float32(10)
 	dataGridPdfLineHeight = float32(12)
+	dataGridMaxCSVColumns = 1000
+)
+
+var dataGridXLSXReplacer = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&quot;",
+	"'", "&apos;",
+	"\r", "",
+	"\n", "&#10;",
+	"\t", "&#9;",
 )
 
 // GridDataFromCSV parses CSV data into data-grid columns
@@ -54,6 +66,10 @@ func GridDataFromCSV(data string) (GridCsvData, error) {
 			return GridCsvData{}, fmt.Errorf("failed to parse CSV: %w", readErr)
 		}
 		if len(fields) > maxCols {
+			if len(fields) > dataGridMaxCSVColumns {
+				return GridCsvData{}, fmt.Errorf(
+					"csv exceeds max column count (%d)", dataGridMaxCSVColumns)
+			}
 			prevCols := len(columns)
 			maxCols = len(fields)
 			columns = dataGridCSVColumns(header, maxCols)
@@ -154,9 +170,10 @@ func GridRowsToPDF(columns []GridColumnCfg, rows []GridRow) string {
 }
 
 // GridRowsToPDFFile writes a PDF export to the given path.
+// Callers must not pass untrusted paths.
 func GridRowsToPDFFile(path string, columns []GridColumnCfg, rows []GridRow) error {
-	target := strings.TrimSpace(path)
-	if target == "" {
+	target := filepath.Clean(strings.TrimSpace(path))
+	if target == "" || target == "." {
 		return fmt.Errorf("pdf path is required")
 	}
 	dir := filepath.Dir(target)
@@ -197,10 +214,11 @@ func GridRowsToXLSXFile(path string, columns []GridColumnCfg, rows []GridRow) er
 }
 
 // GridRowsToXLSXFileWithCfg writes a minimal XLSX workbook
-// to path with export config.
+// to path with export config. Callers must not pass
+// untrusted paths.
 func GridRowsToXLSXFileWithCfg(path string, columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg) error {
-	target := strings.TrimSpace(path)
-	if target == "" {
+	target := filepath.Clean(strings.TrimSpace(path))
+	if target == "" || target == "." {
 		return fmt.Errorf("xlsx path is required")
 	}
 	dir := filepath.Dir(target)
@@ -554,17 +572,7 @@ func dataGridXLSXStringCellXML(cellRef, value string) string {
 }
 
 func dataGridXLSXEscape(value string) string {
-	r := strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		`"`, "&quot;",
-		"'", "&apos;",
-		"\r", "",
-		"\n", "&#10;",
-		"\t", "&#9;",
-	)
-	return r.Replace(value)
+	return dataGridXLSXReplacer.Replace(value)
 }
 
 func dataGridXLSXPreserveSpaces(value string) bool {

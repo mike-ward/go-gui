@@ -159,14 +159,14 @@ func makeColumns() []gui.GridColumnCfg {
 		{
 			ID:           "name",
 			Title:        "Name",
-			Width:        180,
+			Width:        gui.SomeF(180),
 			Editable:     true,
 			DefaultValue: "New User",
 		},
 		{
 			ID:            "team",
 			Title:         "Team",
-			Width:         140,
+			Width:         gui.SomeF(140),
 			Editable:      true,
 			Editor:        gui.GridCellEditorSelect,
 			EditorOptions: []string{"Core", "Data", "Platform", "R&D", "Web", "Security"},
@@ -175,14 +175,14 @@ func makeColumns() []gui.GridColumnCfg {
 		{
 			ID:           "email",
 			Title:        "Email",
-			Width:        250,
+			Width:        gui.SomeF(250),
 			Editable:     true,
 			DefaultValue: "new@grid.dev",
 		},
 		{
 			ID:            "status",
 			Title:         "Status",
-			Width:         120,
+			Width:         gui.SomeF(120),
 			Editable:      true,
 			Editor:        gui.GridCellEditorSelect,
 			EditorOptions: []string{"Open", "Paused", "Closed"},
@@ -191,7 +191,7 @@ func makeColumns() []gui.GridColumnCfg {
 		{
 			ID:           "active",
 			Title:        "Active",
-			Width:        90,
+			Width:        gui.SomeF(90),
 			Editable:     true,
 			Editor:       gui.GridCellEditorCheckbox,
 			DefaultValue: "true",
@@ -199,7 +199,7 @@ func makeColumns() []gui.GridColumnCfg {
 		{
 			ID:           "score",
 			Title:        "Score",
-			Width:        110,
+			Width:        gui.SomeF(110),
 			Align:        gui.HAlignEnd,
 			Editable:     true,
 			DefaultValue: "70",
@@ -207,7 +207,7 @@ func makeColumns() []gui.GridColumnCfg {
 		{
 			ID:           "start",
 			Title:        "Start",
-			Width:        130,
+			Width:        gui.SomeF(130),
 			Editable:     true,
 			Editor:       gui.GridCellEditorDate,
 			DefaultValue: "1/1/2026",
