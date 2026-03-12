@@ -86,7 +86,6 @@ type ToggleStyle struct {
 	Padding          Padding
 	SizeBorder       float32
 	Radius           float32
-	Shadow           *BoxShadow
 	TextStyleNormal  TextStyle
 	TextStyleLabel   TextStyle
 }

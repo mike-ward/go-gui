@@ -89,6 +89,9 @@ func Toggle(cfg ToggleCfg) View {
 	return Row(ContainerCfg{
 		ID:              cfg.ID,
 		IDFocus:         cfg.IDFocus,
+		Disabled:        cfg.Disabled,
+		Invisible:       cfg.Invisible,
+		SizeBorder:      NoBorder,
 		Padding:         NoPadding,
 		VAlign:          VAlignMiddle,
 		A11YRole:        AccessRoleCheckbox,
@@ -99,6 +102,11 @@ func Toggle(cfg ToggleCfg) View {
 		OnClick:         leftClickOnly(cfg.OnClick),
 		MinWidth:        cfg.MinWidth,
 		OnHover: func(layout *Layout, e *Event, w *Window) {
+			if layout.Shape.Disabled ||
+				!layout.Shape.HasEvents() ||
+				layout.Shape.Events.OnClick == nil {
+				return
+			}
 			w.SetMouseCursor(CursorPointingHand)
 			if len(layout.Children) == 0 {
 				return
@@ -127,7 +135,7 @@ func Toggle(cfg ToggleCfg) View {
 }
 
 func applyToggleDefaults(cfg *ToggleCfg) {
-	d := &DefaultButtonStyle
+	d := &DefaultToggleStyle
 	if cfg.TextSelect == "" {
 		cfg.TextSelect = "✓"
 	}
@@ -153,20 +161,20 @@ func applyToggleDefaults(cfg *ToggleCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = DefaultToggleStyle.ColorSelect
+		cfg.ColorSelect = d.ColorSelect
 	}
 
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = Some(PaddingTwoThree)
+		cfg.Padding = Some(d.Padding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = DefaultTextStyle
+		cfg.TextStyle = d.TextStyleNormal
 	} else {
-		cfg.TextStyle = mergeTextStyle(cfg.TextStyle, DefaultTextStyle)
+		cfg.TextStyle = mergeTextStyle(cfg.TextStyle, d.TextStyleNormal)
 	}
 	if cfg.TextStyleLabel == (TextStyle{}) {
-		cfg.TextStyleLabel = DefaultTextStyle
+		cfg.TextStyleLabel = d.TextStyleLabel
 	} else {
-		cfg.TextStyleLabel = mergeTextStyle(cfg.TextStyleLabel, DefaultTextStyle)
+		cfg.TextStyleLabel = mergeTextStyle(cfg.TextStyleLabel, d.TextStyleLabel)
 	}
 }

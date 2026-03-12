@@ -15,6 +15,7 @@ func demoToggle(w *gui.Window) gui.View {
 		Content: []gui.View{
 			gui.Toggle(gui.ToggleCfg{
 				ID:       "toggle-a",
+				IDFocus:  108,
 				Label:    "Toggle",
 				Selected: app.ToggleA,
 				OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
@@ -24,6 +25,7 @@ func demoToggle(w *gui.Window) gui.View {
 			}),
 			gui.Checkbox(gui.ToggleCfg{
 				ID:       "checkbox-a",
+				IDFocus:  109,
 				Label:    "Checkbox",
 				Selected: app.CheckboxA,
 				OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {

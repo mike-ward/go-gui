@@ -73,6 +73,8 @@ func Radio(cfg RadioCfg) View {
 	return Row(ContainerCfg{
 		ID:              cfg.ID,
 		IDFocus:         cfg.IDFocus,
+		Disabled:        cfg.Disabled,
+		Invisible:       cfg.Invisible,
 		Padding:         cfg.Padding,
 		VAlign:          VAlignMiddle,
 		A11YRole:        AccessRoleRadioButton,
@@ -95,6 +97,11 @@ func Radio(cfg RadioCfg) View {
 			}
 		},
 		OnHover: func(layout *Layout, e *Event, w *Window) {
+			if layout.Shape.Disabled ||
+				!layout.Shape.HasEvents() ||
+				layout.Shape.Events.OnClick == nil {
+				return
+			}
 			w.SetMouseCursor(CursorPointingHand)
 			if len(layout.Children) == 0 {
 				return

@@ -58,6 +58,21 @@ func TestRadioDisabledCircle(t *testing.T) {
 	}
 }
 
+func TestRadioDisabledSuppressesHover(t *testing.T) {
+	w := newTestWindow()
+	v := Radio(RadioCfg{OnClick: noop, Disabled: true})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Shape.Disabled {
+		t.Fatal("outer row should be disabled")
+	}
+	origBorder := layout.Children[0].Shape.ColorBorder
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.ColorBorder != origBorder {
+		t.Error("hover should not change border when disabled")
+	}
+}
+
 func TestRadioHoverChangesBorder(t *testing.T) {
 	w := newTestWindow()
 	v := Radio(RadioCfg{OnClick: noop, Label: "X"})
@@ -165,6 +180,116 @@ func TestToggleCheckedState(t *testing.T) {
 	layout := GenerateViewLayout(v, w)
 	if layout.Shape.A11YState != AccessStateChecked {
 		t.Fatalf("got state %d, want Checked", layout.Shape.A11YState)
+	}
+}
+
+func TestToggleDisabledSuppressesHover(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{OnClick: noop, Disabled: true})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Shape.Disabled {
+		t.Fatal("outer row should be disabled")
+	}
+	origColor := layout.Children[0].Shape.Color
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.Color != origColor {
+		t.Error("hover should not change color when disabled")
+	}
+}
+
+func TestToggleNilOnClickSuppressesHover(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{})
+	layout := GenerateViewLayout(v, w)
+	origColor := layout.Children[0].Shape.Color
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.Color != origColor {
+		t.Error("hover should not change color without OnClick")
+	}
+}
+
+func TestToggleHoverChangesColor(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	origColor := layout.Children[0].Shape.Color
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.Color == origColor {
+		t.Error("hover should change box color")
+	}
+}
+
+func TestToggleClickHoverChangesColor(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	clickColor := DefaultToggleStyle.ColorClick
+	e := &Event{MouseButton: MouseLeft}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	got := layout.Children[0].Shape.Color
+	if got != clickColor {
+		t.Errorf("got %v, want click color %v", got, clickColor)
+	}
+}
+
+func TestToggleFocusBorder(t *testing.T) {
+	w := newTestWindow()
+	w.viewState.idFocus = 5
+	v := Toggle(ToggleCfg{OnClick: noop, IDFocus: 5})
+	layout := GenerateViewLayout(v, w)
+	layout.Shape.Events.AmendLayout(&layout, w)
+	if layout.Children[0].Shape.ColorBorder != DefaultToggleStyle.ColorBorderFocus {
+		t.Errorf("focus border = %v, want %v",
+			layout.Children[0].Shape.ColorBorder,
+			DefaultToggleStyle.ColorBorderFocus)
+	}
+}
+
+func TestToggleDefaultStyles(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	d := &DefaultToggleStyle
+	box := layout.Children[0].Shape
+	if box.Color != d.Color {
+		t.Errorf("box color: got %v, want %v", box.Color, d.Color)
+	}
+	if box.ColorBorder != d.ColorBorder {
+		t.Errorf("border color: got %v, want %v", box.ColorBorder, d.ColorBorder)
+	}
+}
+
+func TestToggleOuterRowNoBorder(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{OnClick: noop})
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.SizeBorder != 0 {
+		t.Errorf("outer row SizeBorder: got %v, want 0", layout.Shape.SizeBorder)
+	}
+}
+
+func TestToggleInvisibleHidesWidget(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{OnClick: noop, Invisible: true})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Shape.Disabled || !layout.Shape.OverDraw {
+		t.Error("invisible toggle should be disabled+overdraw")
+	}
+}
+
+func TestToggleUnselectedText(t *testing.T) {
+	w := newTestWindow()
+	v := Toggle(ToggleCfg{OnClick: noop, Selected: false})
+	layout := GenerateViewLayout(v, w)
+	// Unselected with default TextUnselect=" " → transparent text color.
+	box := layout.Children[0]
+	txt := box.Children[0]
+	if txt.Shape.TC.TextStyle.Color != ColorTransparent {
+		t.Errorf("unselected text color: got %v, want transparent",
+			txt.Shape.TC.TextStyle.Color)
 	}
 }
 
