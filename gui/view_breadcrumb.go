@@ -1,6 +1,5 @@
 package gui
 
-import "fmt"
 
 // BreadcrumbItemCfg configures one item in a Breadcrumb.
 type BreadcrumbItemCfg struct {
@@ -209,8 +208,6 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 	}))
 
 	if hasContent && selectedIdx >= 0 && selectedIdx < len(cfg.Items) {
-		activeContent := make([]View, len(cfg.Items[selectedIdx].Content))
-		copy(activeContent, cfg.Items[selectedIdx].Content)
 		outerContent = append(outerContent, Column(ContainerCfg{
 			Color:       cfg.ColorContent,
 			ColorBorder: cfg.ColorContentBorder,
@@ -218,16 +215,9 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 			Radius:      Some(radiusContent),
 			Padding:     cfg.PaddingContent,
 			Sizing:      FillFill,
-			Content:     activeContent,
+			Content:     cfg.Items[selectedIdx].Content,
 		}))
 	}
-
-	// Capture for closure.
-	disabled := cfg.Disabled
-	items := cfg.Items
-	selected := cfg.Selected
-	onSelect := cfg.OnSelect
-	idFocus := cfg.IDFocus
 
 	return Column(ContainerCfg{
 		ID:              cfg.ID,
@@ -245,8 +235,8 @@ func Breadcrumb(cfg BreadcrumbCfg) View {
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-			bcOnKeydown(disabled, items, selected, onSelect,
-				idFocus, e, w)
+			bcOnKeydown(cfg.Disabled, cfg.Items, cfg.Selected,
+				cfg.OnSelect, cfg.IDFocus, e, w)
 		},
 		Content: outerContent,
 	})
@@ -431,5 +421,5 @@ func bcHasAnyContent(items []BreadcrumbItemCfg) bool {
 }
 
 func bcCrumbID(controlID, itemID string) string {
-	return fmt.Sprintf("%s:crumb:%s", controlID, itemID)
+	return controlID + ":crumb:" + itemID
 }

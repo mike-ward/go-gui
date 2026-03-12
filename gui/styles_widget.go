@@ -325,7 +325,6 @@ type BreadcrumbStyle struct {
 	TextStyleSelected  TextStyle
 	TextStyleDisabled  TextStyle
 	TextStyleSeparator TextStyle
-	TextStyleIcon      TextStyle
 }
 
 // SplitterStyle defines splitter visual properties.
