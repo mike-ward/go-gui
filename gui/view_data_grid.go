@@ -238,7 +238,7 @@ type DataGridCfg struct {
 	Radius                 Opt[float32]
 	SizeBorder             Opt[float32]
 	Scrollbar              ScrollbarOverflow
-	Sizing                 Sizing
+	Sizing                 Opt[Sizing]
 	Width                  float32
 	Height                 float32
 	MinWidth               float32
@@ -277,8 +277,8 @@ func boolDefault(p *bool, def bool) bool {
 // defaults and sensible fallbacks.
 func applyDataGridDefaults(cfg *DataGridCfg) {
 	s := guiTheme.DataGridStyle
-	if cfg.Sizing == (Sizing{}) {
-		cfg.Sizing = FillFill
+	if !cfg.Sizing.IsSet() {
+		cfg.Sizing = Some(FillFill)
 	}
 	if cfg.RowHeight == 0 {
 		cfg.RowHeight = dataGridDefaultRowHeight
@@ -1362,7 +1362,7 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		Spacing:     SomeF(0),
 		Disabled:    resolvedCfg.Disabled,
 		Invisible:   resolvedCfg.Invisible,
-		Sizing:      resolvedCfg.Sizing,
+		Sizing:      resolvedCfg.Sizing.Get(FillFill),
 		Width:       resolvedCfg.Width,
 		Height:      resolvedCfg.Height,
 		MinWidth:    resolvedCfg.MinWidth,

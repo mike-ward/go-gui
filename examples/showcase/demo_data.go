@@ -154,7 +154,7 @@ func demoDataGrid(w *gui.Window) gui.View {
 			w.DataGrid(gui.DataGridCfg{
 				ID:                "catalog-data-grid",
 				IDFocus:           9162,
-				Sizing:            gui.FitFit,
+				Sizing:            gui.Some(gui.FitFit),
 				Columns:           showcaseDataGridColumns(),
 				Rows:              rows,
 				Query:             app.DataGridQuery,
@@ -203,7 +203,7 @@ func demoDataSource(w *gui.Window) gui.View {
 			w.DataGrid(gui.DataGridCfg{
 				ID:              "catalog-data-source",
 				IDFocus:         9175,
-				Sizing:          gui.FitFit,
+				Sizing:          gui.Some(gui.FitFit),
 				Columns:         showcaseDataGridColumns(),
 				DataSource:      app.DataSource,
 				PaginationKind:  gui.GridPaginationCursor,
