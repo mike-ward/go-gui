@@ -99,6 +99,42 @@ func TestLocaleMatchesFmt(t *testing.T) {
 	}
 }
 
+func TestLocaleDatePadFormat(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"M/D/YYYY", "MM/DD/YYYY"},
+		{"D.M.YYYY", "DD.MM.YYYY"},
+		{"DD/MM/YYYY", "DD/MM/YYYY"},
+		{"YYYY/M/D", "YYYY/MM/DD"},
+		{"YYYY-M-D", "YYYY-MM-DD"},
+		{"YYYY.M.D", "YYYY.MM.DD"},
+	}
+	for _, tt := range tests {
+		got := localeDatePadFormat(tt.in)
+		if got != tt.want {
+			t.Errorf("localeDatePadFormat(%q) = %q, want %q",
+				tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestLocaleDateMaskPattern(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"M/D/YYYY", "99/99/9999"},
+		{"D.M.YYYY", "99.99.9999"},
+		{"DD/MM/YYYY", "99/99/9999"},
+		{"YYYY/M/D", "9999/99/99"},
+		{"YYYY-M-D", "9999-99-99"},
+		{"YYYY.M.D", "9999.99.99"},
+	}
+	for _, tt := range tests {
+		got := localeDateMaskPattern(tt.in)
+		if got != tt.want {
+			t.Errorf("localeDateMaskPattern(%q) = %q, want %q",
+				tt.in, got, tt.want)
+		}
+	}
+}
+
 func TestLocaleT(t *testing.T) {
 	old := guiLocale
 	defer func() { guiLocale = old }()

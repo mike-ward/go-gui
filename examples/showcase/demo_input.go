@@ -308,12 +308,13 @@ func demoDatePickerRoller(w *gui.Window) gui.View {
 func demoInputDate(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	return gui.Column(gui.ContainerCfg{
-		Sizing:  gui.FillFit,
+		Sizing:  gui.FitFit,
 		Spacing: gui.SomeF(10),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.InputDate(gui.InputDateCfg{
 				ID:          "input-date",
+				IDFocus:     9175,
 				Date:        app.InputDate,
 				Placeholder: "Pick a date",
 				Sizing:      gui.FillFit,

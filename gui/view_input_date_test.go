@@ -156,18 +156,30 @@ func TestInputDateMultiSelectText(t *testing.T) {
 func TestInputDateSingleDateText(t *testing.T) {
 	w := &Window{}
 	d1 := time.Date(2025, 3, 15, 0, 0, 0, 0, time.Local)
-	
+
 	v := InputDate(InputDateCfg{
 		ID:   "id-single",
 		Date: d1,
 	})
 	layout := GenerateViewLayout(v, w)
-	
-	// The text child should say formatted date.
-	row := &layout.Children[0]
-	text := row.Children[0].Shape.TC.Text
-	expected := LocaleFormatDate(d1, guiLocale.Date.ShortDate)
-	if text != expected {
-		t.Errorf("got %q, want %q", text, expected)
+
+	// The date is shown via an embedded Input widget.
+	// Find the text by searching the layout tree.
+	expected := LocaleFormatDate(d1,
+		localeDatePadFormat(guiLocale.Date.ShortDate))
+	if !layoutContainsText(&layout, expected) {
+		t.Errorf("layout does not contain %q", expected)
 	}
+}
+
+func layoutContainsText(l *Layout, text string) bool {
+	if l.Shape != nil && l.Shape.TC != nil && l.Shape.TC.Text == text {
+		return true
+	}
+	for i := range l.Children {
+		if layoutContainsText(&l.Children[i], text) {
+			return true
+		}
+	}
+	return false
 }

@@ -75,16 +75,21 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	dateText := ""
 	if len(dates) == 1 {
 		dateText = LocaleFormatDate(dates[0],
-			guiLocale.Date.ShortDate)
+			localeDatePadFormat(guiLocale.Date.ShortDate))
 	} else if len(dates) > 1 {
 		dateText = fmt.Sprintf("%d dates selected", len(dates))
 	}
 
-	displayText := dateText
-	ts := cfg.TextStyle
-	if displayText == "" && cfg.Placeholder != "" {
-		displayText = cfg.Placeholder
-		ts = cfg.PlaceholderStyle
+	// Sync editable text with external date. Only overwrite
+	// user text when the external date actually changes.
+	sm := StateMap[string, string](w, nsInputDateText, capModerate)
+	editText, _ := sm.Get(cfgID)
+	syncKey := cfgID + ".sync"
+	lastSync, _ := sm.Get(syncKey)
+	if dateText != "" && dateText != lastSync {
+		sm.Set(cfgID, dateText)
+		sm.Set(syncKey, dateText)
+		editText = dateText
 	}
 
 	var content []View
@@ -92,18 +97,17 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	// Date text + calendar icon button.
 	content = append(content,
 		Row(ContainerCfg{
-			Sizing:  FillFit,
-			Padding: NoPadding,
-			Spacing: Some(SpacingSmall),
-			VAlign:  VAlignMiddle,
+			Sizing:     FillFit,
+			Padding:    NoPadding,
+			SizeBorder: NoBorder,
+			Spacing:    Some(SpacingSmall),
+			VAlign:     VAlignMiddle,
 			Content: []View{
-				Text(TextCfg{
-					Text:      displayText,
-					TextStyle: ts,
-					Sizing:    FillFit,
-				}),
+				inputDateTextField(cfg, cfgID, isOpen, editText),
 				Button(ButtonCfg{
-					Disabled: cfg.Disabled,
+					Disabled:   cfg.Disabled,
+					Padding:    NoPadding,
+					SizeBorder: NoBorder,
 					Content: []View{Text(TextCfg{
 						Text: "\U0001F4C5",
 					})},
@@ -175,46 +179,94 @@ func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 		}))
 	}
 
-	col := &containerView{
-		cfg: ContainerCfg{
-			ID:          cfg.ID,
-			IDFocus:     cfg.IDFocus,
-			A11YRole:    AccessRoleDateField,
-			A11YLabel:   a11yLabel(cfg.A11YLabel, "Date Input"),
-			Color:       cfg.Color,
-			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  cfg.SizeBorder,
-			Radius:      cfg.RadiusBorder,
-			Padding:     cfg.Padding,
-			Sizing:      cfg.Sizing,
-			Width:       cfg.Width,
-			Height:      cfg.Height,
-			MinWidth:    cfg.MinWidth,
-			MaxWidth:    cfg.MaxWidth,
-			Disabled:    cfg.Disabled,
-			Invisible:   cfg.Invisible,
-			Content:     content,
-			axis:        AxisTopToBottom,
-			AmendLayout: func(layout *Layout, w *Window) {
-				if w.IsFocus(cfg.IDFocus) {
-					layout.Shape.ColorBorder = cfg.ColorBorderFocus
-				}
-			},
-			OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-				if isOpen && e.KeyCode == KeyEscape {
-					inputDateClose(cfgID, w)
-					e.IsHandled = true
-				} else if !isOpen && (e.KeyCode == KeySpace ||
-					e.KeyCode == KeyEnter) {
-					inputDateOpen(cfgID, w)
-					e.IsHandled = true
-				}
-			},
+	col := Column(ContainerCfg{
+		ID:          cfg.ID,
+		A11YRole:    AccessRoleDateField,
+		A11YLabel:   a11yLabel(cfg.A11YLabel, "Date Input"),
+		Color:       cfg.Color,
+		ColorBorder: cfg.ColorBorder,
+		SizeBorder:  cfg.SizeBorder,
+		Radius:      cfg.RadiusBorder,
+		Padding:     cfg.Padding,
+		Sizing:      cfg.Sizing,
+		Width:       cfg.Width,
+		Height:      cfg.Height,
+		MinWidth:    cfg.MinWidth,
+		MaxWidth:    cfg.MaxWidth,
+		Disabled:    cfg.Disabled,
+		Invisible:   cfg.Invisible,
+		Content:     content,
+		AmendLayout: func(layout *Layout, w *Window) {
+			if w.IsFocus(cfg.IDFocus) {
+				layout.Shape.ColorBorder = cfg.ColorBorderFocus
+			}
 		},
-		content:   content,
-		shapeType: ShapeRectangle,
-	}
+	})
 	return GenerateViewLayout(col, w)
+}
+
+// inputDateTextField returns an Input for single/no dates (editable)
+// or a Text for multi-select display ("N dates selected").
+func inputDateTextField(
+	cfg *InputDateCfg, cfgID string, isOpen bool,
+	dateText string,
+) View {
+	if len(cfg.Dates) > 1 {
+		return Text(TextCfg{
+			Text:      dateText,
+			TextStyle: cfg.TextStyle,
+			Sizing:    FillFit,
+		})
+	}
+	return Input(InputCfg{
+		ID:               cfgID + ".input",
+		IDFocus:          cfg.IDFocus,
+		Text:             dateText,
+		Placeholder:      inputDatePlaceholder(cfg),
+		Mask:             localeDateMaskPattern(guiLocale.Date.ShortDate),
+		TextStyle:        cfg.TextStyle,
+		PlaceholderStyle: cfg.PlaceholderStyle,
+		Sizing:           FillFit,
+		SizeBorder:       NoBorder,
+		Padding:          NoPadding,
+		Color:            ColorTransparent,
+		Disabled:         cfg.Disabled,
+		OnTextChanged: func(_ *Layout, s string, w *Window) {
+			sm := StateMap[string, string](w, nsInputDateText, capModerate)
+			sm.Set(cfgID, s)
+		},
+		OnTextCommit: func(_ *Layout, text string, _ InputCommitReason, w *Window) {
+			if text == "" {
+				if cfg.OnSelect != nil {
+					cfg.OnSelect(nil, nil, w)
+				}
+				w.UpdateWindow()
+				return
+			}
+			t, err := localeParseDate(text,
+				localeDatePadFormat(guiLocale.Date.ShortDate))
+			if err != nil {
+				return
+			}
+			if cfg.OnSelect != nil {
+				cfg.OnSelect([]time.Time{t}, nil, w)
+			}
+			w.UpdateWindow()
+		},
+		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
+			if isOpen && e.KeyCode == KeyEscape {
+				inputDateClose(cfgID, w)
+				e.IsHandled = true
+			}
+		},
+	})
+}
+
+func inputDatePlaceholder(cfg *InputDateCfg) string {
+	if cfg.Placeholder != "" {
+		return cfg.Placeholder
+	}
+	return localeDatePadFormat(guiLocale.Date.ShortDate)
 }
 
 func inputDateToggle(id string, w *Window) {

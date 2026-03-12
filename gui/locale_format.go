@@ -68,6 +68,47 @@ func localeDateReplace(t time.Time, format string) string {
 	return r
 }
 
+// localeDatePadFormat promotes M→MM, D→DD in a date format.
+func localeDatePadFormat(format string) string {
+	r := format
+	if !strings.Contains(r, "MM") {
+		r = strings.ReplaceAll(r, "M", "MM")
+	}
+	if !strings.Contains(r, "DD") {
+		r = strings.ReplaceAll(r, "D", "DD")
+	}
+	return r
+}
+
+// localeDateMaskPattern converts a date format to a mask pattern:
+// YYYY→9999, MM→99, DD→99, separators pass through.
+func localeDateMaskPattern(format string) string {
+	r := localeDatePadFormat(format)
+	r = strings.ReplaceAll(r, "YYYY", "9999")
+	r = strings.ReplaceAll(r, "MM", "99")
+	r = strings.ReplaceAll(r, "DD", "99")
+	return r
+}
+
+// localeParseDate parses a date string using locale format tokens.
+// Converts locale tokens (YYYY, MM, M, DD, D) to Go reference
+// time layout and parses.
+func localeParseDate(text, format string) (time.Time, error) {
+	layout := format
+	layout = strings.ReplaceAll(layout, "YYYY", "2006")
+	if strings.Contains(layout, "MM") {
+		layout = strings.ReplaceAll(layout, "MM", "01")
+	} else {
+		layout = strings.ReplaceAll(layout, "M", "1")
+	}
+	if strings.Contains(layout, "DD") {
+		layout = strings.ReplaceAll(layout, "DD", "02")
+	} else {
+		layout = strings.ReplaceAll(layout, "D", "2")
+	}
+	return time.Parse(layout, text)
+}
+
 // localeRowsFmt formats "Rows start-end/total".
 func localeRowsFmt(start, end, total int) string {
 	return fmt.Sprintf("%s %d-%d/%d",

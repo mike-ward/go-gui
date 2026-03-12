@@ -153,6 +153,7 @@ const (
 	nsColorPicker         = "gui.color_picker"
 	nsRangeSliderPress    = "gui.range_slider.press"
 	nsInputDate           = "gui.input_date"
+	nsInputDateText       = "gui.input_date.text"
 	nsDgColWidths         = "gui.dg.col_widths"
 	nsDgPresentation      = "gui.dg.presentation"
 	nsDgResize            = "gui.dg.resize"
