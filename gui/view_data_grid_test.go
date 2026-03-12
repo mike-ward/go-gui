@@ -185,8 +185,8 @@ func TestDataGridPresentationSignatureStable(t *testing.T) {
 	}
 	cols := []GridColumnCfg{{ID: "a", Title: "A"}}
 	idx := []int{0}
-	s1 := dataGridPresentationSignature(cfg, cols, idx, nil, nil)
-	s2 := dataGridPresentationSignature(cfg, cols, idx, nil, nil)
+	s1 := dataGridPresentationSignature(cfg, cols, idx, nil, nil, nil)
+	s2 := dataGridPresentationSignature(cfg, cols, idx, nil, nil, nil)
 	if s1 != s2 {
 		t.Errorf("unstable: %d != %d", s1, s2)
 	}
@@ -207,8 +207,9 @@ func TestDataGridPresentationSignatureDiffers(t *testing.T) {
 	idx := []int{0}
 	groupCols := []string{"a"}
 	valueCols := []string{"a"}
-	s1 := dataGridPresentationSignature(cfg1, cols, idx, groupCols, valueCols)
-	s2 := dataGridPresentationSignature(cfg2, cols, idx, groupCols, valueCols)
+	groupTitles := map[string]string{"a": "A"}
+	s1 := dataGridPresentationSignature(cfg1, cols, idx, groupCols, valueCols, groupTitles)
+	s2 := dataGridPresentationSignature(cfg2, cols, idx, groupCols, valueCols, groupTitles)
 	if s1 == s2 {
 		t.Error("different data should produce different signature")
 	}
@@ -225,8 +226,8 @@ func TestDataGridPresentationSignatureFlatIgnoresCellValues(t *testing.T) {
 	}
 	cols := []GridColumnCfg{{ID: "a", Title: "A"}}
 	idx := []int{0}
-	s1 := dataGridPresentationSignature(cfg1, cols, idx, nil, nil)
-	s2 := dataGridPresentationSignature(cfg2, cols, idx, nil, nil)
+	s1 := dataGridPresentationSignature(cfg1, cols, idx, nil, nil, nil)
+	s2 := dataGridPresentationSignature(cfg2, cols, idx, nil, nil, nil)
 	if s1 != s2 {
 		t.Error("flat presentation signature should ignore cell value changes")
 	}
@@ -530,5 +531,38 @@ func TestDataGridIndicatorTextStyleDimsAlpha(t *testing.T) {
 	}
 	if got.Size != 14 {
 		t.Errorf("size: got %f, want 14", got.Size)
+	}
+}
+
+// --- DataGrid Disabled/Invisible propagation ---
+
+func TestDataGridDisabledPropagates(t *testing.T) {
+	w := newTestWindow()
+	v := w.DataGrid(DataGridCfg{
+		ID:       "dg1",
+		Disabled: true,
+		Columns:  []GridColumnCfg{{ID: "a", Title: "A"}},
+		Rows:     []GridRow{{ID: "r0", Cells: map[string]string{"a": "1"}}},
+	})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Shape.Disabled {
+		t.Error("outer container should be disabled")
+	}
+}
+
+func TestDataGridInvisiblePropagates(t *testing.T) {
+	w := newTestWindow()
+	v := w.DataGrid(DataGridCfg{
+		ID:        "dg2",
+		Invisible: true,
+		Columns:   []GridColumnCfg{{ID: "a", Title: "A"}},
+		Rows:      []GridRow{{ID: "r0", Cells: map[string]string{"a": "1"}}},
+	})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Shape.Disabled {
+		t.Error("invisible should be disabled")
+	}
+	if !layout.Shape.OverDraw {
+		t.Error("invisible should be overdraw")
 	}
 }

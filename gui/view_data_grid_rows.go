@@ -2,6 +2,7 @@ package gui
 
 import (
 	"math"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -10,7 +11,7 @@ func dataGridGroupHeaderRowView(cfg *DataGridCfg, entry dataGridDisplayRow, rowH
 	depthPad := float32(entry.GroupDepth) * dataGridGroupIndentStep
 	label := entry.GroupColTitle + ": " + entry.GroupValue
 	if boolDefault(cfg.ShowGroupCounts, true) {
-		label += " (" + itoa(entry.GroupCount) + ")"
+		label += " (" + strconv.Itoa(entry.GroupCount) + ")"
 	}
 	if entry.AggregateText != "" {
 		label += "  " + entry.AggregateText
@@ -180,6 +181,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 		rowColor = cfg.ColorRowAlt
 	}
 	colorRowHover := cfg.ColorRowHover
+	disabled := cfg.Disabled
 
 	return Row(ContainerCfg{
 		ID:          cfg.ID + ":row:" + rowID,
@@ -196,6 +198,9 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 				rowIdx, rowID, focusID, columns, e, w)
 		},
 		OnHover: func(layout *Layout, _ *Event, _ *Window) {
+			if disabled {
+				return
+			}
 			w.SetMouseCursorPointingHand()
 			if !isSelected {
 				layout.Shape.Color = colorRowHover
@@ -810,25 +815,3 @@ func dataGridSplitFrozenTopIndices(cfg *DataGridCfg, rowIndices []int) (frozenTo
 	return
 }
 
-// itoa is a simple int-to-string without importing strconv.
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var buf [20]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-	return string(buf[i:])
-}

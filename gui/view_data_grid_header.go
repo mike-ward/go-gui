@@ -114,8 +114,10 @@ func dataGridHeaderCell(cfg *DataGridCfg, col GridColumnCfg, colIdx, colCount in
 				w.SetIDFocus(focusID)
 			}
 		},
-		OnKeyDown: dataGridMakeHeaderOnKeydown(cfg, col, colIdx, colCount, focusID),
 		OnHover: func(layout *Layout, _ *Event, w *Window) {
+			if cfg.Disabled {
+				return
+			}
 			if colSortable {
 				w.SetMouseCursorPointingHand()
 				layout.Shape.Color = colorHeaderHover
@@ -136,6 +138,8 @@ func dataGridResizeHandle(cfg *DataGridCfg, col GridColumnCfg, focusID uint32) V
 	colorResizeHandle := cfg.ColorResizeHandle
 	colorResizeActive := cfg.ColorResizeActive
 
+	disabled := cfg.Disabled
+
 	return Row(ContainerCfg{
 		ID:      gridID + ":resize:" + col.ID,
 		Width:   dataGridResizeHandleWidth,
@@ -143,10 +147,16 @@ func dataGridResizeHandle(cfg *DataGridCfg, col GridColumnCfg, focusID uint32) V
 		Padding: NoPadding,
 		Color:   colorResizeHandle,
 		OnClick: func(layout *Layout, e *Event, w *Window) {
+			if disabled {
+				return
+			}
 			startX := layout.Shape.X + e.MouseX
 			dataGridStartResize(gridID, columns, rows, textStyleHeader, textStyle, paddingCell, col, focusID, startX, e, w)
 		},
 		OnHover: func(layout *Layout, e *Event, w *Window) {
+			if disabled {
+				return
+			}
 			w.SetMouseCursorEW()
 			if e.MouseButton == MouseLeft {
 				layout.Shape.Color = colorResizeActive
@@ -588,10 +598,3 @@ func dataGridHeaderControlsWidth(showReorder, showPin, showResize bool) float32 
 	return width
 }
 
-// dataGridMakeHeaderOnKeydown builds the OnKeyDown handler
-// for header cells. Full implementation in events file.
-func dataGridMakeHeaderOnKeydown(_ *DataGridCfg, _ GridColumnCfg, _, _ int, _ uint32) func(*Layout, *Event, *Window) {
-	return func(_ *Layout, _ *Event, _ *Window) {
-		// Placeholder — wired in view_data_grid_events.go.
-	}
-}

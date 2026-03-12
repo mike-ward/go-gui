@@ -25,11 +25,6 @@ const (
 	dataGridHeaderLabelMinWidth     = float32(24)
 	dataGridGroupIndentStep         = float32(14)
 	dataGridDetailIndentGap         = float32(4)
-	dataGridPDFPageWidth            = float32(612)
-	dataGridPDFPageHeight           = float32(792)
-	dataGridPDFMargin               = float32(40)
-	dataGridPDFFontSize             = float32(10)
-	dataGridPDFLineHeight           = float32(12)
 	dataGridRecordSep               = "\x1e"
 	dataGridUnitSep                 = "\x1f"
 	dataGridGroupSep                = "\x1d"
@@ -586,14 +581,12 @@ func dataGridVisibleRangeForScroll(scrollY, viewportHeight, rowHeight float32, r
 
 // --- Presentation building ---
 
-func dataGridPresentation_(cfg *DataGridCfg, columns []GridColumnCfg) dataGridPresentation {
-	return dataGridPresentationRows(cfg, columns, dataGridVisibleRowIndices(len(cfg.Rows), nil))
-}
-
 func dataGridCachedPresentation(cfg *DataGridCfg, columns []GridColumnCfg, rowIndices []int, w *Window) dataGridPresentation {
 	groupCols := dataGridGroupColumns(cfg.GroupBy, columns)
 	valueCols := dataGridPresentationValueCols(groupCols, cfg.Aggregates)
-	signature := dataGridPresentationSignature(cfg, columns, rowIndices, groupCols, valueCols)
+	visibleIndices := dataGridVisibleRowIndices(len(cfg.Rows), rowIndices)
+	groupTitles := dataGridGroupTitles(columns)
+	signature := dataGridPresentationSignature(cfg, columns, visibleIndices, groupCols, valueCols, groupTitles)
 	dgPC := StateMap[string, dataGridPresentationCache](w, nsDgPresentation, capModerate)
 	if cached, ok := dgPC.Get(cfg.ID); ok {
 		if cached.Signature == signature {
@@ -603,14 +596,13 @@ func dataGridCachedPresentation(cfg *DataGridCfg, columns []GridColumnCfg, rowIn
 			}
 		}
 	}
-	visibleIndices := dataGridVisibleRowIndices(len(cfg.Rows), rowIndices)
 	var groupRanges map[string]int
 	if len(groupCols) > 0 && len(visibleIndices) > 0 {
 		groupRanges = dataGridGroupRanges(cfg.Rows, visibleIndices, groupCols)
 	} else {
 		groupRanges = map[string]int{}
 	}
-	pres := dataGridPresentationRowsWithGroupRanges(cfg, columns, visibleIndices, groupCols, groupRanges)
+	pres := dataGridPresentationRowsWithGroupRanges(cfg, columns, visibleIndices, groupCols, groupRanges, groupTitles)
 	dgPC.Set(cfg.ID, dataGridPresentationCache{
 		Signature:     signature,
 		Rows:          pres.Rows,
@@ -621,9 +613,8 @@ func dataGridCachedPresentation(cfg *DataGridCfg, columns []GridColumnCfg, rowIn
 	return pres
 }
 
-func dataGridPresentationSignature(cfg *DataGridCfg, columns []GridColumnCfg, rowIndices []int, groupCols []string, valueCols []string) uint64 {
+func dataGridPresentationSignature(cfg *DataGridCfg, columns []GridColumnCfg, visibleIndices []int, groupCols []string, valueCols []string, groupTitles map[string]string) uint64 {
 	h := dataGridFnv64Offset
-	visibleIndices := dataGridVisibleRowIndices(len(cfg.Rows), rowIndices)
 	if len(groupCols) == 0 && len(cfg.Aggregates) == 0 && cfg.OnDetailRowView == nil {
 		h = dataGridFnv64Str(h, cfg.ID)
 		h = dataGridFnv64Byte(h, 0x1e)
@@ -638,10 +629,9 @@ func dataGridPresentationSignature(cfg *DataGridCfg, columns []GridColumnCfg, ro
 		}
 		return h
 	}
-	groupTitles := dataGridGroupTitles(columns)
 	h = dataGridFnv64Str(h, cfg.ID)
 	h = dataGridFnv64Byte(h, 0x1e)
-	for _, idx := range rowIndices {
+	for _, idx := range visibleIndices {
 		h = dataGridFnv64U64(h, uint64(idx))
 		h = dataGridFnv64Byte(h, 0x1f)
 	}
@@ -714,16 +704,17 @@ func dataGridPresentationValueCols(groupCols []string, aggregates []GridAggregat
 func dataGridPresentationRows(cfg *DataGridCfg, columns []GridColumnCfg, rowIndices []int) dataGridPresentation {
 	visibleIndices := dataGridVisibleRowIndices(len(cfg.Rows), rowIndices)
 	groupCols := dataGridGroupColumns(cfg.GroupBy, columns)
+	groupTitles := dataGridGroupTitles(columns)
 	var groupRanges map[string]int
 	if len(groupCols) > 0 && len(visibleIndices) > 0 {
 		groupRanges = dataGridGroupRanges(cfg.Rows, visibleIndices, groupCols)
 	} else {
 		groupRanges = map[string]int{}
 	}
-	return dataGridPresentationRowsWithGroupRanges(cfg, columns, visibleIndices, groupCols, groupRanges)
+	return dataGridPresentationRowsWithGroupRanges(cfg, columns, visibleIndices, groupCols, groupRanges, groupTitles)
 }
 
-func dataGridPresentationRowsWithGroupRanges(cfg *DataGridCfg, columns []GridColumnCfg, visibleIndices []int, groupCols []string, groupRanges map[string]int) dataGridPresentation {
+func dataGridPresentationRowsWithGroupRanges(cfg *DataGridCfg, columns []GridColumnCfg, visibleIndices []int, groupCols []string, groupRanges map[string]int, groupTitles map[string]string) dataGridPresentation {
 	rows := make([]dataGridDisplayRow, 0, len(cfg.Rows)+8)
 	dataToDisplay := map[int]int{}
 	if len(groupCols) == 0 || len(visibleIndices) == 0 {
@@ -744,7 +735,6 @@ func dataGridPresentationRowsWithGroupRanges(cfg *DataGridCfg, columns []GridCol
 		return dataGridPresentation{Rows: rows, DataToDisplay: dataToDisplay}
 	}
 
-	groupTitles := dataGridGroupTitles(columns)
 	prevValues := make([]string, len(groupCols))
 	hasPrev := false
 
@@ -1370,6 +1360,8 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		Radius:      resolvedCfg.Radius,
 		Padding:     NoPadding,
 		Spacing:     SomeF(0),
+		Disabled:    resolvedCfg.Disabled,
+		Invisible:   resolvedCfg.Invisible,
 		Sizing:      resolvedCfg.Sizing,
 		Width:       resolvedCfg.Width,
 		Height:      resolvedCfg.Height,

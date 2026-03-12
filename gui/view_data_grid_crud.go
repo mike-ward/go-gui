@@ -2,7 +2,7 @@ package gui
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -407,7 +407,7 @@ func dataGridCrudBuildPayload(state dataGridCrudState) (createRows, updateRows [
 	for rowID := range state.DeletedRowIDs {
 		deleteIDs = append(deleteIDs, rowID)
 	}
-	sort.Strings(deleteIDs)
+	slices.Sort(deleteIDs)
 	return
 }
 
@@ -764,7 +764,7 @@ func sortedMapKeys(m map[string]string) []string {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	return keys
 }
 
@@ -773,6 +773,6 @@ func sortedMapKeysFromSet(m map[string]bool) []string {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	return keys
 }
