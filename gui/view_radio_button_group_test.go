@@ -93,6 +93,30 @@ func TestRadioButtonGroupOnSelect(t *testing.T) {
 	}
 }
 
+func TestRadioButtonGroupDisabledPropagation(t *testing.T) {
+	w := newTestWindow()
+	v := RadioButtonGroupColumn(RadioButtonGroupCfg{
+		Value:    "a",
+		Disabled: true,
+		Options: []RadioOption{
+			{Label: "A", Value: "a"},
+			{Label: "B", Value: "b"},
+		},
+		OnSelect: func(_ string, _ *Window) {},
+	})
+	kids := v.Content()
+	for i, child := range kids {
+		layout := GenerateViewLayout(child, w)
+		// Circle child should be disabled.
+		if len(layout.Children) == 0 {
+			t.Fatalf("child[%d] has no children", i)
+		}
+		if !layout.Children[0].Shape.Disabled {
+			t.Errorf("child[%d] circle not disabled", i)
+		}
+	}
+}
+
 func TestNewRadioOption(t *testing.T) {
 	opt := NewRadioOption("Go", "go")
 	if opt.Label != "Go" || opt.Value != "go" {

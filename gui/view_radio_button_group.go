@@ -25,54 +25,40 @@ type RadioButtonGroupCfg struct {
 	TitleBG     Color
 	MinWidth    float32
 	MinHeight   float32
-	IDFocus     uint32
+	IDFocus   uint32
+	Disabled  bool
+	TextStyle TextStyle
 
 	A11YLabel       string
 	A11YDescription string
 }
 
 // DefaultRadioGroupStyle holds defaults for RadioButtonGroupCfg Opt fields.
-var DefaultRadioGroupStyle = struct {
-	SizeBorder float32
-}{
+var DefaultRadioGroupStyle = RadioGroupStyle{
 	SizeBorder: 1.5,
 }
 
 // RadioButtonGroupColumn creates a vertically stacked radio
 // button group.
 func RadioButtonGroupColumn(cfg RadioButtonGroupCfg) View {
-	applyRadioGroupDefaults(&cfg)
-	drg := &DefaultRadioGroupStyle
-	sizeBorder := cfg.SizeBorder.Get(drg.SizeBorder)
-	return Column(ContainerCfg{
-		A11YRole:        AccessRoleRadioGroup,
-		A11YLabel:       cfg.A11YLabel,
-		A11YDescription: cfg.A11YDescription,
-		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      Some(sizeBorder),
-		Title:           cfg.Title,
-		TitleBG:         cfg.TitleBG,
-		Spacing:         cfg.Spacing,
-		Padding:         cfg.Padding,
-		MinWidth:        cfg.MinWidth,
-		MinHeight:       cfg.MinHeight,
-		Sizing:          cfg.Sizing,
-		Content:         buildRadioOptions(cfg),
-	})
+	return radioGroup(cfg, Column)
 }
 
 // RadioButtonGroupRow creates a horizontally stacked radio
 // button group.
 func RadioButtonGroupRow(cfg RadioButtonGroupCfg) View {
+	return radioGroup(cfg, Row)
+}
+
+func radioGroup(cfg RadioButtonGroupCfg, axis func(ContainerCfg) View) View {
 	applyRadioGroupDefaults(&cfg)
-	drg2 := &DefaultRadioGroupStyle
-	sizeBorder2 := cfg.SizeBorder.Get(drg2.SizeBorder)
-	return Row(ContainerCfg{
+	sizeBorder := cfg.SizeBorder.Get(DefaultRadioGroupStyle.SizeBorder)
+	return axis(ContainerCfg{
 		A11YRole:        AccessRoleRadioGroup,
 		A11YLabel:       cfg.A11YLabel,
 		A11YDescription: cfg.A11YDescription,
 		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      Some(sizeBorder2),
+		SizeBorder:      Some(sizeBorder),
 		Title:           cfg.Title,
 		TitleBG:         cfg.TitleBG,
 		Spacing:         cfg.Spacing,
@@ -91,9 +77,11 @@ func buildRadioOptions(cfg RadioButtonGroupCfg) []View {
 	for _, opt := range cfg.Options {
 		optValue := opt.Value
 		content = append(content, Radio(RadioCfg{
-			Label:    opt.Label,
-			IDFocus:  idFocus,
-			Selected: cfg.Value == opt.Value,
+			Label:     opt.Label,
+			IDFocus:   idFocus,
+			Selected:  cfg.Value == opt.Value,
+			Disabled:  cfg.Disabled,
+			TextStyle: cfg.TextStyle,
 			OnClick: func(_ *Layout, _ *Event, w *Window) {
 				if onSelect != nil {
 					onSelect(optValue, w)

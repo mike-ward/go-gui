@@ -35,6 +35,8 @@ func Radio(cfg RadioCfg) View {
 	sizeBorder := cfg.SizeBorder.Get(dr.SizeBorder)
 
 	colorBorderFocus := cfg.ColorBorderFocus
+	colorHover := cfg.ColorHover
+	colorClick := cfg.ColorClick
 	circleColor := cfg.ColorUnselect
 	if cfg.Selected {
 		circleColor = cfg.ColorSelect
@@ -92,15 +94,22 @@ func Radio(cfg RadioCfg) View {
 				layout.Children[0].Shape.ColorBorder = colorBorderFocus
 			}
 		},
-		OnHover: func(_ *Layout, _ *Event, w *Window) {
+		OnHover: func(layout *Layout, e *Event, w *Window) {
 			w.SetMouseCursor(CursorPointingHand)
+			if len(layout.Children) == 0 {
+				return
+			}
+			layout.Children[0].Shape.ColorBorder = colorHover
+			if e.MouseButton == MouseLeft {
+				layout.Children[0].Shape.ColorBorder = colorClick
+			}
 		},
 		Content: content,
 	})
 }
 
 func applyRadioDefaults(cfg *RadioCfg) {
-	d := &DefaultButtonStyle
+	d := &DefaultRadioStyle
 	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
 	}
@@ -120,15 +129,17 @@ func applyRadioDefaults(cfg *RadioCfg) {
 		cfg.ColorBorderFocus = d.ColorBorderFocus
 	}
 	if !cfg.ColorSelect.IsSet() {
-		cfg.ColorSelect = DefaultRadioStyle.ColorSelect
+		cfg.ColorSelect = d.ColorSelect
 	}
 	if !cfg.ColorUnselect.IsSet() {
-		cfg.ColorUnselect = DefaultRadioStyle.ColorUnselect
+		cfg.ColorUnselect = d.ColorUnselect
 	}
 	if !cfg.Padding.IsSet() {
-		cfg.Padding = NoPadding
+		cfg.Padding = Some(d.Padding)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = DefaultTextStyle
+		cfg.TextStyle = d.TextStyleNormal
+	} else {
+		cfg.TextStyle = mergeTextStyle(cfg.TextStyle, d.TextStyleNormal)
 	}
 }

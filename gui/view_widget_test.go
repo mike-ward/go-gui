@@ -45,6 +45,92 @@ func TestRadioNoLabel(t *testing.T) {
 	}
 }
 
+func TestRadioDisabledCircle(t *testing.T) {
+	w := newTestWindow()
+	v := Radio(RadioCfg{
+		OnClick:  noop,
+		IDFocus:  1,
+		Disabled: true,
+	})
+	layout := GenerateViewLayout(v, w)
+	if !layout.Children[0].Shape.Disabled {
+		t.Error("circle child should be disabled")
+	}
+}
+
+func TestRadioHoverChangesBorder(t *testing.T) {
+	w := newTestWindow()
+	v := Radio(RadioCfg{OnClick: noop, Label: "X"})
+	layout := GenerateViewLayout(v, w)
+	origBorder := layout.Children[0].Shape.ColorBorder
+	// MouseInvalid = no button pressed (MouseLeft = 0 is zero value).
+	e := &Event{MouseButton: MouseInvalid}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Children[0].Shape.ColorBorder == origBorder {
+		t.Error("hover should change circle border color")
+	}
+}
+
+func TestRadioClickHoverChangesBorder(t *testing.T) {
+	w := newTestWindow()
+	v := Radio(RadioCfg{OnClick: noop, Label: "X"})
+	layout := GenerateViewLayout(v, w)
+	clickColor := DefaultRadioStyle.ColorClick
+	e := &Event{MouseButton: MouseLeft}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	got := layout.Children[0].Shape.ColorBorder
+	if got != clickColor {
+		t.Errorf("got %v, want click color %v", got, clickColor)
+	}
+}
+
+func TestRadioFocusBorder(t *testing.T) {
+	w := newTestWindow()
+	w.viewState.idFocus = 5
+	v := Radio(RadioCfg{OnClick: noop, IDFocus: 5})
+	layout := GenerateViewLayout(v, w)
+	layout.Shape.Events.AmendLayout(&layout, w)
+	if layout.Children[0].Shape.ColorBorder != DefaultRadioStyle.ColorBorderFocus {
+		t.Errorf("focus border = %v, want %v",
+			layout.Children[0].Shape.ColorBorder,
+			DefaultRadioStyle.ColorBorderFocus)
+	}
+}
+
+func TestRadioUsesRadioStyleDefaults(t *testing.T) {
+	w := newTestWindow()
+	v := Radio(RadioCfg{OnClick: noop, Label: "Y"})
+	layout := GenerateViewLayout(v, w)
+	// Padding should come from DefaultRadioStyle, not NoPadding.
+	got := layout.Shape.Padding
+	want := DefaultRadioStyle.Padding
+	if got != want {
+		t.Errorf("padding = %v, want %v", got, want)
+	}
+}
+
+func TestRadioCustomTextStyleMerged(t *testing.T) {
+	w := newTestWindow()
+	custom := TextStyle{Color: RGBA(255, 0, 0, 255)}
+	v := Radio(RadioCfg{
+		OnClick:   noop,
+		Label:     "Z",
+		TextStyle: custom,
+	})
+	layout := GenerateViewLayout(v, w)
+	// Label is second child (row with text).
+	labelRow := layout.Children[1]
+	textLayout := labelRow.Children[0]
+	ts := textLayout.Shape.TC.TextStyle
+	if ts.Color != custom.Color {
+		t.Errorf("color = %v, want custom red", ts.Color)
+	}
+	// Size should be merged from default, not zero.
+	if ts.Size == 0 {
+		t.Error("Size should be merged from default, got 0")
+	}
+}
+
 // --- Toggle / Checkbox ---
 
 func TestToggleGeneratesLayout(t *testing.T) {

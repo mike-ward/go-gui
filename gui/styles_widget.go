@@ -50,6 +50,11 @@ type RadioStyle struct {
 	TextStyleNormal  TextStyle
 }
 
+// RadioGroupStyle defines radio button group visual properties.
+type RadioGroupStyle struct {
+	SizeBorder float32
+}
+
 // SwitchStyle defines switch toggle visual properties.
 type SwitchStyle struct {
 	SizeWidth        float32
