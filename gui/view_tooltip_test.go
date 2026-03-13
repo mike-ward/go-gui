@@ -30,15 +30,13 @@ func TestTooltipCfgDefaults(t *testing.T) {
 	if cfg.Delay == 0 {
 		t.Error("expected non-zero delay")
 	}
-	if cfg.Radius == 0 {
-		t.Error("expected non-zero radius")
+	// Radius, OffsetX, OffsetY, Anchor, TieOff are now Opt
+	// and resolve at use sites, not in applyTooltipDefaults.
+	if cfg.Radius.IsSet() {
+		t.Error("Radius should not be set by defaults")
 	}
-	if cfg.OffsetX == 0 || cfg.OffsetY == 0 {
-		t.Error("expected non-zero offsets")
-	}
-	if cfg.Anchor != FloatBottomCenter {
-		t.Errorf("expected BottomCenter anchor, got %d",
-			cfg.Anchor)
+	if cfg.Anchor.IsSet() {
+		t.Error("Anchor should not be set by defaults")
 	}
 }
 
@@ -61,6 +59,7 @@ func TestAnimationTooltipCallback(t *testing.T) {
 	w.viewState.tooltip.bounds = DrawClip{
 		X: 10, Y: 10, Width: 50, Height: 50,
 	}
+	w.viewState.tooltip.hoverID = "tip1"
 	w.viewState.mousePosX = 20
 	w.viewState.mousePosY = 20
 
@@ -74,6 +73,10 @@ func TestAnimationTooltipCallback(t *testing.T) {
 		t.Errorf("expected tooltip id=tip1, got %q",
 			w.viewState.tooltip.id)
 	}
+	if w.viewState.tooltip.popupID != "tip1_popup" {
+		t.Errorf("expected popupID=tip1_popup, got %q",
+			w.viewState.tooltip.popupID)
+	}
 }
 
 func TestAnimationTooltipCallbackOutside(t *testing.T) {
@@ -81,6 +84,7 @@ func TestAnimationTooltipCallbackOutside(t *testing.T) {
 	w.viewState.tooltip.bounds = DrawClip{
 		X: 10, Y: 10, Width: 50, Height: 50,
 	}
+	w.viewState.tooltip.hoverID = "tip1"
 	w.viewState.mousePosX = 100
 	w.viewState.mousePosY = 100
 
@@ -92,6 +96,27 @@ func TestAnimationTooltipCallbackOutside(t *testing.T) {
 
 	if w.viewState.tooltip.id != "" {
 		t.Error("expected empty tooltip id when outside")
+	}
+}
+
+func TestAnimationTooltipStaleHover(t *testing.T) {
+	w := &Window{}
+	w.viewState.tooltip.bounds = DrawClip{
+		X: 10, Y: 10, Width: 50, Height: 50,
+	}
+	w.viewState.tooltip.hoverID = "other"
+	w.viewState.mousePosX = 20
+	w.viewState.mousePosY = 20
+
+	a := AnimationTooltip(TooltipCfg{
+		ID:    "tip1",
+		Delay: 100 * time.Millisecond,
+	})
+	a.Callback(a, w)
+
+	if w.viewState.tooltip.id != "" {
+		t.Errorf("expected empty id with stale hover, got %q",
+			w.viewState.tooltip.id)
 	}
 }
 
@@ -110,6 +135,7 @@ func TestWithTooltipReturnsView(t *testing.T) {
 func TestWithTooltipShowsPopupWhenActive(t *testing.T) {
 	w := &Window{}
 	w.viewState.tooltip.id = "tip1"
+	w.viewState.tooltip.popupID = "tip1_popup"
 	v := WithTooltip(w, WithTooltipCfg{
 		ID:      "tip1",
 		Text:    "hello",
@@ -134,6 +160,20 @@ func TestWithTooltipHidesPopupWhenInactive(t *testing.T) {
 	if len(layout.Children) != 1 {
 		t.Errorf("expected 1 child, got %d",
 			len(layout.Children))
+	}
+}
+
+func TestWithTooltipNoBorderInflation(t *testing.T) {
+	w := &Window{}
+	v := WithTooltip(w, WithTooltipCfg{
+		ID:      "tip1",
+		Text:    "hello",
+		Content: []View{Text(TextCfg{Text: "trigger"})},
+	})
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.SizeBorder != 0 {
+		t.Errorf("expected SizeBorder=0, got %v",
+			layout.Shape.SizeBorder)
 	}
 }
 
@@ -173,6 +213,7 @@ func TestWithTooltipAmendClearsOnLeave(t *testing.T) {
 	w.viewState.tooltip.hoverID = "tip1"
 	w.viewState.tooltip.hoverStart = time.Now()
 	w.viewState.tooltip.id = "tip1"
+	w.viewState.tooltip.popupID = "tip1_popup"
 	w.viewState.mousePosX = 200
 	w.viewState.mousePosY = 200
 
@@ -196,6 +237,10 @@ func TestWithTooltipAmendClearsOnLeave(t *testing.T) {
 	if w.viewState.tooltip.id != "" {
 		t.Errorf("expected empty tooltip id, got %q",
 			w.viewState.tooltip.id)
+	}
+	if w.viewState.tooltip.popupID != "" {
+		t.Errorf("expected empty popupID, got %q",
+			w.viewState.tooltip.popupID)
 	}
 }
 
@@ -249,11 +294,16 @@ func TestWithTooltipAmendSetsIDAfterDelay(t *testing.T) {
 		t.Errorf("expected tooltip id=tip1, got %q",
 			w.viewState.tooltip.id)
 	}
+	if w.viewState.tooltip.popupID != "tip1_popup" {
+		t.Errorf("expected popupID=tip1_popup, got %q",
+			w.viewState.tooltip.popupID)
+	}
 }
 
 func TestWithTooltipDefaultsID(t *testing.T) {
 	w := &Window{}
 	w.viewState.tooltip.id = "hello"
+	w.viewState.tooltip.popupID = "hello_popup"
 	v := WithTooltip(w, WithTooltipCfg{
 		Text:    "hello",
 		Content: []View{Text(TextCfg{Text: "trigger"})},
@@ -263,5 +313,33 @@ func TestWithTooltipDefaultsID(t *testing.T) {
 	if len(layout.Children) < 2 {
 		t.Errorf("expected >=2 children, got %d",
 			len(layout.Children))
+	}
+}
+
+func TestTooltipExplicitZero(t *testing.T) {
+	v := Tooltip(TooltipCfg{
+		ID:      "tip1",
+		Radius:  NoRadius,
+		Content: []View{Text(TextCfg{Text: "hello"})},
+	})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.Radius != 0 {
+		t.Errorf("expected Radius=0, got %v",
+			layout.Shape.Radius)
+	}
+}
+
+func TestTooltipExplicitTopLeft(t *testing.T) {
+	v := Tooltip(TooltipCfg{
+		ID:      "tip1",
+		Anchor:  Some(FloatTopLeft),
+		Content: []View{Text(TextCfg{Text: "hello"})},
+	})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.FloatAnchor != FloatTopLeft {
+		t.Errorf("expected FloatTopLeft, got %d",
+			layout.Shape.FloatAnchor)
 	}
 }

@@ -190,19 +190,14 @@ type ToastStyle struct {
 
 // TooltipStyle defines tooltip visual properties.
 type TooltipStyle struct {
-	Delay            time.Duration
-	Color            Color
-	ColorHover       Color
-	ColorFocus       Color
-	ColorClick       Color
-	ColorBorder      Color
-	ColorBorderFocus Color
-	Padding          Padding
-	SizeBorder       float32
-	Radius           float32
-	RadiusBorder     float32
-	Shadow           *BoxShadow
-	TextStyle        TextStyle
+	Delay      time.Duration
+	Color      Color
+	ColorBorder Color
+	Padding    Padding
+	SizeBorder float32
+	Radius     float32
+	Shadow     *BoxShadow
+	TextStyle  TextStyle
 }
 
 // BadgeStyle defines badge visual properties.
@@ -621,18 +616,13 @@ var (
 	}
 
 	DefaultTooltipStyle = TooltipStyle{
-		Delay:            500 * time.Millisecond,
-		Color:            colorInteriorDark,
-		ColorHover:       colorHoverDark,
-		ColorFocus:       colorActiveDark,
-		ColorClick:       colorActiveDark,
-		ColorBorder:      colorBorderDark,
-		ColorBorderFocus: colorSelectDark,
-		Padding:          PaddingSmall,
-		SizeBorder:       SizeBorderDef,
-		Radius:           RadiusSmall,
-		RadiusBorder:     RadiusSmall,
-		TextStyle:        DefaultTextStyle,
+		Delay:       500 * time.Millisecond,
+		Color:       colorInteriorDark,
+		ColorBorder: colorBorderDark,
+		Padding:     PaddingSmall,
+		SizeBorder:  SizeBorderDef,
+		Radius:      RadiusSmall,
+		TextStyle:   DefaultTextStyle,
 	}
 
 	DefaultBadgeStyle = BadgeStyle{

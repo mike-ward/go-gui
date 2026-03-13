@@ -239,6 +239,7 @@ func rtfTooltipAnimation(tipID string) *Animate {
 			ts := &w.viewState.tooltip
 			if ts.hoverID == tipID && ts.text != "" {
 				ts.id = tipID
+				ts.popupID = tipID + "_rtf_popup"
 			}
 		},
 	}
@@ -298,7 +299,7 @@ func rtfRunsKey(rt *RichText) uint64 {
 func rtfTooltipView(ts *tooltipState) View {
 	d := &DefaultTooltipStyle
 	return Column(ContainerCfg{
-		ID:            ts.id + "_rtf_popup",
+		ID:            ts.popupID,
 		Float:         true,
 		FloatAutoFlip: true,
 		FloatTieOff:   FloatBottomCenter,

@@ -9,6 +9,7 @@ type tooltipState struct {
 	floatOffsetY float32  // run-relative Y for float popup
 	blockKey     uint64   // FNV hash of owning RichText
 	id           string
+	popupID      string    // cached popup ID string
 	hoverID      string    // trigger currently hovered
 	hoverStart   time.Time // when hover began
 	text         string    // RTF tooltip content
@@ -23,6 +24,7 @@ func (ts *tooltipState) clearText() {
 	ts.hoverID = ""
 	ts.hoverStart = time.Time{}
 	ts.id = ""
+	ts.popupID = ""
 	ts.text = ""
 	ts.bounds = DrawClip{}
 	ts.floatOffsetX = 0
@@ -32,40 +34,39 @@ func (ts *tooltipState) clearText() {
 
 // TooltipCfg configures a tooltip popup.
 type TooltipCfg struct {
-	ID           string
-	Color        Color
-	ColorHover   Color
-	ColorBorder  Color
-	Padding      Opt[Padding]
-	TextStyle    TextStyle
-	Content      []View
-	Delay        time.Duration
-	Radius       float32
-	RadiusBorder float32
-	SizeBorder   float32
-	OffsetX      float32
-	OffsetY      float32
-	FloatZIndex  int
-	Anchor       FloatAttach
-	TieOff       FloatAttach
+	ID          string
+	Color       Color
+	ColorBorder Color
+	Padding     Opt[Padding]
+	TextStyle   TextStyle
+	Content     []View
+	Delay       time.Duration
+	Radius      Opt[float32]
+	SizeBorder  Opt[float32]
+	OffsetX     Opt[float32]
+	OffsetY     Opt[float32]
+	FloatZIndex int
+	Anchor      Opt[FloatAttach]
+	TieOff      Opt[FloatAttach]
 }
 
 // Tooltip creates a floating tooltip view.
 func Tooltip(cfg TooltipCfg) View {
 	applyTooltipDefaults(&cfg)
+	d := &DefaultTooltipStyle
 	return Column(ContainerCfg{
 		ID:            cfg.ID,
 		Float:         true,
 		FloatAutoFlip: true,
-		FloatAnchor:   cfg.Anchor,
-		FloatTieOff:   cfg.TieOff,
-		FloatOffsetX:  cfg.OffsetX,
-		FloatOffsetY:  cfg.OffsetY,
+		FloatAnchor:   cfg.Anchor.Get(FloatBottomCenter),
+		FloatTieOff:   cfg.TieOff.Get(FloatTopCenter),
+		FloatOffsetX:  cfg.OffsetX.Get(-3),
+		FloatOffsetY:  cfg.OffsetY.Get(-3),
 		FloatZIndex:   cfg.FloatZIndex,
 		Color:         cfg.Color,
 		ColorBorder:   cfg.ColorBorder,
-		SizeBorder:    Some(cfg.SizeBorder),
-		Radius:        Some(cfg.Radius),
+		SizeBorder:    SomeF(cfg.SizeBorder.Get(d.SizeBorder)),
+		Radius:        SomeF(cfg.Radius.Get(d.Radius)),
 		Padding:       cfg.Padding,
 		MaxWidth:      300,
 		Content:       cfg.Content,
@@ -83,14 +84,17 @@ func AnimationTooltip(cfg TooltipCfg) *Animate {
 	id := cfg.ID
 	return &Animate{
 		AnimID: "___tooltip___",
-		Delay:     delay,
+		Delay:  delay,
 		Callback: func(_ *Animate, w *Window) {
-			b := w.viewState.tooltip.bounds
+			ts := &w.viewState.tooltip
+			b := ts.bounds
 			mx := w.viewState.mousePosX
 			my := w.viewState.mousePosY
-			if mx >= b.X && my >= b.Y &&
+			if ts.hoverID == id &&
+				mx >= b.X && my >= b.Y &&
 				mx < b.X+b.Width && my < b.Y+b.Height {
-				w.viewState.tooltip.id = id
+				ts.id = id
+				ts.popupID = id + "_popup"
 			}
 		},
 	}
@@ -100,9 +104,6 @@ func applyTooltipDefaults(cfg *TooltipCfg) {
 	d := &DefaultTooltipStyle
 	if !cfg.Color.IsSet() {
 		cfg.Color = d.Color
-	}
-	if !cfg.ColorHover.IsSet() {
-		cfg.ColorHover = d.ColorHover
 	}
 	if !cfg.ColorBorder.IsSet() {
 		cfg.ColorBorder = d.ColorBorder
@@ -116,27 +117,6 @@ func applyTooltipDefaults(cfg *TooltipCfg) {
 	if cfg.Delay == 0 {
 		cfg.Delay = d.Delay
 	}
-	if cfg.Radius == 0 {
-		cfg.Radius = d.Radius
-	}
-	if cfg.RadiusBorder == 0 {
-		cfg.RadiusBorder = d.RadiusBorder
-	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = d.SizeBorder
-	}
-	if cfg.OffsetX == 0 {
-		cfg.OffsetX = -3
-	}
-	if cfg.OffsetY == 0 {
-		cfg.OffsetY = -3
-	}
-	if cfg.Anchor == FloatTopLeft {
-		cfg.Anchor = FloatBottomCenter
-	}
-	if cfg.TieOff == FloatTopLeft {
-		cfg.TieOff = FloatTopCenter
-	}
 }
 
 // WithTooltipCfg configures a tooltip wrapper.
@@ -144,8 +124,8 @@ type WithTooltipCfg struct {
 	ID      string
 	Text    string
 	Delay   time.Duration
-	Anchor  FloatAttach
-	TieOff  FloatAttach
+	Anchor  Opt[FloatAttach]
+	TieOff  Opt[FloatAttach]
 	Content []View
 }
 
@@ -162,23 +142,18 @@ func WithTooltip(w *Window, cfg WithTooltipCfg) View {
 		delay = DefaultTooltipStyle.Delay
 	}
 
-	anchor := cfg.Anchor
-	if anchor == FloatTopLeft {
-		anchor = FloatBottomCenter
-	}
-	tieOff := cfg.TieOff
-	if tieOff == FloatTopLeft {
-		tieOff = FloatTopCenter
-	}
+	anchor := cfg.Anchor.Get(FloatBottomCenter)
+	tieOff := cfg.TieOff.Get(FloatTopCenter)
 
 	content := make([]View, 0, len(cfg.Content)+1)
 	content = append(content, cfg.Content...)
 
-	if w.viewState.tooltip.id == tipID {
+	ts := &w.viewState.tooltip
+	if ts.id == tipID {
 		content = append(content, Tooltip(TooltipCfg{
-			ID:     tipID + "_popup",
-			Anchor: anchor,
-			TieOff: tieOff,
+			ID:     ts.popupID,
+			Anchor: Some(anchor),
+			TieOff: Some(tieOff),
 			Content: []View{
 				Text(TextCfg{
 					Text:      cfg.Text,
@@ -192,6 +167,7 @@ func WithTooltip(w *Window, cfg WithTooltipCfg) View {
 	return Column(ContainerCfg{
 		A11YRole:        AccessRoleGroup,
 		A11YDescription: cfg.Text,
+		SizeBorder:      NoBorder,
 		Content:         content,
 		AmendLayout:     withTooltipAmend(tipID, delay),
 	})
@@ -202,6 +178,7 @@ func WithTooltip(w *Window, cfg WithTooltipCfg) View {
 func withTooltipAmend(
 	tipID string, delay time.Duration,
 ) func(*Layout, *Window) {
+	popupID := tipID + "_popup"
 	return func(l *Layout, w *Window) {
 		ts := &w.viewState.tooltip
 		mx := w.viewState.mousePosX
@@ -216,10 +193,11 @@ func withTooltipAmend(
 			ts.hoverStart = time.Now()
 			w.animationAdd(&Animate{
 				AnimID: "___tooltip___",
-				Delay:     delay,
+				Delay:  delay,
 				Callback: func(_ *Animate, w *Window) {
 					if w.viewState.tooltip.hoverID == tipID {
 						w.viewState.tooltip.id = tipID
+						w.viewState.tooltip.popupID = popupID
 					}
 				},
 			})
@@ -227,11 +205,13 @@ func withTooltipAmend(
 		case inside && ts.hoverID == tipID &&
 			time.Since(ts.hoverStart) >= delay:
 			ts.id = tipID
+			ts.popupID = popupID
 
 		case !inside && ts.hoverID == tipID:
 			ts.hoverID = ""
 			ts.hoverStart = time.Time{}
 			ts.id = ""
+			ts.popupID = ""
 		}
 	}
 }

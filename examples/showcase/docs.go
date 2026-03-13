@@ -3954,8 +3954,8 @@ gui.WithTooltip(w, gui.WithTooltipCfg{
 ` + "```go" + `
 gui.WithTooltip(w, gui.WithTooltipCfg{
     Text:   "Right side tooltip",
-    Anchor: gui.FloatMiddleRight,
-    TieOff: gui.FloatMiddleLeft,
+    Anchor: gui.Some(gui.FloatMiddleRight),
+    TieOff: gui.Some(gui.FloatMiddleLeft),
     Content: []gui.View{
         gui.Button(gui.ButtonCfg{...}),
     },
@@ -3969,8 +3969,8 @@ gui.WithTooltip(w, gui.WithTooltipCfg{
 | ID       | string        | Unique identifier                    |
 | Text     | string        | Tooltip text content                 |
 | Delay    | time.Duration | Hover delay before showing           |
-| Anchor   | FloatAttach   | Tooltip anchor on trigger            |
-| TieOff   | FloatAttach   | Tooltip attach point                 |
+| Anchor   | Opt[FloatAttach] | Tooltip anchor on trigger         |
+| TieOff   | Opt[FloatAttach] | Tooltip attach point              |
 | Content  | []View        | Wrapped target views                 |
 
 ## TooltipCfg Properties (Advanced)
@@ -3980,10 +3980,10 @@ gui.WithTooltip(w, gui.WithTooltipCfg{
 | ID           | string        | Unique identifier                |
 | Delay        | time.Duration | Hover delay before showing       |
 | Content      | []View        | Custom tooltip content           |
-| Anchor       | FloatAttach   | Float anchor point               |
-| TieOff       | FloatAttach   | Float tie-off point              |
-| OffsetX      | float32       | Horizontal offset from anchor    |
-| OffsetY      | float32       | Vertical offset from anchor      |
+| Anchor       | Opt[FloatAttach] | Float anchor point            |
+| TieOff       | Opt[FloatAttach] | Float tie-off point           |
+| OffsetX      | Opt[float32]     | Horizontal offset from anchor |
+| OffsetY      | Opt[float32]     | Vertical offset from anchor   |
 | FloatZIndex  | int           | Z-index for float layering       |
 
 ## Appearance
@@ -3991,13 +3991,11 @@ gui.WithTooltip(w, gui.WithTooltipCfg{
 | Property     | Type         | Description                      |
 |--------------|--------------|----------------------------------|
 | Color        | Color        | Tooltip background color         |
-| ColorHover   | Color        | Background on hover              |
 | ColorBorder  | Color        | Border color                     |
 | Padding      | Opt[Padding] | Inner padding                    |
 | TextStyle    | TextStyle    | Tooltip text styling             |
-| Radius       | float32      | Corner radius                    |
-| RadiusBorder | float32      | Border corner radius             |
-| SizeBorder   | float32      | Border width                     |
+| Radius       | Opt[float32] | Corner radius                    |
+| SizeBorder   | Opt[float32] | Border width                     |
 `,
 
 	// Animations

@@ -394,18 +394,13 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			TitleStyle:   makeStyle(ts, cfg.SizeTextMedium),
 		},
 		TooltipStyle: TooltipStyle{
-			Delay:            500 * time.Millisecond,
-			Color:            cfg.ColorInterior,
-			ColorHover:       cfg.ColorHover,
-			ColorFocus:       cfg.ColorActive,
-			ColorClick:       cfg.ColorActive,
-			ColorBorder:      cfg.ColorBorder,
-			ColorBorderFocus: borderFocus,
-			Padding:          cfg.PaddingSmall,
-			SizeBorder:       cfg.SizeBorder,
-			Radius:           cfg.RadiusSmall,
-			RadiusBorder:     cfg.RadiusSmall,
-			TextStyle:        ts,
+			Delay:       500 * time.Millisecond,
+			Color:       cfg.ColorInterior,
+			ColorBorder: cfg.ColorBorder,
+			Padding:     cfg.PaddingSmall,
+			SizeBorder:  cfg.SizeBorder,
+			Radius:      cfg.RadiusSmall,
+			TextStyle:   ts,
 		},
 		BadgeStyle: BadgeStyle{
 			Color:        cfg.ColorActive,
@@ -1071,9 +1066,7 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.ToastStyle.ColorInfo = sel
 
 	t.TooltipStyle.Color = interior
-	t.TooltipStyle.ColorHover = hover
 	t.TooltipStyle.ColorBorder = border
-	t.TooltipStyle.ColorBorderFocus = borderFocus
 
 	t.BadgeStyle.Color = active
 	t.BadgeStyle.ColorInfo = sel
