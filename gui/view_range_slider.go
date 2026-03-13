@@ -300,6 +300,9 @@ func rangeSliderAmendLayoutThumb(
 	layout *Layout, _ *Window,
 	value, minVal, maxVal, thumbSize float32, vertical bool,
 ) {
+	if layout.Parent == nil {
+		return
+	}
 	clamped := f32Clamp(value, minVal, maxVal)
 	percent := (clamped - minVal) / (maxVal - minVal)
 	radius := thumbSize / 2
