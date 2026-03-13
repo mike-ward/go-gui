@@ -3185,7 +3185,7 @@ pane collapse, and optional collapse buttons.
 gui.Splitter(gui.SplitterCfg{
     ID:          "split",
     IDFocus:     100,
-    Ratio:       0.3,
+    Ratio:       gui.SomeF(0.3),
     Orientation: gui.SplitterHorizontal,
     First:  gui.SplitterPaneCfg{Content: []gui.View{left}},
     Second: gui.SplitterPaneCfg{Content: []gui.View{right}},
@@ -3223,12 +3223,11 @@ gui.Splitter(gui.SplitterCfg{
 | IDFocus             | uint32              | Tab-order focus ID (> 0 to enable)   |
 | Orientation         | SplitterOrientation | Horizontal or vertical split         |
 | Sizing              | Sizing              | Combined axis sizing (default FillFill) |
-| Ratio               | float32             | Split position (0.0-1.0)            |
+| Ratio               | Opt[float32]        | Split position (0.0-1.0)            |
 | Collapsed           | SplitterCollapsed   | Which pane is collapsed              |
-| HandleSize          | float32             | Drag handle thickness                |
-| DragStep            | float32             | Keyboard step size                   |
-| DragStepLarge       | float32             | Shift+arrow keyboard step            |
-| DoubleClickCollapse | bool                | Double-click handle to collapse      |
+| HandleSize          | Opt[float32]        | Drag handle thickness                |
+| DragStep            | Opt[float32]        | Keyboard step size                   |
+| DragStepLarge       | Opt[float32]        | Shift+arrow keyboard step            |
 | ShowCollapseButtons | bool                | Show collapse/expand buttons         |
 | Disabled            | bool                | Disable interaction                  |
 | Invisible           | bool                | Hide without removing from layout    |
@@ -3256,9 +3255,9 @@ gui.Splitter(gui.SplitterCfg{
 | ColorButtonHover  | Color   | Collapse button hover                |
 | ColorButtonActive | Color   | Collapse button active               |
 | ColorButtonIcon   | Color   | Collapse button icon color           |
-| SizeBorder        | float32 | Handle border width                  |
-| Radius            | float32 | Handle corner radius                 |
-| RadiusBorder      | float32 | Button/grip corner radius            |
+| SizeBorder        | Opt[float32] | Handle border width             |
+| Radius            | Opt[float32] | Handle corner radius            |
+| RadiusBorder      | Opt[float32] | Button/grip corner radius       |
 
 ## Events
 
@@ -5324,7 +5323,7 @@ gui.Splitter(gui.SplitterCfg{
     ID:          "split",
     Orientation: gui.SplitterHorizontal,
     Sizing:      gui.FillFixed,
-    Ratio:       app.SplitterState.Ratio,
+    Ratio:       gui.SomeF(app.SplitterState.Ratio),
     Collapsed:   app.SplitterState.Collapsed,
     OnChange: func(r float32, c gui.SplitterCollapsed,
         _ *gui.Event, w *gui.Window) {
@@ -5335,7 +5334,6 @@ gui.Splitter(gui.SplitterCfg{
     First:  gui.SplitterPaneCfg{MinSize: 100, Content: [...]},
     Second: gui.SplitterPaneCfg{MinSize: 100, Content: [...]},
     ShowCollapseButtons: true,
-    DoubleClickCollapse: true,
 })
 ` + "```" + `
 
@@ -5344,7 +5342,6 @@ gui.Splitter(gui.SplitterCfg{
 | Property | Description |
 |----------|-------------|
 | IDFocus | Enables keyboard control |
-| DoubleClickCollapse | Collapse on divider double-click |
 | ShowCollapseButtons | Show collapse arrows |
 | DragStep | Arrow key step size |
 | DragStepLarge | Shift+Arrow step size |

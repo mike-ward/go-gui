@@ -250,7 +250,7 @@ func showcaseSplitterMain(w *gui.Window) gui.View {
 		IDFocus:     9160,
 		Sizing:      gui.FillFill,
 		Orientation: gui.SplitterHorizontal,
-		Ratio:       app.SplitterMainState.Ratio,
+		Ratio:       gui.SomeF(app.SplitterMainState.Ratio),
 		Collapsed:   app.SplitterMainState.Collapsed,
 		OnChange:    onShowcaseSplitterMainChange,
 		First: gui.SplitterPaneCfg{
@@ -276,9 +276,9 @@ func showcaseSplitterDetail(w *gui.Window) gui.View {
 		IDFocus:             9161,
 		Orientation:         gui.SplitterVertical,
 		Sizing:              gui.FillFill,
-		HandleSize:          10,
+		HandleSize:          gui.SomeF(10),
 		ShowCollapseButtons: true,
-		Ratio:               app.SplitterDetailState.Ratio,
+		Ratio:               gui.SomeF(app.SplitterDetailState.Ratio),
 		Collapsed:           app.SplitterDetailState.Collapsed,
 		OnChange:            onShowcaseSplitterDetailChange,
 		First: gui.SplitterPaneCfg{

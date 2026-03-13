@@ -8,7 +8,7 @@ import (
 func TestSplitterBasic(t *testing.T) {
 	v := Splitter(SplitterCfg{
 		ID:    "sp",
-		Ratio: 0.5,
+		Ratio: SomeF(0.5),
 		First: SplitterPaneCfg{
 			Content: []View{Text(TextCfg{Text: "left"})},
 		},
@@ -151,5 +151,93 @@ func TestSplitterButtonIcon(t *testing.T) {
 	icon = splitterButtonIcon(core, SplitterCollapseSecond)
 	if icon != "▶" {
 		t.Errorf("got %q, want ▶", icon)
+	}
+}
+
+func TestSplitterToggleTarget(t *testing.T) {
+	core := &splitterCore{
+		first:  splitterPaneCore{collapsible: true},
+		second: splitterPaneCore{collapsible: true},
+	}
+	// Not collapsed → toggle targets first collapsible.
+	if tgt := splitterToggleTarget(core, SplitterCollapseNone); tgt != SplitterCollapseFirst {
+		t.Errorf("none → got %d, want first", tgt)
+	}
+	// Already collapsed first → returns first (to uncollapse).
+	if tgt := splitterToggleTarget(core, SplitterCollapseFirst); tgt != SplitterCollapseFirst {
+		t.Errorf("first → got %d, want first", tgt)
+	}
+	// Only second collapsible.
+	core2 := &splitterCore{
+		first:  splitterPaneCore{collapsible: false},
+		second: splitterPaneCore{collapsible: true},
+	}
+	if tgt := splitterToggleTarget(core2, SplitterCollapseNone); tgt != SplitterCollapseSecond {
+		t.Errorf("only-second → got %d, want second", tgt)
+	}
+	// Neither collapsible.
+	core3 := &splitterCore{}
+	if tgt := splitterToggleTarget(core3, SplitterCollapseNone); tgt != SplitterCollapseNone {
+		t.Errorf("neither → got %d, want none", tgt)
+	}
+}
+
+func TestSplitterToggleCollapse(t *testing.T) {
+	core := &splitterCore{
+		first:  splitterPaneCore{collapsible: true},
+		second: splitterPaneCore{collapsible: true},
+	}
+	// Not collapsed → collapse first.
+	next, ok := splitterToggleCollapse(core, SplitterCollapseNone)
+	if !ok || next != SplitterCollapseFirst {
+		t.Errorf("none → got %d/%v, want first/true", next, ok)
+	}
+	// Already collapsed first → uncollapse.
+	next, ok = splitterToggleCollapse(core, SplitterCollapseFirst)
+	if !ok || next != SplitterCollapseNone {
+		t.Errorf("first → got %d/%v, want none/true", next, ok)
+	}
+	// Neither collapsible → no-op.
+	core2 := &splitterCore{}
+	next, ok = splitterToggleCollapse(core2, SplitterCollapseNone)
+	if ok {
+		t.Errorf("neither → got %d/%v, want unchanged/false", next, ok)
+	}
+}
+
+func TestSplitterArrowStep(t *testing.T) {
+	core := &splitterCore{
+		orientation:   SplitterHorizontal,
+		dragStep:      0.05,
+		dragStepLarge: 0.10,
+	}
+	// Matching orientation, no modifier → step applied.
+	r, ok := splitterArrowStep(core, SplitterHorizontal, +1,
+		ModNone, 200, 0.5)
+	if !ok {
+		t.Fatal("expected handled=true for matching orientation")
+	}
+	if r <= 0.5 {
+		t.Errorf("expected ratio > 0.5, got %f", r)
+	}
+	// Wrong orientation → not handled.
+	_, ok = splitterArrowStep(core, SplitterVertical, +1,
+		ModNone, 200, 0.5)
+	if ok {
+		t.Error("expected handled=false for wrong orientation")
+	}
+	// Shift modifier → large step.
+	rSmall, _ := splitterArrowStep(core, SplitterHorizontal, +1,
+		ModNone, 200, 0.5)
+	rLarge, _ := splitterArrowStep(core, SplitterHorizontal, +1,
+		ModShift, 200, 0.5)
+	if rLarge <= rSmall {
+		t.Errorf("shift step (%f) should exceed normal (%f)", rLarge, rSmall)
+	}
+	// Unsupported modifier → not handled.
+	_, ok = splitterArrowStep(core, SplitterHorizontal, +1,
+		ModCtrl, 200, 0.5)
+	if ok {
+		t.Error("expected handled=false for ctrl modifier")
 	}
 }

@@ -196,7 +196,7 @@ func dockSplitView(
 	return Splitter(SplitterCfg{
 		ID:          "dock_split:" + node.ID,
 		Orientation: orientation,
-		Ratio:       node.Ratio,
+		Ratio:       SomeF(node.Ratio),
 		Sizing:      FillFill,
 		OnChange: func(ratio float32, _ SplitterCollapsed, _ *Event, w *Window) {
 			newRoot := dockTreeUpdateRatio(root, splitID, ratio)

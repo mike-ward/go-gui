@@ -63,7 +63,6 @@ fn main_view(window &gui.Window) gui.View {
 - `first SplitterPaneCfg` / `second SplitterPaneCfg` (required)
 - `handle_size f32`
 - `drag_step f32` / `drag_step_large f32`
-- `double_click_collapse bool`
 - `show_collapse_buttons bool`
 - style fields (`color_*`, `size_border`, `radius`, `radius_border`)
 
