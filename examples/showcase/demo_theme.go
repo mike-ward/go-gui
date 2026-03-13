@@ -22,7 +22,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 	for i, strategy := range strategies {
 		selected := app.ThemeGenStrategy == strategy
 		color := t.ColorInterior
-		textStyle := t.N2
+		textStyle := t.N3
 		if selected {
 			color = t.ColorActive
 			textStyle.Color = gui.White
@@ -351,57 +351,41 @@ func generateThemeCfg(seed gui.Color, strategy string, isDark bool, tint float32
 		ah = ph + 20
 	}
 
+	var cfg gui.ThemeCfg
 	if isDark {
+		cfg = gui.ThemeDarkCfg
 		sTint := max(min(s, 1.0), 0.3) * tintFactor
-		return gui.ThemeCfg{
-			Name:             "generated",
-			ColorBackground:  gui.ColorFromHSV(ph, sTint, 0.19),
-			ColorPanel:       gui.ColorFromHSV(ph, sTint, 0.25),
-			ColorInterior:    gui.ColorFromHSV(ph, sTint, 0.29),
-			ColorHover:       gui.ColorFromHSV(ph, sTint, 0.33),
-			ColorFocus:       gui.ColorFromHSV(ah, sTint, 0.37),
-			ColorActive:      gui.ColorFromHSV(ah, sTint, 0.41),
-			ColorBorder:      gui.ColorFromHSV(ah, sTint*0.8, 0.39),
-			ColorSelect:      gui.ColorFromHSV(ah, accentS, accentV),
-			ColorBorderFocus: gui.ColorFromHSV(ah, accentS*0.7, accentV*0.9),
-			TextStyleDef: gui.TextStyle{
-				Family: gui.ThemeDarkCfg.TextStyleDef.Family,
-				Color:  textColor,
-				Size:   gui.ThemeDarkCfg.TextStyleDef.Size,
-			},
-			TitlebarDark: true,
-			SizeBorder:   border,
-			Radius:       radius,
-			RadiusSmall:  radius * 0.64,
-			RadiusMedium: radius,
-			RadiusLarge:  radius * 1.36,
-		}
+		cfg.ColorBackground = gui.ColorFromHSV(ph, sTint, 0.19)
+		cfg.ColorPanel = gui.ColorFromHSV(ph, sTint, 0.25)
+		cfg.ColorInterior = gui.ColorFromHSV(ph, sTint, 0.29)
+		cfg.ColorHover = gui.ColorFromHSV(ph, sTint, 0.33)
+		cfg.ColorFocus = gui.ColorFromHSV(ah, sTint, 0.37)
+		cfg.ColorActive = gui.ColorFromHSV(ah, sTint, 0.41)
+		cfg.ColorBorder = gui.ColorFromHSV(ah, sTint*0.8, 0.39)
+		cfg.ColorSelect = gui.ColorFromHSV(ah, accentS, accentV)
+		cfg.ColorBorderFocus = gui.ColorFromHSV(ah, accentS*0.7, accentV*0.9)
+		cfg.TextStyleDef.Color = textColor
+	} else {
+		cfg = gui.ThemeLightCfg
+		sTint := max(min(s, 1.0), 0.3) * tintFactor * 0.5
+		cfg.ColorBackground = gui.ColorFromHSV(ph, sTint*0.6, 0.96)
+		cfg.ColorPanel = gui.ColorFromHSV(ph, sTint, 0.90)
+		cfg.ColorInterior = gui.ColorFromHSV(ph, sTint, 0.86)
+		cfg.ColorHover = gui.ColorFromHSV(ph, sTint, 0.82)
+		cfg.ColorFocus = gui.ColorFromHSV(ah, sTint, 0.78)
+		cfg.ColorActive = gui.ColorFromHSV(ah, sTint, 0.74)
+		cfg.ColorBorder = gui.ColorFromHSV(ah, sTint*1.5, 0.55)
+		cfg.ColorSelect = gui.ColorFromHSV(ah, accentS, accentV*0.75)
+		cfg.ColorBorderFocus = gui.ColorFromHSV(ah, accentS*0.8, accentV*0.6)
+		cfg.TextStyleDef.Color = textColor
 	}
-
-	sTint := max(min(s, 1.0), 0.3) * tintFactor * 0.5
-	return gui.ThemeCfg{
-		Name:             "generated",
-		ColorBackground:  gui.ColorFromHSV(ph, sTint*0.6, 0.96),
-		ColorPanel:       gui.ColorFromHSV(ph, sTint, 0.90),
-		ColorInterior:    gui.ColorFromHSV(ph, sTint, 0.86),
-		ColorHover:       gui.ColorFromHSV(ph, sTint, 0.82),
-		ColorFocus:       gui.ColorFromHSV(ah, sTint, 0.78),
-		ColorActive:      gui.ColorFromHSV(ah, sTint, 0.74),
-		ColorBorder:      gui.ColorFromHSV(ah, sTint*1.5, 0.55),
-		ColorSelect:      gui.ColorFromHSV(ah, accentS, accentV*0.75),
-		ColorBorderFocus: gui.ColorFromHSV(ah, accentS*0.8, accentV*0.6),
-		TextStyleDef: gui.TextStyle{
-			Family: gui.ThemeLightCfg.TextStyleDef.Family,
-			Color:  textColor,
-			Size:   gui.ThemeLightCfg.TextStyleDef.Size,
-		},
-		TitlebarDark: false,
-		SizeBorder:   border,
-		Radius:       radius,
-		RadiusSmall:  radius * 0.64,
-		RadiusMedium: radius,
-		RadiusLarge:  radius * 1.36,
-	}
+	cfg.Name = "generated"
+	cfg.SizeBorder = border
+	cfg.Radius = radius
+	cfg.RadiusSmall = radius * 0.64
+	cfg.RadiusMedium = radius
+	cfg.RadiusLarge = radius * 1.36
+	return cfg
 }
 
 func wrapHue(h float32) float32 {
