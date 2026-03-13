@@ -90,13 +90,18 @@ func TestKeydownHandlerFallbackScroll(t *testing.T) {
 	root := &Layout{
 		Shape: &Shape{},
 		Children: []Layout{
-			{Shape: &Shape{
-				IDFocus:  1,
-				IDScroll: 1,
-				Width:    100,
-				Height:   100,
-				Padding:  Padding{},
-			}},
+			{
+				Shape: &Shape{
+					IDFocus:  1,
+					IDScroll: 1,
+					Width:    100,
+					Height:   100,
+					Axis:     AxisTopToBottom,
+				},
+				Children: []Layout{
+					{Shape: &Shape{ShapeType: ShapeRectangle, Height: 500}},
+				},
+			},
 		},
 	}
 	w := &Window{}
@@ -116,9 +121,15 @@ func TestKeyDownScrollHandlerArrows(t *testing.T) {
 	guiTheme.ScrollDeltaPage = 100
 	guiTheme.ScrollMultiplier = 1
 
-	layout := &Layout{Shape: &Shape{
-		IDScroll: 1, Width: 100, Height: 100,
-	}}
+	layout := &Layout{
+		Shape: &Shape{
+			IDScroll: 1, Width: 100, Height: 100,
+			Axis: AxisTopToBottom,
+		},
+		Children: []Layout{
+			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 500, Height: 500}},
+		},
+	}
 	w := &Window{}
 
 	tests := []struct {
@@ -126,14 +137,14 @@ func TestKeyDownScrollHandlerArrows(t *testing.T) {
 		key  KeyCode
 		mod  Modifier
 	}{
-		{"up", KeyUp, ModNone},
 		{"down", KeyDown, ModNone},
-		{"page_up", KeyPageUp, ModNone},
 		{"page_down", KeyPageDown, ModNone},
-		{"home", KeyHome, ModNone},
 		{"end", KeyEnd, ModNone},
-		{"shift+left", KeyLeft, ModShift},
+		{"up", KeyUp, ModNone},
+		{"page_up", KeyPageUp, ModNone},
+		{"home", KeyHome, ModNone},
 		{"shift+right", KeyRight, ModShift},
+		{"shift+left", KeyLeft, ModShift},
 	}
 	for _, tc := range tests {
 		e := &Event{KeyCode: tc.key, Modifiers: tc.mod}

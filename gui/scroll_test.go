@@ -113,13 +113,19 @@ func TestScrollHorizontalNoIDScroll(t *testing.T) {
 
 func TestScrollToView(t *testing.T) {
 	w := &Window{}
-	// Build layout: scroll container > target child.
+	// Build layout: scroll container > target + filler.
 	target := Layout{
 		Shape: &Shape{
 			ShapeType: ShapeRectangle,
 			ID:        "target",
 			Y:         150,
 			Height:    20,
+		},
+	}
+	filler := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			Height:    300,
 		},
 	}
 	scroll := Layout{
@@ -129,10 +135,12 @@ func TestScrollToView(t *testing.T) {
 			Y:         10,
 			Height:    100,
 			Padding:   Padding{Top: 5},
+			Axis:      AxisTopToBottom,
 		},
-		Children: []Layout{target},
+		Children: []Layout{target, filler},
 	}
 	scroll.Children[0].Parent = &scroll
+	scroll.Children[1].Parent = &scroll
 	w.layout = Layout{
 		Shape:    &Shape{ShapeType: ShapeRectangle},
 		Children: []Layout{scroll},
@@ -146,6 +154,8 @@ func TestScrollToView(t *testing.T) {
 		t.Fatal("scroll offset not set")
 	}
 	// baseY = 10 + 5 = 15; newScroll = 15 - 150 + 0 = -135
+	// contentHeight = 20 + 300 = 320; maxScrollNeg = min(0, 100-5-320) = -225
+	// clamp(-135, -225, 0) = -135
 	if v != -135 {
 		t.Errorf("expected -135, got %v", v)
 	}
@@ -264,5 +274,245 @@ func TestScrollVerticalFiresOnScroll(t *testing.T) {
 	scrollVertical(layout, -10, w)
 	if !fired {
 		t.Error("OnScroll callback not fired")
+	}
+}
+
+func TestScrollVerticalReturnsFalseAtBoundary(t *testing.T) {
+	guiTheme.ScrollMultiplier = 1
+	layout, w := makeScrollLayout(10, 100, 100, 100, 300)
+
+	// Scroll to max (offset -200).
+	scrollVertical(layout, -500, w)
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, _ := sy.Get(uint32(10))
+	if v != -200 {
+		t.Fatalf("expected -200, got %v", v)
+	}
+
+	// Further scroll in same direction returns false.
+	if scrollVertical(layout, -10, w) {
+		t.Error("expected false at max boundary")
+	}
+
+	// Scroll back to 0.
+	scrollVertical(layout, 500, w)
+	v, _ = sy.Get(uint32(10))
+	if v != 0 {
+		t.Fatalf("expected 0, got %v", v)
+	}
+
+	// Further scroll up returns false.
+	if scrollVertical(layout, 10, w) {
+		t.Error("expected false at min boundary")
+	}
+}
+
+func TestScrollHorizontalReturnsFalseAtBoundary(t *testing.T) {
+	guiTheme.ScrollMultiplier = 1
+	w := &Window{}
+	child := Layout{
+		Shape: &Shape{ShapeType: ShapeRectangle, Width: 400, Height: 50},
+	}
+	layout := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  11,
+			Width:     100,
+			Height:    50,
+			Axis:      AxisLeftToRight,
+		},
+		Children: []Layout{child},
+	}
+	w.layout = Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{layout},
+	}
+	ly := &w.layout.Children[0]
+
+	// Scroll to max (offset -300).
+	scrollHorizontal(ly, -500, w)
+	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	v, _ := sx.Get(uint32(11))
+	if v != -300 {
+		t.Fatalf("expected -300, got %v", v)
+	}
+
+	if scrollHorizontal(ly, -10, w) {
+		t.Error("expected false at max boundary")
+	}
+
+	// Back to 0.
+	scrollHorizontal(ly, 500, w)
+	v, _ = sx.Get(uint32(11))
+	if v != 0 {
+		t.Fatalf("expected 0, got %v", v)
+	}
+
+	if scrollHorizontal(ly, 10, w) {
+		t.Error("expected false at min boundary")
+	}
+}
+
+func TestScrollModeVerticalOnlyBlocksHorizontal(t *testing.T) {
+	guiTheme.ScrollMultiplier = 1
+	w := &Window{}
+	child := Layout{
+		Shape: &Shape{ShapeType: ShapeRectangle, Width: 400, Height: 50},
+	}
+	layout := Layout{
+		Shape: &Shape{
+			ShapeType:  ShapeRectangle,
+			IDScroll:   12,
+			Width:      100,
+			Height:     50,
+			Axis:       AxisLeftToRight,
+			ScrollMode: ScrollVerticalOnly,
+		},
+		Children: []Layout{child},
+	}
+	w.layout = Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{layout},
+	}
+	if scrollHorizontal(&w.layout.Children[0], -10, w) {
+		t.Error("expected false for ScrollVerticalOnly")
+	}
+}
+
+func TestScrollModeHorizontalOnlyBlocksVertical(t *testing.T) {
+	guiTheme.ScrollMultiplier = 1
+	layout, w := makeScrollLayout(13, 100, 100, 100, 300)
+	layout.Shape.ScrollMode = ScrollHorizontalOnly
+
+	if scrollVertical(layout, -10, w) {
+		t.Error("expected false for ScrollHorizontalOnly")
+	}
+}
+
+func TestScrollToViewClampsOffset(t *testing.T) {
+	w := &Window{}
+	// Target above scroll container — would produce positive
+	// offset without clamping.
+	target := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			ID:        "above",
+			Y:         5,
+			Height:    20,
+		},
+	}
+	child := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			Height:    300,
+		},
+	}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  14,
+			Y:         10,
+			Height:    100,
+			Padding:   Padding{Top: 5},
+			Axis:      AxisTopToBottom,
+		},
+		Children: []Layout{target, child},
+	}
+	scroll.Children[0].Parent = &scroll
+	scroll.Children[1].Parent = &scroll
+	w.layout = Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+	w.layout.Children[0].Parent = &w.layout
+
+	w.ScrollToView("above")
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, ok := sy.Get(uint32(14))
+	if !ok {
+		t.Fatal("scroll offset not set")
+	}
+	// baseY=15, target.Y=5 → raw newScroll = 15-5+0 = +10
+	// clamp to [maxScrollNeg, 0] → 0
+	if v > 0 {
+		t.Errorf("expected clamped <=0, got %v", v)
+	}
+}
+
+func TestScrollVerticalByAndToWithClampAndOnScroll(t *testing.T) {
+	layout, w := makeScrollLayout(15, 100, 100, 100, 300)
+	// Set parent pointers for FindLayoutByIDScroll.
+	w.layout.Children[0].Parent = &w.layout
+
+	fired := 0
+	layout.Shape.Events = &EventHandlers{
+		OnScroll: func(_ *Layout, _ *Window) { fired++ },
+	}
+
+	w.ScrollVerticalBy(15, -50)
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, _ := sy.Get(uint32(15))
+	if v != -50 {
+		t.Errorf("expected -50, got %v", v)
+	}
+	if fired != 1 {
+		t.Errorf("expected OnScroll fired 1, got %d", fired)
+	}
+
+	// Over-scroll clamps to -200.
+	w.ScrollVerticalTo(15, -999)
+	v, _ = sy.Get(uint32(15))
+	if v != -200 {
+		t.Errorf("expected -200, got %v", v)
+	}
+	if fired != 2 {
+		t.Errorf("expected OnScroll fired 2, got %d", fired)
+	}
+}
+
+func TestScrollHorizontalByAndToWithClampAndOnScroll(t *testing.T) {
+	w := &Window{}
+	child := Layout{
+		Shape: &Shape{ShapeType: ShapeRectangle, Width: 400, Height: 50},
+	}
+	layout := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  16,
+			Width:     100,
+			Height:    50,
+			Axis:      AxisLeftToRight,
+		},
+		Children: []Layout{child},
+	}
+	w.layout = Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{layout},
+	}
+	w.layout.Children[0].Parent = &w.layout
+
+	fired := 0
+	w.layout.Children[0].Shape.Events = &EventHandlers{
+		OnScroll: func(_ *Layout, _ *Window) { fired++ },
+	}
+
+	w.ScrollHorizontalBy(16, -50)
+	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	v, _ := sx.Get(uint32(16))
+	if v != -50 {
+		t.Errorf("expected -50, got %v", v)
+	}
+	if fired != 1 {
+		t.Errorf("expected OnScroll fired 1, got %d", fired)
+	}
+
+	// Over-scroll clamps to -300.
+	w.ScrollHorizontalTo(16, -999)
+	v, _ = sx.Get(uint32(16))
+	if v != -300 {
+		t.Errorf("expected -300, got %v", v)
+	}
+	if fired != 2 {
+		t.Errorf("expected OnScroll fired 2, got %d", fired)
 	}
 }

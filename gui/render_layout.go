@@ -537,20 +537,8 @@ func renderInputCursor(shape *Shape, text string, baseX, baseY float32,
 				cp.Height = last.Rect.Height
 			}
 		}
-		// End-of-line affinity: when CursorTrailing is set and
-		// the byte position matches the start of a later line,
-		// render at the right edge of the previous line instead.
-		if is.CursorTrailing {
-			for i, line := range layout.Lines {
-				if i > 0 && byteIdx == line.StartIndex {
-					prev := layout.Lines[i-1]
-					cp.X = prev.Rect.X + prev.Rect.Width
-					cp.Y = prev.Rect.Y
-					cp.Height = prev.Rect.Height
-					break
-				}
-			}
-		}
+		adjustCursorTrailing(
+			&cp, layout.Lines, byteIdx, is.CursorTrailing)
 		emitRenderer(RenderCmd{
 			Kind:  RenderRect,
 			X:     baseX + cp.X,

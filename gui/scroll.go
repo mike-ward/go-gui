@@ -1,5 +1,44 @@
 package gui
 
+import "github.com/mike-ward/go-glyph"
+
+// findScrollLayout returns the layout for idScroll, or false
+// if the layout tree is not yet built or idScroll is not found.
+func findScrollLayout(w *Window, idScroll uint32) (*Layout, bool) {
+	if w.layout.Shape == nil {
+		return nil, false
+	}
+	return FindLayoutByIDScroll(&w.layout, idScroll)
+}
+
+// fireOnScroll fires the OnScroll callback if set.
+func fireOnScroll(ly *Layout, w *Window) {
+	if ly.Shape.HasEvents() && ly.Shape.Events.OnScroll != nil {
+		ly.Shape.Events.OnScroll(ly, w)
+	}
+}
+
+// adjustCursorTrailing adjusts cursor position to the end of
+// the previous line when CursorTrailing is set and the byte
+// index matches the start of a later line.
+func adjustCursorTrailing(
+	cp *glyph.CursorPosition, lines []glyph.Line,
+	byteIdx int, trailing bool,
+) {
+	if !trailing {
+		return
+	}
+	for i, line := range lines {
+		if i > 0 && byteIdx == line.StartIndex {
+			prev := lines[i-1]
+			cp.X = prev.Rect.X + prev.Rect.Width
+			cp.Y = prev.Rect.Y
+			cp.Height = prev.Rect.Height
+			return
+		}
+	}
+}
+
 // inputScrollCursorIntoView adjusts the vertical scroll of a
 // multiline input so the cursor remains visible.
 // layout must be the outer scroll container (Column with IDScroll).
@@ -39,17 +78,7 @@ func inputScrollCursorIntoView(
 	if !ok {
 		return
 	}
-	if is.CursorTrailing {
-		for i, line := range gl.Lines {
-			if i > 0 && byteIdx == line.StartIndex {
-				prev := gl.Lines[i-1]
-				cp.X = prev.Rect.X + prev.Rect.Width
-				cp.Y = prev.Rect.Y
-				cp.Height = prev.Rect.Height
-				break
-			}
-		}
-	}
+	adjustCursorTrailing(&cp, gl.Lines, byteIdx, is.CursorTrailing)
 
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 	scrollOffset, _ := sy.Get(idScroll)
@@ -110,17 +139,7 @@ func textScrollCursorIntoView(layout *Layout, w *Window) {
 	if !ok {
 		return
 	}
-	if is.CursorTrailing {
-		for i, line := range gl.Lines {
-			if i > 0 && byteIdx == line.StartIndex {
-				prev := gl.Lines[i-1]
-				cp.X = prev.Rect.X + prev.Rect.Width
-				cp.Y = prev.Rect.Y
-				cp.Height = prev.Rect.Height
-				break
-			}
-		}
-	}
+	adjustCursorTrailing(&cp, gl.Lines, byteIdx, is.CursorTrailing)
 
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 	scrollOffset, _ := sy.Get(scrollID)
@@ -151,7 +170,8 @@ func textScrollCursorIntoView(layout *Layout, w *Window) {
 // scrollable layout. Returns true if offset was adjusted.
 func scrollHorizontal(layout *Layout, delta float32, w *Window) bool {
 	idScroll := layout.Shape.IDScroll
-	if idScroll == 0 {
+	if idScroll == 0 ||
+		layout.Shape.ScrollMode == ScrollVerticalOnly {
 		return false
 	}
 	maxOffset := f32Min(0,
@@ -159,12 +179,13 @@ func scrollHorizontal(layout *Layout, delta float32, w *Window) bool {
 			contentWidth(layout))
 	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
 	old, _ := sx.Get(idScroll)
-	offsetX := old + delta*guiTheme.ScrollMultiplier
-	sx.Set(idScroll, f32Clamp(offsetX, maxOffset, 0))
-	if layout.Shape.HasEvents() &&
-		layout.Shape.Events.OnScroll != nil {
-		layout.Shape.Events.OnScroll(layout, w)
+	clamped := f32Clamp(
+		old+delta*guiTheme.ScrollMultiplier, maxOffset, 0)
+	if old == clamped {
+		return false
 	}
+	sx.Set(idScroll, clamped)
+	fireOnScroll(layout, w)
 	return true
 }
 
@@ -172,7 +193,8 @@ func scrollHorizontal(layout *Layout, delta float32, w *Window) bool {
 // scrollable layout. Returns true if offset was adjusted.
 func scrollVertical(layout *Layout, delta float32, w *Window) bool {
 	idScroll := layout.Shape.IDScroll
-	if idScroll == 0 {
+	if idScroll == 0 ||
+		layout.Shape.ScrollMode == ScrollHorizontalOnly {
 		return false
 	}
 	maxOffset := f32Min(0,
@@ -180,12 +202,13 @@ func scrollVertical(layout *Layout, delta float32, w *Window) bool {
 			contentHeight(layout))
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 	old, _ := sy.Get(idScroll)
-	offsetY := old + delta*guiTheme.ScrollMultiplier
-	sy.Set(idScroll, f32Clamp(offsetY, maxOffset, 0))
-	if layout.Shape.HasEvents() &&
-		layout.Shape.Events.OnScroll != nil {
-		layout.Shape.Events.OnScroll(layout, w)
+	clamped := f32Clamp(
+		old+delta*guiTheme.ScrollMultiplier, maxOffset, 0)
+	if old == clamped {
+		return false
 	}
+	sy.Set(idScroll, clamped)
+	fireOnScroll(layout, w)
 	return true
 }
 
@@ -205,7 +228,11 @@ func (w *Window) ScrollToView(id string) {
 			current, _ := sy.Get(scrollID)
 			baseY := p.Shape.Y + p.Shape.Padding.Top
 			newScroll := baseY - target.Shape.Y + current
-			sy.Set(scrollID, newScroll)
+			maxScrollNeg := f32Min(0,
+				p.Shape.Height-p.Shape.PaddingHeight()-
+					contentHeight(p))
+			sy.Set(scrollID,
+				f32Clamp(newScroll, maxScrollNeg, 0))
 			w.UpdateWindow()
 			return
 		}
@@ -216,13 +243,31 @@ func (w *Window) ScrollToView(id string) {
 func (w *Window) ScrollHorizontalBy(idScroll uint32, delta float32) {
 	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
 	current, _ := sx.Get(idScroll)
-	sx.Set(idScroll, current+delta)
+	newVal := current + delta
+	if ly, ok := findScrollLayout(w, idScroll); ok {
+		maxOffset := f32Min(0,
+			ly.Shape.Width-ly.Shape.PaddingWidth()-
+				contentWidth(ly))
+		newVal = f32Clamp(newVal, maxOffset, 0)
+		sx.Set(idScroll, newVal)
+		fireOnScroll(ly, w)
+		return
+	}
+	sx.Set(idScroll, newVal)
 }
 
 // ScrollHorizontalTo scrolls the given scrollable to offset
 // (negative).
 func (w *Window) ScrollHorizontalTo(idScroll uint32, offset float32) {
 	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	if ly, ok := findScrollLayout(w, idScroll); ok {
+		maxOffset := f32Min(0,
+			ly.Shape.Width-ly.Shape.PaddingWidth()-
+				contentWidth(ly))
+		sx.Set(idScroll, f32Clamp(offset, maxOffset, 0))
+		fireOnScroll(ly, w)
+		return
+	}
 	sx.Set(idScroll, offset)
 }
 
@@ -267,13 +312,31 @@ func (w *Window) ScrollHorizontalPct(idScroll uint32) float32 {
 func (w *Window) ScrollVerticalBy(idScroll uint32, delta float32) {
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 	current, _ := sy.Get(idScroll)
-	sy.Set(idScroll, current+delta)
+	newVal := current + delta
+	if ly, ok := findScrollLayout(w, idScroll); ok {
+		maxOffset := f32Min(0,
+			ly.Shape.Height-ly.Shape.PaddingHeight()-
+				contentHeight(ly))
+		newVal = f32Clamp(newVal, maxOffset, 0)
+		sy.Set(idScroll, newVal)
+		fireOnScroll(ly, w)
+		return
+	}
+	sy.Set(idScroll, newVal)
 }
 
 // ScrollVerticalTo scrolls the given scrollable to offset
 // (negative).
 func (w *Window) ScrollVerticalTo(idScroll uint32, offset float32) {
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	if ly, ok := findScrollLayout(w, idScroll); ok {
+		maxOffset := f32Min(0,
+			ly.Shape.Height-ly.Shape.PaddingHeight()-
+				contentHeight(ly))
+		sy.Set(idScroll, f32Clamp(offset, maxOffset, 0))
+		fireOnScroll(ly, w)
+		return
+	}
 	sy.Set(idScroll, offset)
 }
 

@@ -220,6 +220,70 @@ func TestThumbOnClickLocksAndUnlocks(t *testing.T) {
 	}
 }
 
+func TestOffsetFromMouseXWithNonZeroOrigin(t *testing.T) {
+	w := &Window{}
+	child := Layout{
+		Shape: &Shape{ShapeType: ShapeRectangle, Width: 300, Height: 50},
+	}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  20,
+			Width:     100,
+			Height:    50,
+			X:         50,
+			Axis:      AxisLeftToRight,
+		},
+		Children: []Layout{child},
+	}
+	root := &Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	// mouseX=100 is at 50% of the scrollbar (origin 50, width 100).
+	// percent = (100-50)/100 = 0.5
+	// offset = -0.5*(300-100) = -100
+	offsetFromMouseX(root, 100, 20, w)
+	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
+	v, _ := sx.Get(uint32(20))
+	if v != -100 {
+		t.Errorf("expected -100, got %v", v)
+	}
+}
+
+func TestOffsetFromMouseYWithNonZeroOrigin(t *testing.T) {
+	w := &Window{}
+	child := Layout{
+		Shape: &Shape{ShapeType: ShapeRectangle, Width: 50, Height: 400},
+	}
+	scroll := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			IDScroll:  21,
+			Width:     50,
+			Height:    100,
+			Y:         200,
+			Axis:      AxisTopToBottom,
+		},
+		Children: []Layout{child},
+	}
+	root := &Layout{
+		Shape:    &Shape{ShapeType: ShapeRectangle},
+		Children: []Layout{scroll},
+	}
+
+	// mouseY=250 is at 50% of the scrollbar (origin 200, height 100).
+	// percent = (250-200)/100 = 0.5
+	// offset = -0.5*(400-100) = -150
+	offsetFromMouseY(root, 250, 21, w)
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	v, _ := sy.Get(uint32(21))
+	if v != -150 {
+		t.Errorf("expected -150, got %v", v)
+	}
+}
+
 func TestGutterClickSetsOffsetAndLocks(t *testing.T) {
 	w := &Window{}
 	child := Layout{Shape: &Shape{ShapeType: ShapeRectangle, Width: 50, Height: 400}}

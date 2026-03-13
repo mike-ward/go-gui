@@ -267,9 +267,7 @@ func scrollbarMouseMove(orientation ScrollbarOrientation, idScroll uint32, layou
 			offset := offsetMouseChangeX(ly, e.MouseDX, idScroll, w)
 			sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
 			sx.Set(idScroll, offset)
-			if ly.Shape.HasEvents() && ly.Shape.Events.OnScroll != nil {
-				ly.Shape.Events.OnScroll(ly, w)
-			}
+			fireOnScroll(ly, w)
 		}
 	} else {
 		if e.MouseY >= ly.Shape.Y-scrollExtend &&
@@ -277,9 +275,7 @@ func scrollbarMouseMove(orientation ScrollbarOrientation, idScroll uint32, layou
 			offset := offsetMouseChangeY(ly, e.MouseDY, idScroll, w)
 			sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 			sy.Set(idScroll, offset)
-			if ly.Shape.HasEvents() && ly.Shape.Events.OnScroll != nil {
-				ly.Shape.Events.OnScroll(ly, w)
-			}
+			fireOnScroll(ly, w)
 		}
 	}
 }
@@ -316,7 +312,7 @@ func offsetFromMouseX(layout *Layout, mouseX float32, idScroll uint32, w *Window
 		return
 	}
 	totalWidth := contentWidth(sb)
-	percent := mouseX / sb.Shape.Width
+	percent := (mouseX - sb.Shape.X) / sb.Shape.Width
 	percent = f32Clamp(percent, 0, 1)
 	if percent <= scrollSnapMin {
 		percent = 0
@@ -326,9 +322,7 @@ func offsetFromMouseX(layout *Layout, mouseX float32, idScroll uint32, w *Window
 	}
 	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
 	sx.Set(idScroll, -percent*(totalWidth-sb.Shape.Width))
-	if sb.Shape.HasEvents() && sb.Shape.Events.OnScroll != nil {
-		sb.Shape.Events.OnScroll(sb, w)
-	}
+	fireOnScroll(sb, w)
 }
 
 // offsetFromMouseY calculates and applies vertical offset
@@ -339,7 +333,7 @@ func offsetFromMouseY(layout *Layout, mouseY float32, idScroll uint32, w *Window
 		return
 	}
 	totalHeight := contentHeight(sb)
-	percent := mouseY / sb.Shape.Height
+	percent := (mouseY - sb.Shape.Y) / sb.Shape.Height
 	percent = f32Clamp(percent, 0, 1)
 	if percent <= scrollSnapMin {
 		percent = 0
@@ -349,7 +343,5 @@ func offsetFromMouseY(layout *Layout, mouseY float32, idScroll uint32, w *Window
 	}
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 	sy.Set(idScroll, -percent*(totalHeight-sb.Shape.Height))
-	if sb.Shape.HasEvents() && sb.Shape.Events.OnScroll != nil {
-		sb.Shape.Events.OnScroll(sb, w)
-	}
+	fireOnScroll(sb, w)
 }
