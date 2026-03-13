@@ -259,7 +259,7 @@ func dockDragGhostView(state dockDragState, label string) View {
 		FloatOffsetY: ghostY - state.parentY,
 		Width:        state.ghostW,
 		Height:       state.ghostH,
-		Opacity:      float32(dragGhostOpacity),
+		Opacity:      SomeF(dragGhostOpacity),
 		Sizing:       FixedFixed,
 		Clip:         true,
 		Padding:      SomeP(6, 12, 6, 12),

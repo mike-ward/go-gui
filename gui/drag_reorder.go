@@ -643,7 +643,7 @@ func dragReorderGhostView(state dragReorderState, content View) View {
 		FloatOffsetY: ghostY - state.parentY,
 		Width:        state.itemWidth,
 		Height:       state.itemHeight,
-		Opacity:      dragGhostOpacity,
+		Opacity:      SomeF(dragGhostOpacity),
 		Sizing:       FixedFixed,
 		Clip:         true,
 		Padding:      NoPadding,

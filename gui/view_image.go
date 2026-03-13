@@ -26,6 +26,7 @@ type ImageCfg struct {
 	OnHover   func(*Layout, *Event, *Window)
 	Invisible bool
 
+	Opacity Opt[float32]
 	BgColor Color // opaque fill drawn behind image (e.g. white for mermaid PNGs)
 
 	// Accessibility
@@ -99,6 +100,7 @@ func (iv *imageView) GenerateLayout(w *Window) Layout {
 					Width:     width,
 					Height:    height,
 					Color:     guiTheme.ColorBackground,
+					Opacity:   c.Opacity.Get(1.0),
 				},
 			}
 			ApplyFixedSizingConstraints(layout.Shape)
@@ -145,7 +147,7 @@ func (iv *imageView) GenerateLayout(w *Window) Layout {
 			),
 			Resource:  imagePath,
 			Color:     c.BgColor,
-			Opacity:   1.0,
+			Opacity:   c.Opacity.Get(1.0),
 			Width:     width,
 			MinWidth:  c.MinWidth,
 			MaxWidth:  c.MaxWidth,

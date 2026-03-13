@@ -185,7 +185,6 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 				}
 				e.IsHandled = true
 			},
-			Opacity: 1.0,
 		},
 		content:   content,
 		shapeType: ShapeRectangle,

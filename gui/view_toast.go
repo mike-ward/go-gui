@@ -180,7 +180,7 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 		SizeBorder:  Some(style.SizeBorder),
 		Radius:      Some(style.Radius),
 		Clip:        true,
-		Opacity:     frac,
+		Opacity:     SomeF(frac),
 		Spacing:     Some(SpacingSmall),
 		A11YRole:    AccessRoleGroup,
 		A11YState:   AccessStateLive,

@@ -34,7 +34,7 @@ type ContainerCfg struct {
 	SizeBorder     Opt[float32]
 	Radius         Opt[float32]
 	BlurRadius     float32
-	Opacity        float32
+	Opacity        Opt[float32]
 	Shadow         *BoxShadow
 	Gradient       *GradientDef
 	BorderGradient *GradientDef
@@ -159,7 +159,7 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 			Hero:                 c.Hero,
 			Wrap:                 c.Wrap,
 			Overflow:             c.Overflow,
-			Opacity:              c.Opacity,
+			Opacity:              c.Opacity.Get(1.0),
 			A11YRole:             cv.deriveA11YRole(),
 			A11YState:            c.A11YState,
 			A11Y:                 cv.makeA11Y(),
@@ -302,10 +302,6 @@ func container(cfg ContainerCfg) View {
 		cfg.OnClick = cfg.OnAnyClick
 	} else {
 		cfg.OnClick = leftClickOnly(cfg.OnClick)
-	}
-	// Default opacity.
-	if cfg.Opacity == 0 {
-		cfg.Opacity = 1.0
 	}
 
 	content := cfg.Content

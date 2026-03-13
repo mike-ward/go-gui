@@ -18,7 +18,7 @@ type TextCfg struct {
 	IsPassword        bool
 	PlaceholderActive bool
 	Hero              bool
-	Opacity           float32
+	Opacity           Opt[float32]
 	Sizing            Sizing
 
 	// Accessibility
@@ -28,8 +28,10 @@ type TextCfg struct {
 
 // textView implements View for text rendering.
 type textView struct {
-	cfg    TextCfg
-	sizing Sizing
+	cfg     TextCfg
+	sizing  Sizing
+	opacity float32
+	tc      ShapeTextConfig
 }
 
 // textEventHandlers is a shared handler set for focused text
@@ -46,6 +48,15 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 	c := &tv.cfg
 	ts := &c.TextStyle
 
+	tv.tc = ShapeTextConfig{
+		Text:              c.Text,
+		TextStyle:         ts,
+		TextIsPassword:    c.IsPassword,
+		TextIsPlaceholder: c.PlaceholderActive,
+		TextMode:          c.Mode,
+		TextTabSize:       c.TabSize,
+	}
+
 	layout := Layout{
 		Shape: &Shape{
 			ShapeType: ShapeText,
@@ -61,15 +72,8 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 			MinWidth:  c.MinWidth,
 			Sizing:    tv.sizing,
 			Hero:      c.Hero,
-			Opacity:   c.Opacity,
-			TC: &ShapeTextConfig{
-				Text:              c.Text,
-				TextStyle:         ts,
-				TextIsPassword:    c.IsPassword,
-				TextIsPlaceholder: c.PlaceholderActive,
-				TextMode:          c.Mode,
-				TextTabSize:       c.TabSize,
-			},
+			Opacity:   tv.opacity,
+			TC:        &tv.tc,
 		},
 	}
 
@@ -82,17 +86,6 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 		layout.Shape.Width = float32(utf8RuneCount(c.Text)) * charWidth
 		layout.Shape.Height = ts.Size * 1.4
 	}
-	// Initial multiline estimate; layoutPlainText overwrites with
-	// final values after sizing. See layout_pipeline.go:layoutPlainText.
-	if c.Mode == TextModeMultiline {
-		if l, ok := plainTextLayoutResolved(c.Text, layout.Shape, *ts, w); ok {
-			layout.Shape.Height = l.Height
-			if layout.Shape.Sizing.Width != SizingFixed && l.Width > 0 {
-				layout.Shape.Width = l.Width
-			}
-		}
-	}
-
 	if c.Mode == TextModeSingleLine ||
 		layout.Shape.Sizing.Width == SizingFixed {
 		layout.Shape.MinWidth = f32Max(
@@ -139,9 +132,9 @@ func Text(cfg TextCfg) View {
 	if cfg.TextStyle.Size == 0 {
 		cfg.TextStyle.Size = SizeTextMedium
 	}
-	if cfg.Opacity == 0 {
-		// Zero means "not set"; use Invisible for fully transparent.
-		cfg.Opacity = 1.0
+	return &textView{
+		cfg:     cfg,
+		sizing:  sizing,
+		opacity: cfg.Opacity.Get(1.0),
 	}
-	return &textView{cfg: cfg, sizing: sizing}
 }

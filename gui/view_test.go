@@ -513,6 +513,41 @@ func TestTextViewA11Y(t *testing.T) {
 	}
 }
 
+func TestTextMultilineSizing(t *testing.T) {
+	v := Text(TextCfg{Text: "line1\nline2", Mode: TextModeMultiline})
+	layout := v.GenerateLayout(&Window{})
+	if layout.Shape.Sizing.Width != SizingFit {
+		t.Error("multiline should use FitFit width")
+	}
+	if layout.Shape.Sizing.Height != SizingFit {
+		t.Error("multiline should use FitFit height")
+	}
+}
+
+func TestTextOpacityDefault(t *testing.T) {
+	v := Text(TextCfg{Text: "hi"})
+	layout := v.GenerateLayout(&Window{})
+	if layout.Shape.Opacity != 1.0 {
+		t.Errorf("opacity: got %f, want 1.0", layout.Shape.Opacity)
+	}
+}
+
+func TestTextOpacityExplicitZero(t *testing.T) {
+	v := Text(TextCfg{Text: "hi", Opacity: SomeF(0)})
+	layout := v.GenerateLayout(&Window{})
+	if layout.Shape.Opacity != 0 {
+		t.Errorf("opacity: got %f, want 0", layout.Shape.Opacity)
+	}
+}
+
+func TestContainerOpacityExplicitZero(t *testing.T) {
+	v := Column(ContainerCfg{ID: "op0", Opacity: SomeF(0)})
+	layout := v.GenerateLayout(&Window{})
+	if layout.Shape.Opacity != 0 {
+		t.Errorf("opacity: got %f, want 0", layout.Shape.Opacity)
+	}
+}
+
 // --- Button tests ---
 
 func TestButtonCreatesRow(t *testing.T) {
