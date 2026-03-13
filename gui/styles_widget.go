@@ -289,7 +289,6 @@ type TabControlStyle struct {
 	RadiusHeader        float32
 	RadiusContent       float32
 	RadiusTab           float32
-	RadiusTabBorder     float32
 	Spacing             float32
 	SpacingHeader       float32
 	TextStyle           TextStyle
@@ -706,14 +705,11 @@ var (
 		PaddingContent:      PaddingMedium,
 		PaddingTab:          PaddingSmall,
 		SizeBorder:          SizeBorderDef,
-		SizeContentBorder:   SizeBorderDef,
 		SizeTabBorder:       SizeBorderDef,
 		Radius:              RadiusMedium,
 		RadiusHeader:        RadiusSmall,
 		RadiusContent:       RadiusMedium,
 		RadiusTab:           RadiusSmall,
-		RadiusTabBorder:     RadiusSmall,
-		Spacing:             SpacingSmall,
 		SpacingHeader:       SpacingSmall,
 		TextStyle:           DefaultTextStyle,
 		TextStyleSelected: TextStyle{

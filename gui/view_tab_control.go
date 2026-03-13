@@ -1,7 +1,5 @@
 package gui
 
-import "fmt"
-
 // TabItemCfg configures one tab in a TabControl.
 type TabItemCfg struct {
 	ID       string
@@ -41,17 +39,16 @@ type TabControlCfg struct {
 	PaddingHeader       Opt[Padding]
 	PaddingContent      Opt[Padding]
 	PaddingTab          Opt[Padding]
-	SizeBorder          float32
-	SizeHeaderBorder    float32
-	SizeContentBorder   float32
-	SizeTabBorder       float32
-	Radius              float32
-	RadiusHeader        float32
-	RadiusContent       float32
-	RadiusTab           float32
-	RadiusTabBorder     float32
-	Spacing             float32
-	SpacingHeader       float32
+	SizeBorder          Opt[float32]
+	SizeHeaderBorder    Opt[float32]
+	SizeContentBorder   Opt[float32]
+	SizeTabBorder       Opt[float32]
+	Radius              Opt[float32]
+	RadiusHeader        Opt[float32]
+	RadiusContent       Opt[float32]
+	RadiusTab           Opt[float32]
+	Spacing             Opt[float32]
+	SpacingHeader       Opt[float32]
 	TextStyle           TextStyle
 	TextStyleSelected   TextStyle
 	TextStyleDisabled   TextStyle
@@ -130,36 +127,6 @@ func applyTabControlDefaults(cfg *TabControlCfg) {
 	if !cfg.PaddingTab.IsSet() {
 		cfg.PaddingTab = Some(s.PaddingTab)
 	}
-	if cfg.SizeBorder == 0 {
-		cfg.SizeBorder = s.SizeBorder
-	}
-	if cfg.SizeContentBorder == 0 {
-		cfg.SizeContentBorder = s.SizeContentBorder
-	}
-	if cfg.SizeTabBorder == 0 {
-		cfg.SizeTabBorder = s.SizeTabBorder
-	}
-	if cfg.Radius == 0 {
-		cfg.Radius = s.Radius
-	}
-	if cfg.RadiusHeader == 0 {
-		cfg.RadiusHeader = s.RadiusHeader
-	}
-	if cfg.RadiusContent == 0 {
-		cfg.RadiusContent = s.RadiusContent
-	}
-	if cfg.RadiusTab == 0 {
-		cfg.RadiusTab = s.RadiusTab
-	}
-	if cfg.RadiusTabBorder == 0 {
-		cfg.RadiusTabBorder = s.RadiusTabBorder
-	}
-	if cfg.Spacing == 0 {
-		cfg.Spacing = s.Spacing
-	}
-	if cfg.SpacingHeader == 0 {
-		cfg.SpacingHeader = s.SpacingHeader
-	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = s.TextStyle
 	}
@@ -179,136 +146,7 @@ func Tabs(cfg TabControlCfg) View {
 // TabControl creates a tab control with header row and content.
 func TabControl(cfg TabControlCfg) View {
 	applyTabControlDefaults(&cfg)
-	if cfg.Reorderable && cfg.OnReorder != nil {
-		return &tabControlView{cfg: cfg}
-	}
-
-	tabNavIDs := make([]string, len(cfg.Items))
-	tabNavDisabled := make([]bool, len(cfg.Items))
-	for i, item := range cfg.Items {
-		tabNavIDs[i] = item.ID
-		tabNavDisabled[i] = item.Disabled
-	}
-
-	selectedIdx := tabSelectedIndex(tabNavIDs, tabNavDisabled, cfg.Selected)
-
-	headerItems := make([]View, 0, len(cfg.Items))
-	for i, item := range cfg.Items {
-		isSelected := i == selectedIdx
-		isDisabled := cfg.Disabled || item.Disabled
-
-		tabColor := cfg.ColorTab
-		hoverColor := cfg.ColorTabHover
-		focusColor := cfg.ColorTabFocus
-		clickColor := cfg.ColorTabClick
-		borderColor := cfg.ColorTabBorder
-
-		if isDisabled {
-			tabColor = cfg.ColorTabDisabled
-			hoverColor = cfg.ColorTabDisabled
-			focusColor = cfg.ColorTabDisabled
-			clickColor = cfg.ColorTabDisabled
-		} else if isSelected {
-			tabColor = cfg.ColorTabSelected
-			hoverColor = cfg.ColorTabSelected
-			focusColor = cfg.ColorTabSelected
-			clickColor = cfg.ColorTabSelected
-			borderColor = cfg.ColorTabBorderFocus
-		}
-
-		ts := cfg.TextStyle
-		if isDisabled {
-			ts = cfg.TextStyleDisabled
-		} else if isSelected {
-			ts = cfg.TextStyleSelected
-		}
-
-		a11yState := AccessStateNone
-		if isSelected {
-			a11yState = AccessStateSelected
-		}
-
-		var onClick func(*Layout, *Event, *Window)
-		if !isDisabled {
-			onClick = makeTabOnClick(cfg.OnSelect, item.ID, cfg.IDFocus)
-		}
-
-		headerItems = append(headerItems, Button(ButtonCfg{
-			ID:               tabButtonID(cfg.ID, item.ID),
-			A11YRole:         AccessRoleTabItem,
-			A11YState:        a11yState,
-			A11YLabel:        item.Label,
-			Color:            tabColor,
-			ColorHover:       hoverColor,
-			ColorFocus:       focusColor,
-			ColorClick:       clickColor,
-			ColorBorder:      borderColor,
-			ColorBorderFocus: cfg.ColorTabBorderFocus,
-			Padding:          cfg.PaddingTab,
-			SizeBorder:       Some(cfg.SizeTabBorder),
-			Radius:           Some(cfg.RadiusTab),
-			Disabled:         isDisabled,
-			OnClick:          onClick,
-			Content: []View{
-				Text(TextCfg{Text: item.Label, TextStyle: ts}),
-			},
-		}))
-	}
-
-	var activeContent []View
-	if selectedIdx >= 0 && selectedIdx < len(cfg.Items) {
-		src := cfg.Items[selectedIdx].Content
-		activeContent = make([]View, len(src))
-		copy(activeContent, src)
-	}
-
-	// Closure captures.
-	disabled := cfg.Disabled
-	selected := cfg.Selected
-	onSelect := cfg.OnSelect
-	idFocus := cfg.IDFocus
-
-	return Column(ContainerCfg{
-		ID:              cfg.ID,
-		IDFocus:         cfg.IDFocus,
-		A11YRole:        AccessRoleTab,
-		A11YLabel:       a11yLabel(cfg.A11YLabel, cfg.ID),
-		A11YDescription: cfg.A11YDescription,
-		Sizing:          cfg.Sizing,
-		Color:           cfg.Color,
-		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      Some(cfg.SizeBorder),
-		Radius:          Some(cfg.Radius),
-		Padding:         cfg.Padding,
-		Spacing:         Some(cfg.Spacing),
-		Disabled:        cfg.Disabled,
-		Invisible:       cfg.Invisible,
-		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-			tabControlOnKeydown(disabled, tabNavIDs, tabNavDisabled,
-				selected, onSelect, idFocus, e, w)
-		},
-		Content: []View{
-			Row(ContainerCfg{
-				Color:       cfg.ColorHeader,
-				ColorBorder: cfg.ColorHeaderBorder,
-				SizeBorder:  Some(cfg.SizeHeaderBorder),
-				Radius:      Some(cfg.RadiusHeader),
-				Padding:     cfg.PaddingHeader,
-				Spacing:     Some(cfg.SpacingHeader),
-				Sizing:      FillFit,
-				Content:     headerItems,
-			}),
-			Column(ContainerCfg{
-				Color:       cfg.ColorContent,
-				ColorBorder: cfg.ColorContentBorder,
-				SizeBorder:  Some(cfg.SizeContentBorder),
-				Radius:      Some(cfg.RadiusContent),
-				Padding:     cfg.PaddingContent,
-				Sizing:      FillFill,
-				Content:     activeContent,
-			}),
-		},
-	})
+	return &tabControlView{cfg: cfg}
 }
 
 func makeTabOnClick(
@@ -360,50 +198,71 @@ func makeTabDragClick(
 
 func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 	cfg := &tv.cfg
+	s := &DefaultTabControlStyle
 
+	// Resolve Opt fields.
+	sizeBorder := cfg.SizeBorder.Get(s.SizeBorder)
+	sizeHeaderBorder := cfg.SizeHeaderBorder.Get(s.SizeHeaderBorder)
+	sizeContentBorder := cfg.SizeContentBorder.Get(s.SizeContentBorder)
+	sizeTabBorder := cfg.SizeTabBorder.Get(s.SizeTabBorder)
+	radius := cfg.Radius.Get(s.Radius)
+	radiusHeader := cfg.RadiusHeader.Get(s.RadiusHeader)
+	radiusContent := cfg.RadiusContent.Get(s.RadiusContent)
+	radiusTab := cfg.RadiusTab.Get(s.RadiusTab)
+	spacing := cfg.Spacing.Get(s.Spacing)
+	spacingHeader := cfg.SpacingHeader.Get(s.SpacingHeader)
+
+	// Build tab navigation arrays.
 	tabNavIDs := make([]string, len(cfg.Items))
 	tabNavDisabled := make([]bool, len(cfg.Items))
 	for i, item := range cfg.Items {
 		tabNavIDs[i] = item.ID
 		tabNavDisabled[i] = item.Disabled
 	}
-	selectedIdx := tabSelectedIndex(
-		tabNavIDs, tabNavDisabled, cfg.Selected)
+	selectedIdx := tabSelectedIndex(tabNavIDs, tabNavDisabled, cfg.Selected)
 
-	// Build tab IDs for drag (enabled tabs only).
-	tabIDs := make([]string, 0, len(cfg.Items))
-	tabLayoutIDs := make([]string, 0, len(cfg.Items))
-	tabDragIdx := make(map[int]int)
-	di := 0
-	for i, item := range cfg.Items {
-		if !item.Disabled && !cfg.Disabled {
-			tabIDs = append(tabIDs, item.ID)
-			tabLayoutIDs = append(tabLayoutIDs,
-				tabButtonID(cfg.ID, item.ID))
-			tabDragIdx[i] = di
-			di++
+	// Reorderable-specific state.
+	var tabIDs, tabLayoutIDs []string
+	var tabDragIdx map[int]int
+	var drag dragReorderState
+	var dragging bool
+
+	if cfg.Reorderable {
+		tabIDs = make([]string, 0, len(cfg.Items))
+		tabLayoutIDs = make([]string, 0, len(cfg.Items))
+		tabDragIdx = make(map[int]int)
+		di := 0
+		for i, item := range cfg.Items {
+			if !item.Disabled && !cfg.Disabled {
+				tabIDs = append(tabIDs, item.ID)
+				tabLayoutIDs = append(tabLayoutIDs,
+					tabButtonID(cfg.ID, item.ID))
+				tabDragIdx[i] = di
+				di++
+			}
+		}
+		drag = dragReorderGet(w, cfg.ID)
+		dragging = drag.active && !drag.cancelled
+		if drag.started || drag.active {
+			dragReorderIDsMetaSet(w, cfg.ID, tabIDs)
 		}
 	}
 
-	drag := dragReorderGet(w, cfg.ID)
-	dragging := drag.active && !drag.cancelled
-	onReorder := cfg.OnReorder
-
-	if drag.started || drag.active {
-		dragReorderIDsMetaSet(w, cfg.ID, tabIDs)
+	headerCap := len(cfg.Items)
+	if cfg.Reorderable {
+		headerCap += 3
 	}
-
-	headerItems := make([]View, 0, len(cfg.Items)+3)
+	headerItems := make([]View, 0, headerCap)
 	var ghostView View
+	onReorder := cfg.OnReorder
 
 	for i, item := range cfg.Items {
 		isSelected := i == selectedIdx
 		isDisabled := cfg.Disabled || item.Disabled
-		isDraggable := !isDisabled
-		dIdx := tabDragIdx[i]
 
-		if dragging && isDraggable &&
-			dIdx == drag.currentIndex {
+		// Reorderable: insert gap before current drag position.
+		if cfg.Reorderable && dragging && !isDisabled &&
+			tabDragIdx[i] == drag.currentIndex {
 			headerItems = append(headerItems,
 				dragReorderGapView(drag, DragReorderHorizontal))
 		}
@@ -440,9 +299,9 @@ func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 		}
 
 		var onClick func(*Layout, *Event, *Window)
-		if isDraggable {
-			onClick = makeTabDragClick(cfg.ID, dIdx, item.ID,
-				tabIDs, onReorder, tabLayoutIDs,
+		if cfg.Reorderable && !isDisabled {
+			onClick = makeTabDragClick(cfg.ID, tabDragIdx[i],
+				item.ID, tabIDs, onReorder, tabLayoutIDs,
 				cfg.OnSelect, cfg.IDFocus)
 		} else if !isDisabled {
 			onClick = makeTabOnClick(
@@ -461,20 +320,18 @@ func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 			ColorBorder:      borderColor,
 			ColorBorderFocus: cfg.ColorTabBorderFocus,
 			Padding:          cfg.PaddingTab,
-			SizeBorder:       Some(cfg.SizeTabBorder),
-			Radius:           Some(cfg.RadiusTab),
+			SizeBorder:       SomeF(sizeTabBorder),
+			Radius:           SomeF(radiusTab),
 			Disabled:         isDisabled,
 			OnClick:          onClick,
 			Content: []View{
-				Text(TextCfg{
-					Text:      item.Label,
-					TextStyle: ts,
-				}),
+				Text(TextCfg{Text: item.Label, TextStyle: ts}),
 			},
 		})
 
-		if dragging && isDraggable &&
-			dIdx == drag.sourceIndex {
+		// Reorderable: skip source item (becomes ghost).
+		if cfg.Reorderable && dragging && !isDisabled &&
+			tabDragIdx[i] == drag.sourceIndex {
 			ghostView = tabBtn
 			continue
 		}
@@ -482,26 +339,30 @@ func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 		headerItems = append(headerItems, tabBtn)
 	}
 
-	if dragging && drag.currentIndex >= len(tabIDs) {
-		headerItems = append(headerItems,
-			dragReorderGapView(drag, DragReorderHorizontal))
-	}
-	if dragging && ghostView != nil {
-		headerItems = append(headerItems,
-			dragReorderGhostView(drag, ghostView))
+	// Trailing reorderable elements.
+	if cfg.Reorderable && dragging {
+		if drag.currentIndex >= len(tabIDs) {
+			headerItems = append(headerItems,
+				dragReorderGapView(drag, DragReorderHorizontal))
+		}
+		if ghostView != nil {
+			headerItems = append(headerItems,
+				dragReorderGhostView(drag, ghostView))
+		}
 	}
 
+	// Active content — direct assignment, no copy needed.
 	var activeContent []View
 	if selectedIdx >= 0 && selectedIdx < len(cfg.Items) {
-		src := cfg.Items[selectedIdx].Content
-		activeContent = make([]View, len(src))
-		copy(activeContent, src)
+		activeContent = cfg.Items[selectedIdx].Content
 	}
 
+	// Closure captures.
 	disabled := cfg.Disabled
 	selected := cfg.Selected
 	onSelect := cfg.OnSelect
 	idFocus := cfg.IDFocus
+	reorderable := cfg.Reorderable
 	controlID := cfg.ID
 
 	return GenerateViewLayout(Column(ContainerCfg{
@@ -513,30 +374,30 @@ func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 		Sizing:          cfg.Sizing,
 		Color:           cfg.Color,
 		ColorBorder:     cfg.ColorBorder,
-		SizeBorder:      Some(cfg.SizeBorder),
-		Radius:          Some(cfg.Radius),
+		SizeBorder:      SomeF(sizeBorder),
+		Radius:          SomeF(radius),
 		Padding:         cfg.Padding,
-		Spacing:         Some(cfg.Spacing),
+		Spacing:         SomeF(spacing),
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-			// canReorder always true in this path (non-reorderable
-			// tabs use the static branch above).
-			if dragReorderEscape(
-				controlID, e.KeyCode, w) {
-				e.IsHandled = true
-				return
-			}
-			for idx, id := range tabIDs {
-				if id == selected {
-					if dragReorderKeyboardMove(
-						e.KeyCode, e.Modifiers,
-						DragReorderHorizontal,
-						idx, tabIDs, onReorder, w) {
-						e.IsHandled = true
-						return
+			if reorderable {
+				if dragReorderEscape(
+					controlID, e.KeyCode, w) {
+					e.IsHandled = true
+					return
+				}
+				for idx, id := range tabIDs {
+					if id == selected {
+						if dragReorderKeyboardMove(
+							e.KeyCode, e.Modifiers,
+							DragReorderHorizontal,
+							idx, tabIDs, onReorder, w) {
+							e.IsHandled = true
+							return
+						}
+						break
 					}
-					break
 				}
 			}
 			tabControlOnKeydown(disabled, tabNavIDs,
@@ -547,18 +408,18 @@ func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 			Row(ContainerCfg{
 				Color:       cfg.ColorHeader,
 				ColorBorder: cfg.ColorHeaderBorder,
-				SizeBorder:  Some(cfg.SizeHeaderBorder),
-				Radius:      Some(cfg.RadiusHeader),
+				SizeBorder:  SomeF(sizeHeaderBorder),
+				Radius:      SomeF(radiusHeader),
 				Padding:     cfg.PaddingHeader,
-				Spacing:     Some(cfg.SpacingHeader),
+				Spacing:     SomeF(spacingHeader),
 				Sizing:      FillFit,
 				Content:     headerItems,
 			}),
 			Column(ContainerCfg{
 				Color:       cfg.ColorContent,
 				ColorBorder: cfg.ColorContentBorder,
-				SizeBorder:  Some(cfg.SizeContentBorder),
-				Radius:      Some(cfg.RadiusContent),
+				SizeBorder:  SomeF(sizeContentBorder),
+				Radius:      SomeF(radiusContent),
 				Padding:     cfg.PaddingContent,
 				Sizing:      FillFill,
 				Content:     activeContent,
@@ -705,5 +566,5 @@ func tabPrevEnabledIndex(disabled []bool, selectedIdx int) int {
 }
 
 func tabButtonID(controlID, tabID string) string {
-	return fmt.Sprintf("tc_%s_%s", controlID, tabID)
+	return "tc_" + controlID + "_" + tabID
 }

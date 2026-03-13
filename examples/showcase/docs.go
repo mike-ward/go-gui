@@ -3493,8 +3493,8 @@ gui.TabControl(gui.TabControlCfg{
 | Reorderable | bool          | Enable drag-reorder of tabs          |
 | Disabled    | bool          | Disable interaction                  |
 | Invisible   | bool          | Hide without removing from layout    |
-| Spacing     | float32       | Gap between header and content       |
-| SpacingHeader | float32     | Gap between tab buttons              |
+| Spacing       | Opt[float32] | Gap between header and content       |
+| SpacingHeader | Opt[float32] | Gap between tab buttons              |
 
 ## Appearance
 
@@ -3518,14 +3518,14 @@ gui.TabControl(gui.TabControlCfg{
 | PaddingHeader      | Opt[Padding] | Header row padding               |
 | PaddingContent     | Opt[Padding] | Content panel padding            |
 | PaddingTab         | Opt[Padding] | Individual tab padding           |
-| SizeBorder         | float32      | Outer border width               |
-| SizeHeaderBorder   | float32      | Header border width              |
-| SizeContentBorder  | float32      | Content border width             |
-| SizeTabBorder      | float32      | Tab button border width          |
-| Radius             | float32      | Outer corner radius              |
-| RadiusHeader       | float32      | Header corner radius             |
-| RadiusContent      | float32      | Content corner radius            |
-| RadiusTab          | float32      | Tab button corner radius         |
+| SizeBorder         | Opt[float32] | Outer border width               |
+| SizeHeaderBorder   | Opt[float32] | Header border width              |
+| SizeContentBorder  | Opt[float32] | Content border width             |
+| SizeTabBorder      | Opt[float32] | Tab button border width          |
+| Radius             | Opt[float32] | Outer corner radius              |
+| RadiusHeader       | Opt[float32] | Header corner radius             |
+| RadiusContent      | Opt[float32] | Content corner radius            |
+| RadiusTab          | Opt[float32] | Tab button corner radius         |
 | TextStyle          | TextStyle    | Default tab text style           |
 | TextStyleSelected  | TextStyle    | Selected tab text style          |
 | TextStyleDisabled  | TextStyle    | Disabled tab text style          |
