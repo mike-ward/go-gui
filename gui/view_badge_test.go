@@ -62,6 +62,8 @@ func TestBadgeLabelMax(t *testing.T) {
 		{"15", 10, "10+"},
 		{"abc", 10, "abc"},
 		{"3", 0, "3"},
+		{"", 10, ""},
+		{"99999999999999999999", 10, "10+"},
 	}
 	for _, tt := range tests {
 		got := badgeLabel(tt.label, tt.max)
@@ -80,5 +82,54 @@ func TestBadgeA11Y(t *testing.T) {
 	}
 	if layout.Shape.A11Y.Label != "42" {
 		t.Errorf("a11y label = %q, want 42", layout.Shape.A11Y.Label)
+	}
+}
+
+func TestBadgeA11YDescription(t *testing.T) {
+	v := Badge(BadgeCfg{Label: "5", A11YDescription: "unread messages"})
+	layout := GenerateViewLayout(v, &Window{})
+	if layout.Shape.A11Y == nil {
+		t.Fatal("a11y should be set")
+	}
+	if layout.Shape.A11Y.Description != "unread messages" {
+		t.Errorf("a11y description = %q, want %q",
+			layout.Shape.A11Y.Description, "unread messages")
+	}
+}
+
+func TestBadgeA11YDescriptionDot(t *testing.T) {
+	v := Badge(BadgeCfg{Dot: true, A11YDescription: "active"})
+	layout := GenerateViewLayout(v, &Window{})
+	if layout.Shape.A11Y == nil {
+		t.Fatal("a11y should be set")
+	}
+	if layout.Shape.A11Y.Description != "active" {
+		t.Errorf("a11y description = %q, want %q",
+			layout.Shape.A11Y.Description, "active")
+	}
+}
+
+func TestBadgeCustomColorWithVariant(t *testing.T) {
+	custom := RGBA(1, 2, 3, 255)
+	v := Badge(BadgeCfg{Label: "x", Color: custom, Variant: BadgeError})
+	layout := GenerateViewLayout(v, &Window{})
+	// Variant overrides custom color
+	if layout.Shape.Color != guiTheme.BadgeStyle.ColorError {
+		t.Error("variant should override custom color")
+	}
+}
+
+func TestBadgeTextStyle(t *testing.T) {
+	v := Badge(BadgeCfg{Label: "x"})
+	layout := GenerateViewLayout(v, &Window{})
+	if len(layout.Children) != 1 {
+		t.Fatalf("children: got %d, want 1", len(layout.Children))
+	}
+	ts := layout.Children[0].Shape.TC.TextStyle
+	want := guiTheme.BadgeStyle.TextStyle
+	if ts.Size != want.Size || ts.Color != want.Color ||
+		ts.Typeface != want.Typeface {
+		t.Errorf("text style mismatch: got size=%v color=%v face=%v",
+			ts.Size, ts.Color, ts.Typeface)
 	}
 }

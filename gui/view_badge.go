@@ -1,10 +1,6 @@
 package gui
 
-import (
-	"strconv"
-
-	"github.com/mike-ward/go-glyph"
-)
+import "strconv"
 
 // BadgeVariant selects the badge color preset.
 type BadgeVariant uint8
@@ -42,13 +38,10 @@ func Badge(cfg BadgeCfg) View {
 	if !cfg.Padding.IsSet() {
 		cfg.Padding = Some(guiTheme.BadgeStyle.Padding)
 	}
-	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = guiTheme.N5
-		cfg.TextStyle.Color = White
-		cfg.TextStyle.Typeface = glyph.TypefaceBold
-	}
-
 	style := guiTheme.BadgeStyle
+	if cfg.TextStyle == (TextStyle{}) {
+		cfg.TextStyle = style.TextStyle
+	}
 	pad := cfg.Padding.Get(style.Padding)
 	radius := (cfg.TextStyle.Size + pad.Top + pad.Bottom) / 2
 	dotSize := cfg.DotSize.Get(style.DotSize)
@@ -67,29 +60,31 @@ func Badge(cfg BadgeCfg) View {
 	if cfg.Dot {
 		sz := dotSize
 		return Row(ContainerCfg{
-			A11YRole:   AccessRoleStaticText,
-			A11YLabel:  a11yLabel(cfg.A11YLabel, "status"),
-			Color:      bg,
-			Radius:     Some(sz / 2),
-			Width:      sz,
-			Height:     sz,
-			Sizing:     FixedFixed,
-			Padding:    NoPadding,
-			SizeBorder: NoBorder,
+			A11YRole:        AccessRoleStaticText,
+			A11YLabel:       a11yLabel(cfg.A11YLabel, "status"),
+			A11YDescription: cfg.A11YDescription,
+			Color:           bg,
+			Radius:          Some(sz / 2),
+			Width:           sz,
+			Height:          sz,
+			Sizing:          FixedFixed,
+			Padding:         NoPadding,
+			SizeBorder:      NoBorder,
 		})
 	}
 
 	label := badgeLabel(cfg.Label, cfg.Max)
 	return Row(ContainerCfg{
-		A11YRole:   AccessRoleStaticText,
-		A11YLabel:  a11yLabel(cfg.A11YLabel, label),
-		Color:      bg,
-		Radius:     Some(radius),
-		Sizing:     FitFit,
-		Padding:    Some(pad),
-		SizeBorder: NoBorder,
-		HAlign:     HAlignCenter,
-		VAlign:     VAlignMiddle,
+		A11YRole:        AccessRoleStaticText,
+		A11YLabel:       a11yLabel(cfg.A11YLabel, label),
+		A11YDescription: cfg.A11YDescription,
+		Color:           bg,
+		Radius:          Some(radius),
+		Sizing:          FitFit,
+		Padding:         Some(pad),
+		SizeBorder:      NoBorder,
+		HAlign:          HAlignCenter,
+		VAlign:          VAlignMiddle,
 		Content: []View{
 			Text(TextCfg{
 				Text:      label,
@@ -99,8 +94,8 @@ func Badge(cfg BadgeCfg) View {
 	})
 }
 
-func badgeLabel(label string, maxLen int) string {
-	if maxLen <= 0 {
+func badgeLabel(label string, max int) string {
+	if max <= 0 || len(label) == 0 {
 		return label
 	}
 	n := 0
@@ -109,12 +104,9 @@ func badgeLabel(label string, maxLen int) string {
 			return label
 		}
 		n = n*10 + int(c-'0')
-	}
-	if len(label) == 0 {
-		return label
-	}
-	if n > maxLen {
-		return strconv.Itoa(maxLen) + "+"
+		if n > max {
+			return strconv.Itoa(max) + "+"
+		}
 	}
 	return label
 }
