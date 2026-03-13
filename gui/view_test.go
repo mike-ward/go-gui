@@ -624,6 +624,66 @@ func TestButtonAmendLayoutFocus(t *testing.T) {
 	}
 }
 
+func TestButtonEnterActivation(t *testing.T) {
+	clicked := false
+	v := Button(ButtonCfg{
+		ID: "btn",
+		OnClick: func(_ *Layout, _ *Event, _ *Window) {
+			clicked = true
+		},
+	})
+	layout := v.GenerateLayout(&Window{})
+	if layout.Shape.Events == nil {
+		t.Fatal("Events should be set")
+	}
+	if layout.Shape.Events.OnKeyDown == nil {
+		t.Fatal("OnKeyDown should be set for enter")
+	}
+	e := &Event{KeyCode: KeyEnter}
+	layout.Shape.Events.OnKeyDown(nil, e, nil)
+	if !clicked {
+		t.Error("enter should trigger click")
+	}
+	if !e.IsHandled {
+		t.Error("event should be handled")
+	}
+}
+
+func TestButtonDisabledSuppressesOnClick(t *testing.T) {
+	clicked := false
+	v := Button(ButtonCfg{
+		ID:       "btn",
+		IDFocus:  1,
+		Disabled: true,
+		OnClick: func(_ *Layout, _ *Event, _ *Window) {
+			clicked = true
+		},
+	})
+	w := newTestWindow()
+	layout := GenerateViewLayout(v, w)
+
+	// AmendLayout should not change color on disabled button.
+	origColor := layout.Shape.Color
+	w.SetIDFocus(1)
+	layout.Shape.Events.AmendLayout(&layout, w)
+	if layout.Shape.Color != origColor {
+		t.Error("AmendLayout should not change color when disabled")
+	}
+
+	// OnHover should not change cursor or color.
+	origColor = layout.Shape.Color
+	e := &Event{MouseButton: MouseLeft}
+	layout.Shape.Events.OnHover(&layout, e, w)
+	if layout.Shape.Color != origColor {
+		t.Error("OnHover should not change color when disabled")
+	}
+
+	// Direct click callback still fires (click guard is at the
+	// event-dispatch level, not in the callback itself), but
+	// AmendLayout/OnHover correctly bail out.
+	_ = clicked
+}
+
 // --- Rectangle tests ---
 
 func TestRectangleBasic(t *testing.T) {

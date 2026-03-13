@@ -44,7 +44,7 @@ func TestRadioButtonGroupIDFocusIncrement(t *testing.T) {
 		},
 		OnSelect: func(_ string, _ *Window) {},
 	})
-	w := &Window{}
+	w := newTestWindow()
 	kids := v.Content()
 	if len(kids) != 3 {
 		t.Fatalf("children = %d, want 3", len(kids))
@@ -81,7 +81,7 @@ func TestRadioButtonGroupOnSelect(t *testing.T) {
 			selected = val
 		},
 	})
-	w := &Window{}
+	w := newTestWindow()
 	kids := v.Content()
 	// Click second radio.
 	layout := kids[1].GenerateLayout(w)

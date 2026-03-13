@@ -197,7 +197,7 @@ func catalogRow(entry DemoEntry, app *ShowcaseApp) gui.View {
 		ColorBorderFocus: gui.ColorTransparent,
 		Radius:           gui.SomeF(4),
 		Padding:          gui.SomeP(3, 6, 3, 6),
-		HAlign:           gui.HAlignLeft,
+		HAlign:           gui.Some(gui.HAlignLeft),
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: entry.Label, TextStyle: gui.CurrentTheme().N4}),
 		},

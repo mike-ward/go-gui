@@ -25,8 +25,8 @@ type ButtonCfg struct {
 	FloatOffsetY     float32
 	Radius           Opt[float32]
 	IDFocus          uint32
-	HAlign           HorizontalAlign
-	VAlign           VerticalAlign
+	HAlign           Opt[HorizontalAlign]
+	VAlign           Opt[VerticalAlign]
 	Disabled         bool
 	Invisible        bool
 
@@ -56,6 +56,8 @@ func Button(cfg ButtonCfg) View {
 	d := &DefaultButtonStyle
 	sizeBorder := cfg.SizeBorder.Get(d.SizeBorder)
 	radius := cfg.Radius.Get(d.Radius)
+	hAlign := cfg.HAlign.Get(HAlignCenter)
+	vAlign := cfg.VAlign.Get(VAlignMiddle)
 
 	// Capture values for closures.
 	colorHover := cfg.ColorHover
@@ -94,8 +96,8 @@ func Button(cfg ButtonCfg) View {
 		Sizing:          cfg.Sizing,
 		Disabled:        cfg.Disabled,
 		Invisible:       cfg.Invisible,
-		HAlign:          cfg.HAlign,
-		VAlign:          cfg.VAlign,
+		HAlign:          hAlign,
+		VAlign:          vAlign,
 		Float:           cfg.Float,
 		FloatAnchor:     cfg.FloatAnchor,
 		FloatTieOff:     cfg.FloatTieOff,
@@ -116,7 +118,8 @@ func Button(cfg ButtonCfg) View {
 			}
 		},
 		OnHover: func(layout *Layout, e *Event, w *Window) {
-			if !layout.Shape.HasEvents() ||
+			if layout.Shape.Disabled ||
+				!layout.Shape.HasEvents() ||
 				layout.Shape.Events.OnClick == nil {
 				return
 			}
@@ -157,11 +160,5 @@ func applyButtonDefaults(cfg *ButtonCfg) {
 	}
 	if !cfg.Padding.IsSet() {
 		cfg.Padding = Some(d.Padding)
-	}
-	if cfg.HAlign == HAlignStart {
-		cfg.HAlign = HAlignCenter
-	}
-	if cfg.VAlign == VAlignTop {
-		cfg.VAlign = VAlignMiddle
 	}
 }

@@ -343,7 +343,7 @@ func dockTabButton(
 	return Button(ButtonCfg{
 		ID:         "dock_tab:" + groupID + ":" + panelID,
 		Sizing:     FillFit,
-		HAlign:     HAlignLeft,
+		HAlign:     Some(HAlignLeft),
 		Padding:    SomeP(4, 8, 4, 8),
 		Radius:     Some[float32](0),
 		SizeBorder: Some[float32](0),

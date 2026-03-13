@@ -73,7 +73,7 @@ func buttonFeatureRows(w *gui.Window) []gui.View {
 			SizeBorder:  gui.SomeF(2),
 			ColorBorder: gui.RGB(160, 160, 160),
 			Padding:     gui.Some(gui.CurrentTheme().PaddingMedium),
-			VAlign:      gui.VAlignMiddle,
+			VAlign:      gui.Some(gui.VAlignMiddle),
 			Content: []gui.View{
 				gui.Text(gui.TextCfg{Text: fmt.Sprintf("%d", app.ButtonClicks), MinWidth: 25}),
 				gui.ProgressBar(gui.ProgressBarCfg{

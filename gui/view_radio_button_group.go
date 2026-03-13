@@ -66,6 +66,7 @@ func radioGroup(cfg RadioButtonGroupCfg, axis func(ContainerCfg) View) View {
 		MinWidth:        cfg.MinWidth,
 		MinHeight:       cfg.MinHeight,
 		Sizing:          cfg.Sizing,
+		Disabled:        cfg.Disabled,
 		Content:         buildRadioOptions(cfg),
 	})
 }
