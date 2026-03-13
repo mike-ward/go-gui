@@ -100,20 +100,29 @@ func demoWrapPanel(_ *gui.Window) gui.View {
 	})
 }
 
-func demoOverflowPanel(_ *gui.Window) gui.View {
+func demoOverflowPanel(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
-	views := make([]gui.View, 20)
-	for i := range views {
-		views[i] = demoBoxSized("Item", t.ColorActive, 100, 30)
+	colors := []gui.Color{
+		t.ColorActive, t.Cfg.ColorSuccess, t.Cfg.ColorWarning, t.Cfg.ColorError,
+		t.ColorActive, t.Cfg.ColorSuccess, t.Cfg.ColorWarning, t.Cfg.ColorError,
 	}
-	return gui.Column(gui.ContainerCfg{
-		Sizing:   gui.FillFixed,
-		Height:   150,
-		Overflow: true,
-		IDScroll: 100,
-		Spacing:  gui.SomeF(4),
-		Padding:  gui.NoPadding,
-		Content:  views,
+	items := make([]gui.OverflowItem, len(colors))
+	for i := range items {
+		label := fmt.Sprintf("Item %d", i+1)
+		items[i] = gui.OverflowItem{
+			ID: label,
+			View: gui.Button(gui.ButtonCfg{
+				Color:   colors[i],
+				Content: []gui.View{gui.Text(gui.TextCfg{Text: label})},
+			}),
+			Text:   label,
+			Action: func(*gui.MenuItemCfg, *gui.Event, *gui.Window) {},
+		}
+	}
+	return gui.OverflowPanel(w, gui.OverflowPanelCfg{
+		ID:      "overflow_panel_demo",
+		IDFocus: 200,
+		Items:   items,
 	})
 }
 

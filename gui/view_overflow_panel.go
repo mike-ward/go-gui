@@ -21,7 +21,7 @@ type OverflowPanelCfg struct {
 	FloatOffsetX float32
 	FloatOffsetY float32
 	FloatZIndex  int
-	Spacing      float32
+	Spacing      Opt[float32]
 	Disabled     bool
 }
 
@@ -88,7 +88,6 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 
 		content = append(content, Menu(w, MenubarCfg{
 			ID:           cfg.ID + "_menu",
-			IDFocus:      cfg.IDFocus,
 			Items:        menuItems,
 			Float:        true,
 			FloatAnchor:  cfg.FloatAnchor,
@@ -101,10 +100,11 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 
 	return Row(ContainerCfg{
 		ID:       cfg.ID,
+		IDFocus:  cfg.IDFocus,
 		A11YRole: AccessRoleGroup,
 		Sizing:   FillFit,
 		Padding:  NoPadding,
-		Spacing:  Some(cfg.Spacing),
+		Spacing:  cfg.Spacing,
 		Overflow: true,
 		Disabled: cfg.Disabled,
 		Content:  content,
@@ -121,7 +121,7 @@ func applyOverflowDefaults(cfg *OverflowPanelCfg) {
 	if cfg.FloatTieOff == 0 {
 		cfg.FloatTieOff = FloatTopRight
 	}
-	if cfg.Spacing == 0 {
-		cfg.Spacing = guiTheme.SpacingSmall
+	if !cfg.Spacing.IsSet() {
+		cfg.Spacing = SomeF(guiTheme.SpacingSmall)
 	}
 }
