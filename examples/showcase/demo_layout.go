@@ -389,6 +389,7 @@ func demoScrollbar(_ *gui.Window) gui.View {
 			gui.Column(gui.ContainerCfg{
 				Sizing:        gui.FillFixed,
 				Height:        180,
+				Overflow:      true,
 				IDScroll:      101,
 				Padding:       gui.NoPadding,
 				Spacing:       gui.SomeF(4),
@@ -399,7 +400,9 @@ func demoScrollbar(_ *gui.Window) gui.View {
 			gui.Row(gui.ContainerCfg{
 				Sizing:        gui.FillFixed,
 				Height:        50,
+				Overflow:      true,
 				IDScroll:      102,
+				ScrollMode:    gui.ScrollHorizontalOnly,
 				Padding:       gui.NoPadding,
 				Spacing:       gui.SomeF(4),
 				ScrollbarCfgX: &gui.ScrollbarCfg{GapEdge: 4},

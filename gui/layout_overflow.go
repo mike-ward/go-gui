@@ -6,7 +6,8 @@ func layoutOverflow(layout *Layout, w *Window) {
 		layoutOverflow(&layout.Children[i], w)
 	}
 
-	if !layout.Shape.Overflow || layout.Shape.Axis != AxisLeftToRight || len(layout.Children) < 2 {
+	if !layout.Shape.Overflow || layout.Shape.Axis != AxisLeftToRight ||
+		len(layout.Children) < 2 || layout.Shape.IDScroll > 0 {
 		return
 	}
 
