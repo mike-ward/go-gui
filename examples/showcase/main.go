@@ -1,4 +1,4 @@
-// Package main implements a faithful showcase port for the go-gui framework.
+// Package main implements a faithful showcase port for the Go-Gui framework.
 package main
 
 import (

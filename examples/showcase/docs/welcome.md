@@ -1,6 +1,6 @@
-# 👋 Welcome to go-gui
+# 👋 Welcome to Go-Gui
 
-`go-gui` is a declarative GUI framework for Go focused on building desktop interfaces with
+Go-Gui is a declarative GUI framework for Go focused on building desktop interfaces with
 clear, composable code. Views are described with rows, columns, and controls, while the
 framework handles layout, painting, focus, and event routing.
 

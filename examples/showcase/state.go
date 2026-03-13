@@ -236,7 +236,7 @@ type DemoGroup struct {
 
 func demoEntries() []DemoEntry {
 	return []DemoEntry{
-		{ID: "welcome", Label: "Welcome", Group: groupWelcome, Summary: "Start here for a quick introduction to go-gui and this showcase.", Tags: []string{"start", "intro", "overview"}},
+		{ID: "welcome", Label: "Welcome", Group: groupWelcome, Summary: "Start here for a quick introduction to Go-Gui and this showcase.", Tags: []string{"start", "intro", "overview"}},
 
 		{ID: "color_picker", Label: "Color Picker", Group: groupSelection, Summary: "Pick RGBA and optional HSV values.", Tags: []string{"color", "hsv", "rgba"}},
 		{ID: "date_picker", Label: "Date Picker", Group: groupSelection, Summary: "Select one or many dates from a calendar.", Tags: []string{"calendar", "dates", "selection"}},

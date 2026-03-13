@@ -355,7 +355,7 @@ func demoRtf(_ *gui.Window) gui.View {
 				RichText: gui.RichText{
 					Runs: []gui.RichTextRun{
 						gui.RichRun("Visit the ", t.N3),
-						gui.RichLink("go-gui repository", "https://github.com/mike-ward/go-gui", gui.TextStyle{
+						gui.RichLink("Go-Gui repository", "https://github.com/mike-ward/go-gui", gui.TextStyle{
 							Color:     gui.ColorFromString("#3b82f6"),
 							Size:      t.N3.Size,
 							Underline: true,

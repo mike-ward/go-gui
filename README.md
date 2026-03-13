@@ -1,14 +1,14 @@
-# go-gui
+# Go-Gui
 
 ![Go version](https://img.shields.io/badge/go-1.26%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-PolyForm%20NC%201.0-blue)
 ![CI](https://github.com/mike-ward/go-gui/actions/workflows/ci.yml/badge.svg)
 
-Cross-platform immediate mode GUI framework for Go.
+Cross-platform immediate-mode GUI framework for Go.
 
 ## Overview
 
-go-gui is an immediate-mode GUI framework ported from the
+Go-Gui is an immediate-mode GUI framework ported from the
 [V-language gui library](https://github.com/mike-ward/gui). Every frame, a
 View function returns a tree of Layout nodes. The layout engine sizes and
 positions them. The backend converts the result into draw commands and
@@ -21,13 +21,13 @@ they produce the same layout. This makes reasoning about UI straightforward
 and testing easy — the `gui/backend/test` no-op backend runs all layout
 and widget logic headlessly.
 
-go-gui descends from the V-language gui framework and preserves its design
+Go-Gui descends from the V-language gui framework and preserves its design
 philosophy: minimal ceremony, composable widgets, and a clear separation
 between layout and rendering.
 
 ## Features
 
-- 50+ built-in widgets (buttons, inputs, sliders, tables, trees, tabs, …)
+- 45+ built-in widgets (buttons, inputs, sliders, tables, trees, tabs, …)
 - Stateless view model — views are plain functions
 - Full animation subsystem with keyframe and spring animations
 - GPU-accelerated rendering via SDL2 + Metal/OpenGL shaders
@@ -112,26 +112,20 @@ Set `CGO_CFLAGS` and `CGO_LDFLAGS` to your vcpkg include/lib paths before buildi
 
 ## Backend Selection
 
-Use one backend import in your app:
-
-- Metal backend (macOS, preferred):
-  `import metalbackend "github.com/mike-ward/go-gui/gui/backend/metal"`
-- OpenGL backend:
-  `import glbackend "github.com/mike-ward/go-gui/gui/backend/gl"`
-- SDL2 backend (fallback when shaders/GL are unavailable):
-  `import sdl2 "github.com/mike-ward/go-gui/gui/backend/sdl2"`
-
-Run with the matching backend:
+`backend.Run(w)` auto-selects Metal on macOS and OpenGL elsewhere:
 
 ```go
-// Preferred on macOS: Metal backend
-metalbackend.Run(w)
+import "github.com/mike-ward/go-gui/gui/backend"
 
-// OpenGL backend
-glbackend.Run(w)
+backend.Run(w) // Metal on macOS, GL on Linux/Windows
+```
 
-// Fallback: SDL2 backend
-sdl2.Run(w)
+To force a specific backend, import it directly:
+
+```go
+import metal   "github.com/mike-ward/go-gui/gui/backend/metal"  // macOS only
+import gl      "github.com/mike-ward/go-gui/gui/backend/gl"     // cross-platform
+import sdl2    "github.com/mike-ward/go-gui/gui/backend/sdl2"   // software fallback
 ```
 
 ## Quick Start
@@ -146,43 +140,35 @@ import (
     "github.com/mike-ward/go-gui/gui/backend"
 )
 
-// App holds all mutable state for the application.
-type App struct {
-    Clicks int
-}
+type App struct{ Clicks int }
 
 func main() {
-    // Choose a built-in theme before opening the window.
     gui.SetTheme(gui.ThemeDarkBordered)
 
     w := gui.NewWindow(gui.WindowCfg{
-        State:  &App{},  // typed state slot; retrieve with gui.State[App](w)
+        State:  &App{},
         Title:  "get_started",
         Width:  300,
         Height: 300,
-        OnInit: func(w *gui.Window) {
-            w.UpdateView(mainView) // register the view function
-        },
+        OnInit: func(w *gui.Window) { w.UpdateView(mainView) },
     })
 
     backend.Run(w) // blocks until window closes
 }
 
-// mainView is called every frame. It returns a layout tree.
 func mainView(w *gui.Window) gui.View {
     ww, wh := w.WindowSize()
     app := gui.State[App](w)
 
     return gui.Column(gui.ContainerCfg{
-        Width:   float32(ww),
-        Height:  float32(wh),
-        Sizing:  gui.FixedFixed,
-        HAlign:  gui.HAlignCenter,
-        VAlign:  gui.VAlignMiddle,
-        Spacing: 10,
+        Width:  float32(ww),
+        Height: float32(wh),
+        Sizing: gui.FixedFixed,
+        HAlign: gui.HAlignCenter,
+        VAlign: gui.VAlignMiddle,
         Content: []gui.View{
             gui.Text(gui.TextCfg{
-                Text:      "Hello go-gui!",
+                Text:      "Hello GUI!",
                 TextStyle: gui.CurrentTheme().B1,
             }),
             gui.Button(gui.ButtonCfg{
@@ -192,8 +178,9 @@ func mainView(w *gui.Window) gui.View {
                         Text: fmt.Sprintf("%d Clicks", app.Clicks),
                     }),
                 },
-                OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
+                OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
                     gui.State[App](w).Clicks++
+                    e.IsHandled = true
                 },
             }),
         },
@@ -206,23 +193,32 @@ version.
 
 ### More Examples
 
-| Directory                                                      | Description                               |
-| -------------------------------------------------------------- | ----------------------------------------- |
-| [`animations`](examples/animations/)                           | Animation subsystem showcase              |
-| [`benchmark`](examples/benchmark/)                             | Frame timing and allocation benchmarks    |
-| [`calculator`](examples/calculator/)                           | Styled desktop calculator                 |
-| [`context_menu`](examples/context_menu/)                       | Right-click context menus                 |
-| [`data_grid_data_source`](examples/data_grid_data_source/)     | DataGrid with async data source           |
-| [`floating_layout`](examples/floating_layout/)                 | Float-anchored overlay positioning        |
-| [`gradient_demo`](examples/gradient_demo/)                     | OpenGL gradient rendering                 |
-| [`listbox`](examples/listbox/)                                 | ListBox widget demo                       |
-| [`markdown`](examples/markdown/)                               | Markdown rendering with code-block copy   |
-| [`menu_demo`](examples/menu_demo/)                             | Pull-down menu bar                        |
-| [`multiline_input`](examples/multiline_input/)                 | Multiline text input                      |
-| [`rtf`](examples/rtf/)                                         | RTF document viewer                       |
-| [`scroll_demo`](examples/scroll_demo/)                         | Scrollable content layouts                |
-| [`svg`](examples/svg/)                                         | SVG loading and display                   |
-| [`todo`](examples/todo/)                                       | Classic todo app                          |
+| Directory                                                  | Description                            |
+| ---------------------------------------------------------- | -------------------------------------- |
+| [`animations`](examples/animations/)                       | Animation subsystem showcase           |
+| [`benchmark`](examples/benchmark/)                         | Frame timing and allocation benchmarks |
+| [`blur_demo`](examples/blur_demo/)                         | Blur visual effect                     |
+| [`calculator`](examples/calculator/)                       | Styled desktop calculator              |
+| [`color_picker`](examples/color_picker/)                   | Color picker widget                    |
+| [`context_menu`](examples/context_menu/)                   | Right-click context menus              |
+| [`custom_shader`](examples/custom_shader/)                 | Custom GPU shader rendering            |
+| [`data_grid_data_source`](examples/data_grid_data_source/) | DataGrid with async data source        |
+| [`date_picker_options`](examples/date_picker_options/)     | Date picker configurations             |
+| [`dialogs`](examples/dialogs/)                             | Native and custom dialogs              |
+| [`draw_canvas`](examples/draw_canvas/)                     | Custom-draw canvas surface             |
+| [`floating_layout`](examples/floating_layout/)             | Float-anchored overlay positioning     |
+| [`gradient_demo`](examples/gradient_demo/)                 | OpenGL gradient rendering              |
+| [`listbox`](examples/listbox/)                             | ListBox widget demo                    |
+| [`markdown`](examples/markdown/)                           | Markdown rendering with code-block copy|
+| [`menu_demo`](examples/menu_demo/)                         | Pull-down menu bar                     |
+| [`multiline_input`](examples/multiline_input/)             | Multiline text input                   |
+| [`rtf`](examples/rtf/)                                     | RTF document viewer                    |
+| [`scroll_demo`](examples/scroll_demo/)                     | Scrollable content layouts             |
+| [`shadow_demo`](examples/shadow_demo/)                     | Box shadow effects                     |
+| [`showcase`](examples/showcase/)                           | Interactive widget showcase            |
+| [`snake`](examples/snake/)                                 | Snake game                             |
+| [`svg`](examples/svg/)                                     | SVG loading and display                |
+| [`todo`](examples/todo/)                                   | Classic todo app                       |
 
 ## Core Concepts
 
@@ -293,7 +289,10 @@ gui.Input(gui.InputCfg{
 | ------------- | --------------------------------- | -------------------------- |
 | Row           | `Row(ContainerCfg)`               | Horizontal flex container  |
 | Column        | `Column(ContainerCfg)`            | Vertical flex container    |
-| Spacer        | `Spacer(SpacerCfg)`               | Flexible blank space       |
+| Wrap          | `Wrap(ContainerCfg)`              | Flow-wrap container        |
+| Canvas        | `Canvas(ContainerCfg)`            | Absolute-position canvas   |
+| Circle        | `Circle(ContainerCfg)`            | Circular container         |
+| Rectangle     | `Rectangle(RectangleCfg)`         | Styled rectangle           |
 | ExpandPanel   | `ExpandPanel(ExpandPanelCfg)`     | Collapsible section        |
 | Splitter      | `Split(SplitterCfg)`              | Resizable two-pane split   |
 | DockLayout    | `DockLayout(DockCfg)`             | Drag-and-drop dock areas   |
@@ -301,33 +300,37 @@ gui.Input(gui.InputCfg{
 
 #### Input
 
-| Widget           | Factory                                 | Description                  |
-| ---------------- | --------------------------------------- | ---------------------------- |
-| Button           | `Button(ButtonCfg)`                     | Clickable button             |
-| Input            | `Input(InputCfg)`                       | Single-line text field       |
-| Checkbox         | `Checkbox(CheckboxCfg)`                 | Boolean toggle               |
-| RadioButtonGroup | `RadioButtonGroup(RadioButtonGroupCfg)` | Mutually-exclusive options   |
-| Select           | `Select(SelectCfg)`                     | Dropdown selector            |
-| Combobox         | `Combobox(ComboboxCfg)`                 | Editable dropdown            |
-| Switch           | `Switch(SwitchCfg)`                     | On/off toggle switch         |
-| RangeSlider      | `RangeSlider(RangeSliderCfg)`           | Min/max range picker         |
-| InputDate        | `InputDate(InputDateCfg)`               | Date field with picker       |
-| ColorPicker      | `ColorPicker(ColorPickerCfg)`           | RGBA color picker            |
-| CommandPalette   | `CommandPalette(CommandPaletteCfg)`     | Fuzzy-search command palette |
+| Widget         | Factory                             | Description                  |
+| -------------- | ----------------------------------- | ---------------------------- |
+| Button         | `Button(ButtonCfg)`                 | Clickable button             |
+| Input          | `Input(InputCfg)`                   | Single-line text field       |
+| NumericInput   | `NumericInput(NumericInputCfg)`     | Numeric text field           |
+| Checkbox       | `Checkbox(CheckboxCfg)`            | Boolean toggle               |
+| Radio          | `Radio(RadioCfg)`                   | Mutually-exclusive options   |
+| Select         | `Select(SelectCfg)`                 | Dropdown selector            |
+| Combobox       | `Combobox(ComboboxCfg)`             | Editable dropdown            |
+| Switch         | `Switch(SwitchCfg)`                 | On/off toggle switch         |
+| Toggle         | `Toggle(ToggleCfg)`                 | Toggle button                |
+| RangeSlider    | `RangeSlider(RangeSliderCfg)`       | Min/max range picker         |
+| InputDate      | `InputDate(InputDateCfg)`           | Date field with picker       |
+| ColorPicker    | `ColorPicker(ColorPickerCfg)`       | RGBA color picker            |
+| Form           | `Form(FormCfg)`                     | Form with validation         |
+| ThemeToggle    | `ThemeToggle(ThemeToggleCfg)`       | Theme switcher               |
+| CommandPalette | `CommandPalette(CommandPaletteCfg)` | Fuzzy-search command palette |
 
 #### Display
 
-| Widget       | Factory                         | Description                   |
-| ------------ | ------------------------------- | ----------------------------- |
-| Text         | `Text(TextCfg)`                 | Styled text label             |
-| Badge        | `Badge(BadgeCfg)`               | Notification badge            |
-| ProgressBar  | `ProgressBar(ProgressBarCfg)`   | Determinate/indeterminate bar |
-| Pulsar       | `Pulsar(PulsarCfg)`             | Blinking cursor indicator     |
-| DrawCanvas   | `DrawCanvas(DrawCanvasCfg)`     | Custom-draw surface           |
-| Image        | `Image(ImageCfg)`               | Raster image view             |
-| SvgView      | `SvgView(SvgViewCfg)`           | SVG vector image view         |
-| MarkdownView | `MarkdownView(MarkdownViewCfg)` | Rendered Markdown             |
-| RtfView      | `RtfView(RtfViewCfg)`           | Rendered RTF                  |
+| Widget      | Factory                       | Description                   |
+| ----------- | ----------------------------- | ----------------------------- |
+| Text        | `Text(TextCfg)`               | Styled text label             |
+| Badge       | `Badge(BadgeCfg)`             | Notification badge            |
+| ProgressBar | `ProgressBar(ProgressBarCfg)` | Determinate/indeterminate bar |
+| Pulsar      | `Pulsar(PulsarCfg)`           | Blinking cursor indicator     |
+| DrawCanvas  | `DrawCanvas(DrawCanvasCfg)`   | Custom-draw surface           |
+| Image       | `Image(ImageCfg)`             | Raster image view             |
+| Svg         | `Svg(SvgCfg)`                 | SVG vector image view         |
+| Markdown    | `w.Markdown(MarkdownCfg)`     | Rendered Markdown             |
+| RTF         | `RTF(RtfCfg)`                 | Rendered RTF                  |
 
 #### Data
 
@@ -335,30 +338,33 @@ gui.Input(gui.InputCfg{
 | ---------------- | --------------------------------------- | ------------------------------- |
 | ListBox          | `ListBox(ListBoxCfg)`                   | Scrollable item list            |
 | Table            | `Table(TableCfg)`                       | Static data table               |
-| DataGrid         | `DataGrid(DataGridCfg)`                 | Virtualized grid with full CRUD |
+| DataGrid         | `w.DataGrid(DataGridCfg)`               | Virtualized grid with full CRUD |
+| Tree             | `Tree(TreeCfg)`                         | Hierarchical tree view          |
 | DatePicker       | `DatePicker(DatePickerCfg)`             | Calendar date picker            |
 | DatePickerRoller | `DatePickerRoller(DatePickerRollerCfg)` | Drum-style date roller          |
 
 #### Navigation
 
-| Widget     | Factory                     | Description                   |
-| ---------- | --------------------------- | ----------------------------- |
-| TabControl | `Tabs(TabControlCfg)`       | Tabbed panel                  |
-| Breadcrumb | `Breadcrumb(BreadcrumbCfg)` | Navigational breadcrumb trail |
-| Menu       | `Menu(MenuCfg)`             | Pull-down menu bar            |
-| Sidebar    | `Sidebar(SidebarCfg)`       | Collapsible side navigation   |
+| Widget      | Factory                          | Description                   |
+| ----------- | -------------------------------- | ----------------------------- |
+| TabControl  | `Tabs(TabControlCfg)`            | Tabbed panel                  |
+| Breadcrumb  | `Breadcrumb(BreadcrumbCfg)`      | Navigational breadcrumb trail |
+| Menu        | `Menu(MenuCfg)`                  | Pull-down menu bar            |
+| Menubar     | `Menubar(w, MenubarCfg)`         | Application menu bar          |
+| ContextMenu | `ContextMenu(w, ContextMenuCfg)` | Right-click context menu      |
+| Sidebar     | `w.Sidebar(SidebarCfg)`          | Collapsible side navigation   |
 
 #### Overlay
 
-| Widget  | Factory               | Description            |
-| ------- | --------------------- | ---------------------- |
-| Dialog  | `Dialog(DialogCfg)`   | Modal dialog           |
-| Toast   | `Toast(ToastCfg)`     | Transient notification |
-| Tooltip | `Tooltip(TooltipCfg)` | Hover tooltip          |
+| Widget      | Factory                          | Description            |
+| ----------- | -------------------------------- | ---------------------- |
+| Dialog      | `w.Dialog(DialogCfg)`            | Modal dialog           |
+| Toast       | `w.Toast(ToastCfg)`              | Transient notification |
+| WithTooltip | `WithTooltip(w, WithTooltipCfg)` | Hover tooltip wrapper  |
 
 ## Backend
 
-go-gui separates rendering concerns into injectable interfaces:
+Go-Gui separates rendering concerns into injectable interfaces:
 
 | Interface        | Purpose                                    |
 | ---------------- | ------------------------------------------ |
@@ -410,4 +416,4 @@ Backend dispatch loop ── Metal / OpenGL / SDL2 renderer
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+PolyForm Noncommercial 1.0.0 — see [LICENSE](LICENSE).
