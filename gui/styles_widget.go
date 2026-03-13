@@ -651,7 +651,7 @@ var (
 		Color:          colorInteriorDark,
 		ColorBar:       colorSelectDark,
 		ColorBorder:    colorBorderDark,
-		TextBackground: colorPanelDark,
+		TextBackground: ColorTransparent,
 		Padding:        PaddingNone,
 		TextPadding:    NewPadding(1, 4, 1, 4),
 		SizeBorder:     0,

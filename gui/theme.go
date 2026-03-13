@@ -426,7 +426,7 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			Color:          cfg.ColorInterior,
 			ColorBar:       cfg.ColorSelect,
 			ColorBorder:    cfg.ColorBorder,
-			TextBackground: cfg.ColorPanel,
+			TextBackground: ColorTransparent,
 			Padding:        PaddingNone,
 			TextPadding:    NewPadding(1, 4, 1, 4),
 			Radius:         cfg.RadiusSmall,
@@ -1079,7 +1079,7 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.ProgressBarStyle.Color = interior
 	t.ProgressBarStyle.ColorBar = sel
 	t.ProgressBarStyle.ColorBorder = border
-	t.ProgressBarStyle.TextBackground = panel
+	t.ProgressBarStyle.TextBackground = ColorTransparent
 
 	t.RangeSliderStyle.Color = interior
 	t.RangeSliderStyle.ColorClick = active
