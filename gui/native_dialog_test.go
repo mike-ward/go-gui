@@ -203,6 +203,21 @@ func TestNativeFolderDialogNoPlatform(t *testing.T) {
 	}
 }
 
+func TestNativeDialogNilOnDone(t *testing.T) {
+	w := &Window{}
+	// Nil OnDone must not panic.
+	nativeOpenDialogImpl(w, NativeOpenDialogCfg{})
+	nativeSaveDialogImpl(w, NativeSaveDialogCfg{})
+	nativeFolderDialogImpl(w, NativeFolderDialogCfg{})
+}
+
+func TestNativeAlertNilOnDone(t *testing.T) {
+	w := &Window{}
+	// Nil OnDone must not panic.
+	nativeMessageDialogImpl(w, NativeMessageDialogCfg{})
+	nativeConfirmDialogImpl(w, NativeConfirmDialogCfg{})
+}
+
 func TestNativeOpenDialogBadExtension(t *testing.T) {
 	w := &Window{}
 	var result NativeDialogResult

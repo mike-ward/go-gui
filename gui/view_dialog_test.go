@@ -13,11 +13,11 @@ func TestDialogCfgDefaults(t *testing.T) {
 		t.Errorf("expected IDFocus=%d, got %d",
 			dialogBaseIDFocus, cfg.IDFocus)
 	}
-	if cfg.MinWidth != 200 {
-		t.Errorf("expected MinWidth=200, got %f", cfg.MinWidth)
+	if cfg.MinWidth.IsSet() {
+		t.Error("expected MinWidth unset (resolved from style)")
 	}
-	if cfg.MaxWidth != 300 {
-		t.Errorf("expected MaxWidth=300, got %f", cfg.MaxWidth)
+	if cfg.MaxWidth.IsSet() {
+		t.Error("expected MaxWidth unset (resolved from style)")
 	}
 }
 
@@ -135,6 +135,90 @@ func TestDialogKeyDownCtrlCNoOpWhenBodyEmpty(t *testing.T) {
 	}
 	if e.IsHandled {
 		t.Fatal("expected IsHandled=false for empty body")
+	}
+}
+
+func TestDialogPromptView(t *testing.T) {
+	cfg := DialogCfg{
+		Title:      "Enter name",
+		Body:       "Name:",
+		Reply:      "Alice",
+		DialogType: DialogPrompt,
+	}
+	v := dialogViewGenerator(cfg)
+	if v == nil {
+		t.Fatal("expected non-nil view")
+	}
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	if len(layout.Children) < 3 {
+		t.Fatalf("expected >=3 children (title+body+input+buttons), got %d",
+			len(layout.Children))
+	}
+}
+
+func TestDialogCustomView(t *testing.T) {
+	custom := Text(TextCfg{Text: "custom content"})
+	cfg := DialogCfg{
+		Title:         "Custom",
+		DialogType:    DialogCustom,
+		CustomContent: []View{custom},
+	}
+	v := dialogViewGenerator(cfg)
+	if v == nil {
+		t.Fatal("expected non-nil view")
+	}
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	// Title + custom content.
+	if len(layout.Children) < 2 {
+		t.Fatalf("expected >=2 children, got %d", len(layout.Children))
+	}
+}
+
+func TestDialogDefaultsPreserveUserSet(t *testing.T) {
+	cfg := DialogCfg{
+		Color:        RGBA(255, 0, 0, 255),
+		AlignButtons: HAlignRight,
+		MinWidth:     SomeF(400),
+		MaxWidth:     SomeF(600),
+	}
+	applyDialogDefaults(&cfg)
+	if cfg.Color != (RGBA(255, 0, 0, 255)) {
+		t.Error("Color was overwritten")
+	}
+	if cfg.AlignButtons != HAlignRight {
+		t.Error("AlignButtons was overwritten")
+	}
+	if cfg.MinWidth.Get(0) != 400 {
+		t.Errorf("MinWidth was overwritten: %v", cfg.MinWidth)
+	}
+	if cfg.MaxWidth.Get(0) != 600 {
+		t.Errorf("MaxWidth was overwritten: %v", cfg.MaxWidth)
+	}
+}
+
+func TestDialogAlignButtonsLeft(t *testing.T) {
+	cfg := DialogCfg{AlignButtons: HAlignLeft}
+	applyDialogDefaults(&cfg)
+	if cfg.AlignButtons != HAlignLeft {
+		t.Errorf("expected HAlignLeft, got %d", cfg.AlignButtons)
+	}
+}
+
+func TestDialogMinMaxWidthResolved(t *testing.T) {
+	cfg := DialogCfg{DialogType: DialogMessage}
+	v := dialogViewGenerator(cfg)
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	s := layout.Shape
+	if s.MinWidth != DefaultDialogStyle.MinWidth {
+		t.Errorf("MinWidth=%f, want %f",
+			s.MinWidth, DefaultDialogStyle.MinWidth)
+	}
+	if s.MaxWidth != DefaultDialogStyle.MaxWidth {
+		t.Errorf("MaxWidth=%f, want %f",
+			s.MaxWidth, DefaultDialogStyle.MaxWidth)
 	}
 }
 

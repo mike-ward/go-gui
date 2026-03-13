@@ -141,11 +141,11 @@ type TreeStyle struct {
 type DialogStyle struct {
 	Color            Color
 	ColorBorder      Color
-	ColorBorderFocus Color
+	ColorBorderFocus Color // Reserved for future focus-ring styling.
 	Padding          Padding
 	SizeBorder       float32
 	Radius           float32
-	RadiusBorder     float32
+	RadiusBorder     float32 // Reserved.
 	BlurRadius       float32
 	Shadow           *BoxShadow
 	AlignButtons     HorizontalAlign

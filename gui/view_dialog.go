@@ -35,13 +35,12 @@ type DialogCfg struct {
 
 	Width     float32
 	Height    float32
-	MinWidth  float32
+	MinWidth  Opt[float32]
 	MinHeight float32
-	MaxWidth  float32
+	MaxWidth  Opt[float32]
 	MaxHeight float32
 
-	Radius       Opt[float32]
-	RadiusBorder Opt[float32]
+	Radius Opt[float32]
 
 	IDFocus      uint32
 	DialogType   DialogType
@@ -58,7 +57,8 @@ func dialogViewGenerator(cfg DialogCfg) View {
 	dn := &DefaultDialogStyle
 	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	radius := cfg.Radius.Get(dn.Radius)
-	_ = cfg.RadiusBorder.Get(dn.RadiusBorder)
+	minWidth := cfg.MinWidth.Get(dn.MinWidth)
+	maxWidth := cfg.MaxWidth.Get(dn.MaxWidth)
 
 	var content []View
 
@@ -97,12 +97,14 @@ func dialogViewGenerator(cfg DialogCfg) View {
 		ColorBorder: cfg.ColorBorder,
 		SizeBorder:  Some(sizeBorder),
 		Radius:      Some(radius),
+		BlurRadius:  dn.BlurRadius,
+		Shadow:      dn.Shadow,
 		Padding:     cfg.Padding,
 		Width:       cfg.Width,
 		Height:      cfg.Height,
-		MinWidth:    cfg.MinWidth,
+		MinWidth:    minWidth,
 		MinHeight:   cfg.MinHeight,
-		MaxWidth:    cfg.MaxWidth,
+		MaxWidth:    maxWidth,
 		MaxHeight:   cfg.MaxHeight,
 		Float:       true,
 		FloatAnchor: FloatMiddleCenter,
@@ -118,17 +120,16 @@ func dialogViewGenerator(cfg DialogCfg) View {
 // messageView returns an OK button row.
 func messageView(cfg DialogCfg) View {
 	onOkYes := cfg.OnOkYes
-	oldFocus := cfg.oldIDFocus
 	return Row(ContainerCfg{
-		Sizing:  FillFit,
-		HAlign:  cfg.AlignButtons,
-		Padding: NoPadding,
+		Sizing:     FillFit,
+		HAlign:     cfg.AlignButtons,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus: cfg.IDFocus,
 				Content: []View{Text(TextCfg{Text: "OK"})},
 				OnClick: func(_ *Layout, _ *Event, w *Window) {
-					w.SetIDFocus(oldFocus)
 					w.DialogDismiss()
 					if onOkYes != nil {
 						onOkYes(w)
@@ -143,18 +144,17 @@ func messageView(cfg DialogCfg) View {
 func confirmView(cfg DialogCfg) View {
 	onOkYes := cfg.OnOkYes
 	onCancelNo := cfg.OnCancelNo
-	oldFocus := cfg.oldIDFocus
 	return Row(ContainerCfg{
-		Sizing:  FillFit,
-		HAlign:  cfg.AlignButtons,
-		Padding: NoPadding,
-		Spacing: Some(SpacingMedium),
+		Sizing:     FillFit,
+		HAlign:     cfg.AlignButtons,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Spacing:    Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus: cfg.IDFocus + 1,
 				Content: []View{Text(TextCfg{Text: "Yes"})},
 				OnClick: func(_ *Layout, _ *Event, w *Window) {
-					w.SetIDFocus(oldFocus)
 					w.DialogDismiss()
 					if onOkYes != nil {
 						onOkYes(w)
@@ -165,7 +165,6 @@ func confirmView(cfg DialogCfg) View {
 				IDFocus: cfg.IDFocus,
 				Content: []View{Text(TextCfg{Text: "No"})},
 				OnClick: func(_ *Layout, _ *Event, w *Window) {
-					w.SetIDFocus(oldFocus)
 					w.DialogDismiss()
 					if onCancelNo != nil {
 						onCancelNo(w)
@@ -180,7 +179,6 @@ func confirmView(cfg DialogCfg) View {
 func promptView(cfg DialogCfg) []View {
 	onReply := cfg.OnReply
 	onCancelNo := cfg.OnCancelNo
-	oldFocus := cfg.oldIDFocus
 
 	var views []View
 
@@ -195,17 +193,17 @@ func promptView(cfg DialogCfg) []View {
 	}))
 
 	views = append(views, Row(ContainerCfg{
-		Sizing:  FillFit,
-		HAlign:  cfg.AlignButtons,
-		Padding: NoPadding,
-		Spacing: Some(SpacingMedium),
+		Sizing:     FillFit,
+		HAlign:     cfg.AlignButtons,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Spacing:    Some(SpacingMedium),
 		Content: []View{
 			Button(ButtonCfg{
 				IDFocus:  cfg.IDFocus + 1,
 				Disabled: len(cfg.Reply) == 0,
 				Content:  []View{Text(TextCfg{Text: "OK"})},
 				OnClick: func(_ *Layout, _ *Event, w *Window) {
-					w.SetIDFocus(oldFocus)
 					reply := w.dialogCfg.Reply
 					w.DialogDismiss()
 					if onReply != nil {
@@ -217,7 +215,6 @@ func promptView(cfg DialogCfg) []View {
 				IDFocus: cfg.IDFocus + 2,
 				Content: []View{Text(TextCfg{Text: "Cancel"})},
 				OnClick: func(_ *Layout, _ *Event, w *Window) {
-					w.SetIDFocus(oldFocus)
 					w.DialogDismiss()
 					if onCancelNo != nil {
 						onCancelNo(w)
@@ -271,14 +268,10 @@ func applyDialogDefaults(cfg *DialogCfg) {
 	if cfg.IDFocus == 0 {
 		cfg.IDFocus = dialogBaseIDFocus
 	}
+	// HAlignStart is 0 (zero value), so explicit HAlignStart cannot be
+	// distinguished from unset. Use HAlignLeft for left alignment.
 	if cfg.AlignButtons == HAlignStart {
 		cfg.AlignButtons = d.AlignButtons
-	}
-	if cfg.MinWidth == 0 {
-		cfg.MinWidth = d.MinWidth
-	}
-	if cfg.MaxWidth == 0 {
-		cfg.MaxWidth = d.MaxWidth
 	}
 }
 

@@ -182,7 +182,7 @@ func nativeFolderDialogImpl(w *Window, cfg NativeFolderDialogCfg) {
 
 func nativeMessageDialogImpl(w *Window, cfg NativeMessageDialogCfg) {
 	if w.nativePlatform == nil {
-		dispatchAlertDone(w, cfg.OnDone, NativeAlertResult{Status: DialogError, ErrorCode: "unsupported", ErrorMessage: "no native platform"})
+		dispatchAlertDone(w, cfg.OnDone, nativeAlertErrorResult("unsupported", "no native platform"))
 		return
 	}
 	result := w.nativePlatform.ShowMessageDialog(cfg.Title, cfg.Body, cfg.Level)
@@ -191,7 +191,7 @@ func nativeMessageDialogImpl(w *Window, cfg NativeMessageDialogCfg) {
 
 func nativeConfirmDialogImpl(w *Window, cfg NativeConfirmDialogCfg) {
 	if w.nativePlatform == nil {
-		dispatchAlertDone(w, cfg.OnDone, NativeAlertResult{Status: DialogError, ErrorCode: "unsupported", ErrorMessage: "no native platform"})
+		dispatchAlertDone(w, cfg.OnDone, nativeAlertErrorResult("unsupported", "no native platform"))
 		return
 	}
 	result := w.nativePlatform.ShowConfirmDialog(cfg.Title, cfg.Body, cfg.Level)
@@ -214,6 +214,10 @@ func dispatchAlertDone(w *Window, onDone func(NativeAlertResult, *Window), resul
 
 func nativeDialogErrorResult(code, message string) NativeDialogResult {
 	return NativeDialogResult{Status: DialogError, ErrorCode: code, ErrorMessage: message}
+}
+
+func nativeAlertErrorResult(code, message string) NativeAlertResult {
+	return NativeAlertResult{Status: DialogError, ErrorCode: code, ErrorMessage: message}
 }
 
 func nativeResultFromPlatform(pr PlatformDialogResult, w *Window) NativeDialogResult {
