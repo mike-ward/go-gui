@@ -6,6 +6,8 @@
 
 Cross-platform immediate-mode GUI framework for Go.
 
+![showcase](assets/showcase.png)
+
 ## Overview
 
 Go-Gui is an immediate-mode GUI framework ported from the
