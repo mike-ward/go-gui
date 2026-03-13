@@ -27,11 +27,17 @@ View fn → GenerateViewLayout() → Layout tree
 ### Packages
 
 - `gui/` — core package: all widget factories, layout engine, theme system,
-  animation subsystem, event dispatch, state management (~255 .go files)
+  animation subsystem, event dispatch, state management (~160 .go files)
 - `gui/backend/sdl2/` — SDL2 backend; implements `TextMeasurer`, `SvgParser`,
   `NativePlatform`; wires into window via `sdl2.New(w)`
+- `gui/backend/metal/` — Metal rendering backend (macOS)
+- `gui/backend/gl/` — OpenGL rendering backend
+- `gui/backend/filedialog/` — native file dialog support
+- `gui/backend/printdialog/` — native print dialog support
+- `gui/backend/internal/` — shared backend internals
 - `gui/backend/test/` — headless no-op backend used by all unit tests
-- `examples/get_started/` — minimal counter app demonstrating window + view + state
+- `examples/` — 25 example apps (get_started, showcase, calculator, todo,
+  snake, markdown, custom_shader, draw_canvas, etc.)
 
 ### Core Types
 
@@ -79,8 +85,8 @@ Backend injects at startup; nil in tests:
 
 ### Key Implementation Notes
 
-- `spacing()` counts only visible children (`ShapeType != ShapeNone`, `!Float`,
-  `!OverDraw`) — fence-post gap calculation
+- `(*Layout).spacing()` counts only visible children (`ShapeType != ShapeNone`,
+  `!Float`, `!OverDraw`) — fence-post gap calculation
 - Shape text fields live in `Shape.TC` (`*ShapeTextConfig`), not on `Shape`
 - `ContainerCfg.Title`/`TitleBG` render a group-box label in the top border
   (floating eraser + text, like HTML fieldset). `TitleBG` should match the
