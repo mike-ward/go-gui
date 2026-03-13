@@ -24,7 +24,7 @@ func (n *nativePlatform) OpenURI(uri string) error {
 	if err := validateOpenURI(uri); err != nil {
 		return err
 	}
-	return exec.Command("open", uri).Start()
+	return exec.Command("open", uri).Run()
 }
 
 func validateOpenURI(raw string) error {
@@ -68,9 +68,10 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 		"-e", "display notification (item 2 of argv) with title (item 1 of argv)",
 		"-e", "end run",
 		"--", title, body)
-	if err := cmd.Start(); err != nil {
+	if err := cmd.Run(); err != nil {
 		return gui.NativeNotificationResult{
 			Status:       gui.NotificationError,
+			ErrorCode:    "exec_failed",
 			ErrorMessage: err.Error(),
 		}
 	}

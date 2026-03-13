@@ -2,8 +2,10 @@ package sdl2
 
 import (
 	"fmt"
+	"net/url"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/filedialog"
@@ -16,6 +18,9 @@ import (
 type nativePlatform struct{}
 
 func (n *nativePlatform) OpenURI(uri string) error {
+	if err := validateOpenURI(uri); err != nil {
+		return err
+	}
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
@@ -28,7 +33,21 @@ func (n *nativePlatform) OpenURI(uri string) error {
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
-	return cmd.Start()
+	return cmd.Run()
+}
+
+func validateOpenURI(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("invalid URI: %w", err)
+	}
+	scheme := strings.ToLower(u.Scheme)
+	switch scheme {
+	case "http", "https", "mailto":
+		return nil
+	default:
+		return fmt.Errorf("unsupported URI scheme: %q", u.Scheme)
+	}
 }
 
 func (n *nativePlatform) ShowOpenDialog(title, startDir string, extensions []string, allowMultiple bool) gui.PlatformDialogResult {
@@ -55,20 +74,24 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		script := fmt.Sprintf(
-			`display notification %q with title %q`, body, title)
-		cmd = exec.Command("osascript", "-e", script)
+		cmd = exec.Command("osascript",
+			"-e", "on run argv",
+			"-e", "display notification (item 2 of argv) with title (item 1 of argv)",
+			"-e", "end run",
+			"--", title, body)
 	case "linux":
 		cmd = exec.Command("notify-send", title, body)
 	default:
 		return gui.NativeNotificationResult{
 			Status:       gui.NotificationError,
+			ErrorCode:    "unsupported",
 			ErrorMessage: "unsupported platform: " + runtime.GOOS,
 		}
 	}
-	if err := cmd.Start(); err != nil {
+	if err := cmd.Run(); err != nil {
 		return gui.NativeNotificationResult{
 			Status:       gui.NotificationError,
+			ErrorCode:    "exec_failed",
 			ErrorMessage: err.Error(),
 		}
 	}
