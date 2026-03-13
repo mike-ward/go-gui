@@ -3680,10 +3680,10 @@ gui.CommandPaletteToggle("cmd", focusPalette, w)
 
 | Function                                     | Description              |
 |----------------------------------------------|--------------------------|
-| CommandPaletteShow(id, idFocus, w)           | Show and focus palette   |
+| CommandPaletteShow(id, idFocus, idScroll, w) | Show and focus palette   |
 | CommandPaletteDismiss(id, w)                 | Hide palette             |
-| CommandPaletteToggle(id, idFocus, w)         | Toggle visibility        |
-| CommandPaletteIsVisible(w, id) bool          | Check if visible         |
+| CommandPaletteToggle(id, idFocus, idScroll, w) | Toggle visibility      |
+| CommandPaletteIsVisible(id, w) bool          | Check if visible         |
 
 ## Key Properties
 

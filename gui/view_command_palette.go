@@ -171,7 +171,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 		FloatZIndex: cfg.FloatZIndex,
 		VAlign:      VAlignTop,
 		HAlign:      HAlignCenter,
-		Padding:     SomeP(60, 0, 0, 0),
+		Padding:     NoPadding,
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			CommandPaletteDismiss(paletteID, w)
 			if onDismiss != nil {
@@ -192,15 +192,16 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 				Padding:     NoPadding,
 				Spacing:     SomeF(0),
 				Sizing:      FixedFit,
-				OnKeyDown:   makePaletteOnKeyDown(paletteID, onAction, onDismiss, filteredIDs),
+				OnKeyDown:   makePaletteOnKeyDown(paletteID, onAction, onDismiss, filtered, filteredIDs),
 				OnClick: func(_ *Layout, e *Event, _ *Window) {
 					// Prevent backdrop click when clicking card.
 					e.IsHandled = true
 				},
 				Content: []View{
 					Row(ContainerCfg{
-						Padding: Some(PaddingSmall),
-						Sizing:  FillFit,
+						Padding:    Some(PaddingSmall),
+						Sizing:     FillFit,
+						SizeBorder: NoBorder,
 						Content: []View{
 							Input(InputCfg{
 								ID:            cfg.ID + ".input",
@@ -214,12 +215,13 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 						},
 					}),
 					Column(ContainerCfg{
-						IDScroll:  cfg.IDScroll,
-						MaxHeight: cfg.MaxHeight,
-						Sizing:    FillFit,
-						Padding:   NoPadding,
-						Spacing:   SomeF(0),
-						Clip:      true,
+						IDScroll:   cfg.IDScroll,
+						MaxHeight:  cfg.MaxHeight,
+						Sizing:     FillFit,
+						Padding:    NoPadding,
+						SizeBorder: NoBorder,
+						Spacing:    SomeF(0),
+						Clip:       true,
 						Content:   resultViews,
 					}),
 				},
@@ -229,13 +231,17 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 }
 
 // CommandPaletteShow makes the palette visible and focuses input.
-func CommandPaletteShow(id string, idFocus uint32, w *Window) {
+func CommandPaletteShow(id string, idFocus, idScroll uint32, w *Window) {
 	ss := StateMap[string, bool](w, nsCmdPalette, capModerate)
 	ss.Set(id, true)
 	sq := StateMap[string, string](w, nsCmdPaletteQuery, capModerate)
 	sq.Set(id, "")
 	sh := StateMap[string, int](w, nsCmdPaletteHighlight, capModerate)
 	sh.Set(id, 0)
+	if idScroll > 0 {
+		sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+		sy.Set(idScroll, 0)
+	}
 	w.SetIDFocus(idFocus)
 	w.UpdateWindow()
 }
@@ -252,17 +258,17 @@ func CommandPaletteDismiss(id string, w *Window) {
 }
 
 // CommandPaletteToggle toggles palette visibility.
-func CommandPaletteToggle(id string, idFocus uint32, w *Window) {
+func CommandPaletteToggle(id string, idFocus, idScroll uint32, w *Window) {
 	visible := StateReadOr[string, bool](w, nsCmdPalette, id, false)
 	if visible {
 		CommandPaletteDismiss(id, w)
 	} else {
-		CommandPaletteShow(id, idFocus, w)
+		CommandPaletteShow(id, idFocus, idScroll, w)
 	}
 }
 
 // CommandPaletteIsVisible returns whether the palette is showing.
-func CommandPaletteIsVisible(w *Window, id string) bool {
+func CommandPaletteIsVisible(id string, w *Window) bool {
 	return StateReadOr[string, bool](w, nsCmdPalette, id, false)
 }
 
@@ -288,11 +294,11 @@ func makePaletteOnTextChanged(paletteID string) func(*Layout, string, *Window) {
 }
 
 func commandPaletteItemsHash(items []CommandPaletteItem) uint64 {
-	const offset uint64 = 1469598103934665603
+	const offset uint64 = 14695981039346656037
 	const prime uint64 = 1099511628211
 	h := offset
 	for i := range items {
-		it := items[i]
+		it := &items[i]
 		h = hashString64(h, it.ID)
 		h = hashString64(h, it.Label)
 		h = hashString64(h, it.Detail)
@@ -300,8 +306,6 @@ func commandPaletteItemsHash(items []CommandPaletteItem) uint64 {
 		h = hashString64(h, it.Group)
 		if it.Disabled {
 			h ^= 1
-		} else {
-			h ^= 0
 		}
 		h *= prime
 	}
@@ -319,13 +323,13 @@ func hashString64(h uint64, s string) uint64 {
 	return h
 }
 
-func makePaletteOnKeyDown(paletteID string, onAction func(string, *Event, *Window), onDismiss func(*Window), filteredIDs []string) func(*Layout, *Event, *Window) {
+func makePaletteOnKeyDown(paletteID string, onAction func(string, *Event, *Window), onDismiss func(*Window), filtered []ListCoreItem, filteredIDs []string) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
-		paletteOnKeyDown(paletteID, onAction, onDismiss, filteredIDs, e, w)
+		paletteOnKeyDown(paletteID, onAction, onDismiss, filtered, filteredIDs, e, w)
 	}
 }
 
-func paletteOnKeyDown(paletteID string, onAction func(string, *Event, *Window), onDismiss func(*Window), filteredIDs []string, e *Event, w *Window) {
+func paletteOnKeyDown(paletteID string, onAction func(string, *Event, *Window), onDismiss func(*Window), filtered []ListCoreItem, filteredIDs []string, e *Event, w *Window) {
 	if e.KeyCode == KeyEscape {
 		CommandPaletteDismiss(paletteID, w)
 		if onDismiss != nil {
@@ -341,7 +345,8 @@ func paletteOnKeyDown(paletteID string, onAction func(string, *Event, *Window), 
 	action := listCoreNavigate(e.KeyCode, itemCount)
 
 	if action == ListCoreSelectItem {
-		if cur >= 0 && cur < itemCount && onAction != nil {
+		if cur >= 0 && cur < itemCount && onAction != nil &&
+			!filtered[cur].Disabled {
 			onAction(filteredIDs[cur], e, w)
 			CommandPaletteDismiss(paletteID, w)
 			if onDismiss != nil {
@@ -390,5 +395,8 @@ func applyCommandPaletteDefaults(cfg *CommandPaletteCfg) {
 	}
 	if !cfg.BackdropColor.IsSet() {
 		cfg.BackdropColor = d.BackdropColor
+	}
+	if cfg.FloatZIndex == 0 {
+		cfg.FloatZIndex = 1000
 	}
 }

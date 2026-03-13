@@ -12,7 +12,6 @@ func TestCommandPaletteHidden(t *testing.T) {
 		IDFocus:  1,
 	})
 	layout := GenerateViewLayout(v, w)
-	// Hidden state: should produce minimal layout.
 	if layout.Shape.ShapeType == ShapeDrawCanvas {
 		t.Error("hidden palette should not be canvas")
 	}
@@ -20,7 +19,7 @@ func TestCommandPaletteHidden(t *testing.T) {
 
 func TestCommandPaletteVisible(t *testing.T) {
 	w := &Window{}
-	CommandPaletteShow("__cmd_palette__", 1, w)
+	CommandPaletteShow("__cmd_palette__", 1, 0, w)
 
 	v := CommandPalette(CommandPaletteCfg{
 		Items: []CommandPaletteItem{
@@ -31,7 +30,6 @@ func TestCommandPaletteVisible(t *testing.T) {
 		IDFocus:  1,
 	})
 	layout := GenerateViewLayout(v, w)
-	// Should produce a non-trivial layout tree.
 	if len(layout.Children) == 0 {
 		t.Error("visible palette should have children")
 	}
@@ -40,12 +38,12 @@ func TestCommandPaletteVisible(t *testing.T) {
 func TestCommandPaletteShowDismiss(t *testing.T) {
 	w := &Window{}
 	id := "cp-sd"
-	CommandPaletteShow(id, 1, w)
-	if !CommandPaletteIsVisible(w, id) {
+	CommandPaletteShow(id, 1, 0, w)
+	if !CommandPaletteIsVisible(id, w) {
 		t.Error("expected visible after show")
 	}
 	CommandPaletteDismiss(id, w)
-	if CommandPaletteIsVisible(w, id) {
+	if CommandPaletteIsVisible(id, w) {
 		t.Error("expected hidden after dismiss")
 	}
 }
@@ -53,50 +51,143 @@ func TestCommandPaletteShowDismiss(t *testing.T) {
 func TestCommandPaletteToggle(t *testing.T) {
 	w := &Window{}
 	id := "cp-tog"
-	CommandPaletteToggle(id, 1, w)
-	if !CommandPaletteIsVisible(w, id) {
+	CommandPaletteToggle(id, 1, 0, w)
+	if !CommandPaletteIsVisible(id, w) {
 		t.Error("first toggle should show")
 	}
-	CommandPaletteToggle(id, 1, w)
-	if CommandPaletteIsVisible(w, id) {
+	CommandPaletteToggle(id, 1, 0, w)
+	if CommandPaletteIsVisible(id, w) {
 		t.Error("second toggle should hide")
 	}
 }
 
 func TestPaletteOnKeyDownEscape(t *testing.T) {
 	w := &Window{}
-	CommandPaletteShow("cp-esc", 1, w)
+	CommandPaletteShow("cp-esc", 1, 0, w)
 	dismissed := false
 	e := &Event{KeyCode: KeyEscape}
+	items := []ListCoreItem{{ID: "a", Label: "A"}}
 	paletteOnKeyDown("cp-esc", nil,
 		func(_ *Window) { dismissed = true },
-		[]string{"a"}, e, w)
+		items, []string{"a"}, e, w)
 	if !dismissed {
 		t.Error("escape should dismiss")
 	}
-	if CommandPaletteIsVisible(w, "cp-esc") {
+	if CommandPaletteIsVisible("cp-esc", w) {
 		t.Error("should be hidden after escape")
 	}
 }
 
 func TestPaletteOnKeyDownSelect(t *testing.T) {
 	w := &Window{}
-	CommandPaletteShow("cp-sel", 1, w)
+	CommandPaletteShow("cp-sel", 1, 0, w)
 	selected := ""
 	e := &Event{KeyCode: KeyEnter}
+	items := []ListCoreItem{
+		{ID: "cmd1", Label: "Cmd1"},
+		{ID: "cmd2", Label: "Cmd2"},
+	}
 	paletteOnKeyDown("cp-sel",
 		func(id string, _ *Event, _ *Window) { selected = id },
 		nil,
-		[]string{"cmd1", "cmd2"}, e, w)
+		items, []string{"cmd1", "cmd2"}, e, w)
 	if selected != "cmd1" {
 		t.Errorf("selected = %q, want cmd1", selected)
+	}
+}
+
+func TestPaletteOnKeyDownDisabledBlocked(t *testing.T) {
+	w := &Window{}
+	CommandPaletteShow("cp-dis", 1, 0, w)
+	selected := ""
+	e := &Event{KeyCode: KeyEnter}
+	items := []ListCoreItem{
+		{ID: "cmd1", Label: "Cmd1", Disabled: true},
+	}
+	paletteOnKeyDown("cp-dis",
+		func(id string, _ *Event, _ *Window) { selected = id },
+		nil,
+		items, []string{"cmd1"}, e, w)
+	if selected != "" {
+		t.Errorf("disabled item should not be selectable, got %q", selected)
+	}
+	if !e.IsHandled {
+		t.Error("Enter on disabled item should still mark event handled")
+	}
+}
+
+func TestPaletteOnKeyDownArrowCycle(t *testing.T) {
+	w := &Window{}
+	id := "cp-nav"
+	CommandPaletteShow(id, 1, 0, w)
+	items := []ListCoreItem{
+		{ID: "a", Label: "A"},
+		{ID: "b", Label: "B"},
+		{ID: "c", Label: "C"},
+	}
+	ids := []string{"a", "b", "c"}
+
+	// Arrow down from 0 -> 1.
+	e := &Event{KeyCode: KeyDown}
+	paletteOnKeyDown(id, nil, nil, items, ids, e, w)
+	sh := StateMap[string, int](w, nsCmdPaletteHighlight, capModerate)
+	cur, _ := sh.Get(id)
+	if cur != 1 {
+		t.Errorf("after down: highlight = %d, want 1", cur)
+	}
+
+	// Arrow down again -> 2.
+	e = &Event{KeyCode: KeyDown}
+	paletteOnKeyDown(id, nil, nil, items, ids, e, w)
+	cur, _ = sh.Get(id)
+	if cur != 2 {
+		t.Errorf("after second down: highlight = %d, want 2", cur)
+	}
+
+	// Arrow up -> 1.
+	e = &Event{KeyCode: KeyUp}
+	paletteOnKeyDown(id, nil, nil, items, ids, e, w)
+	cur, _ = sh.Get(id)
+	if cur != 1 {
+		t.Errorf("after up: highlight = %d, want 1", cur)
+	}
+}
+
+func TestPaletteQueryFiltering(t *testing.T) {
+	w := &Window{}
+	id := "cp-filter"
+	CommandPaletteShow(id, 1, 0, w)
+
+	makeView := func(query string) {
+		StateMap[string, string](w, nsCmdPaletteQuery, capModerate).
+			Set(id, query)
+		v := CommandPalette(CommandPaletteCfg{
+			ID: id,
+			Items: []CommandPaletteItem{
+				{ID: "save", Label: "Save"},
+				{ID: "open", Label: "Open"},
+				{ID: "search", Label: "Search"},
+			},
+			OnAction: func(_ string, _ *Event, _ *Window) {},
+			IDFocus:  1,
+		})
+		_ = GenerateViewLayout(v, w)
+	}
+
+	// Filter for "sa" should narrow results.
+	makeView("sa")
+	cm := StateMapRead[string, *cmdPaletteItemsCache](w, nsCmdPaletteItems)
+	cache, _ := cm.Get(id)
+	if len(cache.filtered) >= 3 {
+		t.Errorf("filtering 'sa': got %d items, expected fewer than 3",
+			len(cache.filtered))
 	}
 }
 
 func TestCommandPaletteItemsCacheInvalidatesOnItemsChange(t *testing.T) {
 	w := &Window{}
 	id := "cp-cache"
-	CommandPaletteShow(id, 1, w)
+	CommandPaletteShow(id, 1, 0, w)
 
 	v := CommandPalette(CommandPaletteCfg{
 		ID: id,
@@ -133,5 +224,91 @@ func TestCommandPaletteItemsCacheInvalidatesOnItemsChange(t *testing.T) {
 	cache, _ = cm.Get(id)
 	if got := len(cache.items); got != 2 {
 		t.Fatalf("cache items len = %d, want 2", got)
+	}
+}
+
+func TestCommandPaletteCacheInvalidatesOnContentChange(t *testing.T) {
+	w := &Window{}
+	id := "cp-content"
+	CommandPaletteShow(id, 1, 0, w)
+
+	makeView := func(label string) uint64 {
+		v := CommandPalette(CommandPaletteCfg{
+			ID: id,
+			Items: []CommandPaletteItem{
+				{ID: "x", Label: label},
+			},
+			OnAction: func(_ string, _ *Event, _ *Window) {},
+			IDFocus:  1,
+		})
+		_ = GenerateViewLayout(v, w)
+		cm := StateMapRead[string, *cmdPaletteItemsCache](
+			w, nsCmdPaletteItems)
+		c, _ := cm.Get(id)
+		return c.sourceHash
+	}
+
+	h1 := makeView("Alpha")
+	h2 := makeView("Beta")
+	if h1 == h2 {
+		t.Error("hash should change when label changes")
+	}
+}
+
+func TestPaletteScrollResetOnShow(t *testing.T) {
+	w := &Window{}
+	id := "cp-scroll"
+	var idScroll uint32 = 42
+
+	// Set scroll position to simulate previous scrolling.
+	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
+	sy.Set(idScroll, 150)
+
+	CommandPaletteShow(id, 1, idScroll, w)
+	scrollY, _ := sy.Get(idScroll)
+	if scrollY != 0 {
+		t.Errorf("scroll should reset on show, got %v", scrollY)
+	}
+}
+
+func TestPaletteBackdropDismiss(t *testing.T) {
+	w := &Window{}
+	id := "cp-backdrop"
+	CommandPaletteShow(id, 1, 0, w)
+
+	dismissed := false
+	v := CommandPalette(CommandPaletteCfg{
+		ID:       id,
+		Items:    []CommandPaletteItem{{ID: "a", Label: "A"}},
+		OnAction: func(_ string, _ *Event, _ *Window) {},
+		OnDismiss: func(_ *Window) {
+			dismissed = true
+		},
+		IDFocus: 1,
+	})
+	layout := GenerateViewLayout(v, w)
+
+	// The outermost child is the backdrop column with OnClick.
+	if layout.Shape.Events == nil || layout.Shape.Events.OnClick == nil {
+		t.Fatal("backdrop should have OnClick")
+	}
+	e := &Event{}
+	layout.Shape.Events.OnClick(&layout, e, w)
+	if !dismissed {
+		t.Error("backdrop click should trigger OnDismiss")
+	}
+	if !e.IsHandled {
+		t.Error("backdrop click should mark event handled")
+	}
+	if CommandPaletteIsVisible(id, w) {
+		t.Error("palette should be hidden after backdrop click")
+	}
+}
+
+func TestPaletteFloatZIndexDefault(t *testing.T) {
+	cfg := CommandPaletteCfg{}
+	applyCommandPaletteDefaults(&cfg)
+	if cfg.FloatZIndex != 1000 {
+		t.Errorf("FloatZIndex = %d, want 1000", cfg.FloatZIndex)
 	}
 }
