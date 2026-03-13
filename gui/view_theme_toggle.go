@@ -37,10 +37,10 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 
 	content := make([]View, 0, 2)
 
-	// Icon placeholder.
+	// Paint palette icon.
 	content = append(content, Text(TextCfg{
-		Text:      "[T]",
-		TextStyle: guiTheme.TextStyleDef,
+		Text:      IconPalette,
+		TextStyle: guiTheme.Icon3,
 	}))
 
 	if isOpen {
