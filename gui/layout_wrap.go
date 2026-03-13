@@ -38,9 +38,6 @@ func layoutWrapContainers(layout *Layout, w *Window) {
 		if child.Shape.Float || child.Shape.ShapeType == ShapeNone || child.Shape.OverDraw {
 			continue
 		}
-		if !rowHasFlowChild {
-			rowStart = idx
-		}
 		childW := child.Shape.Width
 		var gap float32
 		if rowHasFlowChild {

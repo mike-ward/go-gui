@@ -206,13 +206,67 @@ func TestWrapLeadingSkippedChildren(t *testing.T) {
 	if len(root.Children) != 2 {
 		t.Fatalf("rows: got %d, want 2", len(root.Children))
 	}
-	if len(root.Children[0].Children) != 2 {
-		t.Fatalf("row 0 children: got %d, want 2", len(root.Children[0].Children))
+	if len(root.Children[0].Children) != 3 {
+		t.Fatalf("row 0 children: got %d, want 3", len(root.Children[0].Children))
 	}
 	if len(root.Children[1].Children) != 1 {
 		t.Fatalf("row 1 children: got %d, want 1", len(root.Children[1].Children))
 	}
-	if root.Children[0].Children[0].Shape.Float {
-		t.Fatalf("expected first flow child in row 0, got float")
+	if !root.Children[0].Children[0].Shape.Float {
+		t.Fatalf("expected leading float child in row 0")
+	}
+}
+
+func TestWrapTrailingNonFlowAtRowBoundary(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{
+			Axis: AxisLeftToRight, Wrap: true, Width: 65, Spacing: 5,
+		},
+		Children: []Layout{
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+			{Shape: &Shape{Width: 10, ShapeType: ShapeRectangle, Float: true}},
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+		},
+	}
+
+	layoutWrapContainers(root, &Window{})
+
+	if len(root.Children) != 2 {
+		t.Fatalf("rows: got %d, want 2", len(root.Children))
+	}
+	if len(root.Children[0].Children) != 3 {
+		t.Errorf("row 0 children: got %d, want 3 (2 flow + 1 float)",
+			len(root.Children[0].Children))
+	}
+	if len(root.Children[1].Children) != 1 {
+		t.Errorf("row 1 children: got %d, want 1", len(root.Children[1].Children))
+	}
+}
+
+func TestWrapPadding(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{
+			Axis: AxisLeftToRight, Wrap: true, Width: 100, Spacing: 5,
+			Padding: NewPadding(0, 10, 0, 10),
+		},
+		Children: []Layout{
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+			{Shape: &Shape{Width: 30, ShapeType: ShapeRectangle}},
+		},
+	}
+
+	// Available = 100 - 20 padding = 80. 30+5+30=65 fits, 65+5+30=100 > 80.
+	layoutWrapContainers(root, &Window{})
+
+	if len(root.Children) != 2 {
+		t.Fatalf("rows: got %d, want 2", len(root.Children))
+	}
+	if len(root.Children[0].Children) != 2 {
+		t.Errorf("row 0 children: got %d, want 2", len(root.Children[0].Children))
+	}
+	if len(root.Children[1].Children) != 1 {
+		t.Errorf("row 1 children: got %d, want 1", len(root.Children[1].Children))
 	}
 }
