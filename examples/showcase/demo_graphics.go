@@ -637,6 +637,70 @@ func demoDrawCanvas(_ *gui.Window) gui.View {
 	})
 }
 
+func demoBlur(_ *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	return gui.Column(gui.ContainerCfg{
+		Sizing:     gui.FillFit,
+		Spacing:    gui.SomeF(12),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{
+				Text:      "BlurRadius adds a Gaussian blur to a shape's fill. Higher values produce softer edges.",
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
+			}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(40),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Width:      150,
+						Height:     150,
+						Sizing:     gui.FixedFixed,
+						Radius:     gui.SomeF(75),
+						Color:      gui.RGBA(0, 255, 0, 150),
+						BlurRadius: 20,
+						HAlign:     gui.HAlignCenter,
+						VAlign:     gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Soft Orb", TextStyle: t.N2}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:      150,
+						Height:     150,
+						Sizing:     gui.FixedFixed,
+						Radius:     gui.SomeF(20),
+						Color:      gui.RGBA(255, 100, 100, 200),
+						BlurRadius: 10,
+						HAlign:     gui.HAlignCenter,
+						VAlign:     gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Soft Rect", TextStyle: t.N2}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:      200,
+						Height:     100,
+						Sizing:     gui.FixedFixed,
+						Radius:     gui.SomeF(10),
+						Color:      gui.RGBA(60, 120, 255, 255),
+						BlurRadius: 50,
+						HAlign:     gui.HAlignCenter,
+						VAlign:     gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Heavy Glow", TextStyle: t.N2}),
+						},
+					}),
+				},
+			}),
+		},
+	})
+}
+
 func demoShader(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	app := gui.State[ShowcaseApp](w)

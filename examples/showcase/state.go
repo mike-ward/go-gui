@@ -282,6 +282,7 @@ func demoEntries() []DemoEntry {
 		{ID: "printing", Label: "Printing", Group: groupGraphics, Summary: "Export current view to PDF and open native print dialog.", Tags: []string{"print", "pdf", "export"}},
 		{ID: "animations", Label: "Animations", Group: groupGraphics, Summary: "Tween, spring, and layout transition samples.", Tags: []string{"motion", "tween", "spring"}},
 		{ID: "gradient", Label: "Gradients", Group: groupGraphics, Summary: "Linear and radial gradient fills.", Tags: []string{"gradient", "linear", "radial", "fill"}},
+		{ID: "blur", Label: "Blur", Group: groupGraphics, Summary: "Gaussian blur effect on shapes and containers.", Tags: []string{"blur", "gaussian", "glow", "soft"}},
 		{ID: "box_shadows", Label: "Box Shadows", Group: groupGraphics, Summary: "Shadow presets with spread behavior notes.", Tags: []string{"shadow", "depth", "blur"}},
 		{ID: "shader", Label: "Custom Shaders", Group: groupGraphics, Summary: "Custom fragment shaders for dynamic fills.", Tags: []string{"shader", "glsl", "metal"}},
 		{ID: "draw_canvas", Label: "Draw Canvas", Group: groupGraphics, Summary: "Procedural 2D drawing with cached tessellation.", Tags: []string{"canvas", "draw", "chart", "line", "polygon", "circle"}},

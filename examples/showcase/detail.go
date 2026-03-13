@@ -207,6 +207,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoExpandPanel(w)
 	case "icons":
 		return demoIcons(w)
+	case "blur":
+		return demoBlur(w)
 	case "gradient":
 		return demoGradient(w)
 	case "box_shadows":
