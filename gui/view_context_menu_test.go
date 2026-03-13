@@ -110,9 +110,6 @@ func TestContextMenuClosesOnFocusLoss(t *testing.T) {
 
 func TestContextMenuActionFires(t *testing.T) {
 	w := &Window{}
-	sm := StateMap[string, contextMenuState](w, nsContextMenu, capFew)
-	sm.Set("cm6", contextMenuState{Open: true, X: 0, Y: 0})
-
 	var firedID string
 	cfg := ContextMenuCfg{
 		ID:    "cm6",
@@ -121,20 +118,11 @@ func TestContextMenuActionFires(t *testing.T) {
 			firedID = id
 		},
 	}
-	w.SetIDFocus(fnvSum32("context_menu_" + cfg.ID))
+	popup := contextMenuPopupLayout(t, w, cfg)
 
-	// Build the popup action wrapper directly.
-	action := func(id string, e *Event, w *Window) {
-		sm := StateMap[string, contextMenuState](
-			w, nsContextMenu, capFew)
-		sm.Set(cfg.ID, contextMenuState{})
-		if cfg.Action != nil {
-			cfg.Action(id, e, w)
-		}
-	}
-
-	e := &Event{MouseButton: MouseLeft}
-	action("cut", e, w)
+	// First item "cut" is auto-selected; press Enter.
+	e := &Event{KeyCode: KeyEnter}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
 	if firedID != "cut" {
 		t.Errorf("expected 'cut', got %q", firedID)
@@ -143,23 +131,15 @@ func TestContextMenuActionFires(t *testing.T) {
 
 func TestContextMenuActionClosesMenu(t *testing.T) {
 	w := &Window{}
-	sm := StateMap[string, contextMenuState](w, nsContextMenu, capFew)
-	sm.Set("cm7", contextMenuState{Open: true, X: 0, Y: 0})
-
 	cfg := ContextMenuCfg{
 		ID:    "cm7",
 		Items: []MenuItemCfg{{ID: "a", Text: "A"}},
 	}
+	popup := contextMenuPopupLayout(t, w, cfg)
 
-	// Simulate the wrapped action.
-	action := func(_ string, _ *Event, w *Window) {
-		sm := StateMap[string, contextMenuState](
-			w, nsContextMenu, capFew)
-		sm.Set(cfg.ID, contextMenuState{})
-	}
-
-	e := &Event{MouseButton: MouseLeft}
-	action("a", e, w)
+	// First item "a" is auto-selected; press Enter.
+	e := &Event{KeyCode: KeyEnter}
+	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
 	st := StateReadOr[string, contextMenuState](
 		w, nsContextMenu, "cm7", contextMenuState{})

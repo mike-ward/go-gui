@@ -57,12 +57,11 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 	st := StateReadOr[string, contextMenuState](
 		w, nsContextMenu, cfg.ID, contextMenuState{})
 
-	content := make([]View, 0, len(cfg.Content)+1)
-	content = append(content, cfg.Content...)
-
+	content := cfg.Content
 	if st.Open && w.IsFocus(cfg.IDFocus) {
-		content = append(content,
-			contextMenuPopup(w, cfg, st.X, st.Y))
+		content = make([]View, len(cfg.Content)+1)
+		copy(content, cfg.Content)
+		content[len(cfg.Content)] = contextMenuPopup(w, cfg, st.X, st.Y)
 	}
 
 	idFocus := cfg.IDFocus
@@ -129,6 +128,7 @@ func contextMenuPopup(w *Window, cfg ContextMenuCfg, mx, my float32) View {
 		ColorBorder:       cfg.ColorBorder,
 		ColorSelect:       cfg.ColorSelect,
 		SizeBorder:        cfg.SizeBorder,
+		RadiusBorder:      cfg.Radius,
 		RadiusMenuItem:    cfg.RadiusMenuItem,
 		TextStyle:         cfg.TextStyle,
 		TextStyleSubtitle: cfg.TextStyleSubtitle,
@@ -159,6 +159,9 @@ func applyContextMenuDefaults(cfg *ContextMenuCfg) {
 	}
 	if !cfg.ColorSelect.IsSet() {
 		cfg.ColorSelect = d.ColorSelect
+	}
+	if !cfg.SizeBorder.IsSet() {
+		cfg.SizeBorder = Some(d.SizeBorder)
 	}
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = d.TextStyle
