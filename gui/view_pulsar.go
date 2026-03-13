@@ -2,12 +2,13 @@ package gui
 
 // PulsarCfg configures a blinking text indicator.
 type PulsarCfg struct {
-	ID    string
-	Text1 string
-	Text2 string
-	Color Color
-	Size  float32
-	Width float32
+	ID        string
+	Text1     string
+	Text2     string
+	Color     Color
+	TextStyle TextStyle
+	Size      Opt[float32]
+	Width     float32
 }
 
 // Pulsar creates a blinking text view that toggles between
@@ -19,16 +20,20 @@ func Pulsar(cfg PulsarCfg, w *Window) View {
 	if cfg.Text2 == "" {
 		cfg.Text2 = ".."
 	}
-	if cfg.Size == 0 {
-		cfg.Size = guiTheme.SizeTextMedium
+
+	ts := cfg.TextStyle
+	if ts == (TextStyle{}) {
+		ts = guiTheme.TextStyleDef
 	}
-	if !cfg.Color.IsSet() {
-		cfg.Color = guiTheme.TextStyleDef.Color
+	if cfg.Color.IsSet() {
+		ts.Color = cfg.Color
+	}
+	if cfg.Size.IsSet() {
+		ts.Size = cfg.Size.Get(0)
 	}
 
-	ts := TextStyle{
-		Color: cfg.Color,
-		Size:  cfg.Size,
+	if !w.hasAnimationLocked(blinkCursorAnimationID) {
+		w.animationAdd(NewBlinkCursorAnimation())
 	}
 
 	txt := cfg.Text2
@@ -38,14 +43,15 @@ func Pulsar(cfg PulsarCfg, w *Window) View {
 
 	width := cfg.Width
 	if width <= 0 {
-		// Placeholder width based on Text1 length.
-		width = cfg.Size * 0.6 * float32(len(cfg.Text1))
+		width = w.TextWidth(cfg.Text1, ts)
 	}
 
 	return Column(ContainerCfg{
-		ID:       cfg.ID,
-		MinWidth: width,
-		Padding:  NoPadding,
+		ID:         cfg.ID,
+		MinWidth:   width,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Sizing:     FitFit,
 		Content: []View{
 			Text(TextCfg{
 				Text:      txt,

@@ -40,3 +40,97 @@ func TestPulsarCustomText(t *testing.T) {
 		t.Errorf("text = %v, want ON", tc)
 	}
 }
+
+func TestPulsarSizeBorderNone(t *testing.T) {
+	w := &Window{}
+	v := Pulsar(PulsarCfg{}, w)
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.SizeBorder != 0 {
+		t.Errorf("SizeBorder = %v, want 0", layout.Shape.SizeBorder)
+	}
+}
+
+func TestPulsarSizingFitFit(t *testing.T) {
+	w := &Window{}
+	v := Pulsar(PulsarCfg{}, w)
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.Sizing != FitFit {
+		t.Errorf("Sizing = %v, want FitFit", layout.Shape.Sizing)
+	}
+}
+
+func TestPulsarThemeTextStyle(t *testing.T) {
+	w := &Window{}
+	v := Pulsar(PulsarCfg{}, w)
+	layout := GenerateViewLayout(v, w)
+	tc := layout.Children[0].Shape.TC
+	if tc == nil {
+		t.Fatal("TC is nil")
+	}
+	if *tc.TextStyle != guiTheme.TextStyleDef {
+		t.Errorf("TextStyle = %+v, want theme default %+v",
+			*tc.TextStyle, guiTheme.TextStyleDef)
+	}
+}
+
+func TestPulsarCustomColor(t *testing.T) {
+	w := &Window{}
+	clr := RGB(255, 0, 0)
+	v := Pulsar(PulsarCfg{Color: clr}, w)
+	layout := GenerateViewLayout(v, w)
+	tc := layout.Children[0].Shape.TC
+	if tc == nil {
+		t.Fatal("TC is nil")
+	}
+	if tc.TextStyle.Color != clr {
+		t.Errorf("Color = %v, want %v", tc.TextStyle.Color, clr)
+	}
+	if tc.TextStyle.Family != guiTheme.TextStyleDef.Family {
+		t.Errorf("Family = %v, want theme default %v",
+			tc.TextStyle.Family, guiTheme.TextStyleDef.Family)
+	}
+}
+
+func TestPulsarCustomSize(t *testing.T) {
+	w := &Window{}
+	v := Pulsar(PulsarCfg{Size: SomeF(20)}, w)
+	layout := GenerateViewLayout(v, w)
+	tc := layout.Children[0].Shape.TC
+	if tc == nil {
+		t.Fatal("TC is nil")
+	}
+	if tc.TextStyle.Size != 20 {
+		t.Errorf("Size = %v, want 20", tc.TextStyle.Size)
+	}
+	if tc.TextStyle.Color != guiTheme.TextStyleDef.Color {
+		t.Errorf("Color = %v, want theme default %v",
+			tc.TextStyle.Color, guiTheme.TextStyleDef.Color)
+	}
+}
+
+func TestPulsarCustomTextStyle(t *testing.T) {
+	w := &Window{}
+	ts := TextStyle{
+		Color:  RGB(0, 0, 255),
+		Size:   18,
+		Family: "monospace",
+	}
+	v := Pulsar(PulsarCfg{TextStyle: ts}, w)
+	layout := GenerateViewLayout(v, w)
+	tc := layout.Children[0].Shape.TC
+	if tc == nil {
+		t.Fatal("TC is nil")
+	}
+	if *tc.TextStyle != ts {
+		t.Errorf("TextStyle = %+v, want %+v", *tc.TextStyle, ts)
+	}
+}
+
+func TestPulsarWidthCustom(t *testing.T) {
+	w := &Window{}
+	v := Pulsar(PulsarCfg{Width: 100}, w)
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.MinWidth != 100 {
+		t.Errorf("MinWidth = %v, want 100", layout.Shape.MinWidth)
+	}
+}

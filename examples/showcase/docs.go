@@ -181,7 +181,7 @@ gui.Pulsar(gui.PulsarCfg{
     ID:    "typing",
     Text1: "Typing...",
     Text2: "Typing..",
-    Size:  14,
+    Size:  gui.SomeF(14),
 }, w)
 ` + "```" + `
 
@@ -196,10 +196,11 @@ gui.Pulsar(gui.PulsarCfg{
 
 ## Appearance
 
-| Property | Type    | Description                          |
-|----------|---------|--------------------------------------|
-| Color    | Color   | Text color                           |
-| Size     | float32 | Font size                            |
+| Property  | Type         | Description                          |
+|-----------|--------------|--------------------------------------|
+| Color     | Color        | Text color                           |
+| Size      | Opt[float32] | Font size                            |
+| TextStyle | TextStyle    | Full text style override             |
 `,
 
 	"toast": `Non-blocking notifications with severity levels, auto-dismiss,
