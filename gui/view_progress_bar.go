@@ -16,7 +16,7 @@ type ProgressBarCfg struct {
 	TextBackground Color
 	TextPadding    Opt[Padding]
 	Percent        float32 // 0.0 to 1.0
-	Radius         float32
+	Radius         Opt[float32]
 	TextShow       bool
 	Disabled       bool
 	Invisible      bool
@@ -38,7 +38,7 @@ type ProgressBarCfg struct {
 // ProgressBar creates a progress bar view.
 func ProgressBar(cfg ProgressBarCfg) View {
 	if cfg.TextStyle == (TextStyle{}) {
-		cfg.TextStyle = guiTheme.TextStyleDef
+		cfg.TextStyle = guiTheme.ProgressBarStyle.TextStyle
 	}
 	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.ProgressBarStyle.Color
@@ -52,23 +52,23 @@ func ProgressBar(cfg ProgressBarCfg) View {
 	if !cfg.TextPadding.IsSet() {
 		cfg.TextPadding = Some(guiTheme.ProgressBarStyle.TextPadding)
 	}
-	if cfg.Radius == 0 {
-		cfg.Radius = guiTheme.ProgressBarStyle.Radius
-	}
+	radius := cfg.Radius.Get(guiTheme.ProgressBarStyle.Radius)
 
 	content := make([]View, 0, 2)
 	content = append(content, Row(ContainerCfg{
-		Padding: NoPadding,
-		Radius:  Some(cfg.Radius),
-		Color:   cfg.ColorBar,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Radius:     SomeF(radius),
+		Color:      cfg.ColorBar,
 	}))
 
 	if cfg.TextShow && !cfg.Indefinite {
 		pct := math.Min(math.Max(float64(cfg.Percent), 0), 1)
 		pct = math.Round(pct * 100)
 		content = append(content, Row(ContainerCfg{
-			ColorBorder: cfg.TextBackground,
-			Padding:     cfg.TextPadding,
+			SizeBorder: NoBorder,
+			Color:      cfg.TextBackground,
+			Padding:    cfg.TextPadding,
 			Content: []View{
 				Text(TextCfg{
 					Text:      fmt.Sprintf("%.0f%%", pct),
@@ -111,18 +111,19 @@ func ProgressBar(cfg ProgressBarCfg) View {
 			ValueMin:    0,
 			ValueMax:    1,
 		},
-		Width:     w,
-		Height:    h,
-		MinWidth:  cfg.MinWidth,
-		MaxWidth:  cfg.MaxWidth,
-		MinHeight: cfg.MinHeight,
-		MaxHeight: cfg.MaxHeight,
-		Disabled:  cfg.Disabled,
-		Invisible: cfg.Invisible,
-		Color:     cfg.Color,
-		Radius:    Some(cfg.Radius),
-		Sizing:    cfg.Sizing,
-		Padding:   NoPadding,
+		Width:      w,
+		Height:     h,
+		MinWidth:   cfg.MinWidth,
+		MaxWidth:   cfg.MaxWidth,
+		MinHeight:  cfg.MinHeight,
+		MaxHeight:  cfg.MaxHeight,
+		Disabled:   cfg.Disabled,
+		Invisible:  cfg.Invisible,
+		Color:      cfg.Color,
+		Radius:     SomeF(radius),
+		SizeBorder: NoBorder,
+		Sizing:     cfg.Sizing,
+		Padding:    NoPadding,
 		HAlign:    HAlignCenter,
 		VAlign:    VAlignMiddle,
 		AmendLayout: func(layout *Layout, w *Window) {
@@ -161,8 +162,8 @@ func progressBarAmendLayout(
 				Duration: 1500 * time.Millisecond,
 				Keyframes: []Keyframe{
 					{At: 0, Value: 0},
-					{At: 0.5, Value: 1, Easing: EaseInOutQuad},
-					{At: 1, Value: 0, Easing: EaseInOutQuad},
+					{At: 0.5, Value: 1, Easing: EaseInOutCSS},
+					{At: 1, Value: 0, Easing: EaseInOutCSS},
 				},
 				OnValue: func(v float32, w *Window) {
 					pm := StateMap[string, float32](
