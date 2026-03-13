@@ -6,14 +6,16 @@ type ShapeCallback = func(*Layout, *Event, *Window)
 // isFocusedTarget reports whether the layout has keyboard focus
 // (or is the reserved dialog).
 func isFocusedTarget(layout *Layout, w *Window) bool {
-	if layout.Shape == nil || layout.Shape.IDFocus == 0 {
+	if layout.Shape == nil {
 		return false
 	}
-	if !w.IsFocus(layout.Shape.IDFocus) &&
-		layout.Shape.ID != reservedDialogID {
+	if layout.Shape.ID == reservedDialogID {
+		return true
+	}
+	if layout.Shape.IDFocus == 0 {
 		return false
 	}
-	return true
+	return w.IsFocus(layout.Shape.IDFocus)
 }
 
 func executeFocusCallback(

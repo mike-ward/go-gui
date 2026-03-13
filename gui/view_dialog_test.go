@@ -198,6 +198,31 @@ func TestDialogDefaultsPreserveUserSet(t *testing.T) {
 	}
 }
 
+func TestDialogCustomEscapeDismisses(t *testing.T) {
+	w := newTestWindow()
+	cancelled := false
+	w.Dialog(DialogCfg{
+		DialogType:    DialogCustom,
+		CustomContent: []View{Text(TextCfg{Text: "no buttons"})},
+		OnCancelNo:    func(_ *Window) { cancelled = true },
+	})
+	if !w.DialogIsVisible() {
+		t.Fatal("dialog should be visible")
+	}
+
+	v := dialogViewGenerator(w.dialogCfg)
+	layout := GenerateViewLayout(v, w)
+	e := &Event{Type: EventKeyDown, KeyCode: KeyEscape}
+	keydownHandler(&layout, e, w)
+
+	if !e.IsHandled {
+		t.Error("Escape should be handled")
+	}
+	if !cancelled {
+		t.Error("OnCancelNo should fire")
+	}
+}
+
 func TestDialogAlignButtonsLeft(t *testing.T) {
 	cfg := DialogCfg{AlignButtons: HAlignLeft}
 	applyDialogDefaults(&cfg)
