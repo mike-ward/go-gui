@@ -20,27 +20,7 @@ var showcaseLocaleIDs = []string{"en-US", "de-DE", "ar-SA", "ja-JP"}
 var showcaseLocaleLabels = []string{"EN", "DE", "AR", "JA"}
 
 var docPageFiles = map[string]string{
-	"welcome":              "docs/welcome.md",
-	"doc_get_started":      "docs/get_started.md",
-	"doc_animations":       "docs/animations.md",
-	"doc_architecture":     "docs/architecture.md",
-	"doc_containers":       "docs/containers.md",
-	"doc_custom_widgets":   "docs/custom_widgets.md",
-	"doc_data_grid":        "docs/data_grid.md",
-	"doc_forms":            "docs/forms.md",
-	"doc_gradients":        "docs/gradients.md",
-	"doc_layout_algorithm": "docs/layout_algorithm.md",
-	"doc_locales":          "docs/locales.md",
-	"doc_markdown":         "docs/markdown.md",
-	"doc_native_dialogs":   "docs/native_dialogs.md",
-	"doc_performance":      "docs/performance.md",
-	"doc_printing":         "docs/printing.md",
-	"doc_shaders":          "docs/shaders.md",
-	"doc_splitter":         "docs/splitter.md",
-	"doc_svg":              "docs/svg.md",
-	"doc_tables":           "docs/tables.md",
-	"doc_tree":             "docs/tree.md",
-	"doc_themes":           "docs/themes.md",
+	"welcome": "docs/welcome.md",
 }
 
 func loadEmbeddedLocales() {
@@ -78,14 +58,6 @@ func localeLabel(idx int) string {
 
 func localeCount() int {
 	return len(showcaseLocaleIDs)
-}
-
-func demoDocPage(w *gui.Window, id string) gui.View {
-	source := docPageSource(id)
-	if source == "" {
-		source = "# Missing Document\n\nThis showcase page has not been ported yet."
-	}
-	return showcaseMarkdownPanel(w, "showcase-doc-"+id, source)
 }
 
 func docPageSource(id string) string {

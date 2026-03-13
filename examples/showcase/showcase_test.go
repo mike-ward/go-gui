@@ -28,15 +28,15 @@ func TestEntryMatchesQuery(t *testing.T) {
 
 func TestFilteredEntriesByGroupAndQuery(t *testing.T) {
 	app := &ShowcaseApp{
-		SelectedGroup: groupWelcome,
+		SelectedGroup: groupLayout,
 		NavQuery:      "splitter",
 	}
 	entries := filteredEntries(app)
 	if len(entries) != 1 {
 		t.Fatalf("expected 1 entry, got %d", len(entries))
 	}
-	if entries[0].ID != "doc_splitter" {
-		t.Fatalf("expected doc_splitter, got %s", entries[0].ID)
+	if entries[0].ID != "splitter" {
+		t.Fatalf("expected splitter, got %s", entries[0].ID)
 	}
 }
 
@@ -90,10 +90,8 @@ func TestComponentDocsExist(t *testing.T) {
 }
 
 func TestDocPagesExist(t *testing.T) {
-	for _, id := range []string{"doc_data_grid", "doc_tree"} {
-		if doc := docPageSource(id); doc == "" {
-			t.Fatalf("expected doc page for %s", id)
-		}
+	if doc := docPageSource("welcome"); doc == "" {
+		t.Fatal("expected doc page for welcome")
 	}
 }
 
@@ -212,12 +210,6 @@ func TestDemoWelcomePanelHasNoBorder(t *testing.T) {
 	}
 }
 
-func TestComponentDemoDocTreeRoute(t *testing.T) {
-	layout := gui.GenerateViewLayout(componentDemo(&gui.Window{}, "doc_tree"), &gui.Window{})
-	if _, ok := layout.FindByID("showcase-doc-doc_tree"); !ok {
-		t.Fatal("expected doc_tree route to render showcase-doc-doc_tree")
-	}
-}
 
 func TestShowcaseDataGridApplyQuery(t *testing.T) {
 	rows := showcaseDataGridRows()

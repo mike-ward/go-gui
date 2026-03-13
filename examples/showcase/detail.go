@@ -1,10 +1,6 @@
 package main
 
-import (
-	"strings"
-
-	"github.com/mike-ward/go-gui/gui"
-)
+import "github.com/mike-ward/go-gui/gui"
 
 func detailPanel(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
@@ -81,7 +77,7 @@ func viewTitleBar(entry DemoEntry, showDocs bool) gui.View {
 	titleContent := []gui.View{
 		gui.Text(gui.TextCfg{Text: entry.Label, TextStyle: gui.CurrentTheme().B1}),
 	}
-	if entry.ID != "welcome" && !strings.HasPrefix(entry.ID, "doc_") {
+	if entry.ID != "welcome" {
 		titleContent = append(titleContent,
 			gui.Row(gui.ContainerCfg{
 				Sizing:     gui.FillFit,
@@ -252,12 +248,6 @@ func componentDemo(w *gui.Window, id string) gui.View {
 	case "sidebar":
 		return demoSidebar(w)
 
-	case "doc_get_started", "doc_animations", "doc_architecture", "doc_containers",
-		"doc_custom_widgets", "doc_data_grid", "doc_forms", "doc_gradients",
-		"doc_layout_algorithm", "doc_locales", "doc_markdown", "doc_native_dialogs",
-		"doc_performance", "doc_printing", "doc_shaders", "doc_splitter",
-		"doc_svg", "doc_tables", "doc_tree", "doc_themes":
-		return demoDocPage(w, id)
 	default:
 		return demoPlaceholder(gui.CurrentTheme(), "Demo: "+id)
 	}

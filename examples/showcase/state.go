@@ -237,26 +237,6 @@ type DemoGroup struct {
 func demoEntries() []DemoEntry {
 	return []DemoEntry{
 		{ID: "welcome", Label: "Welcome", Group: groupWelcome, Summary: "Start here for a quick introduction to go-gui and this showcase.", Tags: []string{"start", "intro", "overview"}},
-		{ID: "doc_get_started", Label: "Get Started", Group: groupWelcome, Summary: "Step-by-step guide to building your first go-gui application.", Tags: []string{"guide", "tutorial", "setup"}},
-		{ID: "doc_animations", Label: "Animations", Group: groupWelcome, Summary: "Guide to tween, spring, keyframe, and transition APIs.", Tags: []string{"doc", "animation", "tween", "spring"}},
-		{ID: "doc_architecture", Label: "Architecture", Group: groupWelcome, Summary: "Internal architecture and design decisions of the framework.", Tags: []string{"doc", "design", "internals", "structure"}},
-		{ID: "doc_containers", Label: "Containers", Group: groupWelcome, Summary: "Row, column, wrap, canvas, and circle container reference.", Tags: []string{"doc", "container", "row", "column", "wrap", "layout"}},
-		{ID: "doc_custom_widgets", Label: "Custom Widgets", Group: groupWelcome, Summary: "Build third-party widgets via composition or View implementation.", Tags: []string{"doc", "widget", "custom", "extend"}},
-		{ID: "doc_data_grid", Label: "Data Grid", Group: groupWelcome, Summary: "Data grid component documentation and usage patterns.", Tags: []string{"doc", "grid", "table", "data"}},
-		{ID: "doc_forms", Label: "Forms", Group: groupWelcome, Summary: "Form validation model and field adapter documentation.", Tags: []string{"doc", "forms", "validation", "async"}},
-		{ID: "doc_gradients", Label: "Gradients", Group: groupWelcome, Summary: "Guide to linear and radial gradient APIs.", Tags: []string{"doc", "gradient", "linear", "radial"}},
-		{ID: "doc_layout_algorithm", Label: "Layout Algorithm", Group: groupWelcome, Summary: "How the layout engine measures and arranges views.", Tags: []string{"doc", "layout", "sizing", "algorithm"}},
-		{ID: "doc_locales", Label: "Locales", Group: groupWelcome, Summary: "Locale bundles, translation, and runtime language switching.", Tags: []string{"doc", "locale", "i18n", "translation", "rtl"}},
-		{ID: "doc_markdown", Label: "Markdown", Group: groupWelcome, Summary: "Guide to the markdown renderer and its options.", Tags: []string{"doc", "markdown", "renderer"}},
-		{ID: "doc_native_dialogs", Label: "Native Dialogs", Group: groupWelcome, Summary: "Guide to native file, save, and alert dialog APIs.", Tags: []string{"doc", "dialog", "native", "file"}},
-		{ID: "doc_performance", Label: "Performance", Group: groupWelcome, Summary: "Performance optimization tips and best practices.", Tags: []string{"doc", "performance", "optimization", "speed"}},
-		{ID: "doc_printing", Label: "Printing", Group: groupWelcome, Summary: "Guide to PDF export and native print dialog APIs.", Tags: []string{"doc", "print", "pdf", "export"}},
-		{ID: "doc_shaders", Label: "Shaders", Group: groupWelcome, Summary: "Guide to custom fragment shader integration.", Tags: []string{"doc", "shader", "glsl", "metal"}},
-		{ID: "doc_splitter", Label: "Splitter", Group: groupWelcome, Summary: "Guide to resizable split panel APIs.", Tags: []string{"doc", "splitter", "panel", "resize"}},
-		{ID: "doc_svg", Label: "SVG", Group: groupWelcome, Summary: "Guide to SVG rendering and inline SVG APIs.", Tags: []string{"doc", "svg", "vector", "path"}},
-		{ID: "doc_tables", Label: "Tables", Group: groupWelcome, Summary: "Table component documentation and column configuration.", Tags: []string{"doc", "table", "columns", "data"}},
-		{ID: "doc_tree", Label: "Tree View", Group: groupWelcome, Summary: "Guide to tree view configuration, lazy loading, and keyboard navigation.", Tags: []string{"doc", "tree", "hierarchy", "lazy", "virtualized"}},
-		{ID: "doc_themes", Label: "Themes", Group: groupWelcome, Summary: "Theme system: presets, custom themes, JSON, runtime switching.", Tags: []string{"doc", "theme", "color", "style"}},
 
 		{ID: "color_picker", Label: "Color Picker", Group: groupSelection, Summary: "Pick RGBA and optional HSV values.", Tags: []string{"color", "hsv", "rgba"}},
 		{ID: "date_picker", Label: "Date Picker", Group: groupSelection, Summary: "Select one or many dates from a calendar.", Tags: []string{"calendar", "dates", "selection"}},
@@ -411,8 +391,6 @@ func entryPin(id string) int {
 	switch id {
 	case "welcome":
 		return 0
-	case "doc_get_started":
-		return 1
 	default:
 		return 2
 	}
