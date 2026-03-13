@@ -178,8 +178,9 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 	}
 	capturedID := id
 	buttons = append(buttons, Button(ButtonCfg{
-		Color:   ColorTransparent,
-		Content: []View{Text(TextCfg{Text: "\u00d7", TextStyle: style.TextStyle})},
+		Color:      ColorTransparent,
+		SizeBorder: NoBorder,
+		Content:    []View{Text(TextCfg{Text: "\u00d7", TextStyle: style.TextStyle})},
 		OnClick: func(_ *Layout, _ *Event, w *Window) {
 			toastStartExit(w, capturedID)
 		},

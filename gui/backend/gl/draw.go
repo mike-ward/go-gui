@@ -277,19 +277,18 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 	if path == "" {
 		var err error
 		path, err = b.resolveValidatedImagePath(r.Resource)
-		if path == "" {
-			return
-		}
-		if err != nil {
-			log.Printf("gl: drawImage: %v", err)
-			return
-		}
 		if len(b.imagePathCache) >= 1024 {
 			clear(b.imagePathCache)
 		}
+		if err != nil {
+			log.Printf("gl: drawImage: %s: %v",
+				r.Resource, err)
+			b.imagePathCache[r.Resource] = "-"
+			return
+		}
 		b.imagePathCache[r.Resource] = path
 	}
-	if path == "" {
+	if path == "-" {
 		return
 	}
 

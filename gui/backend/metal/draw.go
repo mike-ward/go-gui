@@ -282,17 +282,19 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 	if path == "" {
 		var err error
 		path, err = b.resolveValidatedImagePath(r.Resource)
-		if err != nil {
-			log.Printf("metal: drawImage: %v", err)
-			return
-		}
-		if path == "" {
-			return
-		}
 		if len(b.imagePathCache) >= 1024 {
 			clear(b.imagePathCache)
 		}
+		if err != nil {
+			log.Printf("metal: drawImage: %s: %v",
+				r.Resource, err)
+			b.imagePathCache[r.Resource] = "-"
+			return
+		}
 		b.imagePathCache[r.Resource] = path
+	}
+	if path == "-" {
+		return
 	}
 
 	entry, ok := b.textures.get(path)
