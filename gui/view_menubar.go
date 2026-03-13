@@ -139,68 +139,8 @@ type MenuIdNode struct {
 }
 
 func makeMenubarOnKeyDown(cfg MenubarCfg) func(*Layout, *Event, *Window) {
-	return func(layout *Layout, e *Event, w *Window) {
-		menubarOnKeyDown(cfg, layout, e, w)
-	}
-}
-
-func menubarOnKeyDown(cfg MenubarCfg, _ *Layout, e *Event, w *Window) {
-	sm := StateMap[uint32, string](w, nsMenu, capModerate)
-
-	switch e.KeyCode {
-	case KeyEscape:
-		w.SetIDFocus(0)
-		sm.Delete(cfg.IDFocus)
-		e.IsHandled = true
-
-	case KeySpace, KeyEnter:
-		sel, _ := sm.Get(cfg.IDFocus)
-		if sel == "" {
-			return
-		}
-		item, found := findMenuItemCfg(cfg.Items, sel)
-		if !found {
-			return
-		}
-		if item.Action != nil {
-			item.Action(&item, e, w)
-		}
-		if cfg.Action != nil {
-			cfg.Action(sel, e, w)
-		}
-		// Close menu on leaf item selection.
-		if len(item.Submenu) == 0 {
-			w.SetIDFocus(0)
-			sm.Delete(cfg.IDFocus)
-		}
-		e.IsHandled = true
-
-	case KeyLeft, KeyRight, KeyUp, KeyDown:
-		sel, _ := sm.Get(cfg.IDFocus)
-		if sel == "" {
-			return
-		}
-		idMap := menuMapper(cfg.Items)
-		node, ok := idMap[sel]
-		if !ok {
-			return
-		}
-		var target string
-		switch e.KeyCode {
-		case KeyLeft:
-			target = node.Left
-		case KeyRight:
-			target = node.Right
-		case KeyUp:
-			target = node.Up
-		case KeyDown:
-			target = node.Down
-		}
-		if target != "" && target != sel {
-			sm.Set(cfg.IDFocus, target)
-			w.viewState.menuKeyNav = true
-		}
-		e.IsHandled = true
+	return func(_ *Layout, e *Event, w *Window) {
+		menuOnKeyDown(cfg, menuMapper, e, w)
 	}
 }
 
@@ -228,7 +168,7 @@ func menuMapperVertical(items []MenuItemCfg) MenuIdMap {
 		m[item.ID] = node
 
 		if len(item.Submenu) > 0 {
-			submenuMapper(item.Submenu, item.ID, node,
+			submenuMapper(item.Submenu, item.ID,
 				node, "", m)
 		}
 	}
@@ -272,7 +212,7 @@ func menuMapper(items []MenuItemCfg) MenuIdMap {
 		// Build submenu mappings.
 		if len(item.Submenu) > 0 {
 			rightID := selectables[rightIdx].ID
-			submenuMapper(item.Submenu, item.ID, node,
+			submenuMapper(item.Submenu, item.ID,
 				node, rightID, m)
 		}
 	}
@@ -282,7 +222,7 @@ func menuMapper(items []MenuItemCfg) MenuIdMap {
 // submenuMapper recursively builds navigation for submenu
 // items.
 func submenuMapper(items []MenuItemCfg, parentID string,
-	_, rootNode MenuIdNode, rootRight string,
+	rootNode MenuIdNode, rootRight string,
 	m MenuIdMap) {
 
 	selectables := make([]MenuItemCfg, 0, len(items))
@@ -305,7 +245,7 @@ func submenuMapper(items []MenuItemCfg, parentID string,
 		m[item.ID] = node
 
 		if len(item.Submenu) > 0 {
-			submenuMapper(item.Submenu, item.ID, node,
+			submenuMapper(item.Submenu, item.ID,
 				rootNode, rootRight, m)
 		}
 	}
@@ -315,11 +255,6 @@ func submenuMapper(items []MenuItemCfg, parentID string,
 // separator nor subtitle sentinel.
 func isSelectableMenuID(id string) bool {
 	return id != MenuSeparatorID && id != MenuSubtitleID
-}
-
-// findMenuByID recursively searches items for a matching ID.
-func findMenuByID(items []MenuItemCfg, id string) (MenuItemCfg, bool) {
-	return findMenuItemCfg(items, id)
 }
 
 func nextSelectable(idx int, items []MenuItemCfg) (MenuItemCfg, bool) {

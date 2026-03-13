@@ -46,7 +46,7 @@ func TestMenubarKeydownEscape(t *testing.T) {
 	}
 
 	e := &Event{Type: EventKeyDown, KeyCode: KeyEscape}
-	menubarOnKeyDown(cfg, nil, e, w)
+	menuOnKeyDown(cfg, menuMapper, e, w)
 
 	if e.IsHandled != true {
 		t.Error("escape should be handled")
@@ -78,7 +78,7 @@ func TestMenubarKeydownNavigation(t *testing.T) {
 
 	// Right arrow: file -> edit.
 	e := &Event{Type: EventKeyDown, KeyCode: KeyRight}
-	menubarOnKeyDown(cfg, nil, e, w)
+	menuOnKeyDown(cfg, menuMapper, e, w)
 	sel, _ := sm.Get(100)
 	if sel != "edit" {
 		t.Errorf("after Right: sel = %q, want edit", sel)
@@ -86,7 +86,7 @@ func TestMenubarKeydownNavigation(t *testing.T) {
 
 	// Left arrow: edit -> file.
 	e = &Event{Type: EventKeyDown, KeyCode: KeyLeft}
-	menubarOnKeyDown(cfg, nil, e, w)
+	menuOnKeyDown(cfg, menuMapper, e, w)
 	sel, _ = sm.Get(100)
 	if sel != "file" {
 		t.Errorf("after Left: sel = %q, want file", sel)
@@ -128,14 +128,14 @@ func TestFindMenuByID(t *testing.T) {
 		}),
 		MenuItemText("c", "C"),
 	}
-	item, ok := findMenuByID(items, "b")
+	item, ok := findMenuItemCfg(items, "b")
 	if !ok {
 		t.Fatal("should find b")
 	}
 	if item.Text != "B" {
 		t.Errorf("Text = %q", item.Text)
 	}
-	_, ok = findMenuByID(items, "z")
+	_, ok = findMenuItemCfg(items, "z")
 	if ok {
 		t.Error("should not find z")
 	}

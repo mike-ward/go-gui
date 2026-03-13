@@ -54,62 +54,72 @@ func Menu(w *Window, cfg MenubarCfg) View {
 // standalone vertical menu.
 func makeMenuOnKeyDown(cfg MenubarCfg) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
-		sm := StateMap[uint32, string](w, nsMenu, capModerate)
+		menuOnKeyDown(cfg, menuMapperVertical, e, w)
+	}
+}
 
-		switch e.KeyCode {
-		case KeyEscape:
+// menuOnKeyDown is the shared keyboard handler for both
+// standalone menus and menubars. The mapper function builds
+// the directional navigation graph for arrow-key movement.
+func menuOnKeyDown(cfg MenubarCfg,
+	mapper func([]MenuItemCfg) MenuIdMap,
+	e *Event, w *Window) {
+
+	sm := StateMap[uint32, string](w, nsMenu, capModerate)
+
+	switch e.KeyCode {
+	case KeyEscape:
+		w.SetIDFocus(0)
+		sm.Delete(cfg.IDFocus)
+		e.IsHandled = true
+
+	case KeySpace, KeyEnter:
+		sel, _ := sm.Get(cfg.IDFocus)
+		if sel == "" {
+			return
+		}
+		item, found := findMenuItemCfg(cfg.Items, sel)
+		if !found {
+			return
+		}
+		if item.Action != nil {
+			item.Action(&item, e, w)
+		}
+		if cfg.Action != nil {
+			cfg.Action(sel, e, w)
+		}
+		if len(item.Submenu) == 0 {
 			w.SetIDFocus(0)
 			sm.Delete(cfg.IDFocus)
-			e.IsHandled = true
-
-		case KeySpace, KeyEnter:
-			sel, _ := sm.Get(cfg.IDFocus)
-			if sel == "" {
-				return
-			}
-			item, found := findMenuItemCfg(cfg.Items, sel)
-			if !found {
-				return
-			}
-			if item.Action != nil {
-				item.Action(&item, e, w)
-			}
-			if cfg.Action != nil {
-				cfg.Action(sel, e, w)
-			}
-			if len(item.Submenu) == 0 {
-				w.SetIDFocus(0)
-				sm.Delete(cfg.IDFocus)
-			}
-			e.IsHandled = true
-
-		case KeyLeft, KeyRight, KeyUp, KeyDown:
-			sel, _ := sm.Get(cfg.IDFocus)
-			if sel == "" {
-				return
-			}
-			idMap := menuMapperVertical(cfg.Items)
-			node, ok := idMap[sel]
-			if !ok {
-				return
-			}
-			var target string
-			switch e.KeyCode {
-			case KeyLeft:
-				target = node.Left
-			case KeyRight:
-				target = node.Right
-			case KeyUp:
-				target = node.Up
-			case KeyDown:
-				target = node.Down
-			}
-			if target != "" && target != sel {
-				sm.Set(cfg.IDFocus, target)
-				w.viewState.menuKeyNav = true
-			}
-			e.IsHandled = true
 		}
+		e.IsHandled = true
+
+	case KeyLeft, KeyRight, KeyUp, KeyDown:
+		sel, _ := sm.Get(cfg.IDFocus)
+		if sel == "" {
+			return
+		}
+		idMap := mapper(cfg.Items)
+		node, ok := idMap[sel]
+		if !ok {
+			return
+		}
+		var target string
+		switch e.KeyCode {
+		case KeyLeft:
+			target = node.Left
+		case KeyRight:
+			target = node.Right
+		case KeyUp:
+			target = node.Up
+		case KeyDown:
+			target = node.Down
+		}
+		if target != "" && target != sel {
+			sm.Set(cfg.IDFocus, target)
+			w.viewState.menuKeyNav = true
+		}
+		e.IsHandled = true
 	}
 }
 
@@ -151,6 +161,7 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 		configured.sizing = sizing
 		configured.radius = cfg.RadiusMenuItem.Get(DefaultMenubarStyle.RadiusMenuItem)
 		configured.spacing = cfg.SpacingSubmenu.Get(DefaultMenubarStyle.SpacingSubmenu)
+		configured.level = level
 		configured.textStyle = ts
 
 		// Attach submenu as child of menu item so float
@@ -197,6 +208,7 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 func makeMenuAmendLayout(idFocus uint32) func(*Layout, *Window) {
 	return func(_ *Layout, w *Window) {
 		if !w.IsFocus(idFocus) {
+			// StateMapRead returns nil if map not yet created.
 			sm := StateMapRead[uint32, string](w, nsMenu)
 			if sm != nil {
 				sm.Delete(idFocus)

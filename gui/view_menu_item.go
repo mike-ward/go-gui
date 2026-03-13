@@ -2,8 +2,9 @@ package gui
 
 // Menu item sentinel IDs.
 const (
-	MenuSeparatorID = "__separator__"
-	MenuSubtitleID  = "__subtitle__"
+	MenuSeparatorID  = "__separator__"
+	MenuSubtitleID   = "__subtitle__"
+	submenuIndicator = "  \u203A"
 )
 
 // MenuItemCfg configures a single menu item. Items may be
@@ -15,6 +16,7 @@ type MenuItemCfg struct {
 	sizing      Sizing
 	radius      float32
 	spacing     float32
+	level       int
 	disabled    bool
 	selected    bool
 
@@ -54,7 +56,7 @@ func MenuSubtitle(text string) MenuItemCfg {
 }
 
 // MenuSubmenu creates an item with a submenu. A "›" indicator
-// is appended.
+// is appended for nested submenus (not top-level menubar items).
 func MenuSubmenu(id, text string, submenu []MenuItemCfg) MenuItemCfg {
 	return MenuItemCfg{
 		ID:      id,
@@ -89,8 +91,8 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 		content = itemCfg.CustomView
 	} else {
 		textContent := itemCfg.Text
-		if len(itemCfg.Submenu) > 0 {
-			textContent += "  \u203A"
+		if len(itemCfg.Submenu) > 0 && itemCfg.level > 0 {
+			textContent += submenuIndicator
 		}
 		mode := TextModeSingleLine
 		if itemCfg.sizing == FillFit {
