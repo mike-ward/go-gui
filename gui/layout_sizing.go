@@ -2,6 +2,11 @@ package gui
 
 import "math"
 
+// sentinelNextExtrema is a large finite float32 used as "no next extremum
+// found yet" in distributeGrow. math.MaxFloat32 overflows to +Inf in
+// float32, so math.MaxUint32 (≈4.29e9) is used instead.
+const sentinelNextExtrema = float32(math.MaxUint32)
+
 // distributeMode controls whether space distribution grows or shrinks.
 type distributeMode uint8
 
@@ -75,7 +80,7 @@ func collectDistributionCandidates(layout *Layout, axis distributeAxis, mode dis
 	}
 }
 
-func shouldContinueDistribution(remaining, _ float32, mode distributeMode, fillCount int) bool {
+func shouldContinueDistribution(remaining float32, mode distributeMode, fillCount int) bool {
 	if !f32IsFinite(remaining) || fillCount == 0 {
 		return false
 	}
@@ -92,7 +97,7 @@ func findDistributionExtrema(layout *Layout, axis distributeAxis, mode distribut
 	extrema := getSize(layout.Children[fillIndices[0]].Shape, axis)
 	var nextExtrema float32
 	if mode == distributeGrow {
-		nextExtrema = float32(math.MaxUint32)
+		nextExtrema = sentinelNextExtrema
 	}
 
 	for _, idx := range fillIndices {
@@ -133,7 +138,7 @@ func findDistributionExtrema(layout *Layout, axis distributeAxis, mode distribut
 func computeDistributionDelta(layout *Layout, remaining float32, mode distributeMode, axis distributeAxis, extrema distributionExtrema, fillCount, fixedCount int) (float32, bool) {
 	var sizeDelta float32
 	if mode == distributeGrow {
-		if extrema.nextExtrema == float32(math.MaxUint32) {
+		if extrema.nextExtrema == sentinelNextExtrema {
 			sizeDelta = remaining
 		} else {
 			sizeDelta = extrema.nextExtrema - extrema.extremum
@@ -228,7 +233,7 @@ func distributeSpace(layout *Layout, remainingIn float32, mode distributeMode, a
 	collectDistributionCandidates(layout, axis, mode, candidates, fixedIndices)
 
 	for {
-		if !shouldContinueDistribution(remaining, prevRemaining, mode, len(*candidates)) {
+		if !shouldContinueDistribution(remaining, mode, len(*candidates)) {
 			break
 		}
 		if f32AreClose(remaining, prevRemaining) {
@@ -264,6 +269,9 @@ func layoutWidths(layout *Layout) {
 			minWidths := padding + sp
 			for i := range layout.Children {
 				layoutWidths(&layout.Children[i])
+				if layout.Children[i].Shape.OverDraw {
+					continue
+				}
 				layout.Shape.Width += layout.Children[i].Shape.Width
 				if layout.Shape.Wrap || layout.Shape.Overflow {
 					minWidths = f32Max(minWidths, layout.Children[i].Shape.Width+padding)
@@ -317,6 +325,9 @@ func layoutHeights(layout *Layout) {
 			minHeights := padding + sp
 			for i := range layout.Children {
 				layoutHeights(&layout.Children[i])
+				if layout.Children[i].Shape.OverDraw {
+					continue
+				}
 				layout.Shape.Height += layout.Children[i].Shape.Height
 				minHeights += layout.Children[i].Shape.MinHeight
 			}
@@ -392,6 +403,7 @@ func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 		if layout.Shape.MaxWidth > 0 && layout.Shape.Width > layout.Shape.MaxWidth {
 			layout.Shape.Width = layout.Shape.MaxWidth
 		}
+		remainingWidth = layout.Shape.Width - layout.Shape.PaddingWidth()
 		for i := range layout.Children {
 			if layout.Children[i].Shape.Sizing.Width == SizingFill {
 				layout.Children[i].Shape.Width = remainingWidth
@@ -428,6 +440,7 @@ func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 		if remainingHeight > f32Tolerance {
 			distributeSpace(layout, remainingHeight, distributeGrow, distributeVertical, candidates, fixedIndices)
 		}
+		// No Wrap/Overflow guard: both only apply to AxisLeftToRight.
 		if remainingHeight < -f32Tolerance {
 			distributeSpace(layout, remainingHeight, distributeShrink, distributeVertical, candidates, fixedIndices)
 		}
@@ -449,6 +462,7 @@ func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 		if layout.Shape.MaxHeight > 0 && layout.Shape.Height > layout.Shape.MaxHeight {
 			layout.Shape.Height = layout.Shape.MaxHeight
 		}
+		remainingHeight = layout.Shape.Height - layout.Shape.PaddingHeight()
 		for i := range layout.Children {
 			if layout.Children[i].Shape.Sizing.Height == SizingFill {
 				layout.Children[i].Shape.Height = remainingHeight

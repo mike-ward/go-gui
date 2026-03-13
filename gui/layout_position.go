@@ -129,7 +129,7 @@ func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 			layoutPositions(child, x+xAlign, y+yAlign, w)
 		}
 
-		if child.Shape.ShapeType != ShapeNone {
+		if child.Shape.ShapeType != ShapeNone && !child.Shape.OverDraw {
 			switch axis {
 			case AxisLeftToRight:
 				if isRTL {
