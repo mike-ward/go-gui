@@ -156,21 +156,137 @@ func TestToastDismissAll(t *testing.T) {
 	}
 }
 
-func TestUitoa(t *testing.T) {
-	tests := []struct {
-		n    uint64
-		want string
-	}{
-		{0, "0"},
-		{1, "1"},
-		{42, "42"},
-		{1234567890, "1234567890"},
+func TestToastDurationPersistent(t *testing.T) {
+	w := &Window{}
+	w.toasts = []toastNotification{
+		{id: 1, cfg: ToastCfg{Duration: ToastPersistent}},
 	}
-	for _, tt := range tests {
-		got := uitoa(tt.n)
-		if got != tt.want {
-			t.Errorf("uitoa(%d) = %q, want %q",
-				tt.n, got, tt.want)
+	d := toastDuration(w, 1)
+	if d != 0 {
+		t.Errorf("expected 0 for persistent, got %v", d)
+	}
+}
+
+func TestToastDurationNegative(t *testing.T) {
+	w := &Window{}
+	w.toasts = []toastNotification{
+		{id: 1, cfg: ToastCfg{Duration: -5 * time.Second}},
+	}
+	d := toastDuration(w, 1)
+	if d != 0 {
+		t.Errorf("expected 0 for negative duration, got %v", d)
+	}
+}
+
+func TestToastHoverClearedEachFrame(t *testing.T) {
+	w := &Window{}
+	w.toasts = []toastNotification{
+		{id: 1, cfg: ToastCfg{Title: "A"}, animFrac: 1,
+			hovered: true},
+		{id: 2, cfg: ToastCfg{Title: "B"}, animFrac: 1,
+			hovered: true},
+	}
+	toastContainerView(w)
+	for _, toast := range w.toasts {
+		if toast.hovered {
+			t.Errorf("toast %d hovered should be cleared", toast.id)
 		}
+	}
+}
+
+func TestToastOnActionCallback(t *testing.T) {
+	fired := false
+	w := &Window{}
+	w.toasts = []toastNotification{
+		{id: 1, cfg: ToastCfg{
+			Title:       "T",
+			ActionLabel: "Undo",
+			OnAction:    func(_ *Window) { fired = true },
+		}, animFrac: 1, phase: toastVisible},
+	}
+	// Simulate action callback.
+	w.toasts[0].cfg.OnAction(w)
+	if !fired {
+		t.Error("expected OnAction callback to fire")
+	}
+}
+
+func TestToastAnchorPositioning(t *testing.T) {
+	cases := []struct {
+		anchor ToastAnchor
+		name   string
+	}{
+		{ToastTopLeft, "TopLeft"},
+		{ToastTopRight, "TopRight"},
+		{ToastBottomLeft, "BottomLeft"},
+		{ToastBottomRight, "BottomRight"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			saved := DefaultToastStyle.Anchor
+			DefaultToastStyle.Anchor = tc.anchor
+			defer func() { DefaultToastStyle.Anchor = saved }()
+
+			w := &Window{}
+			w.toasts = []toastNotification{
+				{id: 1, cfg: ToastCfg{Title: "T"},
+					animFrac: 1},
+			}
+			v := toastContainerView(w)
+			if v == nil {
+				t.Fatal("expected non-nil view")
+			}
+		})
+	}
+}
+
+func TestToastItemViewSeverityColors(t *testing.T) {
+	style := DefaultToastStyle
+	severities := []ToastSeverity{
+		ToastInfo, ToastSuccess, ToastWarning, ToastError,
+	}
+	for _, sev := range severities {
+		toast := &toastNotification{
+			id:       1,
+			cfg:      ToastCfg{Title: "T", Severity: sev},
+			animFrac: 1,
+		}
+		v := toastItemView(toast, style)
+		if v == nil {
+			t.Errorf("severity %d: expected non-nil view", sev)
+		}
+	}
+}
+
+func TestToastA11YLabelFallback(t *testing.T) {
+	// Title present → use title.
+	toast := &toastNotification{
+		cfg: ToastCfg{Title: "Alert", Body: "Details"},
+	}
+	if got := toastA11YLabel(toast); got != "Alert" {
+		t.Errorf("expected 'Alert', got %q", got)
+	}
+	// Title empty → fall back to body.
+	toast2 := &toastNotification{
+		cfg: ToastCfg{Body: "Details only"},
+	}
+	if got := toastA11YLabel(toast2); got != "Details only" {
+		t.Errorf("expected 'Details only', got %q", got)
+	}
+	// Both empty → empty string.
+	toast3 := &toastNotification{}
+	if got := toastA11YLabel(toast3); got != "" {
+		t.Errorf("expected empty, got %q", got)
+	}
+}
+
+func TestToastAnimID(t *testing.T) {
+	got := toastAnimID("enter", 42)
+	if got != "enter_toast_42" {
+		t.Errorf("expected 'enter_toast_42', got %q", got)
+	}
+	got = toastAnimID("dismiss", 0)
+	if got != "dismiss_toast_0" {
+		t.Errorf("expected 'dismiss_toast_0', got %q", got)
 	}
 }

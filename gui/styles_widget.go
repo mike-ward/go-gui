@@ -614,8 +614,9 @@ var (
 		ColorError:   RGBA(218, 54, 51, 255),
 		TextStyle:    DefaultTextStyle,
 		TitleStyle: TextStyle{
-			Color: colorTextDark,
-			Size:  SizeTextMedium,
+			Color:    colorTextDark,
+			Size:     SizeTextMedium,
+			Typeface: glyph.TypefaceBold,
 		},
 	}
 

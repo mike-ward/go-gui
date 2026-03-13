@@ -1,6 +1,9 @@
 package gui
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // ToastSeverity indicates the visual severity of a toast.
 type ToastSeverity uint8
@@ -18,7 +21,7 @@ type ToastCfg struct {
 	Title       string
 	Body        string
 	Severity    ToastSeverity
-	Duration    time.Duration // 0 = no auto-dismiss
+	Duration    time.Duration // 0 = default (3s); ToastPersistent = no auto-dismiss
 	ActionLabel string
 	OnAction    func(*Window)
 }
@@ -41,6 +44,9 @@ const (
 	toastExiting
 )
 
+// ToastPersistent disables auto-dismiss when set as Duration.
+const ToastPersistent = time.Duration(-1)
+
 const (
 	toastEnterDuration = 200 * time.Millisecond
 	toastExitDuration  = 200 * time.Millisecond
@@ -53,6 +59,13 @@ func toastContainerView(w *Window) View {
 	if len(w.toasts) == 0 {
 		return nil
 	}
+
+	// Reset hovered flags each frame; OnHover re-sets for
+	// still-hovered toasts.
+	for i := range w.toasts {
+		w.toasts[i].hovered = false
+	}
+
 	style := DefaultToastStyle
 
 	// Map anchor to float attach.
@@ -108,6 +121,7 @@ func toastContainerView(w *Window) View {
 		FloatOffsetY: offsetY,
 		Sizing:       FitFit,
 		Padding:      NoPadding,
+		SizeBorder:   NoBorder,
 		Spacing:      Some(style.Spacing),
 		Color:        ColorTransparent,
 		Content:      items,
@@ -179,12 +193,13 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 		ColorBorder: style.ColorBorder,
 		SizeBorder:  Some(style.SizeBorder),
 		Radius:      Some(style.Radius),
+		Shadow:      style.Shadow,
 		Clip:        true,
 		Opacity:     SomeF(frac),
 		Spacing:     Some(SpacingSmall),
 		A11YRole:    AccessRoleGroup,
 		A11YState:   AccessStateLive,
-		A11YLabel:   a11yLabel("", toast.cfg.Title),
+		A11YLabel:   toastA11YLabel(toast),
 		AmendLayout: func(layout *Layout, _ *Window) {
 			if frac < 1.0 {
 				layout.Shape.Height *= frac
@@ -284,10 +299,14 @@ func toastStartDismissTimer(w *Window, id uint64) {
 }
 
 // toastDuration returns the configured duration for a toast.
+// Returns 0 for persistent toasts (negative duration).
 func toastDuration(w *Window, id uint64) time.Duration {
 	for i := range w.toasts {
 		if w.toasts[i].id == id {
 			d := w.toasts[i].cfg.Duration
+			if d < 0 {
+				return 0 // persistent
+			}
 			if d == 0 {
 				return toastDefaultDelay
 			}
@@ -368,24 +387,18 @@ func toastEnforceMaxVisible(w *Window) {
 	}
 }
 
-// toastAnimID generates a unique animation ID for toast anims.
-func toastAnimID(prefix string, id uint64) string {
-	return prefix + "_toast_" + uitoa(id)
+// toastA11YLabel returns a label for accessibility, falling back
+// to body if title is empty.
+func toastA11YLabel(t *toastNotification) string {
+	if t.cfg.Title != "" {
+		return t.cfg.Title
+	}
+	return t.cfg.Body
 }
 
-// uitoa is a minimal uint64-to-string without fmt.
-func uitoa(n uint64) string {
-	if n == 0 {
-		return "0"
-	}
-	var buf [20]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-	return string(buf[i:])
+// toastAnimID generates a unique animation ID for toast anims.
+func toastAnimID(prefix string, id uint64) string {
+	return prefix + "_toast_" + strconv.FormatUint(id, 10)
 }
 
 // Toast shows a toast notification. Returns the toast id.
