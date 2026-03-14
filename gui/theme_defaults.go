@@ -65,6 +65,7 @@ func baseDarkCfg() ThemeCfg {
 		SizeProgressBar:      20,
 		SizeRangeSlider:      6,
 		SizeRangeSliderThumb: 16,
+		ColorError:           RGBA(218, 54, 51, 255),
 	}
 }
 
@@ -123,6 +124,7 @@ func init() {
 		ColorBorder:      colorBorderLight,
 		ColorBorderFocus: colorBorderFocusLight,
 		ColorSelect:      colorSelectLight,
+		ColorError:       RGBA(200, 40, 40, 255),
 		TextStyleDef: TextStyle{
 			Color: colorTextLight,
 			Size:  SizeTextMedium,
@@ -185,6 +187,7 @@ func init() {
 		ColorBorder:      ColorFromString("#364263"),
 		ColorBorderFocus: ColorFromString("#617AC3"),
 		ColorSelect:      ColorFromString("#3E65D8"),
+		ColorError:       RGBA(218, 54, 51, 255),
 		TitlebarDark:     true,
 		TextStyleDef: TextStyle{
 			Color: ColorFromString("#E1E1E1"),
