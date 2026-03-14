@@ -491,6 +491,12 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 			w.IMECompCursor(), w.IMECompSelLen(),
 			preLayout, style, w)
 	}
+
+	// Spell check underlines.
+	if !imeComposing && hasPreLayout {
+		renderSpellCheckUnderlines(shape, text,
+			baseX, baseY, preLayout, w)
+	}
 }
 
 // renderInputCursor emits a thin rect for the text cursor when

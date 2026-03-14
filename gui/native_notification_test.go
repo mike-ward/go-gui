@@ -45,6 +45,9 @@ func (m *mockNotificationPlatform) IMEStart()                                {}
 func (m *mockNotificationPlatform) IMEStop()                                 {}
 func (m *mockNotificationPlatform) IMESetRect(_, _, _, _ int32)              {}
 func (m *mockNotificationPlatform) TitlebarDark(_ bool)                      {}
+func (m *mockNotificationPlatform) SpellCheck(_ string) []SpellRange         { return nil }
+func (m *mockNotificationPlatform) SpellSuggest(_ string, _, _ int) []string { return nil }
+func (m *mockNotificationPlatform) SpellLearn(_ string)                      {}
 
 func TestNativeNotificationEmptyTitle(t *testing.T) {
 	w := &Window{}

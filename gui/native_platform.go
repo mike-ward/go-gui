@@ -37,6 +37,17 @@ type NativePlatform interface {
 
 	// Window appearance.
 	TitlebarDark(dark bool)
+
+	// Spell check.
+	SpellCheck(text string) []SpellRange
+	SpellSuggest(text string, startByte, lenBytes int) []string
+	SpellLearn(word string)
+}
+
+// SpellRange represents a misspelled byte range in text.
+type SpellRange struct {
+	StartByte int
+	LenBytes  int
 }
 
 // PlatformDialogResult is the raw result from native file dialogs.

@@ -10,6 +10,7 @@ import (
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/filedialog"
 	"github.com/mike-ward/go-gui/gui/backend/printdialog"
+	"github.com/mike-ward/go-gui/gui/backend/spellcheck"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -115,3 +116,15 @@ func (n *nativePlatform) IMESetRect(x, y, w, h int32) {
 	sdl.SetTextInputRect(&sdl.Rect{X: x, Y: y, W: w, H: h})
 }
 func (n *nativePlatform) TitlebarDark(_ bool) {}
+
+func (n *nativePlatform) SpellCheck(text string) []gui.SpellRange {
+	return spellcheck.Check(text)
+}
+
+func (n *nativePlatform) SpellSuggest(text string, startByte, lenBytes int) []string {
+	return spellcheck.Suggest(text, startByte, lenBytes)
+}
+
+func (n *nativePlatform) SpellLearn(word string) {
+	spellcheck.Learn(word)
+}

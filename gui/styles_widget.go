@@ -14,6 +14,7 @@ type InputStyle struct {
 	ColorClick       Color
 	ColorBorder      Color
 	ColorBorderFocus Color
+	ColorSpellError  Color
 	Padding          Padding
 	SizeBorder       float32
 	Radius           float32
@@ -456,6 +457,7 @@ var (
 		ColorClick:       colorActiveDark,
 		ColorBorder:      colorBorderDark,
 		ColorBorderFocus: colorSelectDark,
+		ColorSpellError:  RGBA(255, 80, 80, 220),
 		Padding:          PaddingSmall,
 		SizeBorder:       SizeBorderDef,
 		Radius:           RadiusMedium,

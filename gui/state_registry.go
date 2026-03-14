@@ -177,6 +177,7 @@ const (
 	nsContextMenu         = "gui.context_menu"
 	nsRtfLinkMenu         = "gui.rtf_link_menu"
 	nsForm                = "gui.form"
+	nsSpellCheck          = "gui.spell_check"
 )
 
 // Capacity tiers.

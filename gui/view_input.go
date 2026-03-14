@@ -20,6 +20,7 @@ type InputCfg struct {
 	MaskTokens  []MaskTokenDef
 	Mode        InputMode
 	IsPassword  bool
+	SpellCheck  bool
 	Disabled    bool
 	Invisible   bool
 
@@ -91,6 +92,7 @@ func Input(cfg InputCfg) View {
 	colorBorderFocus := cfg.ColorBorderFocus
 	colorHover := cfg.ColorHover
 	idFocus := cfg.IDFocus
+	spellChk := cfg.SpellCheck && !cfg.IsPassword
 	onBlur := cfg.OnBlur
 
 	hcfg := inputHandlerCfg{
@@ -340,6 +342,13 @@ func Input(cfg InputCfg) View {
 						txt.Shape.TC.TextSelEnd = is.SelectEnd
 					}
 				}
+			}
+
+			// Spell check debounce trigger.
+			if spellChk && focused {
+				text := inputTextFromLayout(layout)
+				spellCheckTrigger(
+					layout.Shape.IDFocus, text, w)
 			}
 		},
 		Content: []View{inner},
