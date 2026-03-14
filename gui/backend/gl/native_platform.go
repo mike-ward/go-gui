@@ -105,10 +105,6 @@ func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return 
 func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
-func (n *nativePlatform) A11yInit(_ func(action, index int))  {}
-func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int) {}
-func (n *nativePlatform) A11yDestroy()                        {}
-func (n *nativePlatform) A11yAnnounce(_ string)               {}
 
 func (n *nativePlatform) IMEStart() { sdl.StartTextInput() }
 func (n *nativePlatform) IMEStop()  { sdl.StopTextInput() }
