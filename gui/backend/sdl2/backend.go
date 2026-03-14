@@ -29,6 +29,8 @@ type Backend struct {
 	filterPoolH        int32
 	filterBlur         float32      // blur radius in pixels
 	filterLayers       int          // number of blur layers
+	filterColorMatrix  *[16]float32 // color transform matrix
+	filterPixels       []uint32     // reusable pixel buffer for color matrix
 	svgVerts           []sdl.Vertex // reusable vertex buffer for SVG geometry
 	textPathPlacements []glyph.GlyphPlacement
 	texCache           texCache // image texture cache

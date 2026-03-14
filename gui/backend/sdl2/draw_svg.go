@@ -2,6 +2,7 @@ package sdl2
 
 import (
 	"math"
+	"unsafe"
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/veandco/go-sdl2/sdl"
@@ -95,6 +96,7 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	b.filterTex = b.filterPool
 	b.filterBlur = r.BlurRadius * b.dpiScale
 	b.filterLayers = r.Layers
+	b.filterColorMatrix = r.ColorMatrix
 	_ = b.renderer.SetRenderTarget(b.filterTex)
 	_ = b.renderer.SetDrawColor(0, 0, 0, 0)
 	_ = b.renderer.Clear()
@@ -109,6 +111,11 @@ func (b *Backend) endFilter() {
 		return
 	}
 	b.filterTex = nil
+
+	// Apply color matrix in software before compositing.
+	if b.filterColorMatrix != nil {
+		b.applyColorMatrix(tex)
+	}
 
 	_ = b.renderer.SetRenderTarget(nil)
 
@@ -162,4 +169,51 @@ func (b *Backend) endFilter() {
 	// Render source graphic on top at full alpha.
 	_ = tex.SetAlphaMod(255)
 	_ = b.renderer.Copy(tex, nil, nil)
+}
+
+// applyColorMatrix transforms filter texture pixels by the 4x4
+// color matrix in software. Called with the render target still
+// set to the filter texture.
+func (b *Backend) applyColorMatrix(tex *sdl.Texture) {
+	outW, outH, _ := b.renderer.GetOutputSize()
+	nPixels := int(outW) * int(outH)
+	if nPixels == 0 {
+		return
+	}
+	if cap(b.filterPixels) < nPixels {
+		b.filterPixels = make([]uint32, nPixels)
+	} else {
+		b.filterPixels = b.filterPixels[:nPixels]
+	}
+
+	pitch := int(outW) * 4
+	_ = b.renderer.ReadPixels(nil, sdl.PIXELFORMAT_RGBA8888,
+		unsafe.Pointer(&b.filterPixels[0]), pitch)
+
+	cm := b.filterColorMatrix
+	for i := range b.filterPixels {
+		px := b.filterPixels[i]
+		ri := float32((px>>24)&0xFF) / 255
+		gi := float32((px>>16)&0xFF) / 255
+		bi := float32((px>>8)&0xFF) / 255
+		ai := float32(px&0xFF) / 255
+
+		ro := cm[0]*ri + cm[4]*gi + cm[8]*bi + cm[12]*ai
+		go_ := cm[1]*ri + cm[5]*gi + cm[9]*bi + cm[13]*ai
+		bo := cm[2]*ri + cm[6]*gi + cm[10]*bi + cm[14]*ai
+		ao := cm[3]*ri + cm[7]*gi + cm[11]*bi + cm[15]*ai
+
+		ro = max(0, min(1, ro))
+		go_ = max(0, min(1, go_))
+		bo = max(0, min(1, bo))
+		ao = max(0, min(1, ao))
+
+		b.filterPixels[i] = uint32(ro*255+0.5)<<24 |
+			uint32(go_*255+0.5)<<16 |
+			uint32(bo*255+0.5)<<8 |
+			uint32(ao*255+0.5)
+	}
+
+	_ = b.renderer.SetRenderTarget(nil)
+	_ = tex.Update(nil, unsafe.Pointer(&b.filterPixels[0]), pitch)
 }

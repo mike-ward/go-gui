@@ -9,35 +9,47 @@ type ColorFilter struct {
 	Matrix [16]float32
 }
 
-// ColorFilterIdentity returns a no-op color filter.
-func ColorFilterIdentity() *ColorFilter {
-	return &ColorFilter{Matrix: [16]float32{
+// Pre-computed matrices for constant filters.
+var (
+	identityMatrix = [16]float32{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1,
-	}}
-}
-
-// ColorFilterGrayscale converts to luminance-weighted grayscale.
-func ColorFilterGrayscale() *ColorFilter {
-	const r, g, b = 0.2126, 0.7152, 0.0722
-	return &ColorFilter{Matrix: [16]float32{
-		r, r, r, 0,
-		g, g, g, 0,
-		b, b, b, 0,
+	}
+	grayscaleMatrix = [16]float32{
+		0.2126, 0.2126, 0.2126, 0,
+		0.7152, 0.7152, 0.7152, 0,
+		0.0722, 0.0722, 0.0722, 0,
 		0, 0, 0, 1,
-	}}
-}
-
-// ColorFilterSepia applies a warm sepia tone.
-func ColorFilterSepia() *ColorFilter {
-	return &ColorFilter{Matrix: [16]float32{
+	}
+	sepiaMatrix = [16]float32{
 		0.393, 0.349, 0.272, 0,
 		0.769, 0.686, 0.534, 0,
 		0.189, 0.168, 0.131, 0,
 		0, 0, 0, 1,
-	}}
+	}
+	invertMatrix = [16]float32{
+		-1, 0, 0, 0,
+		0, -1, 0, 0,
+		0, 0, -1, 0,
+		1, 1, 1, 1,
+	}
+)
+
+// ColorFilterIdentity returns a no-op color filter.
+func ColorFilterIdentity() *ColorFilter {
+	return &ColorFilter{Matrix: identityMatrix}
+}
+
+// ColorFilterGrayscale converts to luminance-weighted grayscale.
+func ColorFilterGrayscale() *ColorFilter {
+	return &ColorFilter{Matrix: grayscaleMatrix}
+}
+
+// ColorFilterSepia applies a warm sepia tone.
+func ColorFilterSepia() *ColorFilter {
+	return &ColorFilter{Matrix: sepiaMatrix}
 }
 
 // ColorFilterSaturate adjusts saturation. 0=grayscale, 1=identity,
@@ -97,10 +109,21 @@ func ColorFilterHueRotate(degrees float32) *ColorFilter {
 // ColorFilterInvert negates RGB, keeps alpha. Uses the alpha
 // column to inject bias (output.rgb = alpha - input.rgb).
 func ColorFilterInvert() *ColorFilter {
-	return &ColorFilter{Matrix: [16]float32{
-		-1, 0, 0, 0,
-		0, -1, 0, 0,
-		0, 0, -1, 0,
-		1, 1, 1, 1,
-	}}
+	return &ColorFilter{Matrix: invertMatrix}
+}
+
+// ColorFilterCompose multiplies two color filters (a applied
+// first, then b). Returns a new filter representing b*a.
+func ColorFilterCompose(a, b *ColorFilter) *ColorFilter {
+	var out ColorFilter
+	for col := range 4 {
+		for row := range 4 {
+			var sum float32
+			for k := range 4 {
+				sum += b.Matrix[k*4+row] * a.Matrix[col*4+k]
+			}
+			out.Matrix[col*4+row] = sum
+		}
+	}
+	return &out
 }

@@ -136,8 +136,45 @@ func TestColorFilterHueRotate180(t *testing.T) {
 	if r >= 0.5 {
 		t.Errorf("hue(180) red channel too high: %f", r)
 	}
-	_ = g
-	_ = b
+	if g <= 0 {
+		t.Errorf("hue(180) green channel should increase: %f", g)
+	}
+	if b <= 0 {
+		t.Errorf("hue(180) blue channel should increase: %f", b)
+	}
+}
+
+func TestColorFilterComposeIdentity(t *testing.T) {
+	// Composing with identity should yield the original.
+	gs := ColorFilterGrayscale()
+	id := ColorFilterIdentity()
+	composed := ColorFilterCompose(gs, id)
+	for i := range 16 {
+		if diff := composed.Matrix[i] - gs.Matrix[i]; diff > 1e-6 || diff < -1e-6 {
+			t.Fatalf("compose(gs, id)[%d]=%f, want %f",
+				i, composed.Matrix[i], gs.Matrix[i])
+		}
+	}
+	composed2 := ColorFilterCompose(id, gs)
+	for i := range 16 {
+		if diff := composed2.Matrix[i] - gs.Matrix[i]; diff > 1e-6 || diff < -1e-6 {
+			t.Fatalf("compose(id, gs)[%d]=%f, want %f",
+				i, composed2.Matrix[i], gs.Matrix[i])
+		}
+	}
+}
+
+func TestColorFilterComposeInvertInvert(t *testing.T) {
+	// Invert composed with invert should approximate identity.
+	inv := ColorFilterInvert()
+	composed := ColorFilterCompose(inv, inv)
+	id := ColorFilterIdentity()
+	for i := range 16 {
+		if diff := composed.Matrix[i] - id.Matrix[i]; diff > 1e-5 || diff < -1e-5 {
+			t.Fatalf("compose(inv, inv)[%d]=%f, want %f",
+				i, composed.Matrix[i], id.Matrix[i])
+		}
+	}
 }
 
 func TestColorFilterNilMatrix(t *testing.T) {
