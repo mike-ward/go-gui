@@ -215,11 +215,12 @@ func Splitter(cfg SplitterCfg) View {
 
 func splitterPane(id string, content []View) View {
 	return Column(ContainerCfg{
-		ID:      id,
-		Sizing:  FixedFixed,
-		Padding: NoPadding,
-		Clip:    true,
-		Content: content,
+		ID:         id,
+		Sizing:     FixedFixed,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Clip:       true,
+		Content:    content,
 	})
 }
 
