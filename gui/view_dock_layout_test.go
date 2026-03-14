@@ -321,11 +321,13 @@ func TestNewDockLayoutCore(t *testing.T) {
 // --- dockLayoutAmend ---
 
 func TestDockLayoutAmendNoChildren(t *testing.T) {
-	_ = t
 	w := &Window{}
-	layout := &Layout{Shape: &Shape{}}
+	layout := &Layout{Shape: &Shape{Width: 100, Height: 50}}
 	// Should not panic with empty children.
 	dockLayoutAmend("dock1", Color{}, layout, w)
+	if len(layout.Children) != 0 {
+		t.Fatal("children should remain empty")
+	}
 }
 
 // --- Integration: OnChange callback ---

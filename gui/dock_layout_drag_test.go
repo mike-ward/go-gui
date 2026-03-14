@@ -107,7 +107,7 @@ func TestDockDragMultipleDocks(t *testing.T) {
 func TestDockDragDetectZoneNoLayout(t *testing.T) {
 	w := &Window{}
 	w.layout = Layout{Shape: &Shape{ID: "other"}}
-	zone, _ := dockDragDetectZone("dock1", nil, 50, 50, "", "", w)
+	zone, _ := dockDragDetectZone("dock1", nil, 50, 50, "", w)
 	if zone != DockDropNone {
 		t.Fatal("should be none with no matching layout")
 	}
@@ -133,7 +133,7 @@ func TestDockDragDetectZoneWindowEdges(t *testing.T) {
 		{400, 595, DockDropWindowBottom},
 	}
 	for _, tc := range tests {
-		zone, _ := dockDragDetectZone("dock1", nil, tc.x, tc.y, "", "", w)
+		zone, _ := dockDragDetectZone("dock1", nil, tc.x, tc.y, "", w)
 		if zone != tc.want {
 			t.Errorf("(%g,%g): got %d, want %d", tc.x, tc.y, zone, tc.want)
 		}
@@ -163,7 +163,7 @@ func TestDockDragDetectZoneGroupZone(t *testing.T) {
 	// Center of group
 	zone, gid := dockDragDetectZone(
 		"dock1", []*DockNode{groupNode},
-		300, 250, "other", "", w)
+		300, 250, "other", w)
 	if zone != DockDropCenter || gid != "g1" {
 		t.Fatalf("center: zone=%d, gid=%s", zone, gid)
 	}
@@ -171,7 +171,7 @@ func TestDockDragDetectZoneGroupZone(t *testing.T) {
 	// Top of group
 	zone, gid = dockDragDetectZone(
 		"dock1", []*DockNode{groupNode},
-		300, 110, "other", "", w)
+		300, 110, "other", w)
 	if zone != DockDropTop || gid != "g1" {
 		t.Fatalf("top: zone=%d, gid=%s", zone, gid)
 	}
@@ -199,7 +199,7 @@ func TestDockDragDetectZoneSkipSinglePanelSource(t *testing.T) {
 	// Dragging from g1 which only has 1 panel — skip
 	zone, _ := dockDragDetectZone(
 		"dock1", []*DockNode{groupNode},
-		300, 250, "g1", "A", w)
+		300, 250, "g1", w)
 	if zone != DockDropNone {
 		t.Fatal("should skip single-panel source group")
 	}
@@ -227,7 +227,7 @@ func TestDockDragDetectZoneSkipCenterSameGroup(t *testing.T) {
 	// Center of same group — skip (already a tab)
 	zone, _ := dockDragDetectZone(
 		"dock1", []*DockNode{groupNode},
-		300, 250, "g1", "A", w)
+		300, 250, "g1", w)
 	if zone != DockDropNone {
 		t.Fatal("should skip center drop on same group")
 	}

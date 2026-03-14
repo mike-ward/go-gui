@@ -200,7 +200,9 @@ func dockSplitView(
 		Sizing:      FillFill,
 		OnChange: func(ratio float32, _ SplitterCollapsed, _ *Event, w *Window) {
 			newRoot := dockTreeUpdateRatio(root, splitID, ratio)
-			onLayoutChange(newRoot, w)
+			if onLayoutChange != nil {
+				onLayoutChange(newRoot, w)
+			}
 		},
 		First:  SplitterPaneCfg{Content: firstContent},
 		Second: SplitterPaneCfg{Content: secondContent},
@@ -238,10 +240,11 @@ func dockGroupView(
 		if len(tabButtons) > 0 {
 			tabButtons = append(tabButtons,
 				Column(ContainerCfg{
-					Width:   1,
-					Sizing:  FixedFill,
-					Padding: NoPadding,
-					Color:   colorSep,
+					Width:      1,
+					Sizing:     FixedFill,
+					Padding:    NoPadding,
+					SizeBorder: NoBorder,
+					Color:      colorSep,
 				}))
 		}
 		tabButtons = append(tabButtons,
@@ -265,30 +268,33 @@ func dockGroupView(
 
 	// Tab header row.
 	groupContent = append(groupContent, Row(ContainerCfg{
-		Sizing:  FillFit,
-		Padding: SomeP(2, 4, 0, 4),
-		Spacing: NoSpacing,
-		Color:   cfg.ColorTabBar,
-		Content: tabButtons,
+		Sizing:     FillFit,
+		Padding:    SomeP(2, 4, 0, 4),
+		Spacing:    NoSpacing,
+		SizeBorder: NoBorder,
+		Color:      cfg.ColorTabBar,
+		Content:    tabButtons,
 	}))
 
 	// Content area.
 	groupContent = append(groupContent, Column(ContainerCfg{
-		Sizing:  FillFill,
-		Padding: NoPadding,
-		Spacing: NoSpacing,
-		Clip:    true,
-		Color:   cfg.ColorContent,
-		Content: activeContent,
+		Sizing:     FillFill,
+		Padding:    NoPadding,
+		Spacing:    NoSpacing,
+		SizeBorder: NoBorder,
+		Clip:       true,
+		Color:      cfg.ColorContent,
+		Content:    activeContent,
 	}))
 
 	return Column(ContainerCfg{
-		ID:      group.ID,
-		Sizing:  FillFill,
-		Padding: NoPadding,
-		Spacing: NoSpacing,
-		Clip:    true,
-		Content: groupContent,
+		ID:         group.ID,
+		Sizing:     FillFill,
+		Padding:    NoPadding,
+		Spacing:    NoSpacing,
+		SizeBorder: NoBorder,
+		Clip:       true,
+		Content:    groupContent,
 	})
 }
 
@@ -322,10 +328,10 @@ func dockTabButton(
 			Height:     14,
 			Sizing:     FixedFixed,
 			Padding:    NoPadding,
-			SizeBorder: Some[float32](0),
+			SizeBorder: NoBorder,
 			Color:      ColorTransparent,
 			ColorHover: guiTheme.ColorHover,
-			Radius:     Some[float32](2),
+			Radius:     SomeF(2),
 			OnClick: func(_ *Layout, _ *Event, w *Window) {
 				onPanelClose(panelID, w)
 			},
@@ -345,8 +351,8 @@ func dockTabButton(
 		Sizing:     FillFit,
 		HAlign:     Some(HAlignLeft),
 		Padding:    SomeP(4, 8, 4, 8),
-		Radius:     Some[float32](0),
-		SizeBorder: Some[float32](0),
+		Radius:     NoRadius,
+		SizeBorder: NoBorder,
 		Color:      colorTab,
 		ColorHover: colorHover,
 		OnClick: func(layout *Layout, e *Event, w *Window) {

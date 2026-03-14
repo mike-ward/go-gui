@@ -234,11 +234,12 @@ func dockTreeSplitAtRec(nd *DockNode, groupID, panelID string, zone DockDropZone
 	newGroup := DockPanelGroup(groupID+"_new_"+panelID, []string{panelID}, panelID)
 	existing := DockPanelGroup(nd.ID, nd.PanelIDs, nd.SelectedID)
 	dir := dockZoneToSplitDir(zone)
+	splitID := groupID + "_split_" + panelID
 	firstIsNew := zone == DockDropLeft || zone == DockDropTop
 	if firstIsNew {
-		return DockSplit(groupID+"_split", dir, 0.5, newGroup, existing)
+		return DockSplit(splitID, dir, 0.5, newGroup, existing)
 	}
-	return DockSplit(groupID+"_split", dir, 0.5, existing, newGroup)
+	return DockSplit(splitID, dir, 0.5, existing, newGroup)
 }
 
 // DockTreeWrapRoot wraps the current root in a new split for
@@ -246,15 +247,16 @@ func dockTreeSplitAtRec(nd *DockNode, groupID, panelID string, zone DockDropZone
 func DockTreeWrapRoot(root *DockNode, panelID string, zone DockDropZone) *DockNode {
 	newGroup := DockPanelGroup("dock_edge_"+panelID, []string{panelID}, panelID)
 	dir := dockZoneToSplitDir(zone)
+	splitID := "dock_root_split_" + panelID
 	firstIsNew := zone == DockDropWindowLeft || zone == DockDropWindowTop
 	ratio := float32(0.8)
 	if firstIsNew {
 		ratio = 0.2
 	}
 	if firstIsNew {
-		return DockSplit("dock_root_split", dir, ratio, newGroup, root)
+		return DockSplit(splitID, dir, ratio, newGroup, root)
 	}
-	return DockSplit("dock_root_split", dir, ratio, root, newGroup)
+	return DockSplit(splitID, dir, ratio, root, newGroup)
 }
 
 // DockTreeMovePanel removes a panel from its source group and

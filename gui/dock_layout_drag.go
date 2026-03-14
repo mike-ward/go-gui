@@ -128,7 +128,7 @@ func dockDragOnMouseMove(
 
 	zone, groupID := dockDragDetectZone(
 		dockID, state.panelNodes, mouseX, mouseY,
-		state.sourceGroup, state.panelID, w)
+		state.sourceGroup, w)
 	state.hoverZone = zone
 	state.hoverGroupID = groupID
 	dockDragSet(w, dockID, state)
@@ -143,7 +143,7 @@ func dockDragOnMouseUp(
 	state := dockDragGet(w, dockID)
 	w.MouseUnlock()
 
-	if state.active && state.hoverZone != DockDropNone {
+	if state.active && state.hoverZone != DockDropNone && onLayoutChange != nil {
 		newRoot := DockTreeMovePanel(
 			root, state.panelID, state.hoverGroupID,
 			state.hoverZone)
@@ -167,7 +167,7 @@ func dockDragCancel(dockID string, w *Window) {
 func dockDragDetectZone(
 	dockID string, panelNodes []*DockNode,
 	mouseX, mouseY float32,
-	sourceGroup, _ string,
+	sourceGroup string,
 	w *Window,
 ) (DockDropZone, string) {
 	dockLayout, ok := w.layout.FindByID(dockID)
@@ -250,19 +250,16 @@ func dockClassifyZone(relX, relY float32) DockDropZone {
 
 // dockDragGhostView returns a floating ghost of the dragged tab.
 func dockDragGhostView(state dockDragState, label string) View {
-	ghostX := state.mouseX - (state.startMouseX - state.parentX)
-	ghostY := state.mouseY - (state.startMouseY - state.parentY)
-
 	return Column(ContainerCfg{
 		Float:        true,
-		FloatOffsetX: ghostX - state.parentX,
-		FloatOffsetY: ghostY - state.parentY,
+		FloatOffsetX: state.mouseX - state.startMouseX,
+		FloatOffsetY: state.mouseY - state.startMouseY,
 		Width:        state.ghostW,
 		Height:       state.ghostH,
 		Opacity:      SomeF(dragGhostOpacity),
 		Sizing:       FixedFixed,
 		Clip:         true,
-		Padding:      SomeP(6, 12, 6, 12),
+		Padding:      SomeP(2, 6, 2, 6),
 		Color:        guiTheme.ColorPanel,
 		Shadow: &BoxShadow{
 			Color:      dragGhostShadowColor,
