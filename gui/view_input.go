@@ -324,6 +324,10 @@ func Input(cfg InputCfg) View {
 					hcfg.OnTextCommit(
 						layout, text, CommitBlur, w)
 				}
+				if spellChk {
+					spellCheckClear(
+						layout.Shape.IDFocus, w)
+				}
 				if onBlur != nil {
 					onBlur(layout, w)
 				}

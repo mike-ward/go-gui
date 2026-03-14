@@ -17,16 +17,16 @@ SpellCheckResult spellcheckCheck(const char *text, int textLen) {
         NSSpellChecker *checker = [NSSpellChecker sharedSpellChecker];
         NSInteger strLen = str.length;
 
-        // First pass: count misspelled ranges.
+        // Collect misspelled ranges.
         int capacity = 8;
         int count = 0;
         SpellRange *ranges = (SpellRange *)malloc(
             capacity * sizeof(SpellRange));
 
         NSInteger offset = 0;
+        NSInteger lastUTF16 = 0;
+        int lastByte = 0;
         while (offset < strLen) {
-            NSRange checkRange = NSMakeRange(offset,
-                strLen - offset);
             NSRange misspelled = [checker
                 checkSpellingOfString:str
                 startingAt:offset
@@ -39,16 +39,21 @@ SpellCheckResult spellcheckCheck(const char *text, int textLen) {
                 break;
             }
 
-            // Convert UTF-16 range to UTF-8 byte range.
-            NSRange utf16Range = misspelled;
-            NSString *prefix = [str substringToIndex:
-                utf16Range.location];
-            NSString *word = [str substringWithRange:
-                utf16Range];
-            int startByte = (int)[prefix
+            // Convert UTF-16 range to UTF-8 byte range
+            // using incremental offset tracking.
+            NSRange delta = NSMakeRange(lastUTF16,
+                misspelled.location - lastUTF16);
+            NSString *gap = [str substringWithRange:delta];
+            lastByte += (int)[gap
                 lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+            int startByte = lastByte;
+
+            NSString *word = [str substringWithRange:
+                misspelled];
             int lenBytes = (int)[word
                 lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+            lastUTF16 = misspelled.location + misspelled.length;
+            lastByte = startByte + lenBytes;
 
             if (count >= capacity) {
                 capacity *= 2;
@@ -73,6 +78,8 @@ SuggestResult spellcheckSuggest(const char *text, int textLen,
     @autoreleasepool {
         SuggestResult result = {0};
         if (text == NULL || textLen == 0) return result;
+        if (startByte < 0 || lenBytes < 0 ||
+            startByte + lenBytes > textLen) return result;
 
         NSString *str = [[NSString alloc]
             initWithBytes:text

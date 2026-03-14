@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/mike-ward/go-glyph"
@@ -16,7 +16,7 @@ type spellCheckState struct {
 const spellCheckDelay = 300 * time.Millisecond
 
 func spellCheckAnimID(idFocus uint32) string {
-	return fmt.Sprintf("spell-check-%d", idFocus)
+	return "spell-check-" + strconv.FormatUint(uint64(idFocus), 10)
 }
 
 // spellCheckTrigger schedules a debounced spell check for the given
