@@ -52,7 +52,7 @@ func rtfSuppressInlineObjectGlyphs(layout *glyph.Layout) {
 
 func (v *rtfView) GenerateLayout(w *Window) Layout {
 	// Convert RichText to glyph.RichText.
-	vgRT := v.RichText.toGlyphRichTextWithMath(
+	vgRT, mathHashes := v.RichText.toGlyphRichTextWithMath(
 		w.viewState.diagramCache)
 
 	// Determine base style.
@@ -110,6 +110,7 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 			RtfLayout:     &layout,
 			RtfRuns:       &v.RichText,
 			rtfGlyphRT:    &vgRT,
+			rtfMathHashes: mathHashes,
 		},
 	}
 	l := Layout{Shape: shape}

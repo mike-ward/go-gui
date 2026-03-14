@@ -792,16 +792,27 @@ func renderRtf(shape *Shape, clip DrawClip, w *Window) {
 	}, w)
 
 	// Emit RenderImage for inline math objects.
+	// Use rtfMathHashes (populated by toGlyphRichTextWithMath)
+	// instead of item.ObjectID, which is unreliable due to
+	// Pango's shape attribute data pointer lacking null
+	// termination on round-trip through C.GoString.
 	cache := w.viewState.diagramCache
-	if cache == nil {
+	hashes := shape.TC.rtfMathHashes
+	if cache == nil || len(hashes) == 0 {
 		return
 	}
+	objIdx := 0
 	for i := range shape.TC.RtfLayout.Items {
 		item := &shape.TC.RtfLayout.Items[i]
 		if !item.IsObject {
 			continue
 		}
-		hash := mathCacheHash(item.ObjectID)
+		if objIdx >= len(hashes) {
+			objIdx++
+			continue
+		}
+		hash := hashes[objIdx]
+		objIdx++
 		entry, ok := cache.Get(hash)
 		if !ok || entry.State != DiagramReady {
 			continue

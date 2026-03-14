@@ -236,6 +236,7 @@ type ShapeTextConfig struct {
 	RtfLayout         *glyph.Layout
 	RtfBaseStyle      glyph.TextStyle
 	rtfGlyphRT        *glyph.RichText // cached conversion
+	rtfMathHashes     []int64         // cache keys per inline math object
 	wrapCacheWidth    float32
 	wrapCacheValid    bool
 	wrapCacheText     string

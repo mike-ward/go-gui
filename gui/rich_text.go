@@ -68,16 +68,21 @@ func RichFootnote(
 
 // toGlyphRichText converts RichText to glyph.RichText.
 func (rt RichText) toGlyphRichText() glyph.RichText {
-	return rt.toGlyphRichTextWithMath(nil)
+	grt, _ := rt.toGlyphRichTextWithMath(nil)
+	return grt
 }
 
 // toGlyphRichTextWithMath converts RichText to
 // glyph.RichText, emitting InlineObject for math runs
-// when the cache has dimensions.
+// when the cache has dimensions. Returns the glyph
+// RichText and a slice of cache hashes for each inline
+// math object (in order), used by renderRtf to bypass
+// the unreliable Pango ObjectID round-trip.
 func (rt RichText) toGlyphRichTextWithMath(
 	cache *BoundedDiagramCache,
-) glyph.RichText {
+) (glyph.RichText, []int64) {
 	runs := make([]glyph.StyleRun, 0, len(rt.Runs))
+	var mathHashes []int64
 	for _, run := range rt.Runs {
 		if run.MathID != "" {
 			hash := mathCacheHash(run.MathID)
@@ -97,6 +102,7 @@ func (rt RichText) toGlyphRichTextWithMath(
 						Text:  "\uFFFC",
 						Style: s,
 					})
+					mathHashes = append(mathHashes, hash)
 					continue
 				}
 			}
@@ -112,5 +118,5 @@ func (rt RichText) toGlyphRichTextWithMath(
 			Style: run.Style.ToGlyphStyle(),
 		})
 	}
-	return glyph.RichText{Runs: runs}
+	return glyph.RichText{Runs: runs}, mathHashes
 }

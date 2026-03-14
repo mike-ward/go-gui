@@ -92,7 +92,7 @@ func TestMathRunEmitsInlineObject(t *testing.T) {
 			{Text: " after", Style: TextStyle{Size: 12}},
 		},
 	}
-	grt := rt.toGlyphRichTextWithMath(cache)
+	grt, mh := rt.toGlyphRichTextWithMath(cache)
 	if len(grt.Runs) != 3 {
 		t.Fatalf("expected 3 runs, got %d", len(grt.Runs))
 	}
@@ -110,6 +110,9 @@ func TestMathRunEmitsInlineObject(t *testing.T) {
 	if mid.Style.Object.Width < 57 || mid.Style.Object.Width > 58 {
 		t.Fatalf("width: got %f", mid.Style.Object.Width)
 	}
+	if len(mh) != 1 || mh[0] != mathCacheHash("x^2") {
+		t.Fatalf("mathHashes: got %v", mh)
+	}
 }
 
 func TestMathRunFallbackWhenLoading(t *testing.T) {
@@ -125,12 +128,15 @@ func TestMathRunFallbackWhenLoading(t *testing.T) {
 			Style:     TextStyle{Size: 12},
 		}},
 	}
-	grt := rt.toGlyphRichTextWithMath(cache)
+	grt, mh := rt.toGlyphRichTextWithMath(cache)
 	if grt.Runs[0].Text != "y^2" {
 		t.Fatalf("expected fallback text, got %q", grt.Runs[0].Text)
 	}
 	if grt.Runs[0].Style.Object != nil {
 		t.Fatal("should not create InlineObject for loading entry")
+	}
+	if len(mh) != 0 {
+		t.Fatalf("expected no mathHashes for loading, got %v", mh)
 	}
 }
 
@@ -142,7 +148,7 @@ func TestMathRunFallbackNilCache(t *testing.T) {
 			Style:     TextStyle{Size: 14},
 		}},
 	}
-	grt := rt.toGlyphRichTextWithMath(nil)
+	grt, _ := rt.toGlyphRichTextWithMath(nil)
 	if grt.Runs[0].Text != "z" {
 		t.Fatalf("expected fallback, got %q", grt.Runs[0].Text)
 	}

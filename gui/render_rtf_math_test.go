@@ -35,7 +35,10 @@ func TestRenderRtfEmitsInlineMathImages(t *testing.T) {
 
 	shape := &Shape{
 		X: 10, Y: 20, Width: 300, Height: 100,
-		TC: &ShapeTextConfig{RtfLayout: layout},
+		TC: &ShapeTextConfig{
+			RtfLayout:     layout,
+			rtfMathHashes: []int64{hash},
+		},
 	}
 	w := &Window{}
 	w.viewState.diagramCache = cache
