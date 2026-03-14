@@ -31,7 +31,8 @@ jobs:
             libfreetype6-dev \
             libharfbuzz-dev \
             libpango1.0-dev \
-            libfontconfig1-dev
+            libfontconfig1-dev \
+            libhunspell-dev
 
       - name: Install macOS system dependencies
         if: runner.os == 'macOS'
@@ -66,7 +67,8 @@ jobs:
             libfreetype6-dev \
             libharfbuzz-dev \
             libpango1.0-dev \
-            libfontconfig1-dev
+            libfontconfig1-dev \
+            libhunspell-dev
 
       - name: Vet
         run: go vet ./...
