@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "filepath=\"$CLAUDE_FILE_PATH\"; case \"$filepath\" in *.go) golangci-lint run --fix \"$(dirname \"$filepath\")/...\" 2>/dev/null; true ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
