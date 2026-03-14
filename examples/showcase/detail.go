@@ -247,6 +247,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoOverflowPanel(w)
 	case "sidebar":
 		return demoSidebar(w)
+	case "dock_layout":
+		return demoDockLayout(w)
 
 	default:
 		return demoPlaceholder(gui.CurrentTheme(), "Demo: "+id)

@@ -164,6 +164,7 @@ var relatedExampleMap = map[string][]string{
 	"wrap_panel":          {"examples/showcase/demo_layout.go"},
 	"overflow_panel":      {"examples/showcase/demo_layout.go"},
 	"sidebar":             {"examples/showcase/demo_layout.go"},
+	"dock_layout":         {"examples/showcase/demo_dock_layout.go", "examples/dock_layout/main.go"},
 }
 
 func themeCfgSave(path string, cfg gui.ThemeCfg) error {

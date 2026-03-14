@@ -118,6 +118,8 @@ type ShowcaseApp struct {
 	DragTabSel    string
 	DragTreeNodes []gui.TreeNodeCfg
 
+	DockRoot *gui.DockNode
+
 	ThemeGenSeed       gui.Color
 	ThemeGenStrategy   string
 	ThemeGenTint       float32
@@ -303,6 +305,7 @@ func demoEntries() []DemoEntry {
 		{ID: "sidebar", Label: "Sidebar", Group: groupLayout, Summary: "Animated panel that slides in and out.", Tags: []string{"sidebar", "panel", "slide", "layout"}},
 		{ID: "scrollbar", Label: "Scrollable Containers", Group: groupLayout, Summary: "Bind scrollable layouts to shared scroll ids.", Tags: []string{"scrollbar", "scroll", "container", "layout"}},
 		{ID: "splitter", Label: "Splitter", Group: groupLayout, Summary: "Resizable panes with drag, keyboard, and collapse.", Tags: []string{"split", "pane", "resize", "layout"}},
+		{ID: "dock_layout", Label: "Dock Layout", Group: groupLayout, Summary: "IDE-style docking panels with splits, tabs, and drag-and-drop.", Tags: []string{"dock", "split", "tabs", "drag", "ide", "layout"}},
 	}
 }
 
