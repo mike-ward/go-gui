@@ -77,9 +77,11 @@ func dockDragStart(
 	// Ghost base offset: tab position relative to dock container.
 	ghostBaseX := layout.Shape.X
 	ghostBaseY := layout.Shape.Y
-	if dockLayout, ok := w.layout.FindByID(dockID); ok {
-		ghostBaseX -= dockLayout.Shape.X
-		ghostBaseY -= dockLayout.Shape.Y
+	if w.layout.Shape != nil {
+		if dockLayout, ok := w.layout.FindByID(dockID); ok {
+			ghostBaseX -= dockLayout.Shape.X
+			ghostBaseY -= dockLayout.Shape.Y
+		}
 	}
 	absMouseX := layout.Shape.X + e.MouseX
 	absMouseY := layout.Shape.Y + e.MouseY
