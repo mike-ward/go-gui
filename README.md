@@ -83,20 +83,24 @@ sudo apt-get install -y \
 #### Fedora / RHEL
 
 ```bash
-sudo dnf install -y golang gcc pkgconf-pkg-config SDL2-devel
+sudo dnf install -y golang gcc pkgconf-pkg-config \
+  SDL2-devel freetype-devel harfbuzz-devel pango-devel fontconfig-devel
 ```
 
 #### Arch Linux
 
 ```bash
-sudo pacman -Syu --noconfirm go base-devel pkgconf sdl2
+sudo pacman -Syu --noconfirm go base-devel pkgconf \
+  sdl2 freetype2 harfbuzz pango fontconfig
 ```
 
 #### Windows (MSYS2 MinGW x64)
 
 ```bash
 pacman -S --needed mingw-w64-x86_64-go mingw-w64-x86_64-gcc \
-  mingw-w64-x86_64-pkgconf mingw-w64-x86_64-SDL2
+  mingw-w64-x86_64-pkgconf mingw-w64-x86_64-SDL2 \
+  mingw-w64-x86_64-freetype mingw-w64-x86_64-harfbuzz \
+  mingw-w64-x86_64-pango mingw-w64-x86_64-fontconfig
 ```
 
 Then use the `MSYS2 MinGW x64` shell for `go build` / `go run`.
@@ -104,7 +108,8 @@ Then use the `MSYS2 MinGW x64` shell for `go build` / `go run`.
 #### Windows (vcpkg toolchain)
 
 ```bash
-vcpkg install sdl2:x64-windows
+vcpkg install sdl2:x64-windows freetype:x64-windows \
+  harfbuzz:x64-windows pango:x64-windows fontconfig:x64-windows
 ```
 
 Set `CGO_CFLAGS` and `CGO_LDFLAGS` to your vcpkg include/lib paths before building.
@@ -385,25 +390,65 @@ implementation used by all unit tests.
 ## Architecture
 
 ```
-View fn
-  │
-  ▼
-GenerateViewLayout()
-  │
-  ▼
-Layout tree
-  │
-  ├─ layoutArrange() ──── sizing pass (Fit/Fixed/Grow axes)
-  │
-  ▼
-renderLayout()
-  │
-  ▼
-[]RenderCmd
-  │
-  ▼
-Backend dispatch loop ── Metal / OpenGL / SDL2 renderer
+┌─────────────────────────────────────────────────────────┐
+│                    Application Layer                    │
+│      examples/  ──  View fn(w *Window) *Layout          │
+│                 gui.State[T](w) typed state slot        │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│                  gui/ (core package)                    │
+│                                                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐  │
+│  │   Widgets    │  │  State Mgmt  │  │   Animation   │  │
+│  │  Button,Text │  │  StateMap    │  │   Subsystem   │  │
+│  │  Container…  │  │  per-window  │  │               │  │
+│  └──────┬───────┘  └──────┬───────┘  └───────┬───────┘  │
+│         │                 │                  │          │
+│  ┌──────▼─────────────────▼──────────────────▼───────┐  │
+│  │              Layout Engine                        │  │
+│  │  GenerateViewLayout() → Layout tree               │  │
+│  │  layoutArrange() — Fit/Fixed/Grow sizing          │  │
+│  │  renderLayout() → []RenderCmd                     │  │
+│  └──────────────────────┬────────────────────────────┘  │
+│                         │                               │
+│  ┌──────────────────────▼────────────────────────────┐  │
+│  │            Event Dispatch                         │  │
+│  │  Mouse · Keyboard · Focus · Scroll                │  │
+│  └───────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────┘
+                         │
+        ┌────────────────┼─────────────────┐
+        │                │                 │
+┌───────▼──────┐ ┌───────▼──────┐ ┌────────▼───────┐
+│  TextMeasurer│ │  SvgParser   │ │ NativePlatform │
+│  (interface) │ │  (interface) │ │  (interface)   │
+└───────┬──────┘ └───────┬──────┘ └────────┬───────┘
+        │                │                 │
+┌───────▼────────────────▼─────────────────▼───────────┐
+│               backend/sdl2/                          │
+│  Injects interfaces at startup · Window management   │
+├──────────────┬───────────────┬───────────────────────┤
+│  backend/    │  backend/gl/  │  backend/filedialog/  │
+│  metal/      │  OpenGL       │  backend/printdialog/ │
+│  Metal(macOS)│               │                       │
+└──────────────┴───────────────┴───────────────────────┘
+        │
+┌───────▼───────┐
+│   go-glyph    │
+│  Text shaping │
+│  rendering    │
+│  wrapping     │
+└───────────────┘
 ```
+
+**Pipeline (immediate-mode, no virtual DOM):**
+
+```
+View fn → Layout tree → layoutArrange() → renderLayout() → []RenderCmd → GPU
+```
+
+**Key types:** `Layout` (tree node), `Shape` (renderable), `RenderCmd` (draw op), `Window` (top-level + state slot)
 
 ## Contributing
 
