@@ -793,27 +793,27 @@ func demoShader(w *gui.Window) gui.View {
 func demoColorFilter(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 
-	// Shared colored content for filter demonstrations.
+	// Pastel/mixed colors so filters produce a visible difference.
 	colorContent := func(label string) []gui.View {
 		return []gui.View{
 			gui.Column(gui.ContainerCfg{
 				Sizing:     gui.FillFit,
 				Height:     20,
-				Color:      gui.RGBA(220, 50, 50, 255),
+				Color:      gui.RGBA(200, 130, 100, 255),
 				SizeBorder: gui.NoBorder,
 				Radius:     gui.SomeF(4),
 			}),
 			gui.Column(gui.ContainerCfg{
 				Sizing:     gui.FillFit,
 				Height:     20,
-				Color:      gui.RGBA(50, 180, 50, 255),
+				Color:      gui.RGBA(100, 180, 140, 255),
 				SizeBorder: gui.NoBorder,
 				Radius:     gui.SomeF(4),
 			}),
 			gui.Column(gui.ContainerCfg{
 				Sizing:     gui.FillFit,
 				Height:     20,
-				Color:      gui.RGBA(50, 100, 220, 255),
+				Color:      gui.RGBA(120, 130, 200, 255),
 				SizeBorder: gui.NoBorder,
 				Radius:     gui.SomeF(4),
 			}),
@@ -876,23 +876,55 @@ func demoColorFilter(_ *gui.Window) gui.View {
 				},
 			}),
 
-			// Frosted glass simulation.
+			// Blur + color filter combined.
 			gui.Text(gui.TextCfg{
-				Text:      "Frosted glass: blur + desaturate + semi-transparent overlay",
+				Text:      "Blur + color filter: gaussian blur combined with color matrix",
 				TextStyle: t.N3,
 			}),
-			gui.Column(gui.ContainerCfg{
-				Width:       300,
-				Height:      100,
-				Sizing:      gui.FixedFixed,
-				Color:       gui.RGBA(255, 255, 255, 80),
-				BlurRadius:  8,
-				ColorFilter: gui.ColorFilterSaturate(0.3),
-				Radius:      gui.SomeF(12),
-				HAlign:      gui.HAlignCenter,
-				VAlign:      gui.VAlignMiddle,
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(12),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
 				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "Frosted Panel", TextStyle: t.B2}),
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						Content:     colorContent("Original"),
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						BlurRadius:  4,
+						ColorFilter: gui.ColorFilterGrayscale(),
+						Content:     colorContent("Blur+Gray"),
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						BlurRadius:  4,
+						ColorFilter: gui.ColorFilterSepia(),
+						Content:     colorContent("Blur+Sepia"),
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						BlurRadius:  4,
+						ColorFilter: gui.ColorFilterHueRotate(90),
+						Content:     colorContent("Blur+Hue90"),
+					}),
 				},
 			}),
 
