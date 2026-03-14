@@ -583,6 +583,7 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	}
 	b.filterBlur = r.BlurRadius * b.dpiScale
 	b.filterLayer = r.Layers
+	b.filterColorMatrix = r.ColorMatrix
 
 	b.bindFBO(b.filterTexA)
 	gogl.Viewport(0, 0, b.physW, b.physH)
@@ -594,61 +595,80 @@ func (b *Backend) endFilter() {
 	b.unbindFBO()
 	gogl.Viewport(0, 0, b.physW, b.physH)
 
-	blur := b.filterBlur
-	if blur < 1 {
-		blur = 1
-	}
 	layers := b.filterLayer
 	if layers < 1 {
 		layers = 1
 	}
 
-	// Gaussian blur: horizontal pass A→B, vertical pass B→A.
-	stdDev := blur
+	// compositeSrc tracks which texture holds the final result.
+	compositeSrc := b.filterTexA
 
-	// Horizontal pass.
-	b.bindFBO(b.filterTexB)
-	gogl.ClearColor(0, 0, 0, 0)
-	gogl.Clear(gogl.COLOR_BUFFER_BIT)
-	b.usePipeline(&b.pipelines.filterBlurH)
-	var tm [16]float32
-	tm[0] = stdDev
-	gogl.UniformMatrix4fv(b.pipelines.filterBlurH.uTM, 1,
-		false, &tm[0])
-	gogl.ActiveTexture(gogl.TEXTURE0)
-	gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexA)
-	if b.pipelines.filterBlurH.uTex >= 0 {
-		gogl.Uniform1i(b.pipelines.filterBlurH.uTex, 0)
-	}
-	b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
-		gui.White)
-	gogl.BindTexture(gogl.TEXTURE_2D, 0)
+	// Blur passes (skip when blur < 1).
+	if b.filterBlur >= 1 {
+		stdDev := b.filterBlur
 
-	// Vertical pass.
-	b.bindFBO(b.filterTexA)
-	gogl.ClearColor(0, 0, 0, 0)
-	gogl.Clear(gogl.COLOR_BUFFER_BIT)
-	b.usePipeline(&b.pipelines.filterBlurV)
-	gogl.UniformMatrix4fv(b.pipelines.filterBlurV.uTM, 1,
-		false, &tm[0])
-	gogl.ActiveTexture(gogl.TEXTURE0)
-	gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexB)
-	if b.pipelines.filterBlurV.uTex >= 0 {
-		gogl.Uniform1i(b.pipelines.filterBlurV.uTex, 0)
+		// Horizontal pass A→B.
+		b.bindFBO(b.filterTexB)
+		gogl.ClearColor(0, 0, 0, 0)
+		gogl.Clear(gogl.COLOR_BUFFER_BIT)
+		b.usePipeline(&b.pipelines.filterBlurH)
+		var tm [16]float32
+		tm[0] = stdDev
+		gogl.UniformMatrix4fv(b.pipelines.filterBlurH.uTM, 1,
+			false, &tm[0])
+		gogl.ActiveTexture(gogl.TEXTURE0)
+		gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexA)
+		if b.pipelines.filterBlurH.uTex >= 0 {
+			gogl.Uniform1i(b.pipelines.filterBlurH.uTex, 0)
+		}
+		b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
+			gui.White)
+		gogl.BindTexture(gogl.TEXTURE_2D, 0)
+
+		// Vertical pass B→A.
+		b.bindFBO(b.filterTexA)
+		gogl.ClearColor(0, 0, 0, 0)
+		gogl.Clear(gogl.COLOR_BUFFER_BIT)
+		b.usePipeline(&b.pipelines.filterBlurV)
+		gogl.UniformMatrix4fv(b.pipelines.filterBlurV.uTM, 1,
+			false, &tm[0])
+		gogl.ActiveTexture(gogl.TEXTURE0)
+		gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexB)
+		if b.pipelines.filterBlurV.uTex >= 0 {
+			gogl.Uniform1i(b.pipelines.filterBlurV.uTex, 0)
+		}
+		b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
+			gui.White)
+		gogl.BindTexture(gogl.TEXTURE_2D, 0)
+		// After blur, result is in filterTexA.
 	}
-	b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
-		gui.White)
-	gogl.BindTexture(gogl.TEXTURE_2D, 0)
+
+	// Color matrix pass A→B (if color matrix is set).
+	if b.filterColorMatrix != nil {
+		b.bindFBO(b.filterTexB)
+		gogl.ClearColor(0, 0, 0, 0)
+		gogl.Clear(gogl.COLOR_BUFFER_BIT)
+		b.usePipeline(&b.pipelines.filterColor)
+		gogl.UniformMatrix4fv(b.pipelines.filterColor.uTM, 1,
+			false, &b.filterColorMatrix[0])
+		gogl.ActiveTexture(gogl.TEXTURE0)
+		gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexA)
+		if b.pipelines.filterColor.uTex >= 0 {
+			gogl.Uniform1i(b.pipelines.filterColor.uTex, 0)
+		}
+		b.drawQuadTex(0, 0, float32(b.physW), float32(b.physH),
+			gui.White)
+		gogl.BindTexture(gogl.TEXTURE_2D, 0)
+		compositeSrc = b.filterTexB
+	}
 
 	b.unbindFBO()
 	gogl.Viewport(0, 0, b.physW, b.physH)
 
-	// Composite: draw blurred texture once per layer at full alpha,
-	// matching SVG feMerge semantics (each feMergeNode composites
-	// the blur at full opacity).
+	// Composite: draw result texture once per layer at full alpha.
 	b.usePipeline(&b.pipelines.filterTex)
 	gogl.ActiveTexture(gogl.TEXTURE0)
-	gogl.BindTexture(gogl.TEXTURE_2D, b.filterTexA)
+	gogl.BindTexture(gogl.TEXTURE_2D, compositeSrc)
 	if b.pipelines.filterTex.uTex >= 0 {
 		gogl.Uniform1i(b.pipelines.filterTex.uTex, 0)
 	}

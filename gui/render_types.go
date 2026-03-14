@@ -61,8 +61,9 @@ type RenderCmd struct {
 	Fill       bool // Rect fill, Circle fill
 	IsClipMask bool // Svg stencil mask
 	ClipGroup  int  // Svg clip group id
-	Layers     int  // FilterComposite
-	GroupIdx   int  // FilterBegin
+	Layers      int          // FilterComposite
+	GroupIdx    int          // FilterBegin
+	ColorMatrix *[16]float32 // FilterBegin: color transform
 
 	// String data.
 	Text       string  // Text

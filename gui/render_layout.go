@@ -9,6 +9,19 @@ import (
 // renderLayout walks the layout tree and emits RenderCmd entries
 // into window.renderers. Clip rectangles bracket clipped children.
 func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
+	// Emit filter bracket when ColorFilter is set (containers only).
+	fx := layout.Shape.FX
+	hasColorFilter := fx != nil && fx.ColorFilter != nil && !w.inFilter
+	if hasColorFilter {
+		w.inFilter = true
+		emitRenderer(RenderCmd{
+			Kind:        RenderFilterBegin,
+			BlurRadius:  fx.BlurRadius,
+			Layers:      1,
+			ColorMatrix: &fx.ColorFilter.Matrix,
+		}, w)
+	}
+
 	renderShape(layout.Shape, bgColor, clip, w)
 
 	shapeClip := clip
@@ -90,6 +103,11 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 			W:    clip.Width,
 			H:    clip.Height,
 		}, w)
+	}
+
+	if hasColorFilter {
+		emitRenderer(RenderCmd{Kind: RenderFilterEnd}, w)
+		w.inFilter = false
 	}
 }
 
@@ -202,8 +220,10 @@ func renderContainer(shape *Shape, _ Color, clip DrawClip, w *Window) {
 			Radius:   shape.Radius,
 			Gradient: fx.Gradient,
 		}, w)
-	} else if hasFX && fx.BlurRadius > 0 && shape.Color.A > 0 {
-		// Blur
+	} else if hasFX && fx.BlurRadius > 0 && shape.Color.A > 0 &&
+		fx.ColorFilter == nil {
+		// SDF blur (skipped when ColorFilter is set; FBO blur
+		// handles it via the filter bracket pipeline).
 		c := shape.Color
 		if shape.Disabled {
 			c = dimAlpha(c)

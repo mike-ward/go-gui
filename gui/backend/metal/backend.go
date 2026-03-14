@@ -69,8 +69,9 @@ type Backend struct {
 
 	textures    metalTexCache
 	glyphBack   *metalGlyphBackend
-	filterBlur  float32
-	filterLayer int
+	filterBlur        float32
+	filterLayer       int
+	filterColorMatrix *[16]float32
 	customCache map[uint64]C.int
 
 	allowedImageRoots []string

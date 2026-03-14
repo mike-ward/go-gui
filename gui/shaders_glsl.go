@@ -449,6 +449,8 @@ const (
 
 	FsFilterColorGLSL = `
     #version 330
+    uniform sampler2D tex_smp;
+    uniform mat4 tm;
     in vec2 uv;
     in vec4 color;
     in float std_dev;
@@ -456,7 +458,8 @@ const (
     out vec4 frag_color;
 
     void main() {
-        frag_color = color;
+        vec4 src = texture(tex_smp, uv);
+        frag_color = clamp(tm * src, 0.0, 1.0);
     }
 `
 

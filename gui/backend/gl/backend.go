@@ -50,8 +50,9 @@ type Backend struct {
 	filterTexB  uint32
 	filterW     int32
 	filterH     int32
-	filterBlur  float32
-	filterLayer int
+	filterBlur        float32
+	filterLayer       int
+	filterColorMatrix *[16]float32
 
 	glyphBack  *glyphBackend
 	customOnce sync.Once

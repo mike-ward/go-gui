@@ -205,6 +205,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoIcons(w)
 	case "blur":
 		return demoBlur(w)
+	case "color_filter":
+		return demoColorFilter(w)
 	case "gradient":
 		return demoGradient(w)
 	case "box_shadows":

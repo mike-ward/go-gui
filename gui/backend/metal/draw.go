@@ -706,6 +706,7 @@ func (b *Backend) endRotation() {
 func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	b.filterBlur = r.BlurRadius * b.dpiScale
 	b.filterLayer = r.Layers
+	b.filterColorMatrix = r.ColorMatrix
 
 	// Set pipelines and MVP before switching to filter target.
 	C.metalSetPipeline(C.int(pipeSolid))
@@ -721,8 +722,12 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 }
 
 func (b *Backend) endFilter() {
+	var cmPtr *C.float
+	if b.filterColorMatrix != nil {
+		cmPtr = (*C.float)(&b.filterColorMatrix[0])
+	}
 	C.metalEndFilter(C.float(b.filterBlur),
-		C.int(b.filterLayer))
+		C.int(b.filterLayer), cmPtr)
 	// Restore pipeline state on the resumed main encoder.
 	C.metalSetPipeline(C.int(pipeSolid))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))

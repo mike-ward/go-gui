@@ -789,3 +789,168 @@ func demoShader(w *gui.Window) gui.View {
 		},
 	})
 }
+
+func demoColorFilter(_ *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+
+	// Shared colored content for filter demonstrations.
+	colorContent := func(label string) []gui.View {
+		return []gui.View{
+			gui.Column(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Height:     20,
+				Color:      gui.RGBA(220, 50, 50, 255),
+				SizeBorder: gui.NoBorder,
+				Radius:     gui.SomeF(4),
+			}),
+			gui.Column(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Height:     20,
+				Color:      gui.RGBA(50, 180, 50, 255),
+				SizeBorder: gui.NoBorder,
+				Radius:     gui.SomeF(4),
+			}),
+			gui.Column(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Height:     20,
+				Color:      gui.RGBA(50, 100, 220, 255),
+				SizeBorder: gui.NoBorder,
+				Radius:     gui.SomeF(4),
+			}),
+			gui.Text(gui.TextCfg{Text: label, TextStyle: t.N4}),
+		}
+	}
+
+	return gui.Column(gui.ContainerCfg{
+		Sizing:     gui.FillFit,
+		Spacing:    gui.SomeF(16),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
+		Content: []gui.View{
+			// Photo filter strip.
+			showcaseWrappedText("Color matrix transforms applied as a post-processing pass. "+
+				"Each container below renders content into an FBO, applies a 4×4 color transform, "+
+				"and composites back.", t.N3),
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(12),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						ColorFilter: gui.ColorFilterGrayscale(),
+						Content:     colorContent("Grayscale"),
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						ColorFilter: gui.ColorFilterSepia(),
+						Content:     colorContent("Sepia"),
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						ColorFilter: gui.ColorFilterContrast(1.5),
+						Content:     colorContent("Contrast"),
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       120,
+						Sizing:      gui.FixedFit,
+						Padding:     gui.SomeP(8, 8, 8, 8),
+						Radius:      gui.SomeF(6),
+						Color:       t.ColorPanel,
+						ColorFilter: gui.ColorFilterSaturate(2.0),
+						Content:     colorContent("Saturate"),
+					}),
+				},
+			}),
+
+			// Frosted glass simulation.
+			gui.Text(gui.TextCfg{
+				Text:      "Frosted glass: blur + desaturate + semi-transparent overlay",
+				TextStyle: t.N3,
+			}),
+			gui.Column(gui.ContainerCfg{
+				Width:       300,
+				Height:      100,
+				Sizing:      gui.FixedFixed,
+				Color:       gui.RGBA(255, 255, 255, 80),
+				BlurRadius:  8,
+				ColorFilter: gui.ColorFilterSaturate(0.3),
+				Radius:      gui.SomeF(12),
+				HAlign:      gui.HAlignCenter,
+				VAlign:      gui.VAlignMiddle,
+				Content: []gui.View{
+					gui.Text(gui.TextCfg{Text: "Frosted Panel", TextStyle: t.B2}),
+				},
+			}),
+
+			// Bloom glow.
+			gui.Text(gui.TextCfg{
+				Text:      "Bloom glow: blur + brightness boost + multi-layer composite",
+				TextStyle: t.N3,
+			}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(24),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
+				Content: []gui.View{
+					gui.Column(gui.ContainerCfg{
+						Width:       100,
+						Height:      100,
+						Sizing:      gui.FixedFixed,
+						Color:       gui.RGBA(0, 255, 128, 255),
+						BlurRadius:  15,
+						ColorFilter: gui.ColorFilterBrightness(1.3),
+						Radius:      gui.SomeF(50),
+						HAlign:      gui.HAlignCenter,
+						VAlign:      gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Glow", TextStyle: t.N2}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       100,
+						Height:      100,
+						Sizing:      gui.FixedFixed,
+						Color:       gui.RGBA(255, 50, 200, 255),
+						BlurRadius:  15,
+						ColorFilter: gui.ColorFilterBrightness(1.3),
+						Radius:      gui.SomeF(50),
+						HAlign:      gui.HAlignCenter,
+						VAlign:      gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Glow", TextStyle: t.N2}),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Width:       100,
+						Height:      100,
+						Sizing:      gui.FixedFixed,
+						Color:       gui.RGBA(50, 150, 255, 255),
+						BlurRadius:  15,
+						ColorFilter: gui.ColorFilterBrightness(1.3),
+						Radius:      gui.SomeF(50),
+						HAlign:      gui.HAlignCenter,
+						VAlign:      gui.VAlignMiddle,
+						Content: []gui.View{
+							gui.Text(gui.TextCfg{Text: "Glow", TextStyle: t.N2}),
+						},
+					}),
+				},
+			}),
+		},
+	})
+}

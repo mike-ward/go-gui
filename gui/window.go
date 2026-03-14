@@ -44,6 +44,8 @@ type Window struct {
 
 	// Clip radius propagated during render walk.
 	clipRadius float32
+	// Nesting guard for filter brackets.
+	inFilter bool
 
 	// Per-frame pipeline timings.
 	frameTimings FrameTimings

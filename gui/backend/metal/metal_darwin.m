@@ -429,8 +429,14 @@ fragment float4 fs_filter_tex(
     return tex.sample(smp, in.uv) * in.color;
 }
 
-fragment float4 fs_filter_color(FilterOut in [[stage_in]]) {
-    return in.color;
+fragment float4 fs_filter_color(
+    FilterOut in [[stage_in]],
+    texture2d<float> tex [[texture(0)]],
+    sampler smp [[sampler(0)]],
+    constant float4x4 &cm [[buffer(0)]]
+) {
+    float4 src = tex.sample(smp, in.uv);
+    return clamp(cm * src, 0.0, 1.0);
 }
 
 fragment float4 fs_glyph_tex(
@@ -665,8 +671,8 @@ int metalInit(void* layerPtr) {
         makePipeline(lib, @"vs_filter", @"fs_filter_tex",
                      mvd, pf);
     _pipelines[PIPE_FILTER_COLOR] =
-        makePipeline(lib, @"vs_filter", @"fs_filter_color",
-                     mvd, pf);
+        makePipelineReplace(lib, @"vs_filter",
+                     @"fs_filter_color", mvd, pf);
     _pipelines[PIPE_GLYPH_TEX] =
         makePipeline(lib, @"vs_glyph", @"fs_glyph_tex",
                      gvd, pf);
@@ -1013,11 +1019,10 @@ int metalBeginFilter(int w, int h) {
     return 0;
 }
 
-void metalEndFilter(float blurRadius, int layers) {
+void metalEndFilter(float blurRadius, int layers,
+                    const float* colorMatrix) {
     if (!_enc || !_cmdBuf) return;
 
-    float stdDev = blurRadius;
-    if (stdDev < 1) stdDev = 1;
     if (layers < 1) layers = 1;
 
     int w = _filterW;
@@ -1027,8 +1032,115 @@ void metalEndFilter(float blurRadius, int layers) {
     [_enc endEncoding];
     _enc = nil;
 
-    // ── Horizontal blur: filterTexA → filterTexB ──
-    {
+    // compositeSrc tracks which texture holds the final result.
+    id<MTLTexture> compositeSrc = _filterTexA;
+
+    // ── Blur passes (skip when blurRadius < 1) ──
+    if (blurRadius >= 1) {
+        float stdDev = blurRadius;
+
+        // Horizontal blur: filterTexA → filterTexB
+        {
+            MTLRenderPassDescriptor *rpd =
+                [MTLRenderPassDescriptor renderPassDescriptor];
+            rpd.colorAttachments[0].texture     = _filterTexB;
+            rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
+            rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+            rpd.colorAttachments[0].clearColor  =
+                MTLClearColorMake(0, 0, 0, 0);
+
+            id<MTLRenderCommandEncoder> enc =
+                [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
+            [enc setViewport:(MTLViewport){
+                0, 0, (double)w, (double)h, 0, 1}];
+            [enc setRenderPipelineState:
+                _pipelines[PIPE_FILTER_BLUR_H]];
+            [enc setFragmentSamplerState:_sampler atIndex:0];
+            [enc setFragmentTexture:_filterTexA atIndex:0];
+
+            float tm[16] = {0};
+            tm[0] = stdDev;
+            [enc setVertexBytes:tm length:64 atIndex:2];
+
+            float mvp[16] = {0};
+            mvp[0]  =  2.0f / w;
+            mvp[5]  = -2.0f / h;
+            mvp[10] = -1.0f;
+            mvp[12] = -1.0f;
+            mvp[13] =  1.0f;
+            mvp[15] =  1.0f;
+            [enc setVertexBytes:mvp length:64 atIndex:1];
+
+            float verts[] = {
+                0,0,0, 0,1, 1,1,1,1,
+                (float)w,0,0, 1,1, 1,1,1,1,
+                (float)w,(float)h,0, 1,0, 1,1,1,1,
+                0,(float)h,0, 0,0, 1,1,1,1,
+            };
+            [enc setVertexBytes:verts length:sizeof(verts)
+                        atIndex:0];
+            [enc drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+                            indexCount:6
+                             indexType:MTLIndexTypeUInt16
+                           indexBuffer:_quadIdx
+                     indexBufferOffset:0];
+            [enc endEncoding];
+        }
+
+        // Vertical blur: filterTexB → filterTexA
+        {
+            MTLRenderPassDescriptor *rpd =
+                [MTLRenderPassDescriptor renderPassDescriptor];
+            rpd.colorAttachments[0].texture     = _filterTexA;
+            rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
+            rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+            rpd.colorAttachments[0].clearColor  =
+                MTLClearColorMake(0, 0, 0, 0);
+
+            id<MTLRenderCommandEncoder> enc =
+                [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
+            [enc setViewport:(MTLViewport){
+                0, 0, (double)w, (double)h, 0, 1}];
+            [enc setRenderPipelineState:
+                _pipelines[PIPE_FILTER_BLUR_V]];
+            [enc setFragmentSamplerState:_sampler atIndex:0];
+            [enc setFragmentTexture:_filterTexB atIndex:0];
+
+            float tm[16] = {0};
+            tm[0] = stdDev;
+            [enc setVertexBytes:tm length:64 atIndex:2];
+
+            float mvp[16] = {0};
+            mvp[0]  =  2.0f / w;
+            mvp[5]  = -2.0f / h;
+            mvp[10] = -1.0f;
+            mvp[12] = -1.0f;
+            mvp[13] =  1.0f;
+            mvp[15] =  1.0f;
+            [enc setVertexBytes:mvp length:64 atIndex:1];
+
+            float verts[] = {
+                0,0,0, 0,1, 1,1,1,1,
+                (float)w,0,0, 1,1, 1,1,1,1,
+                (float)w,(float)h,0, 1,0, 1,1,1,1,
+                0,(float)h,0, 0,0, 1,1,1,1,
+            };
+            [enc setVertexBytes:verts length:sizeof(verts)
+                        atIndex:0];
+            [enc drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+                            indexCount:6
+                             indexType:MTLIndexTypeUInt16
+                           indexBuffer:_quadIdx
+                     indexBufferOffset:0];
+            [enc endEncoding];
+        }
+        // After blur, result is in filterTexA.
+    }
+
+    // ── Color matrix pass: filterTexA → filterTexB ──
+    // Uses non-flipped UVs so the composite always reads an
+    // upright image regardless of whether blur ran first.
+    if (colorMatrix != NULL) {
         MTLRenderPassDescriptor *rpd =
             [MTLRenderPassDescriptor renderPassDescriptor];
         rpd.colorAttachments[0].texture     = _filterTexB;
@@ -1041,62 +1153,14 @@ void metalEndFilter(float blurRadius, int layers) {
             [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
         [enc setViewport:(MTLViewport){
             0, 0, (double)w, (double)h, 0, 1}];
-        [enc setRenderPipelineState:_pipelines[PIPE_FILTER_BLUR_H]];
+        [enc setRenderPipelineState:
+            _pipelines[PIPE_FILTER_COLOR]];
         [enc setFragmentSamplerState:_sampler atIndex:0];
         [enc setFragmentTexture:_filterTexA atIndex:0];
-
-        // TM with stdDev.
-        float tm[16] = {0};
-        tm[0] = stdDev;
-        [enc setVertexBytes:tm length:64 atIndex:2];
-
-        // MVP: identity maps pixel coords to NDC.
-        float mvp[16] = {0};
-        mvp[0]  =  2.0f / w;
-        mvp[5]  = -2.0f / h;
-        mvp[10] = -1.0f;
-        mvp[12] = -1.0f;
-        mvp[13] =  1.0f;
-        mvp[15] =  1.0f;
-        [enc setVertexBytes:mvp length:64 atIndex:1];
-
-        // Full-screen quad (with texture UVs 0..1).
-        float verts[] = {
-            0,0,0, 0,1, 1,1,1,1,
-            (float)w,0,0, 1,1, 1,1,1,1,
-            (float)w,(float)h,0, 1,0, 1,1,1,1,
-            0,(float)h,0, 0,0, 1,1,1,1,
-        };
-        [enc setVertexBytes:verts length:sizeof(verts)
-                    atIndex:0];
-        [enc drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-                        indexCount:6
-                         indexType:MTLIndexTypeUInt16
-                       indexBuffer:_quadIdx
-                 indexBufferOffset:0];
-        [enc endEncoding];
-    }
-
-    // ── Vertical blur: filterTexB → filterTexA ──
-    {
-        MTLRenderPassDescriptor *rpd =
-            [MTLRenderPassDescriptor renderPassDescriptor];
-        rpd.colorAttachments[0].texture     = _filterTexA;
-        rpd.colorAttachments[0].loadAction  = MTLLoadActionClear;
-        rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
-        rpd.colorAttachments[0].clearColor  =
-            MTLClearColorMake(0, 0, 0, 0);
-
-        id<MTLRenderCommandEncoder> enc =
-            [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
-        [enc setViewport:(MTLViewport){
-            0, 0, (double)w, (double)h, 0, 1}];
-        [enc setRenderPipelineState:_pipelines[PIPE_FILTER_BLUR_V]];
-        [enc setFragmentSamplerState:_sampler atIndex:0];
-        [enc setFragmentTexture:_filterTexB atIndex:0];
+        [enc setFragmentBytes:colorMatrix length:64 atIndex:0];
 
         float tm[16] = {0};
-        tm[0] = stdDev;
+        tm[0] = 1; tm[5] = 1; tm[10] = 1; tm[15] = 1;
         [enc setVertexBytes:tm length:64 atIndex:2];
 
         float mvp[16] = {0};
@@ -1108,11 +1172,12 @@ void metalEndFilter(float blurRadius, int layers) {
         mvp[15] =  1.0f;
         [enc setVertexBytes:mvp length:64 atIndex:1];
 
+        // Non-flipped UVs: v=0 at top, v=1 at bottom.
         float verts[] = {
-            0,0,0, 0,1, 1,1,1,1,
-            (float)w,0,0, 1,1, 1,1,1,1,
-            (float)w,(float)h,0, 1,0, 1,1,1,1,
-            0,(float)h,0, 0,0, 1,1,1,1,
+            0,0,0, 0,0, 1,1,1,1,
+            (float)w,0,0, 1,0, 1,1,1,1,
+            (float)w,(float)h,0, 1,1, 1,1,1,1,
+            0,(float)h,0, 0,1, 1,1,1,1,
         };
         [enc setVertexBytes:verts length:sizeof(verts)
                     atIndex:0];
@@ -1122,14 +1187,16 @@ void metalEndFilter(float blurRadius, int layers) {
                        indexBuffer:_quadIdx
                  indexBufferOffset:0];
         [enc endEncoding];
+
+        compositeSrc = _filterTexB;
     }
 
     // ── Resume main render pass (load, not clear) ──
     beginMainEncoder(0, 0, 0, 0, 0);
 
-    // ── Composite: draw filterTexA onto main drawable ──
+    // ── Composite: draw result texture onto main drawable ──
     [_enc setRenderPipelineState:_pipelines[PIPE_FILTER_TEX]];
-    [_enc setFragmentTexture:_filterTexA atIndex:0];
+    [_enc setFragmentTexture:compositeSrc atIndex:0];
 
     float mvp[16] = {0};
     mvp[0]  =  2.0f / _viewW;
@@ -1144,8 +1211,9 @@ void metalEndFilter(float blurRadius, int layers) {
     tm[0] = 1; tm[5] = 1; tm[10] = 1; tm[15] = 1;
     [_enc setVertexBytes:tm length:64 atIndex:2];
 
-    // H-blur and V-blur each flip V, cancelling out. Composite
-    // must NOT flip again (v=0 at screen-top → texture-top).
+    // H-blur and V-blur each flip V, cancelling out. The color
+    // pass uses non-flipped UVs. Composite always uses non-flipped
+    // UVs (v=0 at screen-top → texture-top).
     float verts[] = {
         0,0,0, 0,0, 1,1,1,1,
         (float)_viewW,0,0, 1,0, 1,1,1,1,

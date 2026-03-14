@@ -58,6 +58,7 @@ void metalSetCustomPipeline(int idx);
 
 // Filter (glow) system
 int  metalBeginFilter(int w, int h);
-void metalEndFilter(float blurRadius, int layers);
+void metalEndFilter(float blurRadius, int layers,
+                    const float* colorMatrix);
 
 #endif

@@ -286,6 +286,7 @@ type ShapeEffects struct {
 	Gradient       *GradientDef
 	BorderGradient *GradientDef
 	Shader         *Shader
+	ColorFilter    *ColorFilter
 	BlurRadius     float32
 }
 

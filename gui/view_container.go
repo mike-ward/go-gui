@@ -34,6 +34,7 @@ type ContainerCfg struct {
 	SizeBorder     Opt[float32]
 	Radius         Opt[float32]
 	BlurRadius     float32
+	ColorFilter    *ColorFilter
 	Opacity        Opt[float32]
 	Shadow         *BoxShadow
 	Gradient       *GradientDef
@@ -240,7 +241,7 @@ func (cv *containerView) makeEffects() *ShapeEffects {
 	c := &cv.cfg
 	if c.Shadow == nil && c.Gradient == nil &&
 		c.BorderGradient == nil && c.Shader == nil &&
-		c.BlurRadius == 0 {
+		c.ColorFilter == nil && c.BlurRadius == 0 {
 		return nil
 	}
 	return &ShapeEffects{
@@ -248,6 +249,7 @@ func (cv *containerView) makeEffects() *ShapeEffects {
 		Gradient:       c.Gradient,
 		BorderGradient: c.BorderGradient,
 		Shader:         c.Shader,
+		ColorFilter:    c.ColorFilter,
 		BlurRadius:     c.BlurRadius,
 	}
 }

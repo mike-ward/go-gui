@@ -270,6 +270,7 @@ func demoEntries() []DemoEntry {
 		{ID: "blur", Label: "Blur", Group: groupGraphics, Summary: "Gaussian blur effect on shapes and containers.", Tags: []string{"blur", "gaussian", "glow", "soft"}},
 		{ID: "box_shadows", Label: "Box Shadows", Group: groupGraphics, Summary: "Shadow presets with spread behavior notes.", Tags: []string{"shadow", "depth", "blur"}},
 		{ID: "shader", Label: "Custom Shaders", Group: groupGraphics, Summary: "Custom fragment shaders for dynamic fills.", Tags: []string{"shader", "glsl", "metal"}},
+		{ID: "color_filter", Label: "Color Filters", Group: groupGraphics, Summary: "Color matrix transforms: grayscale, sepia, saturate, contrast, brightness.", Tags: []string{"filter", "color", "grayscale", "sepia", "saturate", "matrix"}},
 		{ID: "draw_canvas", Label: "Draw Canvas", Group: groupGraphics, Summary: "Procedural 2D drawing with cached tessellation.", Tags: []string{"canvas", "draw", "chart", "line", "polygon", "circle"}},
 		{ID: "theme_gen", Label: "Theme", Group: groupGraphics, Summary: "Generate a theme from a seed color, tint level, and palette strategy.", Tags: []string{"theme", "color", "palette", "generator"}},
 

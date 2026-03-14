@@ -28,7 +28,7 @@ type pipelineSet struct {
 	imageClip   pipeline
 	filterBlurH pipeline
 	filterBlurV pipeline
-	filterColor pipeline // TODO: reserved for future filter compositing
+	filterColor pipeline
 	filterTex   pipeline
 	custom      pipeline // VsCustomGLSL vertex shader, reused per hash
 	customCache map[uint64]pipeline
@@ -49,7 +49,6 @@ func (b *Backend) initPipelines() error {
 		{&b.pipelines.imageClip, gui.VsGLSL, gui.FsImageClipGLSL, "imageClip"},
 		{&b.pipelines.filterBlurH, gui.VsFilterBlurGLSL, gui.FsFilterBlurHGLSL, "filterBlurH"},
 		{&b.pipelines.filterBlurV, gui.VsFilterBlurGLSL, gui.FsFilterBlurVGLSL, "filterBlurV"},
-		// TODO: filterColor reserved for future filter compositing.
 		{&b.pipelines.filterColor, gui.VsFilterBlurGLSL, gui.FsFilterColorGLSL, "filterColor"},
 		{&b.pipelines.filterTex, gui.VsFilterBlurGLSL, gui.FsFilterTextureGLSL, "filterTex"},
 		{&b.pipelines.custom, gui.VsCustomGLSL, gui.FsGLSL, "custom"},
