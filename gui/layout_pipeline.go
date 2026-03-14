@@ -15,6 +15,7 @@ func layoutPipeline(layout *Layout, w *Window) {
 	// Height passes.
 	layoutHeights(layout)
 	layoutFillHeights(layout)
+	layoutRotationSwap(layout)
 
 	// Position passes.
 	layoutAdjustScrollOffsets(layout, w)
@@ -50,11 +51,21 @@ func layoutHover(layout *Layout, w *Window) bool {
 	if w.MouseIsLocked() {
 		return false
 	}
+	// Apply inverse rotation for children of rotated containers.
+	savedX, savedY := w.viewState.mousePosX, w.viewState.mousePosY
+	if turns := layout.Shape.QuarterTurns; turns > 0 {
+		e := &Event{MouseX: savedX, MouseY: savedY}
+		rotateMouseInverse(layout.Shape, e)
+		w.viewState.mousePosX = e.MouseX
+		w.viewState.mousePosY = e.MouseY
+	}
 	for i := len(layout.Children) - 1; i >= 0; i-- {
 		if layoutHover(&layout.Children[i], w) {
+			w.viewState.mousePosX, w.viewState.mousePosY = savedX, savedY
 			return true
 		}
 	}
+	w.viewState.mousePosX, w.viewState.mousePosY = savedX, savedY
 	shape := layout.Shape
 	if shape.Disabled {
 		return false

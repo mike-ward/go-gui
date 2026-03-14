@@ -50,6 +50,9 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.beginFilter(r)
 		case gui.RenderFilterEnd:
 			b.endFilter()
+		case gui.RenderRotateBegin,
+			gui.RenderRotateEnd:
+			// Rotation requires MVP transform — unsupported in SDL2.
 		case gui.RenderFilterComposite,
 			gui.RenderLayoutPlaced,
 			gui.RenderCustomShader:

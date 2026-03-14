@@ -72,9 +72,10 @@ type Shape struct {
 	FocusSkip     bool
 	OverDraw      bool
 	Hero          bool
-	Wrap          bool
-	Overflow      bool
-	Opacity       float32
+	Wrap         bool
+	Overflow     bool
+	QuarterTurns uint8   // 0-3: rotation in 90° CW increments
+	Opacity      float32
 }
 
 // NewShape returns a Shape with default field values.

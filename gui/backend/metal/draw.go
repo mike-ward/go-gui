@@ -63,6 +63,11 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 
+		case gui.RenderRotateBegin:
+			b.beginRotation(r)
+		case gui.RenderRotateEnd:
+			b.endRotation()
+
 		case gui.RenderNone,
 			gui.RenderFilterComposite,
 			gui.RenderLayoutPlaced:
@@ -671,6 +676,29 @@ fragment float4 fs_main(
     return frag_color;
 }
 `
+}
+
+// --- Rotation ---
+
+func (b *Backend) beginRotation(r *gui.RenderCmd) {
+	b.mvpStack = append(b.mvpStack, b.mvp)
+	s := b.dpiScale
+	cx := r.RotCX * s
+	cy := r.RotCY * s
+	applyRotation(&b.mvp, r.RotAngle, cx, cy)
+	C.metalSetPipeline(C.int(pipeSolid))
+	C.metalSetMVP((*C.float)(&b.mvp[0]))
+}
+
+func (b *Backend) endRotation() {
+	n := len(b.mvpStack)
+	if n == 0 {
+		return
+	}
+	b.mvp = b.mvpStack[n-1]
+	b.mvpStack = b.mvpStack[:n-1]
+	C.metalSetPipeline(C.int(pipeSolid))
+	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }
 
 // --- Filter (glow) ---

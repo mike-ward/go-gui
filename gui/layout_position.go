@@ -35,6 +35,21 @@ func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 		}
 	}
 
+	// For rotated containers (90°/270°), children are positioned
+	// in the internal (unrotated) coordinate space, centered on
+	// the display rect.
+	layoutW := layout.Shape.Width
+	layoutH := layout.Shape.Height
+	turns := layout.Shape.QuarterTurns
+	if turns == 1 || turns == 3 {
+		contentW := layoutH // swapped back
+		contentH := layoutW
+		x += (layoutW - contentW) / 2
+		y += (layoutH - contentH) / 2
+		layoutW = contentW
+		layoutH = contentH
+	}
+
 	// Resolve start/end based on text direction
 	hAlign := layout.Shape.HAlign
 	switch hAlign {
@@ -57,7 +72,7 @@ func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 	case AxisLeftToRight:
 		if isRTL {
 			if hAlign != HAlignRight {
-				remaining := layout.Shape.Width - layout.Shape.PaddingWidth()
+				remaining := layoutW - layout.Shape.PaddingWidth()
 				remaining -= layout.spacing()
 				for i := range layout.Children {
 					remaining -= layout.Children[i].Shape.Width
@@ -69,7 +84,7 @@ func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 			}
 		} else {
 			if hAlign != HAlignLeft {
-				remaining := layout.Shape.Width - layout.Shape.PaddingWidth()
+				remaining := layoutW - layout.Shape.PaddingWidth()
 				remaining -= layout.spacing()
 				for i := range layout.Children {
 					remaining -= layout.Children[i].Shape.Width
@@ -82,7 +97,7 @@ func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 		}
 	case AxisTopToBottom:
 		if layout.Shape.VAlign != VAlignTop {
-			remaining := layout.Shape.Height - layout.Shape.PaddingHeight()
+			remaining := layoutH - layout.Shape.PaddingHeight()
 			remaining -= layout.spacing()
 			for i := range layout.Children {
 				remaining -= layout.Children[i].Shape.Height
@@ -100,7 +115,7 @@ func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 
 		switch axis {
 		case AxisLeftToRight:
-			remaining := layout.Shape.Height - child.Shape.Height - layout.Shape.PaddingHeight()
+			remaining := layoutH - child.Shape.Height - layout.Shape.PaddingHeight()
 			if remaining > 0 {
 				switch layout.Shape.VAlign {
 				case VAlignTop:
@@ -111,7 +126,7 @@ func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 				}
 			}
 		case AxisTopToBottom:
-			remaining := layout.Shape.Width - child.Shape.Width - layout.Shape.PaddingWidth()
+			remaining := layoutW - child.Shape.Width - layout.Shape.PaddingWidth()
 			if remaining > 0 {
 				switch hAlign {
 				case HAlignLeft:
@@ -171,8 +186,22 @@ func layoutSetShapeClips(layout *Layout, clip DrawClip) {
 	} else {
 		layout.Shape.ShapeClip = DrawClip{}
 	}
+	childClip := layout.Shape.ShapeClip
+	// For rotated containers, children live in the internal
+	// (unrotated) coordinate space which may be larger than
+	// the display rect in the swapped dimension.
+	if turns := layout.Shape.QuarterTurns; turns == 1 || turns == 3 {
+		dw := layout.Shape.Width
+		dh := layout.Shape.Height
+		cx := layout.Shape.X + dw/2
+		cy := layout.Shape.Y + dh/2
+		childClip = DrawClip{
+			X: cx - dh/2, Y: cy - dw/2,
+			Width: dh, Height: dw,
+		}
+	}
 	for i := range layout.Children {
-		layoutSetShapeClips(&layout.Children[i], layout.Shape.ShapeClip)
+		layoutSetShapeClips(&layout.Children[i], childClip)
 	}
 }
 

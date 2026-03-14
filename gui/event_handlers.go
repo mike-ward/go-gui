@@ -104,15 +104,18 @@ func mouseDownHandler(
 		}
 	}
 	// Traverse children in reverse (topmost/last child first).
+	ox, oy := rotateMouseInverse(layout.Shape, e)
 	for i := len(layout.Children) - 1; i >= 0; i-- {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
 		mouseDownHandler(&layout.Children[i], true, e, w)
 		if e.IsHandled {
+			e.MouseX, e.MouseY = ox, oy
 			return
 		}
 	}
+	e.MouseX, e.MouseY = ox, oy
 	if layout.Shape == nil {
 		return
 	}
@@ -139,15 +142,18 @@ func mouseMoveHandler(layout *Layout, e *Event, w *Window) {
 	if !w.PointerOverApp(e) {
 		return
 	}
+	ox, oy := rotateMouseInverse(layout.Shape, e)
 	for i := len(layout.Children) - 1; i >= 0; i-- {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
 		mouseMoveHandler(&layout.Children[i], e, w)
 		if e.IsHandled {
+			e.MouseX, e.MouseY = ox, oy
 			return
 		}
 	}
+	e.MouseX, e.MouseY = ox, oy
 	if layout.Shape == nil {
 		return
 	}
@@ -166,15 +172,18 @@ func mouseUpHandler(layout *Layout, e *Event, w *Window) {
 		w.viewState.mouseLock.MouseUp(layout, e, w)
 		return
 	}
+	ox, oy := rotateMouseInverse(layout.Shape, e)
 	for i := len(layout.Children) - 1; i >= 0; i-- {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
 		mouseUpHandler(&layout.Children[i], e, w)
 		if e.IsHandled {
+			e.MouseX, e.MouseY = ox, oy
 			return
 		}
 	}
+	e.MouseX, e.MouseY = ox, oy
 	if layout.Shape == nil {
 		return
 	}
@@ -215,15 +224,18 @@ func mouseScrollHandler(layout *Layout, e *Event, w *Window) {
 }
 
 func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
+	ox, oy := rotateMouseInverse(layout.Shape, e)
 	for i := len(layout.Children) - 1; i >= 0; i-- {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
 		mouseScrollFallbackHandler(&layout.Children[i], e, w)
 		if e.IsHandled {
+			e.MouseX, e.MouseY = ox, oy
 			return
 		}
 	}
+	e.MouseX, e.MouseY = ox, oy
 	if layout.Shape == nil || layout.Shape.Disabled {
 		return
 	}

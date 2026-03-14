@@ -56,6 +56,11 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 
+		case gui.RenderRotateBegin:
+			b.beginRotation(r)
+		case gui.RenderRotateEnd:
+			b.endRotation()
+
 		// Not emitted by the GL backend render path.
 		case gui.RenderNone,
 			gui.RenderFilterComposite,

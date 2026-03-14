@@ -59,8 +59,10 @@ type Backend struct {
 	cursors   [11]*sdl.Cursor
 	mvp       [16]float32
 
+	mvpStack [][16]float32
+
 	// Reusable buffers.
-	svgVerts           []vertex
+	svgVerts []vertex
 	textPathPlacements []glyph.GlyphPlacement
 	normBuf            []gui.GradientStop
 	sampledBuf         []gui.GradientStop

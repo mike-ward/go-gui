@@ -30,6 +30,8 @@ const (
 	RenderCustomShader
 	RenderTextPath
 	RenderRTF
+	RenderRotateBegin
+	RenderRotateEnd
 )
 
 // RenderCmd is a flat discriminated struct holding all draw
@@ -150,6 +152,10 @@ func renderCmdKindName(k RenderKind) string {
 		return "RenderTextPath"
 	case RenderRTF:
 		return "RenderRTF"
+	case RenderRotateBegin:
+		return "RenderRotateBegin"
+	case RenderRotateEnd:
+		return "RenderRotateEnd"
 	default:
 		return "Unknown"
 	}

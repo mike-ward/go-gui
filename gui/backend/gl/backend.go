@@ -33,8 +33,10 @@ type Backend struct {
 	quadIBO   uint32
 	mvp       [16]float32
 
+	mvpStack [][16]float32
+
 	// Reusable buffers.
-	svgVAO             uint32
+	svgVAO uint32
 	svgVBO             uint32
 	svgCap             int
 	textPathPlacements []glyph.GlyphPlacement

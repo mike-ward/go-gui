@@ -57,12 +57,28 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 	savedClipRadius := w.clipRadius
 	w.clipRadius = resolveClipRadius(savedClipRadius, layout.Shape)
 
+	// Emit rotation bracket before children.
+	if turns := layout.Shape.QuarterTurns; turns > 0 {
+		cx := layout.Shape.X + layout.Shape.Width/2
+		cy := layout.Shape.Y + layout.Shape.Height/2
+		emitRenderer(RenderCmd{
+			Kind:     RenderRotateBegin,
+			RotAngle: float32(turns) * 90,
+			RotCX:    cx,
+			RotCY:    cy,
+		}, w)
+	}
+
 	color := bgColor
 	if layout.Shape.Color != ColorTransparent {
 		color = layout.Shape.Color
 	}
 	for i := range layout.Children {
 		renderLayout(&layout.Children[i], color, shapeClip, w)
+	}
+
+	if layout.Shape.QuarterTurns > 0 {
+		emitRenderer(RenderCmd{Kind: RenderRotateEnd}, w)
 	}
 
 	w.clipRadius = savedClipRadius
