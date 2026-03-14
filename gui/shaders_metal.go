@@ -529,6 +529,37 @@ fragment float4 fs_main(VertexOut in [[stage_in]], texture2d<float> tex [[textur
 }
 `
 
+	FsStencilMetal = `
+#include <metal_stdlib>
+using namespace metal;
+
+struct VertexOut {
+    float4 position [[position]];
+    float2 uv;
+    float4 color;
+    float params;
+};
+
+fragment float4 fs_main(VertexOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler smp [[sampler(0)]]) {
+    float radius = floor(in.params / 4096.0) / 4.0;
+
+    float2 width_inv = float2(fwidth(in.uv.x), fwidth(in.uv.y));
+    float2 half_size = 1.0 / (width_inv + 1e-6);
+    float2 pos = in.uv * half_size;
+
+    float2 q = abs(pos) - half_size + float2(radius);
+    float2 max_q = max(q, float2(0.0));
+    float d = length(max_q) + min(max(q.x, q.y), 0.0) - radius;
+
+    float grad_len = length(float2(dfdx(d), dfdy(d)));
+    d = d / max(grad_len, 0.001);
+    float alpha = 1.0 - smoothstep(-0.59, 0.59, d);
+
+    if (alpha < 0.5) discard_fragment();
+    return float4(1.0);
+}
+`
+
 	FsFilterTextureMetal = `
 #include <metal_stdlib>
 using namespace metal;

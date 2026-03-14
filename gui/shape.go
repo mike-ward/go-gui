@@ -65,8 +65,9 @@ type Shape struct {
 	FloatAnchor          FloatAttach
 	FloatTieOff          FloatAttach
 
-	Clip          bool
-	Disabled      bool
+	Clip         bool
+	ClipContents bool
+	Disabled     bool
 	Float         bool
 	FloatAutoFlip bool // flip float position to stay in window
 	FocusSkip     bool

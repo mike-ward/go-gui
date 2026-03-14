@@ -291,7 +291,7 @@ func (b *Backend) renderFrame(w *gui.Window) {
 		float32(bg.A)/255.0,
 	)
 	gl.Disable(gl.SCISSOR_TEST)
-	gl.Clear(gl.COLOR_BUFFER_BIT)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
 	w.Lock()
 	b.renderersDraw(w)

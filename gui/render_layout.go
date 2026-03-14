@@ -66,6 +66,38 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 		}, w)
 	}
 
+	// Emit stencil clip bracket before children.
+	if layout.Shape.ClipContents {
+		w.stencilDepth++
+		emitRenderer(RenderCmd{
+			Kind:         RenderStencilBegin,
+			X:            layout.Shape.X,
+			Y:            layout.Shape.Y,
+			W:            layout.Shape.Width,
+			H:            layout.Shape.Height,
+			Radius:       layout.Shape.Radius,
+			StencilDepth: w.stencilDepth,
+		}, w)
+		// Also apply scissor clip as optimization (avoids
+		// rasterizing fragments outside bounding rect).
+		if !layout.Shape.Clip && !layout.Shape.OverDraw {
+			sc := layout.Shape.ShapeClip
+			shapeClip = DrawClip{
+				X:      sc.X,
+				Y:      sc.Y,
+				Width:  sc.Width,
+				Height: sc.Height,
+			}
+			emitRenderer(RenderCmd{
+				Kind: RenderClip,
+				X:    shapeClip.X,
+				Y:    shapeClip.Y,
+				W:    shapeClip.Width,
+				H:    shapeClip.Height,
+			}, w)
+		}
+	}
+
 	// Propagate rounded clip radius to child images.
 	savedClipRadius := w.clipRadius
 	w.clipRadius = resolveClipRadius(savedClipRadius, layout.Shape)
@@ -95,6 +127,30 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 	}
 
 	w.clipRadius = savedClipRadius
+
+	if layout.Shape.ClipContents {
+		// Restore scissor if we pushed one.
+		if !layout.Shape.Clip && !layout.Shape.OverDraw {
+			emitRenderer(RenderCmd{
+				Kind: RenderClip,
+				X:    clip.X,
+				Y:    clip.Y,
+				W:    clip.Width,
+				H:    clip.Height,
+			}, w)
+		}
+		emitRenderer(RenderCmd{
+			Kind:         RenderStencilEnd,
+			X:            layout.Shape.X,
+			Y:            layout.Shape.Y,
+			W:            layout.Shape.Width,
+			H:            layout.Shape.Height,
+			Radius:       layout.Shape.Radius,
+			StencilDepth: w.stencilDepth,
+		}, w)
+		w.stencilDepth--
+	}
+
 	if layout.Shape.Clip || layout.Shape.OverDraw {
 		emitRenderer(RenderCmd{
 			Kind: RenderClip,

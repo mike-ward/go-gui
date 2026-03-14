@@ -707,6 +707,152 @@ func TestInvalidClipIsSkippedAndNextDrawKept(t *testing.T) {
 	}
 }
 
+// --- ClipContents stencil emission ---
+
+func TestClipContentsEmitsStencilBracket(t *testing.T) {
+	w := makeWindow()
+	child := Layout{
+		Shape: &Shape{
+			ShapeType: ShapeRectangle,
+			X:         5, Y: 5,
+			Width: 10, Height: 10,
+			Color: RGB(1, 2, 3),
+		},
+	}
+	root := &Layout{
+		Shape: &Shape{
+			ClipContents: true,
+			Radius:       12,
+			Width:        100,
+			Height:       80,
+			ShapeClip:    makeClip(0, 0, 100, 80),
+		},
+		Children: []Layout{child},
+	}
+
+	clip := makeClip(0, 0, 400, 400)
+	renderLayout(root, RGB(0, 0, 0), clip, w)
+
+	// Expect: StencilBegin, Clip(push), [child], Clip(pop),
+	//         StencilEnd
+	var kinds []RenderKind
+	for _, r := range w.renderers {
+		kinds = append(kinds, r.Kind)
+	}
+
+	foundBegin := false
+	foundEnd := false
+	for _, r := range w.renderers {
+		if r.Kind == RenderStencilBegin {
+			foundBegin = true
+			if r.StencilDepth != 1 {
+				t.Errorf("begin depth: got %d, want 1",
+					r.StencilDepth)
+			}
+			if r.Radius != 12 {
+				t.Errorf("begin radius: got %f, want 12",
+					r.Radius)
+			}
+		}
+		if r.Kind == RenderStencilEnd {
+			foundEnd = true
+			if r.StencilDepth != 1 {
+				t.Errorf("end depth: got %d, want 1",
+					r.StencilDepth)
+			}
+		}
+	}
+	if !foundBegin {
+		t.Error("expected RenderStencilBegin")
+	}
+	if !foundEnd {
+		t.Error("expected RenderStencilEnd")
+	}
+}
+
+func TestClipContentsNestedIncrementsDepth(t *testing.T) {
+	w := makeWindow()
+	inner := Layout{
+		Shape: &Shape{
+			ClipContents: true,
+			Radius:       6,
+			Width:        40,
+			Height:       30,
+			ShapeClip:    makeClip(10, 10, 40, 30),
+		},
+	}
+	outer := &Layout{
+		Shape: &Shape{
+			ClipContents: true,
+			Radius:       12,
+			Width:        100,
+			Height:       80,
+			ShapeClip:    makeClip(0, 0, 100, 80),
+		},
+		Children: []Layout{inner},
+	}
+
+	clip := makeClip(0, 0, 400, 400)
+	renderLayout(outer, RGB(0, 0, 0), clip, w)
+
+	depths := []uint8{}
+	for _, r := range w.renderers {
+		if r.Kind == RenderStencilBegin {
+			depths = append(depths, r.StencilDepth)
+		}
+	}
+	if len(depths) != 2 {
+		t.Fatalf("expected 2 StencilBegin, got %d", len(depths))
+	}
+	if depths[0] != 1 {
+		t.Errorf("outer depth: got %d, want 1", depths[0])
+	}
+	if depths[1] != 2 {
+		t.Errorf("inner depth: got %d, want 2", depths[1])
+	}
+}
+
+func TestClipContentsCoexistsWithClip(t *testing.T) {
+	w := makeWindow()
+	root := &Layout{
+		Shape: &Shape{
+			Clip:         true,
+			ClipContents: true,
+			Radius:       8,
+			Width:        60,
+			Height:       40,
+			ShapeClip:    makeClip(5, 5, 60, 40),
+			Padding:      Padding{Left: 2, Right: 2, Top: 2, Bottom: 2},
+		},
+	}
+
+	clip := makeClip(0, 0, 400, 400)
+	renderLayout(root, RGB(0, 0, 0), clip, w)
+
+	hasClip := false
+	hasStencilBegin := false
+	hasStencilEnd := false
+	for _, r := range w.renderers {
+		switch r.Kind {
+		case RenderClip:
+			hasClip = true
+		case RenderStencilBegin:
+			hasStencilBegin = true
+		case RenderStencilEnd:
+			hasStencilEnd = true
+		}
+	}
+	if !hasClip {
+		t.Error("expected RenderClip from Clip=true")
+	}
+	if !hasStencilBegin {
+		t.Error("expected RenderStencilBegin")
+	}
+	if !hasStencilEnd {
+		t.Error("expected RenderStencilEnd")
+	}
+}
+
 // --- findFilterBracketRange ---
 
 func TestFindFilterBracketRangeMatchedBeginEnd(t *testing.T) {

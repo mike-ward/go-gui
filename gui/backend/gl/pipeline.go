@@ -30,6 +30,7 @@ type pipelineSet struct {
 	filterBlurV pipeline
 	filterColor pipeline
 	filterTex   pipeline
+	stencil     pipeline
 	custom      pipeline // VsCustomGLSL vertex shader, reused per hash
 	customCache map[uint64]pipeline
 }
@@ -51,6 +52,7 @@ func (b *Backend) initPipelines() error {
 		{&b.pipelines.filterBlurV, gui.VsFilterBlurGLSL, gui.FsFilterBlurVGLSL, "filterBlurV"},
 		{&b.pipelines.filterColor, gui.VsFilterBlurGLSL, gui.FsFilterColorGLSL, "filterColor"},
 		{&b.pipelines.filterTex, gui.VsFilterBlurGLSL, gui.FsFilterTextureGLSL, "filterTex"},
+		{&b.pipelines.stencil, gui.VsGLSL, gui.FsStencilGLSL, "stencil"},
 		{&b.pipelines.custom, gui.VsCustomGLSL, gui.FsGLSL, "custom"},
 	}
 	for _, e := range entries {
@@ -80,6 +82,7 @@ func (b *Backend) destroyPipelines() {
 	destroy(&b.pipelines.filterBlurV)
 	destroy(&b.pipelines.filterColor)
 	destroy(&b.pipelines.filterTex)
+	destroy(&b.pipelines.stencil)
 	destroy(&b.pipelines.custom)
 	for _, p := range b.pipelines.customCache {
 		gogl.DeleteProgram(p.program)

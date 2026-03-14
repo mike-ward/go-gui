@@ -50,6 +50,11 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.beginFilter(r)
 		case gui.RenderFilterEnd:
 			b.endFilter()
+		case gui.RenderStencilBegin:
+			b.drawClip(r) // scissor fallback (no rounded clip)
+		case gui.RenderStencilEnd:
+			// Scissor restored by subsequent RenderClip.
+
 		case gui.RenderRotateBegin,
 			gui.RenderRotateEnd:
 			// Rotation requires MVP transform — unsupported in SDL2.

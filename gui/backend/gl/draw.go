@@ -56,6 +56,11 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 
+		case gui.RenderStencilBegin:
+			b.beginStencilClip(r)
+		case gui.RenderStencilEnd:
+			b.endStencilClip(r)
+
 		case gui.RenderRotateBegin:
 			b.beginRotation(r)
 		case gui.RenderRotateEnd:
@@ -677,6 +682,54 @@ func (b *Backend) endFilter() {
 			gui.White)
 	}
 	gogl.BindTexture(gogl.TEXTURE_2D, 0)
+}
+
+// --- Stencil clip ---
+
+func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
+	s := b.dpiScale
+	depth := r.StencilDepth
+
+	// Enable stencil test.
+	gogl.Enable(gogl.STENCIL_TEST)
+
+	// Write to stencil: increment where SDF passes.
+	gogl.StencilFunc(gogl.ALWAYS, 0, 0xFF)
+	gogl.StencilOp(gogl.KEEP, gogl.KEEP, gogl.INCR)
+	gogl.ColorMask(false, false, false, false)
+
+	// Draw rounded-rect mask using stencil pipeline.
+	b.usePipeline(&b.pipelines.stencil)
+	b.drawQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
+		gui.White, r.Radius*s, 0)
+
+	// Restore color writes; set stencil test for children.
+	gogl.ColorMask(true, true, true, true)
+	gogl.StencilFunc(gogl.LEQUAL, int32(depth), 0xFF)
+	gogl.StencilOp(gogl.KEEP, gogl.KEEP, gogl.KEEP)
+}
+
+func (b *Backend) endStencilClip(r *gui.RenderCmd) {
+	s := b.dpiScale
+	depth := r.StencilDepth
+
+	// Decrement stencil where SDF passes.
+	gogl.StencilFunc(gogl.ALWAYS, 0, 0xFF)
+	gogl.StencilOp(gogl.KEEP, gogl.KEEP, gogl.DECR)
+	gogl.ColorMask(false, false, false, false)
+
+	b.usePipeline(&b.pipelines.stencil)
+	b.drawQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
+		gui.White, r.Radius*s, 0)
+
+	gogl.ColorMask(true, true, true, true)
+
+	if depth <= 1 {
+		gogl.Disable(gogl.STENCIL_TEST)
+	} else {
+		gogl.StencilFunc(gogl.LEQUAL, int32(depth-1), 0xFF)
+		gogl.StencilOp(gogl.KEEP, gogl.KEEP, gogl.KEEP)
+	}
 }
 
 // --- Glyph pipeline helpers ---

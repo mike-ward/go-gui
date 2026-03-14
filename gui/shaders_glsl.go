@@ -495,6 +495,39 @@ const (
     }
 `
 
+	FsStencilGLSL = `
+    #version 330
+    uniform sampler2D tex;
+    in vec2 uv;
+    in vec4 color;
+    in float params;
+
+    out vec4 frag_color;
+
+    void main() {
+        float radius = floor(params / 4096.0) / 4.0;
+
+        vec2 uv_to_px = 1.0 / (vec2(fwidth(uv.x), fwidth(uv.y)) + 1e-6);
+        vec2 half_size = uv_to_px;
+        vec2 pos = uv * half_size;
+
+        vec2 q = abs(pos) - half_size + vec2(radius);
+        float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+
+        float grad_len = length(vec2(dFdx(d), dFdy(d)));
+        d = d / max(grad_len, 0.001);
+        float alpha = 1.0 - smoothstep(-0.59, 0.59, d);
+
+        if (alpha < 0.5) discard;
+        frag_color = vec4(1.0);
+
+        // sgl workaround: dummy texture sample
+        if (frag_color.a < 0.0) {
+            frag_color += texture(tex, uv);
+        }
+    }
+`
+
 	FsFilterTextureGLSL = `
     #version 330
     uniform sampler2D tex_smp;

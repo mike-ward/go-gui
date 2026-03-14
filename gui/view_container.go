@@ -45,8 +45,9 @@ type ContainerCfg struct {
 	IDFocus    uint32
 	IDScroll   uint32
 	ScrollMode ScrollMode
-	Clip       bool
-	FocusSkip  bool
+	Clip         bool
+	ClipContents bool
+	FocusSkip    bool
 	Disabled   bool
 	Invisible  bool
 	OverDraw   bool
@@ -133,6 +134,7 @@ func (cv *containerView) GenerateLayout(w *Window) Layout {
 			MinHeight:            c.MinHeight,
 			MaxHeight:            c.MaxHeight,
 			Clip:                 c.Clip,
+			ClipContents:         c.ClipContents,
 			FocusSkip:            c.FocusSkip,
 			Spacing:              spacing,
 			Sizing:               c.Sizing,

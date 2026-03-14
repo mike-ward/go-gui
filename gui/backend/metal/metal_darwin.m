@@ -41,6 +41,14 @@ static id<MTLTexture> _filterTexA;
 static id<MTLTexture> _filterTexB;
 static int _filterW, _filterH;
 
+// Stencil clip state.
+static id<MTLTexture> _stencilTex;
+static int _stencilTexW, _stencilTexH;
+static id<MTLDepthStencilState> _stencilIncr;
+static id<MTLDepthStencilState> _stencilTest;
+static id<MTLDepthStencilState> _stencilDecr;
+static id<MTLDepthStencilState> _stencilOff;
+
 // ─── MSL Shader Source ────────────────────────────────────────
 
 static NSString *mslSource = @R"(
@@ -450,6 +458,26 @@ fragment float4 fs_glyph_tex(
 fragment float4 fs_glyph_color(GlyphOut in [[stage_in]]) {
     return in.color;
 }
+
+fragment float4 fs_stencil(VertexOut in [[stage_in]]) {
+    float radius = floor(in.params / 4096.0) / 4.0;
+
+    float2 uv_to_px = 1.0 / (float2(fwidth(in.uv.x),
+                       fwidth(in.uv.y)) + 1e-6);
+    float2 half_size = uv_to_px;
+    float2 pos       = in.uv * half_size;
+
+    float2 q = abs(pos) - half_size + float2(radius);
+    float d = length(max(q, float2(0.0)))
+            + min(max(q.x, q.y), 0.0) - radius;
+
+    float grad_len = length(float2(dfdx(d), dfdy(d)));
+    d = d / max(grad_len, 0.001);
+    float alpha = 1.0 - smoothstep(-0.59, 0.59, d);
+
+    if (alpha < 0.5) discard_fragment();
+    return float4(1.0);
+}
 )";
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -574,6 +602,42 @@ static id<MTLRenderPipelineState> makePipelineReplace(
     return pso;
 }
 
+// makePipelineStencilMask creates a pipeline with color writes
+// disabled (colorWriteMask = None), used for stencil mask passes.
+static id<MTLRenderPipelineState> makePipelineStencilMask(
+    id<MTLLibrary> lib,
+    NSString *vsName,
+    NSString *fsName,
+    MTLVertexDescriptor *vd,
+    MTLPixelFormat pixFmt
+) {
+    MTLRenderPipelineDescriptor *desc =
+        [[MTLRenderPipelineDescriptor alloc] init];
+    desc.vertexFunction   = [lib newFunctionWithName:vsName];
+    desc.fragmentFunction = [lib newFunctionWithName:fsName];
+    desc.vertexDescriptor = vd;
+
+    desc.colorAttachments[0].pixelFormat = pixFmt;
+    desc.colorAttachments[0].writeMask   = MTLColorWriteMaskNone;
+    desc.colorAttachments[0].blendingEnabled = NO;
+
+    desc.stencilAttachmentPixelFormat = MTLPixelFormatStencil8;
+
+    if (!desc.vertexFunction || !desc.fragmentFunction) {
+        NSLog(@"metal: stencil pipeline: function not found");
+        return nil;
+    }
+
+    NSError *err = nil;
+    id<MTLRenderPipelineState> pso =
+        [_device newRenderPipelineStateWithDescriptor:desc
+                                                error:&err];
+    if (!pso) {
+        NSLog(@"metal: stencil pipeline: %@", err);
+    }
+    return pso;
+}
+
 static id<MTLTexture> makeTexture(int w, int h,
     MTLPixelFormat fmt) {
     MTLTextureDescriptor *td =
@@ -595,6 +659,20 @@ static id<MTLTexture> makeRenderTarget(int w, int h,
     return [_device newTextureWithDescriptor:td];
 }
 
+static void ensureStencilTexture(int w, int h) {
+    if (_stencilTex && _stencilTexW == w && _stencilTexH == h)
+        return;
+    MTLTextureDescriptor *td = [MTLTextureDescriptor
+        texture2DDescriptorWithPixelFormat:MTLPixelFormatStencil8
+                                     width:w height:h
+                                  mipmapped:NO];
+    td.usage = MTLTextureUsageRenderTarget;
+    td.storageMode = MTLStorageModePrivate;
+    _stencilTex = [_device newTextureWithDescriptor:td];
+    _stencilTexW = w;
+    _stencilTexH = h;
+}
+
 // Start or resume the main render pass.
 static void beginMainEncoder(float r, float g, float b,
     float a, int clear) {
@@ -609,6 +687,21 @@ static void beginMainEncoder(float r, float g, float b,
     } else {
         rpd.colorAttachments[0].loadAction = MTLLoadActionLoad;
     }
+
+    // Attach stencil buffer.
+    ensureStencilTexture(_viewW, _viewH);
+    if (_stencilTex) {
+        rpd.stencilAttachment.texture = _stencilTex;
+        rpd.stencilAttachment.storeAction = MTLStoreActionStore;
+        if (clear) {
+            rpd.stencilAttachment.loadAction =
+                MTLLoadActionClear;
+            rpd.stencilAttachment.clearStencil = 0;
+        } else {
+            rpd.stencilAttachment.loadAction = MTLLoadActionLoad;
+        }
+    }
+
     _enc = [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
     [_enc setViewport:(MTLViewport){
         0, 0, (double)_viewW, (double)_viewH, 0, 1}];
@@ -679,9 +772,64 @@ int metalInit(void* layerPtr) {
     _pipelines[PIPE_GLYPH_COLOR] =
         makePipeline(lib, @"vs_glyph", @"fs_glyph_color",
                      gvd, pf);
+    _pipelines[PIPE_STENCIL] =
+        makePipelineStencilMask(lib, @"vs_solid", @"fs_stencil",
+                                mvd, pf);
 
     for (int i = 0; i < PIPE_COUNT; i++) {
         if (!_pipelines[i]) return -3;
+    }
+
+    // Build depth stencil states for stencil clipping.
+    {
+        MTLDepthStencilDescriptor *dsd;
+
+        // Increment stencil where fragment passes.
+        dsd = [[MTLDepthStencilDescriptor alloc] init];
+        dsd.frontFaceStencil.stencilCompareFunction =
+            MTLCompareFunctionAlways;
+        dsd.frontFaceStencil.stencilFailureOperation =
+            MTLStencilOperationKeep;
+        dsd.frontFaceStencil.depthFailureOperation =
+            MTLStencilOperationKeep;
+        dsd.frontFaceStencil.depthStencilPassOperation =
+            MTLStencilOperationIncrementClamp;
+        dsd.backFaceStencil = dsd.frontFaceStencil;
+        _stencilIncr =
+            [_device newDepthStencilStateWithDescriptor:dsd];
+
+        // Test stencil (children pass where >= ref).
+        dsd = [[MTLDepthStencilDescriptor alloc] init];
+        dsd.frontFaceStencil.stencilCompareFunction =
+            MTLCompareFunctionLessEqual;
+        dsd.frontFaceStencil.stencilFailureOperation =
+            MTLStencilOperationKeep;
+        dsd.frontFaceStencil.depthFailureOperation =
+            MTLStencilOperationKeep;
+        dsd.frontFaceStencil.depthStencilPassOperation =
+            MTLStencilOperationKeep;
+        dsd.backFaceStencil = dsd.frontFaceStencil;
+        _stencilTest =
+            [_device newDepthStencilStateWithDescriptor:dsd];
+
+        // Decrement stencil where fragment passes.
+        dsd = [[MTLDepthStencilDescriptor alloc] init];
+        dsd.frontFaceStencil.stencilCompareFunction =
+            MTLCompareFunctionAlways;
+        dsd.frontFaceStencil.stencilFailureOperation =
+            MTLStencilOperationKeep;
+        dsd.frontFaceStencil.depthFailureOperation =
+            MTLStencilOperationKeep;
+        dsd.frontFaceStencil.depthStencilPassOperation =
+            MTLStencilOperationDecrementClamp;
+        dsd.backFaceStencil = dsd.frontFaceStencil;
+        _stencilDecr =
+            [_device newDepthStencilStateWithDescriptor:dsd];
+
+        // Disable stencil test.
+        dsd = [[MTLDepthStencilDescriptor alloc] init];
+        _stencilOff =
+            [_device newDepthStencilStateWithDescriptor:dsd];
     }
 
     // Quad index buffer: two triangles [0,1,2, 0,2,3].
@@ -782,6 +930,13 @@ void metalDestroy(void) {
     _triBufFrame = -1;
     _filterTexA = nil;
     _filterTexB = nil;
+    _stencilTex = nil;
+    _stencilTexW = 0;
+    _stencilTexH = 0;
+    _stencilIncr = nil;
+    _stencilTest = nil;
+    _stencilDecr = nil;
+    _stencilOff  = nil;
     for (int i = 0; i < PIPE_COUNT; i++) {
         _pipelines[i] = nil;
     }
@@ -1227,5 +1382,46 @@ void metalEndFilter(float blurRadius, int layers,
                           indexType:MTLIndexTypeUInt16
                         indexBuffer:_quadIdx
                   indexBufferOffset:0];
+    }
+}
+
+// ─── Stencil Clip ─────────────────────────────────────────────
+
+void metalBeginStencilClip(const float* verts, int depth) {
+    if (!_enc) return;
+
+    // Increment stencil where SDF passes, no color output.
+    [_enc setDepthStencilState:_stencilIncr];
+    [_enc setRenderPipelineState:_pipelines[PIPE_STENCIL]];
+    [_enc setVertexBytes:verts length:4*36 atIndex:0];
+    [_enc drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+                     indexCount:6
+                      indexType:MTLIndexTypeUInt16
+                    indexBuffer:_quadIdx
+              indexBufferOffset:0];
+
+    // Set stencil test for children.
+    [_enc setDepthStencilState:_stencilTest];
+    [_enc setStencilReferenceValue:(uint32_t)depth];
+}
+
+void metalEndStencilClip(const float* verts, int depth) {
+    if (!_enc) return;
+
+    // Decrement stencil where SDF passes, no color output.
+    [_enc setDepthStencilState:_stencilDecr];
+    [_enc setRenderPipelineState:_pipelines[PIPE_STENCIL]];
+    [_enc setVertexBytes:verts length:4*36 atIndex:0];
+    [_enc drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+                     indexCount:6
+                      indexType:MTLIndexTypeUInt16
+                    indexBuffer:_quadIdx
+              indexBufferOffset:0];
+
+    if (depth <= 1) {
+        [_enc setDepthStencilState:_stencilOff];
+    } else {
+        [_enc setDepthStencilState:_stencilTest];
+        [_enc setStencilReferenceValue:(uint32_t)(depth - 1)];
     }
 }

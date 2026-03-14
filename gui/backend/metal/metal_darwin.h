@@ -16,6 +16,7 @@ enum {
     PIPE_FILTER_COLOR,
     PIPE_GLYPH_TEX,
     PIPE_GLYPH_COLOR,
+    PIPE_STENCIL,
     PIPE_COUNT,
 };
 
@@ -60,5 +61,9 @@ void metalSetCustomPipeline(int idx);
 int  metalBeginFilter(int w, int h);
 void metalEndFilter(float blurRadius, int layers,
                     const float* colorMatrix);
+
+// Stencil clip
+void metalBeginStencilClip(const float* verts, int depth);
+void metalEndStencilClip(const float* verts, int depth);
 
 #endif

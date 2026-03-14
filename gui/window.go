@@ -44,6 +44,8 @@ type Window struct {
 
 	// Clip radius propagated during render walk.
 	clipRadius float32
+	// Stencil depth for nested ClipContents.
+	stencilDepth uint8
 	// Nesting guard for filter brackets.
 	inFilter bool
 

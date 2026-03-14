@@ -32,6 +32,8 @@ const (
 	RenderRTF
 	RenderRotateBegin
 	RenderRotateEnd
+	RenderStencilBegin
+	RenderStencilEnd
 )
 
 // RenderCmd is a flat discriminated struct holding all draw
@@ -55,7 +57,8 @@ type RenderCmd struct {
 	Scale      float32 // Svg, FilterBegin
 	OffsetX    float32 // Shadow; Line X1
 	OffsetY    float32 // Shadow; Line Y1
-	ClipRadius float32 // Image
+	ClipRadius   float32 // Image
+	StencilDepth uint8   // StencilBegin/End
 
 	// Flags.
 	Fill       bool // Rect fill, Circle fill
@@ -157,6 +160,10 @@ func renderCmdKindName(k RenderKind) string {
 		return "RenderRotateBegin"
 	case RenderRotateEnd:
 		return "RenderRotateEnd"
+	case RenderStencilBegin:
+		return "RenderStencilBegin"
+	case RenderStencilEnd:
+		return "RenderStencilEnd"
 	default:
 		return "Unknown"
 	}

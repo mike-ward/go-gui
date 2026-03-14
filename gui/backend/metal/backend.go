@@ -46,6 +46,7 @@ const (
 	pipeFilterColor = C.PIPE_FILTER_COLOR
 	pipeGlyphTex    = C.PIPE_GLYPH_TEX
 	pipeGlyphColor  = C.PIPE_GLYPH_COLOR
+	pipeStencil     = C.PIPE_STENCIL
 )
 
 // Backend is the Metal backend for go-gui.

@@ -63,6 +63,11 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 
+		case gui.RenderStencilBegin:
+			b.beginStencilClip(r)
+		case gui.RenderStencilEnd:
+			b.endStencilClip(r)
+
 		case gui.RenderRotateBegin:
 			b.beginRotation(r)
 		case gui.RenderRotateEnd:
@@ -676,6 +681,34 @@ fragment float4 fs_main(
     return frag_color;
 }
 `
+}
+
+// --- Stencil clip ---
+
+func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
+	s := b.dpiScale
+	C.metalSetPipeline(C.int(pipeSolid))
+	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
+		gui.White, r.Radius*s, 0)
+	C.metalBeginStencilClip(
+		(*C.float)(unsafe.Pointer(&verts[0])),
+		C.int(r.StencilDepth))
+	// Restore solid pipeline for children.
+	C.metalSetPipeline(C.int(pipeSolid))
+	C.metalSetMVP((*C.float)(&b.mvp[0]))
+}
+
+func (b *Backend) endStencilClip(r *gui.RenderCmd) {
+	s := b.dpiScale
+	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
+		gui.White, r.Radius*s, 0)
+	C.metalEndStencilClip(
+		(*C.float)(unsafe.Pointer(&verts[0])),
+		C.int(r.StencilDepth))
+	// Restore solid pipeline.
+	C.metalSetPipeline(C.int(pipeSolid))
+	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }
 
 // --- Rotation ---
