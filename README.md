@@ -43,6 +43,7 @@ between layout and rendering.
 - SVG loading, caching, and tessellation
 - Dock layout with drag-and-drop and tab groups
 - Embedded Feather icon font with themed icon text styles
+- OS-level spell check for text inputs (macOS NSSpellChecker)
 - IME support and accessibility tree
 - Native dialogs, notifications, and print/PDF
 - Locale and i18n support

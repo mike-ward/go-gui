@@ -10,7 +10,7 @@ Stuff I'm considering. No promises.
 | **Touch / gesture input**             | No pinch, swipe, rotate, long-press. Required for tablet/mobile     |
 | **Embedded video/audio**              | No media playback widget                                            |
 | **Skeleton / shimmer loading**        | Placeholder UI during async loads                                   |
-| **Spell check integration**           | OS-level spell check in text inputs                                 |
+| ~~**Spell check integration**~~       | ✅ Implemented — OS-level spell check via NSSpellChecker            |
 | **Global hotkeys / shortcut manager** | Centralized keybinding registry                                     |
 | **Constraint-based layout**           | Auto-layout style constraints (complementary to flex)               |
 | **Autocomplete / suggestion list**    | Text input with dropdown suggestions (Combobox may partially cover) |
