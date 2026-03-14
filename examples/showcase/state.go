@@ -43,7 +43,8 @@ type ShowcaseApp struct {
 	InputPassword  string
 	InputPhone     string
 	InputExpiry    string
-	InputMultiline string
+	InputMultiline  string
+	InputSpellCheck bool
 
 	ToggleA    bool
 	CheckboxA  bool

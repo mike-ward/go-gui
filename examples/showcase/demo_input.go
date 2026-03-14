@@ -21,12 +21,21 @@ func demoInput(w *gui.Window) gui.View {
 				"Accessibility: supports IME composition, keyboard tab focus, masked input, and multiline editing.",
 				t.N3,
 			),
+			gui.Switch(gui.SwitchCfg{
+				ID:       "input-spell-check",
+				Label:    "Spell Check",
+				Selected: app.InputSpellCheck,
+				OnClick: func(_ *gui.Layout, _ *gui.Event, w *gui.Window) {
+					gui.State[ShowcaseApp](w).InputSpellCheck = !gui.State[ShowcaseApp](w).InputSpellCheck
+				},
+			}),
 			labeledRow(t, "Text", gui.Input(gui.InputCfg{
 				ID:          "input-text",
 				IDFocus:     9160,
 				Sizing:      gui.FillFit,
 				Text:        app.InputText,
 				Placeholder: "Enter text...",
+				SpellCheck:  app.InputSpellCheck,
 				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).InputText = s
 				},
@@ -72,6 +81,7 @@ func demoInput(w *gui.Window) gui.View {
 				Placeholder: "Multiple lines...",
 				Mode:        gui.InputMultiline,
 				Height:      90,
+				SpellCheck:  app.InputSpellCheck,
 				OnTextChanged: func(_ *gui.Layout, s string, w *gui.Window) {
 					gui.State[ShowcaseApp](w).InputMultiline = s
 				},
