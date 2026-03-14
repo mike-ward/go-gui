@@ -55,6 +55,7 @@ type ShowcaseApp struct {
 	ListBoxSelected []string
 	ComboboxValue   string
 	RangeValue      float32
+	SliderValue     float32
 
 	NumericENText        string
 	NumericDEText        string
@@ -143,6 +144,7 @@ func newShowcaseApp() *ShowcaseApp {
 		InputMultiline:       "Now is the time for all good men to come to the aid of their country",
 		RadioValue:           "go",
 		RangeValue:           50,
+		SliderValue:          50,
 		NumericENText:        "1,234.50",
 		NumericENValue:       gui.Some(1234.5),
 		NumericDEText:        "1.234,50",

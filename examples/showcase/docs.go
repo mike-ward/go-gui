@@ -1534,7 +1534,24 @@ gui.Combobox(gui.ComboboxCfg{
 	"range_slider": `Draggable slider for selecting a value within a
 numeric range. Supports horizontal and vertical orientations.
 
-## Usage
+**Slider** is a simplified alias that wraps RangeSlider with fewer
+config fields (drops ColorLeft, ColorClick, RadiusBorder).
+
+## Slider (simplified)
+
+` + "```go" + `
+gui.Slider(gui.SliderCfg{
+    ID:      "vol",
+    IDFocus: 900,
+    Value:   app.Volume,
+    Min:     0, Max: 100,
+    OnChange: func(v float32, _ *gui.Event, w *gui.Window) {
+        gui.State[App](w).Volume = v
+    },
+})
+` + "```" + `
+
+## RangeSlider (full)
 
 ` + "```go" + `
 gui.RangeSlider(gui.RangeSliderCfg{

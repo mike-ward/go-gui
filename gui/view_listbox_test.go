@@ -1,0 +1,81 @@
+package gui
+
+import "testing"
+
+func TestListBoxIDPassthrough(t *testing.T) {
+	w := &Window{}
+	layout := GenerateViewLayout(ListBox(ListBoxCfg{
+		ID:   "lb1",
+		Data: []ListBoxOption{{ID: "a", Name: "A"}},
+	}), w)
+	if layout.Shape.ID != "lb1" {
+		t.Errorf("ID: got %s", layout.Shape.ID)
+	}
+}
+
+func TestListBoxChildCount(t *testing.T) {
+	w := &Window{}
+	layout := GenerateViewLayout(ListBox(ListBoxCfg{
+		ID: "lb2",
+		Data: []ListBoxOption{
+			{ID: "a", Name: "Alpha"},
+			{ID: "b", Name: "Beta"},
+			{ID: "c", Name: "Gamma"},
+		},
+	}), w)
+	if len(layout.Children) != 3 {
+		t.Errorf("children: got %d, want 3", len(layout.Children))
+	}
+}
+
+func TestListBoxSingleSelectClick(t *testing.T) {
+	var selected []string
+	w := &Window{}
+	layout := GenerateViewLayout(ListBox(ListBoxCfg{
+		ID: "lb3",
+		Data: []ListBoxOption{
+			{ID: "a", Name: "Alpha"},
+			{ID: "b", Name: "Beta"},
+		},
+		OnSelect: func(ids []string, _ *Event, _ *Window) {
+			selected = ids
+		},
+	}), w)
+	if len(layout.Children) < 1 {
+		t.Fatal("expected children")
+	}
+	item := &layout.Children[0]
+	if item.Shape.Events != nil && item.Shape.Events.OnClick != nil {
+		e := &Event{MouseButton: MouseLeft}
+		item.Shape.Events.OnClick(item, e, w)
+		if len(selected) != 1 || selected[0] != "a" {
+			t.Errorf("expected [a], got %v", selected)
+		}
+	}
+}
+
+func TestListBoxDisabledFlag(t *testing.T) {
+	w := &Window{}
+	layout := GenerateViewLayout(ListBox(ListBoxCfg{
+		ID:       "lb4",
+		Disabled: true,
+		Data:     []ListBoxOption{{ID: "a", Name: "A"}},
+	}), w)
+	if !layout.Shape.Disabled {
+		t.Error("expected disabled")
+	}
+}
+
+func TestListBoxSubheadingCount(t *testing.T) {
+	w := &Window{}
+	layout := GenerateViewLayout(ListBox(ListBoxCfg{
+		ID: "lb5",
+		Data: []ListBoxOption{
+			{ID: "h1", Name: "Section", IsSubheading: true},
+			{ID: "a", Name: "Alpha"},
+		},
+	}), w)
+	if len(layout.Children) != 2 {
+		t.Errorf("children: got %d, want 2", len(layout.Children))
+	}
+}
