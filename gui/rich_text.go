@@ -93,10 +93,13 @@ func (rt RichText) toGlyphRichTextWithMath(
 					scale := (72.0 / entry.DPI) *
 						(run.Style.Size / 12.0)
 					s := run.Style.ToGlyphStyle()
+					h := entry.Height * scale
 					s.Object = &glyph.InlineObject{
 						ID:     run.MathID,
 						Width:  entry.Width * scale,
-						Height: entry.Height * scale,
+						Height: h,
+						// Center vertically on line.
+						Offset: run.Style.Size*0.4 - h/2,
 					}
 					runs = append(runs, glyph.StyleRun{
 						Text:  "\uFFFC",

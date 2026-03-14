@@ -110,6 +110,10 @@ func TestMathRunEmitsInlineObject(t *testing.T) {
 	if mid.Style.Object.Width < 57 || mid.Style.Object.Width > 58 {
 		t.Fatalf("width: got %f", mid.Style.Object.Width)
 	}
+	// Offset = fontSize*0.4 - h/2 = 12*0.4 - 19.2/2 = -4.8
+	if mid.Style.Object.Offset < -4.9 || mid.Style.Object.Offset > -4.7 {
+		t.Fatalf("offset: got %f, want ~-4.8", mid.Style.Object.Offset)
+	}
 	if len(mh) != 1 || mh[0] != mathCacheHash("x^2") {
 		t.Fatalf("mathHashes: got %v", mh)
 	}
