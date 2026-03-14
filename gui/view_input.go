@@ -348,11 +348,13 @@ func Input(cfg InputCfg) View {
 				}
 			}
 
-			// Spell check debounce trigger.
+			// Spell check: trigger when enabled, clear when disabled.
 			if spellChk && focused {
 				text := inputTextFromLayout(layout)
 				spellCheckTrigger(
 					layout.Shape.IDFocus, text, w)
+			} else if !spellChk {
+				spellCheckClear(layout.Shape.IDFocus, w)
 			}
 		},
 		Content: []View{inner},

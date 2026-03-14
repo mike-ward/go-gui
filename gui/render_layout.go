@@ -422,7 +422,8 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	hasPreLayout := false
 	needLayout := tc.TextSelBeg != tc.TextSelEnd ||
 		(shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() && w.InputCursorOn()) ||
-		imeComposing
+		imeComposing ||
+		spellCheckHasRanges(shape.IDFocus, w)
 	renderWithLayout := plainTextNeedsGlyphLayout(shape, tc, renderStyle)
 	if needLayout || renderWithLayout {
 		preLayout, hasPreLayout = inputGlyphLayoutResolved(text, shape, renderStyle, w, true)

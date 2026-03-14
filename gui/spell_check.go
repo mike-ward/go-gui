@@ -37,6 +37,11 @@ func spellCheckTrigger(idFocus uint32, text string, w *Window) {
 	// Cancel previous pending timer.
 	delete(w.animations, animID)
 
+	// Store pending state so subsequent AmendLayout calls see
+	// the text match and skip re-scheduling. Ranges are nil
+	// until the callback populates them.
+	sm.Set(idFocus, spellCheckState{Text: text})
+
 	capturedText := text
 	w.animationAdd(&Animate{
 		AnimID: animID,
@@ -63,6 +68,18 @@ func spellCheckClear(idFocus uint32, w *Window) {
 		sm.Delete(idFocus)
 	}
 	delete(w.animations, spellCheckAnimID(idFocus))
+}
+
+// spellCheckHasRanges returns true if completed spell check results
+// exist for the given input. Used by the render path to ensure a
+// glyph layout is computed for underline positioning.
+func spellCheckHasRanges(idFocus uint32, w *Window) bool {
+	sm := StateMapRead[uint32, spellCheckState](w, nsSpellCheck)
+	if sm == nil {
+		return false
+	}
+	state, ok := sm.Get(idFocus)
+	return ok && len(state.Ranges) > 0
 }
 
 // renderSpellCheckUnderlines draws red underlines beneath
