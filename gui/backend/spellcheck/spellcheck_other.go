@@ -1,7 +1,7 @@
-//go:build !darwin
+//go:build !darwin && !linux
 
 // Package spellcheck provides native spell checking.
-// This file is a no-op stub for non-macOS platforms.
+// This file is a no-op stub for unsupported platforms.
 package spellcheck
 
 import "github.com/mike-ward/go-gui/gui"
