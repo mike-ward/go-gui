@@ -74,24 +74,27 @@ func dockDragStart(
 	onLayoutChange func(*DockNode, *Window),
 	layout *Layout, e *Event, w *Window,
 ) {
-	parentX := float32(0)
-	parentY := float32(0)
-	if layout.Parent != nil {
-		parentX = layout.Parent.Shape.X
-		parentY = layout.Parent.Shape.Y
+	// Ghost base offset: tab position relative to dock container.
+	ghostBaseX := layout.Shape.X
+	ghostBaseY := layout.Shape.Y
+	if dockLayout, ok := w.layout.FindByID(dockID); ok {
+		ghostBaseX -= dockLayout.Shape.X
+		ghostBaseY -= dockLayout.Shape.Y
 	}
+	absMouseX := layout.Shape.X + e.MouseX
+	absMouseY := layout.Shape.Y + e.MouseY
 	state := dockDragState{
 		active:      false,
 		panelID:     panelID,
 		sourceGroup: sourceGroup,
-		mouseX:      e.MouseX,
-		mouseY:      e.MouseY,
-		startMouseX: e.MouseX,
-		startMouseY: e.MouseY,
+		mouseX:      absMouseX,
+		mouseY:      absMouseY,
+		startMouseX: absMouseX,
+		startMouseY: absMouseY,
 		ghostW:      layout.Shape.Width,
 		ghostH:      layout.Shape.Height,
-		parentX:     parentX,
-		parentY:     parentY,
+		parentX:     ghostBaseX,
+		parentY:     ghostBaseY,
 	}
 	dockDragSet(w, dockID, state)
 	w.MouseLock(MouseLockCfg{
@@ -252,8 +255,8 @@ func dockClassifyZone(relX, relY float32) DockDropZone {
 func dockDragGhostView(state dockDragState, label string) View {
 	return Column(ContainerCfg{
 		Float:        true,
-		FloatOffsetX: state.mouseX - state.startMouseX,
-		FloatOffsetY: state.mouseY - state.startMouseY,
+		FloatOffsetX: state.parentX + (state.mouseX - state.startMouseX),
+		FloatOffsetY: state.parentY + (state.mouseY - state.startMouseY),
 		Width:        state.ghostW,
 		Height:       state.ghostH,
 		Opacity:      SomeF(dragGhostOpacity),
