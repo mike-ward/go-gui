@@ -8,6 +8,41 @@ import (
 	"github.com/mike-ward/go-gui/gui"
 )
 
+func demoRotatedBox(_ *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	labels := []string{"0°", "90°", "180°", "270°"}
+	colors := []gui.Color{t.ColorActive, t.ColorSelect, t.ColorHover, t.ColorFocus}
+	boxes := make([]gui.View, 4)
+	for i := range boxes {
+		boxes[i] = gui.Column(gui.ContainerCfg{
+			Sizing:  gui.FitFit,
+			Spacing: gui.SomeF(4),
+			Padding: gui.NoPadding,
+			HAlign:  gui.HAlignCenter,
+			Content: []gui.View{
+				gui.Text(gui.TextCfg{Text: labels[i], TextStyle: t.B4}),
+				gui.RotatedBox(gui.RotatedBoxCfg{
+					QuarterTurns: i,
+					Content:      demoBoxSized("R", colors[i], 80, 50),
+				}),
+			},
+		})
+	}
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
+		Content: []gui.View{
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(16),
+				Padding: gui.NoPadding,
+				Content: boxes,
+			}),
+		},
+	})
+}
+
 func demoRow(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{

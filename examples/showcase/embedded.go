@@ -159,6 +159,7 @@ var relatedExampleMap = map[string][]string{
 	"rectangle":           {"examples/showcase/demo_graphics.go", "examples/gradient_demo/main.go"},
 	"scrollbar":           {"examples/showcase/demo_layout.go", "examples/scroll_demo/main.go"},
 	"splitter":            {"examples/showcase/demo_layout.go"},
+	"rotated_box":         {"examples/showcase/demo_layout.go"},
 	"row":                 {"examples/showcase/demo_layout.go"},
 	"column_demo":         {"examples/showcase/demo_layout.go"},
 	"wrap_panel":          {"examples/showcase/demo_layout.go"},

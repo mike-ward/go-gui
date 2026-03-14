@@ -237,6 +237,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoScrollbar(w)
 	case "splitter":
 		return demoSplitter(w)
+	case "rotated_box":
+		return demoRotatedBox(w)
 	case "row":
 		return demoRow(w)
 	case "column_demo":
