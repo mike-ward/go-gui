@@ -24,13 +24,15 @@ func TestCaptureLayoutSnapshots(t *testing.T) {
 
 func TestLayoutTransitionUpdate(t *testing.T) {
 	lt := &LayoutTransition{
-		duration:  200 * time.Millisecond,
-		easing:    EaseOutCubic,
-		snapshots: make(map[string]layoutSnapshot),
+		transitionBase: transitionBase{
+			duration: 200 * time.Millisecond,
+			easing:   EaseOutCubic,
+		},
+		snapshots: make(map[string]posSnapshot),
 	}
 	lt.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateLayoutTransition(lt, &deferred)
+	ok := updateTransition(&lt.transitionBase, &deferred)
 	if !ok {
 		t.Error("should update")
 	}
@@ -44,8 +46,8 @@ func TestApplyTransitionRecursive(t *testing.T) {
 		Shape: &Shape{ID: "box", X: 100, Y: 100, Width: 200, Height: 200},
 	}
 	lt := &LayoutTransition{
-		progress: 0.5,
-		snapshots: map[string]layoutSnapshot{
+		transitionBase: transitionBase{progress: 0.5},
+		snapshots: map[string]posSnapshot{
 			"box": {x: 0, y: 0, width: 100, height: 100},
 		},
 	}
@@ -59,14 +61,16 @@ func TestApplyTransitionRecursive(t *testing.T) {
 func TestLayoutTransitionOnDone(t *testing.T) {
 	done := false
 	lt := &LayoutTransition{
-		duration:  200 * time.Millisecond,
-		easing:    EaseOutCubic,
-		OnDone:    func(*Window) { done = true },
-		snapshots: make(map[string]layoutSnapshot),
+		transitionBase: transitionBase{
+			duration: 200 * time.Millisecond,
+			easing:   EaseOutCubic,
+			OnDone:   func(*Window) { done = true },
+		},
+		snapshots: make(map[string]posSnapshot),
 	}
 	lt.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateLayoutTransition(lt, &deferred)
+	updateTransition(&lt.transitionBase, &deferred)
 	runQueuedCommands(deferred)
 	if !done {
 		t.Error("OnDone not called")

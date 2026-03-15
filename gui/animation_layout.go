@@ -2,11 +2,6 @@ package gui
 
 import "time"
 
-// layoutSnapshot captures element position/size.
-type layoutSnapshot struct {
-	x, y, width, height float32
-}
-
 // LayoutTransitionCfg configures layout animation.
 type LayoutTransitionCfg struct {
 	Duration time.Duration
@@ -19,13 +14,8 @@ const layoutTransitionID = "__layout_transition__"
 // LayoutTransition animates layout changes (resize, reorder, add,
 // remove) using FLIP-style animation.
 type LayoutTransition struct {
-	duration  time.Duration
-	easing    EasingFn
-	OnDone    func(*Window)
-	start     time.Time
-	stopped   bool
-	snapshots map[string]layoutSnapshot
-	progress  float32
+	transitionBase
+	snapshots map[string]posSnapshot
 }
 
 // ID implements Animation.
@@ -34,15 +24,9 @@ func (l *LayoutTransition) ID() string { return layoutTransitionID }
 // RefreshKind implements Animation.
 func (l *LayoutTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
 
-// IsStopped implements Animation.
-func (l *LayoutTransition) IsStopped() bool { return l.stopped }
-
-// SetStart implements Animation.
-func (l *LayoutTransition) SetStart(now time.Time) { l.start = now }
-
 // Update implements Animation.
 func (l *LayoutTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
-	return updateLayoutTransition(l, deferred)
+	return updateTransition(&l.transitionBase, deferred)
 }
 
 // AnimateLayout triggers layout transition animation. Call BEFORE
@@ -57,49 +41,26 @@ func (w *Window) AnimateLayout(cfg LayoutTransitionCfg) {
 		eas = EaseOutCubic
 	}
 	lt := &LayoutTransition{
-		duration:  dur,
-		easing:    eas,
-		OnDone:    cfg.OnDone,
+		transitionBase: transitionBase{
+			duration: dur,
+			easing:   eas,
+			OnDone:   cfg.OnDone,
+		},
 		snapshots: captureLayoutSnapshots(w.layout),
 	}
 	w.AnimationAdd(lt)
 }
 
-func updateLayoutTransition(lt *LayoutTransition, deferred *[]queuedCommand) bool {
-	if lt.stopped {
-		return false
-	}
-	elapsed := time.Since(lt.start)
-	if elapsed >= lt.duration {
-		lt.progress = 1.0
-		lt.stopped = true
-		if lt.OnDone != nil {
-			*deferred = append(*deferred, queuedCommand{
-				kind:     queuedCommandWindowFn,
-				windowFn: lt.OnDone,
-			})
-		}
-		return true
-	}
-	progress := float32(elapsed) / float32(lt.duration)
-	easing := lt.easing
-	if easing == nil {
-		easing = EaseOutCubic
-	}
-	lt.progress = easing(progress)
-	return true
-}
-
 // captureLayoutSnapshots recursively captures all element positions.
-func captureLayoutSnapshots(layout Layout) map[string]layoutSnapshot {
-	snapshots := make(map[string]layoutSnapshot)
-	captureRecursive(&layout, snapshots)
+func captureLayoutSnapshots(layout Layout) map[string]posSnapshot {
+	snapshots := make(map[string]posSnapshot)
+	captureSnapshots(&layout, snapshots, false)
 	return snapshots
 }
 
-func captureRecursive(layout *Layout, snapshots map[string]layoutSnapshot) {
-	if layout.Shape.ID != "" {
-		snapshots[layout.Shape.ID] = layoutSnapshot{
+func captureSnapshots(layout *Layout, snapshots map[string]posSnapshot, heroOnly bool) {
+	if layout.Shape.ID != "" && (!heroOnly || layout.Shape.Hero) {
+		snapshots[layout.Shape.ID] = posSnapshot{
 			x:      layout.Shape.X,
 			y:      layout.Shape.Y,
 			width:  layout.Shape.Width,
@@ -107,7 +68,7 @@ func captureRecursive(layout *Layout, snapshots map[string]layoutSnapshot) {
 		}
 	}
 	for i := range layout.Children {
-		captureRecursive(&layout.Children[i], snapshots)
+		captureSnapshots(&layout.Children[i], snapshots, heroOnly)
 	}
 }
 

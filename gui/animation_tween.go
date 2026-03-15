@@ -55,37 +55,18 @@ func updateTween(tw *TweenAnimation, deferred *[]queuedCommand) bool {
 		tw.stopped = true
 		return false
 	}
-	elapsed := time.Since(tw.start)
-	if tw.Duration <= 0 {
-		elapsed = tw.Duration
-	}
-	if elapsed >= tw.Duration {
-		val := tw.To
-		*deferred = append(*deferred, queuedCommand{
-			kind:    queuedCommandValueFn,
-			valueFn: tw.OnValue,
-			value:   val,
-		})
-		if tw.OnDone != nil {
-			*deferred = append(*deferred, queuedCommand{
-				kind:     queuedCommandWindowFn,
-				windowFn: tw.OnDone,
-			})
-		}
+	progress, done := durationProgress(tw.start, tw.Duration)
+	if done {
+		queueOnValue(deferred, tw.OnValue, tw.To)
+		queueOnDone(deferred, tw.OnDone)
 		tw.stopped = true
 		return true
 	}
-	progress := float32(elapsed) / float32(tw.Duration)
 	easing := tw.Easing
 	if easing == nil {
 		easing = EaseLinear
 	}
 	eased := easing(progress)
-	value := Lerp(tw.From, tw.To, eased)
-	*deferred = append(*deferred, queuedCommand{
-		kind:    queuedCommandValueFn,
-		valueFn: tw.OnValue,
-		value:   value,
-	})
+	queueOnValue(deferred, tw.OnValue, Lerp(tw.From, tw.To, eased))
 	return true
 }

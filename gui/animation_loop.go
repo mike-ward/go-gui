@@ -136,9 +136,9 @@ func updateBlinkCursor(b *BlinkCursorAnimation, w *Window) bool {
 	if b.stopped {
 		return false
 	}
-	if time.Since(b.start) > b.delay {
+	if time.Since(b.start) > blinkCursorAnimationDelay {
 		w.viewState.inputCursorOn = !w.viewState.inputCursorOn
-		b.start = b.start.Add(b.delay)
+		b.start = b.start.Add(blinkCursorAnimationDelay)
 		return true
 	}
 	return false

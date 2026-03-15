@@ -107,27 +107,12 @@ func updateSpring(sp *SpringAnimation, dt float32, deferred *[]queuedCommand) bo
 		sp.state.position = sp.state.target
 		sp.state.velocity = 0
 		sp.state.atRest = true
-		target := sp.state.target
-		*deferred = append(*deferred, queuedCommand{
-			kind:    queuedCommandValueFn,
-			valueFn: sp.OnValue,
-			value:   target,
-		})
-		if sp.OnDone != nil {
-			*deferred = append(*deferred, queuedCommand{
-				kind:     queuedCommandWindowFn,
-				windowFn: sp.OnDone,
-			})
-		}
+		queueOnValue(deferred, sp.OnValue, sp.state.target)
+		queueOnDone(deferred, sp.OnDone)
 		sp.stopped = true
 		return true
 	}
 
-	pos := sp.state.position
-	*deferred = append(*deferred, queuedCommand{
-		kind:    queuedCommandValueFn,
-		valueFn: sp.OnValue,
-		value:   pos,
-	})
+	queueOnValue(deferred, sp.OnValue, sp.state.position)
 	return true
 }

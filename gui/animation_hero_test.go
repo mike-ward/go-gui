@@ -27,7 +27,7 @@ func TestHeroTransitionUpdate(t *testing.T) {
 	ht := NewHeroTransition(HeroTransitionCfg{})
 	ht.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateHeroTransition(ht, &deferred)
+	ok := updateTransition(&ht.transitionBase, &deferred)
 	if !ok {
 		t.Error("should update")
 	}
@@ -43,10 +43,10 @@ func TestApplyHeroRecursive(t *testing.T) {
 	layout := Layout{
 		Shape: &Shape{ID: "h", Hero: true, X: 100, Y: 100, Width: 200, Height: 200, Opacity: 1},
 	}
-	outgoing := map[string]heroSnapshot{
+	outgoing := map[string]posSnapshot{
 		"h": {x: 0, y: 0, width: 100, height: 100},
 	}
-	incoming := map[string]heroSnapshot{
+	incoming := map[string]posSnapshot{
 		"h": {x: 100, y: 100, width: 200, height: 200},
 	}
 	// progress=0 → morphProgress=0 → should be at outgoing position
@@ -63,7 +63,7 @@ func TestHeroTransitionOnDone(t *testing.T) {
 	})
 	ht.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateHeroTransition(ht, &deferred)
+	updateTransition(&ht.transitionBase, &deferred)
 	runQueuedCommands(deferred)
 	if !done {
 		t.Error("OnDone not called")

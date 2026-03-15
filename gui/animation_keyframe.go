@@ -59,39 +59,20 @@ func updateKeyframe(kf *KeyframeAnimation, deferred *[]queuedCommand) bool {
 		kf.stopped = true
 		return false
 	}
-	elapsed := time.Since(kf.start)
-	if kf.Duration <= 0 {
-		elapsed = kf.Duration
-	}
-	if elapsed >= kf.Duration {
+	progress, done := durationProgress(kf.start, kf.Duration)
+	if done {
 		if len(kf.Keyframes) > 0 {
-			val := kf.Keyframes[len(kf.Keyframes)-1].Value
-			*deferred = append(*deferred, queuedCommand{
-				kind:    queuedCommandValueFn,
-				valueFn: kf.OnValue,
-				value:   val,
-			})
+			queueOnValue(deferred, kf.OnValue, kf.Keyframes[len(kf.Keyframes)-1].Value)
 		}
 		if kf.Repeat {
 			kf.start = kf.start.Add(kf.Duration)
 			return true
 		}
-		if kf.OnDone != nil {
-			*deferred = append(*deferred, queuedCommand{
-				kind:     queuedCommandWindowFn,
-				windowFn: kf.OnDone,
-			})
-		}
+		queueOnDone(deferred, kf.OnDone)
 		kf.stopped = true
 		return true
 	}
-	progress := float32(elapsed) / float32(kf.Duration)
-	value := interpolateKeyframes(kf.Keyframes, progress)
-	*deferred = append(*deferred, queuedCommand{
-		kind:    queuedCommandValueFn,
-		valueFn: kf.OnValue,
-		value:   value,
-	})
+	queueOnValue(deferred, kf.OnValue, interpolateKeyframes(kf.Keyframes, progress))
 	return true
 }
 

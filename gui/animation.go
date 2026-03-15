@@ -2,6 +2,56 @@ package gui
 
 import "time"
 
+// posSnapshot captures element position/size for transitions.
+type posSnapshot struct {
+	x, y, width, height float32
+}
+
+// transitionBase holds shared fields for LayoutTransition and
+// HeroTransition.
+type transitionBase struct {
+	duration time.Duration
+	easing   EasingFn
+	OnDone   func(*Window)
+	start    time.Time
+	stopped  bool
+	progress float32
+}
+
+func (tb *transitionBase) IsStopped() bool       { return tb.stopped }
+func (tb *transitionBase) SetStart(now time.Time) { tb.start = now }
+
+// updateTransition advances a duration-based transition, returning
+// false when already stopped.
+func updateTransition(tb *transitionBase, deferred *[]queuedCommand) bool {
+	if tb.stopped {
+		return false
+	}
+	progress, done := durationProgress(tb.start, tb.duration)
+	if done {
+		tb.progress = 1.0
+		tb.stopped = true
+		queueOnDone(deferred, tb.OnDone)
+		return true
+	}
+	easing := tb.easing
+	if easing == nil {
+		easing = EaseOutCubic
+	}
+	tb.progress = easing(progress)
+	return true
+}
+
+// durationProgress returns progress [0,1] and whether the animation
+// is complete.
+func durationProgress(start time.Time, duration time.Duration) (float32, bool) {
+	elapsed := time.Since(start)
+	if duration <= 0 || elapsed >= duration {
+		return 1.0, true
+	}
+	return float32(elapsed) / float32(duration), false
+}
+
 // AnimationRefreshKind indicates what type of refresh an animation
 // requires each tick.
 type AnimationRefreshKind uint8
@@ -32,8 +82,6 @@ type Animation interface {
 
 // BlinkCursorAnimation toggles cursor visibility on a timer.
 type BlinkCursorAnimation struct {
-	id      string
-	delay   time.Duration
 	start   time.Time
 	stopped bool
 }
@@ -43,14 +91,11 @@ const blinkCursorAnimationDelay = 600 * time.Millisecond
 
 // NewBlinkCursorAnimation creates a cursor blink animation.
 func NewBlinkCursorAnimation() *BlinkCursorAnimation {
-	return &BlinkCursorAnimation{
-		id:    blinkCursorAnimationID,
-		delay: blinkCursorAnimationDelay,
-	}
+	return &BlinkCursorAnimation{}
 }
 
 // ID implements Animation.
-func (a *BlinkCursorAnimation) ID() string { return a.id }
+func (a *BlinkCursorAnimation) ID() string { return blinkCursorAnimationID }
 
 // RefreshKind implements Animation.
 func (a *BlinkCursorAnimation) RefreshKind() AnimationRefreshKind { return AnimationRefreshRenderOnly }

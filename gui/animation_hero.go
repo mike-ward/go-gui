@@ -2,11 +2,6 @@ package gui
 
 import "time"
 
-// heroSnapshot captures element state for hero transitions.
-type heroSnapshot struct {
-	x, y, width, height float32
-}
-
 // HeroTransitionCfg configures hero transition.
 type HeroTransitionCfg struct {
 	Duration time.Duration
@@ -19,14 +14,9 @@ const heroTransitionID = "__hero_transition__"
 // HeroTransition animates elements between views. Only one
 // HeroTransition can be active at a time (fixed internal ID).
 type HeroTransition struct {
-	duration time.Duration
-	easing   EasingFn
-	OnDone   func(*Window)
-	start    time.Time
-	stopped  bool
-	outgoing map[string]heroSnapshot
-	incoming map[string]heroSnapshot
-	progress float32
+	transitionBase
+	outgoing map[string]posSnapshot
+	incoming map[string]posSnapshot
 }
 
 // ID implements Animation.
@@ -35,15 +25,9 @@ func (h *HeroTransition) ID() string { return heroTransitionID }
 // RefreshKind implements Animation.
 func (h *HeroTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
 
-// IsStopped implements Animation.
-func (h *HeroTransition) IsStopped() bool { return h.stopped }
-
-// SetStart implements Animation.
-func (h *HeroTransition) SetStart(now time.Time) { h.start = now }
-
 // Update implements Animation.
 func (h *HeroTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
-	return updateHeroTransition(h, deferred)
+	return updateTransition(&h.transitionBase, deferred)
 }
 
 // NewHeroTransition creates a HeroTransition with defaults.
@@ -57,56 +41,19 @@ func NewHeroTransition(cfg HeroTransitionCfg) *HeroTransition {
 		eas = EaseOutCubic
 	}
 	return &HeroTransition{
-		duration: dur,
-		easing:   eas,
-		OnDone:   cfg.OnDone,
+		transitionBase: transitionBase{
+			duration: dur,
+			easing:   eas,
+			OnDone:   cfg.OnDone,
+		},
 	}
-}
-
-func updateHeroTransition(ht *HeroTransition, deferred *[]queuedCommand) bool {
-	if ht.stopped {
-		return false
-	}
-	elapsed := time.Since(ht.start)
-	if elapsed >= ht.duration {
-		ht.progress = 1.0
-		ht.stopped = true
-		if ht.OnDone != nil {
-			*deferred = append(*deferred, queuedCommand{
-				kind:     queuedCommandWindowFn,
-				windowFn: ht.OnDone,
-			})
-		}
-		return true
-	}
-	progress := float32(elapsed) / float32(ht.duration)
-	easing := ht.easing
-	if easing == nil {
-		easing = EaseOutCubic
-	}
-	ht.progress = easing(progress)
-	return true
 }
 
 // captureHeroSnapshots finds all hero-marked elements.
-func captureHeroSnapshots(layout Layout) map[string]heroSnapshot {
-	snapshots := make(map[string]heroSnapshot)
-	captureHeroesRecursive(&layout, snapshots)
+func captureHeroSnapshots(layout Layout) map[string]posSnapshot {
+	snapshots := make(map[string]posSnapshot)
+	captureSnapshots(&layout, snapshots, true)
 	return snapshots
-}
-
-func captureHeroesRecursive(layout *Layout, snapshots map[string]heroSnapshot) {
-	if layout.Shape.Hero && layout.Shape.ID != "" {
-		snapshots[layout.Shape.ID] = heroSnapshot{
-			x:      layout.Shape.X,
-			y:      layout.Shape.Y,
-			width:  layout.Shape.Width,
-			height: layout.Shape.Height,
-		}
-	}
-	for i := range layout.Children {
-		captureHeroesRecursive(&layout.Children[i], snapshots)
-	}
 }
 
 // applyHeroTransition modifies layout during render for hero effect.
@@ -129,7 +76,7 @@ func propagateOpacity(layout *Layout, opacity float32) {
 	}
 }
 
-func applyHeroRecursive(layout *Layout, progress float32, outgoing, incoming map[string]heroSnapshot) {
+func applyHeroRecursive(layout *Layout, progress float32, outgoing, incoming map[string]posSnapshot) {
 	if layout.Shape.Hero && layout.Shape.ID != "" {
 		id := layout.Shape.ID
 		morphProgress := f32Min(1, progress*2)
