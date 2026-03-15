@@ -407,47 +407,56 @@ func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 		updateCursorAndSelection(
 			imap, id, is, newPos, isShift)
 	case KeyUp:
-		var newPos int
-		if glOK {
-			bi := runeToByteIndex(text, pos)
-			px := savedOffset
-			if px < 0 {
-				if cp, ok := gl.GetCursorPos(bi); ok {
-					px = cp.X
-				}
-			}
-			is.CursorOffset = px
-			newPos = byteToRuneIndex(text,
-				gl.MoveCursorUp(bi, px))
+		if shape.TC.TextMode == TextModeSingleLine {
+			handled = false
 		} else {
-			newPos = moveCursorUp(
-				[]rune(text), pos)
+			var newPos int
+			if glOK {
+				bi := runeToByteIndex(text, pos)
+				px := savedOffset
+				if px < 0 {
+					if cp, ok := gl.GetCursorPos(bi); ok {
+						px = cp.X
+					}
+				}
+				is.CursorOffset = px
+				newPos = byteToRuneIndex(text,
+					gl.MoveCursorUp(bi, px))
+			} else {
+				newPos = moveCursorUp(
+					[]rune(text), pos)
+			}
+			updateCursorAndSelection(
+				imap, id, is, newPos, isShift)
 		}
-		updateCursorAndSelection(
-			imap, id, is, newPos, isShift)
 	case KeyDown:
-		var newPos int
-		if glOK {
-			bi := runeToByteIndex(text, pos)
-			px := savedOffset
-			if px < 0 {
-				if cp, ok := gl.GetCursorPos(bi); ok {
-					px = cp.X
-				}
-			}
-			is.CursorOffset = px
-			newPos = byteToRuneIndex(text,
-				gl.MoveCursorDown(bi, px))
+		if shape.TC.TextMode == TextModeSingleLine {
+			handled = false
 		} else {
-			newPos = moveCursorDown(
-				[]rune(text), pos)
+			var newPos int
+			if glOK {
+				bi := runeToByteIndex(text, pos)
+				px := savedOffset
+				if px < 0 {
+					if cp, ok := gl.GetCursorPos(bi); ok {
+						px = cp.X
+					}
+				}
+				is.CursorOffset = px
+				newPos = byteToRuneIndex(text,
+					gl.MoveCursorDown(bi, px))
+			} else {
+				newPos = moveCursorDown(
+					[]rune(text), pos)
+			}
+			updateCursorAndSelection(
+				imap, id, is, newPos, isShift)
 		}
-		updateCursorAndSelection(
-			imap, id, is, newPos, isShift)
 	case KeyEscape:
 		is.SelectBeg = 0
 		is.SelectEnd = 0
 		imap.Set(id, is)
+		handled = false
 	case KeyA:
 		if e.Modifiers.HasAny(ModCtrl, ModSuper) {
 			inputSelectAll(text, id, w)

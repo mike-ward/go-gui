@@ -305,6 +305,107 @@ func TestPaletteBackdropDismiss(t *testing.T) {
 	}
 }
 
+func TestPaletteOnEnterSelectsHighlighted(t *testing.T) {
+	w := &Window{}
+	id := "cp-enter"
+	CommandPaletteShow(id, 1, 0, w)
+
+	// Highlight index 1.
+	sh := StateMap[string, int](w, nsCmdPaletteHighlight, capModerate)
+	sh.Set(id, 1)
+
+	selected := ""
+	items := []ListCoreItem{
+		{ID: "a", Label: "A"},
+		{ID: "b", Label: "B"},
+	}
+	ids := []string{"a", "b"}
+	onEnter := makePaletteOnEnter(id,
+		func(itemID string, _ *Event, _ *Window) { selected = itemID },
+		nil, items, ids)
+
+	e := &Event{KeyCode: KeyEnter}
+	onEnter(nil, e, w)
+	if selected != "b" {
+		t.Errorf("OnEnter selected = %q, want b", selected)
+	}
+	if CommandPaletteIsVisible(id, w) {
+		t.Error("palette should dismiss after Enter select")
+	}
+}
+
+func TestPaletteOnEnterDisabledBlocked(t *testing.T) {
+	w := &Window{}
+	id := "cp-enter-dis"
+	CommandPaletteShow(id, 1, 0, w)
+
+	selected := ""
+	items := []ListCoreItem{
+		{ID: "a", Label: "A", Disabled: true},
+	}
+	ids := []string{"a"}
+	onEnter := makePaletteOnEnter(id,
+		func(itemID string, _ *Event, _ *Window) { selected = itemID },
+		nil, items, ids)
+
+	e := &Event{KeyCode: KeyEnter}
+	onEnter(nil, e, w)
+	if selected != "" {
+		t.Errorf("disabled item should not select, got %q", selected)
+	}
+}
+
+func TestPaletteKeyboardDispatchIntegration(t *testing.T) {
+	w := &Window{}
+	id := "cp-integ"
+	var idFocus uint32 = 5
+	var idScroll uint32 = 6
+	CommandPaletteShow(id, idFocus, idScroll, w)
+
+	selected := ""
+	v := CommandPalette(CommandPaletteCfg{
+		ID:       id,
+		IDFocus:  idFocus,
+		IDScroll: idScroll,
+		Items: []CommandPaletteItem{
+			{ID: "alpha", Label: "Alpha"},
+			{ID: "beta", Label: "Beta"},
+			{ID: "gamma", Label: "Gamma"},
+		},
+		OnAction: func(itemID string, _ *Event, _ *Window) {
+			selected = itemID
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+
+	// Arrow down through keydownHandler (full dispatch).
+	e := &Event{KeyCode: KeyDown, Type: EventKeyDown}
+	keydownHandler(&layout, e, w)
+	if !e.IsHandled {
+		t.Fatal("arrow down should be handled")
+	}
+	sh := StateMap[string, int](w, nsCmdPaletteHighlight, capModerate)
+	cur, _ := sh.Get(id)
+	if cur != 1 {
+		t.Errorf("highlight after down = %d, want 1", cur)
+	}
+
+	// Re-generate layout after state change.
+	layout = GenerateViewLayout(v, w)
+
+	// Enter through keydownHandler to select.
+	e = &Event{KeyCode: KeyEnter, Type: EventKeyDown}
+	keydownHandler(&layout, e, w)
+	if selected != "beta" {
+		t.Errorf("selected = %q, want beta", selected)
+	}
+
+	// Palette should be dismissed.
+	if CommandPaletteIsVisible(id, w) {
+		t.Error("palette should be dismissed after Enter")
+	}
+}
+
 func TestPaletteFloatZIndexDefault(t *testing.T) {
 	cfg := CommandPaletteCfg{}
 	applyCommandPaletteDefaults(&cfg)

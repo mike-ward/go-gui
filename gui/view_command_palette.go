@@ -211,6 +211,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 								IDFocus:       cfg.IDFocus,
 								Sizing:        FillFit,
 								OnTextChanged: makePaletteOnTextChanged(cfg.ID),
+								OnEnter:       makePaletteOnEnter(paletteID, onAction, onDismiss, filtered, filteredIDs),
 							}),
 						},
 					}),
@@ -280,6 +281,22 @@ func cmdPaletteItemToCore(item CommandPaletteItem) ListCoreItem {
 		Icon:     item.Icon,
 		Group:    item.Group,
 		Disabled: item.Disabled,
+	}
+}
+
+func makePaletteOnEnter(paletteID string, onAction func(string, *Event, *Window), onDismiss func(*Window), filtered []ListCoreItem, filteredIDs []string) func(*Layout, *Event, *Window) {
+	return func(_ *Layout, e *Event, w *Window) {
+		sh := StateMap[string, int](w, nsCmdPaletteHighlight, capModerate)
+		cur, _ := sh.Get(paletteID)
+		itemCount := len(filteredIDs)
+		if cur >= 0 && cur < itemCount && onAction != nil &&
+			!filtered[cur].Disabled {
+			onAction(filteredIDs[cur], e, w)
+			CommandPaletteDismiss(paletteID, w)
+			if onDismiss != nil {
+				onDismiss(w)
+			}
+		}
 	}
 }
 
