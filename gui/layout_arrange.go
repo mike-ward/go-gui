@@ -26,35 +26,17 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 
 	// Inject inspector overlay as a floating layer.
 	if inspectorSupported && w.inspectorEnabled {
-		iv := inspectorFloatingPanel(w)
-		if iv != nil {
-			il := GenerateViewLayout(iv, w)
-			heapLayout := w.scratch.allocFloatingLayout(il)
-			layoutParents(heapLayout, nil)
-			floatingLayouts = append(floatingLayouts, heapLayout)
-		}
+		injectFloatingLayer(inspectorFloatingPanel(w), w, &floatingLayouts)
 	}
 
 	// Inject toast container as floating layer.
 	if len(w.toasts) > 0 {
-		tv := toastContainerView(w)
-		if tv != nil {
-			tl := GenerateViewLayout(tv, w)
-			heapLayout := w.scratch.allocFloatingLayout(tl)
-			layoutParents(heapLayout, nil)
-			floatingLayouts = append(floatingLayouts, heapLayout)
-		}
+		injectFloatingLayer(toastContainerView(w), w, &floatingLayouts)
 	}
 
 	// Inject dialog as last floating layer (always on top).
 	if w.dialogCfg.visible {
-		dv := dialogViewGenerator(w.dialogCfg)
-		if dv != nil {
-			dl := GenerateViewLayout(dv, w)
-			heapLayout := w.scratch.allocFloatingLayout(dl)
-			layoutParents(heapLayout, nil)
-			floatingLayouts = append(floatingLayouts, heapLayout)
-		}
+		injectFloatingLayer(dialogViewGenerator(w.dialogCfg), w, &floatingLayouts)
 	}
 
 	// Run pipeline on main layout.
@@ -80,4 +62,16 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 	}
 
 	return layouts
+}
+
+// injectFloatingLayer generates a view layout and appends it as a
+// floating layer. No-op if v is nil.
+func injectFloatingLayer(v View, w *Window, floatingLayouts *[]*Layout) {
+	if v == nil {
+		return
+	}
+	l := GenerateViewLayout(v, w)
+	heap := w.scratch.allocFloatingLayout(l)
+	layoutParents(heap, nil)
+	*floatingLayouts = append(*floatingLayouts, heap)
 }

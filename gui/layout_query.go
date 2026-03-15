@@ -136,21 +136,17 @@ func focusFindPrevious(candidates []focusCandidate, idFocus uint32) (*Shape, boo
 	return nil, false
 }
 
-// NextFocusable returns the next focusable shape after the
-// current focus. Wraps to first if at end.
-func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
+type focusFinder func([]focusCandidate, uint32) (*Shape, bool)
+
+func (layout *Layout) findFocusable(w *Window, find focusFinder) (*Shape, bool) {
 	var candidates []focusCandidate
 	var seen map[uint32]struct{}
 	var idFocus uint32
 	if w != nil {
 		candidates = w.scratch.focusCandidates.take(0)
-		defer func() {
-			w.scratch.focusCandidates.put(candidates)
-		}()
+		defer func() { w.scratch.focusCandidates.put(candidates) }()
 		seen = w.scratch.focusSeen.take(len(candidates))
-		defer func() {
-			w.scratch.focusSeen.put(seen)
-		}()
+		defer func() { w.scratch.focusSeen.put(seen) }()
 		idFocus = w.viewState.idFocus
 	} else {
 		seen = make(map[uint32]struct{})
@@ -159,33 +155,19 @@ func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
 	if len(candidates) == 0 {
 		return nil, false
 	}
-	return focusFindNext(candidates, idFocus)
+	return find(candidates, idFocus)
+}
+
+// NextFocusable returns the next focusable shape after the
+// current focus. Wraps to first if at end.
+func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
+	return layout.findFocusable(w, focusFindNext)
 }
 
 // PreviousFocusable returns the previous focusable shape before
 // the current focus. Wraps to last if at beginning.
 func (layout *Layout) PreviousFocusable(w *Window) (*Shape, bool) {
-	var candidates []focusCandidate
-	var seen map[uint32]struct{}
-	var idFocus uint32
-	if w != nil {
-		candidates = w.scratch.focusCandidates.take(0)
-		defer func() {
-			w.scratch.focusCandidates.put(candidates)
-		}()
-		seen = w.scratch.focusSeen.take(len(candidates))
-		defer func() {
-			w.scratch.focusSeen.put(seen)
-		}()
-		idFocus = w.viewState.idFocus
-	} else {
-		seen = make(map[uint32]struct{})
-	}
-	collectFocusCandidates(layout, &candidates, seen)
-	if len(candidates) == 0 {
-		return nil, false
-	}
-	return focusFindPrevious(candidates, idFocus)
+	return layout.findFocusable(w, focusFindPrevious)
 }
 
 // rectIntersection returns the intersection of two rectangles.

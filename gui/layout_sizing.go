@@ -61,6 +61,67 @@ func getSizing(shape *Shape, axis distributeAxis) SizingType {
 	return shape.Sizing.Height
 }
 
+func getPadding(shape *Shape, axis distributeAxis) float32 {
+	if axis == distributeHorizontal {
+		return shape.PaddingWidth()
+	}
+	return shape.PaddingHeight()
+}
+
+// mainAxisOf returns the layout axis that distributes children
+// along the given dimension (horizontal → LeftToRight, etc.).
+func mainAxisOf(axis distributeAxis) Axis {
+	if axis == distributeHorizontal {
+		return AxisLeftToRight
+	}
+	return AxisTopToBottom
+}
+
+func scrollExcludesAxis(mode ScrollMode, axis distributeAxis) bool {
+	if axis == distributeHorizontal {
+		return mode == ScrollVerticalOnly
+	}
+	return mode == ScrollHorizontalOnly
+}
+
+func clampMinMax(shape *Shape, axis distributeAxis) {
+	size := getSize(shape, axis)
+	minSize := getMinSize(shape, axis)
+	maxSize := getMaxSize(shape, axis)
+	if minSize > 0 && size < minSize {
+		setSize(shape, axis, minSize)
+	}
+	if maxSize > 0 && size > maxSize {
+		setSize(shape, axis, maxSize)
+	}
+}
+
+// layoutFillCrossAxis handles cross-axis fill sizing: adjusts scroll
+// containers to fit parent's remaining space, clamps to min/max, and
+// propagates fill size to children.
+func layoutFillCrossAxis(layout *Layout, axis distributeAxis) {
+	if layout.Shape.IDScroll > 0 && getSizing(layout.Shape, axis) == SizingFill &&
+		!scrollExcludesAxis(layout.Shape.ScrollMode, axis) &&
+		layout.Parent != nil && layout.Parent.Shape.Axis == mainAxisOf(axis) {
+		var totalChild float32
+		for j := range layout.Parent.Children {
+			totalChild += getSize(layout.Parent.Children[j].Shape, axis)
+		}
+		sibling := totalChild - getSize(layout.Shape, axis)
+		target := getSize(layout.Parent.Shape, axis) - sibling -
+			layout.Parent.spacing() - getPadding(layout.Parent.Shape, axis)
+		setSize(layout.Shape, axis, f32Max(0, target))
+	}
+	clampMinMax(layout.Shape, axis)
+	remaining := getSize(layout.Shape, axis) - getPadding(layout.Shape, axis)
+	for i := range layout.Children {
+		if getSizing(layout.Children[i].Shape, axis) == SizingFill {
+			setSize(layout.Children[i].Shape, axis, remaining)
+			clampMinMax(layout.Children[i].Shape, axis)
+		}
+	}
+}
+
 type distributionExtrema struct {
 	extremum    float32
 	nextExtrema float32
@@ -386,35 +447,7 @@ func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 			distributeSpace(layout, remainingWidth, distributeShrink, distributeHorizontal, candidates, fixedIndices)
 		}
 	} else if layout.Shape.Axis == AxisTopToBottom {
-		if layout.Shape.IDScroll > 0 && layout.Shape.Sizing.Width == SizingFill &&
-			layout.Shape.ScrollMode != ScrollVerticalOnly &&
-			layout.Parent != nil && layout.Parent.Shape.Axis == AxisLeftToRight {
-			var totalChildWidth float32
-			for j := range layout.Parent.Children {
-				totalChildWidth += layout.Parent.Children[j].Shape.Width
-			}
-			siblingWidthSum := totalChildWidth - layout.Shape.Width
-			targetWidth := layout.Parent.Shape.Width - siblingWidthSum - layout.Parent.spacing() - layout.Parent.Shape.PaddingWidth()
-			layout.Shape.Width = f32Max(0, targetWidth)
-		}
-		if layout.Shape.MinWidth > 0 && layout.Shape.Width < layout.Shape.MinWidth {
-			layout.Shape.Width = layout.Shape.MinWidth
-		}
-		if layout.Shape.MaxWidth > 0 && layout.Shape.Width > layout.Shape.MaxWidth {
-			layout.Shape.Width = layout.Shape.MaxWidth
-		}
-		remainingWidth = layout.Shape.Width - layout.Shape.PaddingWidth()
-		for i := range layout.Children {
-			if layout.Children[i].Shape.Sizing.Width == SizingFill {
-				layout.Children[i].Shape.Width = remainingWidth
-				if layout.Children[i].Shape.MinWidth > 0 {
-					layout.Children[i].Shape.Width = f32Max(layout.Children[i].Shape.Width, layout.Children[i].Shape.MinWidth)
-				}
-				if layout.Children[i].Shape.MaxWidth > 0 {
-					layout.Children[i].Shape.Width = f32Min(layout.Children[i].Shape.Width, layout.Children[i].Shape.MaxWidth)
-				}
-			}
-		}
+		layoutFillCrossAxis(layout, distributeHorizontal)
 	}
 
 	for i := range layout.Children {
@@ -445,35 +478,7 @@ func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 			distributeSpace(layout, remainingHeight, distributeShrink, distributeVertical, candidates, fixedIndices)
 		}
 	} else if layout.Shape.Axis == AxisLeftToRight {
-		if layout.Shape.IDScroll > 0 && layout.Shape.Sizing.Height == SizingFill &&
-			layout.Shape.ScrollMode != ScrollHorizontalOnly &&
-			layout.Parent != nil && layout.Parent.Shape.Axis == AxisTopToBottom {
-			var totalChildHeight float32
-			for j := range layout.Parent.Children {
-				totalChildHeight += layout.Parent.Children[j].Shape.Height
-			}
-			siblingHeightSum := totalChildHeight - layout.Shape.Height
-			targetHeight := layout.Parent.Shape.Height - siblingHeightSum - layout.Parent.spacing() - layout.Parent.Shape.PaddingHeight()
-			layout.Shape.Height = f32Max(0, targetHeight)
-		}
-		if layout.Shape.MinHeight > 0 && layout.Shape.Height < layout.Shape.MinHeight {
-			layout.Shape.Height = layout.Shape.MinHeight
-		}
-		if layout.Shape.MaxHeight > 0 && layout.Shape.Height > layout.Shape.MaxHeight {
-			layout.Shape.Height = layout.Shape.MaxHeight
-		}
-		remainingHeight = layout.Shape.Height - layout.Shape.PaddingHeight()
-		for i := range layout.Children {
-			if layout.Children[i].Shape.Sizing.Height == SizingFill {
-				layout.Children[i].Shape.Height = remainingHeight
-				if layout.Children[i].Shape.MinHeight > 0 {
-					layout.Children[i].Shape.Height = f32Max(layout.Children[i].Shape.Height, layout.Children[i].Shape.MinHeight)
-				}
-				if layout.Children[i].Shape.MaxHeight > 0 {
-					layout.Children[i].Shape.Height = f32Min(layout.Children[i].Shape.Height, layout.Children[i].Shape.MaxHeight)
-				}
-			}
-		}
+		layoutFillCrossAxis(layout, distributeVertical)
 	}
 
 	for i := range layout.Children {
