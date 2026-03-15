@@ -243,6 +243,9 @@ func TestKeyNameFunctionKeys(t *testing.T) {
 	if got := keyName(KeyF12); got != "F12" {
 		t.Errorf("got %q, want F12", got)
 	}
+	if got := keyName(KeyF25); got != "F25" {
+		t.Errorf("got %q, want F25", got)
+	}
 }
 
 func TestKeyNameSpecial(t *testing.T) {
@@ -263,5 +266,43 @@ func TestKeyNameSpecial(t *testing.T) {
 			t.Errorf("keyName(%d) = %q, want %q",
 				tt.key, got, tt.want)
 		}
+	}
+}
+
+func TestCommandButtonUnknownPanics(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int)})
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic on unknown command ID")
+		}
+	}()
+	CommandButton(w, "nonexistent", ButtonCfg{})
+}
+
+func TestUnregisterCommandNoOp(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int)})
+	// Should not panic when unregistering a non-existent ID.
+	w.UnregisterCommand("does-not-exist")
+}
+
+func TestCommandDispatchNoMatch(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int)})
+	w.RegisterCommand(Command{
+		ID:       "x",
+		Shortcut: Shortcut{Key: KeyA, Modifiers: ModCtrl},
+		Execute:  func(_ *Event, _ *Window) {},
+	})
+	e := &Event{KeyCode: KeyB, Modifiers: ModCtrl}
+	w.commandDispatch(e, false)
+	if e.IsHandled {
+		t.Error("event should not be handled when no command matches")
+	}
+}
+
+func TestShortcutMatchesZeroValue(t *testing.T) {
+	s := Shortcut{} // Key == KeyInvalid
+	e := &Event{KeyCode: KeyInvalid}
+	if s.matches(e) {
+		t.Error("zero-value shortcut should not match")
 	}
 }

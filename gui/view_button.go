@@ -145,7 +145,7 @@ func Button(cfg ButtonCfg) View {
 func CommandButton(w *Window, cmdID string, cfg ButtonCfg) View {
 	cmd, ok := w.CommandByID(cmdID)
 	if !ok {
-		return Button(cfg)
+		panic("CommandButton: unknown command ID " + cmdID)
 	}
 
 	// Auto-fill content from command label.

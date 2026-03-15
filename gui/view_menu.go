@@ -176,10 +176,11 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 				}
 				if configured.Action == nil {
 					cmdExec := cmd.Execute
+					cID := configured.CommandID
 					configured.Action = func(
 						_ *MenuItemCfg, e *Event, w *Window,
 					) {
-						if cmdExec != nil {
+						if w.CommandCanExecute(cID) && cmdExec != nil {
 							cmdExec(e, w)
 						}
 					}

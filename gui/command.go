@@ -1,6 +1,9 @@
 package gui
 
-import "runtime"
+import (
+	"runtime"
+	"strconv"
+)
 
 // Shortcut binds a key + modifier combination.
 type Shortcut struct {
@@ -135,13 +138,8 @@ func keyName(k KeyCode) string {
 	return "?"
 }
 
-// itoa converts a small int to string without fmt.
-func itoa(n int) string {
-	if n < 10 {
-		return string(rune('0' + n))
-	}
-	return string(rune('0'+n/10)) + string(rune('0'+n%10))
-}
+// itoa converts an int to its decimal string.
+func itoa(n int) string { return strconv.Itoa(n) }
 
 // Command bundles an action with its identity, shortcut,
 // and enable/disable logic.
