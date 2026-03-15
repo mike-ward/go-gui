@@ -1,9 +1,6 @@
 package gui
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
 func TestStateMapRoundTrip(t *testing.T) {
 	w := &Window{}
@@ -79,32 +76,6 @@ func TestStateMapReadReturnsNilForMissing(t *testing.T) {
 	}
 }
 
-func TestStateMapTypeTagPersisted(t *testing.T) {
-	w := &Window{}
-	_ = StateMap[string, int](w, "test.tagged", 10)
-
-	m, ok := w.viewState.registry.meta["test.tagged"]
-	if !ok {
-		t.Fatal("meta entry missing")
-	}
-	if m.typeTag != stateMapTypeTagOf[string, int]() {
-		t.Errorf("type tag mismatch: got %+v", m.typeTag)
-	}
-}
-
-func TestStateMapMaxSizePersisted(t *testing.T) {
-	w := &Window{}
-	_ = StateMap[string, int](w, "test.cap", 42)
-
-	m, ok := w.viewState.registry.meta["test.cap"]
-	if !ok {
-		t.Fatal("meta entry missing")
-	}
-	if m.maxSize != 42 {
-		t.Errorf("maxSize: got %d", m.maxSize)
-	}
-}
-
 func TestRegistryEntryCount(t *testing.T) {
 	w := &Window{}
 	sm := StateMap[string, int](w, "test.count", 10)
@@ -120,25 +91,5 @@ func TestRegistryEntryCount(t *testing.T) {
 
 	if w.viewState.registry.entryCount("no.such.ns") != 0 {
 		t.Error("missing ns should be 0")
-	}
-}
-
-func TestStateMapTypeCheckDetectsMismatch(t *testing.T) {
-	w := &Window{}
-	_ = StateMap[string, int](w, "test.mismatch", 10)
-
-	if err := stateMapTypeCheck[string, int](&w.viewState.registry, "test.mismatch"); err != nil {
-		t.Errorf("same type should not error: %v", err)
-	}
-
-	err := stateMapTypeCheck[string, bool](&w.viewState.registry, "test.mismatch")
-	if err == nil {
-		t.Fatal("different type should error")
-	}
-	if !strings.Contains(err.Error(), "state_map type mismatch") {
-		t.Errorf("error should mention mismatch: %v", err)
-	}
-	if !strings.Contains(err.Error(), "test.mismatch") {
-		t.Errorf("error should mention namespace: %v", err)
 	}
 }

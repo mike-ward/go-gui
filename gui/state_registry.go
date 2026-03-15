@@ -1,87 +1,28 @@
 package gui
 
-import (
-	"fmt"
-	"log"
-	"reflect"
-)
-
 // StateRegistry stores per-widget BoundedMap instances keyed by
 // namespace string.
 type StateRegistry struct {
 	maps map[string]any
-	meta map[string]stateMapMeta
-}
-
-type stateMapMeta struct {
-	typeTag stateMapTypeTag
-	maxSize int
-}
-
-type stateMapTypeTag struct {
-	keyType   reflect.Type
-	valueType reflect.Type
-}
-
-func stateMapTypeTagOf[K comparable, V any]() stateMapTypeTag {
-	return stateMapTypeTag{
-		keyType:   reflect.TypeFor[K](),
-		valueType: reflect.TypeFor[V](),
-	}
-}
-
-func stateMapTypeCheck[K comparable, V any](r *StateRegistry, ns string) error {
-	if r.meta == nil {
-		return nil
-	}
-	if m, ok := r.meta[ns]; ok {
-		tag := stateMapTypeTagOf[K, V]()
-		if m.typeTag != tag {
-			return fmt.Errorf(
-				"state_map type mismatch: %s expected %s got %s",
-				ns,
-				m.typeTag.keyType.String()+":"+m.typeTag.valueType.String(),
-				tag.keyType.String()+":"+tag.valueType.String(),
-			)
-		}
-	}
-	return nil
 }
 
 // StateMap returns (or lazily creates) a *BoundedMap[K, V] for the
 // given namespace.
 func StateMap[K comparable, V any](w *Window, ns string, maxSize int) *BoundedMap[K, V] {
-	if err := stateMapTypeCheck[K, V](&w.viewState.registry, ns); err != nil {
-		panic(err.Error())
-	}
 	if ptr, ok := w.viewState.registry.maps[ns]; ok {
-		if m, ok := w.viewState.registry.meta[ns]; ok {
-			if m.maxSize != maxSize {
-				log.Printf("state_map max_size mismatch: %s registered %d, requested %d",
-					ns, m.maxSize, maxSize)
-			}
-		}
 		return ptr.(*BoundedMap[K, V])
 	}
 	m := NewBoundedMap[K, V](maxSize)
 	if w.viewState.registry.maps == nil {
 		w.viewState.registry.maps = make(map[string]any)
-		w.viewState.registry.meta = make(map[string]stateMapMeta)
 	}
 	w.viewState.registry.maps[ns] = m
-	w.viewState.registry.meta[ns] = stateMapMeta{
-		typeTag: stateMapTypeTagOf[K, V](),
-		maxSize: maxSize,
-	}
 	return m
 }
 
 // StateMapRead returns a *BoundedMap[K, V] for read-only access.
 // Returns nil if namespace not initialized.
 func StateMapRead[K comparable, V any](w *Window, ns string) *BoundedMap[K, V] {
-	if err := stateMapTypeCheck[K, V](&w.viewState.registry, ns); err != nil {
-		panic(err.Error())
-	}
 	if ptr, ok := w.viewState.registry.maps[ns]; ok {
 		return ptr.(*BoundedMap[K, V])
 	}
@@ -105,18 +46,14 @@ func StateReadOr[K comparable, V any](w *Window, ns string, key K, defaultVal V)
 // Clear drops all registry references.
 func (r *StateRegistry) Clear() {
 	clear(r.maps)
-	clear(r.meta)
 }
 
 // entryCount returns the number of entries in the BoundedMap
 // for the given namespace, or 0 if not found.
 func (r *StateRegistry) entryCount(ns string) int {
-	if ptr, ok := r.maps[ns]; ok && ptr != nil {
-		// Use type assertion to get length — we stored as any
-		type lenner interface{ Len() int }
-		if l, ok := ptr.(lenner); ok {
-			return l.Len()
-		}
+	type lenner interface{ Len() int }
+	if l, ok := r.maps[ns].(lenner); ok {
+		return l.Len()
 	}
 	return 0
 }
@@ -169,7 +106,6 @@ const (
 	nsSvgCache            = "gui.svg_cache"
 	nsSvgDimCache         = "gui.svg_dim_cache"
 	nsSvgAnimSeen         = "gui.svg_anim_seen"
-	nsSvgAnimStart        = "gui.svg_anim_start"
 	nsDragReorder         = "gui.drag_reorder"
 	nsDragReorderIDsMeta  = "gui.drag_reorder.ids_meta"
 	nsTableColWidths      = "gui.table.col_widths"
