@@ -49,6 +49,8 @@ between layout and rendering.
 - Locale and i18n support
 - Theme system with built-in dark/light variants and custom theme support
 
+![gallery](assets/gallery.png)
+
 ## Requirements
 
 - Go 1.26+
