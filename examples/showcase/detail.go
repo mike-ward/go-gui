@@ -132,6 +132,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 	switch id {
 	case "welcome":
 		return demoWelcome(w)
+	case "commands":
+		return showcaseMarkdownPanel(w, "showcase-commands", docPageSource("commands"))
 
 	case "button":
 		return demoButton(w)

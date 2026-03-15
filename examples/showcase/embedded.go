@@ -20,7 +20,8 @@ var showcaseLocaleIDs = []string{"en-US", "de-DE", "ar-SA", "ja-JP"}
 var showcaseLocaleLabels = []string{"EN", "DE", "AR", "JA"}
 
 var docPageFiles = map[string]string{
-	"welcome": "docs/welcome.md",
+	"welcome":  "docs/welcome.md",
+	"commands": "docs/commands.md",
 }
 
 func loadEmbeddedLocales() {
@@ -109,6 +110,7 @@ func relatedExamples(id string) string {
 
 var relatedExampleMap = map[string][]string{
 	"welcome":             {"examples/showcase/demo_welcome.go", "examples/showcase/docs/welcome.md"},
+	"commands":             {"examples/showcase/docs/commands.md", "examples/command_demo/main.go"},
 	"button":              {"examples/showcase/demo_feedback.go"},
 	"input":               {"examples/showcase/demo_input.go", "examples/multiline_input/main.go"},
 	"toggle":              {"examples/showcase/demo_selection.go"},
