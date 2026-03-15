@@ -63,15 +63,7 @@ func (s *BoundedStack[T]) IsEmpty() bool {
 
 // Clear removes all elements.
 func (s *BoundedStack[T]) Clear() {
-	if s.size == 0 {
-		s.head = 0
-		return
-	}
-	var zero T
-	for i := 0; i < s.size; i++ {
-		idx := (s.head + i) % s.maxSize
-		s.buf[idx] = zero
-	}
+	clear(s.buf)
 	s.size = 0
 	s.head = 0
 }
