@@ -68,21 +68,10 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			cached.Animations, elapsed, animState)
 	}
 
-	// Emit tessellated paths.
-	for _, path := range cached.RenderPaths {
-		emitSvgPathRenderer(path, color, sx, sy,
-			cached.Scale, animState, w)
-	}
-
-	// Emit text elements.
-	for i := range cached.TextDraws {
-		emitCachedSvgTextDraw(&cached.TextDraws[i], sx, sy, w)
-	}
-
-	// Emit textPath elements.
-	for i := range cached.TextPathDraws {
-		emitCachedSvgTextPathDraw(&cached.TextPathDraws[i], sx, sy, w)
-	}
+	// Emit main paths, text, and textPath elements.
+	emitSvgGroup(cached.RenderPaths, cached.TextDraws,
+		cached.TextPathDraws, color, sx, sy,
+		cached.Scale, animState, w)
 
 	// Emit filtered groups.
 	for i, fg := range cached.FilteredGroups {
@@ -97,33 +86,18 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			BlurRadius: fg.Filter.StdDev * cached.Scale,
 			Layers:     fg.Filter.BlurLayers,
 		}, w)
-		for _, path := range fg.RenderPaths {
-			emitSvgPathRenderer(path, color,
-				sx, sy, cached.Scale, animState, w)
-		}
-		for j := range fg.TextDraws {
-			emitCachedSvgTextDraw(&fg.TextDraws[j], sx, sy, w)
-		}
-		for j := range fg.TextPathDraws {
-			emitCachedSvgTextPathDraw(&fg.TextPathDraws[j], sx, sy, w)
-		}
+		emitSvgGroup(fg.RenderPaths, fg.TextDraws,
+			fg.TextPathDraws, color, sx, sy,
+			cached.Scale, animState, w)
 		emitRenderer(RenderCmd{
 			Kind: RenderFilterEnd,
 		}, w)
 
 		// KeepSource: re-draw sharp original on top of blur.
 		if fg.Filter.KeepSource {
-			for _, path := range fg.RenderPaths {
-				emitSvgPathRenderer(path, color,
-					sx, sy, cached.Scale, animState, w)
-			}
-			for j := range fg.TextDraws {
-				emitCachedSvgTextDraw(&fg.TextDraws[j], sx, sy, w)
-			}
-			for j := range fg.TextPathDraws {
-				emitCachedSvgTextPathDraw(
-					&fg.TextPathDraws[j], sx, sy, w)
-			}
+			emitSvgGroup(fg.RenderPaths, fg.TextDraws,
+				fg.TextPathDraws, color, sx, sy,
+				cached.Scale, animState, w)
 		}
 	}
 
@@ -135,6 +109,24 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		W:    clip.Width,
 		H:    clip.Height,
 	}, w)
+}
+
+// emitSvgGroup emits paths, text draws, and text path draws.
+func emitSvgGroup(
+	paths []CachedSvgPath, textDraws []CachedSvgTextDraw,
+	textPathDraws []CachedSvgTextPathDraw,
+	color Color, sx, sy, scale float32,
+	animState map[string]svgAnimState, w *Window,
+) {
+	for _, path := range paths {
+		emitSvgPathRenderer(path, color, sx, sy, scale, animState, w)
+	}
+	for i := range textDraws {
+		emitCachedSvgTextDraw(&textDraws[i], sx, sy, w)
+	}
+	for i := range textPathDraws {
+		emitCachedSvgTextPathDraw(&textPathDraws[i], sx, sy, w)
+	}
 }
 
 // emitSvgPathRenderer emits a single SVG path as a RenderSvg

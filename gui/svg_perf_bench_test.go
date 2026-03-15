@@ -80,10 +80,3 @@ func BenchmarkBuildDefsPathDataCache(b *testing.B) {
 	}
 }
 
-func BenchmarkBuildSvgCacheKey(b *testing.B) {
-	h := hashString("<svg/>")
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		_ = buildSvgCacheKey(h, 123.4, 567.8)
-	}
-}

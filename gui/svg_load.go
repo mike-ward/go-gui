@@ -13,7 +13,6 @@ import (
 
 const maxSvgSourceBytes = int64(4 * 1024 * 1024)
 
-var validSvgExtensions = []string{".svg"}
 
 type svgParserCacheInvalidator interface {
 	InvalidateSvgSource(svgSrc string)
@@ -50,9 +49,7 @@ type CachedSvgTextPathDraw struct {
 type CachedFilteredGroup struct {
 	Filter        SvgFilter
 	RenderPaths   []CachedSvgPath
-	Texts         []SvgText
 	TextDraws     []CachedSvgTextDraw
-	TextPaths     []SvgTextPath
 	TextPathDraws []CachedSvgTextPathDraw
 	Gradients     map[string]SvgGradientDef
 	BBox          [4]float32 // x, y, width, height
@@ -61,11 +58,8 @@ type CachedFilteredGroup struct {
 // CachedSvg holds pre-tessellated SVG data for efficient rendering.
 type CachedSvg struct {
 	RenderPaths    []CachedSvgPath
-	Texts          []SvgText
 	TextDraws      []CachedSvgTextDraw
-	TextPaths      []SvgTextPath
 	TextPathDraws  []CachedSvgTextPathDraw
-	DefsPaths      map[string]string
 	FilteredGroups []CachedFilteredGroup
 	Gradients      map[string]SvgGradientDef
 	Animations     []SvgAnimation
@@ -108,6 +102,39 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 	return out
 }
 
+// buildSvgTextStyle builds a TextStyle from SVG text properties.
+func buildSvgTextStyle(
+	fontFamily string, fontWeight int, isBold, isItalic bool,
+	fontSize, letterSpacing, strokeWidth float32,
+	strokeColor, color SvgColor, opacity, scale float32,
+) TextStyle {
+	fontName := fontFamily
+	if wn := pangoWeightName(fontWeight); wn != "" {
+		fontName += " " + wn
+	} else if isBold {
+		fontName += " Bold"
+	}
+	typeface := glyph.TypefaceRegular
+	if isItalic {
+		typeface = glyph.TypefaceItalic
+	}
+	ts := TextStyle{
+		Family:        fontName,
+		Size:          fontSize * scale,
+		LetterSpacing: letterSpacing * scale,
+		Typeface:      typeface,
+		StrokeWidth:   strokeWidth * scale,
+		StrokeColor:   svgToColor(strokeColor),
+	}
+	if opacity < 1.0 {
+		ts.Color = Color{color.R, color.G, color.B,
+			uint8(float32(color.A)*opacity + 0.5), true}
+	} else {
+		ts.Color = svgToColor(color)
+	}
+	return ts
+}
+
 // cachedSvgTextDraws converts SvgText elements to CachedSvgTextDraw.
 func cachedSvgTextDraws(texts []SvgText, scale float32,
 	gradients map[string]SvgGradientDef, w *Window) []CachedSvgTextDraw {
@@ -116,33 +143,11 @@ func cachedSvgTextDraws(texts []SvgText, scale float32,
 		if len(t.Text) == 0 {
 			continue
 		}
-		// Build Pango-style font name with weight/style.
-		fontName := t.FontFamily
-		if wn := pangoWeightName(t.FontWeight); wn != "" {
-			fontName += " " + wn
-		} else if t.IsBold {
-			fontName += " Bold"
-		}
-		typeface := glyph.TypefaceRegular
-		if t.IsItalic {
-			typeface = glyph.TypefaceItalic
-		}
-		ts := TextStyle{
-			Family:        fontName,
-			Size:          t.FontSize * scale,
-			LetterSpacing: t.LetterSpacing * scale,
-			Typeface:      typeface,
-			Underline:     t.Underline,
-			Strikethrough: t.Strikethrough,
-			StrokeWidth:   t.StrokeWidth * scale,
-			StrokeColor:   svgToColor(t.StrokeColor),
-		}
-		if t.Opacity < 1.0 {
-			ts.Color = Color{t.Color.R, t.Color.G, t.Color.B,
-				uint8(float32(t.Color.A)*t.Opacity + 0.5), true}
-		} else {
-			ts.Color = svgToColor(t.Color)
-		}
+		ts := buildSvgTextStyle(t.FontFamily, t.FontWeight,
+			t.IsBold, t.IsItalic, t.FontSize, t.LetterSpacing,
+			t.StrokeWidth, t.StrokeColor, t.Color, t.Opacity, scale)
+		ts.Underline = t.Underline
+		ts.Strikethrough = t.Strikethrough
 
 		// Stroke-only text: fill=none + stroke set → transparent fill.
 		if ts.StrokeWidth > 0 && ts.Color.A == 0 {
@@ -203,36 +208,9 @@ func cachedSvgTextPathDraws(textPaths []SvgTextPath,
 		if !ok || len(cached.polyline) < 4 || cached.totalLen <= 0 {
 			continue
 		}
-
-		fontName := tp.FontFamily
-		if wn := pangoWeightName(tp.FontWeight); wn != "" {
-			fontName += " " + wn
-		} else if tp.IsBold {
-			fontName += " Bold"
-		}
-		typeface := glyph.TypefaceRegular
-		if tp.IsItalic {
-			typeface = glyph.TypefaceItalic
-		}
-		ts := TextStyle{
-			Family:        fontName,
-			Size:          tp.FontSize * scale,
-			LetterSpacing: tp.LetterSpacing * scale,
-			Typeface:      typeface,
-			StrokeWidth:   tp.StrokeWidth * scale,
-			StrokeColor:   svgToColor(tp.StrokeColor),
-		}
-		if tp.Opacity < 1.0 {
-			ts.Color = Color{
-				tp.Color.R,
-				tp.Color.G,
-				tp.Color.B,
-				uint8(float32(tp.Color.A)*tp.Opacity + 0.5),
-				true,
-			}
-		} else {
-			ts.Color = svgToColor(tp.Color)
-		}
+		ts := buildSvgTextStyle(tp.FontFamily, tp.FontWeight,
+			tp.IsBold, tp.IsItalic, tp.FontSize, tp.LetterSpacing,
+			tp.StrokeWidth, tp.StrokeColor, tp.Color, tp.Opacity, scale)
 
 		offset := tp.StartOffset * scale
 		if tp.IsPercent {
@@ -332,15 +310,7 @@ func validateSvgSourceWithRoots(svgSrc string, allowedRoots []string) error {
 			return fmt.Errorf("invalid svg path: contains parent directory reference")
 		}
 	}
-	ext := strings.ToLower(filepath.Ext(cleanPath))
-	valid := false
-	for _, e := range validSvgExtensions {
-		if ext == e {
-			valid = true
-			break
-		}
-	}
-	if !valid {
+	if ext := strings.ToLower(filepath.Ext(cleanPath)); ext != ".svg" {
 		return fmt.Errorf("unsupported svg format: %s", ext)
 	}
 	if len(allowedRoots) > 0 {
@@ -486,29 +456,29 @@ func buildDefsPathDataCache(
 	return cached
 }
 
-func svgHashHex(h uint64) string {
-	var buf [24]byte
-	b := strconv.AppendUint(buf[:0], h, 16)
-	return string(b)
-}
-
-func buildSvgCacheKey(srcHash uint64, width, height float32) string {
-	var buf [64]byte
-	b := buf[:0]
-	b = strconv.AppendUint(b, srcHash, 16)
-	b = append(b, ':')
-	b = strconv.AppendInt(b, int64(width*10), 10)
-	b = append(b, 'x')
-	b = strconv.AppendInt(b, int64(height*10), 10)
-	return string(b)
-}
-
 func buildSvgCacheLookupKey(srcHash uint64, width, height float32) svgCacheKey {
 	return svgCacheKey{
 		srcHash: srcHash,
 		w10:     int32(width * 10),
 		h10:     int32(height * 10),
 	}
+}
+
+// resolveAndCheckSvgSource validates, resolves, and size-checks
+// an SVG source path or inline data.
+func (w *Window) resolveAndCheckSvgSource(svgSrc string) (string, error) {
+	resolvedSrc, err := resolveValidatedSvgPath(svgSrc, w.Config.AllowedSvgRoots)
+	if err != nil {
+		return "", err
+	}
+	sizeSrc := svgSrc
+	if !strings.HasPrefix(svgSrc, "<") {
+		sizeSrc = resolvedSrc
+	}
+	if err := checkSvgSourceSize(sizeSrc); err != nil {
+		return "", err
+	}
+	return resolvedSrc, nil
 }
 
 // LoadSvg loads and tessellates an SVG, caching the result.
@@ -524,15 +494,8 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		}
 	}
 
-	resolvedSrc, err := resolveValidatedSvgPath(svgSrc, w.Config.AllowedSvgRoots)
+	resolvedSrc, err := w.resolveAndCheckSvgSource(svgSrc)
 	if err != nil {
-		return nil, err
-	}
-	sizeSrc := svgSrc
-	if !strings.HasPrefix(svgSrc, "<") {
-		sizeSrc = resolvedSrc
-	}
-	if err := checkSvgSourceSize(sizeSrc); err != nil {
 		return nil, err
 	}
 
@@ -587,9 +550,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		filteredGroups = append(filteredGroups, CachedFilteredGroup{
 			Filter:        fg.Filter,
 			RenderPaths:   fgPaths,
-			Texts:         fg.Texts,
 			TextDraws:     fgTextDraws,
-			TextPaths:     fg.TextPaths,
 			TextPathDraws: fgTextPathDraws,
 			Gradients:     parsed.Gradients,
 			BBox:          computeTriangleBBox(fg.Paths),
@@ -598,17 +559,14 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 
 	cached := &CachedSvg{
 		RenderPaths:    renderPaths,
-		Texts:          parsed.Texts,
 		TextDraws:      textDraws,
-		TextPaths:      parsed.TextPaths,
 		TextPathDraws:  textPathDraws,
-		DefsPaths:      parsed.DefsPaths,
 		FilteredGroups: filteredGroups,
 		Gradients:      parsed.Gradients,
 		Animations:     parsed.Animations,
 		HasAnimations:  len(parsed.Animations) > 0,
 		AnimStartNs:    time.Now().UnixNano(),
-		AnimHash:       svgHashHex(srcHash),
+		AnimHash:       strconv.FormatUint(srcHash, 16),
 		Width:          parsed.Width,
 		Height:         parsed.Height,
 		Scale:          scale,
@@ -639,15 +597,8 @@ func (w *Window) GetSvgDimensions(svgSrc string) (float32, float32, error) {
 		}
 	}
 
-	resolvedSrc, err := resolveValidatedSvgPath(svgSrc, w.Config.AllowedSvgRoots)
+	resolvedSrc, err := w.resolveAndCheckSvgSource(svgSrc)
 	if err != nil {
-		return 0, 0, err
-	}
-	sizeSrc := svgSrc
-	if !strings.HasPrefix(svgSrc, "<") {
-		sizeSrc = resolvedSrc
-	}
-	if err := checkSvgSourceSize(sizeSrc); err != nil {
 		return 0, 0, err
 	}
 
