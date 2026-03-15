@@ -43,21 +43,14 @@ func demoBoxSized(label string, color gui.Color, w, h float32) gui.View {
 }
 
 func placeholderHeader(text string) gui.View {
+	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Padding: gui.SomeP(12, 12, 12, 12),
-		Color:   gui.CurrentTheme().ColorPanel,
+		Color:   t.ColorPanel,
 		Radius:  gui.SomeF(8),
 		Content: []gui.View{
-			showcaseWrappedText(text, gui.CurrentTheme().N3),
+			gui.Text(gui.TextCfg{Text: text, TextStyle: t.N3, Mode: gui.TextModeWrap}),
 		},
-	})
-}
-
-func showcaseWrappedText(text string, style gui.TextStyle) gui.View {
-	return gui.Text(gui.TextCfg{
-		Text:      text,
-		TextStyle: style,
-		Mode:      gui.TextModeWrap,
 	})
 }

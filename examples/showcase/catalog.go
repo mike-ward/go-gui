@@ -147,8 +147,8 @@ func catalogRows(entries []DemoEntry, app *ShowcaseApp) []gui.View {
 		}
 	}
 
-	rows := make([]gui.View, 0, len(entries)+len(demoGroups())*2)
-	for _, group := range demoGroups() {
+	rows := make([]gui.View, 0, len(entries)+len(demoGroups)*2)
+	for _, group := range demoGroups {
 		groupEntries := make([]DemoEntry, 0, 8)
 		for _, entry := range entries {
 			if entry.Group == group.Key {

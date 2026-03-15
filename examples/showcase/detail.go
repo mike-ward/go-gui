@@ -59,7 +59,7 @@ func detailPanel(w *gui.Window) gui.View {
 		},
 		Content: []gui.View{
 			viewTitleBar(entry, app.ShowDocs),
-			showcaseWrappedText(entry.Summary, gui.CurrentTheme().N3),
+			gui.Text(gui.TextCfg{Text: entry.Summary, TextStyle: gui.CurrentTheme().N3, Mode: gui.TextModeWrap}),
 			content,
 			line(),
 			relatedExamplesFooter(entry.ID),
@@ -128,137 +128,78 @@ func docButton(showDocs bool) gui.View {
 	})
 }
 
+var componentDemos = map[string]func(*gui.Window) gui.View{
+	"welcome":             demoWelcome,
+	"button":              demoButton,
+	"input":               demoInput,
+	"toggle":              demoToggle,
+	"switch":              demoSwitch,
+	"radio":               demoRadio,
+	"radio_group":         demoRadioGroup,
+	"combobox":            demoCombobox,
+	"select":              demoSelect,
+	"listbox":             demoListBox,
+	"slider":              demoSlider,
+	"progress_bar":        demoProgressBar,
+	"pulsar":              demoPulsar,
+	"toast":               demoToast,
+	"badge":               demoBadge,
+	"native_notification": demoNotification,
+	"breadcrumb":          demoBreadcrumb,
+	"menus":               demoMenus,
+	"dialog":              demoDialog,
+	"tree":                demoTree,
+	"drag_reorder":        demoDragReorder,
+	"printing":            demoPrinting,
+	"text":                demoText,
+	"rtf":                 demoRtf,
+	"table":               demoTable,
+	"data_grid":           demoDataGrid,
+	"data_source":         demoDataSource,
+	"date_picker":         demoDatePicker,
+	"input_date":          demoInputDate,
+	"numeric_input":       demoNumericInput,
+	"forms":               demoForms,
+	"date_picker_roller":  demoDatePickerRoller,
+	"svg":                 demoSvg,
+	"image":               demoImage,
+	"expand_panel":        demoExpandPanel,
+	"icons":               demoIcons,
+	"blur":                demoBlur,
+	"color_filter":        demoColorFilter,
+	"gradient":            demoGradient,
+	"box_shadows":         demoBoxShadows,
+	"shader":              demoShader,
+	"draw_canvas":         demoDrawCanvas,
+	"animations":          demoAnimations,
+	"color_picker":        demoColorPicker,
+	"theme_gen":           demoThemeGen,
+	"markdown":            demoMarkdown,
+	"tab_control":         demoTabControl,
+	"command_palette":     demoCommandPalette,
+	"context_menu":        demoContextMenu,
+	"tooltip":             demoTooltip,
+	"inspector":           demoInspector,
+	"rectangle":           demoRectangle,
+	"scrollbar":           demoScrollbar,
+	"splitter":            demoSplitter,
+	"rotated_box":         demoRotatedBox,
+	"row":                 demoRow,
+	"column_demo":         demoColumn,
+	"wrap_panel":          demoWrapPanel,
+	"overflow_panel":      demoOverflowPanel,
+	"sidebar":             demoSidebar,
+	"dock_layout":         demoDockLayout,
+}
+
 func componentDemo(w *gui.Window, id string) gui.View {
-	switch id {
-	case "welcome":
-		return demoWelcome(w)
-	case "commands":
+	if id == "commands" {
 		return showcaseMarkdownPanel(w, "showcase-commands", docPageSource("commands"))
-
-	case "button":
-		return demoButton(w)
-	case "input":
-		return demoInput(w)
-	case "toggle":
-		return demoToggle(w)
-	case "switch":
-		return demoSwitch(w)
-	case "radio":
-		return demoRadio(w)
-	case "radio_group":
-		return demoRadioGroup(w)
-	case "combobox":
-		return demoCombobox(w)
-	case "select":
-		return demoSelect(w)
-	case "listbox":
-		return demoListBox(w)
-	case "slider":
-		return demoSlider(w)
-	case "progress_bar":
-		return demoProgressBar(w)
-	case "pulsar":
-		return demoPulsar(w)
-	case "toast":
-		return demoToast(w)
-	case "badge":
-		return demoBadge(w)
-	case "native_notification":
-		return demoNotification(w)
-	case "breadcrumb":
-		return demoBreadcrumb(w)
-	case "menus":
-		return demoMenus(w)
-	case "dialog":
-		return demoDialog(w)
-	case "tree":
-		return demoTree(w)
-	case "drag_reorder":
-		return demoDragReorder(w)
-	case "printing":
-		return demoPrinting(w)
-	case "text":
-		return demoText(w)
-	case "rtf":
-		return demoRtf(w)
-	case "table":
-		return demoTable(w)
-	case "data_grid":
-		return demoDataGrid(w)
-	case "data_source":
-		return demoDataSource(w)
-	case "date_picker":
-		return demoDatePicker(w)
-	case "input_date":
-		return demoInputDate(w)
-	case "numeric_input":
-		return demoNumericInput(w)
-	case "forms":
-		return demoForms(w)
-	case "date_picker_roller":
-		return demoDatePickerRoller(w)
-	case "svg":
-		return demoSvg(w)
-	case "image":
-		return demoImage(w)
-	case "expand_panel":
-		return demoExpandPanel(w)
-	case "icons":
-		return demoIcons(w)
-	case "blur":
-		return demoBlur(w)
-	case "color_filter":
-		return demoColorFilter(w)
-	case "gradient":
-		return demoGradient(w)
-	case "box_shadows":
-		return demoBoxShadows(w)
-	case "shader":
-		return demoShader(w)
-	case "draw_canvas":
-		return demoDrawCanvas(w)
-	case "animations":
-		return demoAnimations(w)
-	case "color_picker":
-		return demoColorPicker(w)
-	case "theme_gen":
-		return demoThemeGen(w)
-	case "markdown":
-		return demoMarkdown(w)
-	case "tab_control":
-		return demoTabControl(w)
-	case "command_palette":
-		return demoCommandPalette(w)
-	case "context_menu":
-		return demoContextMenu(w)
-	case "tooltip":
-		return demoTooltip(w)
-	case "inspector":
-		return demoInspector(w)
-	case "rectangle":
-		return demoRectangle(w)
-	case "scrollbar":
-		return demoScrollbar(w)
-	case "splitter":
-		return demoSplitter(w)
-	case "rotated_box":
-		return demoRotatedBox(w)
-	case "row":
-		return demoRow(w)
-	case "column_demo":
-		return demoColumn(w)
-	case "wrap_panel":
-		return demoWrapPanel(w)
-	case "overflow_panel":
-		return demoOverflowPanel(w)
-	case "sidebar":
-		return demoSidebar(w)
-	case "dock_layout":
-		return demoDockLayout(w)
-
-	default:
-		return demoPlaceholder(gui.CurrentTheme(), "Demo: "+id)
 	}
+	if fn, ok := componentDemos[id]; ok {
+		return fn(w)
+	}
+	return demoPlaceholder(gui.CurrentTheme(), "Demo: "+id)
 }
 
 func demoPlaceholder(t gui.Theme, text string) gui.View {
@@ -268,7 +209,7 @@ func demoPlaceholder(t gui.Theme, text string) gui.View {
 		Padding: gui.SomeP(24, 24, 24, 24),
 		Radius:  gui.SomeF(8),
 		Content: []gui.View{
-			showcaseWrappedText(text, t.N3),
+			gui.Text(gui.TextCfg{Text: text, TextStyle: t.N3, Mode: gui.TextModeWrap}),
 		},
 	})
 }

@@ -17,10 +17,11 @@ func demoInput(w *gui.Window) gui.View {
 		Spacing: gui.SomeF(12),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
-			showcaseWrappedText(
-				"Accessibility: supports IME composition, keyboard tab focus, masked input, and multiline editing.",
-				t.N3,
-			),
+			gui.Text(gui.TextCfg{
+				Text:      "Accessibility: supports IME composition, keyboard tab focus, masked input, and multiline editing.",
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
+			}),
 			gui.Switch(gui.SwitchCfg{
 				ID:       "input-spell-check",
 				Label:    "Spell Check",

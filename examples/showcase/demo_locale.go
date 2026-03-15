@@ -58,10 +58,11 @@ func demoLocale(_ *gui.Window) gui.View {
 			gui.Text(gui.TextCfg{Text: "Short date: " + shortDate, TextStyle: t.N3}),
 			gui.Text(gui.TextCfg{Text: "Long date: " + longDate, TextStyle: t.N3}),
 			gui.Text(gui.TextCfg{Text: "Decimal sep: " + decSep + "  Group sep: " + grpSep, TextStyle: t.N3}),
-			showcaseWrappedText(
-				"OK: "+locale.StrOK+"  Yes: "+locale.StrYes+"  No: "+locale.StrNo+"  Cancel: "+locale.StrCancel,
-				t.N3,
-			),
+			gui.Text(gui.TextCfg{
+				Text:      "OK: " + locale.StrOK + "  Yes: " + locale.StrYes + "  No: " + locale.StrNo + "  Cancel: " + locale.StrCancel,
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
+			}),
 		},
 	})
 }

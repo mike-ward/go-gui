@@ -11,11 +11,13 @@ import (
 
 func TestEntryMatchesQuery(t *testing.T) {
 	entry := DemoEntry{
-		ID:      "numeric_input",
-		Label:   "Numeric Input",
-		Group:   groupInput,
-		Summary: "Locale-aware number input with step controls.",
-		Tags:    []string{"number", "decimal"},
+		ID:         "numeric_input",
+		Label:      "Numeric Input",
+		Group:      groupInput,
+		Summary:    "Locale-aware number input with step controls.",
+		Tags:       []string{"number", "decimal"},
+		idLower:    "numeric_input",
+		labelLower: "numeric input",
 	}
 
 	tests := []string{"numeric", "locale-aware", "input", "decimal"}
@@ -58,7 +60,7 @@ func TestRelatedExamplesMap(t *testing.T) {
 	}
 	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
 
-	for _, entry := range demoEntries() {
+	for _, entry := range demoEntries {
 		got := relatedExamplePaths(entry.ID)
 		if len(got) == 0 {
 			t.Fatalf("expected related examples for %s", entry.ID)

@@ -828,9 +828,13 @@ func demoColorFilter(_ *gui.Window) gui.View {
 		SizeBorder: gui.NoBorder,
 		Content: []gui.View{
 			// Photo filter strip.
-			showcaseWrappedText("Color matrix transforms applied as a post-processing pass. "+
-				"Each container below renders content into an FBO, applies a 4×4 color transform, "+
-				"and composites back.", t.N3),
+			gui.Text(gui.TextCfg{
+				Text: "Color matrix transforms applied as a post-processing pass. " +
+					"Each container below renders content into an FBO, applies a 4×4 color transform, " +
+					"and composites back.",
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
+			}),
 			gui.Row(gui.ContainerCfg{
 				Sizing:     gui.FillFit,
 				Spacing:    gui.SomeF(12),
