@@ -670,14 +670,6 @@ func mergeFormat(parent, child Format) Format {
 var reImageDims = regexp.MustCompile(
 	`(\]\([^\s)]+) (=\d+x\d+\))`)
 
-// preprocessSource strips metadata definitions, converts
-// multi-line $$...$$ to ```math code fences, and encodes
-// image dimension syntax into URL fragments.
-func preprocessSource(source string) string {
-	preprocessed, _, _ := scanSource(source)
-	return preprocessed
-}
-
 func scanSource(source string) (string, map[string]string, map[string]string) {
 	source = reImageDims.ReplaceAllString(source, "${1}#dim${2}")
 	lines := strings.Split(source, "\n")
@@ -770,18 +762,6 @@ func scanSource(source string) (string, map[string]string, map[string]string) {
 	return strings.Join(result, "\n"), abbrDefs, footnoteDefs
 }
 
-// --- Metadata pre-scanning ---
-
-func collectAbbrDefs(source string) map[string]string {
-	_, defs, _ := scanSource(source)
-	return defs
-}
-
-func collectFootnoteDefs(source string) map[string]string {
-	_, _, defs := scanSource(source)
-	return defs
-}
-
 func isAbbrDef(line string) bool {
 	return strings.HasPrefix(line, "*[") &&
 		strings.Contains(line, "]:")
@@ -804,6 +784,7 @@ func applyFootnoteRefs(
 	if len(defs) == 0 {
 		return runs
 	}
+	match := footnoteMatchFunc(defs)
 	result := make([]Run, 0, len(runs))
 	changed := false
 	for _, run := range runs {
@@ -812,7 +793,7 @@ func applyFootnoteRefs(
 			result = append(result, run)
 			continue
 		}
-		nr, split := splitRunForFootnotes(run, defs)
+		nr, split := splitRunByMatches(run, match)
 		if split {
 			changed = true
 			result = append(result, nr...)
@@ -826,31 +807,30 @@ func applyFootnoteRefs(
 	return result
 }
 
-func splitRunForFootnotes(
-	run Run, defs map[string]string,
+// runMatchFunc finds the next match at or after pos in text.
+// Returns start/end indices, the replacement run, and whether
+// a match was found.
+type runMatchFunc func(
+	text string, pos int, base Run,
+) (start, end int, replacement Run, found bool)
+
+// splitRunByMatches splits a run using match to find and
+// replace substrings. Returns nil, false if no matches.
+func splitRunByMatches(
+	run Run, match runMatchFunc,
 ) ([]Run, bool) {
 	t := run.Text
+	if len(t) == 0 {
+		return nil, false
+	}
 	var result []Run
 	pos := 0
 	lastPos := 0
 	split := false
 	for pos < len(t) {
-		idx := strings.Index(t[pos:], "[^")
-		if idx < 0 {
+		start, end, repl, found := match(t, pos, run)
+		if !found {
 			break
-		}
-		start := pos + idx
-		end := strings.Index(t[start+2:], "]")
-		if end < 0 {
-			pos = start + 2
-			continue
-		}
-		end = start + 2 + end
-		id := t[start+2 : end]
-		content, ok := defs[id]
-		if !ok {
-			pos = end + 1
-			continue
 		}
 		if !split {
 			result = make([]Run, 0, 3)
@@ -861,14 +841,9 @@ func splitRunForFootnotes(
 			r.Text = t[lastPos:start]
 			result = append(result, r)
 		}
-		result = append(result, Run{
-			Text:        id,
-			Format:      run.Format,
-			Superscript: true,
-			Tooltip:     content,
-		})
-		lastPos = end + 1
-		pos = lastPos
+		result = append(result, repl)
+		lastPos = end
+		pos = end
 	}
 	if !split {
 		return nil, false
@@ -881,6 +856,75 @@ func splitRunForFootnotes(
 	return result, true
 }
 
+func footnoteMatchFunc(
+	defs map[string]string,
+) runMatchFunc {
+	return func(
+		text string, pos int, base Run,
+	) (int, int, Run, bool) {
+		for pos < len(text) {
+			idx := strings.Index(text[pos:], "[^")
+			if idx < 0 {
+				return 0, 0, Run{}, false
+			}
+			start := pos + idx
+			end := strings.Index(text[start+2:], "]")
+			if end < 0 {
+				pos = start + 2
+				continue
+			}
+			end = start + 2 + end
+			id := text[start+2 : end]
+			content, ok := defs[id]
+			if !ok {
+				pos = end + 1
+				continue
+			}
+			return start, end + 1, Run{
+				Text:        id,
+				Format:      base.Format,
+				Superscript: true,
+				Tooltip:     content,
+			}, true
+		}
+		return 0, 0, Run{}, false
+	}
+}
+
+func abbrMatchFunc(matcher *abbrMatcher) runMatchFunc {
+	return func(
+		text string, pos int, base Run,
+	) (int, int, Run, bool) {
+		for pos < len(text) {
+			if !matcher.firstChars[text[pos]] {
+				pos++
+				continue
+			}
+			for _, abbr := range matcher.abbrs {
+				if pos+len(abbr) > len(text) ||
+					text[pos:pos+len(abbr)] != abbr {
+					continue
+				}
+				if !isWordBoundary(text, pos-1) ||
+					!isWordBoundary(text, pos+len(abbr)) {
+					continue
+				}
+				return pos, pos + len(abbr), Run{
+					Text:          abbr,
+					Format:        base.Format,
+					Strikethrough: base.Strikethrough,
+					Highlight:     base.Highlight,
+					Superscript:   base.Superscript,
+					Subscript:     base.Subscript,
+					Tooltip:       matcher.defs[abbr],
+				}, true
+			}
+			pos++
+		}
+		return 0, 0, Run{}, false
+	}
+}
+
 // replaceAbbreviations scans runs for abbreviation occurrences
 // and splits/marks them with tooltips.
 func replaceAbbreviations(
@@ -889,6 +933,7 @@ func replaceAbbreviations(
 	if matcher == nil {
 		return runs
 	}
+	match := abbrMatchFunc(matcher)
 	result := make([]Run, 0, len(runs))
 	for _, run := range runs {
 		if run.Link != "" || run.Tooltip != "" ||
@@ -896,7 +941,7 @@ func replaceAbbreviations(
 			result = append(result, run)
 			continue
 		}
-		nr, split := splitRunForAbbrs(run, matcher)
+		nr, split := splitRunByMatches(run, match)
 		if split {
 			result = append(result, nr...)
 			continue
@@ -927,70 +972,6 @@ func buildAbbrMatcher(defs map[string]string) *abbrMatcher {
 		firstChars: firstChars,
 		defs:       defs,
 	}
-}
-
-func splitRunForAbbrs(
-	run Run, matcher *abbrMatcher,
-) ([]Run, bool) {
-	t := run.Text
-	if len(t) == 0 {
-		return nil, false
-	}
-	var result []Run
-	pos := 0
-	lastPos := 0
-	split := false
-	for pos < len(t) {
-		if !matcher.firstChars[t[pos]] {
-			pos++
-			continue
-		}
-		matched := false
-		for _, abbr := range matcher.abbrs {
-			if pos+len(abbr) > len(t) ||
-				t[pos:pos+len(abbr)] != abbr {
-				continue
-			}
-			if !isWordBoundary(t, pos-1) ||
-				!isWordBoundary(t, pos+len(abbr)) {
-				continue
-			}
-			if !split {
-				result = make([]Run, 0, 3)
-				split = true
-			}
-			if pos > lastPos {
-				r := run
-				r.Text = t[lastPos:pos]
-				result = append(result, r)
-			}
-			result = append(result, Run{
-				Text:          abbr,
-				Format:        run.Format,
-				Strikethrough: run.Strikethrough,
-				Highlight:     run.Highlight,
-				Superscript:   run.Superscript,
-				Subscript:     run.Subscript,
-				Tooltip:       matcher.defs[abbr],
-			})
-			pos += len(abbr)
-			lastPos = pos
-			matched = true
-			break
-		}
-		if !matched {
-			pos++
-		}
-	}
-	if !split {
-		return nil, false
-	}
-	if lastPos < len(t) {
-		r := run
-		r.Text = t[lastPos:]
-		result = append(result, r)
-	}
-	return result, true
 }
 
 func isWordBoundary(text string, pos int) bool {
@@ -1066,15 +1047,9 @@ func applyTypography(runs []Run) {
 		if !strings.Contains(t, "--") && !strings.Contains(t, "...") {
 			continue
 		}
-		if strings.Contains(t, "---") {
-			t = strings.ReplaceAll(t, "---", "\u2014")
-		}
-		if strings.Contains(t, "--") {
-			t = strings.ReplaceAll(t, "--", "\u2013")
-		}
-		if strings.Contains(t, "...") {
-			t = strings.ReplaceAll(t, "...", "\u2026")
-		}
+		t = strings.ReplaceAll(t, "---", "\u2014")
+		t = strings.ReplaceAll(t, "--", "\u2013")
+		t = strings.ReplaceAll(t, "...", "\u2026")
 		runs[i].Text = t
 	}
 }

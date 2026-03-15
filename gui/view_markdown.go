@@ -346,19 +346,17 @@ func renderMdMermaid(
 				State:     DiagramLoading,
 				RequestID: reqID,
 			})
-		fetchMermaidAsync(w, source, diagramHash, reqID,
-			cfg.Style.MermaidBG.R,
-			cfg.Style.MermaidBG.G,
-			cfg.Style.MermaidBG.B)
+		fetchMermaidAsync(w, source, diagramHash, reqID)
 	}
 	return codeFallback
 }
 
-// renderMdCode renders a fenced code block with a copy-to-clipboard button.
-func renderMdCode(
-	block MarkdownBlock, cfg MarkdownCfg, w *Window, blockIdx int,
+// mdCopyButton builds a floating copy-to-clipboard button
+// with a 2-second check-mark animation.
+func mdCopyButton(
+	animID string, w *Window,
+	onClick func(*Layout, *Event, *Window),
 ) View {
-	animID := "md_cp_" + strconv.Itoa(blockIdx)
 	copied := w.hasAnimationLocked(animID)
 
 	iconStyle := guiTheme.Icon5
@@ -377,7 +375,7 @@ func renderMdCode(
 		}
 	}
 
-	copyBtn := Button(ButtonCfg{
+	return Button(ButtonCfg{
 		Float:        true,
 		FloatAnchor:  FloatTopRight,
 		FloatTieOff:  FloatTopRight,
@@ -388,17 +386,26 @@ func renderMdCode(
 		SizeBorder:   Some[float32](0),
 		Padding:      SomeP(2, 4, 2, 4),
 		Content:      btnContent,
-		OnClick: func(_ *Layout, e *Event, w *Window) {
+		OnClick:      onClick,
+	})
+}
+
+// renderMdCode renders a fenced code block with a copy-to-clipboard button.
+func renderMdCode(
+	block MarkdownBlock, cfg MarkdownCfg, w *Window, blockIdx int,
+) View {
+	animID := "md_cp_" + strconv.Itoa(blockIdx)
+	copyBtn := mdCopyButton(animID, w,
+		func(_ *Layout, e *Event, w *Window) {
 			plain := richTextPlain(block.Content)
 			w.SetClipboard(plain)
 			w.AnimationAdd(&Animate{
-				AnimID: animID,
-				Delay:     2 * time.Second,
-				Callback:  func(*Animate, *Window) {},
+				AnimID:   animID,
+				Delay:    2 * time.Second,
+				Callback: func(*Animate, *Window) {},
 			})
 			e.IsHandled = true
-		},
-	})
+		})
 
 	return Column(ContainerCfg{
 		Color:      cfg.Style.CodeBlockBG,
@@ -725,47 +732,17 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 
 	// Document-level copy button.
 	docAnimID := "md_cp_doc"
-	docCopied := w.hasAnimationLocked(docAnimID)
-
-	docIconStyle := guiTheme.Icon5
-	docIconStyle.Color = Gray
-
-	var docBtnContent []View
-	if docCopied {
-		cs := docIconStyle
-		cs.Color = Color{80, 200, 80, 255, true}
-		docBtnContent = []View{
-			Text(TextCfg{Text: IconCheck, TextStyle: cs}),
-		}
-	} else {
-		docBtnContent = []View{
-			Text(TextCfg{Text: IconFile, TextStyle: docIconStyle}),
-		}
-	}
-
 	source := cfg.Source
-	docCopyBtn := Button(ButtonCfg{
-		Float:        true,
-		FloatAnchor:  FloatTopRight,
-		FloatTieOff:  FloatTopRight,
-		FloatOffsetX: -4,
-		FloatOffsetY: 4,
-		Radius:       Some[float32](4),
-		Color:        ColorTransparent,
-		SizeBorder:   Some[float32](0),
-		Padding:      SomeP(2, 4, 2, 4),
-		Content:      docBtnContent,
-		OnClick: func(_ *Layout, e *Event, w *Window) {
+	content = append(content, mdCopyButton(docAnimID, w,
+		func(_ *Layout, e *Event, w *Window) {
 			w.SetClipboard(source)
 			w.AnimationAdd(&Animate{
-				AnimID: docAnimID,
-				Delay:     2 * time.Second,
-				Callback:  func(*Animate, *Window) {},
+				AnimID:   docAnimID,
+				Delay:    2 * time.Second,
+				Callback: func(*Animate, *Window) {},
 			})
 			e.IsHandled = true
-		},
-	})
-	content = append(content, docCopyBtn)
+		}))
 
 	return Column(ContainerCfg{
 		A11YRole:    AccessRoleGroup,

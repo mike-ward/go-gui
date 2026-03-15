@@ -21,6 +21,39 @@ func mathCacheHash(mathID string) int64 {
 	return int64((h << 32) | uint64(len(mathID)))
 }
 
+// blockedLatexCmds lists TeX commands blocked to prevent
+// shell escape or file access on remote renderers.
+var blockedLatexCmds = []string{
+	`\write18`, `\input`, `\include`,
+	`\openin`, `\openout`, `\read`, `\write`,
+	`\csname`, `\immediate`, `\catcode`,
+	`\special`, `\outer`, `\def`, `\edef`,
+	`\gdef`, `\xdef`, `\let`, `\futurelet`,
+	`\aliasfont`, `\batchmode`, `\copy`,
+	`\count`, `\countdef`, `\dimen`, `\dimendef`,
+	`\errorstopmode`, `\font`, `\fontdimen`,
+	`\halign`, `\hrule`, `\hyphenation`,
+	`\if`, `\ifcase`, `\ifcat`, `\ifdim`,
+	`\ifeof`, `\iffalse`, `\ifhbox`, `\ifhmode`,
+	`\ifinner`, `\ifmmode`, `\ifnum`, `\ifodd`,
+	`\iftrue`, `\ifvbox`, `\ifvmode`, `\ifvoid`,
+	`\ifx`, `\jobname`, `\kern`, `\long`,
+	`\mag`, `\mark`, `\meaning`, `\messages`,
+	`\newcount`, `\newdimen`, `\newif`,
+	`\newread`, `\newskip`, `\newwrite`,
+	`\noexpand`, `\nonstopmode`, `\output`,
+	`\pausing`, `\primitive`, `\readline`,
+	`\scrollmode`, `\setbox`, `\show`,
+	`\showbox`, `\showlists`, `\showthe`,
+	`\skip`, `\skipdef`, `\the`, `\toks`,
+	`\toksdef`, `\tracingall`, `\tracingcommands`,
+	`\tracinglostchars`, `\tracingmacros`,
+	`\tracingonline`, `\tracingoutput`,
+	`\tracingpages`, `\tracingparagraphs`,
+	`\tracingrestores`, `\tracingstats`,
+	`\vcenter`, `\valign`, `\vrule`,
+}
+
 // sanitizeLatex strips dangerous TeX commands that could
 // enable shell escape or file access on the remote renderer.
 func sanitizeLatex(s string) string {
@@ -39,39 +72,9 @@ func sanitizeLatex(s string) string {
 		}
 	}, s)
 	result = strings.TrimSpace(result)
-	blocked := []string{
-		`\write18`, `\input`, `\include`,
-		`\openin`, `\openout`, `\read`, `\write`,
-		`\csname`, `\immediate`, `\catcode`,
-		`\special`, `\outer`, `\def`, `\edef`,
-		`\gdef`, `\xdef`, `\let`, `\futurelet`,
-		`\aliasfont`, `\batchmode`, `\copy`,
-		`\count`, `\countdef`, `\dimen`, `\dimendef`,
-		`\errorstopmode`, `\font`, `\fontdimen`,
-		`\halign`, `\hrule`, `\hyphenation`,
-		`\if`, `\ifcase`, `\ifcat`, `\ifdim`,
-		`\ifeof`, `\iffalse`, `\ifhbox`, `\ifhmode`,
-		`\ifinner`, `\ifmmode`, `\ifnum`, `\ifodd`,
-		`\iftrue`, `\ifvbox`, `\ifvmode`, `\ifvoid`,
-		`\ifx`, `\jobname`, `\kern`, `\long`,
-		`\mag`, `\mark`, `\meaning`, `\messages`,
-		`\newcount`, `\newdimen`, `\newif`,
-		`\newread`, `\newskip`, `\newwrite`,
-		`\noexpand`, `\nonstopmode`, `\output`,
-		`\pausing`, `\primitive`, `\readline`,
-		`\scrollmode`, `\setbox`, `\show`,
-		`\showbox`, `\showlists`, `\showthe`,
-		`\skip`, `\skipdef`, `\the`, `\toks`,
-		`\toksdef`, `\tracingall`, `\tracingcommands`,
-		`\tracinglostchars`, `\tracingmacros`,
-		`\tracingonline`, `\tracingoutput`,
-		`\tracingpages`, `\tracingparagraphs`,
-		`\tracingrestores`, `\tracingstats`,
-		`\vcenter`, `\valign`, `\vrule`,
-	}
 	for range 10 {
 		prev := result
-		for _, cmd := range blocked {
+		for _, cmd := range blockedLatexCmds {
 			result = strings.ReplaceAll(result, cmd, "")
 		}
 		if result == prev {
@@ -81,8 +84,8 @@ func sanitizeLatex(s string) string {
 	return result
 }
 
-// queueMathError queues a DiagramError cache entry.
-func queueMathError(
+// queueDiagramError queues a DiagramError cache entry.
+func queueDiagramError(
 	w *Window, hash int64, requestID uint64, errMsg string,
 ) {
 	w.QueueCommand(func(w *Window) {
@@ -133,35 +136,35 @@ func fetchMathAsync(
 		client := &http.Client{Timeout: diagramFetchTimeout}
 		resp, err := client.Get(url)
 		if err != nil {
-			queueMathError(w, hash, requestID, err.Error())
+			queueDiagramError(w, hash, requestID, err.Error())
 			return
 		}
 		defer func() { _ = resp.Body.Close() }()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			queueMathError(w, hash, requestID,
+			queueDiagramError(w, hash, requestID,
 				"read body: "+err.Error())
 			return
 		}
 
 		if resp.StatusCode != 200 {
 			preview := truncatePreview(string(body), 200)
-			queueMathError(w, hash, requestID,
+			queueDiagramError(w, hash, requestID,
 				fmt.Sprintf("HTTP %d: %s",
 					resp.StatusCode, preview))
 			return
 		}
 
 		if len(body) > 10*1024*1024 {
-			queueMathError(w, hash, requestID,
+			queueDiagramError(w, hash, requestID,
 				"response exceeds 10 MB limit")
 			return
 		}
 
 		img, err := png.Decode(bytes.NewReader(body))
 		if err != nil {
-			queueMathError(w, hash, requestID,
+			queueDiagramError(w, hash, requestID,
 				"decode PNG: "+err.Error())
 			return
 		}
@@ -174,7 +177,7 @@ func fetchMathAsync(
 		tmpFile, err := os.CreateTemp("",
 			fmt.Sprintf("math_%d_*.png", hash))
 		if err != nil {
-			queueMathError(w, hash, requestID,
+			queueDiagramError(w, hash, requestID,
 				"create temp file: "+err.Error())
 			return
 		}
@@ -182,7 +185,7 @@ func fetchMathAsync(
 		if err := png.Encode(tmpFile, img); err != nil {
 			_ = tmpFile.Close()
 			_ = os.Remove(tmpPath)
-			queueMathError(w, hash, requestID,
+			queueDiagramError(w, hash, requestID,
 				"encode PNG: "+err.Error())
 			return
 		}

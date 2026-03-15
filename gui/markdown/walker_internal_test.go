@@ -82,27 +82,27 @@ func TestMergeFormatCodeWins(t *testing.T) {
 	}
 }
 
-// --- preprocessSource ---
+// --- scanSource preprocessing ---
 
-func TestPreprocessSourceAbbrStripped(t *testing.T) {
+func TestScanSourceAbbrStripped(t *testing.T) {
 	src := "Hello HTML.\n\n*[HTML]: HyperText Markup Language"
-	result := preprocessSource(src)
+	result, _, _ := scanSource(src)
 	if strings.Contains(result, "*[HTML]") {
 		t.Error("abbreviation definition should be stripped")
 	}
 }
 
-func TestPreprocessSourceFootnoteStripped(t *testing.T) {
+func TestScanSourceFootnoteStripped(t *testing.T) {
 	src := "Text[^1] more.\n\n[^1]: Footnote content."
-	result := preprocessSource(src)
+	result, _, _ := scanSource(src)
 	if strings.Contains(result, "[^1]: Footnote") {
 		t.Error("footnote definition should be stripped")
 	}
 }
 
-func TestPreprocessSourceFootnoteMultiline(t *testing.T) {
+func TestScanSourceFootnoteMultiline(t *testing.T) {
 	src := "[^1]: First line.\n    Continuation.\n\nParagraph."
-	result := preprocessSource(src)
+	result, _, _ := scanSource(src)
 	if strings.Contains(result, "Continuation") {
 		t.Error("footnote continuation should be stripped")
 	}
@@ -111,9 +111,9 @@ func TestPreprocessSourceFootnoteMultiline(t *testing.T) {
 	}
 }
 
-func TestPreprocessSourceMathFence(t *testing.T) {
+func TestScanSourceMathFence(t *testing.T) {
 	src := "$$\nE = mc^2\n$$"
-	result := preprocessSource(src)
+	result, _, _ := scanSource(src)
 	if !strings.Contains(result, "```math") {
 		t.Error("$$ should convert to ```math fence")
 	}
@@ -122,9 +122,9 @@ func TestPreprocessSourceMathFence(t *testing.T) {
 	}
 }
 
-func TestPreprocessSourceImageDims(t *testing.T) {
+func TestScanSourceImageDims(t *testing.T) {
 	src := "![alt](image.png =200x100)"
-	result := preprocessSource(src)
+	result, _, _ := scanSource(src)
 	if !strings.Contains(result, "#dim=200x100") {
 		t.Errorf("image dims not encoded: %q", result)
 	}
@@ -133,20 +133,20 @@ func TestPreprocessSourceImageDims(t *testing.T) {
 	}
 }
 
-func TestPreprocessSourcePassthrough(t *testing.T) {
+func TestScanSourcePassthrough(t *testing.T) {
 	src := "# Hello\n\nPlain paragraph."
-	result := preprocessSource(src)
+	result, _, _ := scanSource(src)
 	if result != src {
 		t.Errorf("passthrough mismatch:\ngot  %q\nwant %q",
 			result, src)
 	}
 }
 
-// --- collectAbbrDefs ---
+// --- scanSource abbr defs ---
 
-func TestCollectAbbrDefs(t *testing.T) {
+func TestScanSourceAbbrDefs(t *testing.T) {
 	src := "*[HTML]: HyperText Markup Language\n*[CSS]: Cascading Style Sheets"
-	defs := collectAbbrDefs(src)
+	_, defs, _ := scanSource(src)
 	if defs["HTML"] != "HyperText Markup Language" {
 		t.Errorf("HTML abbr: %q", defs["HTML"])
 	}
@@ -155,33 +155,32 @@ func TestCollectAbbrDefs(t *testing.T) {
 	}
 }
 
-func TestCollectAbbrDefsEmpty(t *testing.T) {
-	defs := collectAbbrDefs("No abbreviations here.")
+func TestScanSourceAbbrDefsEmpty(t *testing.T) {
+	_, defs, _ := scanSource("No abbreviations here.")
 	if len(defs) != 0 {
 		t.Errorf("expected 0 abbr defs, got %d", len(defs))
 	}
 }
 
-func TestCollectAbbrDefsMalformed(t *testing.T) {
-	// Missing closing bracket or colon.
-	defs := collectAbbrDefs("*[HTML HyperText")
+func TestScanSourceAbbrDefsMalformed(t *testing.T) {
+	_, defs, _ := scanSource("*[HTML HyperText")
 	if len(defs) != 0 {
 		t.Error("malformed abbr def should not be collected")
 	}
 }
 
-func TestCollectAbbrDefsEmptyExpansion(t *testing.T) {
-	defs := collectAbbrDefs("*[HTML]:")
+func TestScanSourceAbbrDefsEmptyExpansion(t *testing.T) {
+	_, defs, _ := scanSource("*[HTML]:")
 	if len(defs) != 0 {
 		t.Error("empty expansion should not be collected")
 	}
 }
 
-// --- collectFootnoteDefs ---
+// --- scanSource footnote defs ---
 
-func TestCollectFootnoteDefs(t *testing.T) {
+func TestScanSourceFootnoteDefs(t *testing.T) {
 	src := "[^1]: First footnote.\n[^note]: Named footnote."
-	defs := collectFootnoteDefs(src)
+	_, _, defs := scanSource(src)
 	if defs["1"] != "First footnote." {
 		t.Errorf("footnote 1: %q", defs["1"])
 	}
@@ -190,24 +189,24 @@ func TestCollectFootnoteDefs(t *testing.T) {
 	}
 }
 
-func TestCollectFootnoteDefsEmpty(t *testing.T) {
-	defs := collectFootnoteDefs("No footnotes.")
+func TestScanSourceFootnoteDefsEmpty(t *testing.T) {
+	_, _, defs := scanSource("No footnotes.")
 	if len(defs) != 0 {
 		t.Errorf("expected 0 footnote defs, got %d", len(defs))
 	}
 }
 
-func TestCollectFootnoteDefsContinuation(t *testing.T) {
+func TestScanSourceFootnoteDefsContinuation(t *testing.T) {
 	src := "[^1]: Line one.\n    Line two."
-	defs := collectFootnoteDefs(src)
+	_, _, defs := scanSource(src)
 	if !strings.Contains(defs["1"], "Line two") {
 		t.Errorf("footnote should include continuation: %q",
 			defs["1"])
 	}
 }
 
-func TestCollectFootnoteDefsMalformed(t *testing.T) {
-	defs := collectFootnoteDefs("[^]: no id")
+func TestScanSourceFootnoteDefsMalformed(t *testing.T) {
+	_, _, defs := scanSource("[^]: no id")
 	if len(defs) != 0 {
 		t.Error("malformed footnote should not be collected")
 	}

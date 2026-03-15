@@ -48,7 +48,7 @@ func decodePercentPrefix(s string) string {
 	if limit > 20 {
 		limit = 20
 	}
-	buf := make([]byte, 0, len(s))
+	buf := make([]byte, 0, limit)
 	i := 0
 	for i < limit {
 		if s[i] == '%' && i+2 < len(s) {

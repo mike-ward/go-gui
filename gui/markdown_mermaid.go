@@ -156,65 +156,27 @@ func diagramCacheShouldApplyResult(
 // third-party API (kroki.io) for rendering.
 func fetchMermaidAsync(
 	w *Window, source string, hash int64,
-	requestID uint64, bgR, bgG, bgB uint8,
+	requestID uint64,
 ) {
 	go func() {
 		if len(source) > markdown.MaxMermaidSourceLen {
-			w.QueueCommand(func(w *Window) {
-				if !diagramCacheShouldApplyResult(
-					w.viewState.diagramCache,
-					hash, requestID) {
-					return
-				}
-				w.viewState.diagramCache.Set(hash,
-					DiagramCacheEntry{
-						State:     DiagramError,
-						Error:     "Mermaid source too large",
-						RequestID: requestID,
-					})
-				w.UpdateWindow()
-			})
+			queueDiagramError(w, hash, requestID,
+				"Mermaid source too large")
 			return
 		}
 
 		body, err := mermaidHTTPFetch(source)
 		if err != nil {
-			errMsg := err.Error()
-			w.QueueCommand(func(w *Window) {
-				if !diagramCacheShouldApplyResult(
-					w.viewState.diagramCache,
-					hash, requestID) {
-					return
-				}
-				w.viewState.diagramCache.Set(hash,
-					DiagramCacheEntry{
-						State:     DiagramError,
-						Error:     errMsg,
-						RequestID: requestID,
-					})
-				w.UpdateWindow()
-			})
+			queueDiagramError(w, hash, requestID,
+				err.Error())
 			return
 		}
 
 		// Decode PNG.
 		img, err := png.Decode(bytes.NewReader(body))
 		if err != nil {
-			errMsg := err.Error()
-			w.QueueCommand(func(w *Window) {
-				if !diagramCacheShouldApplyResult(
-					w.viewState.diagramCache,
-					hash, requestID) {
-					return
-				}
-				w.viewState.diagramCache.Set(hash,
-					DiagramCacheEntry{
-						State:     DiagramError,
-						Error:     "PNG decode: " + errMsg,
-						RequestID: requestID,
-					})
-				w.UpdateWindow()
-			})
+			queueDiagramError(w, hash, requestID,
+				"PNG decode: "+err.Error())
 			return
 		}
 
@@ -254,9 +216,6 @@ func fetchMermaidAsync(
 			w.UpdateWindow()
 		})
 	}()
-	_ = bgR
-	_ = bgG
-	_ = bgB
 }
 
 func mermaidHTTPFetch(source string) ([]byte, error) {
