@@ -47,7 +47,7 @@ func (m *BoundedMap[K, V]) Set(key K, value V) {
 	}
 	m.order = append(m.order, key)
 	m.data[key] = value
-	m.compactOrder(false)
+	m.compactOrder()
 }
 
 // Get returns value for key. Second return is false if not found.
@@ -67,14 +67,7 @@ func (m *BoundedMap[K, V]) Delete(key K) {
 		m.head = 0
 		return
 	}
-	if m.head > 0 {
-		m.compactOrder(false)
-		return
-	}
-	if len(m.order) >= boundedOrderCompactMin &&
-		len(m.order) > len(m.data)*2 {
-		m.compactOrder(true)
-	}
+	m.compactOrder()
 }
 
 // Contains returns true if key exists.
@@ -142,24 +135,16 @@ func (m *BoundedMap[K, V]) Range(fn func(K, V) bool) {
 	}
 }
 
-func (m *BoundedMap[K, V]) compactOrder(force bool) {
-	if m.head <= 0 && !force {
+func (m *BoundedMap[K, V]) compactOrder() {
+	switch {
+	case m.head >= boundedOrderCompactMin:
+	case m.head > 0 && m.head*2 >= len(m.order):
+	case len(m.order) >= boundedOrderCompactMin && len(m.order) > len(m.data)*2:
+	default:
 		return
-	}
-	if !force &&
-		m.head < boundedOrderCompactMin &&
-		m.head*2 < len(m.order) {
-		return
-	}
-	start := m.head
-	if start < 0 {
-		start = 0
-	}
-	if start > len(m.order) {
-		start = len(m.order)
 	}
 	dst := 0
-	for _, k := range m.order[start:] {
+	for _, k := range m.order[m.head:] {
 		if _, exists := m.data[k]; exists {
 			m.order[dst] = k
 			dst++
