@@ -118,7 +118,7 @@ var relatedExampleMap = map[string][]string{
 	"combobox":            {"examples/showcase/demo_selection.go"},
 	"select":              {"examples/showcase/demo_selection.go"},
 	"listbox":             {"examples/showcase/demo_selection.go", "examples/listbox/main.go"},
-	"range_slider":        {"examples/showcase/demo_selection.go"},
+	"slider":              {"examples/showcase/demo_selection.go"},
 	"progress_bar":        {"examples/showcase/demo_feedback.go"},
 	"pulsar":              {"examples/showcase/demo_feedback.go"},
 	"toast":               {"examples/showcase/demo_feedback.go"},

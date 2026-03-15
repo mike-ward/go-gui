@@ -54,8 +54,7 @@ type ShowcaseApp struct {
 	SelectValue     []string
 	ListBoxSelected []string
 	ComboboxValue   string
-	RangeValue      float32
-	SliderValue     float32
+	RangeValue float32
 
 	NumericENText        string
 	NumericDEText        string
@@ -144,7 +143,6 @@ func newShowcaseApp() *ShowcaseApp {
 		InputMultiline:       "Now is the time for all good men to come to the aid of their country",
 		RadioValue:           "go",
 		RangeValue:           50,
-		SliderValue:          50,
 		NumericENText:        "1,234.50",
 		NumericENValue:       gui.Some(1234.5),
 		NumericDEText:        "1.234,50",
@@ -254,7 +252,7 @@ func demoEntries() []DemoEntry {
 		{ID: "listbox", Label: "List Box", Group: groupSelection, Summary: "Single and multi-select list options.", Tags: []string{"list", "multi", "select"}},
 		{ID: "radio", Label: "Radio", Group: groupSelection, Summary: "Single radio control.", Tags: []string{"option", "boolean", "choice"}},
 		{ID: "radio_group", Label: "Radio Button Group", Group: groupSelection, Summary: "Mutually exclusive options in row or column.", Tags: []string{"group", "options", "select"}},
-		{ID: "range_slider", Label: "Range Slider", Group: groupInput, Summary: "Drag horizontal or vertical value controls.", Tags: []string{"slider", "value", "range"}},
+		{ID: "slider", Label: "Slider", Group: groupInput, Summary: "Drag horizontal or vertical value controls.", Tags: []string{"slider", "value"}},
 		{ID: "drag_reorder", Label: "Drag Reorder", Group: groupLayout, Summary: "Drag-to-reorder items in lists, tabs, and trees.", Tags: []string{"drag", "reorder", "list", "tabs", "tree", "keyboard"}},
 		{ID: "combobox", Label: "Combobox", Group: groupSelection, Summary: "Single-select with typeahead filtering.", Tags: []string{"dropdown", "filter", "typeahead", "autocomplete"}},
 		{ID: "select", Label: "Select", Group: groupSelection, Summary: "Dropdown with optional multi-select.", Tags: []string{"dropdown", "pick", "options"}},

@@ -295,7 +295,7 @@ func cpAlphaSlider(cfg *ColorPickerCfg) View {
 	c := cfg.Color
 	thumbSize := cfg.Style.IndicatorSize
 	trackSize := float32(6)
-	return RangeSlider(RangeSliderCfg{
+	return Slider(SliderCfg{
 		ID:           cfg.ID + ".alpha",
 		Value:        float32(c.A),
 		Min:          0,

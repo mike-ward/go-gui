@@ -151,8 +151,8 @@ func componentDemo(w *gui.Window, id string) gui.View {
 		return demoSelect(w)
 	case "listbox":
 		return demoListBox(w)
-	case "range_slider":
-		return demoRangeSlider(w)
+	case "slider":
+		return demoSlider(w)
 	case "progress_bar":
 		return demoProgressBar(w)
 	case "pulsar":

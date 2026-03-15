@@ -319,7 +319,7 @@ gui.Input(gui.InputCfg{
 | Combobox       | `Combobox(ComboboxCfg)`             | Editable dropdown            |
 | Switch         | `Switch(SwitchCfg)`                 | On/off toggle switch         |
 | Toggle         | `Toggle(ToggleCfg)`                 | Toggle button                |
-| RangeSlider    | `RangeSlider(RangeSliderCfg)`       | Min/max range picker         |
+| Slider         | `Slider(SliderCfg)`                 | Min/max range picker         |
 | InputDate      | `InputDate(InputDateCfg)`           | Date field with picker       |
 | ColorPicker    | `ColorPicker(ColorPickerCfg)`       | RGBA color picker            |
 | Form           | `Form(FormCfg)`                     | Form with validation         |

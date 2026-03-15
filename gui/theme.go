@@ -45,7 +45,7 @@ type Theme struct {
 	BadgeStyle          BadgeStyle
 	ExpandPanelStyle    ExpandPanelStyle
 	ProgressBarStyle    ProgressBarStyle
-	RangeSliderStyle    RangeSliderStyle
+	SliderStyle         SliderStyle
 	TabControlStyle     TabControlStyle
 	BreadcrumbStyle     BreadcrumbStyle
 	SplitterStyle       SplitterStyle
@@ -177,8 +177,8 @@ type ThemeCfg struct {
 	SizeScrollbar        float32
 	SizeScrollbarMin     float32
 	SizeProgressBar      float32
-	SizeRangeSlider      float32
-	SizeRangeSliderThumb float32
+	SizeSlider           float32
+	SizeSliderThumb      float32
 }
 
 // ThemeMaker builds a full Theme from a ThemeCfg.
@@ -434,9 +434,9 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			TextShow:       true,
 			TextStyle:      ts,
 		},
-		RangeSliderStyle: RangeSliderStyle{
-			Size:             cfg.SizeRangeSlider,
-			ThumbSize:        cfg.SizeRangeSliderThumb,
+		SliderStyle: SliderStyle{
+			Size:             cfg.SizeSlider,
+			ThumbSize:        cfg.SizeSliderThumb,
 			Color:            cfg.ColorInterior,
 			ColorClick:       cfg.ColorActive,
 			ColorThumb:       cfg.ColorPanel,
@@ -447,7 +447,7 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			ColorBorderFocus: borderFocus,
 			Padding:          PaddingNone,
 			SizeBorder:       1,
-			Radius:           cfg.SizeRangeSlider / 2,
+			Radius:           cfg.SizeSlider / 2,
 		},
 		TabControlStyle: TabControlStyle{
 			Color:               cfg.ColorPanel,
@@ -772,7 +772,7 @@ func SetTheme(t Theme) {
 	DefaultBadgeStyle = t.BadgeStyle
 	DefaultExpandPanelStyle = t.ExpandPanelStyle
 	DefaultProgressBarStyle = t.ProgressBarStyle
-	DefaultRangeSliderStyle = t.RangeSliderStyle
+	DefaultSliderStyle = t.SliderStyle
 	DefaultTabControlStyle = t.TabControlStyle
 	DefaultBreadcrumbStyle = t.BreadcrumbStyle
 	DefaultSplitterStyle = t.SplitterStyle
@@ -893,9 +893,9 @@ func (t Theme) WithProgressBarStyle(s ProgressBarStyle) Theme {
 	return t
 }
 
-// WithRangeSliderStyle returns a Theme with the given style.
-func (t Theme) WithRangeSliderStyle(s RangeSliderStyle) Theme {
-	t.RangeSliderStyle = s
+// WithSliderStyle returns a Theme with the given style.
+func (t Theme) WithSliderStyle(s SliderStyle) Theme {
+	t.SliderStyle = s
 	return t
 }
 
@@ -1082,14 +1082,14 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.ProgressBarStyle.ColorBorder = border
 	t.ProgressBarStyle.TextBackground = ColorTransparent
 
-	t.RangeSliderStyle.Color = interior
-	t.RangeSliderStyle.ColorClick = active
-	t.RangeSliderStyle.ColorThumb = panel
-	t.RangeSliderStyle.ColorLeft = sel
-	t.RangeSliderStyle.ColorFocus = sel
-	t.RangeSliderStyle.ColorHover = hover
-	t.RangeSliderStyle.ColorBorder = border
-	t.RangeSliderStyle.ColorBorderFocus = borderFocus
+	t.SliderStyle.Color = interior
+	t.SliderStyle.ColorClick = active
+	t.SliderStyle.ColorThumb = panel
+	t.SliderStyle.ColorLeft = sel
+	t.SliderStyle.ColorFocus = sel
+	t.SliderStyle.ColorHover = hover
+	t.SliderStyle.ColorBorder = border
+	t.SliderStyle.ColorBorderFocus = borderFocus
 
 	t.TabControlStyle.Color = panel
 	t.TabControlStyle.ColorBorder = border

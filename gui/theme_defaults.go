@@ -63,8 +63,8 @@ func baseDarkCfg() ThemeCfg {
 		SizeScrollbar:        7,
 		SizeScrollbarMin:     20,
 		SizeProgressBar:      20,
-		SizeRangeSlider:      6,
-		SizeRangeSliderThumb: 16,
+		SizeSlider:      6,
+		SizeSliderThumb: 16,
 		ColorError:           RGBA(218, 54, 51, 255),
 	}
 }
@@ -156,8 +156,8 @@ func init() {
 		SizeScrollbar:        7,
 		SizeScrollbarMin:     20,
 		SizeProgressBar:      20,
-		SizeRangeSlider:      6,
-		SizeRangeSliderThumb: 16,
+		SizeSlider:      6,
+		SizeSliderThumb: 16,
 	}
 	ThemeLight = ThemeMaker(ThemeLightCfg)
 
@@ -220,8 +220,8 @@ func init() {
 		SizeScrollbar:        7,
 		SizeScrollbarMin:     20,
 		SizeProgressBar:      20,
-		SizeRangeSlider:      6,
-		SizeRangeSliderThumb: 16,
+		SizeSlider:      6,
+		SizeSliderThumb: 16,
 	}
 	ThemeBlueBordered = ThemeMaker(ThemeBlueBorderedCfg)
 

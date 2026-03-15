@@ -205,14 +205,14 @@ func TestThemeBoldTypeface(t *testing.T) {
 	}
 }
 
-func TestWithColorsRangeSlider(t *testing.T) {
+func TestWithColorsSlider(t *testing.T) {
 	theme := ThemeMaker(baseDarkCfg())
 	hover := RGB(99, 99, 99)
 	updated := theme.WithColors(ColorOverrides{
 		ColorHover: &hover,
 	})
-	if updated.RangeSliderStyle.ColorHover != hover {
-		t.Error("range slider hover not propagated")
+	if updated.SliderStyle.ColorHover != hover {
+		t.Error("slider hover not propagated")
 	}
 }
 

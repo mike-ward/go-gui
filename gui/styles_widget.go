@@ -240,8 +240,8 @@ type ProgressBarStyle struct {
 	TextStyle      TextStyle
 }
 
-// RangeSliderStyle defines range slider visual properties.
-type RangeSliderStyle struct {
+// SliderStyle defines slider visual properties.
+type SliderStyle struct {
 	Size             float32
 	ThumbSize        float32
 	Color            Color
@@ -662,7 +662,7 @@ var (
 		TextStyle:      DefaultTextStyle,
 	}
 
-	DefaultRangeSliderStyle = RangeSliderStyle{
+	DefaultSliderStyle = SliderStyle{
 		Size:             6,
 		ThumbSize:        16,
 		Color:            colorInteriorDark,

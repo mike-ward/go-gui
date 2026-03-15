@@ -367,7 +367,7 @@ func dragTreeReorderNodes(
 	return false
 }
 
-func demoRangeSlider(w *gui.Window) gui.View {
+func demoSlider(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	t := gui.CurrentTheme()
 	return gui.Column(gui.ContainerCfg{
@@ -376,39 +376,17 @@ func demoRangeSlider(w *gui.Window) gui.View {
 		Padding: gui.NoPadding,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      "RangeSlider",
-				TextStyle: t.B4,
-			}),
-			gui.Text(gui.TextCfg{
 				Text:      fmt.Sprintf("Value: %.0f", app.RangeValue),
 				TextStyle: t.N3,
 			}),
-			gui.RangeSlider(gui.RangeSliderCfg{
-				ID:     "range-slider-demo",
+			gui.Slider(gui.SliderCfg{
+				ID:     "slider-demo",
 				Value:  app.RangeValue,
 				Min:    0,
 				Max:    100,
 				Sizing: gui.FillFit,
 				OnChange: func(v float32, _ *gui.Event, w *gui.Window) {
 					gui.State[ShowcaseApp](w).RangeValue = v
-				},
-			}),
-			gui.Text(gui.TextCfg{
-				Text:      "Slider (simplified API)",
-				TextStyle: t.B4,
-			}),
-			gui.Text(gui.TextCfg{
-				Text:      fmt.Sprintf("Value: %.0f", app.SliderValue),
-				TextStyle: t.N3,
-			}),
-			gui.Slider(gui.SliderCfg{
-				ID:     "slider-demo",
-				Value:  app.SliderValue,
-				Min:    0,
-				Max:    100,
-				Sizing: gui.FillFit,
-				OnChange: func(v float32, _ *gui.Event, w *gui.Window) {
-					gui.State[ShowcaseApp](w).SliderValue = v
 				},
 			}),
 		},

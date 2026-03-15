@@ -81,7 +81,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 								Text:      fmt.Sprintf("Tint: %.0f%%", app.ThemeGenTint),
 								TextStyle: t.N3,
 							}),
-							gui.RangeSlider(gui.RangeSliderCfg{
+							gui.Slider(gui.SliderCfg{
 								ID:     "theme-gen-tint",
 								Value:  app.ThemeGenTint,
 								Min:    0,
