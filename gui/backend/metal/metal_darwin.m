@@ -39,6 +39,7 @@ static int _triBufFrame = -1;
 // Filter textures.
 static id<MTLTexture> _filterTexA;
 static id<MTLTexture> _filterTexB;
+static id<MTLTexture> _filterStencilTex;
 static int _filterW, _filterH;
 
 // Stencil clip state.
@@ -544,6 +545,8 @@ static id<MTLRenderPipelineState> makePipeline(
     desc.colorAttachments[0].destinationAlphaBlendFactor =
         MTLBlendFactorOneMinusSourceAlpha;
 
+    desc.stencilAttachmentPixelFormat = MTLPixelFormatStencil8;
+
     if (!desc.vertexFunction) {
         NSLog(@"metal: vertex function %@ not found", vsName);
         return nil;
@@ -582,6 +585,8 @@ static id<MTLRenderPipelineState> makePipelineReplace(
 
     desc.colorAttachments[0].pixelFormat = pixFmt;
     desc.colorAttachments[0].blendingEnabled = NO;
+
+    desc.stencilAttachmentPixelFormat = MTLPixelFormatStencil8;
 
     if (!desc.vertexFunction) {
         NSLog(@"metal: vertex function %@ not found", vsName);
@@ -930,6 +935,7 @@ void metalDestroy(void) {
     _triBufFrame = -1;
     _filterTexA = nil;
     _filterTexB = nil;
+    _filterStencilTex = nil;
     _stencilTex = nil;
     _stencilTexW = 0;
     _stencilTexH = 0;
@@ -1144,6 +1150,14 @@ static void ensureFilterTextures(int w, int h) {
     MTLPixelFormat pf = MTLPixelFormatBGRA8Unorm;
     _filterTexA = makeRenderTarget(w, h, pf);
     _filterTexB = makeRenderTarget(w, h, pf);
+    // Stencil attachment so ClipContents works inside filters.
+    MTLTextureDescriptor *std = [MTLTextureDescriptor
+        texture2DDescriptorWithPixelFormat:MTLPixelFormatStencil8
+                                     width:w height:h
+                                  mipmapped:NO];
+    std.usage = MTLTextureUsageRenderTarget;
+    std.storageMode = MTLStorageModePrivate;
+    _filterStencilTex = [_device newTextureWithDescriptor:std];
     _filterW = w;
     _filterH = h;
 }
@@ -1166,6 +1180,14 @@ int metalBeginFilter(int w, int h) {
     rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
     rpd.colorAttachments[0].clearColor  =
         MTLClearColorMake(0, 0, 0, 0);
+
+    // Attach stencil so ClipContents works inside filters.
+    if (_filterStencilTex) {
+        rpd.stencilAttachment.texture     = _filterStencilTex;
+        rpd.stencilAttachment.loadAction  = MTLLoadActionClear;
+        rpd.stencilAttachment.storeAction = MTLStoreActionStore;
+        rpd.stencilAttachment.clearStencil = 0;
+    }
 
     _enc = [_cmdBuf renderCommandEncoderWithDescriptor:rpd];
     [_enc setViewport:(MTLViewport){

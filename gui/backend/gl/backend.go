@@ -45,11 +45,12 @@ type Backend struct {
 	sampledBuf         []gui.GradientStop
 
 	textures    glTexCache
-	filterFBO   uint32
-	filterTexA  uint32
-	filterTexB  uint32
-	filterW     int32
-	filterH     int32
+	filterFBO      uint32
+	filterStencil  uint32
+	filterTexA     uint32
+	filterTexB     uint32
+	filterW        int32
+	filterH        int32
 	filterBlur        float32
 	filterLayer       int
 	filterColorMatrix *[16]float32

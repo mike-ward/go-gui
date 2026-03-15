@@ -82,6 +82,7 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 
 	type clipEntry struct{}
 	var clipStack []clipEntry
+	var stencilClipDepth int
 
 	for _, cmd := range renderers {
 		switch cmd.Kind {
@@ -472,6 +473,20 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 				resetAlpha(pdf)
 			}
 
+		case RenderStencilBegin:
+			// Approximate rounded-rect stencil with rect clip.
+			if cmd.W > 0 && cmd.H > 0 {
+				pdf.ClipRect(px(cmd.X), py(cmd.Y),
+					pw(cmd.W), ph(cmd.H), false)
+				stencilClipDepth++
+			}
+
+		case RenderStencilEnd:
+			if stencilClipDepth > 0 {
+				pdf.ClipEnd()
+				stencilClipDepth--
+			}
+
 		// Unsupported kinds — skip silently.
 		case RenderShadow, RenderBlur, RenderFilterBegin,
 			RenderFilterEnd, RenderFilterComposite,
@@ -482,6 +497,9 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 	}
 
 	// Close any remaining clip regions.
+	for range stencilClipDepth {
+		pdf.ClipEnd()
+	}
 	for range clipStack {
 		pdf.ClipEnd()
 	}

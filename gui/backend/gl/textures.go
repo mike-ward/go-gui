@@ -148,7 +148,18 @@ func (b *Backend) ensureFilterFBO(w, h int32) bool {
 	b.filterW = w
 	b.filterH = h
 
+	// Attach a stencil renderbuffer so ClipContents works
+	// inside filter containers.
+	gogl.GenRenderbuffers(1, &b.filterStencil)
+	gogl.BindRenderbuffer(gogl.RENDERBUFFER, b.filterStencil)
+	gogl.RenderbufferStorage(gogl.RENDERBUFFER,
+		gogl.STENCIL_INDEX8, w, h)
+	gogl.BindRenderbuffer(gogl.RENDERBUFFER, 0)
+
 	b.bindFBO(b.filterTexA)
+	gogl.FramebufferRenderbuffer(gogl.FRAMEBUFFER,
+		gogl.STENCIL_ATTACHMENT, gogl.RENDERBUFFER,
+		b.filterStencil)
 	status := gogl.CheckFramebufferStatus(gogl.FRAMEBUFFER)
 	b.unbindFBO()
 	if status != gogl.FRAMEBUFFER_COMPLETE {
@@ -160,6 +171,10 @@ func (b *Backend) ensureFilterFBO(w, h int32) bool {
 }
 
 func (b *Backend) destroyFilterFBO() {
+	if b.filterStencil != 0 {
+		gogl.DeleteRenderbuffers(1, &b.filterStencil)
+		b.filterStencil = 0
+	}
 	if b.filterFBO != 0 {
 		gogl.DeleteFramebuffers(1, &b.filterFBO)
 		b.filterFBO = 0

@@ -68,7 +68,9 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 
 	// Emit stencil clip bracket before children.
 	if layout.Shape.ClipContents {
-		w.stencilDepth++
+		if w.stencilDepth < 255 {
+			w.stencilDepth++
+		}
 		emitRenderer(RenderCmd{
 			Kind:         RenderStencilBegin,
 			X:            layout.Shape.X,

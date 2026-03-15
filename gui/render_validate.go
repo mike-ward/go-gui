@@ -53,6 +53,9 @@ func rendererValidForDraw(r RenderCmd) bool {
 	case RenderFilterComposite:
 		return f32AllFinite4(r.X, r.Y, r.W, r.H) &&
 			r.W > 0 && r.H > 0 && r.Layers > 0
+	case RenderStencilBegin, RenderStencilEnd:
+		return f32AllFinite5(r.X, r.Y, r.W, r.H, r.Radius) &&
+			r.W > 0 && r.H > 0 && r.StencilDepth > 0
 	default:
 		return true
 	}
