@@ -2,22 +2,22 @@
 
 Stuff I'm considering. No promises.
 
-| Feature                               | Notes                                                               |
-| ------------------------------------- | ------------------------------------------------------------------- |
-| **Multi-window**                      | Single window only. Qt/Flutter/SwiftUI all support N windows        |
-| **Charts**                            | No bar/line/pie/scatter/area. DrawCanvas exists but no chart API    |
-| **System tray / menubar**             | No tray icon, no native menu bar integration                        |
-| **Touch / gesture input**             | No pinch, swipe, rotate, long-press. Required for tablet/mobile     |
-| **Embedded video/audio**              | No media playback widget                                            |
-| **Skeleton / shimmer loading**        | Placeholder UI during async loads                                   |
-| ~~**Spell check integration**~~       | ✅ Implemented — OS-level spell check via NSSpellChecker            |
-| **Global hotkeys / shortcut manager** | Centralized keybinding registry                                     |
-| **Constraint-based layout**           | Auto-layout style constraints (complementary to flex)               |
-| **Autocomplete / suggestion list**    | Text input with dropdown suggestions (Combobox may partially cover) |
-| **Keyboard shortcut hints**           | Show accelerator keys in menus/tooltips                             |
-| **Native dark/light mode sync**       | Auto-switch theme to match OS appearance                            |
-| Mobile target spike                   | gesture model, safe area, virtual keyboard insets                   |
-| Web target spike                      | Wasm renderer + browser clipboard/input backends                    |
+| Feature                                   | Notes                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| **Multi-window**                          | Single window only. Qt/Flutter/SwiftUI all support N windows        |
+| **Charts**                                | No bar/line/pie/scatter/area. DrawCanvas exists but no chart API    |
+| **System tray / menubar**                 | No tray icon, no native menu bar integration                        |
+| **Touch / gesture input**                 | No pinch, swipe, rotate, long-press. Required for tablet/mobile     |
+| **Embedded video/audio**                  | No media playback widget                                            |
+| **Skeleton / shimmer loading**            | Placeholder UI during async loads                                   |
+| ~~**Spell check integration**~~           | ✅ Implemented — OS-level spell check via NSSpellChecker            |
+| ~~**Global hotkeys / shortcut manager**~~ | ✅ Implemented — Command registry with global/non-global dispatch   |
+| **Constraint-based layout**               | Auto-layout style constraints (complementary to flex)               |
+| **Autocomplete / suggestion list**        | Text input with dropdown suggestions (Combobox may partially cover) |
+| ~~**Keyboard shortcut hints**~~           | ✅ Implemented — MenuItemCfg.CommandID renders shortcut hints       |
+| **Native dark/light mode sync**           | Auto-switch theme to match OS appearance                            |
+| Mobile target spike                       | gesture model, safe area, virtual keyboard insets                   |
+| Web target spike                          | Wasm renderer + browser clipboard/input backends                    |
 
 ## Charting / Graphing / Plotting (External Package)
 
