@@ -123,7 +123,7 @@ func createMetalTexture(w, h int32,
 func (b *Backend) loadImageTexture(
 	path string) (metalTexCacheEntry, error) {
 	if len(b.allowedImageRoots) > 0 {
-		if err := validatePathAllowed(path,
+		if err := imgpath.ValidateAllowed(path,
 			b.allowedImageRoots); err != nil {
 			return metalTexCacheEntry{}, err
 		}
@@ -222,28 +222,12 @@ func (b *Backend) resolveValidatedImagePath(
 	if err != nil {
 		return "", fmt.Errorf("invalid image path: %w", err)
 	}
-	resolvedPath := resolvePathWithParentFallback(pathAbs)
+	resolvedPath := imgpath.ResolveWithParentFallback(pathAbs)
 	if len(b.allowedImageRoots) > 0 {
-		if err := validatePathAllowed(resolvedPath,
+		if err := imgpath.ValidateAllowed(resolvedPath,
 			b.allowedImageRoots); err != nil {
 			return "", err
 		}
 	}
 	return resolvedPath, nil
-}
-
-// Delegating wrappers — shared implementation in imgpath.
-
-func resolvePathWithParentFallback(path string) string {
-	return imgpath.ResolveWithParentFallback(path)
-}
-
-func validatePathAllowed(
-	path string, allowedRoots []string) error {
-	return imgpath.ValidateAllowed(path, allowedRoots)
-}
-
-func normalizeAllowedRoots(
-	allowedRoots []string) []string {
-	return imgpath.NormalizeRoots(allowedRoots)
 }

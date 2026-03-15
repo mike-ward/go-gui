@@ -178,13 +178,9 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	C.metalSetPipeline(C.int(pipeShadow))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 
-	var tm [16]float32
-	tm[0] = 1
-	tm[5] = 1
-	tm[10] = 1
+	tm := identityTM()
 	tm[12] = r.OffsetX * s
 	tm[13] = r.OffsetY * s
-	tm[15] = 1
 	C.metalSetTM((*C.float)(&tm[0]))
 
 	verts := buildQuad(qx, qy, qw, qh, r.Color, rad, blur)
@@ -199,11 +195,7 @@ func (b *Backend) drawBlur(r *gui.RenderCmd) {
 
 	C.metalSetPipeline(C.int(pipeBlur))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
-	var tm [16]float32
-	tm[0] = 1
-	tm[5] = 1
-	tm[10] = 1
-	tm[15] = 1
+	tm := identityTM()
 	C.metalSetTM((*C.float)(&tm[0]))
 
 	verts := buildQuad(
@@ -560,11 +552,7 @@ func (b *Backend) drawLayoutTransformed(r *gui.RenderCmd) {
 }
 
 func (b *Backend) drawRtf(r *gui.RenderCmd) {
-	if b.textSys == nil || r.LayoutPtr == nil {
-		return
-	}
-	b.useGlyphPipeline()
-	b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
+	b.drawLayout(r)
 }
 
 func (b *Backend) drawCustomShader(r *gui.RenderCmd) {

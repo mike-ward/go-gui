@@ -28,8 +28,11 @@ func goA11yAction(action, index C.int) {
 	}
 }
 
-// Reusable C node buffer — grows only, never shrinks.
-var cNodeBuf []C.A11yCNode
+// Reusable C buffers — grow only, never shrink.
+var (
+	cNodeBuf   []C.A11yCNode
+	cStringBuf []*C.char
+)
 
 func a11yInitBridge(win *sdl.Window) {
 	cWin := (*C.SDL_Window)(unsafe.Pointer(win))
@@ -46,8 +49,8 @@ func a11ySyncBridge(nodes []gui.A11yNode, count, focusedIdx int, windowH float32
 	}
 	cNodeBuf = cNodeBuf[:count]
 
-	// Collect C strings for batch free.
-	cStrings := make([]*C.char, 0, count*3)
+	// Reslice reusable C string buffer.
+	cStringBuf = cStringBuf[:0]
 
 	for i := 0; i < count; i++ {
 		n := &nodes[i]
@@ -63,9 +66,9 @@ func a11ySyncBridge(nodes []gui.A11yNode, count, focusedIdx int, windowH float32
 		cn.childrenStart = C.int(n.ChildrenStart)
 		cn.childrenCount = C.int(n.ChildrenCount)
 
-		cn.label = cStringOrNil(n.Label, &cStrings)
-		cn.value = cStringOrNil(n.Value, &cStrings)
-		cn.description = cStringOrNil(n.Description, &cStrings)
+		cn.label = cStringOrNil(n.Label, &cStringBuf)
+		cn.value = cStringOrNil(n.Value, &cStringBuf)
+		cn.description = cStringOrNil(n.Description, &cStringBuf)
 	}
 
 	C.a11ySync(
@@ -75,9 +78,10 @@ func a11ySyncBridge(nodes []gui.A11yNode, count, focusedIdx int, windowH float32
 		C.float(windowH),
 	)
 
-	// Free all C strings.
-	for _, cs := range cStrings {
+	// Free all C strings and nil out to avoid dangling pointers.
+	for i, cs := range cStringBuf {
 		C.free(unsafe.Pointer(cs))
+		cStringBuf[i] = nil
 	}
 }
 

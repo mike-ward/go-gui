@@ -30,6 +30,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
 	"github.com/mike-ward/go-gui/gui/svg"
 )
 
@@ -171,7 +172,7 @@ func New(w *gui.Window) (*Backend, error) {
 		maxImageBytes:  cfg.MaxImageBytes,
 		maxImagePixels: cfg.MaxImagePixels,
 	}
-	b.allowedImageRoots = normalizeAllowedRoots(
+	b.allowedImageRoots = imgpath.NormalizeRoots(
 		cfg.AllowedImageRoots)
 	b.updateProjection()
 

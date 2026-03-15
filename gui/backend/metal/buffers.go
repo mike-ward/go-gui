@@ -47,6 +47,11 @@ func buildQuad(x, y, w, h float32, c gui.Color,
 	}
 }
 
+// identityTM returns a 4x4 identity matrix for the TM uniform.
+func identityTM() [16]float32 {
+	return [16]float32{0: 1, 5: 1, 10: 1, 15: 1}
+}
+
 // ortho builds an orthographic projection matrix (column-major).
 func ortho(m *[16]float32, l, r, b, t, n, f float32) {
 	m[0] = 2 / (r - l)
