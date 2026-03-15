@@ -310,36 +310,12 @@ func container(cfg ContainerCfg) View {
 
 	content := cfg.Content
 	if cfg.IDScroll > 0 {
-		extra := make([]View, 0, 2)
-		if cfg.ScrollbarCfgX != nil {
-			if cfg.ScrollbarCfgX.Overflow != ScrollbarHidden {
-				merged := *cfg.ScrollbarCfgX
-				merged.Orientation = ScrollbarHorizontal
-				merged.IDScroll = cfg.IDScroll
-				extra = append(extra, Scrollbar(merged))
-			}
-		} else {
-			extra = append(extra, Scrollbar(ScrollbarCfg{
-				Orientation: ScrollbarHorizontal,
-				IDScroll:    cfg.IDScroll,
-			}))
-		}
-		if cfg.ScrollbarCfgY != nil {
-			if cfg.ScrollbarCfgY.Overflow != ScrollbarHidden {
-				merged := *cfg.ScrollbarCfgY
-				merged.Orientation = ScrollbarVertical
-				merged.IDScroll = cfg.IDScroll
-				extra = append(extra, Scrollbar(merged))
-			}
-		} else {
-			extra = append(extra, Scrollbar(ScrollbarCfg{
-				Orientation: ScrollbarVertical,
-				IDScroll:    cfg.IDScroll,
-			}))
-		}
-		content = make([]View, 0, len(cfg.Content)+len(extra))
+		content = make([]View, 0, len(cfg.Content)+2)
 		content = append(content, cfg.Content...)
-		content = append(content, extra...)
+		content = appendScrollbar(content, cfg.ScrollbarCfgX,
+			ScrollbarHorizontal, cfg.IDScroll)
+		content = appendScrollbar(content, cfg.ScrollbarCfgY,
+			ScrollbarVertical, cfg.IDScroll)
 	}
 
 	return &containerView{
@@ -380,6 +356,22 @@ func Circle(cfg ContainerCfg) View {
 	cv := container(cfg).(*containerView)
 	cv.shapeType = ShapeCircle
 	return cv
+}
+
+func appendScrollbar(content []View, override *ScrollbarCfg, orientation ScrollbarOrientation, idScroll uint32) []View {
+	if override != nil {
+		if override.Overflow == ScrollbarHidden {
+			return content
+		}
+		merged := *override
+		merged.Orientation = orientation
+		merged.IDScroll = idScroll
+		return append(content, Scrollbar(merged))
+	}
+	return append(content, Scrollbar(ScrollbarCfg{
+		Orientation: orientation,
+		IDScroll:    idScroll,
+	}))
 }
 
 func invisibleContainerView() *containerView {
