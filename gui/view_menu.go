@@ -164,6 +164,29 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 		configured.level = level
 		configured.textStyle = ts
 
+		// Resolve CommandID from registered commands.
+		if configured.CommandID != "" {
+			if cmd, ok := w.CommandByID(configured.CommandID); ok {
+				if configured.Text == "" {
+					configured.Text = cmd.Label
+				}
+				configured.shortcutText = cmd.Shortcut.String()
+				if cmd.CanExecute != nil && !cmd.CanExecute(w) {
+					configured.disabled = true
+				}
+				if configured.Action == nil {
+					cmdExec := cmd.Execute
+					configured.Action = func(
+						_ *MenuItemCfg, e *Event, w *Window,
+					) {
+						if cmdExec != nil {
+							cmdExec(e, w)
+						}
+					}
+				}
+			}
+		}
+
 		// Attach submenu as child of menu item so float
 		// positioning is relative to the item, not the bar.
 		if len(item.Submenu) > 0 &&

@@ -138,6 +138,47 @@ func Button(cfg ButtonCfg) View {
 	})
 }
 
+// CommandButton creates a button wired to a registered
+// command. Auto-fills label from Command.Label when Content
+// is nil. Auto-disables via CanExecute. Wires OnClick to
+// Command.Execute.
+func CommandButton(w *Window, cmdID string, cfg ButtonCfg) View {
+	cmd, ok := w.CommandByID(cmdID)
+	if !ok {
+		return Button(cfg)
+	}
+
+	// Auto-fill content from command label.
+	if cfg.Content == nil && cmd.Label != "" {
+		label := cmd.Label
+		hint := cmd.Shortcut.String()
+		if hint != "" {
+			label += "  " + hint
+		}
+		cfg.Content = []View{
+			Text(TextCfg{Text: label}),
+		}
+	}
+
+	// Wire OnClick to command execute.
+	if cfg.OnClick == nil {
+		cmdExec := cmd.Execute
+		cID := cmdID
+		cfg.OnClick = func(_ *Layout, e *Event, w *Window) {
+			if w.CommandCanExecute(cID) && cmdExec != nil {
+				cmdExec(e, w)
+			}
+		}
+	}
+
+	// Auto-disable via CanExecute.
+	if cmd.CanExecute != nil && !cmd.CanExecute(w) {
+		cfg.Disabled = true
+	}
+
+	return Button(cfg)
+}
+
 func applyButtonDefaults(cfg *ButtonCfg) {
 	d := &DefaultButtonStyle
 	if !cfg.Color.IsSet() {

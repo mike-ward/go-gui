@@ -64,7 +64,11 @@ func (w *Window) EventFn(e *Event) {
 		w.imeClear()
 
 	case EventKeyDown:
-		keydownHandler(layout, e, w)
+		// Global commands fire before focus dispatch.
+		w.commandDispatch(e, true)
+		if !e.IsHandled {
+			keydownHandler(layout, e, w)
+		}
 		if !e.IsHandled && e.KeyCode == KeyTab &&
 			e.Modifiers == ModShift {
 			if shape, ok := layout.PreviousFocusable(w); ok {
@@ -74,6 +78,10 @@ func (w *Window) EventFn(e *Event) {
 			if shape, ok := layout.NextFocusable(w); ok {
 				w.SetIDFocus(shape.IDFocus)
 			}
+		}
+		// Non-global commands fire as fallback.
+		if !e.IsHandled {
+			w.commandDispatch(e, false)
 		}
 
 	case EventMouseDown:

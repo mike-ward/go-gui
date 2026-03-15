@@ -23,11 +23,15 @@ type MenuItemCfg struct {
 	// Public configuration.
 	ID         string
 	Text       string
+	CommandID  string // auto-fill from registered command
 	Padding    Opt[Padding]
 	Action     func(*MenuItemCfg, *Event, *Window)
 	Submenu    []MenuItemCfg
 	CustomView View
 	Separator  bool
+
+	// Internal — resolved shortcut hint text.
+	shortcutText string
 }
 
 // MenuItemText creates a simple text menu item.
@@ -98,11 +102,33 @@ func menuItem(menubarCfg MenubarCfg, itemCfg MenuItemCfg, extra ...View) View {
 		if itemCfg.sizing == FillFit {
 			mode = TextModeWrap
 		}
-		content = Text(TextCfg{
+		label := Text(TextCfg{
 			Text:      textContent,
 			TextStyle: itemCfg.textStyle,
 			Mode:      mode,
 		})
+		if itemCfg.shortcutText != "" && itemCfg.level > 0 {
+			hintStyle := itemCfg.textStyle
+			hintStyle.Color = dimAlpha(hintStyle.Color)
+			content = Row(ContainerCfg{
+				Sizing:     FillFit,
+				Padding:    NoPadding,
+				SizeBorder: NoBorder,
+				Content: []View{
+					label,
+					Rectangle(RectangleCfg{
+						Sizing: FillFit,
+					}),
+					Text(TextCfg{
+						Text:      itemCfg.shortcutText,
+						TextStyle: hintStyle,
+						Mode:      TextModeSingleLine,
+					}),
+				},
+			})
+		} else {
+			content = label
+		}
 	}
 
 	itemID := itemCfg.ID

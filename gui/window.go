@@ -84,6 +84,10 @@ type Window struct {
 	// OnEvent is called for unhandled events. Nil-safe.
 	OnEvent func(*Event, *Window)
 
+	// Command registry — registered commands for shortcut
+	// dispatch, menu/button integration.
+	cmdRegistry []Command
+
 	// Text measurement — set by backend, nil in tests.
 	textMeasurer TextMeasurer
 
