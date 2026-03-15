@@ -28,10 +28,8 @@ type TextCfg struct {
 
 // textView implements View for text rendering.
 type textView struct {
-	cfg     TextCfg
-	sizing  Sizing
-	opacity float32
-	tc      ShapeTextConfig
+	cfg TextCfg
+	tc  ShapeTextConfig
 }
 
 // textEventHandlers is a shared handler set for focused text
@@ -70,20 +68,17 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 			FocusSkip: c.FocusSkip,
 			Disabled:  c.Disabled,
 			MinWidth:  c.MinWidth,
-			Sizing:    tv.sizing,
+			Sizing:    c.Sizing,
 			Hero:      c.Hero,
-			Opacity:   tv.opacity,
+			Opacity:   c.Opacity.Get(1.0),
 			TC:        &tv.tc,
 		},
 	}
 
+	layout.Shape.Width = w.TextWidth(c.Text, *ts)
 	if w.textMeasurer != nil {
-		layout.Shape.Width = w.textMeasurer.TextWidth(c.Text, *ts)
 		layout.Shape.Height = w.textMeasurer.FontHeight(*ts)
 	} else {
-		// Fallback for tests (no backend).
-		charWidth := ts.Size * 0.6
-		layout.Shape.Width = float32(utf8RuneCount(c.Text)) * charWidth
 		layout.Shape.Height = ts.Size * 1.4
 	}
 	if c.Mode == TextModeSingleLine ||
@@ -132,9 +127,6 @@ func Text(cfg TextCfg) View {
 	if cfg.TextStyle.Size == 0 {
 		cfg.TextStyle.Size = SizeTextMedium
 	}
-	return &textView{
-		cfg:     cfg,
-		sizing:  sizing,
-		opacity: cfg.Opacity.Get(1.0),
-	}
+	cfg.Sizing = sizing
+	return &textView{cfg: cfg}
 }
