@@ -20,7 +20,7 @@ func TestModifierHas(t *testing.T) {
 	}
 
 	// combined bitmask
-	combined := Modifier(uint32(ModShift) | uint32(ModCtrl))
+	combined := ModShift | ModCtrl
 	if !combined.Has(ModShift) {
 		t.Error("combined should have shift")
 	}
@@ -46,7 +46,7 @@ func TestModifierHasAny(t *testing.T) {
 		t.Error("shift should not match ctrl|alt")
 	}
 
-	combined := Modifier(uint32(ModShift) | uint32(ModCtrl))
+	combined := ModShift | ModCtrl
 	if !combined.HasAny(ModShift) {
 		t.Error("combined should match shift")
 	}
@@ -59,7 +59,7 @@ func TestModifierHasAny(t *testing.T) {
 }
 
 func TestModifierCombinations(t *testing.T) {
-	combined := Modifier(uint32(ModCtrl) | uint32(ModShift))
+	combined := ModCtrl | ModShift
 	if !combined.Has(ModCtrl) {
 		t.Error("should have ctrl")
 	}
@@ -70,10 +70,7 @@ func TestModifierCombinations(t *testing.T) {
 		t.Error("should not have alt")
 	}
 
-	all := Modifier(
-		uint32(ModCtrl) | uint32(ModShift) |
-			uint32(ModAlt) | uint32(ModSuper),
-	)
+	all := ModCtrl | ModShift | ModAlt | ModSuper
 	if !all.Has(ModCtrl) {
 		t.Error("all should have ctrl")
 	}

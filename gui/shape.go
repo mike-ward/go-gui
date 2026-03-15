@@ -65,18 +65,18 @@ type Shape struct {
 	FloatAnchor          FloatAttach
 	FloatTieOff          FloatAttach
 
-	Clip         bool
-	ClipContents bool
-	Disabled     bool
+	Clip          bool
+	ClipContents  bool
+	Disabled      bool
 	Float         bool
 	FloatAutoFlip bool // flip float position to stay in window
 	FocusSkip     bool
 	OverDraw      bool
 	Hero          bool
-	Wrap         bool
-	Overflow     bool
-	QuarterTurns uint8   // 0-3: rotation in 90° CW increments
-	Opacity      float32
+	Wrap          bool
+	Overflow      bool
+	QuarterTurns  uint8 // 0-3: rotation in 90° CW increments
+	Opacity       float32
 }
 
 // NewShape returns a Shape with default field values.
@@ -210,7 +210,7 @@ const (
 
 // Has checks if the state bitmask contains the given flag.
 func (s AccessState) Has(flag AccessState) bool {
-	return uint16(s)&uint16(flag) > 0 || s == flag
+	return s&flag == flag
 }
 
 // DrawClip represents a clipping rectangle.

@@ -104,14 +104,14 @@ const (
 
 // Has checks if the modifier bitmask contains the given flag.
 func (m Modifier) Has(mod Modifier) bool {
-	return uint32(m)&uint32(mod) > 0 || m == mod
+	return m&mod == mod
 }
 
 // HasAny checks if the modifier bitmask contains any of the
 // given flags.
 func (m Modifier) HasAny(mods ...Modifier) bool {
 	for _, mod := range mods {
-		if uint32(m)&uint32(mod) > 0 || m == mod {
+		if m&mod == mod {
 			return true
 		}
 	}
