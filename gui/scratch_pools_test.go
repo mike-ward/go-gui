@@ -2,47 +2,78 @@ package gui
 
 import "testing"
 
-func TestTakeFilterRenderersEmpty(t *testing.T) {
-	var p scratchPools
-	s := p.takeFilterRenderers(0)
-	if len(s) != 0 {
-		t.Fatalf("want len 0, got %d", len(s))
+func TestScratchSliceTakeEmpty(t *testing.T) {
+	s := scratchSlice[RenderCmd]{retainMax: 1000, shrinkTo: 100}
+	b := s.take(0)
+	if len(b) != 0 {
+		t.Fatalf("want len 0, got %d", len(b))
 	}
 }
 
-func TestTakeFilterRenderersRequiredCap(t *testing.T) {
-	var p scratchPools
-	s := p.takeFilterRenderers(100)
-	if cap(s) < 100 {
-		t.Fatalf("want cap>=100, got %d", cap(s))
+func TestScratchSliceTakeRequiredCap(t *testing.T) {
+	s := scratchSlice[RenderCmd]{retainMax: 1000, shrinkTo: 100}
+	b := s.take(100)
+	if cap(b) < 100 {
+		t.Fatalf("want cap>=100, got %d", cap(b))
 	}
 }
 
-func TestPutFilterRenderersShrink(t *testing.T) {
-	var p scratchPools
-	big := make([]RenderCmd, 0, scratchFilterRenderersRetainMax+1)
-	p.putFilterRenderers(big)
-	if cap(p.filterRenderers) != scratchFilterRenderersShrinkTo {
-		t.Fatalf("want cap %d, got %d", scratchFilterRenderersShrinkTo, cap(p.filterRenderers))
+func TestScratchSlicePutShrink(t *testing.T) {
+	s := scratchSlice[RenderCmd]{retainMax: 1000, shrinkTo: 100}
+	big := make([]RenderCmd, 0, 1001)
+	s.put(big)
+	if cap(s.buf) != 100 {
+		t.Fatalf("want cap 100, got %d", cap(s.buf))
 	}
 }
 
-func TestTakePutFilterRenderersRoundTrip(t *testing.T) {
-	var p scratchPools
-	s := p.takeFilterRenderers(16)
-	s = append(s, RenderCmd{Kind: RenderRect})
-	p.putFilterRenderers(s)
-	s2 := p.takeFilterRenderers(0)
-	if len(s2) != 0 {
-		t.Fatalf("want empty after take, got %d", len(s2))
+func TestScratchSliceRoundTrip(t *testing.T) {
+	s := scratchSlice[RenderCmd]{retainMax: 1000, shrinkTo: 100}
+	b := s.take(16)
+	b = append(b, RenderCmd{Kind: RenderRect})
+	s.put(b)
+	b2 := s.take(0)
+	if len(b2) != 0 {
+		t.Fatalf("want empty after take, got %d", len(b2))
 	}
-	if cap(s2) < 16 {
+	if cap(b2) < 16 {
 		t.Fatal("backing array should be reused")
 	}
 }
 
+func TestScratchMapTakeEmpty(t *testing.T) {
+	s := scratchMap[uint32, struct{}]{retainMax: 4096}
+	m := s.take(0)
+	if len(m) != 0 {
+		t.Fatalf("want len 0, got %d", len(m))
+	}
+}
+
+func TestScratchMapTakeReuse(t *testing.T) {
+	s := scratchMap[uint32, struct{}]{retainMax: 4096}
+	m := s.take(8)
+	m[1] = struct{}{}
+	s.put(m)
+	m2 := s.take(0)
+	if len(m2) != 0 {
+		t.Fatal("should be cleared")
+	}
+}
+
+func TestScratchMapPutDiscard(t *testing.T) {
+	s := scratchMap[uint32, struct{}]{retainMax: 2}
+	m := make(map[uint32]struct{}, 8)
+	m[1] = struct{}{}
+	m[2] = struct{}{}
+	m[3] = struct{}{}
+	s.put(m)
+	if s.m != nil {
+		t.Fatal("should discard oversized map")
+	}
+}
+
 func TestTakeFloatingLayoutsResets(t *testing.T) {
-	var p scratchPools
+	p := newScratchPools()
 	s := p.takeFloatingLayouts(10)
 	if len(s) != 0 || cap(s) < 10 {
 		t.Fatal("unexpected size/cap")
@@ -53,7 +84,7 @@ func TestTakeFloatingLayoutsResets(t *testing.T) {
 }
 
 func TestAllocFloatingLayoutNew(t *testing.T) {
-	var p scratchPools
+	p := newScratchPools()
 	shape := Shape{Width: 42}
 	src := Layout{Shape: &shape}
 	l := p.allocFloatingLayout(src)
@@ -66,7 +97,7 @@ func TestAllocFloatingLayoutNew(t *testing.T) {
 }
 
 func TestAllocFloatingLayoutReuse(t *testing.T) {
-	var p scratchPools
+	p := newScratchPools()
 	shape1 := Shape{Width: 1}
 	src := Layout{Shape: &shape1}
 	first := p.allocFloatingLayout(src)
@@ -83,114 +114,5 @@ func TestAllocFloatingLayoutReuse(t *testing.T) {
 	}
 	if second.Shape.Width != 2 {
 		t.Fatal("expected width 2")
-	}
-}
-
-func TestTakePutFocusCandidates(t *testing.T) {
-	var p scratchPools
-	s := p.takeFocusCandidates()
-	s = append(s, focusCandidate{})
-	p.putFocusCandidates(s)
-	s2 := p.takeFocusCandidates()
-	if len(s2) != 0 {
-		t.Fatal("should be empty")
-	}
-}
-
-func TestTakePutGradientNormStops(t *testing.T) {
-	var p scratchPools
-	s := p.takeGradientNormStops(5)
-	if cap(s) < 5 {
-		t.Fatal("cap too small")
-	}
-	s = append(s, GradientStop{Pos: 0.5})
-	p.putGradientNormStops(s)
-	s2 := p.takeGradientNormStops(0)
-	if len(s2) != 0 {
-		t.Fatal("should be empty after take")
-	}
-}
-
-func TestTakePutGradientSampleStops(t *testing.T) {
-	var p scratchPools
-	s := p.takeGradientSampleStops(3)
-	s = append(s, GradientStop{})
-	p.putGradientSampleStops(s)
-	if len(p.gradientSampleStops) != 0 {
-		t.Fatal("should be reset")
-	}
-}
-
-func TestTakePutSvgAnimVals(t *testing.T) {
-	var p scratchPools
-	s := p.takeSvgAnimVals(8)
-	s = append(s, 1.0, 2.0)
-	p.putSvgAnimVals(s)
-	s2 := p.takeSvgAnimVals(0)
-	if len(s2) != 0 {
-		t.Fatal("should be empty")
-	}
-}
-
-func TestTakePutWrapRows(t *testing.T) {
-	var p scratchPools
-	s := p.takeWrapRows(4)
-	s = append(s, wrapRowRange{start: 0, end: 3})
-	p.putWrapRows(s)
-	s2 := p.takeWrapRows(0)
-	if len(s2) != 0 {
-		t.Fatal("should be empty")
-	}
-}
-
-func TestPutWrapRowsShrink(t *testing.T) {
-	var p scratchPools
-	big := make([]wrapRowRange, 0, scratchWrapRowsRetainMax+1)
-	p.putWrapRows(big)
-	if cap(p.wrapRows) != scratchWrapRowsShrinkTo {
-		t.Fatalf("want cap %d, got %d", scratchWrapRowsShrinkTo, cap(p.wrapRows))
-	}
-}
-
-func TestTransformSvgTriangles(t *testing.T) {
-	var p scratchPools
-	tris := []float32{1, 0, 0, 1}
-	// Scale by 2.
-	m := [6]float32{2, 0, 0, 2, 0, 0}
-	out := p.transformSvgTriangles(tris, m)
-	if len(out) != 4 || out[0] != 2 || out[1] != 0 || out[2] != 0 || out[3] != 2 {
-		t.Fatalf("unexpected: %v", out)
-	}
-}
-
-func TestTransformSvgTrianglesBatchGrow(t *testing.T) {
-	var p scratchPools
-	m := [6]float32{1, 0, 0, 1, 0, 0} // identity
-	_ = p.transformSvgTriangles([]float32{1, 2}, m)
-	_ = p.transformSvgTriangles([]float32{3, 4}, m)
-	if p.svgTransformBatchesUsed != 2 {
-		t.Fatalf("want 2, got %d", p.svgTransformBatchesUsed)
-	}
-}
-
-func TestTrimSvgGroupMaps(t *testing.T) {
-	var p scratchPools
-	p.svgGroupMatrices = make(map[string][6]float32, scratchSvgGroupMatricesRetainMax+1)
-	for i := range scratchSvgGroupMatricesRetainMax + 1 {
-		p.svgGroupMatrices[string(rune('a'+i%26))+string(rune('0'+i/26))] = [6]float32{}
-	}
-	p.trimSvgGroupMaps()
-	if p.svgGroupMatrices != nil {
-		t.Fatal("should be nil after trim")
-	}
-}
-
-func TestTrimSvgTransformBatches(t *testing.T) {
-	var p scratchPools
-	big := make([]float32, 0, scratchSvgTrisRetainMax+1)
-	p.svgTransformBatches = [][]float32{big}
-	p.trimSvgTransformBatches()
-	if cap(p.svgTransformBatches[0]) != scratchSvgTrisShrinkTo {
-		t.Fatalf("want %d, got %d", scratchSvgTrisShrinkTo, cap(p.svgTransformBatches[0]))
 	}
 }

@@ -24,9 +24,9 @@ func layoutWrapContainers(layout *Layout, w *Window) {
 
 	var rows []wrapRowRange
 	if w != nil {
-		rows = w.scratch.takeWrapRows(len(layout.Children))
+		rows = w.scratch.wrapRows.take(len(layout.Children))
 		defer func() {
-			w.scratch.putWrapRows(rows)
+			w.scratch.wrapRows.put(rows)
 		}()
 	}
 	rowStart := 0

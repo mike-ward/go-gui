@@ -38,6 +38,7 @@ func NewWindow(cfg WindowCfg) *Window {
 		refreshLayout: true,
 		OnEvent:       cfg.OnEvent,
 		Config:        cfg,
+		scratch:       newScratchPools(),
 		animationStop: make(chan struct{}),
 		animationDone: make(chan struct{}),
 	}

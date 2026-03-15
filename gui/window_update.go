@@ -162,7 +162,7 @@ func (w *Window) Update() {
 	}
 
 	if len(w.layout.Children) > 0 {
-		w.scratch.putLayerLayouts(w.layout.Children)
+		w.scratch.layerLayouts.put(w.layout.Children)
 	}
 
 	if w.Config.Timings {

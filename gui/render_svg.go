@@ -53,8 +53,8 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	// Compute animation state for SMIL animations.
 	var animState map[string]svgAnimState
 	if cached.HasAnimations && cached.AnimStartNs != 0 {
-		animState = w.scratch.takeSvgAnimStates(len(cached.Animations))
-		defer w.scratch.putSvgAnimStates(animState)
+		animState = w.scratch.svgAnimStates.take(len(cached.Animations))
+		defer w.scratch.svgAnimStates.put(animState)
 		nowNs := time.Now().UnixNano()
 		// Keep animation alive while SVG is being rendered.
 		if cached.AnimHash != "" {

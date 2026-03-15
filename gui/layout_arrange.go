@@ -59,7 +59,7 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 
 	// Run pipeline on main layout.
 	layoutPipeline(layout, w)
-	layouts := w.scratch.takeLayerLayouts(1 + len(floatingLayouts))
+	layouts := w.scratch.layerLayouts.take(1 + len(floatingLayouts))
 	layouts = append(layouts, *layout)
 
 	// Run pipeline on each floating layout.

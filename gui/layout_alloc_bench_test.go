@@ -34,7 +34,7 @@ func benchmarkArrangeLayout() Layout {
 }
 
 func BenchmarkLayoutArrange(b *testing.B) {
-	w := &Window{}
+	w := &Window{scratch: newScratchPools()}
 	w.windowWidth = 1200
 	w.windowHeight = 900
 
@@ -56,7 +56,7 @@ func BenchmarkLayoutArrange(b *testing.B) {
 			}
 		}
 		layers := layoutArrange(&layout, w)
-		w.scratch.putLayerLayouts(layers)
+		w.scratch.layerLayouts.put(layers)
 	}
 }
 
@@ -84,7 +84,7 @@ func benchmarkWrapLayout() Layout {
 }
 
 func BenchmarkLayoutWrapContainers(b *testing.B) {
-	w := &Window{}
+	w := &Window{scratch: newScratchPools()}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		layout := benchmarkWrapLayout()
@@ -109,7 +109,7 @@ func benchmarkFocusLayout() *Layout {
 }
 
 func BenchmarkFocusTraversal(b *testing.B) {
-	w := &Window{}
+	w := &Window{scratch: newScratchPools()}
 	root := benchmarkFocusLayout()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {

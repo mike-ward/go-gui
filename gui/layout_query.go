@@ -143,13 +143,13 @@ func (layout *Layout) NextFocusable(w *Window) (*Shape, bool) {
 	var seen map[uint32]struct{}
 	var idFocus uint32
 	if w != nil {
-		candidates = w.scratch.takeFocusCandidates()
+		candidates = w.scratch.focusCandidates.take(0)
 		defer func() {
-			w.scratch.putFocusCandidates(candidates)
+			w.scratch.focusCandidates.put(candidates)
 		}()
-		seen = w.scratch.takeFocusSeen(len(candidates))
+		seen = w.scratch.focusSeen.take(len(candidates))
 		defer func() {
-			w.scratch.putFocusSeen(seen)
+			w.scratch.focusSeen.put(seen)
 		}()
 		idFocus = w.viewState.idFocus
 	} else {
@@ -169,13 +169,13 @@ func (layout *Layout) PreviousFocusable(w *Window) (*Shape, bool) {
 	var seen map[uint32]struct{}
 	var idFocus uint32
 	if w != nil {
-		candidates = w.scratch.takeFocusCandidates()
+		candidates = w.scratch.focusCandidates.take(0)
 		defer func() {
-			w.scratch.putFocusCandidates(candidates)
+			w.scratch.focusCandidates.put(candidates)
 		}()
-		seen = w.scratch.takeFocusSeen(len(candidates))
+		seen = w.scratch.focusSeen.take(len(candidates))
 		defer func() {
-			w.scratch.putFocusSeen(seen)
+			w.scratch.focusSeen.put(seen)
 		}()
 		idFocus = w.viewState.idFocus
 	} else {
