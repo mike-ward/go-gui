@@ -248,14 +248,9 @@ func resetBlinkCursorVisible(w *Window) {
 // PointerOverApp returns true if the mouse pointer is within
 // the application window bounds.
 func (w *Window) PointerOverApp(e *Event) bool {
-	if e.MouseX < 0 || e.MouseY < 0 {
-		return false
-	}
-	if e.MouseX > float32(w.windowWidth) ||
-		e.MouseY > float32(w.windowHeight) {
-		return false
-	}
-	return true
+	return e.MouseX >= 0 && e.MouseY >= 0 &&
+		e.MouseX <= float32(w.windowWidth) &&
+		e.MouseY <= float32(w.windowHeight)
 }
 
 // clearInputSelections zeros SelectBeg/SelectEnd for all

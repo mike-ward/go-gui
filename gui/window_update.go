@@ -48,10 +48,7 @@ func (w *Window) QueueAnimateCommand(cb func(*Animate, *Window), a *Animate) {
 
 func (w *Window) queueCommand(cmd queuedCommand) {
 	w.commandsMu.Lock()
-	if w.commands == nil && cap(w.commandScratch) > 0 {
-		w.commands = w.commandScratch[:0]
-		w.commandScratch = nil
-	}
+	w.reclaimCommandScratch()
 	w.commands = append(w.commands, cmd)
 	w.commandsMu.Unlock()
 }
@@ -61,12 +58,18 @@ func (w *Window) queueCommandsBatch(cmds []queuedCommand) {
 		return
 	}
 	w.commandsMu.Lock()
+	w.reclaimCommandScratch()
+	w.commands = append(w.commands, cmds...)
+	w.commandsMu.Unlock()
+}
+
+// reclaimCommandScratch reclaims the scratch buffer when the main
+// command slice is nil. Caller must hold commandsMu.
+func (w *Window) reclaimCommandScratch() {
 	if w.commands == nil && cap(w.commandScratch) > 0 {
 		w.commands = w.commandScratch[:0]
 		w.commandScratch = nil
 	}
-	w.commands = append(w.commands, cmds...)
-	w.commandsMu.Unlock()
 }
 
 // flushCommands executes all pending commands. Called by the main
@@ -165,27 +168,32 @@ func (w *Window) Update() {
 		w.scratch.layerLayouts.put(w.layout.Children)
 	}
 
-	if w.Config.Timings {
-		t0 := time.Now()
-		view := w.viewGenerator(w)
-		rootLayout := GenerateViewLayout(view, w)
-		t1 := time.Now()
-		layers := layoutArrange(&rootLayout, w)
-		t2 := time.Now()
-		w.layout = composeLayout(layers, w)
-		w.buildRenderers(w.Config.BgColor, w.WindowRect())
+	t := w.Config.Timings
+	var t0, t1, t2 time.Time
+	if t {
+		t0 = time.Now()
+	}
+
+	view := w.viewGenerator(w)
+	rootLayout := GenerateViewLayout(view, w)
+	if t {
+		t1 = time.Now()
+	}
+
+	layers := layoutArrange(&rootLayout, w)
+	if t {
+		t2 = time.Now()
+	}
+
+	w.layout = composeLayout(layers, w)
+	w.buildRenderers(w.Config.BgColor, w.WindowRect())
+	if t {
 		t3 := time.Now()
 		w.frameTimings = FrameTimings{
 			ViewGen:       t1.Sub(t0),
 			LayoutArrange: t2.Sub(t1),
 			RenderBuild:   t3.Sub(t2),
 		}
-	} else {
-		view := w.viewGenerator(w)
-		rootLayout := GenerateViewLayout(view, w)
-		layers := layoutArrange(&rootLayout, w)
-		w.layout = composeLayout(layers, w)
-		w.buildRenderers(w.Config.BgColor, w.WindowRect())
 	}
 }
 

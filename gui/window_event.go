@@ -106,23 +106,7 @@ func (w *Window) EventFn(e *Event) {
 		// before dispatch so handlers can re-open. Focus
 		// is only cleared when a popup was actually open
 		// to avoid interfering with normal focus flow.
-		popupOpen := false
-		if cms := StateMapRead[string, contextMenuState](
-			w, nsContextMenu); cms != nil && cms.Len() > 0 {
-			cms.Clear()
-			popupOpen = true
-		}
-		if rms := StateMapRead[string, rtfLinkMenuState](
-			w, nsRtfLinkMenu); rms != nil && rms.Len() > 0 {
-			rms.Clear()
-			popupOpen = true
-		}
-		if ms := StateMapRead[uint32, string](
-			w, nsMenu); ms != nil && ms.Len() > 0 {
-			ms.Clear()
-			popupOpen = true
-		}
-		if popupOpen {
+		if dismissPopups(w) {
 			w.SetIDFocus(0)
 		}
 		if !e.IsHandled {
@@ -160,4 +144,23 @@ func (w *Window) EventFn(e *Event) {
 		w.OnEvent(e, w)
 	}
 	w.UpdateWindow()
+}
+
+// dismissPopups clears all open popup state maps and returns
+// true if any were open.
+func dismissPopups(w *Window) bool {
+	a := clearStateMap[string, contextMenuState](w, nsContextMenu)
+	b := clearStateMap[string, rtfLinkMenuState](w, nsRtfLinkMenu)
+	c := clearStateMap[uint32, string](w, nsMenu)
+	return a || b || c
+}
+
+// clearStateMap clears a state map if it exists and is non-empty.
+func clearStateMap[K comparable, V any](w *Window, ns string) bool {
+	sm := StateMapRead[K, V](w, ns)
+	if sm == nil || sm.Len() == 0 {
+		return false
+	}
+	sm.Clear()
+	return true
 }
