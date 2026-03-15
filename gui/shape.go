@@ -14,7 +14,8 @@ type Shape struct {
 	ID       string // unique identifier assigned by the user
 	Resource string // image path or SVG source
 
-	Version uint64 // for cache invalidation (DrawCanvas, etc.)
+	Version     uint64 // for cache invalidation (DrawCanvas, etc.)
+	FloatZIndex int
 
 	// Optional sub-structs (nil when unused)
 	Events *EventHandlers   // event handlers
@@ -40,7 +41,6 @@ type Shape struct {
 	Spacing      float32 // spacing between children
 	FloatOffsetX float32
 	FloatOffsetY float32
-	FloatZIndex  int
 
 	IDFocus           uint32 // >0 means focusable; value = tab order
 	IDScroll          uint32 // >0 means receives scroll events
