@@ -25,6 +25,13 @@ main
 # Output
 *.out
 
+# WASM build artifacts
+*.wasm
+wasm_exec.js
+
+# npm
+package-lock.json
+
 # Go workspace
 go.work
 go.work.sum
