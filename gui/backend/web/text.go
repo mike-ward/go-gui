@@ -1,4 +1,6 @@
-package sdl2
+//go:build js && wasm
+
+package web
 
 import (
 	"github.com/mike-ward/go-glyph"
@@ -11,8 +13,9 @@ type textMeasurer struct {
 	textSys *glyph.TextSystem
 }
 
-func (tm *textMeasurer) TextWidth(text string, style gui.TextStyle) float32 {
-	cfg := guiStyleToGlyphConfig(style)
+func (tm *textMeasurer) TextWidth(
+	text string, style gui.TextStyle) float32 {
+	cfg := glyphconv.GuiStyleToGlyphConfig(style)
 	w, err := tm.textSys.TextWidth(text, cfg)
 	if err != nil {
 		return 0
@@ -20,8 +23,9 @@ func (tm *textMeasurer) TextWidth(text string, style gui.TextStyle) float32 {
 	return w
 }
 
-func (tm *textMeasurer) TextHeight(text string, style gui.TextStyle) float32 {
-	cfg := guiStyleToGlyphConfig(style)
+func (tm *textMeasurer) TextHeight(
+	text string, style gui.TextStyle) float32 {
+	cfg := glyphconv.GuiStyleToGlyphConfig(style)
 	h, err := tm.textSys.TextHeight(text, cfg)
 	if err != nil {
 		return 0
@@ -29,8 +33,9 @@ func (tm *textMeasurer) TextHeight(text string, style gui.TextStyle) float32 {
 	return h
 }
 
-func (tm *textMeasurer) FontHeight(style gui.TextStyle) float32 {
-	cfg := guiStyleToGlyphConfig(style)
+func (tm *textMeasurer) FontHeight(
+	style gui.TextStyle) float32 {
+	cfg := glyphconv.GuiStyleToGlyphConfig(style)
 	h, err := tm.textSys.FontHeight(cfg)
 	if err != nil {
 		return style.Size * 1.4
@@ -38,8 +43,9 @@ func (tm *textMeasurer) FontHeight(style gui.TextStyle) float32 {
 	return h
 }
 
-func (tm *textMeasurer) FontAscent(style gui.TextStyle) float32 {
-	cfg := guiStyleToGlyphConfig(style)
+func (tm *textMeasurer) FontAscent(
+	style gui.TextStyle) float32 {
+	cfg := glyphconv.GuiStyleToGlyphConfig(style)
 	m, err := tm.textSys.FontMetrics(cfg)
 	if err != nil {
 		return style.Size * 0.8
@@ -50,7 +56,7 @@ func (tm *textMeasurer) FontAscent(style gui.TextStyle) float32 {
 func (tm *textMeasurer) LayoutText(
 	text string, style gui.TextStyle, wrapWidth float32,
 ) (glyph.Layout, error) {
-	cfg := guiStyleToGlyphConfig(style)
+	cfg := glyphconv.GuiStyleToGlyphConfig(style)
 	if wrapWidth > 0 {
 		cfg.Block.Width = wrapWidth
 		cfg.Block.Wrap = glyph.WrapWord
@@ -65,8 +71,4 @@ func (tm *textMeasurer) LayoutRichText(
 	rt glyph.RichText, cfg glyph.TextConfig,
 ) (glyph.Layout, error) {
 	return tm.textSys.LayoutRichText(rt, cfg)
-}
-
-func guiStyleToGlyphConfig(s gui.TextStyle) glyph.TextConfig {
-	return glyphconv.GuiStyleToGlyphConfig(s)
 }

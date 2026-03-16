@@ -1,0 +1,232 @@
+//go:build js && wasm
+
+// Package web provides a Canvas2D-based backend for go-gui
+// running in the browser via WebAssembly.
+package web
+
+import (
+	"encoding/base64"
+	"log"
+	"syscall/js"
+
+	"github.com/mike-ward/go-glyph"
+	glyphweb "github.com/mike-ward/go-glyph/backend/web"
+
+	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/svg"
+)
+
+// Backend is the Canvas2D/WASM backend for go-gui.
+type Backend struct {
+	canvas    js.Value
+	ctx2d     js.Value
+	glyphBack *glyphweb.Backend
+	textSys   *glyph.TextSystem
+	dpiScale  float32
+	width     int
+	height    int
+
+	normBuf    []gui.GradientStop
+	sampledBuf []gui.GradientStop
+	imgCache   map[string]js.Value
+	clipDepth  int
+	lastCursor gui.MouseCursor
+
+	textPathPlacements []glyph.GlyphPlacement
+
+	lastPasteText string
+	callbacks     []js.Func // prevent GC of registered callbacks
+}
+
+// Run initializes the web backend and runs the event/render
+// loop. Blocks forever.
+func Run(w *gui.Window) {
+	b := newBackend(w)
+	b.run(w)
+}
+
+func newBackend(w *gui.Window) *Backend {
+	doc := js.Global().Get("document")
+	canvas := doc.Call("getElementById", "go-gui-canvas")
+	if canvas.IsNull() || canvas.IsUndefined() {
+		panic("web: canvas element #go-gui-canvas not found")
+	}
+
+	// Compute DPI scale.
+	dpr := js.Global().Get("devicePixelRatio")
+	dpiScale := float32(1.0)
+	if !dpr.IsUndefined() && !dpr.IsNull() {
+		dpiScale = float32(dpr.Float())
+	}
+
+	// Size canvas.
+	cfg := w.Config
+	cssW := cfg.Width
+	if cssW <= 0 {
+		cssW = js.Global().Get("innerWidth").Int()
+	}
+	cssH := cfg.Height
+	if cssH <= 0 {
+		cssH = js.Global().Get("innerHeight").Int()
+	}
+
+	canvas.Get("style").Set("width", itoa(cssW)+"px")
+	canvas.Get("style").Set("height", itoa(cssH)+"px")
+	canvas.Set("width", int(float32(cssW)*dpiScale))
+	canvas.Set("height", int(float32(cssH)*dpiScale))
+
+	ctx2d := canvas.Call("getContext", "2d")
+
+	// Scale context for HiDPI.
+	if dpiScale != 1.0 {
+		ctx2d.Call("scale", float64(dpiScale), float64(dpiScale))
+	}
+
+	// Initialize glyph web backend. Pass dpiScale=1 so glyph
+	// works in logical (CSS) pixels. The canvas transform handles
+	// scaling to physical pixels for HiDPI sharpness.
+	glyphBack := glyphweb.New(canvas, 1.0)
+	textSys, err := glyph.NewTextSystem(glyphBack)
+	if err != nil {
+		panic("web: NewTextSystem: " + err.Error())
+	}
+
+	// Load embedded icon font via JS FontFace API.
+	loadIconFont(gui.IconFontData)
+
+	b := &Backend{
+		canvas:    canvas,
+		ctx2d:     ctx2d,
+		glyphBack: glyphBack,
+		textSys:   textSys,
+		dpiScale:  dpiScale,
+		width:     cssW,
+		height:    cssH,
+		imgCache:  make(map[string]js.Value),
+	}
+
+	// Inject interfaces into Window.
+	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
+	w.SetSvgParser(svg.New())
+	w.SetClipboardFn(func(text string) {
+		nav := js.Global().Get("navigator")
+		cb := nav.Get("clipboard")
+		if !cb.IsUndefined() && !cb.IsNull() {
+			cb.Call("writeText", text)
+		}
+	})
+	w.SetClipboardGetFn(func() string {
+		return b.lastPasteText
+	})
+	w.SetNativePlatform(&nativePlatform{})
+
+	return b
+}
+
+func (b *Backend) run(w *gui.Window) {
+	defer w.WindowCleanup()
+
+	if w.Config.OnInit != nil {
+		w.Config.OnInit(w)
+	}
+
+	b.registerEvents(w)
+
+	// requestAnimationFrame render loop.
+	var renderFunc js.Func
+	renderFunc = js.FuncOf(func(_ js.Value, _ []js.Value) any {
+		w.FrameFn()
+		b.renderFrame(w)
+
+		// Update cursor.
+		mc := w.MouseCursorState()
+		if mc != b.lastCursor {
+			b.lastCursor = mc
+			css := "default"
+			if int(mc) < len(cursorCSS) {
+				css = cursorCSS[mc]
+			}
+			b.canvas.Get("style").Set("cursor", css)
+		}
+
+		js.Global().Call("requestAnimationFrame", renderFunc)
+		return nil
+	})
+	b.callbacks = append(b.callbacks, renderFunc)
+	js.Global().Call("requestAnimationFrame", renderFunc)
+
+	// Block forever.
+	select {}
+}
+
+func (b *Backend) renderFrame(w *gui.Window) {
+	bg := w.Config.BgColor
+	if bg == (gui.Color{}) {
+		t := gui.CurrentTheme()
+		bg = t.ColorBackground
+	}
+	b.glyphBack.BeginFrame(
+		float32(bg.R)/255, float32(bg.G)/255,
+		float32(bg.B)/255, float32(bg.A)/255)
+
+	// BeginFrame resets the canvas transform to identity.
+	// Re-apply DPI scale so all drawing uses logical coordinates
+	// that map to physical pixels via the transform.
+	if b.dpiScale != 1.0 {
+		b.ctx2d.Call("setTransform",
+			float64(b.dpiScale), 0, 0,
+			float64(b.dpiScale), 0, 0)
+	}
+
+	// Reset clip depth.
+	for b.clipDepth > 0 {
+		b.ctx2d.Call("restore")
+		b.clipDepth--
+	}
+
+	w.Lock()
+	b.renderersDraw(w)
+	w.Unlock()
+
+	b.textSys.Commit()
+	b.glyphBack.EndFrame()
+}
+
+func (b *Backend) resizeCanvas(cssW, cssH int) {
+	b.width = cssW
+	b.height = cssH
+	b.canvas.Get("style").Set("width", itoa(cssW)+"px")
+	b.canvas.Get("style").Set("height", itoa(cssH)+"px")
+	physW := int(float32(cssW) * b.dpiScale)
+	physH := int(float32(cssH) * b.dpiScale)
+	b.canvas.Set("width", physW)
+	b.canvas.Set("height", physH)
+	// Re-apply DPI scale after resize resets transform.
+	if b.dpiScale != 1.0 {
+		b.ctx2d.Call("setTransform",
+			float64(b.dpiScale), 0, 0,
+			float64(b.dpiScale), 0, 0)
+	}
+}
+
+// loadIconFont loads the embedded icon font via the JS FontFace
+// API. Converts TTF bytes to a base64 data URL.
+func loadIconFont(data []byte) {
+	if len(data) == 0 {
+		return
+	}
+	b64 := base64.StdEncoding.EncodeToString(data)
+	src := "url(data:font/truetype;base64," + b64 + ")"
+
+	ff := js.Global().Get("FontFace").New("feathericon", src)
+	promise := ff.Call("load")
+	promise.Call("then", js.FuncOf(func(_ js.Value, _ []js.Value) any {
+		js.Global().Get("document").Get("fonts").Call("add", ff)
+		return nil
+	}))
+	promise.Call("catch", js.FuncOf(func(_ js.Value, args []js.Value) any {
+		log.Printf("web: icon font load failed: %v",
+			args[0].String())
+		return nil
+	}))
+}
