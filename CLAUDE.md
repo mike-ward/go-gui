@@ -101,3 +101,9 @@ Backend injects at startup; nil in tests:
   for positioning elements that have children.
 - Event callbacks must set `e.IsHandled = true` when the event is consumed to
   prevent further propagation
+
+## Coding Conventions
+
+- **No variable shadowing.** Never use `:=` to redeclare a variable that
+  already exists in an outer scope. Use `=` to assign to the existing
+  variable, or choose a distinct name.
