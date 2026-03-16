@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/mike-ward/go-glyph"
@@ -81,13 +79,6 @@ func embeddedText(name string) string {
 	return string(data)
 }
 
-func showcaseAssetPath(name string) string {
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		return filepath.Join("examples", "showcase", "assets", name)
-	}
-	return filepath.Join(filepath.Dir(file), "assets", name)
-}
 
 func floatString(v float32) string {
 	return fmt.Sprintf("%.1f", v)

@@ -56,6 +56,7 @@ func (iv *imageView) GenerateLayout(w *Window) Layout {
 	imagePath := c.Src
 	isURL := strings.HasPrefix(c.Src, "http://") ||
 		strings.HasPrefix(c.Src, "https://")
+	isDataURL := strings.HasPrefix(c.Src, "data:")
 
 	if isURL {
 		hash := hashString(c.Src)
@@ -108,15 +109,19 @@ func (iv *imageView) GenerateLayout(w *Window) Layout {
 		}
 	}
 
-	// Validate local path.
-	if err := ValidateImagePath(imagePath); err != nil {
-		log.Printf("image: %v", err)
-		return errorTextLayout(c.Src, w)
-	}
-	// Check file exists.
-	if _, err := os.Stat(imagePath); err != nil {
-		log.Printf("image: %v", err)
-		return errorTextLayout(c.Src, w)
+	// Data URLs are passed directly to the backend renderer
+	// (used by WASM for embedded image assets).
+	if !isDataURL {
+		// Validate local path.
+		if err := ValidateImagePath(imagePath); err != nil {
+			log.Printf("image: %v", err)
+			return errorTextLayout(c.Src, w)
+		}
+		// Check file exists.
+		if _, err := os.Stat(imagePath); err != nil {
+			log.Printf("image: %v", err)
+			return errorTextLayout(c.Src, w)
+		}
 	}
 
 	width := c.Width

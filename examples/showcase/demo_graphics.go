@@ -462,7 +462,7 @@ func demoSvg(_ *gui.Window) gui.View {
 
 func demoImage(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
-	imgPath := showcaseAssetPath("image_clip_face.jpg")
+	imgPath := embeddedAssetPath("assets/image_clip_face.jpg")
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.SomeF(12),
