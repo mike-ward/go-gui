@@ -226,7 +226,10 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	b.ctx2d.Set("shadowBlur", float64(r.BlurRadius))
 	b.ctx2d.Set("shadowOffsetX", float64(r.OffsetX))
 	b.ctx2d.Set("shadowOffsetY", float64(r.OffsetY))
-	b.setFillColor(r.Color)
+	// Opaque source so shadow opacity = shadowColor alpha
+	// alone, not multiplied by fill alpha. The container's
+	// background (drawn next) covers this opaque fill.
+	b.ctx2d.Set("fillStyle", "#000")
 	if r.Radius > 0 {
 		b.fillRoundedRect(r.X, r.Y, r.W, r.H, r.Radius)
 	} else {
