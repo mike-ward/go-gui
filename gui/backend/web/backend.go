@@ -35,6 +35,8 @@ type Backend struct {
 	textPathPlacements []glyph.GlyphPlacement
 
 	lastPasteText string
+	lastCSSColor  gui.Color
+	lastCSS       string
 	callbacks     []js.Func // prevent GC of registered callbacks
 }
 
@@ -142,9 +144,9 @@ func (b *Backend) run(w *gui.Window) {
 		mc := w.MouseCursorState()
 		if mc != b.lastCursor {
 			b.lastCursor = mc
-			css := "default"
-			if int(mc) < len(cursorCSS) {
-				css = cursorCSS[mc]
+			css, ok := cursorCSS[mc]
+			if !ok {
+				css = "default"
 			}
 			b.canvas.Get("style").Set("cursor", css)
 		}
@@ -193,6 +195,12 @@ func (b *Backend) renderFrame(w *gui.Window) {
 }
 
 func (b *Backend) resizeCanvas(cssW, cssH int) {
+	// Re-read devicePixelRatio — it may change when the window
+	// moves between displays with different DPI.
+	dpr := js.Global().Get("devicePixelRatio")
+	if !dpr.IsUndefined() && !dpr.IsNull() {
+		b.dpiScale = float32(dpr.Float())
+	}
 	b.width = cssW
 	b.height = cssH
 	b.canvas.Get("style").Set("width", itoa(cssW)+"px")
@@ -220,13 +228,20 @@ func loadIconFont(data []byte) {
 
 	ff := js.Global().Get("FontFace").New("feathericon", src)
 	promise := ff.Call("load")
-	promise.Call("then", js.FuncOf(func(_ js.Value, _ []js.Value) any {
+	var thenFn, catchFn js.Func
+	thenFn = js.FuncOf(func(_ js.Value, _ []js.Value) any {
 		js.Global().Get("document").Get("fonts").Call("add", ff)
+		thenFn.Release()
+		catchFn.Release()
 		return nil
-	}))
-	promise.Call("catch", js.FuncOf(func(_ js.Value, args []js.Value) any {
+	})
+	catchFn = js.FuncOf(func(_ js.Value, args []js.Value) any {
 		log.Printf("web: icon font load failed: %v",
 			args[0].String())
+		thenFn.Release()
+		catchFn.Release()
 		return nil
-	}))
+	})
+	promise.Call("then", thenFn)
+	promise.Call("catch", catchFn)
 }

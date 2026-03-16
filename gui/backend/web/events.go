@@ -23,6 +23,8 @@ func (b *Backend) registerEvents(w *gui.Window) {
 		target.Call("addEventListener", name, f)
 	}
 
+	// Single shared Event — safe in WASM's single-threaded JS
+	// runtime. Must not be read from goroutines.
 	evt := new(gui.Event)
 
 	reg(canvas, "mousedown", func(_ js.Value, args []js.Value) any {
@@ -68,10 +70,23 @@ func (b *Backend) registerEvents(w *gui.Window) {
 	reg(canvas, "wheel", func(_ js.Value, args []js.Value) any {
 		e := args[0]
 		e.Call("preventDefault")
+		dx := e.Get("deltaX").Float()
+		dy := e.Get("deltaY").Float()
+		switch e.Get("deltaMode").Int() {
+		case 0: // DOM_DELTA_PIXEL
+			dx /= 53
+			dy /= 53
+		case 1: // DOM_DELTA_LINE
+			dx /= 3
+			dy /= 3
+		case 2: // DOM_DELTA_PAGE
+			dx *= 10
+			dy *= 10
+		}
 		*evt = gui.Event{
 			Type:      gui.EventMouseScroll,
-			ScrollX:   -float32(e.Get("deltaX").Float()) / 120,
-			ScrollY:   -float32(e.Get("deltaY").Float()) / 120,
+			ScrollX:   -float32(dx),
+			ScrollY:   -float32(dy),
 			MouseX:    float32(e.Get("offsetX").Float()),
 			MouseY:    float32(e.Get("offsetY").Float()),
 			Modifiers: mapModifiers(e),
@@ -153,6 +168,23 @@ func (b *Backend) registerEvents(w *gui.Window) {
 			return nil
 		})
 
+	reg(js.Global(), "compositionend",
+		func(_ js.Value, args []js.Value) any {
+			e := args[0]
+			text := e.Get("data").String()
+			if len(text) == 0 {
+				return nil
+			}
+			r, _ := utf8.DecodeRuneInString(text)
+			*evt = gui.Event{
+				Type:     gui.EventChar,
+				CharCode: uint32(r),
+				IMEText:  text,
+			}
+			w.EventFn(evt)
+			return nil
+		})
+
 	reg(js.Global(), "resize", func(_ js.Value, _ []js.Value) any {
 		ww := js.Global().Get("innerWidth").Int()
 		wh := js.Global().Get("innerHeight").Int()
@@ -194,6 +226,21 @@ func (b *Backend) registerEvents(w *gui.Window) {
 		args[0].Call("preventDefault")
 		return nil
 	})
+
+	// Touch events — map to framework touch event types.
+	touchHandler := func(typ gui.EventType) func(js.Value, []js.Value) any {
+		return func(_ js.Value, args []js.Value) any {
+			e := args[0]
+			e.Call("preventDefault")
+			mapTouchEvent(canvas, e, typ, evt)
+			w.EventFn(evt)
+			return nil
+		}
+	}
+	reg(canvas, "touchstart", touchHandler(gui.EventTouchesBegan))
+	reg(canvas, "touchmove", touchHandler(gui.EventTouchesMoved))
+	reg(canvas, "touchend", touchHandler(gui.EventTouchesEnded))
+	reg(canvas, "touchcancel", touchHandler(gui.EventTouchesCancelled))
 }
 
 func mapMouseButton(b int) gui.MouseButton {
@@ -350,7 +397,7 @@ func mapKeyCode(code string) gui.KeyCode {
 }
 
 // cursorCSS maps gui.MouseCursor to CSS cursor values.
-var cursorCSS = [11]string{
+var cursorCSS = map[gui.MouseCursor]string{
 	gui.CursorDefault:      "default",
 	gui.CursorArrow:        "default",
 	gui.CursorIBeam:        "text",
@@ -362,4 +409,37 @@ var cursorCSS = [11]string{
 	gui.CursorResizeNESW:   "nesw-resize",
 	gui.CursorResizeAll:    "move",
 	gui.CursorNotAllowed:   "not-allowed",
+}
+
+func mapTouchEvent(
+	canvas, e js.Value,
+	typ gui.EventType,
+	evt *gui.Event,
+) {
+	rect := canvas.Call("getBoundingClientRect")
+	left := rect.Get("left").Float()
+	top := rect.Get("top").Float()
+	all := e.Get("touches")
+	changed := e.Get("changedTouches")
+	n := min(all.Length(), 8)
+
+	*evt = gui.Event{Type: typ, NumTouches: n}
+	for i := range n {
+		t := all.Index(i)
+		evt.Touches[i] = gui.TouchPoint{
+			Identifier: uint64(t.Get("identifier").Int()),
+			PosX:       float32(t.Get("clientX").Float() - left),
+			PosY:       float32(t.Get("clientY").Float() - top),
+			ToolType:   gui.TouchToolFinger,
+		}
+	}
+	for i := range changed.Length() {
+		cid := uint64(changed.Index(i).Get("identifier").Int())
+		for j := range n {
+			if evt.Touches[j].Identifier == cid {
+				evt.Touches[j].Changed = true
+				break
+			}
+		}
+	}
 }

@@ -4,12 +4,15 @@ package web
 
 import (
 	"math"
+	"strconv"
 	"syscall/js"
 
 	"github.com/mike-ward/go-glyph"
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/internal/glyphconv"
 )
+
+const maxImageCacheSize = 256
 
 // renderersDraw iterates render commands and draws them.
 func (b *Backend) renderersDraw(w *gui.Window) {
@@ -54,13 +57,19 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 		case gui.RenderStencilBegin:
-			b.drawClip(r) // scissor fallback
+			// Scissor fallback: resets existing clips before
+			// setting the new one. If stencil and clip are
+			// interleaved, clip state may be incorrect.
+			b.drawClip(r)
 		case gui.RenderStencilEnd:
 			// Restored by subsequent RenderClip.
 
-		case gui.RenderRotateBegin,
-			gui.RenderRotateEnd,
-			gui.RenderFilterComposite,
+		case gui.RenderRotateBegin:
+			b.beginRotation(r)
+		case gui.RenderRotateEnd:
+			b.endRotation()
+
+		case gui.RenderFilterComposite,
 			gui.RenderLayoutPlaced,
 			gui.RenderCustomShader:
 			// Unsupported in Canvas2D backend.
@@ -182,7 +191,7 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	}
 
 	b.ctx2d.Call("save")
-	b.ctx2d.Set("shadowColor", cssColor(r.Color))
+	b.ctx2d.Set("shadowColor", b.cssColorCached(r.Color))
 	b.ctx2d.Set("shadowBlur", float64(r.BlurRadius))
 	b.ctx2d.Set("shadowOffsetX", float64(r.OffsetX))
 	b.ctx2d.Set("shadowOffsetY", float64(r.OffsetY))
@@ -200,7 +209,7 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 func (b *Backend) drawBlur(r *gui.RenderCmd) {
 	b.ctx2d.Call("save")
 	b.ctx2d.Set("filter",
-		"blur("+ftoa(float64(r.BlurRadius))+"px)")
+		"blur("+ftoaGeneral(float64(r.BlurRadius))+"px)")
 	b.setFillColor(r.Color)
 	b.ctx2d.Call("fillRect",
 		float64(r.X), float64(r.Y),
@@ -230,9 +239,13 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 		dx, dy := gui.GradientDir(r.Gradient, r.W, r.H)
 		cx := float64(r.X + r.W/2)
 		cy := float64(r.Y + r.H/2)
+		// Scale unit direction vector to span the rectangle.
+		halfLen := math.Abs(float64(dx))*float64(r.W)/2 +
+			math.Abs(float64(dy))*float64(r.H)/2
+		hx := float64(dx) * halfLen
+		hy := float64(dy) * halfLen
 		grad = b.ctx2d.Call("createLinearGradient",
-			cx-float64(dx)/2, cy-float64(dy)/2,
-			cx+float64(dx)/2, cy+float64(dy)/2)
+			cx-hx, cy-hy, cx+hx, cy+hy)
 	}
 
 	for _, s := range stops {
@@ -286,7 +299,13 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 func (b *Backend) drawImage(r *gui.RenderCmd) {
 	img, ok := b.imgCache[r.Resource]
 	if !ok {
-		// Create Image element and start async load.
+		// Evict an arbitrary entry when cache is full.
+		if len(b.imgCache) >= maxImageCacheSize {
+			for k := range b.imgCache {
+				delete(b.imgCache, k)
+				break
+			}
+		}
 		img = js.Global().Get("Image").New()
 		img.Set("src", r.Resource)
 		b.imgCache[r.Resource] = img
@@ -342,9 +361,7 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 		cosA = float32(math.Cos(rad))
 	}
 
-	// Draw triangles (3 verts each).
-	for i := 0; i < numVerts; i += 3 {
-		b.ctx2d.Call("beginPath")
+	addTri := func(i int) {
 		for j := range 3 {
 			vi := i + j
 			vx := r.Triangles[vi*2]
@@ -364,16 +381,41 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 			}
 		}
 		b.ctx2d.Call("closePath")
-		if hasVCols {
-			vc := r.VertexColors[i]
-			alpha := vc.A
-			if r.HasVertexAlpha {
-				alpha = uint8(float32(alpha) * vAlpha)
-			}
-			b.setFillColor(gui.RGBA(vc.R, vc.G, vc.B, alpha))
-		} else {
-			b.setFillColor(r.Color)
+	}
+
+	if !hasVCols {
+		// All triangles share the same color — single path.
+		b.setFillColor(r.Color)
+		b.ctx2d.Call("beginPath")
+		for i := 0; i < numVerts; i += 3 {
+			addTri(i)
 		}
+		b.ctx2d.Call("fill")
+		return
+	}
+
+	// Batch consecutive same-color triangles into one path.
+	var batchColor gui.Color
+	batchOpen := false
+	for i := 0; i < numVerts; i += 3 {
+		vc := r.VertexColors[i]
+		alpha := vc.A
+		if r.HasVertexAlpha {
+			alpha = uint8(float32(alpha) * vAlpha)
+		}
+		c := gui.RGBA(vc.R, vc.G, vc.B, alpha)
+		if !batchOpen || c != batchColor {
+			if batchOpen {
+				b.ctx2d.Call("fill")
+			}
+			batchColor = c
+			b.setFillColor(c)
+			b.ctx2d.Call("beginPath")
+			batchOpen = true
+		}
+		addTri(i)
+	}
+	if batchOpen {
 		b.ctx2d.Call("fill")
 	}
 }
@@ -483,7 +525,7 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	b.ctx2d.Call("save")
 	if r.BlurRadius > 0 {
 		b.ctx2d.Set("filter",
-			"blur("+ftoa(float64(r.BlurRadius))+"px)")
+			"blur("+ftoaGeneral(float64(r.BlurRadius))+"px)")
 	}
 }
 
@@ -494,11 +536,35 @@ func (b *Backend) endFilter() {
 // --- Helpers ---
 
 func (b *Backend) setFillColor(c gui.Color) {
-	b.ctx2d.Set("fillStyle", cssColor(c))
+	b.ctx2d.Set("fillStyle", b.cssColorCached(c))
 }
 
 func (b *Backend) setStrokeColor(c gui.Color) {
-	b.ctx2d.Set("strokeStyle", cssColor(c))
+	b.ctx2d.Set("strokeStyle", b.cssColorCached(c))
+}
+
+func (b *Backend) cssColorCached(c gui.Color) string {
+	if c == b.lastCSSColor {
+		return b.lastCSS
+	}
+	s := cssColor(c)
+	b.lastCSSColor = c
+	b.lastCSS = s
+	return s
+}
+
+func (b *Backend) beginRotation(r *gui.RenderCmd) {
+	b.ctx2d.Call("save")
+	cx := float64(r.RotCX)
+	cy := float64(r.RotCY)
+	rad := float64(r.RotAngle) * math.Pi / 180
+	b.ctx2d.Call("translate", cx, cy)
+	b.ctx2d.Call("rotate", rad)
+	b.ctx2d.Call("translate", -cx, -cy)
+}
+
+func (b *Backend) endRotation() {
+	b.ctx2d.Call("restore")
 }
 
 func (b *Backend) fillRoundedRect(
@@ -542,6 +608,7 @@ func uitoa(u uint) string {
 	return string(buf[i:])
 }
 
+// ftoa formats a float in [0,1] as a two-decimal CSS alpha.
 func ftoa(f float64) string {
 	if f <= 0 {
 		return "0"
@@ -551,4 +618,13 @@ func ftoa(f float64) string {
 	}
 	i := int(f * 100)
 	return "0." + uitoa(uint(i/10)) + uitoa(uint(i%10))
+}
+
+// ftoaGeneral formats an arbitrary non-negative float for CSS
+// property values (e.g. blur radius).
+func ftoaGeneral(f float64) string {
+	if f <= 0 {
+		return "0"
+	}
+	return strconv.FormatFloat(f, 'f', -1, 64)
 }
