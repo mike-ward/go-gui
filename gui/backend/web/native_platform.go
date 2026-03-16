@@ -4,6 +4,7 @@ package web
 
 import (
 	"fmt"
+	"strings"
 	"syscall/js"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -13,6 +14,11 @@ import (
 type nativePlatform struct{}
 
 func (n *nativePlatform) OpenURI(uri string) error {
+	if !strings.HasPrefix(uri, "http://") &&
+		!strings.HasPrefix(uri, "https://") &&
+		!strings.HasPrefix(uri, "mailto:") {
+		return fmt.Errorf("web: blocked URI scheme in %q", uri)
+	}
 	w := js.Global().Call("open", uri, "_blank")
 	if w.IsNull() || w.IsUndefined() {
 		return fmt.Errorf("web: popup blocked for %q", uri)

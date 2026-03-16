@@ -34,6 +34,9 @@ type Backend struct {
 
 	textPathPlacements []glyph.GlyphPlacement
 
+	canvasLeft float64 // cached getBoundingClientRect().left
+	canvasTop  float64 // cached getBoundingClientRect().top
+
 	lastPasteText string
 	lastCSSColor  gui.Color
 	lastCSS       string
@@ -100,6 +103,8 @@ func newBackend(w *gui.Window) *Backend {
 		height:    cssH,
 		imgCache:  make(map[string]js.Value),
 	}
+
+	b.updateCanvasRect()
 
 	// Inject interfaces into Window.
 	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
@@ -197,6 +202,14 @@ func (b *Backend) renderFrame(w *gui.Window) {
 	b.glyphBack.EndFrame()
 }
 
+// updateCanvasRect caches the canvas bounding rect to avoid
+// a DOM layout query on every touch event.
+func (b *Backend) updateCanvasRect() {
+	rect := b.canvas.Call("getBoundingClientRect")
+	b.canvasLeft = rect.Get("left").Float()
+	b.canvasTop = rect.Get("top").Float()
+}
+
 func (b *Backend) resizeCanvas(cssW, cssH int) {
 	// Re-read devicePixelRatio — it may change when the window
 	// moves between displays with different DPI.
@@ -218,6 +231,7 @@ func (b *Backend) resizeCanvas(cssW, cssH int) {
 			float64(b.dpiScale), 0, 0,
 			float64(b.dpiScale), 0, 0)
 	}
+	b.updateCanvasRect()
 }
 
 // loadIconFont loads the embedded icon font via the JS FontFace

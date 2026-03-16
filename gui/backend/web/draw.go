@@ -3,6 +3,7 @@
 package web
 
 import (
+	"log"
 	"math"
 	"strconv"
 	"syscall/js"
@@ -12,7 +13,12 @@ import (
 	"github.com/mike-ward/go-gui/gui/backend/internal/glyphconv"
 )
 
-const maxImageCacheSize = 256
+const (
+	maxImageCacheSize = 256
+
+	// offscreenSentinel places unpositioned glyphs off-screen.
+	offscreenSentinel = -9999
+)
 
 // renderersDraw iterates render commands and draws them.
 func (b *Backend) renderersDraw(w *gui.Window) {
@@ -150,7 +156,9 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 		cfg.Block.Wrap = glyph.WrapWord
 		cfg.Block.Width = r.W
 	}
-	_ = b.textSys.DrawText(r.X, r.Y, r.Text, cfg)
+	if err := b.textSys.DrawText(r.X, r.Y, r.Text, cfg); err != nil {
+		log.Printf("web: DrawText: %v", err)
+	}
 }
 
 func (b *Backend) drawCircle(r *gui.RenderCmd) {
@@ -248,6 +256,8 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 			cx-hx, cy-hy, cx+hx, cy+hy)
 	}
 
+	// Each stop has a unique color so the single-entry cache
+	// won't help. Per-stop allocation is acceptable here.
 	for _, s := range stops {
 		grad.Call("addColorStop",
 			float64(s.Pos), cssColor(s.Color))
@@ -299,7 +309,10 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 func (b *Backend) drawImage(r *gui.RenderCmd) {
 	img, ok := b.imgCache[r.Resource]
 	if !ok {
-		// Evict an arbitrary entry when cache is full.
+		// Evict a random entry when cache is full. Random
+		// eviction is O(1) with no bookkeeping. For typical
+		// UIs the cache is large enough that thrashing is
+		// unlikely.
 		if len(b.imgCache) >= maxImageCacheSize {
 			for k := range b.imgCache {
 				delete(b.imgCache, k)
@@ -489,7 +502,9 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	}
 	placements := b.textPathPlacements[:n]
 	for i := range placements {
-		placements[i] = glyph.GlyphPlacement{X: -9999, Y: -9999}
+		placements[i] = glyph.GlyphPlacement{
+			X: offscreenSentinel, Y: offscreenSentinel,
+		}
 	}
 
 	cumAdv := float32(0)

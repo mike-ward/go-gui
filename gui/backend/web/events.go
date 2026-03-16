@@ -9,6 +9,17 @@ import (
 	"github.com/mike-ward/go-gui/gui"
 )
 
+// Wheel delta normalization constants. Converts browser delta
+// values to approximate scroll "notches":
+//   - DOM_DELTA_PIXEL: ~53px per trackpad notch
+//   - DOM_DELTA_LINE: ~3 lines per discrete wheel notch
+//   - DOM_DELTA_PAGE: each page maps to ~10 notches
+const (
+	wheelPixelDivisor   = 53
+	wheelLineDivisor    = 3
+	wheelPageMultiplier = 10
+)
+
 // registerEvents attaches DOM event listeners to the canvas and
 // window. Registered callbacks are appended to b.callbacks to
 // prevent garbage collection.
@@ -74,14 +85,14 @@ func (b *Backend) registerEvents(w *gui.Window) {
 		dy := e.Get("deltaY").Float()
 		switch e.Get("deltaMode").Int() {
 		case 0: // DOM_DELTA_PIXEL
-			dx /= 53
-			dy /= 53
+			dx /= wheelPixelDivisor
+			dy /= wheelPixelDivisor
 		case 1: // DOM_DELTA_LINE
-			dx /= 3
-			dy /= 3
+			dx /= wheelLineDivisor
+			dy /= wheelLineDivisor
 		case 2: // DOM_DELTA_PAGE
-			dx *= 10
-			dy *= 10
+			dx *= wheelPageMultiplier
+			dy *= wheelPageMultiplier
 		}
 		*evt = gui.Event{
 			Type:      gui.EventMouseScroll,
@@ -128,7 +139,10 @@ func (b *Backend) registerEvents(w *gui.Window) {
 		}
 		w.EventFn(evt)
 
-		// Generate char event for printable keys.
+		// Generate char event for printable single-rune keys.
+		// Multi-byte single-rune input (e.g. emoji via keyboard
+		// shortcut) is excluded here; IME-based emoji is handled
+		// by the compositionend listener.
 		if len(key) > 0 && !e.Get("ctrlKey").Bool() &&
 			!e.Get("metaKey").Bool() {
 			r, sz := utf8.DecodeRuneInString(key)
@@ -175,6 +189,9 @@ func (b *Backend) registerEvents(w *gui.Window) {
 			if len(text) == 0 {
 				return nil
 			}
+			// CharCode carries only the first rune; the full
+			// committed string is in IMEText for multi-char
+			// input (e.g. Chinese phrases).
 			r, _ := utf8.DecodeRuneInString(text)
 			*evt = gui.Event{
 				Type:     gui.EventChar,
@@ -232,7 +249,7 @@ func (b *Backend) registerEvents(w *gui.Window) {
 		return func(_ js.Value, args []js.Value) any {
 			e := args[0]
 			e.Call("preventDefault")
-			mapTouchEvent(canvas, e, typ, evt)
+			mapTouchEvent(b.canvasLeft, b.canvasTop, e, typ, evt)
 			w.EventFn(evt)
 			return nil
 		}
@@ -412,13 +429,11 @@ var cursorCSS = map[gui.MouseCursor]string{
 }
 
 func mapTouchEvent(
-	canvas, e js.Value,
+	left, top float64,
+	e js.Value,
 	typ gui.EventType,
 	evt *gui.Event,
 ) {
-	rect := canvas.Call("getBoundingClientRect")
-	left := rect.Get("left").Float()
-	top := rect.Get("top").Float()
 	all := e.Get("touches")
 	changed := e.Get("changedTouches")
 	n := min(all.Length(), 8)
