@@ -14,9 +14,9 @@ import (
 type nativePlatform struct{}
 
 func (n *nativePlatform) OpenURI(uri string) error {
-	if !strings.HasPrefix(uri, "http://") &&
-		!strings.HasPrefix(uri, "https://") &&
-		!strings.HasPrefix(uri, "mailto:") {
+	if !hasPrefixFold(uri, "http://") &&
+		!hasPrefixFold(uri, "https://") &&
+		!hasPrefixFold(uri, "mailto:") {
 		return fmt.Errorf("web: blocked URI scheme in %q", uri)
 	}
 	w := js.Global().Call("open", uri, "_blank")
@@ -100,3 +100,10 @@ func (n *nativePlatform) TitlebarDark(_ bool) {}
 func (n *nativePlatform) SpellCheck(_ string) []gui.SpellRange          { return nil }
 func (n *nativePlatform) SpellSuggest(_ string, _, _ int) []string      { return nil }
 func (n *nativePlatform) SpellLearn(_ string)                           {}
+
+// hasPrefixFold reports whether s begins with prefix,
+// ignoring ASCII case.
+func hasPrefixFold(s, prefix string) bool {
+	return len(s) >= len(prefix) &&
+		strings.EqualFold(s[:len(prefix)], prefix)
+}

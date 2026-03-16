@@ -28,8 +28,9 @@ type Backend struct {
 
 	normBuf    []gui.GradientStop
 	sampledBuf []gui.GradientStop
-	imgCache   map[string]js.Value
-	clipDepth  int
+	imgCache     map[string]js.Value
+	failedImages map[string]struct{}
+	clipDepth    int
 	lastCursor gui.MouseCursor
 
 	textPathPlacements []glyph.GlyphPlacement
@@ -38,9 +39,10 @@ type Backend struct {
 	canvasTop  float64 // cached getBoundingClientRect().top
 
 	lastPasteText string
-	lastCSSColor  gui.Color
-	lastCSS       string
 	colorBuf      []byte
+	colorCache    [colorCacheSize]colorCacheEntry
+	colorCacheLen int
+	colorCacheIdx int
 	callbacks     []js.Func // prevent GC of registered callbacks
 }
 
@@ -55,7 +57,9 @@ func newBackend(w *gui.Window) *Backend {
 	doc := js.Global().Get("document")
 	canvas := doc.Call("getElementById", "go-gui-canvas")
 	if canvas.IsNull() || canvas.IsUndefined() {
-		panic("web: canvas element #go-gui-canvas not found")
+		const msg = "go-gui: canvas #go-gui-canvas not found"
+		js.Global().Call("alert", msg)
+		log.Fatal(msg)
 	}
 
 	canvas.Set("tabIndex", 0)
@@ -90,7 +94,9 @@ func newBackend(w *gui.Window) *Backend {
 	glyphBack := glyphweb.New(canvas, 1.0)
 	textSys, err := glyph.NewTextSystem(glyphBack)
 	if err != nil {
-		panic("web: NewTextSystem: " + err.Error())
+		msg := "go-gui: text system init failed: " + err.Error()
+		js.Global().Call("alert", msg)
+		log.Fatal(msg)
 	}
 
 	// Load embedded icon font via JS FontFace API.
@@ -104,7 +110,8 @@ func newBackend(w *gui.Window) *Backend {
 		dpiScale:  dpiScale,
 		width:     cssW,
 		height:    cssH,
-		imgCache:  make(map[string]js.Value),
+		imgCache:     make(map[string]js.Value),
+		failedImages: make(map[string]struct{}),
 	}
 
 	b.updateCanvasRect()

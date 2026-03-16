@@ -436,6 +436,7 @@ func mapTouchEvent(
 ) {
 	all := e.Get("touches")
 	changed := e.Get("changedTouches")
+	// Cap at fixed-size Touches array (8 simultaneous touches).
 	n := min(all.Length(), len(evt.Touches))
 
 	*evt = gui.Event{Type: typ, NumTouches: n}
