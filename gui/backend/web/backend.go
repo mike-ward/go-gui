@@ -61,16 +61,10 @@ func newBackend(w *gui.Window) *Backend {
 		dpiScale = float32(dpr.Float())
 	}
 
-	// Size canvas.
-	cfg := w.Config
-	cssW := cfg.Width
-	if cssW <= 0 {
-		cssW = js.Global().Get("innerWidth").Int()
-	}
-	cssH := cfg.Height
-	if cssH <= 0 {
-		cssH = js.Global().Get("innerHeight").Int()
-	}
+	// Size canvas to fill the browser viewport. Config Width/Height
+	// are ignored — the browser window IS the application window.
+	cssW := js.Global().Get("innerWidth").Int()
+	cssH := js.Global().Get("innerHeight").Int()
 
 	canvas.Get("style").Set("width", itoa(cssW)+"px")
 	canvas.Get("style").Set("height", itoa(cssH)+"px")
@@ -133,6 +127,15 @@ func (b *Backend) run(w *gui.Window) {
 	}
 
 	b.registerEvents(w)
+
+	// Sync Window dimensions with the actual canvas size.
+	// NewWindow sets windowWidth/Height from Config, which may
+	// differ from the browser viewport.
+	w.EventFn(&gui.Event{
+		Type:         gui.EventResized,
+		WindowWidth:  b.width,
+		WindowHeight: b.height,
+	})
 
 	// requestAnimationFrame render loop.
 	var renderFunc js.Func
