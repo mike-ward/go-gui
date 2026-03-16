@@ -43,14 +43,28 @@ func (n *nativePlatform) ShowFolderDialog(_, _ string) gui.PlatformDialogResult 
 		ErrorCode: "unsupported", ErrorMessage: "not available in wasm"}
 }
 
-func (n *nativePlatform) ShowMessageDialog(_, _ string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
-	return gui.NativeAlertResult{Status: gui.DialogError,
-		ErrorCode: "unsupported", ErrorMessage: "not available in wasm"}
+func (n *nativePlatform) ShowMessageDialog(
+	title, body string, _ gui.NativeAlertLevel,
+) gui.NativeAlertResult {
+	msg := title
+	if body != "" {
+		msg += "\n\n" + body
+	}
+	js.Global().Call("alert", msg)
+	return gui.NativeAlertResult{Status: gui.DialogOK}
 }
 
-func (n *nativePlatform) ShowConfirmDialog(_, _ string, _ gui.NativeAlertLevel) gui.NativeAlertResult {
-	return gui.NativeAlertResult{Status: gui.DialogError,
-		ErrorCode: "unsupported", ErrorMessage: "not available in wasm"}
+func (n *nativePlatform) ShowConfirmDialog(
+	title, body string, _ gui.NativeAlertLevel,
+) gui.NativeAlertResult {
+	msg := title
+	if body != "" {
+		msg += "\n\n" + body
+	}
+	if js.Global().Call("confirm", msg).Bool() {
+		return gui.NativeAlertResult{Status: gui.DialogOK}
+	}
+	return gui.NativeAlertResult{Status: gui.DialogCancel}
 }
 
 func (n *nativePlatform) SendNotification(_, _ string) gui.NativeNotificationResult {

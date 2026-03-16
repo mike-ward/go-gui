@@ -40,6 +40,7 @@ type Backend struct {
 	lastPasteText string
 	lastCSSColor  gui.Color
 	lastCSS       string
+	colorBuf      []byte
 	callbacks     []js.Func // prevent GC of registered callbacks
 }
 
@@ -56,6 +57,8 @@ func newBackend(w *gui.Window) *Backend {
 	if canvas.IsNull() || canvas.IsUndefined() {
 		panic("web: canvas element #go-gui-canvas not found")
 	}
+
+	canvas.Set("tabIndex", 0)
 
 	// Compute DPI scale.
 	dpr := js.Global().Get("devicePixelRatio")
@@ -109,11 +112,17 @@ func newBackend(w *gui.Window) *Backend {
 	// Inject interfaces into Window.
 	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
 	w.SetSvgParser(svg.New())
+	clipCatchFn := js.FuncOf(
+		func(_ js.Value, _ []js.Value) any {
+			return nil
+		})
+	b.callbacks = append(b.callbacks, clipCatchFn)
 	w.SetClipboardFn(func(text string) {
 		nav := js.Global().Get("navigator")
 		cb := nav.Get("clipboard")
 		if !cb.IsUndefined() && !cb.IsNull() {
-			cb.Call("writeText", text)
+			cb.Call("writeText", text).
+				Call("catch", clipCatchFn)
 		}
 	})
 	w.SetClipboardGetFn(func() string {
@@ -132,6 +141,7 @@ func (b *Backend) run(w *gui.Window) {
 	}
 
 	b.registerEvents(w)
+	b.canvas.Call("focus")
 
 	// Sync Window dimensions with the actual canvas size.
 	// NewWindow sets windowWidth/Height from Config, which may
@@ -170,6 +180,8 @@ func (b *Backend) run(w *gui.Window) {
 }
 
 func (b *Backend) renderFrame(w *gui.Window) {
+	// Zero Color (transparent black) falls through to theme
+	// default — not distinguishable from unset.
 	bg := w.Config.BgColor
 	if bg == (gui.Color{}) {
 		t := gui.CurrentTheme()

@@ -118,7 +118,7 @@ func (b *Backend) registerEvents(w *gui.Window) {
 		return nil
 	})
 
-	reg(js.Global(), "keydown", func(_ js.Value, args []js.Value) any {
+	reg(canvas, "keydown", func(_ js.Value, args []js.Value) any {
 		e := args[0]
 		code := e.Get("code").String()
 		key := e.Get("key").String()
@@ -160,7 +160,7 @@ func (b *Backend) registerEvents(w *gui.Window) {
 		return nil
 	})
 
-	reg(js.Global(), "keyup", func(_ js.Value, args []js.Value) any {
+	reg(canvas, "keyup", func(_ js.Value, args []js.Value) any {
 		e := args[0]
 		*evt = gui.Event{
 			Type:      gui.EventKeyUp,
@@ -436,7 +436,7 @@ func mapTouchEvent(
 ) {
 	all := e.Get("touches")
 	changed := e.Get("changedTouches")
-	n := min(all.Length(), 8)
+	n := min(all.Length(), len(evt.Touches))
 
 	*evt = gui.Event{Type: typ, NumTouches: n}
 	for i := range n {

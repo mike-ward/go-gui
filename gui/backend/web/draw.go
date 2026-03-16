@@ -256,11 +256,9 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 			cx-hx, cy-hy, cx+hx, cy+hy)
 	}
 
-	// Each stop has a unique color so the single-entry cache
-	// won't help. Per-stop allocation is acceptable here.
 	for _, s := range stops {
 		grad.Call("addColorStop",
-			float64(s.Pos), cssColor(s.Color))
+			float64(s.Pos), b.cssColorBuf(s.Color))
 	}
 
 	b.ctx2d.Set("fillStyle", grad)
@@ -309,6 +307,11 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 func (b *Backend) drawImage(r *gui.RenderCmd) {
 	img, ok := b.imgCache[r.Resource]
 	if !ok {
+		if !isAllowedImageSrc(r.Resource) {
+			log.Printf("web: blocked image src scheme: %q",
+				r.Resource)
+			return
+		}
 		// Evict a random entry when cache is full. Random
 		// eviction is O(1) with no bookkeeping. For typical
 		// UIs the cache is large enough that thrashing is
@@ -323,9 +326,17 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		img.Set("src", r.Resource)
 		b.imgCache[r.Resource] = img
 	}
-	// Skip draw until loaded.
-	if !img.Get("complete").Bool() ||
-		img.Get("naturalWidth").Int() == 0 {
+	// Negative cache: failed images stored as js.Undefined().
+	if img.IsUndefined() {
+		return
+	}
+	if !img.Get("complete").Bool() {
+		return
+	}
+	// Loaded but broken (e.g. 404) — negative-cache to
+	// prevent eternal retry.
+	if img.Get("naturalWidth").Int() == 0 {
+		b.imgCache[r.Resource] = js.Undefined()
 		return
 	}
 	// Fill background.
@@ -562,7 +573,7 @@ func (b *Backend) cssColorCached(c gui.Color) string {
 	if c == b.lastCSSColor {
 		return b.lastCSS
 	}
-	s := cssColor(c)
+	s := b.cssColorBuf(c)
 	b.lastCSSColor = c
 	b.lastCSS = s
 	return s
@@ -592,14 +603,68 @@ func (b *Backend) fillRoundedRect(
 	b.ctx2d.Call("fill")
 }
 
-func cssColor(c gui.Color) string {
+// cssColorBuf formats c into b.colorBuf and returns the
+// string. Reuses the buffer across calls, producing one
+// allocation per call (the string conversion).
+func (b *Backend) cssColorBuf(c gui.Color) string {
+	buf := b.colorBuf[:0]
 	if c.A == 255 {
-		return "rgb(" + itoa(int(c.R)) + "," +
-			itoa(int(c.G)) + "," + itoa(int(c.B)) + ")"
+		buf = append(buf, "rgb("...)
+		buf = appendUint8(buf, c.R)
+		buf = append(buf, ',')
+		buf = appendUint8(buf, c.G)
+		buf = append(buf, ',')
+		buf = appendUint8(buf, c.B)
+	} else {
+		buf = append(buf, "rgba("...)
+		buf = appendUint8(buf, c.R)
+		buf = append(buf, ',')
+		buf = appendUint8(buf, c.G)
+		buf = append(buf, ',')
+		buf = appendUint8(buf, c.B)
+		buf = append(buf, ',')
+		buf = appendAlpha(buf, c.A)
 	}
-	return "rgba(" + itoa(int(c.R)) + "," +
-		itoa(int(c.G)) + "," + itoa(int(c.B)) + "," +
-		ftoa(float64(c.A)/255.0) + ")"
+	buf = append(buf, ')')
+	b.colorBuf = buf
+	return string(buf)
+}
+
+func appendUint8(buf []byte, v uint8) []byte {
+	if v < 10 {
+		return append(buf, byte('0'+v))
+	}
+	if v < 100 {
+		return append(buf, byte('0'+v/10), byte('0'+v%10))
+	}
+	return append(buf, byte('0'+v/100),
+		byte('0'+(v/10)%10), byte('0'+v%10))
+}
+
+func appendAlpha(buf []byte, a uint8) []byte {
+	if a == 0 {
+		return append(buf, '0')
+	}
+	i := int(a) * 100 / 255
+	return append(buf, '0', '.',
+		byte('0'+i/10), byte('0'+i%10))
+}
+
+// isAllowedImageSrc validates that src uses a safe scheme.
+// Allows data:, http(s):, blob:, and relative paths. Blocks
+// exotic schemes like javascript:.
+func isAllowedImageSrc(src string) bool {
+	for i := range len(src) {
+		switch src[i] {
+		case ':':
+			p := src[:i]
+			return p == "data" || p == "http" ||
+				p == "https" || p == "blob"
+		case '/', '?', '#':
+			return true // relative URL
+		}
+	}
+	return len(src) > 0 // plain filename
 }
 
 func itoa(i int) string {
@@ -621,18 +686,6 @@ func uitoa(u uint) string {
 		u /= 10
 	}
 	return string(buf[i:])
-}
-
-// ftoa formats a float in [0,1] as a two-decimal CSS alpha.
-func ftoa(f float64) string {
-	if f <= 0 {
-		return "0"
-	}
-	if f >= 1 {
-		return "1"
-	}
-	i := int(f * 100)
-	return "0." + uitoa(uint(i/10)) + uitoa(uint(i%10))
 }
 
 // ftoaGeneral formats an arbitrary non-negative float for CSS
