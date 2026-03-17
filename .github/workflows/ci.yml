@@ -92,15 +92,11 @@ jobs:
 
       - name: Build
         working-directory: go-gui
-        run: |
-          pkgs=$(GOOS=js GOARCH=wasm go list -e -f '{{if not .Error}}{{.ImportPath}}{{end}}' ./...)
-          GOOS=js GOARCH=wasm go build $pkgs
+        run: GOOS=js GOARCH=wasm go build ./...
 
       - name: Vet
         working-directory: go-gui
-        run: |
-          pkgs=$(GOOS=js GOARCH=wasm go list -e -f '{{if not .Error}}{{.ImportPath}}{{end}}' ./...)
-          GOOS=js GOARCH=wasm go vet $pkgs
+        run: GOOS=js GOARCH=wasm go vet ./...
 
       - uses: actions/setup-node@v4
         with:
@@ -110,5 +106,4 @@ jobs:
         working-directory: go-gui
         run: |
           export PATH="$(go env GOROOT)/misc/wasm:$PATH"
-          pkgs=$(GOOS=js GOARCH=wasm go list -e -f '{{if not .Error}}{{.ImportPath}}{{end}}' ./gui/...)
-          GOOS=js GOARCH=wasm go test $pkgs
+          GOOS=js GOARCH=wasm go test ./gui/...
