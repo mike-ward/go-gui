@@ -9,8 +9,8 @@ func demoText(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	wrapSample := "Wrap mode collapses repeated spaces and wraps words to fit the available width."
 	keepSpacesSample := "wrap_keep_spaces keeps    repeated spaces.\nColumns:\nName\tRole\nAlex\tDesigner\nRiley\tEngineer"
-	emojiSample := "Emoji: 😀 🚀 🎉 👍🏽 👩‍💻 🧑‍🚀"
-	graphemeSample := "Multi-grapheme: 👨‍👩‍👧‍👦  🇺🇸  1️⃣  café"
+	emojiSample := "Emoji: 😀🚀🎉👍🏽👩‍💻🧑‍🚀"
+	graphemeSample := "Multi-grapheme: 👨‍👩‍👧‍👦🇺🇸1️⃣ café"
 	i18nSample := "i18n: English | Español | العربية | हिन्दी | 日本語 | 한국어 | עברית | ไทย"
 
 	content := []gui.View{
