@@ -1,8 +1,6 @@
 package main
 
 import (
-	"runtime"
-
 	"github.com/mike-ward/go-glyph"
 	"github.com/mike-ward/go-gui/gui"
 )
@@ -142,10 +140,8 @@ func demoText(_ *gui.Window) gui.View {
 		}),
 	}
 
-	// Text transforms use glyph affine rendering which is not yet
-	// supported in the Canvas2D (WASM) backend.
-	if runtime.GOARCH != "wasm" {
-		content = append(content, textDemoCard("", "Transforms", 0, []gui.View{
+	content = append(content,
+		textDemoCard("", "Transforms", 0, []gui.View{
 			gui.Row(gui.ContainerCfg{
 				Sizing:  gui.FillFixed,
 				Height:  t.B4.Size * 4,
@@ -189,10 +185,7 @@ func demoText(_ *gui.Window) gui.View {
 					}),
 				},
 			}),
-		}))
-	}
-
-	content = append(content,
+		}),
 		textDemoCard("", "Gradient Text", 0, []gui.View{
 			gui.Text(gui.TextCfg{
 				ID:   "text-gradient-horizontal",

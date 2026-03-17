@@ -491,14 +491,23 @@ func (b *Backend) drawLayoutTransformed(r *gui.RenderCmd) {
 		r.LayoutTransform == nil {
 		return
 	}
+	// Apply the affine transform at the go-gui canvas level,
+	// then render through the identity DrawLayout/WithGradient
+	// path which is known to work in Canvas2D.
+	t := *r.LayoutTransform
+	b.ctx2d.Call("save")
+	b.ctx2d.Call("transform",
+		float64(t.XX), float64(t.YX),
+		float64(t.XY), float64(t.YY),
+		float64(r.X)+float64(t.X0),
+		float64(r.Y)+float64(t.Y0))
 	if r.TextGradient != nil {
-		b.textSys.DrawLayoutTransformedWithGradient(
-			*r.LayoutPtr, r.X, r.Y,
-			*r.LayoutTransform, r.TextGradient)
-		return
+		b.textSys.DrawLayoutWithGradient(
+			*r.LayoutPtr, 0, 0, r.TextGradient)
+	} else {
+		b.textSys.DrawLayout(*r.LayoutPtr, 0, 0)
 	}
-	b.textSys.DrawLayoutTransformed(
-		*r.LayoutPtr, r.X, r.Y, *r.LayoutTransform)
+	b.ctx2d.Call("restore")
 }
 
 func (b *Backend) drawTextPath(r *gui.RenderCmd) {
