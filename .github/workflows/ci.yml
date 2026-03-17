@@ -72,3 +72,38 @@ jobs:
 
       - name: Vet
         run: go vet ./...
+
+  wasm:
+    name: WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: go-gui
+
+      - uses: actions/checkout@v4
+        with:
+          repository: mike-ward/go-glyph
+          path: go-glyph
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build
+        working-directory: go-gui
+        run: GOOS=js GOARCH=wasm go build ./...
+
+      - name: Vet
+        working-directory: go-gui
+        run: GOOS=js GOARCH=wasm go vet ./...
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test
+        working-directory: go-gui
+        run: |
+          export PATH="$(go env GOROOT)/misc/wasm:$PATH"
+          GOOS=js GOARCH=wasm go test ./gui/...
