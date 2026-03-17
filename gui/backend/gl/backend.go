@@ -16,6 +16,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
+	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 	"github.com/mike-ward/go-gui/gui/svg"
 )
 
@@ -46,7 +48,7 @@ type Backend struct {
 	normBuf            []gui.GradientStop
 	sampledBuf         []gui.GradientStop
 
-	textures    glTexCache
+	textures    texcache.Cache[string, glTexture]
 	filterFBO      uint32
 	filterStencil  uint32
 	filterTexA     uint32
@@ -61,7 +63,7 @@ type Backend struct {
 	customOnce sync.Once
 
 	allowedImageRoots []string
-	imagePathCache    map[string]string
+	imagePathCache    texcache.Cache[string, string]
 	maxImageBytes     int64
 	maxImagePixels    int64
 }
@@ -144,12 +146,12 @@ func New(w *gui.Window) (*Backend, error) {
 		dpiScale:       dpiScale,
 		physW:          glW,
 		physH:          glH,
-		textures:       newGLTexCache(128),
-		imagePathCache: make(map[string]string, 64),
+		textures:       newGLTexCacheLRU(128),
+		imagePathCache: texcache.New[string, string](1024, nil),
 		maxImageBytes:  cfg.MaxImageBytes,
 		maxImagePixels: cfg.MaxImagePixels,
 	}
-	b.allowedImageRoots = normalizeAllowedRoots(cfg.AllowedImageRoots)
+	b.allowedImageRoots = imgpath.NormalizeRoots(cfg.AllowedImageRoots)
 
 	// Initialize GL state.
 	gl.Enable(gl.BLEND)
@@ -210,7 +212,11 @@ func New(w *gui.Window) (*Backend, error) {
 	// Set injected interfaces on gui Window.
 	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
 	w.SetSvgParser(svg.New())
-	w.SetClipboardFn(func(text string) { _ = sdl.SetClipboardText(text) })
+	w.SetClipboardFn(func(text string) {
+		if err := sdl.SetClipboardText(text); err != nil {
+			log.Printf("gl: set clipboard: %v", err)
+		}
+	})
 	w.SetClipboardGetFn(func() string {
 		text, _ := sdl.GetClipboardText()
 		return text
@@ -332,7 +338,7 @@ func Run(w *gui.Window) {
 
 // Destroy releases all backend resources.
 func (b *Backend) Destroy() {
-	b.textures.destroyAll()
+	b.textures.DestroyAll()
 	b.destroyPipelines()
 	if b.quadVAO != 0 {
 		gl.DeleteVertexArrays(1, &b.quadVAO)

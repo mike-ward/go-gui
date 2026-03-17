@@ -8,22 +8,10 @@ package metal
 import "C"
 
 import (
-	"fmt"
-	"image"
-	"image/draw"
-	_ "image/jpeg" // register JPEG decoder
-	_ "image/png"  // register PNG decoder
-	"os"
-	"path/filepath"
-	"strings"
 	"unsafe"
 
-	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
-)
-
-const (
-	defaultMaxImageBytes  = int64(16 * 1024 * 1024)
-	defaultMaxImagePixels = int64(40_000_000)
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgload"
+	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 )
 
 // metalTexture holds a Metal texture ID and dimensions.
@@ -32,77 +20,15 @@ type metalTexture struct {
 	w, h int32
 }
 
-type metalTexCacheEntry struct {
-	tex metalTexture
-}
-
-type metalTexCache struct {
-	data    map[string]metalTexCacheEntry
-	order   []string
-	maxSize int
-}
-
-func newMetalTexCache(maxSize int) metalTexCache {
-	return metalTexCache{
-		data:    make(map[string]metalTexCacheEntry, maxSize),
-		order:   make([]string, 0, maxSize),
-		maxSize: maxSize,
-	}
-}
-
-func (c *metalTexCache) get(
-	path string) (metalTexCacheEntry, bool) {
-	e, ok := c.data[path]
-	if ok {
-		c.promote(path)
-	}
-	return e, ok
-}
-
-// promote moves path to the end of the order slice (most
-// recently used).
-func (c *metalTexCache) promote(path string) {
-	for i, k := range c.order {
-		if k == path {
-			c.order = append(
-				c.order[:i], c.order[i+1:]...)
-			c.order = append(c.order, path)
-			return
-		}
-	}
-}
-
-func (c *metalTexCache) set(
-	path string, entry metalTexCacheEntry) {
-	if _, exists := c.data[path]; exists {
-		c.data[path] = entry
-		return
-	}
-	if len(c.order) >= c.maxSize {
-		evict := c.order[0]
-		c.order = c.order[1:]
-		if len(c.order) < cap(c.order)/2 {
-			c.order = append([]string(nil), c.order...)
-		}
-		if old, ok := c.data[evict]; ok {
-			if old.tex.id != 0 {
-				C.metalDeleteTexture(C.int(old.tex.id))
+func newMetalTexCacheLRU(
+	maxSize int,
+) texcache.Cache[string, metalTexture] {
+	return texcache.New[string, metalTexture](maxSize,
+		func(tex metalTexture) {
+			if tex.id != 0 {
+				C.metalDeleteTexture(C.int(tex.id))
 			}
-			delete(c.data, evict)
-		}
-	}
-	c.order = append(c.order, path)
-	c.data[path] = entry
-}
-
-func (c *metalTexCache) destroyAll() {
-	for _, e := range c.data {
-		if e.tex.id != 0 {
-			C.metalDeleteTexture(C.int(e.tex.id))
-		}
-	}
-	c.data = nil
-	c.order = nil
+		})
 }
 
 func createMetalTexture(w, h int32,
@@ -120,114 +46,23 @@ func createMetalTexture(w, h int32,
 
 // --- Image loading ---
 
+// loadImageTexture opens, validates, decodes, and uploads an
+// image to a Metal texture.
 func (b *Backend) loadImageTexture(
-	path string) (metalTexCacheEntry, error) {
-	if len(b.allowedImageRoots) > 0 {
-		if err := imgpath.ValidateAllowed(path,
-			b.allowedImageRoots); err != nil {
-			return metalTexCacheEntry{}, err
-		}
-	}
-	pre, err := os.Stat(path)
+	path string) (metalTexture, error) {
+	f, err := imgload.OpenSafe(path, b.allowedImageRoots)
 	if err != nil {
-		return metalTexCacheEntry{}, err
+		return metalTexture{}, err
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		return metalTexCacheEntry{}, err
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-	post, err := f.Stat()
-	if err != nil {
-		return metalTexCacheEntry{}, err
-	}
-	if !os.SameFile(pre, post) {
-		return metalTexCacheEntry{}, fmt.Errorf(
-			"image path changed during open: %s", path)
-	}
-	return b.loadTextureFromFile(path, f)
-}
+	defer func() { _ = f.Close() }()
 
-func (b *Backend) loadTextureFromFile(
-	path string, f *os.File) (metalTexCacheEntry, error) {
-	if err := b.validateImageFile(path, f); err != nil {
-		return metalTexCacheEntry{}, err
-	}
-	if _, err := f.Seek(0, 0); err != nil {
-		return metalTexCacheEntry{}, err
-	}
-	src, _, err := image.Decode(f)
+	nrgba, err := imgload.DecodeNRGBA(
+		path, f, b.maxImageBytes, b.maxImagePixels)
 	if err != nil {
-		return metalTexCacheEntry{}, err
-	}
-
-	var nrgba *image.NRGBA
-	if existing, ok := src.(*image.NRGBA); ok {
-		nrgba = existing
-	} else {
-		bounds := src.Bounds()
-		nrgba = image.NewNRGBA(bounds)
-		draw.Draw(nrgba, bounds, src, bounds.Min, draw.Src)
+		return metalTexture{}, err
 	}
 	bounds := nrgba.Bounds()
 	w := int32(bounds.Dx())
 	h := int32(bounds.Dy())
-	tex := createMetalTexture(w, h, nrgba.Pix)
-	return metalTexCacheEntry{tex: tex}, nil
-}
-
-func (b *Backend) validateImageFile(
-	path string, f *os.File) error {
-	maxBytes := b.maxImageBytes
-	if maxBytes <= 0 {
-		maxBytes = defaultMaxImageBytes
-	}
-	info, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	if info.Size() > maxBytes {
-		return fmt.Errorf("image file too large: %s", path)
-	}
-	maxPixels := b.maxImagePixels
-	if maxPixels <= 0 {
-		maxPixels = defaultMaxImagePixels
-	}
-	cfg, _, err := image.DecodeConfig(f)
-	if err != nil {
-		return err
-	}
-	if cfg.Width <= 0 || cfg.Height <= 0 {
-		return fmt.Errorf("invalid image dimensions: %s", path)
-	}
-	if int64(cfg.Width)*int64(cfg.Height) > maxPixels {
-		return fmt.Errorf("image dimensions too large: %s", path)
-	}
-	return nil
-}
-
-func (b *Backend) resolveValidatedImagePath(
-	src string) (string, error) {
-	if strings.ContainsRune(src, 0) {
-		return "", fmt.Errorf(
-			"invalid image path: contains NUL")
-	}
-	cleanPath := filepath.Clean(src)
-	if cleanPath == "." || cleanPath == "" {
-		return "", fmt.Errorf("invalid image path")
-	}
-	pathAbs, err := filepath.Abs(cleanPath)
-	if err != nil {
-		return "", fmt.Errorf("invalid image path: %w", err)
-	}
-	resolvedPath := imgpath.ResolveWithParentFallback(pathAbs)
-	if len(b.allowedImageRoots) > 0 {
-		if err := imgpath.ValidateAllowed(resolvedPath,
-			b.allowedImageRoots); err != nil {
-			return "", err
-		}
-	}
-	return resolvedPath, nil
+	return createMetalTexture(w, h, nrgba.Pix), nil
 }

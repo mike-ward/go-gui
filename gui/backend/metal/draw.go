@@ -16,6 +16,7 @@ import (
 	"github.com/mike-ward/go-glyph"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgload"
 )
 
 // renderersDraw iterates render commands and draws them.
@@ -280,36 +281,32 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 }
 
 func (b *Backend) drawImage(r *gui.RenderCmd) {
-	path := b.imagePathCache[r.Resource]
-	if path == "" {
+	path, ok := b.imagePathCache.Get(r.Resource)
+	if !ok {
 		var err error
-		path, err = b.resolveValidatedImagePath(r.Resource)
-		if len(b.imagePathCache) >= 1024 {
-			clear(b.imagePathCache)
-		}
+		path, err = imgload.ResolveValidatedPath(
+			r.Resource, b.allowedImageRoots)
 		if err != nil {
 			log.Printf("metal: drawImage: %s: %v",
 				r.Resource, err)
-			b.imagePathCache[r.Resource] = "-"
-			return
+			path = "-"
 		}
-		b.imagePathCache[r.Resource] = path
+		b.imagePathCache.Set(r.Resource, path)
 	}
 	if path == "-" {
 		return
 	}
 
-	entry, ok := b.textures.get(path)
+	tex, ok := b.textures.Get(path)
 	if !ok {
 		var err error
-		entry, err = b.loadImageTexture(path)
+		tex, err = b.loadImageTexture(path)
 		if err != nil {
 			log.Printf("metal: drawImage: %v", err)
-			entry = metalTexCacheEntry{}
 		}
-		b.textures.set(path, entry)
+		b.textures.Set(path, tex)
 	}
-	if entry.tex.id == 0 {
+	if tex.id == 0 {
 		return
 	}
 
@@ -329,7 +326,7 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 
 	C.metalSetPipeline(C.int(pipeImageClip))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
-	C.metalBindTexture(C.int(entry.tex.id))
+	C.metalBindTexture(C.int(tex.id))
 
 	z := packParams(r.ClipRadius*s, 0)
 	nc := normColor(255, 255, 255, 255)
@@ -561,14 +558,8 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 	}
 
 	h := gui.ShaderHash(r.Shader)
-	idx, ok := b.customCache[h]
+	idx, ok := b.customCache.Get(h)
 	if !ok {
-		// Flush cache when limit reached to prevent unbounded growth.
-		if len(b.customCache) >= 32 {
-			for k := range b.customCache {
-				delete(b.customCache, k)
-			}
-		}
 		msl := buildCustomMSL(r.Shader.Metal)
 		cmsl := C.CString(msl)
 		idx = C.int(C.metalBuildCustomPipeline(cmsl))
@@ -576,7 +567,7 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 		if idx < 0 {
 			return
 		}
-		b.customCache[h] = idx
+		b.customCache.Set(h, idx)
 	}
 
 	s := b.dpiScale

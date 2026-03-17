@@ -9,17 +9,18 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgload"
 )
 
-func TestResolveValidatedImagePathAllowedRoots(t *testing.T) {
+func TestResolveValidatedPathAllowedRoots(t *testing.T) {
 	root := t.TempDir()
 	imgPath := filepath.Join(root, "img.png")
 	if err := os.WriteFile(imgPath, []byte("x"), 0o644); err != nil {
 		t.Fatalf("write image: %v", err)
 	}
 
-	b := &Backend{allowedImageRoots: []string{root}}
-	got, err := b.resolveValidatedImagePath(imgPath)
+	got, err := imgload.ResolveValidatedPath(imgPath, []string{root})
 	if err != nil {
 		t.Fatalf("resolve path: %v", err)
 	}
@@ -28,7 +29,7 @@ func TestResolveValidatedImagePathAllowedRoots(t *testing.T) {
 	}
 }
 
-func TestResolveValidatedImagePathRejectsOutsideRoots(t *testing.T) {
+func TestResolveValidatedPathRejectsOutsideRoots(t *testing.T) {
 	root := t.TempDir()
 	outsideDir := t.TempDir()
 	imgPath := filepath.Join(outsideDir, "img.png")
@@ -36,13 +37,13 @@ func TestResolveValidatedImagePathRejectsOutsideRoots(t *testing.T) {
 		t.Fatalf("write image: %v", err)
 	}
 
-	b := &Backend{allowedImageRoots: []string{root}}
-	if _, err := b.resolveValidatedImagePath(imgPath); err == nil {
+	if _, err := imgload.ResolveValidatedPath(
+		imgPath, []string{root}); err == nil {
 		t.Fatal("expected disallowed image path")
 	}
 }
 
-func TestValidateImageFileRejectsByBytes(t *testing.T) {
+func TestDecodeNRGBARejectsByBytes(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "big.bin")
 	if err := os.WriteFile(path, make([]byte, 1024), 0o644); err != nil {
 		t.Fatalf("write file: %v", err)
@@ -51,15 +52,14 @@ func TestValidateImageFileRejectsByBytes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
-	b := &Backend{maxImageBytes: 32}
-	if err := b.validateImageFile(path, f); err == nil {
+	if _, err := imgload.DecodeNRGBA(path, f, 32, 0); err == nil {
 		t.Fatal("expected image byte limit error")
 	}
 }
 
-func TestValidateImageFileRejectsByPixels(t *testing.T) {
+func TestDecodeNRGBARejectsByPixels(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "img.png")
 	if err := writePNG(path, 100, 100); err != nil {
 		t.Fatalf("write png: %v", err)
@@ -68,10 +68,10 @@ func TestValidateImageFileRejectsByPixels(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
-	b := &Backend{maxImageBytes: 1 << 20, maxImagePixels: 1000}
-	if err := b.validateImageFile(path, f); err == nil {
+	if _, err := imgload.DecodeNRGBA(
+		path, f, 1<<20, 1000); err == nil {
 		t.Fatal("expected image pixel limit error")
 	}
 }
@@ -87,6 +87,6 @@ func writePNG(path string, w, h int) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	return png.Encode(f, img)
 }

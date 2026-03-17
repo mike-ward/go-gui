@@ -31,6 +31,7 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
+	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 	"github.com/mike-ward/go-gui/gui/svg"
 )
 
@@ -69,15 +70,15 @@ type Backend struct {
 	normBuf            []gui.GradientStop
 	sampledBuf         []gui.GradientStop
 
-	textures    metalTexCache
+	textures    texcache.Cache[string, metalTexture]
 	glyphBack   *metalGlyphBackend
 	filterBlur        float32
 	filterLayer       int
 	filterColorMatrix *[16]float32
-	customCache map[uint64]C.int
+	customCache texcache.Cache[uint64, C.int]
 
 	allowedImageRoots []string
-	imagePathCache    map[string]string
+	imagePathCache    texcache.Cache[string, string]
 	maxImageBytes     int64
 	maxImagePixels    int64
 }
@@ -166,9 +167,9 @@ func New(w *gui.Window) (*Backend, error) {
 		dpiScale:       dpiScale,
 		physW:          int32(dw),
 		physH:          int32(dh),
-		textures:       newMetalTexCache(128),
-		customCache:    make(map[uint64]C.int),
-		imagePathCache: make(map[string]string, 64),
+		textures:       newMetalTexCacheLRU(128),
+		customCache:    texcache.New[uint64, C.int](32, nil),
+		imagePathCache: texcache.New[string, string](1024, nil),
 		maxImageBytes:  cfg.MaxImageBytes,
 		maxImagePixels: cfg.MaxImagePixels,
 	}
@@ -300,6 +301,7 @@ func (b *Backend) renderFrame(w *gui.Window) {
 		C.float(float32(bg.A)/255.0),
 	)
 	if rc != 0 {
+		log.Printf("metal: beginFrame failed (rc=%d)", rc)
 		return
 	}
 
@@ -348,7 +350,7 @@ func Run(w *gui.Window) {
 
 // Destroy releases all backend resources.
 func (b *Backend) Destroy() {
-	b.textures.destroyAll()
+	b.textures.DestroyAll()
 	if b.glyphBack != nil {
 		b.glyphBack.destroy()
 	}

@@ -15,6 +15,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
+	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 	"github.com/mike-ward/go-gui/gui/svg"
 )
 
@@ -35,9 +37,9 @@ type Backend struct {
 	filterPixels       []uint32     // reusable pixel buffer for color matrix
 	svgVerts           []sdl.Vertex // reusable vertex buffer for SVG geometry
 	textPathPlacements []glyph.GlyphPlacement
-	texCache           texCache // image texture cache
+	texCache           texcache.Cache[string, *sdl.Texture]
 	allowedImageRoots  []string
-	imagePathCache     map[string]string
+	imagePathCache     texcache.Cache[string, string]
 	maxImageBytes      int64
 	maxImagePixels     int64
 	normBuf            []gui.GradientStop // reusable buffer for gradient normalization
@@ -123,9 +125,9 @@ func New(w *gui.Window) (*Backend, error) {
 		renderer:          ren,
 		textSys:           textSys,
 		dpiScale:          dpiScale,
-		texCache:          newTexCache(128),
-		allowedImageRoots: normalizeAllowedRoots(cfg.AllowedImageRoots),
-		imagePathCache:    make(map[string]string, 64),
+		texCache:          newSDLTexCache(128),
+		allowedImageRoots: imgpath.NormalizeRoots(cfg.AllowedImageRoots),
+		imagePathCache:    texcache.New[string, string](1024, nil),
 		maxImageBytes:     cfg.MaxImageBytes,
 		maxImagePixels:    cfg.MaxImagePixels,
 	}
@@ -151,7 +153,9 @@ func New(w *gui.Window) (*Backend, error) {
 
 	// Set clipboard functions.
 	w.SetClipboardFn(func(text string) {
-		_ = sdl.SetClipboardText(text)
+		if err := sdl.SetClipboardText(text); err != nil {
+			log.Printf("sdl2: set clipboard: %v", err)
+		}
 	})
 	w.SetClipboardGetFn(func() string {
 		text, _ := sdl.GetClipboardText()
@@ -252,7 +256,7 @@ func Run(w *gui.Window) {
 
 // Destroy releases all backend resources.
 func (b *Backend) Destroy() {
-	b.texCache.destroyAll()
+	b.texCache.DestroyAll()
 	if b.filterPool != nil {
 		_ = b.filterPool.Destroy()
 		b.filterPool = nil

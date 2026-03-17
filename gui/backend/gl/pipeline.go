@@ -10,6 +10,7 @@ import (
 	gogl "github.com/go-gl/gl/v3.3-core/gl"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 )
 
 // pipeline holds a compiled and linked GL program with cached
@@ -34,7 +35,7 @@ type pipelineSet struct {
 	filterTex   pipeline
 	stencil     pipeline
 	custom      pipeline // VsCustomGLSL vertex shader, reused per hash
-	customCache map[uint64]pipeline
+	customCache texcache.Cache[uint64, pipeline]
 }
 
 func (b *Backend) initPipelines() error {
@@ -64,7 +65,12 @@ func (b *Backend) initPipelines() error {
 		}
 		*e.dst = p
 	}
-	b.pipelines.customCache = make(map[uint64]pipeline)
+	b.pipelines.customCache = texcache.New[uint64, pipeline](
+		maxCustomPipelines, func(p pipeline) {
+			if p.program != 0 {
+				gogl.DeleteProgram(p.program)
+			}
+		})
 	return nil
 }
 
@@ -86,10 +92,7 @@ func (b *Backend) destroyPipelines() {
 	destroy(&b.pipelines.filterTex)
 	destroy(&b.pipelines.stencil)
 	destroy(&b.pipelines.custom)
-	for _, p := range b.pipelines.customCache {
-		gogl.DeleteProgram(p.program)
-	}
-	b.pipelines.customCache = nil
+	b.pipelines.customCache.DestroyAll()
 }
 
 func buildPipeline(vsSrc, fsSrc string) (pipeline, error) {
@@ -168,25 +171,18 @@ func linkProgram(vs, fs uint32) (uint32, error) {
 const maxCustomPipelines = 32
 
 // getOrBuildCustomPipeline returns a cached custom shader pipeline
-// or compiles a new one. Flushes the cache when the limit is reached.
+// or compiles a new one. The cache evicts the LRU entry when full.
 func (b *Backend) getOrBuildCustomPipeline(s *gui.Shader) (pipeline, error) {
 	h := gui.ShaderHash(s)
-	if p, ok := b.pipelines.customCache[h]; ok {
+	if p, ok := b.pipelines.customCache.Get(h); ok {
 		return p, nil
-	}
-	// Flush cache when limit reached to prevent unbounded growth.
-	if len(b.pipelines.customCache) >= maxCustomPipelines {
-		for k, p := range b.pipelines.customCache {
-			gogl.DeleteProgram(p.program)
-			delete(b.pipelines.customCache, k)
-		}
 	}
 	fsSrc := gui.BuildGLSLFragment(s.GLSL)
 	p, err := buildPipeline(gui.VsCustomGLSL, fsSrc)
 	if err != nil {
 		return pipeline{}, err
 	}
-	b.pipelines.customCache[h] = p
+	b.pipelines.customCache.Set(h, p)
 	return p, nil
 }
 

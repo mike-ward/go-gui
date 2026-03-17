@@ -11,6 +11,7 @@ import (
 	"github.com/mike-ward/go-glyph"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/backend/internal/imgload"
 )
 
 // renderersDraw iterates render commands and draws them.
@@ -285,36 +286,32 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 }
 
 func (b *Backend) drawImage(r *gui.RenderCmd) {
-	path := b.imagePathCache[r.Resource]
-	if path == "" {
+	path, ok := b.imagePathCache.Get(r.Resource)
+	if !ok {
 		var err error
-		path, err = b.resolveValidatedImagePath(r.Resource)
-		if len(b.imagePathCache) >= 1024 {
-			clear(b.imagePathCache)
-		}
+		path, err = imgload.ResolveValidatedPath(
+			r.Resource, b.allowedImageRoots)
 		if err != nil {
 			log.Printf("gl: drawImage: %s: %v",
 				r.Resource, err)
-			b.imagePathCache[r.Resource] = "-"
-			return
+			path = "-"
 		}
-		b.imagePathCache[r.Resource] = path
+		b.imagePathCache.Set(r.Resource, path)
 	}
 	if path == "-" {
 		return
 	}
 
-	entry, ok := b.textures.get(path)
+	tex, ok := b.textures.Get(path)
 	if !ok {
 		var err error
-		entry, err = b.loadImageTexture(path)
+		tex, err = b.loadImageTexture(path)
 		if err != nil {
 			log.Printf("gl: drawImage: %v", err)
-			entry = glTexCacheEntry{}
 		}
-		b.textures.set(path, entry)
+		b.textures.Set(path, tex)
 	}
-	if entry.tex.id == 0 {
+	if tex.id == 0 {
 		return
 	}
 
@@ -331,7 +328,7 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 	}
 
 	gogl.ActiveTexture(gogl.TEXTURE0)
-	gogl.BindTexture(gogl.TEXTURE_2D, entry.tex.id)
+	gogl.BindTexture(gogl.TEXTURE_2D, tex.id)
 
 	b.usePipeline(&b.pipelines.imageClip)
 	if b.pipelines.imageClip.uTex >= 0 {
