@@ -104,6 +104,4 @@ jobs:
 
       - name: Test
         working-directory: go-gui
-        run: |
-          export PATH="$(go env GOROOT)/misc/wasm:$PATH"
-          GOOS=js GOARCH=wasm go test ./gui/...
+        run: GOOS=js GOARCH=wasm go test -exec="$(go env GOROOT)/misc/wasm/go_js_wasm_exec" ./gui/...
