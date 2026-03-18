@@ -22,6 +22,12 @@ import (
 
 // Parse converts markdown source to []Block.
 func Parse(source string, hardLineBreaks bool) []Block {
+	// Normalize CRLF/CR to LF. The WASM text backend's
+	// Intl.Segmenter treats \r\n as a single grapheme cluster,
+	// preventing newline recognition in code blocks.
+	if strings.ContainsRune(source, '\r') {
+		source = strings.ReplaceAll(source, "\r", "")
+	}
 	source, abbrDefs, footnoteDefs := scanSource(source)
 	abbrMatcher := buildAbbrMatcher(abbrDefs)
 	src := []byte(source)

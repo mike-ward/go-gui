@@ -524,6 +524,25 @@ func TestMarkdownCodeBlockContent(t *testing.T) {
 	}
 }
 
+func TestMarkdownCodeBlockCRLF(t *testing.T) {
+	blocks := parse("```\r\nline1\r\nline2\r\n```")
+	found := false
+	for _, b := range blocks {
+		if b.IsCode {
+			text := RunsToText(b.Runs)
+			if strings.Contains(text, "\r") {
+				t.Error("code block contains \\r after CRLF normalization")
+			}
+			if strings.Contains(text, "line1\nline2") {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected code block with normalized newlines")
+	}
+}
+
 // --- HR ---
 
 func TestMarkdownHR(t *testing.T) {
