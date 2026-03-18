@@ -4531,7 +4531,7 @@ gui.Column(gui.ContainerCfg{
 | Property | Type      | Description                          |
 |----------|-----------|--------------------------------------|
 | Metal    | string    | MSL fragment body                    |
-| GLSL     | string    | GLSL 3.3 fragment body               |
+| GLSL     | string    | GLSL fragment body (desktop GL 3.3 / WebGL2-compatible) |
 | Params   | []float32 | Up to 16 custom floats               |
 
 ## Available Inputs
@@ -5028,4 +5028,3 @@ the rotated box measures to its child size (swapping width/height for
 odd quarter turns).
 `,
 }
-

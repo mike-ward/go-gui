@@ -8,7 +8,7 @@ import (
 // Shader holds custom fragment shader bodies and parameters.
 type Shader struct {
 	Metal  string    // MSL fragment body
-	GLSL   string    // GLSL 3.3 fragment body
+	GLSL   string    // GLSL fragment body. Keep syntax compatible with desktop GL 3.3 and WebGL2 GLSL ES 3.00.
 	Params []float32 // up to 16 custom floats
 }
 

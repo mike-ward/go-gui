@@ -123,13 +123,13 @@ func newBackend(w *gui.Window) *Backend {
 		ctx2d:        ctx2d,
 		glyphBack:    glyphBack,
 		textSys:      textSys,
-		shaders:      newCustomShaderRenderer(doc),
 		dpiScale:     dpiScale,
 		width:        cssW,
 		height:       cssH,
 		imgCache:     make(map[string]js.Value),
 		failedImages: make(map[string]struct{}),
 	}
+	b.shaders = newCustomShaderRenderer(doc, &b.callbacks)
 
 	b.updateCanvasRect()
 
