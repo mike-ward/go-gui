@@ -22,6 +22,7 @@ type Backend struct {
 	ctx2d     js.Value
 	glyphBack *glyphweb.Backend
 	textSys   *glyph.TextSystem
+	shaders   *customShaderRenderer
 	dpiScale  float32
 	width     int
 	height    int
@@ -122,6 +123,7 @@ func newBackend(w *gui.Window) *Backend {
 		ctx2d:        ctx2d,
 		glyphBack:    glyphBack,
 		textSys:      textSys,
+		shaders:      newCustomShaderRenderer(doc),
 		dpiScale:     dpiScale,
 		width:        cssW,
 		height:       cssH,

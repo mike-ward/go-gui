@@ -96,10 +96,11 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			b.beginRotation(r)
 		case gui.RenderRotateEnd:
 			b.endRotation()
+		case gui.RenderCustomShader:
+			b.drawCustomShader(r)
 
 		case gui.RenderFilterComposite,
-			gui.RenderLayoutPlaced,
-			gui.RenderCustomShader:
+			gui.RenderLayoutPlaced:
 			// Unsupported in Canvas2D backend.
 		}
 	}
