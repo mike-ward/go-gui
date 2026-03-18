@@ -87,7 +87,7 @@ type ShowcaseApp struct {
 	ExpandOpen          bool
 
 	CmdButtonCount    int
-	ThemeToggleResult string
+	ThemePickerResult string
 
 	DialogResult string
 	NotifyResult string
@@ -294,7 +294,7 @@ var demoEntries = []DemoEntry{
 
 	{ID: "button", Label: "Button", Group: groupButtons, Summary: "Trigger actions with click and keyboard focus.", Tags: []string{"action", "press", "click"}},
 	{ID: "command_button", Label: "Command Button", Group: groupButtons, Summary: "Button wired to a registered command with auto-label, shortcut hint, and CanExecute.", Tags: []string{"command", "button", "shortcut", "action"}},
-	{ID: "theme_toggle", Label: "Theme Toggle", Group: groupSelection, Summary: "Palette icon dropdown for switching registered themes.", Tags: []string{"theme", "toggle", "palette", "dark", "light"}},
+	{ID: "theme_picker", Label: "Theme Picker", Group: groupSelection, Summary: "Palette icon dropdown for switching registered themes.", Tags: []string{"theme", "picker", "palette", "dark", "light"}},
 	{ID: "progress_bar", Label: "Progress Bar", Group: groupFeedback, Summary: "Determinate and indeterminate progress indicators.", Tags: []string{"progress", "loader", "status"}},
 	{ID: "pulsar", Label: "Pulsar", Group: groupFeedback, Summary: "Animated pulse indicator with optional icons.", Tags: []string{"pulse", "loading", "indicator"}},
 	{ID: "toast", Label: "Toast", Group: groupFeedback, Summary: "Non-blocking notifications with auto-dismiss and actions.", Tags: []string{"notification", "alert", "severity", "stack"}},

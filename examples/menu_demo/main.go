@@ -180,8 +180,8 @@ func menu(w *gui.Window) gui.View {
 			},
 			{
 				ID: "theme",
-				CustomView: gui.ThemeToggle(gui.ThemeToggleCfg{
-					ID: "theme-toggle",
+				CustomView: gui.ThemePicker(gui.ThemePickerCfg{
+					ID: "theme-picker",
 				}),
 			},
 		},

@@ -191,7 +191,7 @@ var componentDemos = map[string]func(*gui.Window) gui.View{
 	"sidebar":             demoSidebar,
 	"dock_layout":         demoDockLayout,
 	"command_button":      demoCommandButton,
-	"theme_toggle":        demoThemeToggle,
+	"theme_picker":        demoThemePicker,
 }
 
 func componentDemo(w *gui.Window, id string) gui.View {

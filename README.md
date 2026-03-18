@@ -343,7 +343,7 @@ gui.Input(gui.InputCfg{
 | InputDate      | `InputDate(InputDateCfg)`           | Date field with picker       |
 | ColorPicker    | `ColorPicker(ColorPickerCfg)`       | RGBA color picker            |
 | Form           | `Form(FormCfg)`                     | Form with validation         |
-| ThemeToggle    | `ThemeToggle(ThemeToggleCfg)`       | Theme switcher               |
+| ThemePicker    | `ThemePicker(ThemePickerCfg)`       | Theme switcher               |
 | CommandPalette | `CommandPalette(CommandPaletteCfg)` | Fuzzy-search command palette |
 
 #### Display

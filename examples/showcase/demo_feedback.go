@@ -216,10 +216,10 @@ func demoCommandButton(w *gui.Window) gui.View {
 	})
 }
 
-func demoThemeToggle(w *gui.Window) gui.View {
+func demoThemePicker(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	t := gui.CurrentTheme()
-	result := app.ThemeToggleResult
+	result := app.ThemePickerResult
 	if result == "" {
 		result = "(none)"
 	}
@@ -233,12 +233,12 @@ func demoThemeToggle(w *gui.Window) gui.View {
 				TextStyle: t.N3,
 				Mode:      gui.TextModeWrap,
 			}),
-			gui.ThemeToggle(gui.ThemeToggleCfg{
-				ID:          "theme-toggle-demo",
+			gui.ThemePicker(gui.ThemePickerCfg{
+				ID:          "theme-picker-demo",
 				FloatAnchor: gui.FloatBottomLeft,
 				FloatTieOff: gui.FloatTopLeft,
 				OnSelect: func(name string, _ *gui.Event, w *gui.Window) {
-					gui.State[ShowcaseApp](w).ThemeToggleResult = name
+					gui.State[ShowcaseApp](w).ThemePickerResult = name
 				},
 			}),
 			gui.Text(gui.TextCfg{

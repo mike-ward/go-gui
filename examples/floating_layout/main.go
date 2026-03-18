@@ -61,8 +61,8 @@ func mainView(w *gui.Window) gui.View {
 					gui.Text(gui.TextCfg{Text: "File"}),
 					fauxEditMenu(theme),
 					gui.Rectangle(gui.RectangleCfg{Sizing: gui.FillFit}),
-					gui.ThemeToggle(gui.ThemeToggleCfg{
-						ID:          "theme-toggle",
+					gui.ThemePicker(gui.ThemePickerCfg{
+						ID:          "theme-picker",
 						IDFocus:     1,
 						FloatAnchor: gui.FloatBottomRight,
 						FloatTieOff: gui.FloatTopRight,

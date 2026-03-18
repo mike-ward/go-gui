@@ -1,7 +1,7 @@
 package gui
 
-// ThemeToggleCfg configures a theme toggle view.
-type ThemeToggleCfg struct {
+// ThemePickerCfg configures a theme picker view.
+type ThemePickerCfg struct {
 	ID              string
 	A11YLabel       string
 	A11YDescription string
@@ -14,19 +14,19 @@ type ThemeToggleCfg struct {
 	FloatOffsetY    float32
 }
 
-// ThemeToggle creates a toggle icon that opens a dropdown of
+// ThemePicker creates a palette icon that opens a dropdown of
 // registered themes for selection.
-func ThemeToggle(cfg ThemeToggleCfg) View {
-	return &themeToggleView{cfg: cfg}
+func ThemePicker(cfg ThemePickerCfg) View {
+	return &themePickerView{cfg: cfg}
 }
 
-type themeToggleView struct {
-	cfg ThemeToggleCfg
+type themePickerView struct {
+	cfg ThemePickerCfg
 }
 
-func (tv *themeToggleView) Content() []View { return nil }
+func (tv *themePickerView) Content() []View { return nil }
 
-func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
+func (tv *themePickerView) GenerateLayout(w *Window) Layout {
 	cfg := &tv.cfg
 	isOpen := StateReadOr[string, bool](w, nsSelect, cfg.ID, false)
 	id := cfg.ID
@@ -93,7 +93,7 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 		ID:        cfg.ID,
 		IDFocus:   idFocus,
 		A11YRole:  AccessRoleButton,
-		A11YLabel: a11yLabel(cfg.A11YLabel, "Theme Toggle"),
+		A11YLabel: a11yLabel(cfg.A11YLabel, "Theme Picker"),
 		Sizing:    cfg.Sizing,
 		Padding:   Some(PaddingSmall),
 		OnClick: func(_ *Layout, e *Event, w *Window) {
@@ -102,7 +102,7 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 			opening := !isOpen
 			ss.Set(id, opening)
 			if opening {
-				themeToggleSyncHighlight(lbID, w)
+				themePickerSyncHighlight(lbID, w)
 			}
 			e.IsHandled = true
 		},
@@ -118,7 +118,7 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 				if e.KeyCode == KeySpace || e.KeyCode == KeyEnter {
 					ss := StateMap[string, bool](w, nsSelect, capModerate)
 					ss.Set(id, true)
-					themeToggleSyncHighlight(lbID, w)
+					themePickerSyncHighlight(lbID, w)
 					e.IsHandled = true
 				}
 				return
@@ -178,9 +178,9 @@ func (tv *themeToggleView) GenerateLayout(w *Window) Layout {
 	}), w)
 }
 
-// themeToggleSyncHighlight sets listbox focus index to match the
-// current theme name.
-func themeToggleSyncHighlight(lbID string, w *Window) {
+// themePickerSyncHighlight sets listbox focus index to match the current
+// theme name.
+func themePickerSyncHighlight(lbID string, w *Window) {
 	names := ThemeRegisteredNames()
 	current := guiTheme.Name
 	idx := 0

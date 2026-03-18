@@ -53,7 +53,7 @@ func catalogPanel(w *gui.Window) gui.View {
 				VAlign:  gui.VAlignMiddle,
 				Content: []gui.View{
 					toggleLocale(app),
-					gui.ThemeToggle(gui.ThemeToggleCfg{
+					gui.ThemePicker(gui.ThemePickerCfg{
 						ID:          "showcase-theme",
 						IDFocus:     9190,
 						FloatAnchor: gui.FloatTopRight,

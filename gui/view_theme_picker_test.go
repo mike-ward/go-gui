@@ -2,16 +2,16 @@ package gui
 
 import "testing"
 
-func TestThemeToggleClosed(t *testing.T) {
+func TestThemePickerClosed(t *testing.T) {
 	w := &Window{}
-	v := ThemeToggle(ThemeToggleCfg{ID: "tt1"})
+	v := ThemePicker(ThemePickerCfg{ID: "tt1"})
 	layout := GenerateViewLayout(v, w)
 	if layout.Shape.ID != "tt1" {
 		t.Errorf("ID = %q", layout.Shape.ID)
 	}
 }
 
-func TestThemeToggleOpen(t *testing.T) {
+func TestThemePickerOpen(t *testing.T) {
 	defer func() {
 		themeRegistryMu.Lock()
 		delete(themeRegistry, "dark-test")
@@ -25,7 +25,7 @@ func TestThemeToggleOpen(t *testing.T) {
 	ss := StateMap[string, bool](w, nsSelect, capModerate)
 	ss.Set("tt-open", true)
 
-	v := ThemeToggle(ThemeToggleCfg{ID: "tt-open"})
+	v := ThemePicker(ThemePickerCfg{ID: "tt-open"})
 	layout := GenerateViewLayout(v, w)
 	// Should have icon + dropdown.
 	if len(layout.Children) < 2 {
@@ -33,7 +33,7 @@ func TestThemeToggleOpen(t *testing.T) {
 	}
 }
 
-func TestThemeToggleSyncHighlight(t *testing.T) {
+func TestThemePickerSyncHighlight(t *testing.T) {
 	savedName := guiTheme.Name
 	defer func() {
 		guiTheme.Name = savedName
@@ -47,7 +47,7 @@ func TestThemeToggleSyncHighlight(t *testing.T) {
 	guiTheme.Name = "beta"
 
 	w := &Window{}
-	themeToggleSyncHighlight("test-lb", w)
+	themePickerSyncHighlight("test-lb", w)
 	idx := StateReadOr[string, int](w, nsListBoxFocus, "test-lb", -1)
 	// "alpha"=0, "beta"=1 (sorted).
 	if idx != 1 {
@@ -55,7 +55,7 @@ func TestThemeToggleSyncHighlight(t *testing.T) {
 	}
 }
 
-func TestThemeToggleSetTheme(t *testing.T) {
+func TestThemePickerSetTheme(t *testing.T) {
 	saved := guiTheme
 	defer SetTheme(saved)
 

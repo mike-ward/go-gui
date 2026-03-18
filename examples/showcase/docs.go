@@ -391,7 +391,7 @@ gui.Badge(gui.BadgeCfg{Label: "150", Max: 99})
 | A11YDescription | string | Accessible description                 |
 `,
 
-	"theme_toggle": `Palette icon that opens a floating dropdown of all
+	"theme_picker": `Palette icon that opens a floating dropdown of all
 registered themes. Clicking a theme applies it immediately via
 w.SetTheme. The dropdown supports keyboard navigation (arrow keys,
 Enter, Escape).
@@ -399,8 +399,8 @@ Enter, Escape).
 ## Usage
 
 ` + "```go" + `
-gui.ThemeToggle(gui.ThemeToggleCfg{
-    ID:          "my-theme-toggle",
+gui.ThemePicker(gui.ThemePickerCfg{
+    ID:          "my-theme-picker",
     FloatAnchor: gui.FloatBottomLeft,
     FloatTieOff: gui.FloatTopLeft,
     OnSelect: func(name string, _ *gui.Event, w *gui.Window) {
@@ -415,8 +415,8 @@ The dropdown is a floating panel. Control its anchor and tie-off
 to place it relative to the icon:
 
 ` + "```go" + `
-gui.ThemeToggle(gui.ThemeToggleCfg{
-    ID:          "tt",
+gui.ThemePicker(gui.ThemePickerCfg{
+    ID:          "tp",
     FloatAnchor: gui.FloatTopRight,
     FloatTieOff: gui.FloatBottomRight,
 })
