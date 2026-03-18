@@ -7,22 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B1000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000001; };
-		B1000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000002; };
-		B1000003 /* GoGuiViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000003; };
 		B1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2000004; };
 		B1000005 /* libgoguiapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B2000005; };
+		B1000006 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B2000009; };
+		B1000007 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B200000A; };
+		B1000008 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B200000B; };
+		B1000009 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B200000C; };
+		B100000A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B200000D; };
+		B100000B /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B200000E; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B2000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		B2000002 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		B2000003 /* GoGuiViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoGuiViewController.swift; sourceTree = "<group>"; };
 		B2000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B2000005 /* libgoguiapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgoguiapp.a; sourceTree = "<group>"; };
 		B2000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B2000007 /* IOSDemo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "IOSDemo-Bridging-Header.h"; sourceTree = "<group>"; };
 		B2000008 /* IOSDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IOSDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2000009 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		B200000A /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		B200000B /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		B200000C /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		B200000D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		B200000E /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -31,6 +36,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				B1000005 /* libgoguiapp.a in Frameworks */,
+				B1000007 /* UIKit.framework in Frameworks */,
+				B1000008 /* Metal.framework in Frameworks */,
+				B1000009 /* QuartzCore.framework in Frameworks */,
+				B100000A /* CoreGraphics.framework in Frameworks */,
+				B100000B /* CoreText.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -42,7 +52,11 @@
 			children = (
 				B4000002 /* IOSDemo */,
 				B2000005 /* libgoguiapp.a */,
-				B2000007 /* IOSDemo-Bridging-Header.h */,
+				B200000A /* UIKit.framework */,
+				B200000B /* Metal.framework */,
+				B200000C /* QuartzCore.framework */,
+				B200000D /* CoreGraphics.framework */,
+				B200000E /* CoreText.framework */,
 				B4000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -50,9 +64,7 @@
 		B4000002 /* IOSDemo */ = {
 			isa = PBXGroup;
 			children = (
-				B2000001 /* AppDelegate.swift */,
-				B2000002 /* SceneDelegate.swift */,
-				B2000003 /* GoGuiViewController.swift */,
+				B2000009 /* main.m */,
 				B2000004 /* Assets.xcassets */,
 				B2000006 /* Info.plist */,
 			);
@@ -94,7 +106,6 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 			};
 			buildConfigurationList = B7000002;
@@ -131,9 +142,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B1000001 /* AppDelegate.swift in Sources */,
-				B1000002 /* SceneDelegate.swift in Sources */,
-				B1000003 /* GoGuiViewController.swift in Sources */,
+				B1000006 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,14 +163,13 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)";
 				OTHER_LDFLAGS = (
+					"-ObjC",
 					"-lresolv",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.IOSDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_OBJC_BRIDGING_HEADER = "IOSDemo-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -180,14 +188,13 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)";
 				OTHER_LDFLAGS = (
+					"-ObjC",
 					"-lresolv",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.IOSDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SUPPORTS_MACCATALYST = NO;
-				SWIFT_OBJC_BRIDGING_HEADER = "IOSDemo-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -205,8 +212,6 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
@@ -222,8 +227,6 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

@@ -4,10 +4,8 @@
 // Compiled as a c-archive and linked into a native Xcode project.
 package main
 
-import "C"
 import (
 	"fmt"
-	"unsafe"
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/ios"
@@ -15,6 +13,16 @@ import (
 
 type App struct {
 	Clicks int
+}
+
+func init() {
+	w := gui.NewWindow(gui.WindowCfg{
+		State: &App{},
+		OnInit: func(w *gui.Window) {
+			w.UpdateView(view)
+		},
+	})
+	ios.SetWindow(w)
 }
 
 func view(w *gui.Window) gui.View {
@@ -52,47 +60,5 @@ func view(w *gui.Window) gui.View {
 		},
 	})
 }
-
-func init() {
-	w := gui.NewWindow(gui.WindowCfg{
-		State: &App{},
-		OnInit: func(w *gui.Window) {
-			w.UpdateView(view)
-		},
-	})
-	ios.SetWindow(w)
-}
-
-//export GoGuiStart
-func GoGuiStart(layerPtr unsafe.Pointer,
-	w, h C.int, scale C.float) {
-	ios.Start(layerPtr, int(w), int(h), float32(scale))
-}
-
-//export GoGuiRender
-func GoGuiRender() { ios.Render() }
-
-//export GoGuiTouchBegan
-func GoGuiTouchBegan(x, y C.float) {
-	ios.TouchBegan(float32(x), float32(y))
-}
-
-//export GoGuiTouchMoved
-func GoGuiTouchMoved(x, y C.float) {
-	ios.TouchMoved(float32(x), float32(y))
-}
-
-//export GoGuiTouchEnded
-func GoGuiTouchEnded(x, y C.float) {
-	ios.TouchEnded(float32(x), float32(y))
-}
-
-//export GoGuiResize
-func GoGuiResize(w, h C.int, scale C.float) {
-	ios.Resize(int(w), int(h), float32(scale))
-}
-
-//export GoGuiDestroy
-func GoGuiDestroy() { ios.CleanUp() }
 
 func main() {}
