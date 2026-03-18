@@ -9,7 +9,6 @@ import (
 	"image/png"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui/markdown"
@@ -174,34 +173,25 @@ func fetchMathAsync(
 		imgH := float32(bounds.Dy())
 		imgDPI := float32(dpi)
 
-		tmpFile, err := os.CreateTemp("",
-			fmt.Sprintf("math_%d_*.png", hash))
+		// Store PNG (temp file on native, data URL on WASM).
+		ref, err := storeDiagramPNG(body, hash, "math")
 		if err != nil {
 			queueDiagramError(w, hash, requestID,
-				"create temp file: "+err.Error())
+				"store PNG: "+err.Error())
 			return
 		}
-		tmpPath := tmpFile.Name()
-		if err := png.Encode(tmpFile, img); err != nil {
-			_ = tmpFile.Close()
-			_ = os.Remove(tmpPath)
-			queueDiagramError(w, hash, requestID,
-				"encode PNG: "+err.Error())
-			return
-		}
-		_ = tmpFile.Close()
 
 		w.QueueCommand(func(w *Window) {
 			if !diagramCacheShouldApplyResult(
 				w.viewState.diagramCache,
 				hash, requestID) {
-				_ = os.Remove(tmpPath)
+				removeDiagramPNG(ref)
 				return
 			}
 			w.viewState.diagramCache.Set(hash,
 				DiagramCacheEntry{
 					State:     DiagramReady,
-					PNGPath:   tmpPath,
+					PNGPath:   ref,
 					Width:     imgW,
 					Height:    imgH,
 					DPI:       imgDPI,

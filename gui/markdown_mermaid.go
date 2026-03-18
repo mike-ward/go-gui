@@ -10,7 +10,6 @@ import (
 	"image/png"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/mike-ward/go-gui/gui/markdown"
@@ -83,7 +82,7 @@ func (c *BoundedDiagramCache) Set(
 	if existing, ok := c.data[key]; ok {
 		if existing.PNGPath != "" &&
 			existing.PNGPath != value.PNGPath {
-			_ = os.Remove(existing.PNGPath)
+			removeDiagramPNG(existing.PNGPath)
 		}
 	}
 	// If new key, evict oldest if at capacity.
@@ -92,7 +91,7 @@ func (c *BoundedDiagramCache) Set(
 			oldest := c.order[0]
 			if oe, ok := c.data[oldest]; ok {
 				if oe.PNGPath != "" {
-					_ = os.Remove(oe.PNGPath)
+					removeDiagramPNG(oe.PNGPath)
 				}
 			}
 			delete(c.data, oldest)
@@ -126,7 +125,7 @@ func (c *BoundedDiagramCache) Len() int {
 func (c *BoundedDiagramCache) Clear() {
 	for _, e := range c.data {
 		if e.PNGPath != "" {
-			_ = os.Remove(e.PNGPath)
+			removeDiagramPNG(e.PNGPath)
 		}
 	}
 	clear(c.data)
@@ -184,31 +183,23 @@ func fetchMermaidAsync(
 		finalW := float32(bounds.Dx())
 		finalH := float32(bounds.Dy())
 
-		// Write to temp file.
-		tmpFile, err := os.CreateTemp("",
-			fmt.Sprintf("mermaid_%d_*.png", hash))
+		// Store PNG (temp file on native, data URL on WASM).
+		ref, err := storeDiagramPNG(body, hash, "mermaid")
 		if err != nil {
 			return
 		}
-		tmpPath := tmpFile.Name()
-		if err := png.Encode(tmpFile, img); err != nil {
-			_ = tmpFile.Close()
-			_ = os.Remove(tmpPath)
-			return
-		}
-		_ = tmpFile.Close()
 
 		w.QueueCommand(func(w *Window) {
 			if !diagramCacheShouldApplyResult(
 				w.viewState.diagramCache,
 				hash, requestID) {
-				_ = os.Remove(tmpPath)
+				removeDiagramPNG(ref)
 				return
 			}
 			w.viewState.diagramCache.Set(hash,
 				DiagramCacheEntry{
 					State:     DiagramReady,
-					PNGPath:   tmpPath,
+					PNGPath:   ref,
 					Width:     finalW,
 					Height:    finalH,
 					RequestID: requestID,
