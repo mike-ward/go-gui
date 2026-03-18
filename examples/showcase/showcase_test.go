@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	glyph "github.com/mike-ward/go-glyph"
 	"github.com/mike-ward/go-gui/gui"
 )
 
@@ -322,19 +323,21 @@ func TestDemoTextLayout(t *testing.T) {
 		}
 	})
 
-	t.Run("vertical gradient demo uses multiline text", func(t *testing.T) {
+	t.Run("vertical gradient config exists", func(t *testing.T) {
 		l, ok := layout.FindByID("text-gradient-vertical")
 		if !ok {
 			t.Fatal("text-gradient-vertical not found")
 		}
-		if l.Shape.TC == nil {
+		if l.Shape.TC == nil || l.Shape.TC.TextStyle == nil {
 			t.Fatal("text-gradient-vertical missing text config")
 		}
-		if l.Shape.TC.TextMode != gui.TextModeMultiline {
-			t.Fatalf("text-gradient-vertical mode = %v, want %v", l.Shape.TC.TextMode, gui.TextModeMultiline)
+		g := l.Shape.TC.TextStyle.Gradient
+		if g == nil {
+			t.Fatal("text-gradient-vertical missing gradient config")
 		}
-		if !strings.Contains(l.Shape.TC.Text, "\n") {
-			t.Fatalf("text-gradient-vertical text = %q, want multiline content", l.Shape.TC.Text)
+		if g.Direction != glyph.GradientVertical {
+			t.Fatalf("direction = %v, want GradientVertical",
+				g.Direction)
 		}
 	})
 
