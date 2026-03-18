@@ -98,8 +98,7 @@ func (b *Backend) drawRect(r *gui.RenderCmd) {
 		return
 	}
 	s := b.dpiScale
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		r.Color, r.Radius*s, 0)
 	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
@@ -107,8 +106,7 @@ func (b *Backend) drawRect(r *gui.RenderCmd) {
 
 func (b *Backend) drawStrokeRect(r *gui.RenderCmd) {
 	s := b.dpiScale
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		r.Color, r.Radius*s, r.Thickness*s)
 	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
@@ -120,8 +118,7 @@ func (b *Backend) drawCircle(r *gui.RenderCmd) {
 	}
 	s := b.dpiScale
 	rad := r.Radius * s
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 	verts := buildQuad(
 		(r.X-r.Radius)*s,
 		(r.Y-r.Radius)*s,
@@ -156,8 +153,7 @@ func (b *Backend) drawLine(r *gui.RenderCmd) {
 		{x0 - nx, y0 - ny, 0, -1, 1, nc.r, nc.g, nc.b, nc.a},
 	}
 
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
 }
 
@@ -176,8 +172,7 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	qw := w + 2*expand
 	qh := h + 2*expand
 
-	C.metalSetPipeline(C.int(pipeShadow))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeShadow)
 
 	tm := identityTM()
 	tm[12] = r.OffsetX * s
@@ -194,8 +189,7 @@ func (b *Backend) drawBlur(r *gui.RenderCmd) {
 	rad := r.Radius * s
 	expand := blur * 1.5
 
-	C.metalSetPipeline(C.int(pipeBlur))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeBlur)
 	tm := identityTM()
 	C.metalSetTM((*C.float)(&tm[0]))
 
@@ -247,8 +241,7 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 	tm[3*4+1] = h / 2
 	tm[3*4+3] = float32(len(stops))
 
-	C.metalSetPipeline(C.int(pipeGradient))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeGradient)
 	C.metalSetTM((*C.float)(&tm[0]))
 
 	verts := buildQuad(x, y, w, h, gui.White, rad, 0)
@@ -269,8 +262,7 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 		{r.X * s, r.Y * s, th, r.H * s},
 		{(r.X+r.W)*s - th, r.Y * s, th, r.H * s},
 	}
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 	for i := range 4 {
 		c := gui.SampleGradientStopColor(
 			r.Gradient.Stops, positions[i])
@@ -318,14 +310,12 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 
 	// Fill background.
 	if r.Color.A > 0 {
-		C.metalSetPipeline(C.int(pipeSolid))
-		C.metalSetMVP((*C.float)(&b.mvp[0]))
+		b.setPipeline(pipeSolid)
 		verts := buildQuad(x, y, w, h, r.Color, 0, 0)
 		C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
 	}
 
-	C.metalSetPipeline(C.int(pipeImageClip))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeImageClip)
 	C.metalBindTexture(C.int(tex.id))
 
 	z := packParams(r.ClipRadius*s, 0)
@@ -404,8 +394,7 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 		}
 	}
 
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 	C.metalDrawTriangles(
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(numVerts))
@@ -440,9 +429,11 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 	}
 
 	b.useGlyphPipeline()
+	b.textQueued = true
 	if err := b.textSys.DrawText(r.X, r.Y, r.Text, cfg); err != nil {
 		log.Printf("ios: DrawText: %v", err)
 	}
+	b.invalidatePipelineState()
 }
 
 func (b *Backend) drawTextPath(r *gui.RenderCmd) {
@@ -513,7 +504,9 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	}
 
 	b.useGlyphPipeline()
+	b.textQueued = true
 	b.textSys.DrawLayoutPlaced(layout, placements)
+	b.invalidatePipelineState()
 }
 
 func (b *Backend) drawLayout(r *gui.RenderCmd) {
@@ -521,13 +514,15 @@ func (b *Backend) drawLayout(r *gui.RenderCmd) {
 		return
 	}
 	b.useGlyphPipeline()
+	b.textQueued = true
 	if r.TextGradient != nil {
 		b.textSys.DrawLayoutWithGradient(
 			*r.LayoutPtr, r.X, r.Y, r.TextGradient,
 		)
-		return
+	} else {
+		b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
 	}
-	b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
+	b.invalidatePipelineState()
 }
 
 func (b *Backend) drawLayoutTransformed(r *gui.RenderCmd) {
@@ -536,16 +531,18 @@ func (b *Backend) drawLayoutTransformed(r *gui.RenderCmd) {
 		return
 	}
 	b.useGlyphPipeline()
+	b.textQueued = true
 	if r.TextGradient != nil {
 		b.textSys.DrawLayoutTransformedWithGradient(
 			*r.LayoutPtr, r.X, r.Y,
 			*r.LayoutTransform, r.TextGradient,
 		)
-		return
+	} else {
+		b.textSys.DrawLayoutTransformed(
+			*r.LayoutPtr, r.X, r.Y, *r.LayoutTransform,
+		)
 	}
-	b.textSys.DrawLayoutTransformed(
-		*r.LayoutPtr, r.X, r.Y, *r.LayoutTransform,
-	)
+	b.invalidatePipelineState()
 }
 
 func (b *Backend) drawRtf(r *gui.RenderCmd) {
@@ -586,6 +583,7 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		r.Color, r.Radius*s, 0)
 	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	b.invalidatePipelineState()
 }
 
 func buildCustomMSL(body string) string {
@@ -663,15 +661,14 @@ fragment float4 fs_main(
 
 func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
 	s := b.dpiScale
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		gui.White, r.Radius*s, 0)
 	C.metalBeginStencilClip(
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(r.StencilDepth))
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.invalidatePipelineState()
+	b.setPipeline(pipeSolid)
 }
 
 func (b *Backend) endStencilClip(r *gui.RenderCmd) {
@@ -681,8 +678,8 @@ func (b *Backend) endStencilClip(r *gui.RenderCmd) {
 	C.metalEndStencilClip(
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(r.StencilDepth))
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.invalidatePipelineState()
+	b.setPipeline(pipeSolid)
 }
 
 // --- Rotation ---
@@ -693,8 +690,8 @@ func (b *Backend) beginRotation(r *gui.RenderCmd) {
 	cx := r.RotCX * s
 	cy := r.RotCY * s
 	applyRotation(&b.mvp, r.RotAngle, cx, cy)
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.mvpDirty = true
+	b.setPipeline(pipeSolid)
 }
 
 func (b *Backend) endRotation() {
@@ -704,8 +701,8 @@ func (b *Backend) endRotation() {
 	}
 	b.mvp = b.mvpStack[n-1]
 	b.mvpStack = b.mvpStack[:n-1]
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.mvpDirty = true
+	b.setPipeline(pipeSolid)
 }
 
 // --- Filter (glow) ---
@@ -715,15 +712,14 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	b.filterLayer = r.Layers
 	b.filterColorMatrix = r.ColorMatrix
 
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeSolid)
 
 	rc := C.metalBeginFilter(C.int(b.physW), C.int(b.physH))
 	if rc != 0 {
 		return
 	}
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.invalidatePipelineState()
+	b.setPipeline(pipeSolid)
 }
 
 func (b *Backend) endFilter() {
@@ -733,6 +729,6 @@ func (b *Backend) endFilter() {
 	}
 	C.metalEndFilter(C.float(b.filterBlur),
 		C.int(b.filterLayer), cmPtr)
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.invalidatePipelineState()
+	b.setPipeline(pipeSolid)
 }

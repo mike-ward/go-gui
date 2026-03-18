@@ -31,7 +31,8 @@
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     CGRect bounds = self.view.bounds;
-    CGFloat scale = [UIScreen mainScreen].scale;
+    UIScreen *screen = self.view.window.screen;
+    CGFloat scale = screen ? screen.scale : 2.0;
 
     CAMetalLayer *layer = (CAMetalLayer *)self.view.layer;
     layer.contentsScale = scale;
@@ -57,7 +58,19 @@
             displayLinkWithTarget:self
             selector:@selector(render:)];
         [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop]
-                               forMode:NSDefaultRunLoopMode];
+                               forMode:NSRunLoopCommonModes];
+
+        [[NSNotificationCenter defaultCenter]
+            addObserver:self
+            selector:@selector(appWillResignActive:)
+            name:UIApplicationWillResignActiveNotification
+            object:nil];
+        [[NSNotificationCenter defaultCenter]
+            addObserver:self
+            selector:@selector(appDidBecomeActive:)
+            name:UIApplicationDidBecomeActiveNotification
+            object:nil];
+
         self.started = YES;
     } else {
         goIOSResize((int)bounds.size.width,
@@ -102,7 +115,16 @@
     goIOSTouchEnded((float)loc.x, (float)loc.y);
 }
 
+- (void)appWillResignActive:(NSNotification *)n {
+    self.displayLink.paused = YES;
+}
+
+- (void)appDidBecomeActive:(NSNotification *)n {
+    self.displayLink.paused = NO;
+}
+
 - (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [self.displayLink invalidate];
 }
 
@@ -118,8 +140,11 @@
 
 - (BOOL)application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)opts {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     self.window = [[UIWindow alloc]
         initWithFrame:[UIScreen mainScreen].bounds];
+#pragma clang diagnostic pop
     self.window.rootViewController =
         [[GoGuiViewController alloc] init];
     [self.window makeKeyAndVisible];

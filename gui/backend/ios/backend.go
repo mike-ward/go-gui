@@ -75,6 +75,11 @@ type Backend struct {
 	imagePathCache    texcache.Cache[string, string]
 	maxImageBytes     int64
 	maxImagePixels    int64
+
+	// Pipeline state tracking to skip redundant CGo calls.
+	lastPipe   int
+	mvpDirty   bool
+	textQueued bool
 }
 
 // --- Pattern A: Go-driven (backend.Run) ---
@@ -122,6 +127,7 @@ func initBackend(layerPtr unsafe.Pointer,
 		imagePathCache: texcache.New[string, string](1024, nil),
 		maxImageBytes:  cfg.MaxImageBytes,
 		maxImagePixels: cfg.MaxImagePixels,
+		lastPipe:       -1,
 	}
 	b.allowedImageRoots = imgpath.NormalizeRoots(
 		cfg.AllowedImageRoots)
@@ -190,16 +196,19 @@ func (b *Backend) renderFrame(w *gui.Window) {
 		return
 	}
 
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.invalidatePipelineState()
+	b.setPipeline(pipeSolid)
 
 	w.Lock()
 	b.renderersDraw(w)
 	w.Unlock()
 
-	// Render queued text.
-	b.useGlyphPipeline()
-	b.textSys.Commit()
+	// Flush queued text.
+	if b.textQueued {
+		b.useGlyphPipeline()
+		b.textSys.Commit()
+		b.textQueued = false
+	}
 
 	C.metalEndFrame()
 }
@@ -236,10 +245,27 @@ func (b *Backend) Destroy() {
 	C.metalDestroy()
 }
 
+// setPipeline sets Metal pipeline and MVP, skipping redundant
+// CGo calls when unchanged.
+func (b *Backend) setPipeline(pipe int) {
+	if pipe == b.lastPipe && !b.mvpDirty {
+		return
+	}
+	C.metalSetPipeline(C.int(pipe))
+	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.lastPipe = pipe
+	b.mvpDirty = false
+}
+
+// invalidatePipelineState forces the next setPipeline to issue
+// CGo calls.
+func (b *Backend) invalidatePipelineState() {
+	b.lastPipe = -1
+}
+
 // useGlyphPipeline sets up Metal state for glyph text rendering.
 func (b *Backend) useGlyphPipeline() {
-	C.metalSetPipeline(C.int(pipeGlyphTex))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	b.setPipeline(pipeGlyphTex)
 }
 
 // --- Exported callbacks for ios_app.m (Pattern A) ---

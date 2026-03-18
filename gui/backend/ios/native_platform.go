@@ -28,8 +28,7 @@ func (n *nativePlatform) OpenURI(uri string) error {
 		return fmt.Errorf("unsupported URI scheme: %q",
 			u.Scheme)
 	}
-	// TODO: implement via UIApplication.openURL CGo call
-	return nil
+	return fmt.Errorf("OpenURI not implemented on iOS")
 }
 
 func (n *nativePlatform) ShowOpenDialog(title, startDir string, extensions []string, allowMultiple bool) gui.PlatformDialogResult {
