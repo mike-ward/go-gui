@@ -16,8 +16,7 @@ import (
 
 // diagramCacheHash computes a cache key for a math expression.
 func diagramCacheHash(mathID string) int64 {
-	h := markdown.MathHash(mathID)
-	return int64((h << 32) | uint64(len(mathID)))
+	return int64(markdown.MathHash(mathID))
 }
 
 // blockedLatexCmds lists TeX commands blocked to prevent

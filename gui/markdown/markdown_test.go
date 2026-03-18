@@ -1015,6 +1015,7 @@ func TestIsSafeURLBlocked(t *testing.T) {
 	blocked := []string{
 		"javascript:alert(1)",
 		"data:text/html,<h1>",
+		"data:image/png;base64,iVBOR",
 		"vbscript:msgbox",
 		"file:///etc/passwd",
 		"blob:http://example.com/x",

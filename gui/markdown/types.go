@@ -6,14 +6,7 @@ package markdown
 
 // Limits for multi-line constructs.
 const (
-	maxBlockquoteLines            = 100
-	maxTableLines                 = 500
-	maxTableColumns               = 100
-	maxListContinuationLines      = 50
-	maxFootnoteContinuationLines  = 20
-	maxParagraphContinuationLines = 100
-	maxCodeBlockLines             = 10000
-	maxMathBlockLines             = 200
+	maxFootnoteContinuationLines = 20
 )
 
 // Source length caps for external API submissions.
@@ -26,7 +19,6 @@ const (
 const (
 	maxAbbreviationDefs = 1000
 	maxFootnoteDefs     = 10000
-	maxLinkDefs         = 10000
 )
 
 // Highlight limits.

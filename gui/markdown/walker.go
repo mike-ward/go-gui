@@ -763,7 +763,9 @@ func scanSource(source string) (string, map[string]string, map[string]string) {
 		if trimmed == "$$" {
 			result = append(result, "```math")
 			i++
-			for i < len(lines) {
+			const maxMathLines = 200
+			mathLines := 0
+			for i < len(lines) && mathLines < maxMathLines {
 				if strings.TrimSpace(lines[i]) == "$$" {
 					result = append(result, "```")
 					i++
@@ -771,6 +773,7 @@ func scanSource(source string) (string, map[string]string, map[string]string) {
 				}
 				result = append(result, lines[i])
 				i++
+				mathLines++
 			}
 			continue
 		}

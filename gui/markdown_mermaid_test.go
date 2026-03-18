@@ -91,3 +91,19 @@ func TestDiagramCacheEviction(t *testing.T) {
 			cache.Len())
 	}
 }
+
+func TestDiagramCacheClear(t *testing.T) {
+	cache := NewBoundedDiagramCache(10)
+	cache.Set(1, DiagramCacheEntry{State: DiagramLoading})
+	cache.Set(2, DiagramCacheEntry{State: DiagramReady})
+	cache.Set(3, DiagramCacheEntry{State: DiagramLoading})
+	cache.Clear()
+	if cache.Len() != 0 {
+		t.Fatalf("expected empty cache after clear: len=%d",
+			cache.Len())
+	}
+	if cache.LoadingCount() != 0 {
+		t.Fatalf("expected zero loading count after clear: got %d",
+			cache.LoadingCount())
+	}
+}

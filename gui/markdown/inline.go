@@ -42,7 +42,7 @@ func IsSafeURL(url string) bool {
 }
 
 // decodePercentPrefix decodes leading percent-encoded bytes
-// (first 20 chars) for scheme detection.
+// (first 40 chars) for scheme detection.
 func decodePercentPrefix(s string) string {
 	limit := len(s)
 	if limit > 40 {
