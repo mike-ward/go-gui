@@ -94,6 +94,7 @@ func groupPicker(app *ShowcaseApp) gui.View {
 			groupPickerItem("Welcome", groupWelcome, app),
 			groupPickerItem("All", groupAll, app),
 			groupPickerItem("Text", groupText, app),
+			groupPickerItem("Buttons", groupButtons, app),
 			groupPickerItem("Input", groupInput, app),
 			groupPickerItem("Selection", groupSelection, app),
 			groupPickerItem("Data", groupData, app),

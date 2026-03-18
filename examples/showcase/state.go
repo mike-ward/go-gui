@@ -11,6 +11,7 @@ const (
 	groupWelcome   = "welcome"
 	groupAll       = "all"
 	groupText      = "text"
+	groupButtons   = "buttons"
 	groupInput     = "input"
 	groupSelection = "selection"
 	groupData      = "data"
@@ -220,6 +221,7 @@ var demoGroups = []DemoGroup{
 	{Key: groupFeedback, Label: "Feedback"},
 	{Key: groupOverlays, Label: "Overlays"},
 	{Key: groupText, Label: "Text"},
+	{Key: groupButtons, Label: "Buttons"},
 	{Key: groupGraphics, Label: "Graphics"},
 }
 
@@ -254,14 +256,14 @@ var demoEntries = []DemoEntry{
 	{ID: "forms", Label: "Forms", Group: groupInput, Summary: "Form runtime with sync and async validation states recreated in example code.", Tags: []string{"form", "validation", "async", "touched", "dirty"}},
 
 	{ID: "listbox", Label: "List Box", Group: groupSelection, Summary: "Single and multi-select list options.", Tags: []string{"list", "multi", "select"}},
-	{ID: "radio", Label: "Radio", Group: groupSelection, Summary: "Single radio control.", Tags: []string{"option", "boolean", "choice"}},
-	{ID: "radio_group", Label: "Radio Button Group", Group: groupSelection, Summary: "Mutually exclusive options in row or column.", Tags: []string{"group", "options", "select"}},
+	{ID: "radio", Label: "Radio", Group: groupButtons, Summary: "Single radio control.", Tags: []string{"option", "boolean", "choice"}},
+	{ID: "radio_group", Label: "Radio Button Group", Group: groupButtons, Summary: "Mutually exclusive options in row or column.", Tags: []string{"group", "options", "select"}},
 	{ID: "slider", Label: "Slider", Group: groupInput, Summary: "Drag horizontal or vertical value controls.", Tags: []string{"slider", "value"}},
 	{ID: "drag_reorder", Label: "Drag Reorder", Group: groupLayout, Summary: "Drag-to-reorder items in lists, tabs, and trees.", Tags: []string{"drag", "reorder", "list", "tabs", "tree", "keyboard"}},
 	{ID: "combobox", Label: "Combobox", Group: groupSelection, Summary: "Single-select with typeahead filtering.", Tags: []string{"dropdown", "filter", "typeahead", "autocomplete"}},
 	{ID: "select", Label: "Select", Group: groupSelection, Summary: "Dropdown with optional multi-select.", Tags: []string{"dropdown", "pick", "options"}},
-	{ID: "switch", Label: "Switch", Group: groupSelection, Summary: "On/off switch control.", Tags: []string{"toggle", "boolean", "control"}},
-	{ID: "toggle", Label: "Toggle", Group: groupSelection, Summary: "Checkbox-style and icon toggles.", Tags: []string{"checkbox", "boolean", "control"}},
+	{ID: "switch", Label: "Switch", Group: groupButtons, Summary: "On/off switch control.", Tags: []string{"toggle", "boolean", "control"}},
+	{ID: "toggle", Label: "Toggle", Group: groupButtons, Summary: "Checkbox-style and icon toggles.", Tags: []string{"checkbox", "boolean", "control"}},
 
 	{ID: "image", Label: "Image", Group: groupGraphics, Summary: "Render local image assets.", Tags: []string{"photo", "asset", "media"}},
 	{ID: "rectangle", Label: "Rectangle", Group: groupGraphics, Summary: "Draw colored shapes with border and radius.", Tags: []string{"shape", "primitive", "box"}},
@@ -290,8 +292,8 @@ var demoEntries = []DemoEntry{
 	{ID: "menus", Label: "Menus + Menubar", Group: groupNav, Summary: "Nested menus, separators, and custom menu items.", Tags: []string{"menu", "menubar", "submenu"}},
 	{ID: "tab_control", Label: "Tab Control", Group: groupNav, Summary: "Switch content panels with keyboard-friendly tabs.", Tags: []string{"tabs", "navigation", "panes"}},
 
-	{ID: "button", Label: "Button", Group: groupSelection, Summary: "Trigger actions with click and keyboard focus.", Tags: []string{"action", "press", "click"}},
-	{ID: "command_button", Label: "Command Button", Group: groupSelection, Summary: "Button wired to a registered command with auto-label, shortcut hint, and CanExecute.", Tags: []string{"command", "button", "shortcut", "action"}},
+	{ID: "button", Label: "Button", Group: groupButtons, Summary: "Trigger actions with click and keyboard focus.", Tags: []string{"action", "press", "click"}},
+	{ID: "command_button", Label: "Command Button", Group: groupButtons, Summary: "Button wired to a registered command with auto-label, shortcut hint, and CanExecute.", Tags: []string{"command", "button", "shortcut", "action"}},
 	{ID: "theme_toggle", Label: "Theme Toggle", Group: groupSelection, Summary: "Palette icon dropdown for switching registered themes.", Tags: []string{"theme", "toggle", "palette", "dark", "light"}},
 	{ID: "progress_bar", Label: "Progress Bar", Group: groupFeedback, Summary: "Determinate and indeterminate progress indicators.", Tags: []string{"progress", "loader", "status"}},
 	{ID: "pulsar", Label: "Pulsar", Group: groupFeedback, Summary: "Animated pulse indicator with optional icons.", Tags: []string{"pulse", "loading", "indicator"}},
