@@ -143,10 +143,9 @@ func layoutWrapTextWalk(layout *Layout, w *Window) {
 	}
 }
 
-// rtfLayoutEntry caches a shaped RTF layout and its height.
+// rtfLayoutEntry caches a shaped RTF layout.
 type rtfLayoutEntry struct {
 	Layout glyph.Layout
-	Height float32
 }
 
 func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
@@ -160,9 +159,12 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 		return
 	}
 
-	// Cross-frame cache: content hash XOR'd with width bits.
+	// Cross-frame cache: content hash XOR'd with width and
+	// base style bits so different styles don't collide.
 	contentKey := rtfRunsKey(tc.RtfRuns)
-	cacheKey := contentKey ^ uint64(math.Float32bits(shape.Width))
+	styleKey := rtfStyleKey(tc.RtfBaseStyle)
+	cacheKey := contentKey ^ styleKey ^
+		uint64(math.Float32bits(shape.Width))
 	vs := &w.viewState
 
 	// Invalidate on theme change.
@@ -176,9 +178,9 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	if vs.rtfLayoutCache != nil {
 		if entry, ok := vs.rtfLayoutCache.Get(cacheKey); ok {
 			tc.RtfLayout = &entry.Layout
-			shape.Height = entry.Height
+			shape.Height = entry.Layout.Height
 			tc.wrapCacheWidth = shape.Width
-			tc.wrapCacheHeight = entry.Height
+			tc.wrapCacheHeight = entry.Layout.Height
 			tc.wrapCacheValid = true
 			return
 		}
@@ -225,7 +227,6 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	}
 	vs.rtfLayoutCache.Set(cacheKey, rtfLayoutEntry{
 		Layout: l,
-		Height: l.Height,
 	})
 }
 

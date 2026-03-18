@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mike-ward/go-gui/gui/markdown"
@@ -129,17 +128,6 @@ var markdownExternalAPIsEnabled bool
 // (CodeCogs/Kroki). Default is disabled.
 func SetMarkdownExternalAPIsEnabled(enabled bool) {
 	markdownExternalAPIsEnabled = enabled
-}
-
-func richTextPlain(rt RichText) string {
-	if len(rt.Runs) == 0 {
-		return ""
-	}
-	var sb strings.Builder
-	for _, r := range rt.Runs {
-		sb.WriteString(r.Text)
-	}
-	return sb.String()
 }
 
 func ensureDiagramCache(w *Window) *BoundedDiagramCache {

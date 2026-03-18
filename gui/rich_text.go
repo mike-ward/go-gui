@@ -4,7 +4,11 @@ package gui
 // paragraphs. These wrap glyph.RichText/StyleRun internally
 // while providing a gui-native API.
 
-import "github.com/mike-ward/go-glyph"
+import (
+	"strings"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 // RichTextRun is a styled segment within a RichText block.
 type RichTextRun struct {
@@ -122,4 +126,27 @@ func (rt RichText) toGlyphRichTextWithMath(
 		})
 	}
 	return glyph.RichText{Runs: runs}, mathHashes
+}
+
+// richTextPlain returns the plain text content of a RichText,
+// falling back to MathLatex for math runs with empty Text.
+func richTextPlain(rt RichText) string {
+	if len(rt.Runs) == 0 {
+		return ""
+	}
+	if len(rt.Runs) == 1 {
+		if rt.Runs[0].Text != "" {
+			return rt.Runs[0].Text
+		}
+		return rt.Runs[0].MathLatex
+	}
+	var sb strings.Builder
+	for _, r := range rt.Runs {
+		if r.Text != "" {
+			sb.WriteString(r.Text)
+		} else {
+			sb.WriteString(r.MathLatex)
+		}
+	}
+	return sb.String()
 }

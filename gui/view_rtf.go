@@ -5,6 +5,7 @@ package gui
 // Supports text wrapping, clickable links, and custom runs.
 
 import (
+	"math"
 	"time"
 
 	"github.com/mike-ward/go-glyph"
@@ -277,7 +278,8 @@ func rtfAmendTooltip(_ *Layout, w *Window) {
 }
 
 // rtfRunsKey computes an FNV-1a hash of RichText content
-// including Link and Tooltip for tooltip/menu block matching.
+// including Link, Tooltip, MathID, and MathLatex for
+// tooltip/menu block matching and cross-frame caching.
 func rtfRunsKey(rt *RichText) uint64 {
 	h := uint64(14695981039346656037)
 	for _, r := range rt.Runs {
@@ -297,7 +299,38 @@ func rtfRunsKey(rt *RichText) uint64 {
 			h ^= uint64(r.Tooltip[i])
 			h *= 1099511628211
 		}
+		h ^= 0x1F
+		h *= 1099511628211
+		for i := 0; i < len(r.MathID); i++ {
+			h ^= uint64(r.MathID[i])
+			h *= 1099511628211
+		}
+		h ^= 0x1F
+		h *= 1099511628211
+		for i := 0; i < len(r.MathLatex); i++ {
+			h ^= uint64(r.MathLatex[i])
+			h *= 1099511628211
+		}
+		h ^= 0x1F // run separator
+		h *= 1099511628211
 	}
+	return h
+}
+
+// rtfStyleKey hashes layout-affecting fields of a base style
+// for use in the cross-frame RTF layout cache key.
+func rtfStyleKey(s glyph.TextStyle) uint64 {
+	h := uint64(14695981039346656037)
+	for i := 0; i < len(s.FontName); i++ {
+		h ^= uint64(s.FontName[i])
+		h *= 1099511628211
+	}
+	h ^= uint64(s.Typeface)
+	h *= 1099511628211
+	h ^= uint64(math.Float32bits(s.Size))
+	h *= 1099511628211
+	h ^= uint64(math.Float32bits(s.LetterSpacing))
+	h *= 1099511628211
 	return h
 }
 
@@ -413,7 +446,8 @@ func rtfLinkMenuView(w *Window, st rtfLinkMenuState) View {
 		Action: func(id string, _ *Event, w *Window) {
 			switch id {
 			case "open_link":
-				if w.nativePlatform != nil {
+				if w.nativePlatform != nil &&
+					markdown.IsSafeURL(link) {
 					_ = w.nativePlatform.OpenURI(link)
 				}
 			case "copy_link":
