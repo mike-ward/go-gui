@@ -80,31 +80,30 @@ func (cv *colorPickerView) GenerateLayout(w *Window) Layout {
 		content = append(content, cpHSVInputs(cfg, hsv))
 	}
 
-	col := &containerView{
-		cfg: ContainerCfg{
-			ID:          cfg.ID,
-			IDFocus:     cfg.IDFocus,
-			A11YRole:    AccessRoleColorWell,
-			A11YLabel:   a11yLabel(cfg.A11YLabel, "Color Picker"),
-			Color:       style.Color,
-			ColorBorder: style.ColorBorder,
-			SizeBorder:  Some(style.SizeBorder),
-			Radius:      Some(style.Radius),
-			Padding:     Some(style.Padding),
-			Spacing:     Some(SpacingSmall),
-			Sizing:      cfg.Sizing,
-			Width:       cfg.Width,
-			Height:      cfg.Height,
-			Content: content,
-			axis:    AxisTopToBottom,
-			AmendLayout: func(layout *Layout, w *Window) {
-				if cfg.IDFocus > 0 && w.IsFocus(cfg.IDFocus) {
-					layout.Shape.ColorBorder = style.ColorBorderFocus
-				}
-			},
+	ccfg := ContainerCfg{
+		ID:          cfg.ID,
+		IDFocus:     cfg.IDFocus,
+		A11YRole:    AccessRoleColorWell,
+		A11YLabel:   a11yLabel(cfg.A11YLabel, "Color Picker"),
+		Color:       style.Color,
+		ColorBorder: style.ColorBorder,
+		SizeBorder:  Some(style.SizeBorder),
+		Radius:      Some(style.Radius),
+		Padding:     Some(style.Padding),
+		Spacing:     Some(SpacingSmall),
+		Sizing:      cfg.Sizing,
+		Width:       cfg.Width,
+		Height:      cfg.Height,
+		axis:        AxisTopToBottom,
+		AmendLayout: func(layout *Layout, w *Window) {
+			if cfg.IDFocus > 0 && w.IsFocus(cfg.IDFocus) {
+				layout.Shape.ColorBorder = style.ColorBorderFocus
+			}
 		},
-		content:   content,
-		shapeType: ShapeRectangle,
+	}
+	col := &containerView{
+		shape:   buildContainerShape(&ccfg),
+		content: content,
 	}
 	return GenerateViewLayout(col, w)
 }

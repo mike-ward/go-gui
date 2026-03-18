@@ -143,54 +143,53 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 	colorBorderFocus := cfg.ColorBorderFocus
 
 	// Build the outer row layout directly.
-	cv := &containerView{
-		cfg: ContainerCfg{
-			ID:          cfg.ID,
-			IDFocus:     cfg.IDFocus,
-			Clip:        clip,
-			A11YRole:    AccessRoleComboBox,
-			A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
-			Color:       cfg.Color,
-			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  Some(sizeBorder),
-			Radius:      Some(radius),
-			Padding:     cfg.Padding,
-			Sizing:      cfg.Sizing,
-			MinWidth:    cfg.MinWidth,
-			MaxWidth:    cfg.MaxWidth,
-			Disabled:    cfg.Disabled,
-			Invisible:   cfg.Invisible,
-			axis:        AxisLeftToRight,
-			AmendLayout: func(layout *Layout, w *Window) {
-				if layout.Shape.Disabled {
-					return
-				}
-				if w.IsFocus(layout.Shape.IDFocus) {
-					layout.Shape.Color = colorFocus
-					layout.Shape.ColorBorder = colorBorderFocus
-				}
-			},
-			OnKeyDown: makeSelectOnKeyDown(&sv.cfg, idScroll),
-			OnClick: func(_ *Layout, e *Event, w *Window) {
-				ss := StateMap[string, bool](
-					w, nsSelect, capModerate)
-				cur, _ := ss.Get(id)
-				ss.Clear()
-				if !cur {
-					ss.Set(id, true)
-					sh := StateMap[string, int](
-						w, nsSelectHL, capModerate)
-					sh.Set(id, selectInitialHighlight(
-						cfg.Selected, cfg.Options))
-				}
-				e.IsHandled = true
-			},
+	ccfg := ContainerCfg{
+		ID:          cfg.ID,
+		IDFocus:     cfg.IDFocus,
+		Clip:        clip,
+		A11YRole:    AccessRoleComboBox,
+		A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
+		Color:       cfg.Color,
+		ColorBorder: cfg.ColorBorder,
+		SizeBorder:  Some(sizeBorder),
+		Radius:      Some(radius),
+		Padding:     cfg.Padding,
+		Sizing:      cfg.Sizing,
+		MinWidth:    cfg.MinWidth,
+		MaxWidth:    cfg.MaxWidth,
+		Disabled:    cfg.Disabled,
+		Invisible:   cfg.Invisible,
+		axis:        AxisLeftToRight,
+		AmendLayout: func(layout *Layout, w *Window) {
+			if layout.Shape.Disabled {
+				return
+			}
+			if w.IsFocus(layout.Shape.IDFocus) {
+				layout.Shape.Color = colorFocus
+				layout.Shape.ColorBorder = colorBorderFocus
+			}
 		},
-		content:   content,
-		shapeType: ShapeRectangle,
+		OnKeyDown: makeSelectOnKeyDown(&sv.cfg, idScroll),
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			ss := StateMap[string, bool](
+				w, nsSelect, capModerate)
+			cur, _ := ss.Get(id)
+			ss.Clear()
+			if !cur {
+				ss.Set(id, true)
+				sh := StateMap[string, int](
+					w, nsSelectHL, capModerate)
+				sh.Set(id, selectInitialHighlight(
+					cfg.Selected, cfg.Options))
+			}
+			e.IsHandled = true
+		},
 	}
-	// Resolve click handler.
-	cv.cfg.OnClick = leftClickOnly(cv.cfg.OnClick)
+	ccfg.OnClick = leftClickOnly(ccfg.OnClick)
+	cv := &containerView{
+		shape:   buildContainerShape(&ccfg),
+		content: content,
+	}
 	return GenerateViewLayout(cv, w)
 }
 

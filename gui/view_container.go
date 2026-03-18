@@ -107,76 +107,31 @@ func applyContainerDefaults(cfg *ContainerCfg) (spacing, sizeBorder, radius floa
 }
 
 // containerView implements View for container-based layouts.
+// Shape is pre-built at factory time so the full ContainerCfg
+// never escapes to heap with the view.
 type containerView struct {
-	cfg       ContainerCfg
-	content   []View
-	shapeType ShapeType
+	shape       *Shape
+	content     []View
+	title       string
+	titleBG     Color
+	colorBorder Color
+	disabled    bool
 }
 
 func (cv *containerView) Content() []View { return cv.content }
 
 func (cv *containerView) GenerateLayout(w *Window) Layout {
-	c := &cv.cfg
-	spacing, sizeBorder, radius, padding := applyContainerDefaults(c)
-	layout := Layout{
-		Shape: &Shape{
-			ShapeType:            cv.shapeType,
-			ID:                   c.ID,
-			IDFocus:              c.IDFocus,
-			Axis:                 c.axis,
-			ScrollbarOrientation: c.scrollbarOrientation,
-			X:                    c.X,
-			Y:                    c.Y,
-			Width:                c.Width,
-			MinWidth:             c.MinWidth,
-			MaxWidth:             c.MaxWidth,
-			Height:               c.Height,
-			MinHeight:            c.MinHeight,
-			MaxHeight:            c.MaxHeight,
-			Clip:                 c.Clip,
-			ClipContents:         c.ClipContents,
-			FocusSkip:            c.FocusSkip,
-			Spacing:              spacing,
-			Sizing:               c.Sizing,
-			Padding:              padding,
-			HAlign:               c.HAlign,
-			VAlign:               c.VAlign,
-			TextDir:              c.TextDir,
-			Radius:               radius,
-			Color:                c.Color,
-			FX:                   cv.makeEffects(),
-			SizeBorder:           sizeBorder,
-			ColorBorder:          c.ColorBorder,
-			Disabled:             c.Disabled,
-			Float:                c.Float,
-			FloatAutoFlip:        c.FloatAutoFlip,
-			FloatAnchor:          c.FloatAnchor,
-			FloatTieOff:          c.FloatTieOff,
-			FloatOffsetX:         c.FloatOffsetX,
-			FloatOffsetY:         c.FloatOffsetY,
-			FloatZIndex:          c.FloatZIndex,
-			IDScroll:             c.IDScroll,
-			OverDraw:             c.OverDraw,
-			ScrollMode:           c.ScrollMode,
-			Events:               cv.makeEvents(),
-			Hero:                 c.Hero,
-			Wrap:                 c.Wrap,
-			Overflow:             c.Overflow,
-			Opacity:              c.Opacity.Get(1.0),
-			A11YRole:             cv.deriveA11YRole(),
-			A11YState:            c.A11YState,
-			A11Y:                 cv.makeA11Y(),
-		},
-	}
-	ApplyFixedSizingConstraints(layout.Shape)
-	addGroupBoxTitle(c, w, &layout)
+	layout := Layout{Shape: cv.shape}
+	addGroupBoxTitle(cv.title, cv.titleBG, cv.colorBorder,
+		cv.disabled, w, &layout)
 	return layout
 }
 
 // addGroupBoxTitle injects floating eraser + text children to render
 // a title label in the container's top border (HTML fieldset style).
-func addGroupBoxTitle(c *ContainerCfg, w *Window, layout *Layout) {
-	if len(c.Title) == 0 {
+func addGroupBoxTitle(title string, titleBG, colorBorder Color,
+	disabled bool, w *Window, layout *Layout) {
+	if len(title) == 0 {
 		return
 	}
 	ts := DefaultTextStyle
@@ -184,21 +139,21 @@ func addGroupBoxTitle(c *ContainerCfg, w *Window, layout *Layout) {
 	var textWidth, fontHeight float32
 	const pad float32 = 5
 	if w.textMeasurer != nil {
-		textWidth = w.textMeasurer.TextWidth(c.Title, ts)
+		textWidth = w.textMeasurer.TextWidth(title, ts)
 		fontHeight = w.textMeasurer.FontHeight(ts)
 	} else {
 		// Fallback for tests without a text measurer.
-		textWidth = float32(len(c.Title)) * 8
+		textWidth = float32(len(title)) * 8
 		fontHeight = 16
 	}
 	// Center the title vertically on the top border line.
 	offset := fontHeight / 2
 
-	eraserColor := c.TitleBG
+	eraserColor := titleBG
 	if !eraserColor.IsSet() {
 		eraserColor = ColorTransparent
 	}
-	if c.Disabled {
+	if disabled {
 		eraserColor = dimAlpha(eraserColor)
 	}
 
@@ -216,8 +171,8 @@ func addGroupBoxTitle(c *ContainerCfg, w *Window, layout *Layout) {
 		},
 	})
 
-	textColor := c.ColorBorder
-	if c.Disabled {
+	textColor := colorBorder
+	if disabled {
 		textColor = dimAlpha(textColor)
 	}
 	ts.Color = textColor
@@ -232,15 +187,14 @@ func addGroupBoxTitle(c *ContainerCfg, w *Window, layout *Layout) {
 			Opacity:   1.0,
 			Float:     true,
 			TC: &ShapeTextConfig{
-				Text:      c.Title,
+				Text:      title,
 				TextStyle: &ts,
 			},
 		},
 	})
 }
 
-func (cv *containerView) makeEffects() *ShapeEffects {
-	c := &cv.cfg
+func makeContainerEffects(c *ContainerCfg) *ShapeEffects {
 	if c.Shadow == nil && c.Gradient == nil &&
 		c.BorderGradient == nil && c.Shader == nil &&
 		c.ColorFilter == nil && c.BlurRadius == 0 {
@@ -256,8 +210,7 @@ func (cv *containerView) makeEffects() *ShapeEffects {
 	}
 }
 
-func (cv *containerView) makeEvents() *EventHandlers {
-	c := &cv.cfg
+func makeContainerEvents(c *ContainerCfg) *EventHandlers {
 	if c.OnClick == nil && c.OnChar == nil &&
 		c.OnKeyDown == nil && c.OnMouseMove == nil &&
 		c.OnMouseUp == nil && c.OnHover == nil &&
@@ -278,21 +231,77 @@ func (cv *containerView) makeEvents() *EventHandlers {
 	}
 }
 
-func (cv *containerView) makeA11Y() *AccessInfo {
-	if cv.cfg.A11Y != nil {
-		return cv.cfg.A11Y
+func makeContainerA11Y(c *ContainerCfg) *AccessInfo {
+	if c.A11Y != nil {
+		return c.A11Y
 	}
-	return makeA11YInfo(cv.cfg.A11YLabel, cv.cfg.A11YDescription)
+	return makeA11YInfo(c.A11YLabel, c.A11YDescription)
 }
 
-func (cv *containerView) deriveA11YRole() AccessRole {
-	if cv.cfg.A11YRole != AccessRoleNone {
-		return cv.cfg.A11YRole
+func deriveContainerA11YRole(c *ContainerCfg) AccessRole {
+	if c.A11YRole != AccessRoleNone {
+		return c.A11YRole
 	}
-	if cv.cfg.IDScroll > 0 {
+	if c.IDScroll > 0 {
 		return AccessRoleScrollArea
 	}
 	return AccessRoleNone
+}
+
+// buildContainerShape constructs a Shape from a ContainerCfg.
+// Used by widgets that build containerView directly.
+func buildContainerShape(cfg *ContainerCfg) *Shape {
+	spacing, sizeBorder, radius, padding := applyContainerDefaults(cfg)
+	shape := &Shape{
+		ShapeType:            ShapeRectangle,
+		ID:                   cfg.ID,
+		IDFocus:              cfg.IDFocus,
+		Axis:                 cfg.axis,
+		ScrollbarOrientation: cfg.scrollbarOrientation,
+		X:                    cfg.X,
+		Y:                    cfg.Y,
+		Width:                cfg.Width,
+		MinWidth:             cfg.MinWidth,
+		MaxWidth:             cfg.MaxWidth,
+		Height:               cfg.Height,
+		MinHeight:            cfg.MinHeight,
+		MaxHeight:            cfg.MaxHeight,
+		Clip:                 cfg.Clip,
+		ClipContents:         cfg.ClipContents,
+		FocusSkip:            cfg.FocusSkip,
+		Spacing:              spacing,
+		Sizing:               cfg.Sizing,
+		Padding:              padding,
+		HAlign:               cfg.HAlign,
+		VAlign:               cfg.VAlign,
+		TextDir:              cfg.TextDir,
+		Radius:               radius,
+		Color:                cfg.Color,
+		FX:                   makeContainerEffects(cfg),
+		SizeBorder:           sizeBorder,
+		ColorBorder:          cfg.ColorBorder,
+		Disabled:             cfg.Disabled,
+		Float:                cfg.Float,
+		FloatAutoFlip:        cfg.FloatAutoFlip,
+		FloatAnchor:          cfg.FloatAnchor,
+		FloatTieOff:          cfg.FloatTieOff,
+		FloatOffsetX:         cfg.FloatOffsetX,
+		FloatOffsetY:         cfg.FloatOffsetY,
+		FloatZIndex:          cfg.FloatZIndex,
+		IDScroll:             cfg.IDScroll,
+		OverDraw:             cfg.OverDraw,
+		ScrollMode:           cfg.ScrollMode,
+		Events:               makeContainerEvents(cfg),
+		Hero:                 cfg.Hero,
+		Wrap:                 cfg.Wrap,
+		Overflow:             cfg.Overflow,
+		Opacity:              cfg.Opacity.Get(1.0),
+		A11YRole:             deriveContainerA11YRole(cfg),
+		A11YState:            cfg.A11YState,
+		A11Y:                 makeContainerA11Y(cfg),
+	}
+	ApplyFixedSizingConstraints(shape)
+	return shape
 }
 
 // container is the fundamental layout builder. Factory
@@ -319,9 +328,12 @@ func container(cfg ContainerCfg) View {
 	}
 
 	return &containerView{
-		cfg:       cfg,
-		content:   content,
-		shapeType: ShapeRectangle,
+		shape:       buildContainerShape(&cfg),
+		content:     content,
+		title:       cfg.Title,
+		titleBG:     cfg.TitleBG,
+		colorBorder: cfg.ColorBorder,
+		disabled:    cfg.Disabled,
 	}
 }
 
@@ -354,7 +366,7 @@ func Canvas(cfg ContainerCfg) View {
 func Circle(cfg ContainerCfg) View {
 	cfg.axis = AxisTopToBottom
 	cv := container(cfg).(*containerView)
-	cv.shapeType = ShapeCircle
+	cv.shape.ShapeType = ShapeCircle
 	return cv
 }
 
@@ -375,12 +387,12 @@ func appendScrollbar(content []View, override *ScrollbarCfg, orientation Scrollb
 }
 
 func invisibleContainerView() *containerView {
+	cfg := ContainerCfg{
+		Disabled: true,
+		OverDraw: true,
+		Padding:  NoPadding,
+	}
 	return &containerView{
-		cfg: ContainerCfg{
-			Disabled: true,
-			OverDraw: true,
-			Padding:  NoPadding,
-		},
-		shapeType: ShapeRectangle,
+		shape: buildContainerShape(&cfg),
 	}
 }

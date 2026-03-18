@@ -242,46 +242,46 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	colorBorderFocus := cfg.ColorBorderFocus
 	idFocus := cfg.IDFocus
 
-	outerRow := &containerView{
-		cfg: ContainerCfg{
-			ID:          cfg.ID,
-			IDFocus:     idFocus,
-			A11YRole:    AccessRoleComboBox,
-			A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
-			Color:       cfg.Color,
-			ColorBorder: cfg.ColorBorder,
-			SizeBorder:  Some(sizeBorder),
-			Radius:      Some(radius),
-			Padding:     cfg.Padding,
-			Sizing:      cfg.Sizing,
-			MinWidth:    cfg.MinWidth,
-			MaxWidth:    cfg.MaxWidth,
-			Disabled:    cfg.Disabled,
-			axis:        AxisLeftToRight,
-			AmendLayout: func(layout *Layout, w *Window) {
-				if layout.Shape.Disabled {
-					return
-				}
-				if w.IsFocus(layout.Shape.IDFocus) {
-					layout.Shape.Color = colorFocus
-					layout.Shape.ColorBorder = colorBorderFocus
-				}
-			},
-			OnKeyDown: makeComboboxOnKeyDown(cfg.ID, onSelect, idFocus, filteredIDs, cfg.IDScroll, rowH, listH),
-			OnChar:    makeComboboxOnChar(cfg.ID),
-			OnClick: func(_ *Layout, e *Event, w *Window) {
-				if isOpen {
-					comboboxClose(cfgID, w)
-				} else {
-					comboboxOpen(cfgID, idFocus, w)
-				}
-				e.IsHandled = true
-			},
+	ccfg := ContainerCfg{
+		ID:          cfg.ID,
+		IDFocus:     idFocus,
+		A11YRole:    AccessRoleComboBox,
+		A11YLabel:   a11yLabel(cfg.A11YLabel, cfg.Placeholder),
+		Color:       cfg.Color,
+		ColorBorder: cfg.ColorBorder,
+		SizeBorder:  Some(sizeBorder),
+		Radius:      Some(radius),
+		Padding:     cfg.Padding,
+		Sizing:      cfg.Sizing,
+		MinWidth:    cfg.MinWidth,
+		MaxWidth:    cfg.MaxWidth,
+		Disabled:    cfg.Disabled,
+		axis:        AxisLeftToRight,
+		AmendLayout: func(layout *Layout, w *Window) {
+			if layout.Shape.Disabled {
+				return
+			}
+			if w.IsFocus(layout.Shape.IDFocus) {
+				layout.Shape.Color = colorFocus
+				layout.Shape.ColorBorder = colorBorderFocus
+			}
 		},
-		content:   content,
-		shapeType: ShapeRectangle,
+		OnKeyDown: makeComboboxOnKeyDown(cfg.ID, onSelect, idFocus, filteredIDs, cfg.IDScroll, rowH, listH),
+		OnChar:    makeComboboxOnChar(cfg.ID),
+		OnClick: func(_ *Layout, e *Event, w *Window) {
+			if isOpen {
+				comboboxClose(cfgID, w)
+			} else {
+				comboboxOpen(cfgID, idFocus, w)
+			}
+			e.IsHandled = true
+		},
 	}
-	outerRow.cfg.OnClick = leftClickOnly(outerRow.cfg.OnClick)
+	ccfg.OnClick = leftClickOnly(ccfg.OnClick)
+	outerRow := &containerView{
+		shape:   buildContainerShape(&ccfg),
+		content: content,
+	}
 	return GenerateViewLayout(outerRow, w)
 }
 

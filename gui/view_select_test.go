@@ -92,9 +92,9 @@ func TestSelectOptionViewOnClickFires(t *testing.T) {
 
 	w := &Window{}
 	e := &Event{MouseButton: MouseLeft}
-	// The OnClick is on the containerView's cfg.
-	if cv.cfg.OnClick != nil {
-		cv.cfg.OnClick(nil, e, w)
+	// The OnClick is on the containerView's shape events.
+	if cv.shape.Events != nil && cv.shape.Events.OnClick != nil {
+		cv.shape.Events.OnClick(nil, e, w)
 	}
 	if !fired {
 		t.Error("OnSelect not fired")
