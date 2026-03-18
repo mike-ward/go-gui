@@ -501,7 +501,7 @@ func (w *mdWalker) walkInline(
 		e := node.(*emast.Emoji)
 		if len(e.Value.Unicode) > 0 {
 			return append(dst, w.makeRun(
-				string(e.Value.Unicode[0]), state))
+				string(e.Value.Unicode), state))
 		}
 		return append(dst, w.makeRun(
 			":"+string(e.ShortName)+":", state))
