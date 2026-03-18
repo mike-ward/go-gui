@@ -55,6 +55,7 @@ void metalBindTexture(int id);
 
 // Custom shader pipelines
 int  metalBuildCustomPipeline(const char* mslSrc);
+void metalDeleteCustomPipeline(int idx);
 void metalSetCustomPipeline(int idx);
 
 // Filter (glow) system

@@ -560,6 +560,9 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 	h := gui.ShaderHash(r.Shader)
 	idx, ok := b.customCache.Get(h)
 	if !ok {
+		if b.customCache.Len() >= maxCustomPipelines {
+			b.customCache.EvictOldest()
+		}
 		msl := buildCustomMSL(r.Shader.Metal)
 		cmsl := C.CString(msl)
 		idx = C.int(C.metalBuildCustomPipeline(cmsl))

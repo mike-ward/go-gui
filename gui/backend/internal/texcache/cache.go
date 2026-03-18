@@ -44,6 +44,27 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return me.val, true
 }
 
+// Len returns the number of cached entries.
+func (c *Cache[K, V]) Len() int {
+	return len(c.data)
+}
+
+// EvictOldest removes the least-recently-used entry.
+// It returns false if the cache is empty.
+func (c *Cache[K, V]) EvictOldest() bool {
+	if c.order.Len() == 0 {
+		return false
+	}
+	front := c.order.Front()
+	evictKey := front.Value.(K)
+	c.order.Remove(front)
+	if c.destroy != nil {
+		c.destroy(c.data[evictKey].val)
+	}
+	delete(c.data, evictKey)
+	return true
+}
+
 // Set inserts or updates key. If the cache is full the
 // least-recently-used entry is evicted first.
 func (c *Cache[K, V]) Set(key K, val V) {
@@ -57,13 +78,7 @@ func (c *Cache[K, V]) Set(key K, val V) {
 		return
 	}
 	if c.order.Len() >= c.maxSize {
-		front := c.order.Front()
-		evictKey := front.Value.(K)
-		c.order.Remove(front)
-		if c.destroy != nil {
-			c.destroy(c.data[evictKey].val)
-		}
-		delete(c.data, evictKey)
+		c.EvictOldest()
 	}
 	elem := c.order.PushBack(key)
 	c.data[key] = mapEntry[V]{val: val, elem: elem}
@@ -77,6 +92,6 @@ func (c *Cache[K, V]) DestroyAll() {
 			c.destroy(me.val)
 		}
 	}
-	c.data = nil
+	c.data = make(map[K]mapEntry[V], c.maxSize)
 	c.order.Init()
 }

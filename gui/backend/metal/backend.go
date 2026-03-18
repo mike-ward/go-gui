@@ -51,6 +51,8 @@ const (
 	pipeStencil     = C.PIPE_STENCIL
 )
 
+const maxCustomPipelines = 32
+
 // Backend is the Metal backend for go-gui.
 type Backend struct {
 	window    *sdl.Window
@@ -65,17 +67,17 @@ type Backend struct {
 	mvpStack [][16]float32
 
 	// Reusable buffers.
-	svgVerts []vertex
+	svgVerts           []vertex
 	textPathPlacements []glyph.GlyphPlacement
 	normBuf            []gui.GradientStop
 	sampledBuf         []gui.GradientStop
 
-	textures    texcache.Cache[string, metalTexture]
-	glyphBack   *metalGlyphBackend
+	textures          texcache.Cache[string, metalTexture]
+	glyphBack         *metalGlyphBackend
 	filterBlur        float32
 	filterLayer       int
 	filterColorMatrix *[16]float32
-	customCache texcache.Cache[uint64, C.int]
+	customCache       texcache.Cache[uint64, C.int]
 
 	allowedImageRoots []string
 	imagePathCache    texcache.Cache[string, string]
@@ -162,13 +164,16 @@ func New(w *gui.Window) (*Backend, error) {
 	C.metalResize(dw, dh)
 
 	b := &Backend{
-		window:         win,
-		metalView:      metalView,
-		dpiScale:       dpiScale,
-		physW:          int32(dw),
-		physH:          int32(dh),
-		textures:       newMetalTexCacheLRU(128),
-		customCache:    texcache.New[uint64, C.int](32, nil),
+		window:    win,
+		metalView: metalView,
+		dpiScale:  dpiScale,
+		physW:     int32(dw),
+		physH:     int32(dh),
+		textures:  newMetalTexCacheLRU(128),
+		customCache: texcache.New[uint64, C.int](
+			maxCustomPipelines,
+			func(idx C.int) { C.metalDeleteCustomPipeline(idx) },
+		),
 		imagePathCache: texcache.New[string, string](1024, nil),
 		maxImageBytes:  cfg.MaxImageBytes,
 		maxImagePixels: cfg.MaxImagePixels,
@@ -351,6 +356,7 @@ func Run(w *gui.Window) {
 // Destroy releases all backend resources.
 func (b *Backend) Destroy() {
 	b.textures.DestroyAll()
+	b.customCache.DestroyAll()
 	if b.glyphBack != nil {
 		b.glyphBack.destroy()
 	}

@@ -859,14 +859,11 @@ int metalInit(void* layerPtr) {
 #define MAX_CUSTOM_PIPELINES 32
 static id<MTLRenderPipelineState>
     _customPipelines[MAX_CUSTOM_PIPELINES];
-static int _customPipelineCount = 0;
+static int _freeCustomPipelineIDs[MAX_CUSTOM_PIPELINES];
+static int _freeCustomPipelineCount = 0;
+static int _nextCustomPipelineID = 0;
 
 int metalBuildCustomPipeline(const char* mslSrc) {
-    if (_customPipelineCount >= MAX_CUSTOM_PIPELINES) {
-        for (int i = 0; i < _customPipelineCount; i++)
-            _customPipelines[i] = nil;
-        _customPipelineCount = 0;
-    }
     NSString *src = [NSString stringWithUTF8String:mslSrc];
     NSError *err = nil;
     id<MTLLibrary> lib =
@@ -909,13 +906,36 @@ int metalBuildCustomPipeline(const char* mslSrc) {
         return -1;
     }
 
-    int idx = _customPipelineCount++;
+    int idx = 0;
+    if (_freeCustomPipelineCount > 0) {
+        idx = _freeCustomPipelineIDs[--_freeCustomPipelineCount];
+    } else {
+        if (_nextCustomPipelineID >= MAX_CUSTOM_PIPELINES) {
+            NSLog(@"metal: custom pipeline cache exhausted");
+            return -1;
+        }
+        idx = _nextCustomPipelineID++;
+    }
     _customPipelines[idx] = pso;
     return idx;
 }
 
+void metalDeleteCustomPipeline(int idx) {
+    if (idx < 0 || idx >= MAX_CUSTOM_PIPELINES) {
+        return;
+    }
+    if (!_customPipelines[idx]) {
+        return;
+    }
+    _customPipelines[idx] = nil;
+    if (_freeCustomPipelineCount < MAX_CUSTOM_PIPELINES) {
+        _freeCustomPipelineIDs[_freeCustomPipelineCount++] = idx;
+    }
+}
+
 void metalSetCustomPipeline(int idx) {
-    if (!_enc || idx < 0 || idx >= _customPipelineCount)
+    if (!_enc || idx < 0 || idx >= MAX_CUSTOM_PIPELINES ||
+        !_customPipelines[idx])
         return;
     [_enc setRenderPipelineState:_customPipelines[idx]];
 }
@@ -946,10 +966,11 @@ void metalDestroy(void) {
     for (int i = 0; i < PIPE_COUNT; i++) {
         _pipelines[i] = nil;
     }
-    for (int i = 0; i < _customPipelineCount; i++) {
+    for (int i = 0; i < MAX_CUSTOM_PIPELINES; i++) {
         _customPipelines[i] = nil;
     }
-    _customPipelineCount = 0;
+    _nextCustomPipelineID = 0;
+    _freeCustomPipelineCount = 0;
     _quadIdx = nil;
     _sampler = nil;
     _queue   = nil;

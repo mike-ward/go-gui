@@ -16,7 +16,11 @@ import (
 )
 
 const (
-	DefaultMaxImageBytes  = int64(16 * 1024 * 1024)
+	// DefaultMaxImageBytes is the default maximum encoded image
+	// size accepted by DecodeNRGBA.
+	DefaultMaxImageBytes = int64(16 * 1024 * 1024)
+	// DefaultMaxImagePixels is the default maximum decoded pixel
+	// count accepted by DecodeNRGBA.
 	DefaultMaxImagePixels = int64(40_000_000)
 )
 
