@@ -29,10 +29,15 @@ between layout and rendering.
 
 ## Features
 
-- 45+ built-in widgets (buttons, inputs, sliders, tables, trees, tabs, …)
+- 50+ built-in widgets (buttons, inputs, sliders, tables, trees, tabs, …)
 - Stateless view model — views are plain functions
 - Full animation subsystem with keyframe and spring animations
 - GPU-accelerated rendering via SDL2 + Metal/OpenGL shaders
+- Web/WASM backend — Canvas2D rendering with custom WebGL shaders,
+  runs in any modern browser
+- iOS backend — Metal rendering, UIKit windowing, touch events
+- Command registry with global hotkeys, shortcut hints, and
+  fuzzy-search command palette
 - DataGrid with virtualization, sorting, grouping, inline editing,
   CSV/TSV/XLSX/PDF export, and async data sources
 - Rich text input — multiline, click-to-cursor, drag-to-select,
@@ -42,9 +47,14 @@ between layout and rendering.
   copy-to-clipboard
 - SVG loading, caching, and tessellation
 - Dock layout with drag-and-drop and tab groups
+- ColorFilter post-processing — grayscale, sepia, brightness, contrast,
+  hue rotate, invert, saturation, and composable filter chains
+- ClipContents — stencil-based rounded-rect clip masking for containers
+- RotatedBox — quarter-turn rotation for any widget subtree
 - Embedded Feather icon font with themed icon text styles
-- OS-level spell check for text inputs (macOS NSSpellChecker)
-- IME support and accessibility tree
+- OS-level spell check for text inputs (macOS NSSpellChecker,
+  Linux Hunspell)
+- IME support and accessibility tree (macOS, Linux AT-SPI2)
 - Native dialogs, notifications, and print/PDF
 - Locale and i18n support
 - Theme system with built-in dark/light variants and custom theme support
@@ -133,9 +143,11 @@ backend.Run(w) // Metal on macOS, GL on Linux/Windows
 To force a specific backend, import it directly:
 
 ```go
-import metal   "github.com/mike-ward/go-gui/gui/backend/metal"  // macOS only
-import gl      "github.com/mike-ward/go-gui/gui/backend/gl"     // cross-platform
-import sdl2    "github.com/mike-ward/go-gui/gui/backend/sdl2"   // software fallback
+import metal "github.com/mike-ward/go-gui/gui/backend/metal" // macOS only
+import gl    "github.com/mike-ward/go-gui/gui/backend/gl"    // cross-platform
+import sdl2  "github.com/mike-ward/go-gui/gui/backend/sdl2"  // software fallback
+import web   "github.com/mike-ward/go-gui/gui/backend/web"   // WASM/browser
+import ios   "github.com/mike-ward/go-gui/gui/backend/ios"   // iOS
 ```
 
 ## Quick Start
@@ -199,36 +211,41 @@ func mainView(w *gui.Window) gui.View {
 ```
 
 See [`examples/get_started/`](examples/get_started/) for the full runnable
-version.
+version. For the WASM/browser version, see [`examples/web_demo/`](examples/web_demo/).
 
 ### More Examples
 
-| Directory                                                  | Description                             |
-| ---------------------------------------------------------- | --------------------------------------- |
-| [`animations`](examples/animations/)                       | Animation subsystem showcase            |
-| [`benchmark`](examples/benchmark/)                         | Frame timing and allocation benchmarks  |
-| [`blur_demo`](examples/blur_demo/)                         | Blur visual effect                      |
-| [`calculator`](examples/calculator/)                       | Styled desktop calculator               |
-| [`color_picker`](examples/color_picker/)                   | Color picker widget                     |
-| [`context_menu`](examples/context_menu/)                   | Right-click context menus               |
-| [`custom_shader`](examples/custom_shader/)                 | Custom GPU shader rendering             |
-| [`data_grid_data_source`](examples/data_grid_data_source/) | DataGrid with async data source         |
-| [`date_picker_options`](examples/date_picker_options/)     | Date picker configurations              |
-| [`dialogs`](examples/dialogs/)                             | Native and custom dialogs               |
-| [`draw_canvas`](examples/draw_canvas/)                     | Custom-draw canvas surface              |
-| [`floating_layout`](examples/floating_layout/)             | Float-anchored overlay positioning      |
-| [`gradient_demo`](examples/gradient_demo/)                 | OpenGL gradient rendering               |
-| [`listbox`](examples/listbox/)                             | ListBox widget demo                     |
-| [`markdown`](examples/markdown/)                           | Markdown rendering with code-block copy |
-| [`menu_demo`](examples/menu_demo/)                         | Pull-down menu bar                      |
-| [`multiline_input`](examples/multiline_input/)             | Multiline text input                    |
-| [`rtf`](examples/rtf/)                                     | RTF document viewer                     |
-| [`scroll_demo`](examples/scroll_demo/)                     | Scrollable content layouts              |
-| [`shadow_demo`](examples/shadow_demo/)                     | Box shadow effects                      |
-| [`showcase`](examples/showcase/)                           | Interactive widget showcase             |
-| [`snake`](examples/snake/)                                 | Snake game                              |
-| [`svg`](examples/svg/)                                     | SVG loading and display                 |
-| [`todo`](examples/todo/)                                   | Classic todo app                        |
+| Directory                                                  | Description                                 |
+| ---------------------------------------------------------- | ------------------------------------------- |
+| [`animations`](examples/animations/)                       | Animation subsystem showcase                |
+| [`benchmark`](examples/benchmark/)                         | Frame timing and allocation benchmarks      |
+| [`blur_demo`](examples/blur_demo/)                         | Blur visual effect                          |
+| [`calculator`](examples/calculator/)                       | Styled desktop calculator                   |
+| [`color_picker`](examples/color_picker/)                   | Color picker widget                         |
+| [`command_demo`](examples/command_demo/)                   | Command registry, hotkeys, command palette  |
+| [`context_menu`](examples/context_menu/)                   | Right-click context menus                   |
+| [`custom_shader`](examples/custom_shader/)                 | Custom GPU shader rendering                 |
+| [`data_grid_data_source`](examples/data_grid_data_source/) | DataGrid with async data source             |
+| [`date_picker_options`](examples/date_picker_options/)     | Date picker configurations                  |
+| [`dialogs`](examples/dialogs/)                             | Native and custom dialogs                   |
+| [`dock_layout`](examples/dock_layout/)                     | IDE-style docking panels with drag-and-drop |
+| [`draw_canvas`](examples/draw_canvas/)                     | Custom-draw canvas surface                  |
+| [`floating_layout`](examples/floating_layout/)             | Float-anchored overlay positioning          |
+| [`gradient_demo`](examples/gradient_demo/)                 | OpenGL gradient rendering                   |
+| [`ios_demo`](examples/ios_demo/)                           | iOS demo app (Metal + UIKit)                |
+| [`listbox`](examples/listbox/)                             | ListBox widget demo                         |
+| [`markdown`](examples/markdown/)                           | Markdown rendering with code-block copy     |
+| [`menu_demo`](examples/menu_demo/)                         | Pull-down menu bar                          |
+| [`multiline_input`](examples/multiline_input/)             | Multiline text input                        |
+| [`rotated_box`](examples/rotated_box/)                     | Quarter-turn rotation widget                |
+| [`rtf`](examples/rtf/)                                     | RTF document viewer                         |
+| [`scroll_demo`](examples/scroll_demo/)                     | Scrollable content layouts                  |
+| [`shadow_demo`](examples/shadow_demo/)                     | Box shadow effects                          |
+| [`showcase`](examples/showcase/)                           | Interactive widget showcase                 |
+| [`snake`](examples/snake/)                                 | Snake game                                  |
+| [`svg`](examples/svg/)                                     | SVG loading and display                     |
+| [`todo`](examples/todo/)                                   | Classic todo app                            |
+| [`web_demo`](examples/web_demo/)                           | Browser demo via WASM                       |
 
 ## Core Concepts
 
@@ -307,6 +324,7 @@ gui.Input(gui.InputCfg{
 | Splitter      | `Split(SplitterCfg)`              | Resizable two-pane split   |
 | DockLayout    | `DockLayout(DockCfg)`             | Drag-and-drop dock areas   |
 | OverflowPanel | `OverflowPanel(OverflowPanelCfg)` | Wraps overflowing children |
+| RotatedBox    | `RotatedBox(RotatedBoxCfg)`       | Quarter-turn rotation      |
 
 #### Input
 
@@ -383,8 +401,11 @@ Go-Gui separates rendering concerns into injectable interfaces:
 | `NativePlatform` | Native dialogs, notifications, print, a11y |
 
 The SDL2 backend (`gui/backend/sdl2`) implements all three and wires itself
-into the window on `sdl2.New(w)`. Custom backends implement the interfaces
-and call the corresponding `w.Set*` methods.
+into the window on `sdl2.New(w)`. The Web/WASM backend (`gui/backend/web`)
+renders via Canvas2D with WebGL custom shaders. The iOS backend
+(`gui/backend/ios`) uses Metal rendering and UIKit windowing with touch
+event translation. Custom backends implement the interfaces and call the
+corresponding `w.Set*` methods.
 
 The headless test backend (`gui/backend/test`) provides a no-op
 implementation used by all unit tests.
@@ -434,6 +455,10 @@ implementation used by all unit tests.
 │  backend/    │  backend/gl/  │  backend/filedialog/  │
 │  metal/      │  OpenGL       │  backend/printdialog/ │
 │  Metal(macOS)│               │                       │
+├──────────────┼───────────────┼───────────────────────┤
+│  backend/    │  backend/ios/ │  backend/spellcheck/  │
+│  web/        │  Metal+UIKit  │  backend/atspi/       │
+│  WASM+Canvas │  (iOS)        │  (Linux a11y)         │
 └──────────────┴───────────────┴───────────────────────┘
         │
 ┌───────▼───────┐
