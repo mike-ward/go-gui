@@ -50,11 +50,11 @@ func demoRow(_ *gui.Window) gui.View {
 		Spacing: gui.SomeF(12),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
-			gui.Text(gui.TextCfg{Text: "Evenly spaced row:", TextStyle: t.B3}),
+			gui.Text(gui.TextCfg{Text: "Left-aligned (default):", TextStyle: t.B3}),
 			gui.Row(gui.ContainerCfg{
-				Sizing:  gui.FillFit,
-				Spacing: gui.SomeF(8),
-				Padding: gui.NoPadding,
+				Sizing:      gui.FillFit,
+				Spacing:     gui.SomeF(8),
+				ColorBorder: t.ColorBorder,
 				Content: []gui.View{
 					demoBox("A", t.ColorActive),
 					demoBox("B", t.ColorSelect),
@@ -63,10 +63,10 @@ func demoRow(_ *gui.Window) gui.View {
 			}),
 			gui.Text(gui.TextCfg{Text: "Right-aligned:", TextStyle: t.B3}),
 			gui.Row(gui.ContainerCfg{
-				Sizing:  gui.FillFit,
-				Spacing: gui.SomeF(8),
-				Padding: gui.NoPadding,
-				HAlign:  gui.HAlignRight,
+				Sizing:      gui.FillFit,
+				Spacing:     gui.SomeF(8),
+				ColorBorder: t.ColorBorder,
+				HAlign:      gui.HAlignRight,
 				Content: []gui.View{
 					demoBox("X", t.ColorActive),
 					demoBox("Y", t.ColorSelect),
@@ -74,13 +74,26 @@ func demoRow(_ *gui.Window) gui.View {
 			}),
 			gui.Text(gui.TextCfg{Text: "Center-aligned:", TextStyle: t.B3}),
 			gui.Row(gui.ContainerCfg{
-				Sizing:  gui.FillFit,
-				Spacing: gui.SomeF(8),
-				Padding: gui.NoPadding,
-				HAlign:  gui.HAlignCenter,
+				Sizing:      gui.FillFit,
+				Spacing:     gui.SomeF(8),
+				ColorBorder: t.ColorBorder,
+				HAlign:      gui.HAlignCenter,
 				Content: []gui.View{
 					demoBox("1", t.ColorActive),
 					demoBox("2", t.ColorSelect),
+				},
+			}),
+			gui.Text(gui.TextCfg{Text: "Row with Title:", TextStyle: t.B3}),
+			gui.Row(gui.ContainerCfg{
+				Title:       "Options",
+				TitleBG:     t.ColorBackground,
+				Sizing:      gui.FillFit,
+				Spacing:     gui.SomeF(8),
+				ColorBorder: t.ColorBorder,
+				Content: []gui.View{
+					demoBox("A", t.ColorActive),
+					demoBox("B", t.ColorSelect),
+					demoBox("C", t.ColorHover),
 				},
 			}),
 		},
@@ -89,31 +102,64 @@ func demoRow(_ *gui.Window) gui.View {
 
 func demoColumn(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
-	return gui.Row(gui.ContainerCfg{
+	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
-		Spacing: gui.SomeF(16),
+		Spacing: gui.SomeF(12),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
-			gui.Column(gui.ContainerCfg{
-				Sizing:  gui.FitFit,
-				Spacing: gui.SomeF(8),
-				Padding: gui.NoPadding,
-				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "Top (default)", TextStyle: t.B3}),
-					demoBox("A", t.ColorActive),
-					demoBox("B", t.ColorSelect),
-					demoBox("C", t.ColorHover),
-				},
+			gui.Text(gui.TextCfg{
+				Text:      "All columns are fixed size and center-aligned.",
+				TextStyle: t.N3,
 			}),
-			gui.Column(gui.ContainerCfg{
-				Sizing:  gui.FitFit,
-				Spacing: gui.SomeF(8),
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(16),
 				Padding: gui.NoPadding,
-				HAlign:  gui.HAlignCenter,
 				Content: []gui.View{
-					gui.Text(gui.TextCfg{Text: "Centered", TextStyle: t.B3}),
-					demoBox("X", t.ColorActive),
-					demoBox("Y", t.ColorSelect),
+					gui.Column(gui.ContainerCfg{
+						Title:       "Top (default)",
+						TitleBG:     t.ColorBackground,
+						Width:       180,
+						Height:      180,
+						Sizing:      gui.FixedFixed,
+						Spacing:     gui.SomeF(8),
+						ColorBorder: t.ColorBorder,
+						HAlign:      gui.HAlignCenter,
+						Content: []gui.View{
+							demoBoxSized("A", t.ColorActive, 90, 40),
+							demoBoxSized("B", t.ColorSelect, 90, 40),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Title:       "Middle",
+						TitleBG:     t.ColorBackground,
+						Width:       180,
+						Height:      180,
+						Sizing:      gui.FixedFixed,
+						Spacing:     gui.SomeF(8),
+						ColorBorder: t.ColorBorder,
+						HAlign:      gui.HAlignCenter,
+						VAlign:      gui.VAlignMiddle,
+						Content: []gui.View{
+							demoBoxSized("X", t.ColorActive, 90, 40),
+							demoBoxSized("Y", t.ColorSelect, 90, 40),
+						},
+					}),
+					gui.Column(gui.ContainerCfg{
+						Title:       "Bottom",
+						TitleBG:     t.ColorBackground,
+						Width:       180,
+						Height:      180,
+						Sizing:      gui.FixedFixed,
+						Spacing:     gui.SomeF(8),
+						ColorBorder: t.ColorBorder,
+						HAlign:      gui.HAlignCenter,
+						VAlign:      gui.VAlignBottom,
+						Content: []gui.View{
+							demoBoxSized("M", t.ColorActive, 90, 40),
+							demoBoxSized("N", t.ColorSelect, 90, 40),
+						},
+					}),
 				},
 			}),
 		},
