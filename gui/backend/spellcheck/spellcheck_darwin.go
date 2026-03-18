@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && !ios
 
 // Package spellcheck provides native spell checking via NSSpellChecker.
 package spellcheck

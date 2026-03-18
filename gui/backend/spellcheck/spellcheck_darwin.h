@@ -1,3 +1,5 @@
+//go:build darwin && !ios
+
 #ifndef SPELLCHECK_DARWIN_H
 #define SPELLCHECK_DARWIN_H
 

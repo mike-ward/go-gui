@@ -1,6 +1,6 @@
-//go:build darwin && !ios
+//go:build ios
 
-package metal
+package ios
 
 import "math"
 

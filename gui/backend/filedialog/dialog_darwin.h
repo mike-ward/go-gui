@@ -1,3 +1,5 @@
+//go:build darwin && !ios
+
 #ifndef FILEDIALOG_DARWIN_H
 #define FILEDIALOG_DARWIN_H
 

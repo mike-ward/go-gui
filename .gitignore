@@ -25,6 +25,10 @@ main
 # Output
 *.out
 
+# iOS c-archive build artifacts
+*.a
+examples/ios_demo/ios/libgoguiapp.h
+
 # WASM build artifacts
 *.wasm
 wasm_exec.js

@@ -1,6 +1,6 @@
-//go:build darwin && !ios
+//go:build ios
 
-package metal
+package ios
 
 /*
 #include "metal_darwin.h"
@@ -43,8 +43,6 @@ func createMetalTexture(w, h int32,
 		C.int(w), C.int(h), ptr, hasData)
 	return metalTexture{id: int32(id), w: w, h: h}
 }
-
-// --- Image loading ---
 
 // loadImageTexture opens, validates, decodes, and uploads an
 // image to a Metal texture.

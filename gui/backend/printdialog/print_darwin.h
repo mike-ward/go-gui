@@ -1,3 +1,5 @@
+//go:build darwin && !ios
+
 #ifndef PRINTDIALOG_DARWIN_H
 #define PRINTDIALOG_DARWIN_H
 

@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && !ios
 
 // Package printdialog provides native print dialog support.
 package printdialog

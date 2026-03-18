@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && !ios
 
 // Package metal provides a Metal backend for go-gui on macOS.
 // Uses SDL2 for window creation and event handling, and Metal

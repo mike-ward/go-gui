@@ -1,6 +1,6 @@
-//go:build darwin && !ios
+//go:build ios
 
-package metal
+package ios
 
 /*
 #include "metal_darwin.h"

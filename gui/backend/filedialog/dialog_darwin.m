@@ -1,3 +1,5 @@
+//go:build darwin && !ios
+
 #import <AppKit/AppKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #include "dialog_darwin.h"

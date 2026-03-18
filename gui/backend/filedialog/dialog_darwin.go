@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && !ios
 
 // Package filedialog provides native file dialog support.
 package filedialog

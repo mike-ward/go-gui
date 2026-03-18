@@ -1,6 +1,6 @@
-//go:build darwin && !ios
+//go:build ios
 
-package metal
+package ios
 
 /*
 #include <stdlib.h>
@@ -287,7 +287,7 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		path, err = imgload.ResolveValidatedPath(
 			r.Resource, b.allowedImageRoots)
 		if err != nil {
-			log.Printf("metal: drawImage: %s: %v",
+			log.Printf("ios: drawImage: %s: %v",
 				r.Resource, err)
 			path = "-"
 		}
@@ -302,7 +302,7 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		var err error
 		tex, err = b.loadImageTexture(path)
 		if err != nil {
-			log.Printf("metal: drawImage: %v", err)
+			log.Printf("ios: drawImage: %v", err)
 		}
 		b.textures.Set(path, tex)
 	}
@@ -341,7 +341,7 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 
 func (b *Backend) drawSvg(r *gui.RenderCmd) {
 	if r.IsClipMask {
-		return // clip masks not yet supported in render pipeline
+		return
 	}
 	if len(r.Triangles) == 0 || len(r.Triangles)%6 != 0 {
 		return
@@ -441,7 +441,7 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 
 	b.useGlyphPipeline()
 	if err := b.textSys.DrawText(r.X, r.Y, r.Text, cfg); err != nil {
-		log.Printf("metal: DrawText: %v", err)
+		log.Printf("ios: DrawText: %v", err)
 	}
 }
 
@@ -454,7 +454,7 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	cfg := guiStyleToGlyphConfig(*r.TextStylePtr)
 	layout, err := b.textSys.LayoutTextCached(r.Text, cfg)
 	if err != nil {
-		log.Printf("metal: drawTextPath: %v", err)
+		log.Printf("ios: drawTextPath: %v", err)
 		return
 	}
 	positions := layout.GlyphPositions()
@@ -588,12 +588,6 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-// buildCustomMSL produces a complete MSL source with vertex and
-// fragment shaders for a custom shader body.
-// NOTE: The custom VS uses standalone buffer(1)/buffer(2) bindings
-// instead of the Uniforms struct at buffer(0) used by built-in
-// shaders. The C layer (metalSetCustomPipeline) sets up matching
-// bindings for custom pipelines.
 func buildCustomMSL(body string) string {
 	return `#include <metal_stdlib>
 using namespace metal;
@@ -676,7 +670,6 @@ func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
 	C.metalBeginStencilClip(
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(r.StencilDepth))
-	// Restore solid pipeline for children.
 	C.metalSetPipeline(C.int(pipeSolid))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }
@@ -688,7 +681,6 @@ func (b *Backend) endStencilClip(r *gui.RenderCmd) {
 	C.metalEndStencilClip(
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(r.StencilDepth))
-	// Restore solid pipeline.
 	C.metalSetPipeline(C.int(pipeSolid))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }
@@ -723,7 +715,6 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	b.filterLayer = r.Layers
 	b.filterColorMatrix = r.ColorMatrix
 
-	// Set pipelines and MVP before switching to filter target.
 	C.metalSetPipeline(C.int(pipeSolid))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 
@@ -731,7 +722,6 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 	if rc != 0 {
 		return
 	}
-	// Reset pipeline state on the new encoder.
 	C.metalSetPipeline(C.int(pipeSolid))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }
@@ -743,7 +733,6 @@ func (b *Backend) endFilter() {
 	}
 	C.metalEndFilter(C.float(b.filterBlur),
 		C.int(b.filterLayer), cmPtr)
-	// Restore pipeline state on the resumed main encoder.
 	C.metalSetPipeline(C.int(pipeSolid))
 	C.metalSetMVP((*C.float)(&b.mvp[0]))
 }

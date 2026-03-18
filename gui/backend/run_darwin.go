@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && !ios
 
 // Package backend provides platform-specific backend initialization.
 package backend

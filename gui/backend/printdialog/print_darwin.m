@@ -1,3 +1,5 @@
+//go:build darwin && !ios
+
 #import <AppKit/AppKit.h>
 #import <Quartz/Quartz.h>
 #include "print_darwin.h"

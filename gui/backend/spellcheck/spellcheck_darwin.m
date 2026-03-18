@@ -1,3 +1,5 @@
+//go:build darwin && !ios
+
 #import <AppKit/AppKit.h>
 #include "spellcheck_darwin.h"
 #include <stdlib.h>

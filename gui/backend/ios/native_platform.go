@@ -1,46 +1,35 @@
-//go:build darwin && !ios
+//go:build ios
 
-package metal
+package ios
 
 import (
 	"fmt"
 	"net/url"
-	"os/exec"
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/filedialog"
 	"github.com/mike-ward/go-gui/gui/backend/printdialog"
 	"github.com/mike-ward/go-gui/gui/backend/spellcheck"
-	"github.com/veandco/go-sdl2/sdl"
 )
 
-// nativePlatform implements gui.NativePlatform for the Metal
-// backend.
-type nativePlatform struct {
-	window *sdl.Window
-}
+// nativePlatform implements gui.NativePlatform for iOS.
+type nativePlatform struct{}
 
 func (n *nativePlatform) OpenURI(uri string) error {
-	if err := validateOpenURI(uri); err != nil {
-		return err
-	}
-	return exec.Command("open", uri).Run()
-}
-
-func validateOpenURI(raw string) error {
-	u, err := url.Parse(raw)
+	u, err := url.Parse(uri)
 	if err != nil {
 		return fmt.Errorf("invalid URI: %w", err)
 	}
 	scheme := strings.ToLower(u.Scheme)
 	switch scheme {
 	case "http", "https", "mailto":
-		return nil
 	default:
 		return fmt.Errorf("unsupported URI scheme: %q",
 			u.Scheme)
 	}
+	// TODO: implement via UIApplication.openURL CGo call
+	return nil
 }
 
 func (n *nativePlatform) ShowOpenDialog(title, startDir string, extensions []string, allowMultiple bool) gui.PlatformDialogResult {
@@ -63,21 +52,11 @@ func (n *nativePlatform) ShowConfirmDialog(title, body string, level gui.NativeA
 	return filedialog.ShowConfirmDialog(title, body, level)
 }
 
-func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotificationResult {
-	cmd := exec.Command("osascript",
-		"-e", "on run argv",
-		"-e", "display notification (item 2 of argv) with title (item 1 of argv)",
-		"-e", "end run",
-		"--", title, body)
-	if err := cmd.Run(); err != nil {
-		return gui.NativeNotificationResult{
-			Status:       gui.NotificationError,
-			ErrorCode:    "exec_failed",
-			ErrorMessage: err.Error(),
-		}
-	}
+func (n *nativePlatform) SendNotification(_, _ string) gui.NativeNotificationResult {
 	return gui.NativeNotificationResult{
-		Status: gui.NotificationOK,
+		Status:       gui.NotificationError,
+		ErrorCode:    "unsupported",
+		ErrorMessage: "notifications not available on iOS",
 	}
 }
 
@@ -89,39 +68,14 @@ func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return 
 func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
-func (n *nativePlatform) A11yInit(cb func(action, index int)) {
-	a11yActionCallback = cb
-	a11yInitBridge(n.window)
-}
-
-func (n *nativePlatform) A11ySync(nodes []gui.A11yNode, count, focusedIdx int) {
-	_, h := n.window.GetSize()
-	a11ySyncBridge(nodes, count, focusedIdx, float32(h))
-}
-
-func (n *nativePlatform) A11yDestroy() {
-	a11yDestroyBridge()
-}
-
-func (n *nativePlatform) A11yAnnounce(text string) {
-	a11yAnnounceBridge(text)
-}
-
-func (n *nativePlatform) IMEStart() { sdl.StartTextInput() }
-func (n *nativePlatform) IMEStop()  { sdl.StopTextInput() }
-func (n *nativePlatform) IMESetRect(x, y, w, h int32) {
-	sdl.SetTextInputRect(&sdl.Rect{X: x, Y: y, W: w, H: h})
-}
-func (n *nativePlatform) TitlebarDark(_ bool) {}
-
-func (n *nativePlatform) SpellCheck(text string) []gui.SpellRange {
-	return spellcheck.Check(text)
-}
-
-func (n *nativePlatform) SpellSuggest(text string, startByte, lenBytes int) []string {
-	return spellcheck.Suggest(text, startByte, lenBytes)
-}
-
-func (n *nativePlatform) SpellLearn(word string) {
-	spellcheck.Learn(word)
-}
+func (n *nativePlatform) A11yInit(_ func(action, index int))             {}
+func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int)            {}
+func (n *nativePlatform) A11yDestroy()                                   {}
+func (n *nativePlatform) A11yAnnounce(_ string)                          {}
+func (n *nativePlatform) IMEStart()                                      {}
+func (n *nativePlatform) IMEStop()                                       {}
+func (n *nativePlatform) IMESetRect(_, _, _, _ int32)                    {}
+func (n *nativePlatform) TitlebarDark(_ bool)                            {}
+func (n *nativePlatform) SpellCheck(text string) []gui.SpellRange        { return spellcheck.Check(text) }
+func (n *nativePlatform) SpellSuggest(text string, s, l int) []string    { return spellcheck.Suggest(text, s, l) }
+func (n *nativePlatform) SpellLearn(word string)                         { spellcheck.Learn(word) }
