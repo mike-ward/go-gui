@@ -208,8 +208,8 @@ func demoText(_ *gui.Window) gui.View {
 			}),
 			gui.Text(gui.TextCfg{
 				ID:   "text-gradient-vertical",
-				Text: "Vertical Sunset Gradient",
-				Mode: gui.TextModeWrap,
+				Text: "Vertical\nSunset\nGradient",
+				Mode: gui.TextModeMultiline,
 				TextStyle: gui.TextStyle{
 					Color:    t.B2.Color,
 					Size:     t.B2.Size,

@@ -212,7 +212,6 @@ func TestDemoWelcomePanelHasNoBorder(t *testing.T) {
 	}
 }
 
-
 func TestShowcaseDataGridApplyQuery(t *testing.T) {
 	rows := showcaseDataGridRows()
 	query := gui.GridQueryState{
@@ -320,6 +319,22 @@ func TestDemoTextLayout(t *testing.T) {
 			if _, ok := layout.FindByID(id); !ok {
 				t.Fatalf("%s not found", id)
 			}
+		}
+	})
+
+	t.Run("vertical gradient demo uses multiline text", func(t *testing.T) {
+		l, ok := layout.FindByID("text-gradient-vertical")
+		if !ok {
+			t.Fatal("text-gradient-vertical not found")
+		}
+		if l.Shape.TC == nil {
+			t.Fatal("text-gradient-vertical missing text config")
+		}
+		if l.Shape.TC.TextMode != gui.TextModeMultiline {
+			t.Fatalf("text-gradient-vertical mode = %v, want %v", l.Shape.TC.TextMode, gui.TextModeMultiline)
+		}
+		if !strings.Contains(l.Shape.TC.Text, "\n") {
+			t.Fatalf("text-gradient-vertical text = %q, want multiline content", l.Shape.TC.Text)
 		}
 	})
 
