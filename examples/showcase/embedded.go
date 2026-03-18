@@ -159,6 +159,8 @@ var relatedExampleMap = map[string][]string{
 	"overflow_panel":      {"examples/showcase/demo_layout.go"},
 	"sidebar":             {"examples/showcase/demo_layout.go"},
 	"dock_layout":         {"examples/showcase/demo_dock_layout.go", "examples/dock_layout/main.go"},
+	"command_button":      {"examples/showcase/demo_feedback.go", "examples/command_demo/main.go"},
+	"theme_toggle":        {"examples/showcase/demo_feedback.go"},
 }
 
 func themeCfgSave(path string, cfg gui.ThemeCfg) error {

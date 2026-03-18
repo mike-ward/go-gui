@@ -85,6 +85,9 @@ type ShowcaseApp struct {
 	SidebarOpen         bool
 	ExpandOpen          bool
 
+	CmdButtonCount    int
+	ThemeToggleResult string
+
 	DialogResult string
 	NotifyResult string
 
@@ -288,6 +291,8 @@ var demoEntries = []DemoEntry{
 	{ID: "tab_control", Label: "Tab Control", Group: groupNav, Summary: "Switch content panels with keyboard-friendly tabs.", Tags: []string{"tabs", "navigation", "panes"}},
 
 	{ID: "button", Label: "Button", Group: groupSelection, Summary: "Trigger actions with click and keyboard focus.", Tags: []string{"action", "press", "click"}},
+	{ID: "command_button", Label: "Command Button", Group: groupSelection, Summary: "Button wired to a registered command with auto-label, shortcut hint, and CanExecute.", Tags: []string{"command", "button", "shortcut", "action"}},
+	{ID: "theme_toggle", Label: "Theme Toggle", Group: groupSelection, Summary: "Palette icon dropdown for switching registered themes.", Tags: []string{"theme", "toggle", "palette", "dark", "light"}},
 	{ID: "progress_bar", Label: "Progress Bar", Group: groupFeedback, Summary: "Determinate and indeterminate progress indicators.", Tags: []string{"progress", "loader", "status"}},
 	{ID: "pulsar", Label: "Pulsar", Group: groupFeedback, Summary: "Animated pulse indicator with optional icons.", Tags: []string{"pulse", "loading", "indicator"}},
 	{ID: "toast", Label: "Toast", Group: groupFeedback, Summary: "Non-blocking notifications with auto-dismiss and actions.", Tags: []string{"notification", "alert", "severity", "stack"}},

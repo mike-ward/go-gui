@@ -32,6 +32,26 @@ func main() {
 			loadEmbeddedLocales()
 			app := gui.State[ShowcaseApp](w)
 			syncThemeGenFromCfg(app, gui.CurrentTheme().Cfg)
+			w.RegisterCommands(
+				gui.Command{
+					ID: "sc.greet", Label: "Greet", Icon: gui.IconBell,
+					Shortcut: gui.Shortcut{Key: gui.KeyF5},
+					Execute: func(_ *gui.Event, w *gui.Window) {
+						w.Toast(gui.ToastCfg{Title: "Command", Body: "Hello from CommandButton!"})
+					},
+				},
+				gui.Command{
+					ID: "sc.count", Label: "Count", Icon: gui.IconPlus,
+					Shortcut: gui.Shortcut{Key: gui.KeyF5, Modifiers: gui.ModShift},
+					Execute: func(_ *gui.Event, w *gui.Window) {
+						gui.State[ShowcaseApp](w).CmdButtonCount++
+					},
+				},
+				gui.Command{
+					ID: "sc.disabled", Label: "Delete", Icon: gui.IconTrash,
+					CanExecute: func(_ *gui.Window) bool { return false },
+				},
+			)
 			w.UpdateView(mainView)
 			w.AnimationAdd(&gui.Animate{
 				AnimID: "shader_tick",

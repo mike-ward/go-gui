@@ -188,6 +188,67 @@ func demoBadge(_ *gui.Window) gui.View {
 	})
 }
 
+func demoCommandButton(w *gui.Window) gui.View {
+	app := gui.State[ShowcaseApp](w)
+	t := gui.CurrentTheme()
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{
+				Text:      fmt.Sprintf("Count: %d", app.CmdButtonCount),
+				TextStyle: t.N3,
+			}),
+			sectionLabel(t, "Auto-labeled with shortcut hint"),
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(8),
+				Padding: gui.NoPadding,
+				Content: []gui.View{
+					gui.CommandButton(w, "sc.greet", gui.ButtonCfg{ID: "cb-greet"}),
+					gui.CommandButton(w, "sc.count", gui.ButtonCfg{ID: "cb-count"}),
+				},
+			}),
+			sectionLabel(t, "Auto-disabled via CanExecute"),
+			gui.CommandButton(w, "sc.disabled", gui.ButtonCfg{ID: "cb-disabled"}),
+		},
+	})
+}
+
+func demoThemeToggle(w *gui.Window) gui.View {
+	app := gui.State[ShowcaseApp](w)
+	t := gui.CurrentTheme()
+	result := app.ThemeToggleResult
+	if result == "" {
+		result = "(none)"
+	}
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{
+				Text:      "Palette icon that opens a dropdown of registered themes.",
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
+			}),
+			gui.ThemeToggle(gui.ThemeToggleCfg{
+				ID:          "theme-toggle-demo",
+				FloatAnchor: gui.FloatBottomLeft,
+				FloatTieOff: gui.FloatTopLeft,
+				OnSelect: func(name string, _ *gui.Event, w *gui.Window) {
+					gui.State[ShowcaseApp](w).ThemeToggleResult = name
+				},
+			}),
+			gui.Text(gui.TextCfg{
+				Text:      "Selected: " + result,
+				TextStyle: t.N3,
+			}),
+		},
+	})
+}
+
 func demoToast(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{
