@@ -1,6 +1,10 @@
 package gui
 
-import "github.com/mike-ward/go-glyph"
+import (
+	"math"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 // layoutPipeline runs all layout passes in order on a single
 // layout tree.
@@ -139,6 +143,12 @@ func layoutWrapTextWalk(layout *Layout, w *Window) {
 	}
 }
 
+// rtfLayoutEntry caches a shaped RTF layout and its height.
+type rtfLayoutEntry struct {
+	Layout glyph.Layout
+	Height float32
+}
+
 func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	if tc.RtfRuns == nil {
 		return
@@ -149,6 +159,31 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 		shape.Height = tc.wrapCacheHeight
 		return
 	}
+
+	// Cross-frame cache: content hash XOR'd with width bits.
+	contentKey := rtfRunsKey(tc.RtfRuns)
+	cacheKey := contentKey ^ uint64(math.Float32bits(shape.Width))
+	vs := &w.viewState
+
+	// Invalidate on theme change.
+	themeName := guiTheme.Name
+	if vs.rtfLayoutCache != nil && vs.rtfLayoutTheme != themeName {
+		vs.rtfLayoutCache.Clear()
+		vs.rtfLayoutTheme = themeName
+	}
+
+	// Check cross-frame cache.
+	if vs.rtfLayoutCache != nil {
+		if entry, ok := vs.rtfLayoutCache.Get(cacheKey); ok {
+			tc.RtfLayout = &entry.Layout
+			shape.Height = entry.Height
+			tc.wrapCacheWidth = shape.Width
+			tc.wrapCacheHeight = entry.Height
+			tc.wrapCacheValid = true
+			return
+		}
+	}
+
 	tm, ok := w.textMeasurer.(interface {
 		LayoutRichText(glyph.RichText, glyph.TextConfig) (glyph.Layout, error)
 	})
@@ -182,6 +217,16 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	tc.wrapCacheWidth = shape.Width
 	tc.wrapCacheHeight = l.Height
 	tc.wrapCacheValid = true
+
+	// Store in cross-frame cache.
+	if vs.rtfLayoutCache == nil {
+		vs.rtfLayoutCache = NewBoundedMap[uint64, rtfLayoutEntry](200)
+		vs.rtfLayoutTheme = themeName
+	}
+	vs.rtfLayoutCache.Set(cacheKey, rtfLayoutEntry{
+		Layout: l,
+		Height: l.Height,
+	})
 }
 
 // layoutPlainText computes final text dimensions after sizing.

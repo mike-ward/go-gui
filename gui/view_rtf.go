@@ -63,24 +63,30 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 		baseStyle = vgRT.Runs[0].Style
 	}
 
-	cfg := glyph.TextConfig{
-		Style: baseStyle,
-		Block: glyph.BlockStyle{
-			Wrap:   glyph.WrapWord,
-			Width:  -1.0,
-			Indent: -v.HangingIndent,
-		},
-	}
+	// For wrapped modes, skip the initial LayoutRichText — Width is
+	// overridden by Fill sizing and Height by layoutWrapRTF. The
+	// expensive glyph shaping runs once in layoutWrapRTF instead.
+	isWrap := v.Mode == TextModeWrap ||
+		v.Mode == TextModeWrapKeepSpaces
 
-	// Layout rich text via text measurer.
 	var layout glyph.Layout
-	if w.textMeasurer != nil {
-		if tm, ok := w.textMeasurer.(interface {
-			LayoutRichText(glyph.RichText, glyph.TextConfig) (glyph.Layout, error)
-		}); ok {
-			if l, err := tm.LayoutRichText(vgRT, cfg); err == nil {
-				layout = l
-				rtfSuppressInlineObjectGlyphs(&layout)
+	if !isWrap {
+		cfg := glyph.TextConfig{
+			Style: baseStyle,
+			Block: glyph.BlockStyle{
+				Wrap:   glyph.WrapWord,
+				Width:  -1.0,
+				Indent: -v.HangingIndent,
+			},
+		}
+		if w.textMeasurer != nil {
+			if tm, ok := w.textMeasurer.(interface {
+				LayoutRichText(glyph.RichText, glyph.TextConfig) (glyph.Layout, error)
+			}); ok {
+				if l, err := tm.LayoutRichText(vgRT, cfg); err == nil {
+					layout = l
+					rtfSuppressInlineObjectGlyphs(&layout)
+				}
 			}
 		}
 	}

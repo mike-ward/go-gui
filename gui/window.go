@@ -154,6 +154,10 @@ type ViewState struct {
 	diagramCache             *BoundedDiagramCache
 	diagramRequestSeq        uint64
 	externalAPIWarningLogged bool
+
+	// RTF layout cache — avoids re-shaping unchanged content.
+	rtfLayoutCache *BoundedMap[uint64, rtfLayoutEntry]
+	rtfLayoutTheme string
 }
 
 // State returns a typed pointer to the user-supplied state.
