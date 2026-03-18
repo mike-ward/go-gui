@@ -26,12 +26,13 @@ type Backend struct {
 	width     int
 	height    int
 
-	normBuf    []gui.GradientStop
-	sampledBuf []gui.GradientStop
+	normBuf      []gui.GradientStop
+	sampledBuf   []gui.GradientStop
 	imgCache     map[string]js.Value
 	failedImages map[string]struct{}
 	clipDepth    int
-	lastCursor gui.MouseCursor
+	clipStack    []clipRegion
+	lastCursor   gui.MouseCursor
 
 	textPathPlacements []glyph.GlyphPlacement
 
@@ -44,6 +45,20 @@ type Backend struct {
 	colorCacheLen int
 	colorCacheIdx int
 	callbacks     []js.Func // prevent GC of registered callbacks
+}
+
+type clipKind uint8
+
+const (
+	clipKindRect clipKind = iota
+	clipKindStencil
+)
+
+type clipRegion struct {
+	kind   clipKind
+	x, y   float32
+	w, h   float32
+	radius float32
 }
 
 // Run initializes the web backend and runs the event/render
@@ -103,13 +118,13 @@ func newBackend(w *gui.Window) *Backend {
 	loadIconFont(gui.IconFontData)
 
 	b := &Backend{
-		canvas:    canvas,
-		ctx2d:     ctx2d,
-		glyphBack: glyphBack,
-		textSys:   textSys,
-		dpiScale:  dpiScale,
-		width:     cssW,
-		height:    cssH,
+		canvas:       canvas,
+		ctx2d:        ctx2d,
+		glyphBack:    glyphBack,
+		textSys:      textSys,
+		dpiScale:     dpiScale,
+		width:        cssW,
+		height:       cssH,
 		imgCache:     make(map[string]js.Value),
 		failedImages: make(map[string]struct{}),
 	}
@@ -212,6 +227,7 @@ func (b *Backend) renderFrame(w *gui.Window) {
 		b.ctx2d.Call("restore")
 		b.clipDepth--
 	}
+	b.clipStack = nil
 
 	w.Lock()
 	b.renderersDraw(w)

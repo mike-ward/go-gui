@@ -15,9 +15,11 @@ import (
 )
 
 const (
-	maxImageCacheSize = 256
-	imageCacheEvictN  = 16
-	colorCacheSize    = 8
+	maxImageCacheSize       = 256
+	imageCacheEvictN        = 16
+	maxFailedImageCacheSize = 256
+	failedImageCacheEvictN  = 16
+	colorCacheSize          = 8
 
 	// offscreenSentinel places unpositioned glyphs off-screen.
 	offscreenSentinel = -9999
@@ -86,12 +88,9 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 		case gui.RenderStencilBegin:
-			// Scissor fallback: resets existing clips before
-			// setting the new one. If stencil and clip are
-			// interleaved, clip state may be incorrect.
-			b.drawClip(r)
+			b.beginStencilClip(r)
 		case gui.RenderStencilEnd:
-			// Restored by subsequent RenderClip.
+			b.endStencilClip()
 
 		case gui.RenderRotateBegin:
 			b.beginRotation(r)
@@ -109,18 +108,74 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 // --- Individual draw commands ---
 
 func (b *Backend) drawClip(r *gui.RenderCmd) {
-	// Restore previous clip state.
+	next := clipRegion{
+		kind: clipKindRect,
+		x:    r.X,
+		y:    r.Y,
+		w:    r.W,
+		h:    r.H,
+	}
+	if replaced := false; len(b.clipStack) > 0 {
+		for i := len(b.clipStack) - 1; i >= 0; i-- {
+			if b.clipStack[i].kind == clipKindRect {
+				b.clipStack[i] = next
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			b.clipStack = append(b.clipStack, next)
+		}
+	} else {
+		b.clipStack = append(b.clipStack, next)
+	}
+	b.rebuildClipStack()
+}
+
+func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
+	b.clipStack = append(b.clipStack, clipRegion{
+		kind:   clipKindStencil,
+		x:      r.X,
+		y:      r.Y,
+		w:      r.W,
+		h:      r.H,
+		radius: r.Radius,
+	})
+	b.rebuildClipStack()
+}
+
+func (b *Backend) endStencilClip() {
+	for i := len(b.clipStack) - 1; i >= 0; i-- {
+		if b.clipStack[i].kind == clipKindStencil {
+			b.clipStack = append(
+				b.clipStack[:i], b.clipStack[i+1:]...)
+			break
+		}
+	}
+	b.rebuildClipStack()
+}
+
+func (b *Backend) rebuildClipStack() {
 	for b.clipDepth > 0 {
 		b.ctx2d.Call("restore")
 		b.clipDepth--
 	}
-	b.ctx2d.Call("save")
-	b.clipDepth++
-	b.ctx2d.Call("beginPath")
-	b.ctx2d.Call("rect",
-		float64(r.X), float64(r.Y),
-		float64(r.W), float64(r.H))
-	b.ctx2d.Call("clip")
+	for _, clip := range b.clipStack {
+		b.ctx2d.Call("save")
+		b.clipDepth++
+		b.ctx2d.Call("beginPath")
+		if clip.kind == clipKindStencil && clip.radius > 0 {
+			b.ctx2d.Call("roundRect",
+				float64(clip.x), float64(clip.y),
+				float64(clip.w), float64(clip.h),
+				float64(clip.radius))
+		} else {
+			b.ctx2d.Call("rect",
+				float64(clip.x), float64(clip.y),
+				float64(clip.w), float64(clip.h))
+		}
+		b.ctx2d.Call("clip")
+	}
 }
 
 func (b *Backend) drawRect(r *gui.RenderCmd) {
@@ -315,10 +370,10 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 	positions := [4]float32{0.0, 0.25, 0.5, 0.75}
 	type rect struct{ x, y, w, h float32 }
 	rects := [4]rect{
-		{r.X, r.Y, r.W, th},               // top
-		{r.X, r.Y + r.H - th, r.W, th},    // bottom
-		{r.X, r.Y, th, r.H},               // left
-		{r.X + r.W - th, r.Y, th, r.H},    // right
+		{r.X, r.Y, r.W, th},            // top
+		{r.X, r.Y + r.H - th, r.W, th}, // bottom
+		{r.X, r.Y, th, r.H},            // left
+		{r.X + r.W - th, r.Y, th, r.H}, // right
 	}
 	for i := range 4 {
 		c := gui.SampleGradientStopColor(stops, positions[i])
@@ -362,9 +417,20 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		return
 	}
 	// Loaded but broken (e.g. 404) — track in failedImages
-	// to prevent eternal retry. Separate from imgCache to
-	// avoid unbounded growth and js.Undefined() ambiguity.
+	// to prevent eternal retry. Keep the negative cache bounded
+	// so a stream of unique bad URLs cannot grow session memory
+	// without limit.
 	if img.Get("naturalWidth").Int() == 0 {
+		if len(b.failedImages) >= maxFailedImageCacheSize {
+			n := 0
+			for k := range b.failedImages {
+				delete(b.failedImages, k)
+				n++
+				if n >= failedImageCacheEvictN {
+					break
+				}
+			}
+		}
 		b.failedImages[r.Resource] = struct{}{}
 		delete(b.imgCache, r.Resource)
 		return

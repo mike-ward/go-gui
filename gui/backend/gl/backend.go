@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"sync"
 
@@ -17,6 +16,7 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
+	"github.com/mike-ward/go-gui/gui/backend/internal/tempfont"
 	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 	"github.com/mike-ward/go-gui/gui/svg"
 )
@@ -40,7 +40,7 @@ type Backend struct {
 	mvpStack [][16]float32
 
 	// Reusable buffers.
-	svgVAO uint32
+	svgVAO             uint32
 	svgVBO             uint32
 	svgCap             int
 	textPathPlacements []glyph.GlyphPlacement
@@ -48,19 +48,20 @@ type Backend struct {
 	normBuf            []gui.GradientStop
 	sampledBuf         []gui.GradientStop
 
-	textures    texcache.Cache[string, glTexture]
-	filterFBO      uint32
-	filterStencil  uint32
-	filterTexA     uint32
-	filterTexB     uint32
-	filterW        int32
-	filterH        int32
+	textures          texcache.Cache[string, glTexture]
+	filterFBO         uint32
+	filterStencil     uint32
+	filterTexA        uint32
+	filterTexB        uint32
+	filterW           int32
+	filterH           int32
 	filterBlur        float32
 	filterLayer       int
 	filterColorMatrix *[16]float32
 
-	glyphBack  *glyphBackend
-	customOnce sync.Once
+	glyphBack    *glyphBackend
+	customOnce   sync.Once
+	iconFontPath string
 
 	allowedImageRoots []string
 	imagePathCache    texcache.Cache[string, string]
@@ -187,12 +188,14 @@ func New(w *gui.Window) (*Backend, error) {
 	// Load embedded icon font. File must persist because
 	// FontConfig registers the path; FreeType reads it lazily.
 	if data := gui.IconFontData; len(data) > 0 {
-		tmp := filepath.Join(os.TempDir(),
-			"go_gui_feathericon.ttf")
-		if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		tmp, err := tempfont.Write("go_gui_feathericon", data)
+		if err != nil {
 			log.Printf("gl: write icon font: %v", err)
 		} else if err := textSys.AddFontFile(tmp); err != nil {
 			log.Printf("gl: load icon font: %v", err)
+			_ = os.Remove(tmp)
+		} else {
+			b.iconFontPath = tmp
 		}
 	}
 
@@ -361,6 +364,10 @@ func (b *Backend) Destroy() {
 	}
 	if b.textSys != nil {
 		b.textSys.Free()
+	}
+	if b.iconFontPath != "" {
+		_ = os.Remove(b.iconFontPath)
+		b.iconFontPath = ""
 	}
 	for i, c := range b.cursors {
 		if c != nil {

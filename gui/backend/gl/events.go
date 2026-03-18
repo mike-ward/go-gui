@@ -160,7 +160,7 @@ func mapKeyCode(sym sdl.Keycode) gui.KeyCode {
 	switch sym {
 	case sdl.K_SPACE:
 		return gui.KeySpace
-	case sdl.K_RETURN, sdl.K_RETURN2:
+	case sdl.K_RETURN, sdl.K_RETURN2, sdl.K_KP_ENTER:
 		return gui.KeyEnter
 	case sdl.K_ESCAPE:
 		return gui.KeyEscape

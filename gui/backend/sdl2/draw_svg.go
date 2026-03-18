@@ -76,7 +76,12 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 // effects. All subsequent draw commands render to this texture
 // until endFilter is called.
 func (b *Backend) beginFilter(r *gui.RenderCmd) {
-	outW, outH, _ := b.renderer.GetOutputSize()
+	prevTarget := b.renderer.GetRenderTarget()
+	currClip, clipEnabled := b.currentClipState()
+	outW, outH, err := b.currentTargetSize(prevTarget)
+	if err != nil {
+		return
+	}
 	if b.filterPool == nil || b.filterPoolW != outW || b.filterPoolH != outH {
 		if b.filterPool != nil {
 			_ = b.filterPool.Destroy()
@@ -96,10 +101,12 @@ func (b *Backend) beginFilter(r *gui.RenderCmd) {
 		b.filterPoolH = outH
 	}
 	b.filterTex = b.filterPool
+	b.filterPrevTarget = prevTarget
 	b.filterBlur = r.BlurRadius * b.dpiScale
 	b.filterLayers = r.Layers
 	b.filterColorMatrix = r.ColorMatrix
 	_ = b.renderer.SetRenderTarget(b.filterTex)
+	b.applyClipState(currClip, clipEnabled)
 	_ = b.renderer.SetDrawColor(0, 0, 0, 0)
 	_ = b.renderer.Clear()
 }
@@ -112,14 +119,18 @@ func (b *Backend) endFilter() {
 	if tex == nil {
 		return
 	}
+	currClip, clipEnabled := b.currentClipState()
+	prevTarget := b.filterPrevTarget
 	b.filterTex = nil
+	b.filterPrevTarget = nil
 
 	// Apply color matrix in software before compositing.
 	if b.filterColorMatrix != nil {
-		b.applyColorMatrix(tex)
+		b.applyColorMatrix(tex, prevTarget)
 	}
 
-	_ = b.renderer.SetRenderTarget(nil)
+	_ = b.renderer.SetRenderTarget(prevTarget)
+	b.applyClipState(currClip, clipEnabled)
 
 	blur := b.filterBlur
 	if blur < 1 {
@@ -130,7 +141,10 @@ func (b *Backend) endFilter() {
 		layers = 1
 	}
 
-	outW, outH, _ := b.renderer.GetOutputSize()
+	outW, outH, err := b.currentTargetSize(prevTarget)
+	if err != nil {
+		return
+	}
 
 	// Simulate glow: render texture at increasing offsets with
 	// Gaussian-like alpha falloff. 8 directions per ring for a
@@ -176,8 +190,13 @@ func (b *Backend) endFilter() {
 // applyColorMatrix transforms filter texture pixels by the 4x4
 // color matrix in software. Called with the render target still
 // set to the filter texture.
-func (b *Backend) applyColorMatrix(tex *sdl.Texture) {
-	outW, outH, _ := b.renderer.GetOutputSize()
+func (b *Backend) applyColorMatrix(
+	tex *sdl.Texture, restoreTarget *sdl.Texture,
+) {
+	_, _, outW, outH, err := tex.Query()
+	if err != nil {
+		return
+	}
 	nPixels := int(outW) * int(outH)
 	if nPixels == 0 {
 		return
@@ -216,6 +235,6 @@ func (b *Backend) applyColorMatrix(tex *sdl.Texture) {
 			uint32(ao*255+0.5)
 	}
 
-	_ = b.renderer.SetRenderTarget(nil)
+	_ = b.renderer.SetRenderTarget(restoreTarget)
 	_ = tex.Update(nil, unsafe.Pointer(&b.filterPixels[0]), pitch)
 }

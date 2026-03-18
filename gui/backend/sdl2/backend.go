@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/mike-ward/go-glyph"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
+	"github.com/mike-ward/go-gui/gui/backend/internal/tempfont"
 	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 	"github.com/mike-ward/go-gui/gui/svg"
 )
@@ -28,6 +28,7 @@ type Backend struct {
 	dpiScale           float32
 	cursors            [11]*sdl.Cursor
 	filterTex          *sdl.Texture // temporary render target for filter groups
+	filterPrevTarget   *sdl.Texture
 	filterPool         *sdl.Texture // reusable filter render target
 	filterPoolW        int32
 	filterPoolH        int32
@@ -38,8 +39,10 @@ type Backend struct {
 	svgVerts           []sdl.Vertex // reusable vertex buffer for SVG geometry
 	textPathPlacements []glyph.GlyphPlacement
 	texCache           texcache.Cache[string, *sdl.Texture]
+	iconFontPath       string
 	allowedImageRoots  []string
 	imagePathCache     texcache.Cache[string, string]
+	roundedClipStack   []roundedClipState
 	maxImageBytes      int64
 	maxImagePixels     int64
 	normBuf            []gui.GradientStop // reusable buffer for gradient normalization
@@ -111,12 +114,16 @@ func New(w *gui.Window) (*Backend, error) {
 	}
 
 	// Load embedded icon font into glyph via temp file.
+	var iconFontPath string
 	if data := gui.IconFontData; len(data) > 0 {
-		tmp := filepath.Join(os.TempDir(), "go_gui_feathericon.ttf")
-		if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		tmp, err := tempfont.Write("go_gui_feathericon", data)
+		if err != nil {
 			log.Printf("sdl2: write icon font: %v", err)
 		} else if err := textSys.AddFontFile(tmp); err != nil {
 			log.Printf("sdl2: load icon font: %v", err)
+			_ = os.Remove(tmp)
+		} else {
+			iconFontPath = tmp
 		}
 	}
 
@@ -126,6 +133,7 @@ func New(w *gui.Window) (*Backend, error) {
 		textSys:           textSys,
 		dpiScale:          dpiScale,
 		texCache:          newSDLTexCache(128),
+		iconFontPath:      iconFontPath,
 		allowedImageRoots: imgpath.NormalizeRoots(cfg.AllowedImageRoots),
 		imagePathCache:    texcache.New[string, string](1024, nil),
 		maxImageBytes:     cfg.MaxImageBytes,
@@ -179,21 +187,24 @@ func (b *Backend) Run(w *gui.Window) {
 	// During window drag-resize, macOS enters a modal loop that
 	// blocks PollEvent. This callback fires from within that loop,
 	// allowing re-layout and re-render at the new size.
-	resizeEvent := &gui.Event{Type: gui.EventResized}
-	watchHandle := sdl.AddEventWatchFunc(
-		func(ev sdl.Event, _ interface{}) bool {
-			we, ok := ev.(*sdl.WindowEvent)
-			if !ok || we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
+	var watchHandle sdl.EventWatchHandle
+	if runtime.GOOS == "darwin" {
+		resizeEvent := &gui.Event{Type: gui.EventResized}
+		watchHandle = sdl.AddEventWatchFunc(
+			func(ev sdl.Event, _ interface{}) bool {
+				we, ok := ev.(*sdl.WindowEvent)
+				if !ok || we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
+					return true
+				}
+				resizeEvent.WindowWidth = int(we.Data1)
+				resizeEvent.WindowHeight = int(we.Data2)
+				w.EventFn(resizeEvent)
+				w.FrameFn()
+				b.renderFrame(w)
 				return true
-			}
-			resizeEvent.WindowWidth = int(we.Data1)
-			resizeEvent.WindowHeight = int(we.Data2)
-			w.EventFn(resizeEvent)
-			w.FrameFn()
-			b.renderFrame(w)
-			return true
-		}, nil)
-	defer sdl.DelEventWatch(watchHandle)
+			}, nil)
+		defer sdl.DelEventWatch(watchHandle)
+	}
 
 	running := true
 	evt := new(gui.Event)
@@ -263,6 +274,10 @@ func (b *Backend) Destroy() {
 	}
 	if b.textSys != nil {
 		b.textSys.Free()
+	}
+	if b.iconFontPath != "" {
+		_ = os.Remove(b.iconFontPath)
+		b.iconFontPath = ""
 	}
 	for i, c := range b.cursors {
 		if c != nil {

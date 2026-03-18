@@ -135,7 +135,7 @@ func (b *Backend) drawLine(r *gui.RenderCmd) {
 	if length < 0.001 {
 		return
 	}
-	thick := max(1.0*s, 1.0)
+	thick := max(r.Thickness*s, 1.0)
 	// Normal perpendicular to line direction.
 	nx := -dy / length * thick * 0.5
 	ny := dx / length * thick * 0.5

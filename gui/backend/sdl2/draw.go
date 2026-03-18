@@ -10,6 +10,12 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+type roundedClipState struct {
+	tex        *sdl.Texture
+	prevTarget *sdl.Texture
+	cmd        gui.RenderCmd
+}
+
 // renderersDraw iterates render commands and draws them.
 func (b *Backend) renderersDraw(w *gui.Window) {
 	cmds := w.Renderers()
@@ -53,9 +59,9 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 		case gui.RenderFilterEnd:
 			b.endFilter()
 		case gui.RenderStencilBegin:
-			b.drawClip(r) // scissor fallback (no rounded clip)
+			b.beginStencilClip(r)
 		case gui.RenderStencilEnd:
-			// Scissor restored by subsequent RenderClip.
+			b.endStencilClip()
 
 		case gui.RenderRotateBegin,
 			gui.RenderRotateEnd:
@@ -68,6 +74,93 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 			// Unimplemented render kinds are silently skipped.
 		}
 	}
+}
+
+func (b *Backend) currentTargetSize(
+	target *sdl.Texture,
+) (int32, int32, error) {
+	if target == nil {
+		return b.renderer.GetOutputSize()
+	}
+	_, _, w, h, err := target.Query()
+	return w, h, err
+}
+
+func (b *Backend) currentClipState() (sdl.Rect, bool) {
+	return b.renderer.GetClipRect(), b.renderer.IsClipEnabled()
+}
+
+func (b *Backend) applyClipState(rect sdl.Rect, enabled bool) {
+	if enabled {
+		_ = b.renderer.SetClipRect(&rect)
+		return
+	}
+	_ = b.renderer.SetClipRect(nil)
+}
+
+func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
+	if r.Radius <= 0 {
+		b.drawClip(r)
+		return
+	}
+	b.beginRoundedClip(r)
+}
+
+func (b *Backend) endStencilClip() {
+	if len(b.roundedClipStack) == 0 {
+		return
+	}
+	state := b.roundedClipStack[len(b.roundedClipStack)-1]
+	b.roundedClipStack = b.roundedClipStack[:len(b.roundedClipStack)-1]
+
+	currClip, clipEnabled := b.currentClipState()
+	_ = b.renderer.SetRenderTarget(state.prevTarget)
+	b.applyClipState(currClip, clipEnabled)
+
+	dst := sdl.FRect{
+		X: state.cmd.X * b.dpiScale,
+		Y: state.cmd.Y * b.dpiScale,
+		W: state.cmd.W * b.dpiScale,
+		H: state.cmd.H * b.dpiScale,
+	}
+	srcNorm, ok := textureRegionUV(state.tex, dst)
+	if ok {
+		b.drawTextureRoundedRegion(
+			state.tex, dst, srcNorm, state.cmd.Radius*b.dpiScale)
+	}
+	_ = state.tex.Destroy()
+}
+
+func (b *Backend) beginRoundedClip(r *gui.RenderCmd) {
+	prevTarget := b.renderer.GetRenderTarget()
+	currClip, clipEnabled := b.currentClipState()
+	w, h, err := b.currentTargetSize(prevTarget)
+	if err != nil {
+		b.drawClip(r)
+		return
+	}
+
+	tex, err := b.renderer.CreateTexture(
+		sdl.PIXELFORMAT_RGBA8888,
+		sdl.TEXTUREACCESS_TARGET,
+		w, h,
+	)
+	if err != nil {
+		b.drawClip(r)
+		return
+	}
+	_ = tex.SetBlendMode(sdl.BLENDMODE_BLEND)
+
+	b.roundedClipStack = append(b.roundedClipStack, roundedClipState{
+		tex:        tex,
+		prevTarget: prevTarget,
+		cmd:        *r,
+	})
+
+	_ = b.renderer.SetRenderTarget(tex)
+	b.applyClipState(currClip, clipEnabled)
+	_ = b.renderer.SetDrawColor(0, 0, 0, 0)
+	_ = b.renderer.Clear()
 }
 
 func (b *Backend) drawClip(r *gui.RenderCmd) {
@@ -201,8 +294,48 @@ func (b *Backend) fillRoundedRect(x, y, w, h, rad float32, c gui.Color) {
 
 func (b *Backend) drawLine(r *gui.RenderCmd) {
 	s := b.dpiScale
-	_ = b.renderer.SetDrawColor(r.Color.R, r.Color.G, r.Color.B, r.Color.A)
-	_ = b.renderer.DrawLineF(r.X*s, r.Y*s, r.OffsetX*s, r.OffsetY*s)
+	x0 := r.X * s
+	y0 := r.Y * s
+	x1 := r.OffsetX * s
+	y1 := r.OffsetY * s
+
+	dx := x1 - x0
+	dy := y1 - y0
+	length := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+	if length < 0.001 {
+		return
+	}
+
+	thick := max(r.Thickness*s, 1.0)
+	nx := -dy / length * thick * 0.5
+	ny := dx / length * thick * 0.5
+
+	c := sdl.Color{
+		R: r.Color.R,
+		G: r.Color.G,
+		B: r.Color.B,
+		A: r.Color.A,
+	}
+	verts := []sdl.Vertex{
+		{
+			Position: sdl.FPoint{X: x0 + nx, Y: y0 + ny},
+			Color:    c,
+		},
+		{
+			Position: sdl.FPoint{X: x1 + nx, Y: y1 + ny},
+			Color:    c,
+		},
+		{
+			Position: sdl.FPoint{X: x1 - nx, Y: y1 - ny},
+			Color:    c,
+		},
+		{
+			Position: sdl.FPoint{X: x0 - nx, Y: y0 - ny},
+			Color:    c,
+		},
+	}
+	indices := []int32{0, 1, 2, 0, 2, 3}
+	_ = b.renderer.RenderGeometry(nil, verts, indices)
 }
 
 func (b *Backend) drawShadow(r *gui.RenderCmd) {

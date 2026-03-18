@@ -110,23 +110,47 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 	}
 
 	if r.ClipRadius > 0 {
-		b.drawImageRounded(tex, r)
+		dst := sdl.FRect{
+			X: r.X * s,
+			Y: r.Y * s,
+			W: r.W * s,
+			H: r.H * s,
+		}
+		b.drawTextureRoundedRegion(
+			tex, dst, sdl.FRect{X: 0, Y: 0, W: 1, H: 1},
+			r.ClipRadius*s,
+		)
 		return
 	}
 	_ = b.renderer.Copy(tex, nil, &dst)
 }
 
-// drawImageRounded renders a textured rounded rectangle using
-// RenderGeometry with UV-mapped vertices. Mesh: 3 rectangles
-// (center, left, right strips) + 4 quarter-circle corner fans.
-func (b *Backend) drawImageRounded(tex *sdl.Texture, r *gui.RenderCmd) {
-	s := b.dpiScale
-	x := r.X * s
-	y := r.Y * s
-	w := r.W * s
-	h := r.H * s
-	rad := r.ClipRadius * s
-	rad = min(rad, w/2, h/2)
+func textureRegionUV(
+	tex *sdl.Texture, dst sdl.FRect,
+) (sdl.FRect, bool) {
+	_, _, texW, texH, err := tex.Query()
+	if err != nil || texW <= 0 || texH <= 0 ||
+		dst.W <= 0 || dst.H <= 0 {
+		return sdl.FRect{}, false
+	}
+	return sdl.FRect{
+		X: dst.X / float32(texW),
+		Y: dst.Y / float32(texH),
+		W: dst.W / float32(texW),
+		H: dst.H / float32(texH),
+	}, true
+}
+
+// drawTextureRoundedRegion renders a textured rounded rectangle
+// using normalized source UVs.
+func (b *Backend) drawTextureRoundedRegion(
+	tex *sdl.Texture, dst sdl.FRect, src sdl.FRect, radius float32,
+) {
+	x := dst.X
+	y := dst.Y
+	w := dst.W
+	h := dst.H
+	rad := min(radius, w/2, h/2)
 
 	white := sdl.Color{R: 255, G: 255, B: 255, A: 255}
 	vert := func(px, py float32) sdl.Vertex {
@@ -134,8 +158,8 @@ func (b *Backend) drawImageRounded(tex *sdl.Texture, r *gui.RenderCmd) {
 			Position: sdl.FPoint{X: px, Y: py},
 			Color:    white,
 			TexCoord: sdl.FPoint{
-				X: (px - x) / w,
-				Y: (py - y) / h,
+				X: src.X + ((px-x)/w)*src.W,
+				Y: src.Y + ((py-y)/h)*src.H,
 			},
 		}
 	}

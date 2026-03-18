@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"unsafe"
 
@@ -31,6 +30,7 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/internal/imgpath"
+	"github.com/mike-ward/go-gui/gui/backend/internal/tempfont"
 	"github.com/mike-ward/go-gui/gui/backend/internal/texcache"
 	"github.com/mike-ward/go-gui/gui/svg"
 )
@@ -78,6 +78,7 @@ type Backend struct {
 	filterLayer       int
 	filterColorMatrix *[16]float32
 	customCache       texcache.Cache[uint64, C.int]
+	iconFontPath      string
 
 	allowedImageRoots []string
 	imagePathCache    texcache.Cache[string, string]
@@ -194,12 +195,14 @@ func New(w *gui.Window) (*Backend, error) {
 	// Load embedded icon font. File must persist because
 	// FontConfig registers the path; FreeType reads it lazily.
 	if data := gui.IconFontData; len(data) > 0 {
-		tmp := filepath.Join(os.TempDir(),
-			"go_gui_feathericon.ttf")
-		if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		tmp, err := tempfont.Write("go_gui_feathericon", data)
+		if err != nil {
 			log.Printf("metal: write icon font: %v", err)
 		} else if err := textSys.AddFontFile(tmp); err != nil {
 			log.Printf("metal: load icon font: %v", err)
+			_ = os.Remove(tmp)
+		} else {
+			b.iconFontPath = tmp
 		}
 	}
 
@@ -362,6 +365,10 @@ func (b *Backend) Destroy() {
 	}
 	if b.textSys != nil {
 		b.textSys.Free()
+	}
+	if b.iconFontPath != "" {
+		_ = os.Remove(b.iconFontPath)
+		b.iconFontPath = ""
 	}
 	for i, c := range b.cursors {
 		if c != nil {
