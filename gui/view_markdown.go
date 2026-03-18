@@ -142,6 +142,14 @@ func richTextPlain(rt RichText) string {
 	return sb.String()
 }
 
+func ensureDiagramCache(w *Window) *BoundedDiagramCache {
+	if w.viewState.diagramCache == nil {
+		w.viewState.diagramCache =
+			NewBoundedDiagramCache(50)
+	}
+	return w.viewState.diagramCache
+}
+
 func nextDiagramRequestID(w *Window) uint64 {
 	w.viewState.diagramRequestSeq++
 	return w.viewState.diagramRequestSeq
@@ -232,35 +240,29 @@ func renderMdMath(
 		return codeFallback
 	}
 
-	diagramHash := mathCacheHash(
+	diagramHash := diagramCacheHash(
 		fmt.Sprintf("display_%d", markdown.MathHash(block.MathLatex)))
 
-	if w.viewState.diagramCache != nil {
-		if entry, ok := w.viewState.diagramCache.Get(
-			diagramHash); ok {
-			switch entry.State {
-			case DiagramLoading:
-				return codeFallback
-			case DiagramReady:
-				return Image(ImageCfg{
-					Src:    entry.PNGPath,
-					Width:  entry.Width,
-					Height: entry.Height,
-				})
-			case DiagramError:
-				return markdownDiagramErrorView(
-					entry.Error, cfg.Style.Code,
-				)
-			}
+	cache := ensureDiagramCache(w)
+	if entry, ok := cache.Get(diagramHash); ok {
+		switch entry.State {
+		case DiagramLoading:
+			return codeFallback
+		case DiagramReady:
+			return Image(ImageCfg{
+				Src:    entry.PNGPath,
+				Width:  entry.Width,
+				Height: entry.Height,
+			})
+		case DiagramError:
+			return markdownDiagramErrorView(
+				entry.Error, cfg.Style.Code,
+			)
 		}
 	}
 
 	// Start async fetch.
-	if w.viewState.diagramCache == nil {
-		w.viewState.diagramCache =
-			NewBoundedDiagramCache(50)
-	}
-	if w.viewState.diagramCache.LoadingCount() <
+	if cache.LoadingCount() <
 		maxConcurrentDiagramFetches {
 		reqID := nextDiagramRequestID(w)
 		w.viewState.diagramCache.Set(diagramHash,
@@ -298,50 +300,43 @@ func renderMdMermaid(
 		return codeFallback
 	}
 
-	diagramHash := int64(
-		(markdown.MathHash(source) << 32) | uint64(len(source)))
+	diagramHash := diagramCacheHash(source)
 
-	if w.viewState.diagramCache != nil {
-		if entry, ok := w.viewState.diagramCache.Get(
-			diagramHash); ok {
-			switch entry.State {
-			case DiagramLoading:
-				return Text(TextCfg{
-					Text:      "Loading diagram...",
-					TextStyle: cfg.Style.Text,
-				})
-			case DiagramReady:
-				imgW, imgH := entry.Width, entry.Height
-				mw := float32(cfg.MermaidWidth)
-				if mw <= 0 {
-					mw = 600
-				}
-				if imgW > mw {
-					imgH *= mw / imgW
-					imgW = mw
-				}
-				return Image(ImageCfg{
-					Src:     entry.PNGPath,
-					Width:   imgW,
-					Height:  imgH,
-					BgColor: White,
-				})
-			case DiagramError:
-				return markdownDiagramErrorView(
-					entry.Error, cfg.Style.Code,
-				)
+	cache := ensureDiagramCache(w)
+	if entry, ok := cache.Get(diagramHash); ok {
+		switch entry.State {
+		case DiagramLoading:
+			return Text(TextCfg{
+				Text:      "Loading diagram...",
+				TextStyle: cfg.Style.Text,
+			})
+		case DiagramReady:
+			imgW, imgH := entry.Width, entry.Height
+			mw := float32(cfg.MermaidWidth)
+			if mw <= 0 {
+				mw = 600
 			}
+			if imgW > mw {
+				imgH *= mw / imgW
+				imgW = mw
+			}
+			return Image(ImageCfg{
+				Src:     entry.PNGPath,
+				Width:   imgW,
+				Height:  imgH,
+				BgColor: White,
+			})
+		case DiagramError:
+			return markdownDiagramErrorView(
+				entry.Error, cfg.Style.Code,
+			)
 		}
 	}
 
-	if w.viewState.diagramCache == nil {
-		w.viewState.diagramCache =
-			NewBoundedDiagramCache(50)
-	}
-	if w.viewState.diagramCache.LoadingCount() <
+	if cache.LoadingCount() <
 		maxConcurrentDiagramFetches {
 		reqID := nextDiagramRequestID(w)
-		w.viewState.diagramCache.Set(diagramHash,
+		cache.Set(diagramHash,
 			DiagramCacheEntry{
 				State:     DiagramLoading,
 				RequestID: reqID,
@@ -453,26 +448,22 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 	// Trigger inline math fetches.
 	if allowExternalAPIs {
 		markdownWarnExternalAPIOnce(w)
-		if w.viewState.diagramCache == nil {
-			w.viewState.diagramCache =
-				NewBoundedDiagramCache(50)
-		}
+		inlineCache := ensureDiagramCache(w)
 		for _, block := range blocks {
 			for _, run := range block.Content.Runs {
 				if run.MathID == "" {
 					continue
 				}
-				mhash := mathCacheHash(run.MathID)
-				if _, ok := w.viewState.diagramCache.Get(
-					mhash); ok {
+				mhash := diagramCacheHash(run.MathID)
+				if _, ok := inlineCache.Get(mhash); ok {
 					continue
 				}
-				if w.viewState.diagramCache.LoadingCount() >=
+				if inlineCache.LoadingCount() >=
 					maxConcurrentDiagramFetches {
 					continue
 				}
 				reqID := nextDiagramRequestID(w)
-				w.viewState.diagramCache.Set(mhash,
+				inlineCache.Set(mhash,
 					DiagramCacheEntry{
 						State:     DiagramLoading,
 						RequestID: reqID,
@@ -598,7 +589,9 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 
 		case block.IsImage:
 			content = append(content, Image(ImageCfg{
-				Src: block.ImageSrc,
+				Src:    block.ImageSrc,
+				Width:  block.ImageWidth,
+				Height: block.ImageHeight,
 			}))
 
 		case block.HeaderLevel > 0:

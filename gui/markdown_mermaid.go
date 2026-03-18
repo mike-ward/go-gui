@@ -17,6 +17,7 @@ import (
 
 const (
 	maxConcurrentDiagramFetches = 8
+	maxDiagramResponseBytes     = 10 * 1024 * 1024
 	diagramFetchTimeout         = 30 * time.Second
 )
 
@@ -45,9 +46,10 @@ type DiagramCacheEntry struct {
 // Custom cache (not BoundedMap) — needs png_path cleanup
 // on evict/overwrite.
 type BoundedDiagramCache struct {
-	data    map[int64]DiagramCacheEntry
-	order   []int64
-	maxSize int
+	data         map[int64]DiagramCacheEntry
+	order        []int64
+	maxSize      int
+	loadingCount int
 }
 
 // NewBoundedDiagramCache creates a diagram cache with the
@@ -78,18 +80,22 @@ func (c *BoundedDiagramCache) Set(
 	if c.maxSize < 1 {
 		return
 	}
-	// Clean up existing entry's temp file on overwrite.
-	if existing, ok := c.data[key]; ok {
+	existing, exists := c.data[key]
+	if exists {
+		if existing.State == DiagramLoading {
+			c.loadingCount--
+		}
 		if existing.PNGPath != "" &&
 			existing.PNGPath != value.PNGPath {
 			removeDiagramPNG(existing.PNGPath)
 		}
-	}
-	// If new key, evict oldest if at capacity.
-	if _, ok := c.data[key]; !ok {
+	} else {
 		if len(c.data) >= c.maxSize && len(c.order) > 0 {
 			oldest := c.order[0]
 			if oe, ok := c.data[oldest]; ok {
+				if oe.State == DiagramLoading {
+					c.loadingCount--
+				}
 				if oe.PNGPath != "" {
 					removeDiagramPNG(oe.PNGPath)
 				}
@@ -102,18 +108,15 @@ func (c *BoundedDiagramCache) Set(
 		}
 		c.order = append(c.order, key)
 	}
+	if value.State == DiagramLoading {
+		c.loadingCount++
+	}
 	c.data[key] = value
 }
 
 // LoadingCount returns entries in loading state.
 func (c *BoundedDiagramCache) LoadingCount() int {
-	n := 0
-	for _, e := range c.data {
-		if e.State == DiagramLoading {
-			n++
-		}
-	}
-	return n
+	return c.loadingCount
 }
 
 // Len returns the number of entries.
@@ -130,6 +133,7 @@ func (c *BoundedDiagramCache) Clear() {
 	}
 	clear(c.data)
 	c.order = c.order[:0]
+	c.loadingCount = 0
 }
 
 // diagramCacheShouldApplyResult checks if a result should
@@ -186,6 +190,8 @@ func fetchMermaidAsync(
 		// Store PNG (temp file on native, data URL on WASM).
 		ref, err := storeDiagramPNG(body, hash, "mermaid")
 		if err != nil {
+			queueDiagramError(w, hash, requestID,
+				"store PNG: "+err.Error())
 			return
 		}
 
@@ -228,7 +234,8 @@ func mermaidHTTPFetch(source string) ([]byte, error) {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(
+		io.LimitReader(resp.Body, maxDiagramResponseBytes+1))
 	if err != nil {
 		return nil, err
 	}
@@ -237,9 +244,10 @@ func mermaidHTTPFetch(source string) ([]byte, error) {
 		return nil, fmt.Errorf(
 			"HTTP %d: %s", resp.StatusCode, preview)
 	}
-	if len(body) > 10*1024*1024 {
+	if len(body) > maxDiagramResponseBytes {
 		return nil, fmt.Errorf(
-			"response too large (%dMB)", len(body)/1024/1024)
+			"response too large (%dMB)",
+			len(body)/1024/1024)
 	}
 	return body, nil
 }

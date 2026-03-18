@@ -85,7 +85,7 @@ func (rt RichText) toGlyphRichTextWithMath(
 	var mathHashes []int64
 	for _, run := range rt.Runs {
 		if run.MathID != "" {
-			hash := mathCacheHash(run.MathID)
+			hash := diagramCacheHash(run.MathID)
 			if cache != nil {
 				if entry, ok := cache.Get(hash); ok &&
 					entry.State == DiagramReady &&

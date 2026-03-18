@@ -9,7 +9,7 @@ import (
 func TestRenderRtfEmitsInlineMathImages(t *testing.T) {
 	cache := NewBoundedDiagramCache(10)
 	mathID := "a+b"
-	hash := mathCacheHash(mathID)
+	hash := diagramCacheHash(mathID)
 	cache.Set(hash, DiagramCacheEntry{
 		State:   DiagramReady,
 		PNGPath: "/tmp/math.png",
@@ -112,7 +112,7 @@ func TestRenderRtfNoImagesWithoutCache(t *testing.T) {
 
 func TestRenderRtfSkipsLoadingEntry(t *testing.T) {
 	cache := NewBoundedDiagramCache(10)
-	hash := mathCacheHash("q")
+	hash := diagramCacheHash("q")
 	cache.Set(hash, DiagramCacheEntry{
 		State: DiagramLoading,
 	})

@@ -74,7 +74,7 @@ func TestRichTextToGlyphConversion(t *testing.T) {
 
 func TestMathRunEmitsInlineObject(t *testing.T) {
 	cache := NewBoundedDiagramCache(10)
-	hash := mathCacheHash("x^2")
+	hash := diagramCacheHash("x^2")
 	cache.Set(hash, DiagramCacheEntry{
 		State:  DiagramReady,
 		Width:  120,
@@ -114,14 +114,14 @@ func TestMathRunEmitsInlineObject(t *testing.T) {
 	if mid.Style.Object.Offset < -4.9 || mid.Style.Object.Offset > -4.7 {
 		t.Fatalf("offset: got %f, want ~-4.8", mid.Style.Object.Offset)
 	}
-	if len(mh) != 1 || mh[0] != mathCacheHash("x^2") {
+	if len(mh) != 1 || mh[0] != diagramCacheHash("x^2") {
 		t.Fatalf("mathHashes: got %v", mh)
 	}
 }
 
 func TestMathRunFallbackWhenLoading(t *testing.T) {
 	cache := NewBoundedDiagramCache(10)
-	hash := mathCacheHash("y^2")
+	hash := diagramCacheHash("y^2")
 	cache.Set(hash, DiagramCacheEntry{
 		State: DiagramLoading,
 	})

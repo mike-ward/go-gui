@@ -14,8 +14,8 @@ import (
 	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
-// mathCacheHash computes a cache key for a math expression.
-func mathCacheHash(mathID string) int64 {
+// diagramCacheHash computes a cache key for a math expression.
+func diagramCacheHash(mathID string) int64 {
 	h := markdown.MathHash(mathID)
 	return int64((h << 32) | uint64(len(mathID)))
 }
@@ -140,7 +140,8 @@ func fetchMathAsync(
 		}
 		defer func() { _ = resp.Body.Close() }()
 
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(
+			io.LimitReader(resp.Body, maxDiagramResponseBytes+1))
 		if err != nil {
 			queueDiagramError(w, hash, requestID,
 				"read body: "+err.Error())
@@ -155,7 +156,7 @@ func fetchMathAsync(
 			return
 		}
 
-		if len(body) > 10*1024*1024 {
+		if len(body) > maxDiagramResponseBytes {
 			queueDiagramError(w, hash, requestID,
 				"response exceeds 10 MB limit")
 			return

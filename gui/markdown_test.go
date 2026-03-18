@@ -269,7 +269,7 @@ func TestRenderMdMathErrorsWrap(t *testing.T) {
 		IsMath:    true,
 		MathLatex: `\badcommand{this error should wrap}`,
 	}
-	hash := mathCacheHash(
+	hash := diagramCacheHash(
 		fmt.Sprintf("display_%d",
 			markdown.MathHash(block.MathLatex)),
 	)

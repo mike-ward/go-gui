@@ -628,8 +628,10 @@ func TestMathHashDifferent(t *testing.T) {
 }
 
 func TestMathHashEmpty(t *testing.T) {
-	if MathHash("") != 0 {
-		t.Error("empty string should hash to 0")
+	// FNV-1a offset basis for empty string.
+	if MathHash("") != 14695981039346656037 {
+		t.Errorf("empty string hash = %d, want FNV offset basis",
+			MathHash(""))
 	}
 }
 

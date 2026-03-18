@@ -45,8 +45,8 @@ func IsSafeURL(url string) bool {
 // (first 20 chars) for scheme detection.
 func decodePercentPrefix(s string) string {
 	limit := len(s)
-	if limit > 20 {
-		limit = 20
+	if limit > 40 {
+		limit = 40
 	}
 	buf := make([]byte, 0, limit)
 	i := 0
@@ -109,8 +109,8 @@ func hasURIScheme(s string) bool {
 // isSafeImagePath validates image paths, blocking traversal
 // and absolute paths.
 func isSafeImagePath(path string) bool {
-	lower := strings.ToLower(
-		strings.ReplaceAll(path, "%2e", "."))
+	lower := strings.ReplaceAll(
+		strings.ToLower(path), "%2e", ".")
 	if strings.Contains(lower, "..") {
 		return false
 	}

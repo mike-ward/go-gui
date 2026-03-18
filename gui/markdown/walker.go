@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
@@ -20,35 +21,47 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
+var (
+	mdInstance     goldmark.Markdown
+	mdInstanceOnce sync.Once
+)
+
+func getMarkdownParser() goldmark.Markdown {
+	mdInstanceOnce.Do(func() {
+		mdInstance = goldmark.New(
+			goldmark.WithExtensions(
+				extension.GFM,
+				extension.DefinitionList,
+				emoji.Emoji,
+			),
+			goldmark.WithParserOptions(
+				parser.WithInlineParsers(
+					util.Prioritized(&mathInlineParser{}, 100),
+					util.Prioritized(&highlightParser{}, 100),
+					util.Prioritized(&underlineParser{}, 100),
+					util.Prioritized(&superscriptParser{}, 100),
+					util.Prioritized(&subscriptParser{}, 100),
+				),
+			),
+		)
+	})
+	return mdInstance
+}
+
 // Parse converts markdown source to []Block.
 func Parse(source string, hardLineBreaks bool) []Block {
 	// Normalize CRLF/CR to LF. The WASM text backend's
 	// Intl.Segmenter treats \r\n as a single grapheme cluster,
 	// preventing newline recognition in code blocks.
 	if strings.ContainsRune(source, '\r') {
-		source = strings.ReplaceAll(source, "\r", "")
+		source = strings.ReplaceAll(source, "\r\n", "\n")
+		source = strings.ReplaceAll(source, "\r", "\n")
 	}
 	source, abbrDefs, footnoteDefs := scanSource(source)
 	abbrMatcher := buildAbbrMatcher(abbrDefs)
 	src := []byte(source)
 
-	md := goldmark.New(
-		goldmark.WithExtensions(
-			extension.GFM,
-			extension.DefinitionList,
-			emoji.Emoji,
-		),
-		goldmark.WithParserOptions(
-			parser.WithInlineParsers(
-				util.Prioritized(&mathInlineParser{}, 100),
-				util.Prioritized(&highlightParser{}, 100),
-				util.Prioritized(&underlineParser{}, 100),
-				util.Prioritized(&superscriptParser{}, 100),
-				util.Prioritized(&subscriptParser{}, 100),
-			),
-		),
-	)
-
+	md := getMarkdownParser()
 	doc := md.Parser().Parse(text.NewReader(src))
 
 	w := &mdWalker{
@@ -1123,11 +1136,12 @@ func parseFloat32(s string) float32 {
 	return v
 }
 
-// MathHash computes a simple hash of a string.
+// MathHash computes a FNV-1a hash of a string.
 func MathHash(s string) uint64 {
-	var h uint64
+	h := uint64(14695981039346656037) // FNV offset basis
 	for i := 0; i < len(s); i++ {
-		h = h*31 + uint64(s[i])
+		h ^= uint64(s[i])
+		h *= 1099511628211 // FNV prime
 	}
 	return h
 }
