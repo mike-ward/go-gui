@@ -73,6 +73,43 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+  ios:
+    name: iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: go-gui
+
+      - uses: actions/checkout@v4
+        with:
+          repository: mike-ward/go-glyph
+          path: go-glyph
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build
+        working-directory: go-gui
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          CGO_ENABLED=1 \
+          GOOS=darwin \
+          GOARCH=arm64 \
+          CC="clang -isysroot $SDK -arch arm64 -miphoneos-version-min=15.0" \
+          go build -tags ios ./gui/backend/ios/...
+
+      - name: Vet
+        working-directory: go-gui
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          CGO_ENABLED=1 \
+          GOOS=darwin \
+          GOARCH=arm64 \
+          CC="clang -isysroot $SDK -arch arm64 -miphoneos-version-min=15.0" \
+          go vet -tags ios ./gui/backend/ios/...
+
   wasm:
     name: WASM
     runs-on: ubuntu-latest
