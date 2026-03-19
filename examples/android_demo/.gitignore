@@ -1,0 +1,9 @@
+# gomobile output
+android/app/libs/*.aar
+android/app/libs/*-sources.jar
+
+# Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
