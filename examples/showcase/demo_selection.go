@@ -392,4 +392,3 @@ func demoSlider(w *gui.Window) gui.View {
 		},
 	})
 }
-

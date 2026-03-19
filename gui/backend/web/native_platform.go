@@ -83,23 +83,23 @@ func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
 // Accessibility stubs.
-func (n *nativePlatform) A11yInit(_ func(action, index int)) {}
+func (n *nativePlatform) A11yInit(_ func(action, index int))  {}
 func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int) {}
 func (n *nativePlatform) A11yDestroy()                        {}
 func (n *nativePlatform) A11yAnnounce(_ string)               {}
 
 // IME stubs.
-func (n *nativePlatform) IMEStart()                     {}
-func (n *nativePlatform) IMEStop()                      {}
-func (n *nativePlatform) IMESetRect(_, _, _, _ int32)   {}
+func (n *nativePlatform) IMEStart()                   {}
+func (n *nativePlatform) IMEStop()                    {}
+func (n *nativePlatform) IMESetRect(_, _, _, _ int32) {}
 
 // Window appearance stub.
 func (n *nativePlatform) TitlebarDark(_ bool) {}
 
 // Spell check stubs.
-func (n *nativePlatform) SpellCheck(_ string) []gui.SpellRange          { return nil }
-func (n *nativePlatform) SpellSuggest(_ string, _, _ int) []string      { return nil }
-func (n *nativePlatform) SpellLearn(_ string)                           {}
+func (n *nativePlatform) SpellCheck(_ string) []gui.SpellRange     { return nil }
+func (n *nativePlatform) SpellSuggest(_ string, _, _ int) []string { return nil }
+func (n *nativePlatform) SpellLearn(_ string)                      {}
 
 // hasPrefixFold reports whether s begins with prefix,
 // ignoring ASCII case.

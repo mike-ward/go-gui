@@ -79,7 +79,6 @@ func embeddedText(name string) string {
 	return string(data)
 }
 
-
 func floatString(v float32) string {
 	return fmt.Sprintf("%.1f", v)
 }
@@ -101,7 +100,7 @@ func relatedExamples(id string) string {
 
 var relatedExampleMap = map[string][]string{
 	"welcome":             {"examples/showcase/demo_welcome.go", "examples/showcase/docs/welcome.md"},
-	"commands":             {"examples/showcase/docs/commands.md", "examples/command_demo/main.go"},
+	"commands":            {"examples/showcase/docs/commands.md", "examples/command_demo/main.go"},
 	"button":              {"examples/showcase/demo_feedback.go"},
 	"input":               {"examples/showcase/demo_input.go", "examples/multiline_input/main.go"},
 	"toggle":              {"examples/showcase/demo_selection.go"},
@@ -147,7 +146,7 @@ var relatedExampleMap = map[string][]string{
 	"markdown":            {"examples/showcase/demo_text.go", "examples/markdown/main.go", "examples/markdown/markdown_source.md"},
 	"tab_control":         {"examples/showcase/demo_navigation.go"},
 	"command_palette":     {"examples/showcase/demo_navigation.go"},
-	"context_menu":       {"examples/showcase/demo_overlays.go", "examples/context_menu/main.go"},
+	"context_menu":        {"examples/showcase/demo_overlays.go", "examples/context_menu/main.go"},
 	"tooltip":             {"examples/showcase/demo_overlays.go"},
 	"rectangle":           {"examples/showcase/demo_graphics.go", "examples/gradient_demo/main.go"},
 	"scrollbar":           {"examples/showcase/demo_layout.go", "examples/scroll_demo/main.go"},
@@ -225,25 +224,25 @@ type gradientStopJSON struct {
 }
 
 type gradientConfigJSON struct {
-	Stops     []gradientStopJSON     `json:"stops"`
+	Stops     []gradientStopJSON      `json:"stops"`
 	Direction glyph.GradientDirection `json:"direction"`
 }
 
 type textStyleJSON struct {
-	Family        string            `json:"family"`
-	Color         colorJSON         `json:"color"`
-	BgColor       colorJSON         `json:"bg_color"`
-	Size          float32           `json:"size"`
-	LineSpacing   float32           `json:"line_spacing"`
-	LetterSpacing float32           `json:"letter_spacing"`
-	Align         gui.TextAlignment `json:"align"`
-	Underline     bool              `json:"underline"`
-	Strikethrough bool              `json:"strikethrough"`
-	RotationRadians float32         `json:"rotation_radians"`
+	Family          string               `json:"family"`
+	Color           colorJSON            `json:"color"`
+	BgColor         colorJSON            `json:"bg_color"`
+	Size            float32              `json:"size"`
+	LineSpacing     float32              `json:"line_spacing"`
+	LetterSpacing   float32              `json:"letter_spacing"`
+	Align           gui.TextAlignment    `json:"align"`
+	Underline       bool                 `json:"underline"`
+	Strikethrough   bool                 `json:"strikethrough"`
+	RotationRadians float32              `json:"rotation_radians"`
 	AffineTransform *affineTransformJSON `json:"affine_transform,omitempty"`
 	Gradient        *gradientConfigJSON  `json:"gradient,omitempty"`
-	StrokeWidth   float32           `json:"stroke_width"`
-	StrokeColor   colorJSON         `json:"stroke_color"`
+	StrokeWidth     float32              `json:"stroke_width"`
+	StrokeColor     colorJSON            `json:"stroke_color"`
 }
 
 func themeCfgJSONFromCfg(cfg gui.ThemeCfg) themeCfgJSON {
@@ -361,38 +360,38 @@ func (g *gradientConfigJSON) toGlyph() *glyph.GradientConfig {
 
 func textStyleJSONFromTextStyle(ts gui.TextStyle) textStyleJSON {
 	return textStyleJSON{
-		Family:        ts.Family,
-		Color:         colorJSONFromColor(ts.Color),
-		BgColor:       colorJSONFromColor(ts.BgColor),
-		Size:          ts.Size,
-		LineSpacing:   ts.LineSpacing,
-		LetterSpacing: ts.LetterSpacing,
-		Align:         ts.Align,
-		Underline:     ts.Underline,
-		Strikethrough: ts.Strikethrough,
+		Family:          ts.Family,
+		Color:           colorJSONFromColor(ts.Color),
+		BgColor:         colorJSONFromColor(ts.BgColor),
+		Size:            ts.Size,
+		LineSpacing:     ts.LineSpacing,
+		LetterSpacing:   ts.LetterSpacing,
+		Align:           ts.Align,
+		Underline:       ts.Underline,
+		Strikethrough:   ts.Strikethrough,
 		RotationRadians: ts.RotationRadians,
 		AffineTransform: affineTransformJSONFromGlyph(ts.AffineTransform),
 		Gradient:        gradientConfigJSONFromGlyph(ts.Gradient),
-		StrokeWidth:   ts.StrokeWidth,
-		StrokeColor:   colorJSONFromColor(ts.StrokeColor),
+		StrokeWidth:     ts.StrokeWidth,
+		StrokeColor:     colorJSONFromColor(ts.StrokeColor),
 	}
 }
 
 func (ts textStyleJSON) toTextStyle() gui.TextStyle {
 	return gui.TextStyle{
-		Family:        ts.Family,
-		Color:         ts.Color.toColor(),
-		BgColor:       ts.BgColor.toColor(),
-		Size:          ts.Size,
-		LineSpacing:   ts.LineSpacing,
-		LetterSpacing: ts.LetterSpacing,
-		Align:         ts.Align,
-		Underline:     ts.Underline,
-		Strikethrough: ts.Strikethrough,
+		Family:          ts.Family,
+		Color:           ts.Color.toColor(),
+		BgColor:         ts.BgColor.toColor(),
+		Size:            ts.Size,
+		LineSpacing:     ts.LineSpacing,
+		LetterSpacing:   ts.LetterSpacing,
+		Align:           ts.Align,
+		Underline:       ts.Underline,
+		Strikethrough:   ts.Strikethrough,
 		RotationRadians: ts.RotationRadians,
 		AffineTransform: ts.AffineTransform.toGlyph(),
 		Gradient:        ts.Gradient.toGlyph(),
-		StrokeWidth:   ts.StrokeWidth,
-		StrokeColor:   ts.StrokeColor.toColor(),
+		StrokeWidth:     ts.StrokeWidth,
+		StrokeColor:     ts.StrokeColor.toColor(),
 	}
 }

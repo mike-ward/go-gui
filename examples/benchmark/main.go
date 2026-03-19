@@ -98,8 +98,8 @@ func startAnimation(w *gui.Window) {
 	gui.State[App](w).LastFrame = time.Now()
 	w.AnimationAdd(&gui.Animate{
 		AnimID: animID,
-		Delay:     0,
-		Repeat:    true,
+		Delay:  0,
+		Repeat: true,
 		Callback: func(_ *gui.Animate, w *gui.Window) {
 			app := gui.State[App](w)
 			// Sample timings every frame so the averages track the live view.

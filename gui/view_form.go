@@ -24,7 +24,7 @@ const (
 type FormIssueKind uint8
 
 const (
-	FormIssueError   FormIssueKind = iota
+	FormIssueError FormIssueKind = iota
 	FormIssueWarning
 )
 
@@ -158,14 +158,14 @@ type FormCfg struct {
 	PendingSlot func(FormPendingState) View
 
 	// Container passthrough.
-	Sizing                                                          Sizing
-	Width, Height, MinWidth, MaxWidth, MinHeight, MaxHeight         float32
-	Padding                                                         Opt[Padding]
-	Spacing                                                         Opt[float32]
-	Color                                                           Color
-	SizeBorder                                                      Opt[float32]
-	ColorBorder                                                     Color
-	Radius                                                          Opt[float32]
+	Sizing                                                  Sizing
+	Width, Height, MinWidth, MaxWidth, MinHeight, MaxHeight float32
+	Padding                                                 Opt[Padding]
+	Spacing                                                 Opt[float32]
+	Color                                                   Color
+	SizeBorder                                              Opt[float32]
+	ColorBorder                                             Color
+	Radius                                                  Opt[float32]
 
 	Content []View
 }

@@ -1,6 +1,6 @@
 //go:build !js
 
-package gl
+package sdl2
 
 import (
 	"testing"

@@ -17,11 +17,11 @@ func benchAnimationOnAnimate(_ *Animate, _ *Window) {}
 
 func BenchmarkUpdateAnimate(b *testing.B) {
 	a := &Animate{
-		AnimID: "bench:animate",
-		Callback:  benchAnimationOnAnimate,
-		Delay:     0,
-		Repeat:    true,
-		start:     time.Now().Add(-time.Second),
+		AnimID:   "bench:animate",
+		Callback: benchAnimationOnAnimate,
+		Delay:    0,
+		Repeat:   true,
+		start:    time.Now().Add(-time.Second),
 	}
 	w := &Window{}
 	deferred := make([]queuedCommand, 0, 8)

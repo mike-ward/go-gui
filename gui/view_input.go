@@ -49,17 +49,17 @@ type InputCfg struct {
 	IDScroll uint32
 
 	// Callbacks
-	OnTextChanged      func(*Layout, string, *Window)
-	OnTextCommit       func(*Layout, string, InputCommitReason, *Window)
-	OnEnter            func(*Layout, *Event, *Window)
-	OnKeyDown          func(*Layout, *Event, *Window)
-	OnBlur             func(*Layout, *Window)
+	OnTextChanged func(*Layout, string, *Window)
+	OnTextCommit  func(*Layout, string, InputCommitReason, *Window)
+	OnEnter       func(*Layout, *Event, *Window)
+	OnKeyDown     func(*Layout, *Event, *Window)
+	OnBlur        func(*Layout, *Window)
 	// PreTextChange is called before text changes. Return (adjusted, true)
 	// to accept (adjusted may differ from proposed), or ("", false) to
 	// reject. Undo/redo bypass this callback by design — if security
 	// invariants (max length, forbidden chars) must be enforced
 	// unconditionally, use OnTextChanged instead.
-	PreTextChange func(current, proposed string) (string, bool)
+	PreTextChange       func(current, proposed string) (string, bool)
 	PostCommitNormalize func(text string, reason InputCommitReason) string
 
 	// Accessibility
@@ -96,13 +96,13 @@ func Input(cfg InputCfg) View {
 	onBlur := cfg.OnBlur
 
 	hcfg := inputHandlerCfg{
-		IDFocus:       cfg.IDFocus,
-		IDScroll:      cfg.IDScroll,
-		IsPassword:    cfg.IsPassword,
-		Mode:          cfg.Mode,
-		Mask:          cfg.Mask,
-		MaskPreset:    cfg.MaskPreset,
-		MaskTokens:    cfg.MaskTokens,
+		IDFocus:             cfg.IDFocus,
+		IDScroll:            cfg.IDScroll,
+		IsPassword:          cfg.IsPassword,
+		Mode:                cfg.Mode,
+		Mask:                cfg.Mask,
+		MaskPreset:          cfg.MaskPreset,
+		MaskTokens:          cfg.MaskTokens,
 		OnTextChanged:       cfg.OnTextChanged,
 		OnTextCommit:        cfg.OnTextCommit,
 		OnEnter:             cfg.OnEnter,
@@ -1097,11 +1097,11 @@ func startInputDrag(d *inputDragState, w *Window) {
 				if outside && !w.HasAnimation(
 					animIDDragScroll) {
 					w.AnimationAdd(&Animate{
-						AnimID: animIDDragScroll,
-						Delay:     32 * time.Millisecond,
-						Repeat:    true,
-						Refresh:   AnimationRefreshLayout,
-						Callback:  d.scrollCallback,
+						AnimID:   animIDDragScroll,
+						Delay:    32 * time.Millisecond,
+						Repeat:   true,
+						Refresh:  AnimationRefreshLayout,
+						Callback: d.scrollCallback,
 					})
 				} else if !outside {
 					w.AnimationRemove(animIDDragScroll)

@@ -30,13 +30,13 @@ import (
 
 // Pipeline IDs matching the C enum.
 const (
-	pipeSolid       = C.PIPE_SOLID
-	pipeShadow      = C.PIPE_SHADOW
-	pipeBlur        = C.PIPE_BLUR
-	pipeGradient    = C.PIPE_GRADIENT
-	pipeImageClip   = C.PIPE_IMAGE_CLIP
-	pipeGlyphTex    = C.PIPE_GLYPH_TEX
-	pipeGlyphColor  = C.PIPE_GLYPH_COLOR
+	pipeSolid      = C.PIPE_SOLID
+	pipeShadow     = C.PIPE_SHADOW
+	pipeBlur       = C.PIPE_BLUR
+	pipeGradient   = C.PIPE_GRADIENT
+	pipeImageClip  = C.PIPE_IMAGE_CLIP
+	pipeGlyphTex   = C.PIPE_GLYPH_TEX
+	pipeGlyphColor = C.PIPE_GLYPH_COLOR
 )
 
 const maxCustomPipelines = 32

@@ -1,6 +1,5 @@
 package gui
 
-
 // BreadcrumbItemCfg configures one item in a Breadcrumb.
 type BreadcrumbItemCfg struct {
 	ID       string

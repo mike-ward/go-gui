@@ -89,8 +89,8 @@ func handleKeyEvent(e *gui.Event, w *gui.Window) {
 func startGameLoop(w *gui.Window) {
 	w.AnimationAdd(&gui.Animate{
 		AnimID: tickAnimation,
-		Delay:     tickMs * time.Millisecond,
-		Repeat:    true,
+		Delay:  tickMs * time.Millisecond,
+		Repeat: true,
 		Callback: func(_ *gui.Animate, w *gui.Window) {
 			app := gui.State[App](w)
 			app.LandingFrame++

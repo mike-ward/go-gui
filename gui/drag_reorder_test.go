@@ -338,7 +338,7 @@ func TestDragReorderCancelsOnMidDragMutation(t *testing.T) {
 		Axis: DragReorderVertical, ItemIDs: []string{"a", "b", "c"},
 		OnReorder:     func(string, string, *Window) { called = true },
 		ItemLayoutIDs: []string{"a", "b", "c"},
-		Layout: item, Event: e,
+		Layout:        item, Event: e,
 	}, w)
 	dragReorderIDsMetaSet(w, dragKey, []string{"a", "b", "c"})
 

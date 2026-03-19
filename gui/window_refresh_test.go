@@ -58,8 +58,8 @@ func TestBlinkCursorAnimationRefreshKindIsRenderOnly(t *testing.T) {
 
 func TestAnimateRefreshKindIsLayout(t *testing.T) {
 	a := &Animate{
-		AnimID: "test",
-		Callback:  func(*Animate, *Window) {},
+		AnimID:   "test",
+		Callback: func(*Animate, *Window) {},
 	}
 	if a.RefreshKind() != AnimationRefreshLayout {
 		t.Errorf("got %d, want layout", a.RefreshKind())
@@ -68,9 +68,9 @@ func TestAnimateRefreshKindIsLayout(t *testing.T) {
 
 func TestAnimateRefreshKindOverride(t *testing.T) {
 	a := &Animate{
-		AnimID: "test",
-		Callback:  func(*Animate, *Window) {},
-		Refresh:   AnimationRefreshRenderOnly,
+		AnimID:   "test",
+		Callback: func(*Animate, *Window) {},
+		Refresh:  AnimationRefreshRenderOnly,
 	}
 	if a.RefreshKind() != AnimationRefreshRenderOnly {
 		t.Errorf("got %d, want render_only", a.RefreshKind())

@@ -18,7 +18,7 @@ type transitionBase struct {
 	progress float32
 }
 
-func (tb *transitionBase) IsStopped() bool       { return tb.stopped }
+func (tb *transitionBase) IsStopped() bool        { return tb.stopped }
 func (tb *transitionBase) SetStart(now time.Time) { tb.start = now }
 
 // updateTransition advances a duration-based transition, returning
@@ -115,11 +115,11 @@ func (a *BlinkCursorAnimation) Update(w *Window, _ float32, _ *[]queuedCommand) 
 type Animate struct {
 	AnimID   string
 	Callback func(*Animate, *Window)
-	Delay     time.Duration
-	Repeat    bool
-	Refresh   AnimationRefreshKind // 0 defaults to layout
-	start     time.Time
-	stopped   bool
+	Delay    time.Duration
+	Repeat   bool
+	Refresh  AnimationRefreshKind // 0 defaults to layout
+	start    time.Time
+	stopped  bool
 }
 
 // ID implements Animation.

@@ -72,7 +72,7 @@ func dataGridQuickFilterRow(cfg *DataGridCfg) View {
 					filters := append([]GridFilter(nil), query.Filters...)
 					w.AnimationAdd(&Animate{
 						AnimID: inputID + ":debounce",
-						Delay:     debounce,
+						Delay:  debounce,
 						Callback: func(_ *Animate, w *Window) {
 							next := GridQueryState{
 								Sorts:       sorts,

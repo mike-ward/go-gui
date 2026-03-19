@@ -66,7 +66,7 @@ type TableCfg struct {
 
 	// IDScroll enables scrolling. When set with Height or
 	// MaxHeight, virtualization renders only visible rows.
-	IDScroll  uint32
+	IDScroll     uint32
 	Scrollbar    ScrollbarOverflow
 	FreezeHeader bool
 

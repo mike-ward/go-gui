@@ -27,9 +27,9 @@ func main() {
 			w.UpdateView(mainView)
 			w.AnimationAdd(&gui.Animate{
 				// Keep the frame loop hot so the shader parameter updates continuously.
-				AnimID: shaderTickAnimationID,
-				Repeat:    true,
-				Callback:  func(_ *gui.Animate, _ *gui.Window) {},
+				AnimID:   shaderTickAnimationID,
+				Repeat:   true,
+				Callback: func(_ *gui.Animate, _ *gui.Window) {},
 			})
 		},
 	})

@@ -15,7 +15,7 @@ func (m *mockNotificationPlatform) SendNotification(_, _ string) NativeNotificat
 	return m.result
 }
 
-func (m *mockNotificationPlatform) OpenURI(_ string) error                          { return nil }
+func (m *mockNotificationPlatform) OpenURI(_ string) error { return nil }
 func (m *mockNotificationPlatform) ShowOpenDialog(_, _ string, _ []string, _ bool) PlatformDialogResult {
 	return PlatformDialogResult{}
 }

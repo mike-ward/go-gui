@@ -109,7 +109,6 @@ func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return 
 func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
-
 func (n *nativePlatform) IMEStart() { sdl.StartTextInput() }
 func (n *nativePlatform) IMEStop()  { sdl.StopTextInput() }
 func (n *nativePlatform) IMESetRect(x, y, w, h int32) {

@@ -25,9 +25,9 @@ type RadioButtonGroupCfg struct {
 	TitleBG     Color
 	MinWidth    float32
 	MinHeight   float32
-	IDFocus   uint32
-	Disabled  bool
-	TextStyle TextStyle
+	IDFocus     uint32
+	Disabled    bool
+	TextStyle   TextStyle
 
 	A11YLabel       string
 	A11YDescription string

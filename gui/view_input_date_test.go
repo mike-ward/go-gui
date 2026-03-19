@@ -137,13 +137,13 @@ func TestInputDateMultiSelectText(t *testing.T) {
 	w := &Window{}
 	d1 := time.Date(2025, 3, 15, 0, 0, 0, 0, time.Local)
 	d2 := time.Date(2025, 3, 16, 0, 0, 0, 0, time.Local)
-	
+
 	v := InputDate(InputDateCfg{
 		ID:    "id-multi",
 		Dates: []time.Time{d1, d2},
 	})
 	layout := GenerateViewLayout(v, w)
-	
+
 	// The text child should say "2 dates selected".
 	// The structure is Row -> [Text, Button]
 	row := &layout.Children[0]

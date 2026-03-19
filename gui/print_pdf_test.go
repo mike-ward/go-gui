@@ -363,8 +363,8 @@ func TestRenderToPDF_TextPath(t *testing.T) {
 func TestRenderToPDF_TextMultilineStrikethrough(t *testing.T) {
 	j := testPrintJob(t)
 	cmds := []RenderCmd{{
-		Kind:     RenderText,
-		X:        50, Y: 50,
+		Kind: RenderText,
+		X:    50, Y: 50,
 		Color:    RGBA(0, 0, 0, 255),
 		Text:     "Line1\nLine2Long",
 		FontName: "sans", FontSize: 14,
@@ -379,8 +379,8 @@ func TestRenderToPDF_TextMultilineStrikethrough(t *testing.T) {
 func TestRenderToPDF_TextGradientFallback(t *testing.T) {
 	j := testPrintJob(t)
 	cmds := []RenderCmd{{
-		Kind:     RenderText,
-		X:        10, Y: 10,
+		Kind: RenderText,
+		X:    10, Y: 10,
 		Color:    RGBA(0, 0, 0, 255),
 		Text:     "Gradient",
 		FontName: "sans", FontSize: 14,
@@ -456,13 +456,13 @@ func TestRenderToPDF_Diagnostic(t *testing.T) {
 		// 1. White text on dark bg (no clip).
 		{Kind: RenderText, X: 20, Y: 20,
 			Color: RGBA(225, 225, 225, 255),
-			Text: "1. White text no clip", FontName: "sans",
+			Text:  "1. White text no clip", FontName: "sans",
 			FontSize: 14},
 
 		// 2. Black text on dark bg (should be invisible).
 		{Kind: RenderText, X: 20, Y: 50,
 			Color: RGBA(0, 0, 0, 255),
-			Text: "2. Black text (invisible)", FontName: "sans",
+			Text:  "2. Black text (invisible)", FontName: "sans",
 			FontSize: 14},
 
 		// 3. Light rect + dark text inside clip.
@@ -471,24 +471,24 @@ func TestRenderToPDF_Diagnostic(t *testing.T) {
 			Color: RGBA(60, 60, 63, 255)},
 		{Kind: RenderText, X: 30, Y: 100,
 			Color: RGBA(225, 225, 225, 255),
-			Text: "3. White text inside clip", FontName: "sans",
+			Text:  "3. White text inside clip", FontName: "sans",
 			FontSize: 14},
 		{Kind: RenderText, X: 30, Y: 130,
 			Color: RGBA(225, 225, 225, 255),
-			Text: "4. Second line in clip", FontName: "sans",
+			Text:  "4. Second line in clip", FontName: "sans",
 			FontSize: 13},
 		{Kind: RenderClip}, // end clip
 
 		// 5. Text after clip ends.
 		{Kind: RenderText, X: 20, Y: 320,
 			Color: RGBA(225, 225, 225, 255),
-			Text: "5. Text after clip", FontName: "sans",
+			Text:  "5. Text after clip", FontName: "sans",
 			FontSize: 14},
 
 		// 6. Semi-transparent text.
 		{Kind: RenderText, X: 20, Y: 360,
 			Color: RGBA(225, 225, 225, 128),
-			Text: "6. Semi-transparent text", FontName: "sans",
+			Text:  "6. Semi-transparent text", FontName: "sans",
 			FontSize: 14},
 	}
 	if err := renderToPDF(cmds, j, 800, 600); err != nil {
@@ -519,13 +519,13 @@ func TestRenderToPDF_TwoPanel(t *testing.T) {
 			Color: RGBA(55, 55, 58, 255)},
 		{Kind: RenderText, X: 20, Y: 30,
 			Color: RGBA(225, 225, 225, 255),
-			Text: "LEFT PANEL", FontName: "sans", FontSize: 16},
+			Text:  "LEFT PANEL", FontName: "sans", FontSize: 16},
 
 		// Nested clip inside left panel (child scroll area).
 		{Kind: RenderClip, X: 10, Y: 60, W: 330, H: 500},
 		{Kind: RenderText, X: 20, Y: 80,
 			Color: RGBA(200, 200, 200, 255),
-			Text: "Left nested clip content", FontName: "sans",
+			Text:  "Left nested clip content", FontName: "sans",
 			FontSize: 12},
 		// Restore left panel clip (exit child).
 		{Kind: RenderClip, X: 0, Y: 0, W: 350, H: 600},
@@ -533,7 +533,7 @@ func TestRenderToPDF_TwoPanel(t *testing.T) {
 		// More left panel content after nested clip.
 		{Kind: RenderText, X: 20, Y: 580,
 			Color: RGBA(200, 200, 200, 255),
-			Text: "Left footer", FontName: "sans", FontSize: 10},
+			Text:  "Left footer", FontName: "sans", FontSize: 10},
 		// Restore window clip (exit left panel).
 		windowClip(),
 
@@ -543,17 +543,17 @@ func TestRenderToPDF_TwoPanel(t *testing.T) {
 			Color: RGBA(65, 65, 68, 255)},
 		{Kind: RenderText, X: 370, Y: 30,
 			Color: RGBA(225, 225, 225, 255),
-			Text: "RIGHT PANEL", FontName: "sans", FontSize: 16},
+			Text:  "RIGHT PANEL", FontName: "sans", FontSize: 16},
 
 		// Nested clip inside right panel (detail scroll area).
 		{Kind: RenderClip, X: 360, Y: 60, W: 430, H: 500},
 		{Kind: RenderText, X: 370, Y: 80,
 			Color: RGBA(200, 200, 200, 255),
-			Text: "Right nested clip content", FontName: "sans",
+			Text:  "Right nested clip content", FontName: "sans",
 			FontSize: 12},
 		{Kind: RenderText, X: 370, Y: 100,
 			Color: RGBA(200, 200, 200, 255),
-			Text: "Export PDF  |  Print", FontName: "sans",
+			Text:  "Export PDF  |  Print", FontName: "sans",
 			FontSize: 12},
 		// Restore right panel clip (exit child).
 		{Kind: RenderClip, X: 350, Y: 0, W: 450, H: 600},

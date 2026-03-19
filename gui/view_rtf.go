@@ -242,7 +242,7 @@ func rtfMouseMove(l *Layout, e *Event, w *Window) {
 func rtfTooltipAnimation(tipID string) *Animate {
 	return &Animate{
 		AnimID: "___tooltip___",
-		Delay:     DefaultTooltipStyle.Delay,
+		Delay:  DefaultTooltipStyle.Delay,
 		Callback: func(_ *Animate, w *Window) {
 			ts := &w.viewState.tooltip
 			if ts.hoverID == tipID && ts.text != "" {

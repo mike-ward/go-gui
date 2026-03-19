@@ -264,4 +264,3 @@ func TestRenderFilterBracketBlurSuppressed(t *testing.T) {
 		t.Error("FilterBegin with blur radius not found")
 	}
 }
-

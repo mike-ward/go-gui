@@ -67,14 +67,16 @@ func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return 
 func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
-func (n *nativePlatform) A11yInit(_ func(action, index int))             {}
-func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int)            {}
-func (n *nativePlatform) A11yDestroy()                                   {}
-func (n *nativePlatform) A11yAnnounce(_ string)                          {}
-func (n *nativePlatform) IMEStart()                                      {}
-func (n *nativePlatform) IMEStop()                                       {}
-func (n *nativePlatform) IMESetRect(_, _, _, _ int32)                    {}
-func (n *nativePlatform) TitlebarDark(_ bool)                            {}
-func (n *nativePlatform) SpellCheck(text string) []gui.SpellRange        { return spellcheck.Check(text) }
-func (n *nativePlatform) SpellSuggest(text string, s, l int) []string    { return spellcheck.Suggest(text, s, l) }
-func (n *nativePlatform) SpellLearn(word string)                         { spellcheck.Learn(word) }
+func (n *nativePlatform) A11yInit(_ func(action, index int))      {}
+func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int)     {}
+func (n *nativePlatform) A11yDestroy()                            {}
+func (n *nativePlatform) A11yAnnounce(_ string)                   {}
+func (n *nativePlatform) IMEStart()                               {}
+func (n *nativePlatform) IMEStop()                                {}
+func (n *nativePlatform) IMESetRect(_, _, _, _ int32)             {}
+func (n *nativePlatform) TitlebarDark(_ bool)                     {}
+func (n *nativePlatform) SpellCheck(text string) []gui.SpellRange { return spellcheck.Check(text) }
+func (n *nativePlatform) SpellSuggest(text string, s, l int) []string {
+	return spellcheck.Suggest(text, s, l)
+}
+func (n *nativePlatform) SpellLearn(word string) { spellcheck.Learn(word) }

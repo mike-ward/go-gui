@@ -892,12 +892,12 @@ func demoColorFilter(_ *gui.Window) gui.View {
 				SizeBorder: gui.NoBorder,
 				Content: []gui.View{
 					gui.Column(gui.ContainerCfg{
-						Width:       120,
-						Sizing:      gui.FixedFit,
-						Padding:     gui.SomeP(8, 8, 8, 8),
-						Radius:      gui.SomeF(6),
-						Color:       t.ColorPanel,
-						Content:     colorContent("Original"),
+						Width:   120,
+						Sizing:  gui.FixedFit,
+						Padding: gui.SomeP(8, 8, 8, 8),
+						Radius:  gui.SomeF(6),
+						Color:   t.ColorPanel,
+						Content: colorContent("Original"),
 					}),
 					gui.Column(gui.ContainerCfg{
 						Width:       120,

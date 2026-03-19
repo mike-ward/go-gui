@@ -53,13 +53,13 @@ func (s *scratchMap[K, V]) put(m map[K]V) {
 
 // scratchPools holds reusable per-frame buffers.
 type scratchPools struct {
-	filterRenderers    scratchSlice[RenderCmd]
-	focusCandidates    scratchSlice[focusCandidate]
-	gradientNormStops  scratchSlice[GradientStop]
+	filterRenderers     scratchSlice[RenderCmd]
+	focusCandidates     scratchSlice[focusCandidate]
+	gradientNormStops   scratchSlice[GradientStop]
 	gradientSampleStops scratchSlice[GradientStop]
-	svgAnimVals        scratchSlice[float32]
-	wrapRows           scratchSlice[wrapRowRange]
-	layerLayouts       scratchSlice[Layout]
+	svgAnimVals         scratchSlice[float32]
+	wrapRows            scratchSlice[wrapRowRange]
+	layerLayouts        scratchSlice[Layout]
 
 	focusSeen     scratchMap[uint32, struct{}]
 	svgAnimStates scratchMap[string, svgAnimState]

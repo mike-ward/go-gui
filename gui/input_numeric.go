@@ -198,21 +198,21 @@ func numericGroupIntegerPart(raw string, groupSep rune, groupSizes []int) string
 
 func numericFormatValue(value float64, decimals int, loc NumericLocaleCfg) string {
 	d := numericDecimalsClamped(decimals)
-	
+
 	str := strconv.FormatFloat(math.Abs(value), 'f', d, 64)
-	
+
 	sign := ""
 	if value < 0 {
 		sign = string(loc.MinusSign)
 	}
-	
+
 	parts := strings.Split(str, ".")
 	intPart := parts[0]
 	grouped := numericGroupIntegerPart(intPart, loc.GroupSep, loc.GroupSizes)
 	if d == 0 || len(parts) == 1 {
 		return sign + grouped
 	}
-	
+
 	fracPart := parts[1]
 	return sign + grouped + string(loc.DecimalSep) + fracPart
 }

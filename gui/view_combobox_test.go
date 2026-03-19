@@ -184,10 +184,10 @@ func TestScrollEnsureVisibleSurvivesPipeline(t *testing.T) {
 	}
 	dropdown := Layout{
 		Shape: &Shape{
-			IDScroll:  idScroll,
-			Height:    200, // MaxHeight clamped
-			Axis:      AxisTopToBottom,
-			Padding:   Padding{Top: 5, Right: 5, Bottom: 5, Left: 5},
+			IDScroll:   idScroll,
+			Height:     200, // MaxHeight clamped
+			Axis:       AxisTopToBottom,
+			Padding:    Padding{Top: 5, Right: 5, Bottom: 5, Left: 5},
 			SizeBorder: 1.5,
 		},
 		Children: children,

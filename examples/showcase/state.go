@@ -40,10 +40,10 @@ type ShowcaseApp struct {
 	ButtonClicks    int
 	ButtonCopyUntil time.Time
 
-	InputText      string
-	InputPassword  string
-	InputPhone     string
-	InputExpiry    string
+	InputText       string
+	InputPassword   string
+	InputPhone      string
+	InputExpiry     string
 	InputMultiline  string
 	InputSpellCheck bool
 
@@ -55,7 +55,7 @@ type ShowcaseApp struct {
 	SelectValue     []string
 	ListBoxSelected []string
 	ComboboxValue   string
-	RangeValue float32
+	RangeValue      float32
 
 	NumericENText        string
 	NumericDEText        string
@@ -106,11 +106,11 @@ type ShowcaseApp struct {
 
 	DataGridQuery       gui.GridQueryState
 	DataGridSelection   gui.GridSelection
-	TableSortBy      int
-	TableBorderStyle string
+	TableSortBy         int
+	TableBorderStyle    string
 	TableMultiSelect    bool
 	TableFreezeHeader   bool
-	TableSelected    map[int]bool
+	TableSelected       map[int]bool
 	DataSourceQuery     gui.GridQueryState
 	DataSourceSelection gui.GridSelection
 	DataSource          gui.DataGridDataSource
@@ -209,7 +209,6 @@ func newShowcaseApp() *ShowcaseApp {
 		},
 	}
 }
-
 
 var demoGroups = []DemoGroup{
 	{Key: groupWelcome, Label: "Welcome"},

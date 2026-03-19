@@ -236,4 +236,3 @@ func TestProgressBarSizeBorderNone(t *testing.T) {
 		}
 	}
 }
-

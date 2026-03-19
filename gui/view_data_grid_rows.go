@@ -814,4 +814,3 @@ func dataGridSplitFrozenTopIndices(cfg *DataGridCfg, rowIndices []int) (frozenTo
 	}
 	return
 }
-

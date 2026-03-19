@@ -13,7 +13,6 @@ import (
 
 const maxSvgSourceBytes = int64(4 * 1024 * 1024)
 
-
 type svgParserCacheInvalidator interface {
 	InvalidateSvgSource(svgSrc string)
 	ClearSvgParserCache()

@@ -42,16 +42,16 @@ type ContainerCfg struct {
 	Shader         *Shader
 
 	// Behavior
-	IDFocus    uint32
-	IDScroll   uint32
-	ScrollMode ScrollMode
+	IDFocus      uint32
+	IDScroll     uint32
+	ScrollMode   ScrollMode
 	Clip         bool
 	ClipContents bool
 	FocusSkip    bool
-	Disabled   bool
-	Invisible  bool
-	OverDraw   bool
-	Hero       bool
+	Disabled     bool
+	Invisible    bool
+	OverDraw     bool
+	Hero         bool
 
 	// Floating
 	Float         bool

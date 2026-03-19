@@ -52,18 +52,18 @@ type RenderCmd struct {
 	Radius float32
 
 	// Type-specific numerics.
-	Thickness  float32 // StrokeRect, GradientBorder
-	BlurRadius float32 // Shadow, Blur
-	Scale      float32 // Svg, FilterBegin
-	OffsetX    float32 // Shadow; Line X1
-	OffsetY    float32 // Shadow; Line Y1
+	Thickness    float32 // StrokeRect, GradientBorder
+	BlurRadius   float32 // Shadow, Blur
+	Scale        float32 // Svg, FilterBegin
+	OffsetX      float32 // Shadow; Line X1
+	OffsetY      float32 // Shadow; Line Y1
 	ClipRadius   float32 // Image
 	StencilDepth uint8   // StencilBegin/End
 
 	// Flags.
-	Fill       bool // Rect fill, Circle fill
-	IsClipMask bool // Svg stencil mask
-	ClipGroup  int  // Svg clip group id
+	Fill        bool         // Rect fill, Circle fill
+	IsClipMask  bool         // Svg stencil mask
+	ClipGroup   int          // Svg clip group id
 	Layers      int          // FilterComposite
 	GroupIdx    int          // FilterBegin
 	ColorMatrix *[16]float32 // FilterBegin: color transform
@@ -90,12 +90,12 @@ type RenderCmd struct {
 	HasVertexAlpha   bool
 
 	// Pointer fields.
-	Shader       *Shader
-	Gradient     *GradientDef
-	TextStylePtr *TextStyle            // full text style (typeface, etc.)
-	TextGradient *glyph.GradientConfig // text gradient for glyph-layout draws
-	TextPath     *TextPathData         // SVG textPath placement data
-	LayoutPtr    *glyph.Layout         // pre-shaped glyph layout
+	Shader          *Shader
+	Gradient        *GradientDef
+	TextStylePtr    *TextStyle            // full text style (typeface, etc.)
+	TextGradient    *glyph.GradientConfig // text gradient for glyph-layout draws
+	TextPath        *TextPathData         // SVG textPath placement data
+	LayoutPtr       *glyph.Layout         // pre-shaped glyph layout
 	LayoutTransform *glyph.AffineTransform
 }
 

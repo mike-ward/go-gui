@@ -43,22 +43,22 @@ const (
 
 // TextStyle defines text rendering properties.
 type TextStyle struct {
-	Family        string
-	Color         Color
-	BgColor       Color
-	Size          float32
-	LineSpacing   float32
-	LetterSpacing float32
-	Align         TextAlignment
-	Underline     bool
-	Strikethrough bool
+	Family          string
+	Color           Color
+	BgColor         Color
+	Size            float32
+	LineSpacing     float32
+	LetterSpacing   float32
+	Align           TextAlignment
+	Underline       bool
+	Strikethrough   bool
 	RotationRadians float32
 	AffineTransform *glyph.AffineTransform
-	Typeface      glyph.Typeface
-	Gradient      *glyph.GradientConfig
-	StrokeWidth   float32
-	StrokeColor   Color
-	Features      *glyph.FontFeatures
+	Typeface        glyph.Typeface
+	Gradient        *glyph.GradientConfig
+	StrokeWidth     float32
+	StrokeColor     Color
+	Features        *glyph.FontFeatures
 }
 
 // mergeTextStyle fills zero fields in s from fallback.

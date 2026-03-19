@@ -93,13 +93,13 @@ import "time"
 // state.
 
 const (
-	dragReorderThreshold       = float32(5.0)
-	dragReorderScrollZone      = float32(40.0)
-	dragReorderScrollSpeed     = float32(4.0)
-	dragReorderScrollAnimID    = "gui.drag_reorder.scroll"
-	dragGhostOpacity    = float32(0.85)
-	dragGhostShadowBlur = float32(8.0)
-	dragGhostShadowOffY = float32(2.0)
+	dragReorderThreshold    = float32(5.0)
+	dragReorderScrollZone   = float32(40.0)
+	dragReorderScrollSpeed  = float32(4.0)
+	dragReorderScrollAnimID = "gui.drag_reorder.scroll"
+	dragGhostOpacity        = float32(0.85)
+	dragGhostShadowBlur     = float32(8.0)
+	dragGhostShadowOffY     = float32(2.0)
 )
 
 var dragGhostShadowColor = Color{R: 0, G: 0, B: 0, A: 60, set: true}
@@ -428,8 +428,8 @@ func dragReorderOnMouseMove(
 		state.scrollTimerActive = true
 		w.AnimationAdd(&Animate{
 			AnimID: dragReorderScrollAnimID,
-			Repeat:    true,
-			Delay:     16 * time.Millisecond,
+			Repeat: true,
+			Delay:  16 * time.Millisecond,
 			Callback: func(an *Animate, w *Window) {
 				st := dragReorderGet(w, dragKey)
 				if !st.active || st.cancelled {

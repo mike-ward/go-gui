@@ -43,7 +43,6 @@ func TestTweenOnDoneCalled(t *testing.T) {
 	}
 }
 
-
 func TestTweenStopped(t *testing.T) {
 	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
 	tw.stopped = true

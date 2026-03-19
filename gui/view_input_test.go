@@ -247,7 +247,6 @@ func TestInputKeyDownDelete(t *testing.T) {
 	}
 }
 
-
 func TestInputKeyDownEnterMultiline(t *testing.T) {
 	ctx := newInputTestMultiline("ab", 505, 2)
 	ctx.fireKeyDown(KeyEnter, 0)

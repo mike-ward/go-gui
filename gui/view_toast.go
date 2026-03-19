@@ -284,7 +284,7 @@ func toastStartDismissTimer(w *Window, id uint64) {
 	animID := toastAnimID("dismiss", id)
 	w.AnimationAdd(&Animate{
 		AnimID: animID,
-		Delay:     dur,
+		Delay:  dur,
 		Callback: func(_ *Animate, w *Window) {
 			// If hovered, reset and wait again.
 			for i := range w.toasts {

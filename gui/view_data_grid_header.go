@@ -223,7 +223,6 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 	})
 }
 
-
 func dataGridOrderButton(label string, baseStyle TextStyle, hoverColor Color, cb func(*Event, *Window)) View {
 	return dataGridIndicatorButton(label, baseStyle, hoverColor, false, dataGridHeaderControlWidth,
 		func(_ *Layout, e *Event, w *Window) {
@@ -597,4 +596,3 @@ func dataGridHeaderControlsWidth(showReorder, showPin, showResize bool) float32 
 	}
 	return width
 }
-

@@ -94,18 +94,18 @@ type SplitterCfg struct {
 
 // splitterCore holds callback-relevant fields.
 type splitterCore struct {
-	id                  string
-	idFocus             uint32
-	orientation         SplitterOrientation
-	ratio               float32
-	collapsed           SplitterCollapsed
-	onChange            func(float32, SplitterCollapsed, *Event, *Window)
-	first               splitterPaneCore
-	second              splitterPaneCore
-	handleSize          float32
-	dragStep            float32
-	dragStepLarge       float32
-	disabled bool
+	id            string
+	idFocus       uint32
+	orientation   SplitterOrientation
+	ratio         float32
+	collapsed     SplitterCollapsed
+	onChange      func(float32, SplitterCollapsed, *Event, *Window)
+	first         splitterPaneCore
+	second        splitterPaneCore
+	handleSize    float32
+	dragStep      float32
+	dragStepLarge float32
+	disabled      bool
 }
 
 type splitterComputed struct {

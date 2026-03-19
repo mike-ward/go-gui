@@ -223,7 +223,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 						SizeBorder: NoBorder,
 						Spacing:    SomeF(0),
 						Clip:       true,
-						Content:   resultViews,
+						Content:    resultViews,
 					}),
 				},
 			}),

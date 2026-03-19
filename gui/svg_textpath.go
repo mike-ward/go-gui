@@ -22,7 +22,7 @@ func flattenDefsPath(d string, scale float32) []float32 {
 	}
 
 	var out []float32
-	var cx, cy float32       // current position
+	var cx, cy float32 // current position
 	var startX, startY float32
 	var lastCtrlX, lastCtrlY float32
 	var lastCmd string

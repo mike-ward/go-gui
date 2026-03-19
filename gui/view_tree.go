@@ -874,4 +874,3 @@ func treeScrollTo(
 		scrollEnsureVisible(idScroll, idx, rowH, listH, w)
 	}
 }
-

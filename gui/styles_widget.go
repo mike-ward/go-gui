@@ -191,14 +191,14 @@ type ToastStyle struct {
 
 // TooltipStyle defines tooltip visual properties.
 type TooltipStyle struct {
-	Delay      time.Duration
-	Color      Color
+	Delay       time.Duration
+	Color       Color
 	ColorBorder Color
-	Padding    Padding
-	SizeBorder float32
-	Radius     float32
-	Shadow     *BoxShadow
-	TextStyle  TextStyle
+	Padding     Padding
+	SizeBorder  float32
+	Radius      float32
+	Shadow      *BoxShadow
+	TextStyle   TextStyle
 }
 
 // BadgeStyle defines badge visual properties.
@@ -208,8 +208,8 @@ type BadgeStyle struct {
 	ColorSuccess Color
 	ColorWarning Color
 	ColorError   Color
-	Padding   Padding
-	TextStyle TextStyle
+	Padding      Padding
+	TextStyle    TextStyle
 	DotSize      float32
 }
 
@@ -633,8 +633,8 @@ var (
 		ColorSuccess: RGBA(46, 160, 67, 255),
 		ColorWarning: RGBA(210, 153, 34, 255),
 		ColorError:   RGBA(218, 54, 51, 255),
-		Padding: NewPadding(2, 6, 2, 6),
-		DotSize: 8,
+		Padding:      NewPadding(2, 6, 2, 6),
+		DotSize:      8,
 	}
 
 	DefaultExpandPanelStyle = ExpandPanelStyle{
@@ -787,15 +787,15 @@ var (
 	}
 
 	DefaultComboboxStyle = ComboboxStyle{
-		Color:            colorInteriorDark,
-		ColorHover:       colorHoverDark,
-		ColorFocus:       colorInteriorDark,
-		ColorBorder:      colorBorderDark,
-		ColorBorderFocus: colorSelectDark,
-		ColorHighlight:   colorSelectDark,
-		Padding:          PaddingSmall,
-		SizeBorder:       SizeBorderDef,
-		Radius:           RadiusMedium,
+		Color:             colorInteriorDark,
+		ColorHover:        colorHoverDark,
+		ColorFocus:        colorInteriorDark,
+		ColorBorder:       colorBorderDark,
+		ColorBorderFocus:  colorSelectDark,
+		ColorHighlight:    colorSelectDark,
+		Padding:           PaddingSmall,
+		SizeBorder:        SizeBorderDef,
+		Radius:            RadiusMedium,
 		MinWidth:          75,
 		MaxWidth:          200,
 		MaxDropdownHeight: 200,

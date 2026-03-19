@@ -217,11 +217,11 @@ func textOnClick(layout *Layout, e *Event, w *Window) {
 				if outside && !w.HasAnimation(
 					animIDTextDragScroll) {
 					w.AnimationAdd(&Animate{
-						AnimID: animIDTextDragScroll,
-						Delay:     32 * time.Millisecond,
-						Repeat:    true,
-						Refresh:   AnimationRefreshLayout,
-						Callback:  dragScrollCB,
+						AnimID:   animIDTextDragScroll,
+						Delay:    32 * time.Millisecond,
+						Repeat:   true,
+						Refresh:  AnimationRefreshLayout,
+						Callback: dragScrollCB,
 					})
 				} else if !outside {
 					w.AnimationRemove(

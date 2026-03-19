@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	idFocusMenu    uint32 = 1
-	idFocusPalette uint32 = 2
+	idFocusMenu     uint32 = 1
+	idFocusPalette  uint32 = 2
 	idScrollPalette uint32 = 3
 )
 

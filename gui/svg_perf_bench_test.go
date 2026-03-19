@@ -79,4 +79,3 @@ func BenchmarkBuildDefsPathDataCache(b *testing.B) {
 		_ = buildDefsPathDataCache(textPaths, filtered, defs, 1.0)
 	}
 }
-

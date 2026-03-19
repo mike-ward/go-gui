@@ -18,31 +18,31 @@ const (
 
 // DatePickerRollerCfg configures a roller-style date picker.
 type DatePickerRollerCfg struct {
-	ID              string
-	A11YLabel       string
-	A11YDescription string
-	IDFocus         uint32
-	SelectedDate    time.Time
-	DisplayMode     DatePickerRollerDisplayMode
-	MinYear         int
-	MaxYear         int
-	ItemHeight      float32
-	VisibleItems    int // must be odd
-	MinWidth        float32
-	MaxWidth        float32
-	WidthDay        float32
-	WidthMonth      float32
-	WidthYear       float32
-	LongMonths      bool // true = "January", false = "Jan"
-	WrapYear        bool
-	Color           Color
-	ColorBorder     Color
+	ID               string
+	A11YLabel        string
+	A11YDescription  string
+	IDFocus          uint32
+	SelectedDate     time.Time
+	DisplayMode      DatePickerRollerDisplayMode
+	MinYear          int
+	MaxYear          int
+	ItemHeight       float32
+	VisibleItems     int // must be odd
+	MinWidth         float32
+	MaxWidth         float32
+	WidthDay         float32
+	WidthMonth       float32
+	WidthYear        float32
+	LongMonths       bool // true = "January", false = "Jan"
+	WrapYear         bool
+	Color            Color
+	ColorBorder      Color
 	ColorBorderFocus Color
-	SizeBorder      Opt[float32]
-	Radius          Opt[float32]
-	Padding         Opt[Padding]
-	TextStyle       TextStyle
-	OnChange        func(time.Time, *Window)
+	SizeBorder       Opt[float32]
+	Radius           Opt[float32]
+	Padding          Opt[Padding]
+	TextStyle        TextStyle
+	OnChange         func(time.Time, *Window)
 }
 
 type datePickerRollerView struct {
@@ -90,9 +90,9 @@ func (rv *datePickerRollerView) GenerateLayout(w *Window) Layout {
 		MaxWidth:    cfg.MaxWidth,
 		Padding:     cfg.Padding,
 		Spacing:     Some(SpacingSmall),
-		HAlign:    HAlignCenter,
-		VAlign:    VAlignMiddle,
-		axis:      AxisLeftToRight,
+		HAlign:      HAlignCenter,
+		VAlign:      VAlignMiddle,
+		axis:        AxisLeftToRight,
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
 			rollerOnKeyDown(onChange, selectedDate,
 				minYear, maxYear, e, w, mode, wrapYear)
