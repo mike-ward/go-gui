@@ -12,7 +12,6 @@ Stuff I'm considering. No promises.
 | Skeleton / shimmer loading            | Placeholder UI during async loads                                   |
 | ~~Spell check integration~~           | ✅ Implemented — OS-level spell check via NSSpellChecker            |
 | ~~Global hotkeys / shortcut manager~~ | ✅ Implemented — Command registry with global/non-global dispatch   |
-| Constraint-based layout               | Auto-layout style constraints (complementary to flex)               |
 | Autocomplete / suggestion list        | Text input with dropdown suggestions (Combobox may partially cover) |
 | ~~Keyboard shortcut hints~~           | ✅ Implemented — MenuItemCfg.CommandID renders shortcut hints       |
 | Native dark/light mode sync           | Auto-switch theme to match OS appearance                            |
