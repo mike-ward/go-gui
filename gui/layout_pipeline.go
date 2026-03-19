@@ -85,13 +85,13 @@ func layoutHover(layout *Layout, w *Window) bool {
 		!layoutInDialogLayout(layout) {
 		return false
 	}
-	e := Event{
+	w.scratch.hoverEvent = Event{
 		MouseX:      w.viewState.mousePosX,
 		MouseY:      w.viewState.mousePosY,
 		Type:        EventMouseMove,
 		MouseButton: MouseInvalid,
 	}
-	shape.Events.OnHover(layout, &e, w)
+	shape.Events.OnHover(layout, &w.scratch.hoverEvent, w)
 	return true
 }
 

@@ -1,5 +1,7 @@
 package gui
 
+import "github.com/mike-ward/go-glyph"
+
 // scratch_pools.go — reusable per-frame buffers. Zero-value valid.
 
 // scratchSlice is a reusable slice pool with retain/shrink thresholds.
@@ -51,6 +53,36 @@ func (s *scratchMap[K, V]) put(m map[K]V) {
 	s.m = m
 }
 
+// scratchObjPool is a reusable pool of individually heap-allocated
+// objects. Pointers handed out remain valid until reset. On reuse,
+// existing allocations are overwritten; new ones are appended.
+type scratchObjPool[T any] struct {
+	items     []*T
+	used      int
+	retainMax int
+	shrinkTo  int
+}
+
+func (p *scratchObjPool[T]) alloc(src T) *T {
+	idx := p.used
+	p.used++
+	if idx < len(p.items) {
+		*p.items[idx] = src
+		return p.items[idx]
+	}
+	cp := src
+	ptr := &cp
+	p.items = append(p.items, ptr)
+	return ptr
+}
+
+func (p *scratchObjPool[T]) reset() {
+	p.used = 0
+	if p.retainMax > 0 && len(p.items) > p.retainMax {
+		p.items = make([]*T, 0, p.shrinkTo)
+	}
+}
+
 // scratchPools holds reusable per-frame buffers.
 type scratchPools struct {
 	filterRenderers     scratchSlice[RenderCmd]
@@ -63,6 +95,16 @@ type scratchPools struct {
 
 	focusSeen     scratchMap[uint32, struct{}]
 	svgAnimStates scratchMap[string, svgAnimState]
+
+	// Render-phase pools: reuse heap objects whose addresses are
+	// stored in RenderCmd pointer fields (avoids per-frame escapes).
+	renderTextStyles      scratchObjPool[TextStyle]
+	renderGlyphLayouts    scratchObjPool[glyph.Layout]
+	renderAffineTransforms scratchObjPool[glyph.AffineTransform]
+
+	// Reusable event for layoutHover callbacks (avoids per-shape
+	// heap allocation of Event).
+	hoverEvent Event
 
 	floatingLayouts      []*Layout
 	floatingLayoutPool   []*Layout
@@ -91,7 +133,18 @@ func newScratchPools() scratchPools {
 		layerLayouts:        scratchSlice[Layout]{retainMax: 4096, shrinkTo: 256},
 		focusSeen:           scratchMap[uint32, struct{}]{retainMax: 4096},
 		svgAnimStates:       scratchMap[string, svgAnimState]{retainMax: 4096},
+		renderTextStyles:       scratchObjPool[TextStyle]{retainMax: 4096, shrinkTo: 256},
+		renderGlyphLayouts:     scratchObjPool[glyph.Layout]{retainMax: 1024, shrinkTo: 64},
+		renderAffineTransforms: scratchObjPool[glyph.AffineTransform]{retainMax: 256, shrinkTo: 16},
 	}
+}
+
+// resetRenderPools resets the render-phase object pools. Called at the
+// start of each frame before building the render command list.
+func (p *scratchPools) resetRenderPools() {
+	p.renderTextStyles.reset()
+	p.renderGlyphLayouts.reset()
+	p.renderAffineTransforms.reset()
 }
 
 func (p *scratchPools) takeFloatingLayouts(requiredCap int) []*Layout {

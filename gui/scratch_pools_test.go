@@ -96,6 +96,50 @@ func TestAllocFloatingLayoutNew(t *testing.T) {
 	}
 }
 
+func TestScratchObjPoolAlloc(t *testing.T) {
+	pool := scratchObjPool[TextStyle]{retainMax: 64, shrinkTo: 8}
+	s1 := TextStyle{Family: "sans", Size: 14}
+	p1 := pool.alloc(s1)
+	if p1.Family != "sans" || p1.Size != 14 {
+		t.Fatal("alloc should copy value")
+	}
+	if pool.used != 1 {
+		t.Fatal("used should be 1")
+	}
+}
+
+func TestScratchObjPoolReuse(t *testing.T) {
+	pool := scratchObjPool[TextStyle]{retainMax: 64, shrinkTo: 8}
+	s1 := TextStyle{Family: "serif", Size: 12}
+	first := pool.alloc(s1)
+
+	pool.reset()
+
+	s2 := TextStyle{Family: "mono", Size: 16}
+	second := pool.alloc(s2)
+	if first != second {
+		t.Fatal("should reuse same pointer")
+	}
+	if second.Family != "mono" || second.Size != 16 {
+		t.Fatal("reused slot should have new value")
+	}
+}
+
+func TestScratchObjPoolResetShrink(t *testing.T) {
+	pool := scratchObjPool[TextStyle]{retainMax: 2, shrinkTo: 1}
+	for i := range 5 {
+		pool.alloc(TextStyle{Size: float32(i)})
+	}
+	if len(pool.items) != 5 {
+		t.Fatalf("want 5 items, got %d", len(pool.items))
+	}
+	pool.reset()
+	if len(pool.items) != 0 || cap(pool.items) != 1 {
+		t.Fatalf("want shrunk pool, got len=%d cap=%d",
+			len(pool.items), cap(pool.items))
+	}
+}
+
 func TestAllocFloatingLayoutReuse(t *testing.T) {
 	p := newScratchPools()
 	shape1 := Shape{Width: 1}

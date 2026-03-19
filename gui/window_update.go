@@ -220,6 +220,7 @@ func composeLayout(layers []Layout, w *Window) Layout {
 // buildRenderers resets and rebuilds the render command list.
 func (w *Window) buildRenderers(bgColor Color, clip DrawClip) {
 	w.renderers = w.renderers[:0]
+	w.scratch.resetRenderPools()
 	renderLayout(&w.layout, bgColor, clip, w)
 	if inspectorSupported && w.inspectorEnabled {
 		inspectorInjectWireframe(w)

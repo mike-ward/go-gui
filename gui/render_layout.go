@@ -529,14 +529,14 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 			X:            baseX,
 			Y:            baseY,
 			Text:         text,
-			LayoutPtr:    &preLayout,
-			TextStylePtr: &renderStyle,
+			LayoutPtr:    w.scratch.renderGlyphLayouts.alloc(preLayout),
+			TextStylePtr: w.scratch.renderTextStyles.alloc(renderStyle),
 			TextGradient: renderStyle.Gradient,
 		}
 		if renderStyle.HasTextTransform() {
 			transform := renderStyle.EffectiveTextTransform()
 			cmd.Kind = RenderLayoutTransformed
-			cmd.LayoutTransform = &transform
+			cmd.LayoutTransform = w.scratch.renderAffineTransforms.alloc(transform)
 		}
 		emitRenderer(cmd, w)
 	} else {
@@ -556,7 +556,7 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 			FontSize:     tc.TextStyle.Size,
 			FontAscent:   fontAscent,
 			TextWidth:    textWidth,
-			TextStylePtr: &renderStyle,
+			TextStylePtr: w.scratch.renderTextStyles.alloc(renderStyle),
 			TextGradient: renderStyle.Gradient,
 		}
 		if tc.TextMode == TextModeWrap ||
