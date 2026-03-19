@@ -280,10 +280,15 @@ func a11yFindLayoutWalk(layout *Layout, target int, counter *int) *Layout {
 // during window destruction.
 func (w *Window) WindowCleanup() {
 	w.cleanupOnce.Do(func() {
+		if w.cancelCtx != nil {
+			w.cancelCtx()
+		}
 		w.stopAnimationLoop()
 		w.ReleaseAllFileAccess()
 		if w.nativePlatform != nil {
 			w.nativePlatform.A11yDestroy()
 		}
+		w.viewState.registry.Clear()
+		w.renderGuardWarned = nil
 	})
 }

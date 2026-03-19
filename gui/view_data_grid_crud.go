@@ -591,9 +591,13 @@ func dataGridCrudSave(ctx dataGridCrudSaveContext, e *Event, w *Window) {
 		selection := ctx.selection
 		onSelectionChange := ctx.onSelectionChange
 		focusID := ctx.focusID
+		wCtx := w.Ctx()
 		go func() {
 			result := dataGridCrudExecMutations(source, gridID, query,
 				createRows, updateRows, updateEdits, deleteIDs)
+			if wCtx.Err() != nil {
+				return
+			}
 			w.QueueCommand(func(w *Window) {
 				dataGridCrudApplySaveResult(gridID, result, snapshotRows,
 					onCRUDError, onRowsChange, selection, onSelectionChange,

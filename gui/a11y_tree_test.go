@@ -475,3 +475,29 @@ func TestWindowCleanup(t *testing.T) {
 		t.Errorf("grants not released: %d", w.FileAccessGrantCount())
 	}
 }
+
+func TestWindowCleanupClearsRegistryAndContext(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	w.stopAnimationLoop()
+	// Populate state registry.
+	sm := StateMap[string, int](w, "test.ns", 10)
+	sm.Set("a", 1)
+	sm.Set("b", 2)
+	if w.viewState.registry.entryCount("test.ns") != 2 {
+		t.Fatal("registry not populated")
+	}
+	// Populate render guard.
+	w.renderGuardWarned = map[string]bool{"rect": true}
+	// Cleanup should clear all.
+	w.WindowCleanup()
+	if w.viewState.registry.entryCount("test.ns") != 0 {
+		t.Errorf("registry not cleared: %d entries",
+			w.viewState.registry.entryCount("test.ns"))
+	}
+	if w.renderGuardWarned != nil {
+		t.Error("renderGuardWarned not cleared")
+	}
+	if w.Ctx().Err() == nil {
+		t.Error("context not cancelled after cleanup")
+	}
+}

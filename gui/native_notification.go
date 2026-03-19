@@ -48,8 +48,12 @@ func nativeNotificationImpl(w *Window, cfg NativeNotificationCfg) {
 		return
 	}
 	// Notification may block; run in goroutine.
+	ctx := w.Ctx()
 	go func() {
 		result := w.nativePlatform.SendNotification(cfg.Title, cfg.Body)
+		if ctx.Err() != nil {
+			return
+		}
 		w.QueueCommand(func(w *Window) {
 			dispatchNotificationDone(w, cfg.OnDone, result)
 		})

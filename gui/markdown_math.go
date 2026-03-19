@@ -111,6 +111,7 @@ func fetchMathAsync(
 	w *Window, latex string, hash int64,
 	requestID uint64, dpi int, fgColor Color,
 ) {
+	ctx := w.Ctx()
 	go func() {
 		safeLatex := sanitizeLatex(latex)
 
@@ -128,11 +129,17 @@ func fetchMathAsync(
 			prefix+safeLatex, " ", "{}")
 		encoded = strings.ReplaceAll(encoded, "#", "%23")
 		encoded = strings.ReplaceAll(encoded, "&", "%26")
-		url := "https://latex.codecogs.com/png.image?" +
+		reqURL := "https://latex.codecogs.com/png.image?" +
 			encoded
 
+		req, err := http.NewRequestWithContext(
+			ctx, http.MethodGet, reqURL, nil)
+		if err != nil {
+			queueDiagramError(w, hash, requestID, err.Error())
+			return
+		}
 		client := &http.Client{Timeout: diagramFetchTimeout}
-		resp, err := client.Get(url)
+		resp, err := client.Do(req)
 		if err != nil {
 			queueDiagramError(w, hash, requestID, err.Error())
 			return

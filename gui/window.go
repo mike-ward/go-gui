@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -119,6 +120,11 @@ type Window struct {
 	// Reusable per-frame scratch buffers.
 	scratch scratchPools
 
+	// Lifecycle context — cancelled in WindowCleanup to abort
+	// in-flight async goroutines (HTTP fetches, notifications, etc.).
+	ctx       context.Context
+	cancelCtx context.CancelFunc
+
 	// Animation loop lifecycle.
 	animationStop     chan struct{}
 	animationDone     chan struct{}
@@ -168,6 +174,16 @@ func State[T any](w *Window) *T {
 // SetState sets the user state for the window.
 func (w *Window) SetState(state any) {
 	w.state = state
+}
+
+// Ctx returns the window's lifecycle context. The context is
+// cancelled when WindowCleanup runs. Use for async operations
+// that should abort on window destruction.
+func (w *Window) Ctx() context.Context {
+	if w.ctx == nil {
+		return context.Background()
+	}
+	return w.ctx
 }
 
 // ClearViewState resets all view state.

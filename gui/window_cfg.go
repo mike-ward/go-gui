@@ -1,5 +1,7 @@
 package gui
 
+import "context"
+
 // WindowCfg configures a new Window.
 type WindowCfg struct {
 	State  any
@@ -30,6 +32,7 @@ type WindowCfg struct {
 
 // NewWindow creates a Window from the given configuration.
 func NewWindow(cfg WindowCfg) *Window {
+	ctx, cancel := context.WithCancel(context.Background())
 	w := &Window{
 		state:         cfg.State,
 		windowWidth:   cfg.Width,
@@ -39,6 +42,8 @@ func NewWindow(cfg WindowCfg) *Window {
 		OnEvent:       cfg.OnEvent,
 		Config:        cfg,
 		scratch:       newScratchPools(),
+		ctx:           ctx,
+		cancelCtx:     cancel,
 		animationStop: make(chan struct{}),
 		animationDone: make(chan struct{}),
 	}

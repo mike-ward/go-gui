@@ -5,6 +5,7 @@ package gui
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"image/png"
@@ -161,6 +162,7 @@ func fetchMermaidAsync(
 	w *Window, source string, hash int64,
 	requestID uint64,
 ) {
+	ctx := w.Ctx()
 	go func() {
 		if len(source) > markdown.MaxMermaidSourceLen {
 			queueDiagramError(w, hash, requestID,
@@ -168,7 +170,7 @@ func fetchMermaidAsync(
 			return
 		}
 
-		body, err := mermaidHTTPFetch(source)
+		body, err := mermaidHTTPFetch(ctx, source)
 		if err != nil {
 			queueDiagramError(w, hash, requestID,
 				err.Error())
@@ -215,7 +217,7 @@ func fetchMermaidAsync(
 	}()
 }
 
-func mermaidHTTPFetch(source string) ([]byte, error) {
+func mermaidHTTPFetch(ctx context.Context, source string) ([]byte, error) {
 	payload, err := json.Marshal(map[string]string{
 		"diagram_source": source,
 	})
@@ -223,12 +225,15 @@ func mermaidHTTPFetch(source string) ([]byte, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: diagramFetchTimeout}
-	resp, err := client.Post(
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		"https://kroki.io/mermaid/png",
-		"application/json",
-		bytes.NewReader(payload),
-	)
+		bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: diagramFetchTimeout}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
