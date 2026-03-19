@@ -3,9 +3,9 @@ module github.com/mike-ward/go-gui
 go 1.26.0
 
 require (
-	github.com/mike-ward/go-glyph v1.3.1
-	github.com/mike-ward/go-glyph/backend/sdl2 v1.0.1 // sdl2 backend unchanged
-	github.com/mike-ward/go-glyph/backend/web v1.0.0
+	github.com/mike-ward/go-glyph v1.4.0
+	github.com/mike-ward/go-glyph/backend/sdl2 v1.1.0
+	github.com/mike-ward/go-glyph/backend/web v1.1.0
 	github.com/veandco/go-sdl2 v0.4.40
 )
 
@@ -23,15 +23,5 @@ require (
 
 require (
 	github.com/rivo/uniseg v0.2.0 // indirect
-	golang.org/x/mobile v0.0.0-20260312152759-81488f6aeb60 // indirect
-	golang.org/x/mod v0.34.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/tools v0.43.0 // indirect
 )
-
-replace github.com/mike-ward/go-glyph => ../go-glyph
-
-replace github.com/mike-ward/go-glyph/backend/sdl2 => ../go-glyph/backend/sdl2
-
-replace github.com/mike-ward/go-glyph/backend/web => ../go-glyph/backend/web
