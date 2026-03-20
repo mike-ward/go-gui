@@ -65,7 +65,7 @@ func TestToastSetHovered(t *testing.T) {
 func TestToastEnforceMaxVisible(t *testing.T) {
 	w := &Window{}
 	// Add more than max.
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		w.toasts = append(w.toasts, toastNotification{
 			id:       uint64(i + 1),
 			cfg:      ToastCfg{Title: "T"},

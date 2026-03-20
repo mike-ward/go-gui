@@ -698,10 +698,7 @@ func dataGridHandleRowNavigationKeys(kc dataGridKeydownContext, visibleIndices [
 	}
 	currentIdx := dataGridActiveRowIndex(kc.rows, kc.selection)
 	currentPos := slices.Index(visibleIndices, currentIdx)
-	targetPos := currentPos
-	if currentPos < 0 {
-		targetPos = 0
-	}
+	targetPos := max(currentPos, 0)
 
 	switch e.KeyCode {
 	case KeyUp:
@@ -790,9 +787,7 @@ func dataGridScrollRowIntoViewEx(viewportH float32, rowIdx int, rowHeight, stati
 	} else if rowBottom > current+viewportH {
 		next = rowBottom - viewportH
 	}
-	if next < 0 {
-		next = 0
-	}
+	next = max(next, 0)
 	w.ScrollVerticalTo(scrollID, -next)
 }
 
@@ -840,7 +835,7 @@ func dataGridJumpEnabledLocal(rowsLen int, onSelectionChange func(GridSelection,
 
 func dataGridJumpDigits(text string) string {
 	buf := make([]byte, 0, len(text))
-	for i := 0; i < len(text); i++ {
+	for i := range len(text) {
 		if text[i] >= '0' && text[i] <= '9' {
 			buf = append(buf, text[i])
 		}

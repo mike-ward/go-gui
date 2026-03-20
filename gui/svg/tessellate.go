@@ -69,7 +69,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 						nVerts := len(fillTris) / 2
 						vcols := make([]gui.SvgColor, nVerts)
 						opacity := path.Opacity * path.FillOpacity
-						for vi := 0; vi < nVerts; vi++ {
+						for vi := range nVerts {
 							vx := fillTris[vi*2]
 							vy := fillTris[vi*2+1]
 							t := projectOntoGradient(vx, vy, grad)
@@ -119,7 +119,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 						nVerts := len(sTris) / 2
 						vcols := make([]gui.SvgColor, nVerts)
 						opacity := path.Opacity * path.StrokeOpacity
-						for vi := 0; vi < nVerts; vi++ {
+						for vi := range nVerts {
 							vx := sTris[vi*2]
 							vy := sTris[vi*2+1]
 							t := projectOntoGradient(vx, vy, grad)
@@ -456,7 +456,7 @@ func mergeHole(outer, hole []float32) []float32 {
 	bestIdx := 0
 	bestDist := float32(1e30)
 
-	for i := 0; i < nOuter; i++ {
+	for i := range nOuter {
 		x1 := outer[i*2]
 		y1 := outer[i*2+1]
 		j := (i + 1) % nOuter
@@ -480,7 +480,7 @@ func mergeHole(outer, hole []float32) []float32 {
 		}
 	}
 
-	for i := 0; i < nOuter; i++ {
+	for i := range nOuter {
 		x := outer[i*2]
 		y := outer[i*2+1]
 		if x >= holeX {
@@ -507,7 +507,7 @@ func mergeHole(outer, hole []float32) []float32 {
 	for i := 0; i <= bestIdx; i++ {
 		result = append(result, outer[i*2], outer[i*2+1])
 	}
-	for i := 0; i < nHole; i++ {
+	for i := range nHole {
 		idx := (holeIdx + i) % nHole
 		result = append(result, hole[idx*2], hole[idx*2+1])
 	}
@@ -522,7 +522,7 @@ func isVertexVisible(outer []float32, idx int, px, py float32) bool {
 	vx := outer[idx*2]
 	vy := outer[idx*2+1]
 	n := len(outer) / 2
-	for i := 0; i < n; i++ {
+	for i := range n {
 		j := (i + 1) % n
 		if i == idx || j == idx {
 			continue
@@ -576,7 +576,7 @@ func earClip(polygon []float32) []float32 {
 			indices[n-1-i] = i
 		}
 	} else {
-		for i := 0; i < n; i++ {
+		for i := range n {
 			indices[i] = i
 		}
 	}
@@ -624,7 +624,7 @@ func polygonArea(polygon []float32) float32 {
 	n := len(polygon) / 2
 	area := float32(0)
 	j := n - 1
-	for i := 0; i < n; i++ {
+	for i := range n {
 		area += (polygon[j*2] + polygon[i*2]) * (polygon[j*2+1] - polygon[i*2+1])
 		j = i
 	}
@@ -644,7 +644,7 @@ func isEar(polygon []float32, indices []int, u, v, w int) bool {
 		return false
 	}
 
-	for i := 0; i < len(indices); i++ {
+	for i := range len(indices) {
 		if i == u || i == v || i == w {
 			continue
 		}
@@ -708,18 +708,10 @@ func bboxFromTriangles(tris []float32) (float32, float32, float32, float32) {
 	maxX, maxY := minX, minY
 	for i := 2; i < len(tris); i += 2 {
 		x, y := tris[i], tris[i+1]
-		if x < minX {
-			minX = x
-		}
-		if x > maxX {
-			maxX = x
-		}
-		if y < minY {
-			minY = y
-		}
-		if y > maxY {
-			maxY = y
-		}
+		minX = min(minX, x)
+		maxX = max(maxX, x)
+		minY = min(minY, y)
+		maxY = max(maxY, y)
 	}
 	return minX, minY, maxX, maxY
 }
@@ -803,19 +795,9 @@ func splitTriAtStops(ax, ay, bx, by, cx, cy float32, grad gui.SvgGradientDef, st
 	tc := projectOntoGradient(cx, cy, grad)
 
 	tMin := ta
-	if tb < tMin {
-		tMin = tb
-	}
-	if tc < tMin {
-		tMin = tc
-	}
+	tMin = min(tMin, tb, tc)
 	tMax := ta
-	if tb > tMax {
-		tMax = tb
-	}
-	if tc > tMax {
-		tMax = tc
-	}
+	tMax = max(tMax, tb, tc)
 
 	for _, tS := range stopTs {
 		if tS > tMin+1e-4 && tS < tMax-1e-4 {

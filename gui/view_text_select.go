@@ -38,12 +38,7 @@ func textOnClick(layout *Layout, e *Event, w *Window) {
 		}
 		runePos = int(relX / charWidth)
 		runeLen := utf8RuneCount(text)
-		if runePos < 0 {
-			runePos = 0
-		}
-		if runePos > runeLen {
-			runePos = runeLen
-		}
+		runePos = min(max(runePos, 0), runeLen)
 	}
 
 	idFocus := shape.IDFocus
@@ -136,12 +131,7 @@ func textOnClick(layout *Layout, e *Event, w *Window) {
 		}
 		rp := int((mx - dragShapeX) / cw)
 		rl := utf8RuneCount(text)
-		if rp < 0 {
-			rp = 0
-		}
-		if rp > rl {
-			rp = rl
-		}
+		rp = min(max(rp, 0), rl)
 		return rp
 	}
 
@@ -256,9 +246,7 @@ func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 	is.CursorTrailing = false
 	runeLen := utf8RuneCount(text)
 	pos := is.CursorPos
-	if pos > runeLen {
-		pos = runeLen
-	}
+	pos = min(pos, runeLen)
 	isShift := e.Modifiers.Has(ModShift)
 	isWordMod := e.Modifiers.HasAny(
 		ModCtrl, ModAlt, ModSuper,
@@ -297,9 +285,7 @@ func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 					gl.MoveCursorLeft(bi))
 			} else {
 				newPos = pos - 1
-				if newPos < 0 {
-					newPos = 0
-				}
+				newPos = max(newPos, 0)
 			}
 			updateCursorAndSelection(
 				imap, id, is, newPos, isShift)
@@ -331,9 +317,7 @@ func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 					gl.MoveCursorRight(bi))
 			} else {
 				newPos = pos + 1
-				if newPos > runeLen {
-					newPos = runeLen
-				}
+				newPos = min(newPos, runeLen)
 			}
 			updateCursorAndSelection(
 				imap, id, is, newPos, isShift)

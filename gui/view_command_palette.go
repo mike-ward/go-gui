@@ -331,7 +331,7 @@ func commandPaletteItemsHash(items []CommandPaletteItem) uint64 {
 
 func hashString64(h uint64, s string) uint64 {
 	const prime uint64 = 1099511628211
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		h ^= uint64(s[i])
 		h *= prime
 	}

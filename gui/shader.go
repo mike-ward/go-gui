@@ -71,7 +71,7 @@ func ShaderHash(s *Shader) uint64 {
 // hashString computes a 64-bit FNV-1a hash.
 func hashString(s string) uint64 {
 	h := uint64(0xcbf29ce484222325)
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		h ^= uint64(s[i])
 		h *= 0x100000001b3
 	}

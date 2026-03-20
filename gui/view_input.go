@@ -507,9 +507,7 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		text := inputTextFromLayout(layout)
 		runeLen := utf8RuneCount(text)
 		pos := is.CursorPos
-		if pos > runeLen {
-			pos = runeLen
-		}
+		pos = min(pos, runeLen)
 		isShift := e.Modifiers.Has(ModShift)
 		isWordMod := e.Modifiers.HasAny(ModCtrl, ModAlt, ModSuper)
 		handled := true
@@ -541,9 +539,7 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					newPos = byteToRuneIndex(text, gl.MoveCursorLeft(byteIdx))
 				} else {
 					newPos = pos - 1
-					if newPos < 0 {
-						newPos = 0
-					}
+					newPos = max(newPos, 0)
 				}
 				updateCursorAndSelection(imap, id, is,
 					newPos, isShift)
@@ -570,9 +566,7 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 					newPos = byteToRuneIndex(text, gl.MoveCursorRight(byteIdx))
 				} else {
 					newPos = pos + 1
-					if newPos > runeLen {
-						newPos = runeLen
-					}
+					newPos = min(newPos, runeLen)
 				}
 				updateCursorAndSelection(imap, id, is,
 					newPos, isShift)

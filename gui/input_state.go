@@ -401,9 +401,7 @@ func wordBoundsAt(runes []rune, pos int) (int, int) {
 	if pos >= n {
 		pos = n - 1
 	}
-	if pos < 0 {
-		pos = 0
-	}
+	pos = max(pos, 0)
 	sep := isWordSep(runes[pos])
 	beg := pos
 	for beg > 0 && isWordSep(runes[beg-1]) == sep {
@@ -434,9 +432,7 @@ func moveCursorUp(runes []rune, pos int) int {
 		prevLineStart--
 	}
 	prevLineLen := prevLineEnd - prevLineStart
-	if col > prevLineLen {
-		col = prevLineLen
-	}
+	col = min(col, prevLineLen)
 	return prevLineStart + col
 }
 
@@ -464,9 +460,7 @@ func moveCursorDown(runes []rune, pos int) int {
 		nextLineEnd++
 	}
 	nextLineLen := nextLineEnd - nextLineStart
-	if col > nextLineLen {
-		col = nextLineLen
-	}
+	col = min(col, nextLineLen)
 	return nextLineStart + col
 }
 

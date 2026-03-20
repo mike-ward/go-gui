@@ -610,10 +610,7 @@ func renderInputCursor(shape *Shape, text string, baseX, baseY float32,
 	}
 	is := StateReadOr(w, nsInput, shape.IDFocus, InputState{})
 	runeLen := utf8RuneCount(text)
-	pos := is.CursorPos
-	if pos > runeLen {
-		pos = runeLen
-	}
+	pos := min(is.CursorPos, runeLen)
 
 	style := textStyleOrDefault(shape)
 	byteIdx := runeToByteIndex(text, pos)
@@ -831,9 +828,7 @@ func fontHeight(style TextStyle, w *Window) float32 {
 // textWidthFallback approximates text width for tests (no glyph).
 func textWidthFallback(text string, runePos int, tc *ShapeTextConfig, style TextStyle, w *Window) float32 {
 	runeLen := utf8RuneCount(text)
-	if runePos > runeLen {
-		runePos = runeLen
-	}
+	runePos = min(runePos, runeLen)
 	prefix := text[:runeToByteIndex(text, runePos)]
 	if tc != nil && tc.TextIsPassword {
 		prefix = passwordMask(prefix)

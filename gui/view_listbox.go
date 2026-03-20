@@ -220,7 +220,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	midsOffset := 0
 	if canReorder {
 		itemLayoutIDs = make([]string, 0, last-first+1)
-		for idx := 0; idx < first; idx++ {
+		for idx := range first {
 			if idx < len(cfg.Data) &&
 				!cfg.Data[idx].IsSubheading {
 				midsOffset++
@@ -601,21 +601,21 @@ func listBoxDataHash(items []ListBoxOption) uint64 {
 	h := offset
 	for i := range items {
 		it := items[i]
-		for j := 0; j < len(it.ID); j++ {
+		for j := range len(it.ID) {
 			h ^= uint64(it.ID[j])
 			h *= prime
 		}
 		h ^= 0xff
 		h *= prime
 
-		for j := 0; j < len(it.Name); j++ {
+		for j := range len(it.Name) {
 			h ^= uint64(it.Name[j])
 			h *= prime
 		}
 		h ^= 0xff
 		h *= prime
 
-		for j := 0; j < len(it.Value); j++ {
+		for j := range len(it.Value) {
 			h ^= uint64(it.Value[j])
 			h *= prime
 		}

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -698,9 +699,7 @@ func dataGridDetailToggleControl(cfg *DataGridCfg, rowID string, expanded, enabl
 
 func dataGridNextDetailExpandedMap(expanded map[string]bool, rowID string) map[string]bool {
 	next := make(map[string]bool, len(expanded))
-	for k, v := range expanded {
-		next[k] = v
-	}
+	maps.Copy(next, expanded)
 	if rowID == "" {
 		return next
 	}

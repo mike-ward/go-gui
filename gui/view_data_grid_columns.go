@@ -1,6 +1,9 @@
 package gui
 
-import "strings"
+import (
+	"maps"
+	"strings"
+)
 
 // dataGridEffectiveColumns resolves the final visible column
 // list: apply columnOrder (fallback to declaration order),
@@ -169,9 +172,7 @@ func dataGridVisibleColumnCount(columns []GridColumnCfg, hidden map[string]bool)
 
 func dataGridNextHiddenColumns(hidden map[string]bool, colID string, columns []GridColumnCfg) map[string]bool {
 	next := make(map[string]bool, len(hidden))
-	for k, v := range hidden {
-		next[k] = v
-	}
+	maps.Copy(next, hidden)
 	if colID == "" {
 		return next
 	}
@@ -383,12 +384,8 @@ func dataGridInitialWidth(col GridColumnCfg) float32 {
 func dataGridClampWidth(col GridColumnCfg, width float32) float32 {
 	minW := col.MinWidth.Get(60)
 	maxW := col.MaxWidth.Get(600)
-	if maxW < minW {
-		maxW = minW
-	}
-	if minW < 1 {
-		minW = 1
-	}
+	maxW = max(maxW, minW)
+	minW = max(minW, 1)
 	return f32Clamp(width, minW, maxW)
 }
 

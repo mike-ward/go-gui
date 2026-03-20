@@ -251,7 +251,7 @@ func numericIntegerGroupsValid(intSegment []rune, groupSep rune, groupSizes []in
 		return false
 	}
 	groupLengths = append(groupLengths, count)
-	for idx := 0; idx < len(groupLengths); idx++ {
+	for idx := range len(groupLengths) {
 		length := groupLengths[idx]
 		expected := numericGroupSize(groupSizes, idx)
 		if idx == len(groupLengths)-1 {

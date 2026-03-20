@@ -158,12 +158,8 @@ func floatAttachLayout(
 	if y+fh > winH {
 		y = winH - fh
 	}
-	if x < 0 {
-		x = 0
-	}
-	if y < 0 {
-		y = 0
-	}
+	x = max(x, 0)
+	y = max(y, 0)
 
 	return x, y
 }

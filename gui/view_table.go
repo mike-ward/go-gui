@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"hash/fnv"
 	"log"
+	"maps"
 	"strings"
 	"sync"
 
@@ -709,8 +710,6 @@ func copySelected(m map[int]bool) map[int]bool {
 		return make(map[int]bool)
 	}
 	cp := make(map[int]bool, len(m))
-	for k, v := range m {
-		cp[k] = v
-	}
+	maps.Copy(cp, m)
 	return cp
 }

@@ -92,24 +92,15 @@ func listCoreNavigate(key KeyCode, itemCount int) ListCoreAction {
 func listCoreApplyNav(action ListCoreAction, cur, itemCount int) (int, bool) {
 	switch action {
 	case ListCoreMoveUp:
-		next := cur - 1
-		if next < 0 {
-			next = 0
-		}
+		next := max(cur-1, 0)
 		return next, next != cur
 	case ListCoreMoveDown:
-		next := cur + 1
-		if next >= itemCount {
-			next = itemCount - 1
-		}
+		next := min(cur+1, itemCount-1)
 		return next, next != cur
 	case ListCoreFirst:
 		return 0, cur != 0
 	case ListCoreLast:
-		last := itemCount - 1
-		if last < 0 {
-			last = 0
-		}
+		last := max(itemCount-1, 0)
 		return last, cur != last
 	default:
 		return cur, false
@@ -132,9 +123,7 @@ func listCoreVisibleRange(itemCount int, rowHeight, listHeight, scrollY float32)
 	buf := listCoreVirtualBufferRows
 	firstVisible := intMax(0, first-buf)
 	lastVisible := min(maxIdx, first+visibleRows+buf)
-	if firstVisible > lastVisible {
-		lastVisible = firstVisible
-	}
+	lastVisible = max(lastVisible, firstVisible)
 	return firstVisible, lastVisible
 }
 
@@ -157,7 +146,7 @@ func listCoreFuzzyScore(candidate, query string) int {
 	qi := 0
 	score := 0
 	prevMatch := -1
-	for ci := 0; ci < len(candidate); ci++ {
+	for ci := range len(candidate) {
 		if qi >= len(query) {
 			break
 		}

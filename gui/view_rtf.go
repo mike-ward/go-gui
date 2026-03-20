@@ -283,31 +283,31 @@ func rtfAmendTooltip(_ *Layout, w *Window) {
 func rtfRunsKey(rt *RichText) uint64 {
 	h := uint64(14695981039346656037)
 	for _, r := range rt.Runs {
-		for i := 0; i < len(r.Text); i++ {
+		for i := range len(r.Text) {
 			h ^= uint64(r.Text[i])
 			h *= 1099511628211
 		}
 		h ^= 0x1F // field separator
 		h *= 1099511628211
-		for i := 0; i < len(r.Link); i++ {
+		for i := range len(r.Link) {
 			h ^= uint64(r.Link[i])
 			h *= 1099511628211
 		}
 		h ^= 0x1F
 		h *= 1099511628211
-		for i := 0; i < len(r.Tooltip); i++ {
+		for i := range len(r.Tooltip) {
 			h ^= uint64(r.Tooltip[i])
 			h *= 1099511628211
 		}
 		h ^= 0x1F
 		h *= 1099511628211
-		for i := 0; i < len(r.MathID); i++ {
+		for i := range len(r.MathID) {
 			h ^= uint64(r.MathID[i])
 			h *= 1099511628211
 		}
 		h ^= 0x1F
 		h *= 1099511628211
-		for i := 0; i < len(r.MathLatex); i++ {
+		for i := range len(r.MathLatex) {
 			h ^= uint64(r.MathLatex[i])
 			h *= 1099511628211
 		}
@@ -321,7 +321,7 @@ func rtfRunsKey(rt *RichText) uint64 {
 // for use in the cross-frame RTF layout cache key.
 func rtfStyleKey(s glyph.TextStyle) uint64 {
 	h := uint64(14695981039346656037)
-	for i := 0; i < len(s.FontName); i++ {
+	for i := range len(s.FontName) {
 		h ^= uint64(s.FontName[i])
 		h *= 1099511628211
 	}

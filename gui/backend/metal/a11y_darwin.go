@@ -52,7 +52,7 @@ func a11ySyncBridge(nodes []gui.A11yNode, count, focusedIdx int, windowH float32
 	// Reslice reusable C string buffer.
 	cStringBuf = cStringBuf[:0]
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		n := &nodes[i]
 		cn := &cNodeBuf[i]
 

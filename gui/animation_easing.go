@@ -104,7 +104,7 @@ type bezierLUT struct {
 
 func buildBezierLUT(x1, y1, x2, y2 float32) bezierLUT {
 	var lut bezierLUT
-	for i := 0; i < bezierLUTSize; i++ {
+	for i := range bezierLUTSize {
 		t := float32(i) / float32(bezierLUTSize-1)
 		lut.values[i] = bezierCalc(t, x1, y1, x2, y2)
 	}

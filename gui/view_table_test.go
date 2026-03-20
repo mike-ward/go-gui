@@ -278,7 +278,7 @@ func TestTableVirtualization(t *testing.T) {
 
 	data := make([]TableRowCfg, 0, 101)
 	data = append(data, TR([]TableCellCfg{TH("Col")}))
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		data = append(data, TR([]TableCellCfg{TD("row")}))
 	}
 
@@ -424,7 +424,7 @@ func TestTableFreezeHeaderVirtualization(t *testing.T) {
 
 	data := make([]TableRowCfg, 0, 101)
 	data = append(data, TR([]TableCellCfg{TH("Col")}))
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		data = append(data, TR([]TableCellCfg{TD("row")}))
 	}
 

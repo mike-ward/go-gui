@@ -78,8 +78,8 @@ func TestDecodeNRGBARejectsByPixels(t *testing.T) {
 
 func writePNG(path string, w, h int) error {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
+	for y := range h {
+		for x := range w {
 			img.Set(x, y, color.RGBA{R: 200, G: 100, B: 50, A: 255})
 		}
 	}

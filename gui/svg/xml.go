@@ -983,12 +983,7 @@ func parseGradientStops(content string) []gui.SvgGradientStop {
 		} else {
 			offset = parseF32(offsetStr)
 		}
-		if offset < 0 {
-			offset = 0
-		}
-		if offset > 1 {
-			offset = 1
-		}
+		offset = min(max(offset, 0), 1)
 
 		colorStr := "#000000"
 		if cs, ok := findAttrOrStyle(stopElem, "stop-color"); ok {

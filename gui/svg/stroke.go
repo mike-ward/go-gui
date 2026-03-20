@@ -80,7 +80,7 @@ func tessellateStroke(polylines [][]float32, width float32, lineCap gui.StrokeCa
 		// Line joins
 		numNormals := len(normals) / 2
 		if isClosed {
-			for i := 0; i < pointCount; i++ {
+			for i := range pointCount {
 				prevNorm := i - 1
 				if i == 0 {
 					prevNorm = numNormals - 1

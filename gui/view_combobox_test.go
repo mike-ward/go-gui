@@ -84,7 +84,7 @@ func TestComboboxKeyNavScrolls(t *testing.T) {
 	comboboxOpen("cb-nav", 0, w)
 
 	// Navigate down 8 times (past visible ~7 items).
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		e := &Event{KeyCode: KeyDown}
 		comboboxOnKeyDown("cb-nav", onSel, 0, ids, idScroll, rowH, listH, e, w)
 	}
@@ -275,7 +275,7 @@ func TestComboboxScrollEndToEnd(t *testing.T) {
 	comboboxOpen("cb-e2e", 0, w)
 
 	// Navigate down 8 times to trigger scroll.
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		e := &Event{KeyCode: KeyDown}
 		comboboxOnKeyDown("cb-e2e", func(_ string, _ *Event, _ *Window) {},
 			0, options, idScroll, 26, 187, e, w)

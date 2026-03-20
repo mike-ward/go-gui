@@ -206,11 +206,11 @@ func parserSourceHash(src string, inline bool) uint64 {
 	if inline {
 		prefix = "inline:"
 	}
-	for i := 0; i < len(prefix); i++ {
+	for i := range len(prefix) {
 		h ^= uint64(prefix[i])
 		h *= fnvPrime
 	}
-	for i := 0; i < len(src); i++ {
+	for i := range len(src) {
 		h ^= uint64(src[i])
 		h *= fnvPrime
 	}

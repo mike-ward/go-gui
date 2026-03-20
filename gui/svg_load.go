@@ -528,11 +528,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		if parsed.Height > 0 {
 			scaleY = height / parsed.Height
 		}
-		if scaleX < scaleY {
-			scale = scaleX
-		} else {
-			scale = scaleY
-		}
+		scale = min(scaleX, scaleY)
 	}
 
 	triangles := w.svgParser.Tessellate(parsed, scale)
@@ -681,18 +677,10 @@ func computeTriangleBBox(tpaths []TessellatedPath) [4]float32 {
 		for i := 0; i+1 < len(tp.Triangles); i += 2 {
 			x := tp.Triangles[i]
 			y := tp.Triangles[i+1]
-			if x < minX {
-				minX = x
-			}
-			if x > maxX {
-				maxX = x
-			}
-			if y < minY {
-				minY = y
-			}
-			if y > maxY {
-				maxY = y
-			}
+			minX = min(minX, x)
+			maxX = max(maxX, x)
+			minY = min(minY, y)
+			maxY = max(maxY, y)
 			hasData = true
 		}
 	}

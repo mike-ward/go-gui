@@ -562,23 +562,12 @@ func dataGridVisibleRangeForScroll(scrollY, viewportHeight, rowHeight float32, r
 	if rowCount == 0 || rowHeight <= 0 || viewportHeight <= 0 {
 		return 0, -1
 	}
-	bodyScroll := scrollY - staticTop
-	if bodyScroll < 0 {
-		bodyScroll = 0
-	}
+	bodyScroll := max(scrollY-staticTop, 0)
 	first := int(bodyScroll / rowHeight)
 	visibleRows := int(viewportHeight/rowHeight) + 1
-	firstVisible := first - buffer
-	if firstVisible < 0 {
-		firstVisible = 0
-	}
-	lastVisible := first + visibleRows + buffer
-	if lastVisible > rowCount-1 {
-		lastVisible = rowCount - 1
-	}
-	if firstVisible > lastVisible {
-		firstVisible = lastVisible
-	}
+	firstVisible := max(first-buffer, 0)
+	lastVisible := min(first+visibleRows+buffer, rowCount-1)
+	firstVisible = min(firstVisible, lastVisible)
 	return firstVisible, lastVisible
 }
 

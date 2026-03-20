@@ -177,7 +177,7 @@ func (m *CompiledInputMask) hasSlotAfter(entryIndex int) bool {
 func (m *CompiledInputMask) rawFromFormattedRunes(formatted []rune) []rune {
 	raw := make([]rune, 0, m.slotCount())
 	limit := min(len(formatted), len(m.entries))
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		entry := m.entries[i]
 		if entry.kind == maskSlot && entry.matcher != nil {
 			ch := formatted[i]
@@ -216,7 +216,7 @@ func (m *CompiledInputMask) formattedToRawIndex(formattedLen, formattedIndex, ra
 	idx := intClamp(formattedIndex, 0, formattedLen)
 	limit := min(idx, len(m.entries))
 	rawIndex := 0
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		if m.entries[i].kind == maskSlot {
 			rawIndex++
 		}

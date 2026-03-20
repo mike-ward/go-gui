@@ -1,5 +1,7 @@
 package gui
 
+import "slices"
+
 // dock_layout_tree.go — user-owned, serializable layout tree for
 // IDE-style docking panels. Binary tree of splits; leaves are
 // panel groups (one or more panels shown as tabs).
@@ -94,12 +96,8 @@ func DockTreeFindGroupByPanel(node *DockNode, panelID string) (*DockNode, bool) 
 				return g, true
 			}
 		}
-	} else {
-		for _, id := range node.PanelIDs {
-			if id == panelID {
-				return node, true
-			}
-		}
+	} else if slices.Contains(node.PanelIDs, panelID) {
+		return node, true
 	}
 	return nil, false
 }
@@ -152,14 +150,7 @@ func dockTreeRemovePanelRec(nd *DockNode, panelID string) *DockNode {
 		return nd
 	}
 
-	found := false
-	for _, id := range nd.PanelIDs {
-		if id == panelID {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if !slices.Contains(nd.PanelIDs, panelID) {
 		return nd
 	}
 	newIDs := make([]string, 0, max(len(nd.PanelIDs)-1, 0))

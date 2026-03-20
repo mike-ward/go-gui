@@ -36,9 +36,7 @@ type scratchMap[K comparable, V any] struct {
 func (s *scratchMap[K, V]) take(requiredCap int) map[K]V {
 	m := s.m
 	if m == nil {
-		if requiredCap < 8 {
-			requiredCap = 8
-		}
+		requiredCap = max(requiredCap, 8)
 		m = make(map[K]V, requiredCap)
 	}
 	clear(m)

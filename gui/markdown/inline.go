@@ -45,9 +45,7 @@ func IsSafeURL(url string) bool {
 // (first 40 chars) for scheme detection.
 func decodePercentPrefix(s string) string {
 	limit := len(s)
-	if limit > 40 {
-		limit = 40
-	}
+	limit = min(limit, 40)
 	buf := make([]byte, 0, limit)
 	i := 0
 	for i < limit {
@@ -86,7 +84,7 @@ func hasURIScheme(s string) bool {
 	if colon <= 0 {
 		return false
 	}
-	for i := 0; i < colon; i++ {
+	for i := range colon {
 		c := s[i]
 		if c == '/' || c == '?' || c == '#' {
 			return false

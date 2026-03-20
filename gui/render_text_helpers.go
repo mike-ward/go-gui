@@ -27,20 +27,8 @@ func passwordMaskSlice(mask, text string, startByte, endByte int) string {
 	if len(mask) == 0 || endByte <= startByte {
 		return ""
 	}
-	start := byteToRuneIndex(text, startByte)
-	end := byteToRuneIndex(text, endByte)
-	if start < 0 {
-		start = 0
-	}
-	if start > len(mask) {
-		start = len(mask)
-	}
-	if end < start {
-		end = start
-	}
-	if end > len(mask) {
-		end = len(mask)
-	}
+	start := min(max(byteToRuneIndex(text, startByte), 0), len(mask))
+	end := min(max(byteToRuneIndex(text, endByte), start), len(mask))
 	return mask[start:end]
 }
 

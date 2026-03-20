@@ -244,7 +244,7 @@ func (w *mdWalker) collectLines(node ast.Node) string {
 	}
 	segs := hl.Lines()
 	var sb strings.Builder
-	for i := 0; i < segs.Len(); i++ {
+	for i := range segs.Len() {
 		seg := segs.At(i)
 		sb.Write(seg.Value(w.source))
 	}
@@ -1141,7 +1141,7 @@ func parseFloat32(s string) float32 {
 // MathHash computes a FNV-1a hash of a string.
 func MathHash(s string) uint64 {
 	h := uint64(14695981039346656037) // FNV offset basis
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		h ^= uint64(s[i])
 		h *= 1099511628211 // FNV prime
 	}

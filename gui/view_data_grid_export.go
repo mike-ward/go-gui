@@ -288,14 +288,8 @@ func dataGridPDFColWidths(columns []GridColumnCfg, rows []GridRow) []int {
 	if ncols > 1 {
 		sepChars = (ncols - 1) * 3
 	}
-	budget := totalChars - sepChars
-	if budget < ncols {
-		budget = ncols
-	}
-	sampleLimit := len(rows)
-	if sampleLimit > 100 {
-		sampleLimit = 100
-	}
+	budget := max(totalChars-sepChars, ncols)
+	sampleLimit := min(len(rows), 100)
 	natural := make([]int, ncols)
 	for ci, col := range columns {
 		w := utf8.RuneCountInString(col.Title)
@@ -303,7 +297,7 @@ func dataGridPDFColWidths(columns []GridColumnCfg, rows []GridRow) []int {
 			natural[ci] = w
 		}
 	}
-	for ri := 0; ri < sampleLimit; ri++ {
+	for ri := range sampleLimit {
 		for ci, col := range columns {
 			w := utf8.RuneCountInString(rows[ri].Cells[col.ID])
 			if w > natural[ci] {
@@ -322,9 +316,7 @@ func dataGridPDFColWidths(columns []GridColumnCfg, rows []GridRow) []int {
 		assigned := 0
 		for ci := range ncols {
 			w := int(float64(natural[ci]) * float64(budget) / float64(totalNatural))
-			if w < 3 {
-				w = 3
-			}
+			w = max(w, 3)
 			widths[ci] = w
 			assigned += w
 		}
@@ -374,9 +366,7 @@ func dataGridPDFDocument(lines []string) string {
 	}
 	usableHeight := dataGridPdfPageHeight - dataGridPdfMargin*2
 	maxLines := int(usableHeight / dataGridPdfLineHeight)
-	if maxLines < 1 {
-		maxLines = 1
-	}
+	maxLines = max(maxLines, 1)
 	var pages [][]string
 	for i := 0; i < len(lines); i += maxLines {
 		end := i + maxLines
@@ -520,9 +510,7 @@ func dataGridXLSXWorkbookRelsXML() string {
 
 func dataGridXLSXSheetXML(columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg) string {
 	cellsPerRow := len(columns)
-	if cellsPerRow < 1 {
-		cellsPerRow = 1
-	}
+	cellsPerRow = max(cellsPerRow, 1)
 	var out strings.Builder
 	out.Grow(1024 + (len(rows)+1)*cellsPerRow*56)
 	out.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n")
@@ -610,7 +598,7 @@ func dataGridXLSXIsNumber(value string) bool {
 }
 
 func dataGridXLSXSafeNumber(value string) bool {
-	for i := 0; i < len(value); i++ {
+	for i := range len(value) {
 		c := value[i]
 		switch {
 		case c >= '0' && c <= '9':
@@ -692,7 +680,7 @@ func dataGridCSVEscape(value string) string {
 func dataGridCSVColumns(header []string, maxCols int) []GridColumnCfg {
 	columns := make([]GridColumnCfg, 0, maxCols)
 	usedIDs := map[string]bool{}
-	for idx := 0; idx < maxCols; idx++ {
+	for idx := range maxCols {
 		headerValue := ""
 		if idx < len(header) {
 			headerValue = dataGridCSVStripBOM(header[idx], idx)
@@ -722,7 +710,7 @@ func dataGridCSVColumnID(title string, idx int) string {
 	lower := strings.ToLower(title)
 	var out []byte
 	lastIsUnderscore := false
-	for i := 0; i < len(lower); i++ {
+	for i := range len(lower) {
 		ch := lower[i]
 		isAlpha := ch >= 'a' && ch <= 'z'
 		isDigit := ch >= '0' && ch <= '9'

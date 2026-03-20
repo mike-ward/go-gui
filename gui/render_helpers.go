@@ -30,16 +30,7 @@ func resolveClipRadius(parentRadius float32, shape *Shape) float32 {
 	rightInset := shape.Padding.Right + shape.SizeBorder
 	topInset := shape.Padding.Top + shape.SizeBorder
 	bottomInset := shape.Padding.Bottom + shape.SizeBorder
-	inset := leftInset
-	if rightInset > inset {
-		inset = rightInset
-	}
-	if topInset > inset {
-		inset = topInset
-	}
-	if bottomInset > inset {
-		inset = bottomInset
-	}
+	inset := max(leftInset, rightInset, topInset, bottomInset)
 	localRadius := f32Max(0, baseRadius-inset)
 	if localRadius <= 0 {
 		return parentRadius

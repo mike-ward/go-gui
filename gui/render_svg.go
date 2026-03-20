@@ -243,9 +243,7 @@ func computeSvgAnimations(
 			st.Inited = true
 		}
 		adj := elapsedSec - a.BeginSec
-		if adj < 0 {
-			adj = 0
-		}
+		adj = max(adj, 0)
 		frac := fmod(adj, a.DurSec) / a.DurSec
 
 		switch a.Kind {

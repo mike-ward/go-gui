@@ -194,7 +194,7 @@ func (h *nodeHandler) GetChildAtIndex(idx int32) (string, dbus.ObjectPath, *dbus
 	if h.index == -1 {
 		// App root: children are top-level nodes (parentIdx == -1).
 		count := 0
-		for i := 0; i < h.bridge.nodeCount; i++ {
+		for i := range h.bridge.nodeCount {
 			if h.bridge.nodes[i].ParentIdx == -1 {
 				if count == int(idx) {
 					path := dbus.ObjectPath(fmt.Sprintf("/org/gui/a11y/%d", i))
@@ -225,7 +225,7 @@ func (h *nodeHandler) GetChildCount() (int32, *dbus.Error) {
 
 	if h.index == -1 {
 		count := int32(0)
-		for i := 0; i < h.bridge.nodeCount; i++ {
+		for i := range h.bridge.nodeCount {
 			if h.bridge.nodes[i].ParentIdx == -1 {
 				count++
 			}

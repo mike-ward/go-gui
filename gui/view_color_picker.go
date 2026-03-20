@@ -592,12 +592,7 @@ func cpApplyHSV(
 	if err != nil || onChange == nil {
 		return
 	}
-	if n < 0 {
-		n = 0
-	}
-	if n > maxVal {
-		n = maxVal
-	}
+	n = min(max(n, 0), maxVal)
 	sm := StateMap[string, colorPickerState](
 		w, nsColorPicker, capModerate)
 	hsv, _ := sm.Get(cfgID)

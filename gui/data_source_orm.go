@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -418,19 +419,9 @@ func gridOrmColumnAllowsFilterOp(
 		return false
 	}
 	if len(col.normalizedOps) > 0 {
-		for _, allowed := range col.normalizedOps {
-			if allowed == op {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(col.normalizedOps, op)
 	}
-	for _, allowed := range gridOrmDefaultFilterOps {
-		if allowed == op {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(gridOrmDefaultFilterOps, op)
 }
 
 func gridOrmValidateMutationColumns(

@@ -144,9 +144,7 @@ func (tv *themePickerView) GenerateLayout(w *Window) Layout {
 			case ListCoreMoveUp:
 				e.IsHandled = true
 				nextIdx = currentIdx - 1
-				if nextIdx < 0 {
-					nextIdx = 0
-				}
+				nextIdx = max(nextIdx, 0)
 			case ListCoreMoveDown:
 				e.IsHandled = true
 				nextIdx = currentIdx + 1

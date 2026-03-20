@@ -601,9 +601,7 @@ func (b *Backend) endFilter() {
 	gogl.Viewport(0, 0, b.physW, b.physH)
 
 	layers := b.filterLayer
-	if layers < 1 {
-		layers = 1
-	}
+	layers = max(layers, 1)
 
 	// compositeSrc tracks which texture holds the final result.
 	compositeSrc := b.filterTexA

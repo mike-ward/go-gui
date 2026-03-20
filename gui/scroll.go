@@ -69,9 +69,7 @@ func inputScrollCursorIntoView(
 		layout.Shape.IDFocus, InputState{})
 	runeLen := utf8RuneCount(text)
 	pos := is.CursorPos
-	if pos > runeLen {
-		pos = runeLen
-	}
+	pos = min(pos, runeLen)
 	byteIdx := runeToByteIndex(text, pos)
 
 	cp, ok := gl.GetCursorPos(byteIdx)
@@ -130,9 +128,7 @@ func textScrollCursorIntoView(layout *Layout, w *Window) {
 		w, nsInput, shape.IDFocus, InputState{})
 	runeLen := utf8RuneCount(text)
 	pos := is.CursorPos
-	if pos > runeLen {
-		pos = runeLen
-	}
+	pos = min(pos, runeLen)
 	byteIdx := runeToByteIndex(text, pos)
 
 	cp, ok := gl.GetCursorPos(byteIdx)

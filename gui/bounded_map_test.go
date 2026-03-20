@@ -280,7 +280,7 @@ func TestBoundedMapRangeKeysOrder(t *testing.T) {
 
 func TestBoundedMapRangeKeysEarlyStop(t *testing.T) {
 	m := NewBoundedMap[int, int](5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		m.Set(i, i)
 	}
 	seen := 0

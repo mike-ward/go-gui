@@ -115,9 +115,7 @@ func inspectorResize(delta float32, w *Window) {
 		return
 	}
 	maxWidth := float32(w.windowWidth) * 0.8
-	if maxWidth < inspectorPanelMinWidth {
-		maxWidth = inspectorPanelMinWidth
-	}
+	maxWidth = max(maxWidth, inspectorPanelMinWidth)
 	width := f32Clamp(
 		inspectorPanelWidth(w)+delta,
 		inspectorPanelMinWidth,
@@ -710,9 +708,7 @@ func inspectorApplyScrollTo(panelHeight float32, w *Window) {
 	}, w)
 	targetY := float32(rowIdx) * rowHeight
 	newScroll := -(targetY - rowHeight*2)
-	if newScroll > 0 {
-		newScroll = 0
-	}
+	newScroll = min(newScroll, 0)
 	StateMap[uint32, float32](w, nsScrollY, capScroll).
 		Set(inspectorIDScrollPanel, newScroll)
 }

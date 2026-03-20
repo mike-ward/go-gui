@@ -138,7 +138,7 @@ func TestDemoTreeWrapsIntroText(t *testing.T) {
 		t.Fatalf("len(layout.Children) = %d, want >= 2", len(layout.Children))
 	}
 
-	for idx := 0; idx < 2; idx++ {
+	for idx := range 2 {
 		tc := layout.Children[idx].Shape.TC
 		if tc == nil {
 			t.Fatalf("layout.Children[%d].Shape.TC = nil, want text config", idx)

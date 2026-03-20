@@ -188,18 +188,14 @@ func (dc *DrawContext) FilledArc(cx, cy, rx, ry, start, sweep float32, color Col
 // polyline via angular subdivision.
 func arcToPolyline(cx, cy, rx, ry, start, sweep float32) []float32 {
 	r := rx
-	if ry > r {
-		r = ry
-	}
+	r = max(r, ry)
 	if r <= 0 {
 		return nil
 	}
 	n := int(math.Ceil(
 		float64(f32Abs(sweep)) / (2 * math.Pi) * 64 *
 			math.Sqrt(float64(r)/50+1)))
-	if n < 4 {
-		n = 4
-	}
+	n = max(n, 4)
 	step := sweep / float32(n)
 	pts := make([]float32, 0, (n+1)*2)
 	for i := 0; i <= n; i++ {
@@ -215,18 +211,14 @@ func arcToPolyline(cx, cy, rx, ry, start, sweep float32) []float32 {
 // Writes into dc.arcBuf and returns the populated slice.
 func (dc *DrawContext) arcPoints(cx, cy, rx, ry, start, sweep float32) []float32 {
 	r := rx
-	if ry > r {
-		r = ry
-	}
+	r = max(r, ry)
 	if r <= 0 {
 		return nil
 	}
 	n := int(math.Ceil(
 		float64(f32Abs(sweep)) / (2 * math.Pi) * 64 *
 			math.Sqrt(float64(r)/50+1)))
-	if n < 4 {
-		n = 4
-	}
+	n = max(n, 4)
 	need := (n + 1) * 2
 	if cap(dc.arcBuf) < need {
 		dc.arcBuf = make([]float32, 0, need)

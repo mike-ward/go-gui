@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -365,7 +366,7 @@ func dataGridSourceIsDecimal(input string) bool {
 	if input == "" {
 		return false
 	}
-	for i := 0; i < len(input); i++ {
+	for i := range len(input) {
 		if input[i] < '0' || input[i] > '9' {
 			return false
 		}
@@ -532,7 +533,7 @@ func gridContainsLower(haystack, needle string) bool {
 	limit := len(haystack) - len(needle)
 	for i := 0; i <= limit; i++ {
 		found := true
-		for j := 0; j < len(needle); j++ {
+		for j := range len(needle) {
 			if gridLowerByte(haystack[i+j]) != needle[j] {
 				found = false
 				break
@@ -551,7 +552,7 @@ func gridEqualsLower(haystack, needle string) bool {
 	if len(haystack) != len(needle) {
 		return false
 	}
-	for i := 0; i < len(haystack); i++ {
+	for i := range len(haystack) {
 		if gridLowerByte(haystack[i]) != needle[i] {
 			return false
 		}
@@ -565,7 +566,7 @@ func gridStartsWithLower(haystack, needle string) bool {
 	if len(haystack) < len(needle) {
 		return false
 	}
-	for i := 0; i < len(needle); i++ {
+	for i := range len(needle) {
 		if gridLowerByte(haystack[i]) != needle[i] {
 			return false
 		}
@@ -580,7 +581,7 @@ func gridEndsWithLower(haystack, needle string) bool {
 		return false
 	}
 	off := len(haystack) - len(needle)
-	for i := 0; i < len(needle); i++ {
+	for i := range len(needle) {
 		if gridLowerByte(haystack[i+off]) != needle[i] {
 			return false
 		}
@@ -635,7 +636,7 @@ func GridQuerySignature(query GridQueryState) uint64 {
 }
 
 func dataGridFnv64Str(h uint64, s string) uint64 {
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		h = (h ^ uint64(s[i])) * dataGridFnv64Prime
 	}
 	return h
@@ -696,9 +697,7 @@ func dataGridSourceApplyCreate(
 			return gridMutationApplyResult{}, err
 		}
 		cells := make(map[string]string, len(row.Cells))
-		for k, v := range row.Cells {
-			cells[k] = v
-		}
+		maps.Copy(cells, row.Cells)
 		nextRow := GridRow{ID: nextID, Cells: cells}
 		*rows = append(*rows, nextRow)
 		existing[nextID] = true
@@ -743,12 +742,8 @@ func dataGridSourceApplyUpdate(
 		}
 		cells := make(map[string]string,
 			len((*rows)[idx].Cells))
-		for k, v := range (*rows)[idx].Cells {
-			cells[k] = v
-		}
-		for k, v := range reqRow.Cells {
-			cells[k] = v
-		}
+		maps.Copy(cells, (*rows)[idx].Cells)
+		maps.Copy(cells, reqRow.Cells)
 		if rowEdits, ok := editsByRow[reqRow.ID]; ok {
 			for _, edit := range rowEdits {
 				cells[edit.ColID] = edit.Value
@@ -775,9 +770,7 @@ func dataGridSourceApplyUpdate(
 		}
 		cells := make(map[string]string,
 			len((*rows)[idx].Cells))
-		for k, v := range (*rows)[idx].Cells {
-			cells[k] = v
-		}
+		maps.Copy(cells, (*rows)[idx].Cells)
 		for _, edit := range rowEdits {
 			cells[edit.ColID] = edit.Value
 		}

@@ -455,7 +455,7 @@ func comboboxOptionsHash(options []string) uint64 {
 	h := offset
 	for i := range options {
 		s := options[i]
-		for j := 0; j < len(s); j++ {
+		for j := range len(s) {
 			h ^= uint64(s[j])
 			h *= prime
 		}

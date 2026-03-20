@@ -24,12 +24,7 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 	vAlpha := float32(1)
 	if r.HasVertexAlpha {
 		vAlpha = r.VertexAlphaScale
-		if vAlpha < 0 {
-			vAlpha = 0
-		}
-		if vAlpha > 1 {
-			vAlpha = 1
-		}
+		vAlpha = min(max(vAlpha, 0), 1)
 	}
 
 	// Precompute rotation if needed.
@@ -133,13 +128,9 @@ func (b *Backend) endFilter() {
 	b.applyClipState(currClip, clipEnabled)
 
 	blur := b.filterBlur
-	if blur < 1 {
-		blur = 1
-	}
+	blur = max(blur, 1)
 	layers := b.filterLayers
-	if layers < 1 {
-		layers = 1
-	}
+	layers = max(layers, 1)
 
 	outW, outH, err := b.currentTargetSize(prevTarget)
 	if err != nil {
@@ -150,12 +141,7 @@ func (b *Backend) endFilter() {
 	// Gaussian-like alpha falloff. 8 directions per ring for a
 	// circular glow.
 	steps := int(blur + 0.5)
-	if steps < 1 {
-		steps = 1
-	}
-	if steps > 16 {
-		steps = 16
-	}
+	steps = min(max(steps, 1), 16)
 	baseAlpha := float32(60) * float32(layers)
 	diag := func(off int32) int32 {
 		return off * 7 / 10 // ~0.707 approximation
@@ -166,9 +152,7 @@ func (b *Backend) endFilter() {
 		if a < 1 {
 			continue
 		}
-		if a > 255 {
-			a = 255
-		}
+		a = min(a, 255)
 		_ = tex.SetAlphaMod(uint8(a))
 		off := int32(s)
 		d := diag(off)

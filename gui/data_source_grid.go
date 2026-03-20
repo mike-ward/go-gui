@@ -382,9 +382,7 @@ func dataGridSourceRowsWithStableIDs(rows []GridRow, kind GridPaginationKind, st
 }
 
 func dataGridSourceSyntheticRowID(kind GridPaginationKind, state dataGridSourceState, localIdx int) string {
-	if localIdx < 0 {
-		localIdx = 0
-	}
+	localIdx = max(localIdx, 0)
 	switch kind {
 	case GridPaginationOffset:
 		absIdx := intMax(0, state.OffsetStart) + localIdx

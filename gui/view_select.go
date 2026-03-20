@@ -435,7 +435,7 @@ func fnvSum32(s string) uint32 {
 	const offset uint32 = 2166136261
 	const prime uint32 = 16777619
 	h := offset
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		h ^= uint32(s[i])
 		h *= prime
 	}

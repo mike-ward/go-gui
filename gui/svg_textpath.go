@@ -379,9 +379,7 @@ func flattenArc(out *[]float32,
 		return
 	}
 	sq := num / den
-	if sq < 0 {
-		sq = 0
-	}
+	sq = max(sq, 0)
 	root := math.Sqrt(sq)
 	if largeArc == sweepFlag {
 		root = -root
@@ -406,9 +404,7 @@ func flattenArc(out *[]float32,
 	}
 
 	steps := int(math.Ceil(math.Abs(dtheta) / (math.Pi / 8)))
-	if steps < 4 {
-		steps = 4
-	}
+	steps = max(steps, 4)
 	for i := 1; i <= steps; i++ {
 		t := theta1 + dtheta*float64(i)/float64(steps)
 		xr := rx * math.Cos(t)
@@ -427,9 +423,7 @@ func vecAngle(ux, uy, vx, vy float64) float64 {
 	if d < -1 {
 		d = -1
 	}
-	if d > 1 {
-		d = 1
-	}
+	d = min(d, 1)
 	a := math.Acos(d)
 	if ux*vy-uy*vx < 0 {
 		a = -a

@@ -436,8 +436,8 @@ func toggleSign(state *calculatorState) {
 	if state.Err || state.Display == "0" {
 		return
 	}
-	if strings.HasPrefix(state.Display, "-") {
-		state.Display = strings.TrimPrefix(state.Display, "-")
+	if rest, ok := strings.CutPrefix(state.Display, "-"); ok {
+		state.Display = rest
 		return
 	}
 	state.Display = "-" + state.Display

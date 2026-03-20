@@ -315,9 +315,7 @@ func arcToCubic(x1, y1, rx, ry, phi float32, largeArc, sweep bool, x2, y2 float3
 	y1p2 := y1p * y1p
 
 	sq := (rx2*ry2 - rx2*y1p2 - ry2*x1p2) / (rx2*y1p2 + ry2*x1p2)
-	if sq < 0 {
-		sq = 0
-	}
+	sq = max(sq, 0)
 	coef := float32(math.Sqrt(float64(sq)))
 	if largeArc == sweep {
 		coef = -coef
@@ -360,9 +358,7 @@ func vectorAngle(ux, uy, vx, vy float32) float32 {
 	if c < -1 {
 		c = -1
 	}
-	if c > 1 {
-		c = 1
-	}
+	c = min(c, 1)
 	angle := float32(math.Acos(float64(c)))
 	if ux*vy-uy*vx < 0 {
 		return -angle
@@ -408,7 +404,7 @@ func tokenizePath(d string) []string {
 	current.Grow(16)
 	hasDot := false
 
-	for i := 0; i < len(d); i++ {
+	for i := range len(d) {
 		if len(tokens) >= maxPathSegments {
 			break
 		}

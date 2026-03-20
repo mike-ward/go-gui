@@ -631,9 +631,7 @@ func splitterCollapsedFirst(core *splitterCore, available float32) (float32, flo
 	firstTarget := f32Clamp(core.first.collapsedSize, 0, available)
 	secondMin := f32Max(0, core.second.minSize)
 	secondMax := splitterLimitMax(core.second.maxSize, available)
-	if secondMin > secondMax {
-		secondMin = secondMax
-	}
+	secondMin = min(secondMin, secondMax)
 	second := f32Clamp(available-firstTarget, secondMin, secondMax)
 	first := f32Max(0, available-second)
 	first = f32Min(first, splitterLimitMax(core.first.maxSize, available))
@@ -645,9 +643,7 @@ func splitterCollapsedSecond(core *splitterCore, available float32) (float32, fl
 	secondTarget := f32Clamp(core.second.collapsedSize, 0, available)
 	firstMin := f32Max(0, core.first.minSize)
 	firstMax := splitterLimitMax(core.first.maxSize, available)
-	if firstMin > firstMax {
-		firstMin = firstMax
-	}
+	firstMin = min(firstMin, firstMax)
 	first := f32Clamp(available-secondTarget, firstMin, firstMax)
 	second := f32Max(0, available-first)
 	second = f32Min(second, splitterLimitMax(core.second.maxSize, available))
@@ -706,14 +702,10 @@ func splitterClampFirstSize(core *splitterCore, available, target float32) float
 func splitterBounds(core *splitterCore, available float32) (float32, float32) {
 	firstMin := f32Max(0, core.first.minSize)
 	firstMax := splitterLimitMax(core.first.maxSize, available)
-	if firstMin > firstMax {
-		firstMin = firstMax
-	}
+	firstMin = min(firstMin, firstMax)
 	secondMin := f32Max(0, core.second.minSize)
 	secondMax := splitterLimitMax(core.second.maxSize, available)
-	if secondMin > secondMax {
-		secondMin = secondMax
-	}
+	secondMin = min(secondMin, secondMax)
 	lower := f32Max(firstMin, available-secondMax)
 	upper := f32Min(firstMax, available-secondMin)
 	return lower, upper

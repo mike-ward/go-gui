@@ -520,7 +520,7 @@ func TestInMemoryConcurrentFetchMutate(t *testing.T) {
 	})
 
 	wg.Go(func() {
-		for i := 0; i < 200; i++ {
+		for i := range 200 {
 			_, err := src.MutateData(GridMutationRequest{
 				Kind: GridMutationUpdate,
 				Edits: []GridCellEdit{

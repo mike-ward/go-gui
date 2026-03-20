@@ -452,7 +452,7 @@ func showcaseDataSourceRows() []gui.GridRow {
 	teams := []string{"Core", "Data", "Platform", "R&D", "Web", "Security"}
 	statuses := []string{"Open", "Paused", "Closed"}
 	rows := make([]gui.GridRow, 0, 200)
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		id := i + 1
 		rows = append(rows, gui.GridRow{
 			ID: fmt.Sprintf("%d", id),
@@ -468,9 +468,9 @@ func showcaseDataSourceRows() []gui.GridRow {
 
 func showcaseBigTreeNodes() []gui.TreeNodeCfg {
 	nodes := make([]gui.TreeNodeCfg, 0, 20)
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		children := make([]gui.TreeNodeCfg, 0, 10)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			children = append(children, gui.TreeNodeCfg{
 				ID:   fmt.Sprintf("group_%02d_item_%02d", i, j),
 				Text: fmt.Sprintf("Item %d-%d", i, j),
