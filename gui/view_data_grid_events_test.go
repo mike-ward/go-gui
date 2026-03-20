@@ -318,3 +318,444 @@ func TestRangeSelectedRowsFallback(t *testing.T) {
 		t.Fatalf("expected fallback to target, got %v", got)
 	}
 }
+
+// --- dataGridNextPageIndexForKey (additional branches) ---
+
+func TestNextPageIndexForKeyCtrlPageUp(t *testing.T) {
+	e := &Event{KeyCode: KeyPageUp, Modifiers: ModCtrl}
+	got, ok := dataGridNextPageIndexForKey(2, 5, e)
+	if !ok || got != 1 {
+		t.Fatalf("got (%d, %v), want (1, true)", got, ok)
+	}
+}
+
+func TestNextPageIndexForKeyAltEnd(t *testing.T) {
+	e := &Event{KeyCode: KeyEnd, Modifiers: ModAlt}
+	got, ok := dataGridNextPageIndexForKey(1, 5, e)
+	if !ok || got != 4 {
+		t.Fatalf("got (%d, %v), want (4, true)", got, ok)
+	}
+}
+
+func TestNextPageIndexForKeyUnrecognized(t *testing.T) {
+	e := &Event{KeyCode: KeyA, Modifiers: ModCtrl}
+	_, ok := dataGridNextPageIndexForKey(1, 5, e)
+	if ok {
+		t.Fatal("expected false for unrecognized key")
+	}
+}
+
+func TestNextPageIndexForKeyNoModifier(t *testing.T) {
+	e := &Event{KeyCode: KeyPageDown}
+	_, ok := dataGridNextPageIndexForKey(1, 5, e)
+	if ok {
+		t.Fatal("expected false without ctrl/super modifier")
+	}
+}
+
+func TestNextPageIndexForKeyAltUnrecognized(t *testing.T) {
+	e := &Event{KeyCode: KeyA, Modifiers: ModAlt}
+	_, ok := dataGridNextPageIndexForKey(1, 5, e)
+	if ok {
+		t.Fatal("expected false for Alt+A")
+	}
+}
+
+func TestNextPageIndexForKeySuperPageDown(t *testing.T) {
+	e := &Event{KeyCode: KeyPageDown, Modifiers: ModSuper}
+	got, ok := dataGridNextPageIndexForKey(0, 3, e)
+	if !ok || got != 1 {
+		t.Fatalf("got (%d, %v), want (1, true)", got, ok)
+	}
+}
+
+func TestNextPageIndexForKeyClampFirst(t *testing.T) {
+	e := &Event{KeyCode: KeyPageUp, Modifiers: ModCtrl}
+	got, ok := dataGridNextPageIndexForKey(0, 5, e)
+	if !ok || got != 0 {
+		t.Fatalf("got (%d, %v), want (0, true)", got, ok)
+	}
+}
+
+func TestNextPageIndexForKeyClampLast(t *testing.T) {
+	e := &Event{KeyCode: KeyPageDown, Modifiers: ModCtrl}
+	got, ok := dataGridNextPageIndexForKey(4, 5, e)
+	if !ok || got != 4 {
+		t.Fatalf("got (%d, %v), want (4, true)", got, ok)
+	}
+}
+
+// --- dataGridHandleEscapeKey ---
+
+func TestHandleEscapeKeyMarksHandled(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{gridID: "g1"}
+	e := &Event{KeyCode: KeyEscape}
+	handled := dataGridHandleEscapeKey(kc, e, w)
+	if !handled {
+		t.Fatal("escape should be handled")
+	}
+	if !e.IsHandled {
+		t.Fatal("event should be marked handled")
+	}
+}
+
+func TestHandleEscapeKeyIgnoresModifiers(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{gridID: "g1"}
+	e := &Event{KeyCode: KeyEscape, Modifiers: ModShift}
+	handled := dataGridHandleEscapeKey(kc, e, w)
+	if handled {
+		t.Fatal("escape with modifiers should not be handled")
+	}
+}
+
+func TestHandleEscapeKeyIgnoresNonEscape(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{gridID: "g1"}
+	e := &Event{KeyCode: KeyA}
+	handled := dataGridHandleEscapeKey(kc, e, w)
+	if handled {
+		t.Fatal("non-escape should not be handled")
+	}
+}
+
+// --- dataGridHandleRowNavigationKeys ---
+
+func TestHandleRowNavigationKeysArrowDown(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	rows := []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	var selected GridSelection
+	kc := dataGridKeydownContext{
+		gridID:  "g1",
+		rows:    rows,
+		columns: []GridColumnCfg{{ID: "col1"}},
+		selection: GridSelection{
+			ActiveRowID:    "a",
+			SelectedRowIDs: map[string]bool{"a": true},
+		},
+		multiSelect:  true,
+		rangeSelect:  true,
+		pageRows:     10,
+		pageIndices:  []int{0, 1, 2},
+		colCount:     1,
+		frozenTopIDs: map[string]bool{},
+		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
+		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
+			selected = sel
+		},
+	}
+	e := &Event{KeyCode: KeyDown}
+	dataGridHandleRowNavigationKeys(kc, []int{0, 1, 2}, e, w)
+	if !e.IsHandled {
+		t.Fatal("event should be handled")
+	}
+	if selected.ActiveRowID != "b" {
+		t.Errorf("active row: got %q, want %q", selected.ActiveRowID, "b")
+	}
+}
+
+func TestHandleRowNavigationKeysArrowUp(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	rows := []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	var selected GridSelection
+	kc := dataGridKeydownContext{
+		gridID:  "g1",
+		rows:    rows,
+		columns: []GridColumnCfg{{ID: "col1"}},
+		selection: GridSelection{
+			ActiveRowID:    "b",
+			SelectedRowIDs: map[string]bool{"b": true},
+		},
+		multiSelect:  true,
+		rangeSelect:  true,
+		pageRows:     10,
+		pageIndices:  []int{0, 1, 2},
+		colCount:     1,
+		frozenTopIDs: map[string]bool{},
+		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
+		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
+			selected = sel
+		},
+	}
+	e := &Event{KeyCode: KeyUp}
+	dataGridHandleRowNavigationKeys(kc, []int{0, 1, 2}, e, w)
+	if selected.ActiveRowID != "a" {
+		t.Errorf("active row: got %q, want %q", selected.ActiveRowID, "a")
+	}
+}
+
+func TestHandleRowNavigationKeysHome(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	rows := []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	var selected GridSelection
+	kc := dataGridKeydownContext{
+		gridID:  "g1",
+		rows:    rows,
+		selection: GridSelection{
+			ActiveRowID:    "c",
+			SelectedRowIDs: map[string]bool{"c": true},
+		},
+		multiSelect:  true,
+		rangeSelect:  true,
+		pageRows:     10,
+		pageIndices:  []int{0, 1, 2},
+		frozenTopIDs: map[string]bool{},
+		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
+		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
+			selected = sel
+		},
+	}
+	e := &Event{KeyCode: KeyHome}
+	dataGridHandleRowNavigationKeys(kc, []int{0, 1, 2}, e, w)
+	if selected.ActiveRowID != "a" {
+		t.Errorf("home: got %q, want %q", selected.ActiveRowID, "a")
+	}
+}
+
+func TestHandleRowNavigationKeysEnd(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	rows := []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	var selected GridSelection
+	kc := dataGridKeydownContext{
+		gridID:  "g1",
+		rows:    rows,
+		selection: GridSelection{
+			ActiveRowID:    "a",
+			SelectedRowIDs: map[string]bool{"a": true},
+		},
+		multiSelect:  true,
+		rangeSelect:  true,
+		pageRows:     10,
+		pageIndices:  []int{0, 1, 2},
+		frozenTopIDs: map[string]bool{},
+		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
+		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
+			selected = sel
+		},
+	}
+	e := &Event{KeyCode: KeyEnd}
+	dataGridHandleRowNavigationKeys(kc, []int{0, 1, 2}, e, w)
+	if selected.ActiveRowID != "c" {
+		t.Errorf("end: got %q, want %q", selected.ActiveRowID, "c")
+	}
+}
+
+func TestHandleRowNavigationKeysNoCallback(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	rows := []GridRow{{ID: "a"}, {ID: "b"}}
+	kc := dataGridKeydownContext{
+		gridID:            "g1",
+		rows:              rows,
+		selection:         GridSelection{ActiveRowID: "a"},
+		pageRows:          10,
+		pageIndices:       []int{0, 1},
+		frozenTopIDs:      map[string]bool{},
+		dataToDisplay:     map[int]int{0: 0, 1: 1},
+		onSelectionChange: nil,
+	}
+	e := &Event{KeyCode: KeyDown}
+	dataGridHandleRowNavigationKeys(kc, []int{0, 1}, e, w)
+	if !e.IsHandled {
+		t.Fatal("should still mark handled even without callback")
+	}
+}
+
+func TestHandleRowNavigationKeysUnrecognized(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	rows := []GridRow{{ID: "a"}}
+	kc := dataGridKeydownContext{
+		gridID:        "g1",
+		rows:          rows,
+		pageRows:      10,
+		pageIndices:   []int{0},
+		frozenTopIDs:  map[string]bool{},
+		dataToDisplay: map[int]int{0: 0},
+	}
+	e := &Event{KeyCode: KeyA}
+	dataGridHandleRowNavigationKeys(kc, []int{0}, e, w)
+	if e.IsHandled {
+		t.Fatal("unrecognized key should not be handled")
+	}
+}
+
+// --- dataGridOnKeydown (integration) ---
+
+func TestOnKeydownEscapeNoRows(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{gridID: "g1"}
+	e := &Event{KeyCode: KeyEscape}
+	dataGridOnKeydown(kc, e, w)
+	if !e.IsHandled {
+		t.Fatal("escape should be handled")
+	}
+}
+
+func TestOnKeydownSelectAll(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	rows := []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+	var selected GridSelection
+	kc := dataGridKeydownContext{
+		gridID:      "g1",
+		rows:        rows,
+		multiSelect: true,
+		pageIndices: []int{0, 1, 2},
+		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
+			selected = sel
+		},
+	}
+	e := &Event{KeyCode: KeyA, Modifiers: ModCtrl}
+	dataGridOnKeydown(kc, e, w)
+	if !e.IsHandled {
+		t.Fatal("Ctrl+A should be handled")
+	}
+	if len(selected.SelectedRowIDs) != 3 {
+		t.Errorf("expected 3 selected, got %d", len(selected.SelectedRowIDs))
+	}
+}
+
+// --- dataGridScrollRowIntoViewEx ---
+
+func TestScrollRowIntoViewExZeroViewport(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	// Should not panic.
+	dataGridScrollRowIntoViewEx(0, 0, 30, 0, 1, w)
+}
+
+func TestScrollRowIntoViewExZeroRowHeight(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	dataGridScrollRowIntoViewEx(100, 0, 0, 0, 1, w)
+}
+
+// --- dataGridHandleEnterKey ---
+
+func TestHandleEnterKeyNoActivate(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{
+		gridID: "g1",
+		rows:   []GridRow{{ID: "a"}},
+	}
+	e := &Event{KeyCode: KeyEnter}
+	handled := dataGridHandleEnterKey(kc, e, w)
+	if !handled {
+		t.Fatal("enter should be handled")
+	}
+	if !e.IsHandled {
+		t.Fatal("event should be marked handled")
+	}
+}
+
+func TestHandleEnterKeyWithActivate(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	var activated string
+	kc := dataGridKeydownContext{
+		gridID: "g1",
+		rows:   []GridRow{{ID: "a"}, {ID: "b"}},
+		selection: GridSelection{
+			ActiveRowID:    "b",
+			SelectedRowIDs: map[string]bool{"b": true},
+		},
+		onRowActivate: func(row GridRow, _ *Event, _ *Window) {
+			activated = row.ID
+		},
+	}
+	e := &Event{KeyCode: KeyEnter}
+	dataGridHandleEnterKey(kc, e, w)
+	if activated != "b" {
+		t.Errorf("activated: got %q, want %q", activated, "b")
+	}
+}
+
+func TestHandleEnterKeyNotEnter(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{gridID: "g1"}
+	e := &Event{KeyCode: KeyA}
+	handled := dataGridHandleEnterKey(kc, e, w)
+	if handled {
+		t.Fatal("non-enter should not be handled")
+	}
+}
+
+// --- dataGridHandleCrudKeys ---
+
+func TestHandleCrudKeysNotEnabled(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{
+		gridID:      "g1",
+		crudEnabled: false,
+	}
+	e := &Event{KeyCode: KeyInsert}
+	handled := dataGridHandleCrudKeys(kc, e, w)
+	if handled {
+		t.Fatal("crud disabled should return false")
+	}
+}
+
+func TestHandleCrudKeysWithModifiers(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{
+		gridID:      "g1",
+		crudEnabled: true,
+	}
+	e := &Event{KeyCode: KeyInsert, Modifiers: ModShift}
+	handled := dataGridHandleCrudKeys(kc, e, w)
+	if handled {
+		t.Fatal("crud with modifiers should return false")
+	}
+}
+
+// --- dataGridHandleEditStartKey ---
+
+func TestHandleEditStartKeyNotF2(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{gridID: "g1"}
+	e := &Event{KeyCode: KeyA}
+	handled := dataGridHandleEditStartKey(kc, e, w)
+	if handled {
+		t.Fatal("non-F2 should return false")
+	}
+}
+
+func TestHandleEditStartKeyF2NotEditable(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{
+		gridID:      "g1",
+		editEnabled: false,
+	}
+	e := &Event{KeyCode: KeyF2}
+	handled := dataGridHandleEditStartKey(kc, e, w)
+	if !handled {
+		t.Fatal("F2 should return true even when not editable")
+	}
+}
+
+func TestHandleEditStartKeyF2WithModifiers(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	kc := dataGridKeydownContext{gridID: "g1"}
+	e := &Event{KeyCode: KeyF2, Modifiers: ModCtrl}
+	handled := dataGridHandleEditStartKey(kc, e, w)
+	if handled {
+		t.Fatal("F2+Ctrl should return false")
+	}
+}
