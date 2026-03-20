@@ -28,14 +28,14 @@ func BenchmarkListCorePrepare(b *testing.B) {
 
 	b.Run("empty_query", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = listCorePrepare(items, "", 25)
 		}
 	})
 
 	b.Run("fuzzy_query", func(b *testing.B) {
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = listCorePrepare(items, "199", 25)
 		}
 	})
@@ -57,7 +57,7 @@ func BenchmarkComboboxGenerateLayout(b *testing.B) {
 		v := Combobox(cfg)
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = GenerateViewLayout(v, w)
 		}
 	})
@@ -70,7 +70,7 @@ func BenchmarkComboboxGenerateLayout(b *testing.B) {
 		v := Combobox(cfg)
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = GenerateViewLayout(v, w)
 		}
 	})
@@ -103,7 +103,7 @@ func BenchmarkCommandPaletteGenerateLayout(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = GenerateViewLayout(v, w)
 	}
 }
@@ -130,7 +130,7 @@ func BenchmarkListBoxGenerateLayout(b *testing.B) {
 
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = GenerateViewLayout(v, w)
 		}
 	})
@@ -150,7 +150,7 @@ func BenchmarkListBoxGenerateLayout(b *testing.B) {
 
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = GenerateViewLayout(v, w)
 		}
 	})

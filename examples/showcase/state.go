@@ -411,15 +411,3 @@ func entryPin(id string) int {
 		return 2
 	}
 }
-
-func groupLabel(key string) string {
-	for _, group := range demoGroups {
-		if group.Key == key {
-			return group.Label
-		}
-	}
-	if key == groupAll {
-		return "All"
-	}
-	return key
-}

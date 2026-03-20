@@ -10,7 +10,7 @@ func (w *Window) EventFn(e *Event) {
 	// Focus gate: block events when unfocused except right-click,
 	// focused, and scroll.
 	if !w.focused &&
-		!(e.Type == EventMouseDown && e.MouseButton == MouseRight) &&
+		(e.Type != EventMouseDown || e.MouseButton != MouseRight) &&
 		e.Type != EventFocused &&
 		e.Type != EventMouseScroll {
 		return

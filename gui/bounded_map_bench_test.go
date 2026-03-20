@@ -7,11 +7,13 @@ func BenchmarkBoundedMapSetUniqueToCapacity(b *testing.B) {
 	m := NewBoundedMap[int, int](capSize)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	n := 0
+	for b.Loop() {
 		if m.Len() == capSize {
 			m.Clear()
 		}
-		m.Set(i, i)
+		m.Set(n, n)
+		n++
 	}
 }
 
@@ -23,8 +25,10 @@ func BenchmarkBoundedMapSetWithEvictions(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		m.Set(capSize+i, i)
+	n := 0
+	for b.Loop() {
+		m.Set(capSize+n, n)
+		n++
 	}
 }
 
@@ -33,9 +37,11 @@ func BenchmarkBoundedMapDeleteInsertChurn(b *testing.B) {
 	m.Set(0, 0)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 1; i <= b.N; i++ {
-		m.Set(i, i)
-		m.Delete(i)
+	n := 0
+	for b.Loop() {
+		n++
+		m.Set(n, n)
+		m.Delete(n)
 	}
 }
 
@@ -49,7 +55,7 @@ func BenchmarkBoundedMapKeysUnderChurn(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = m.Keys()
 	}
 }
@@ -64,7 +70,7 @@ func BenchmarkBoundedMapRangeKeysUnderChurn(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		count := 0
 		m.RangeKeys(func(int) bool {
 			count++

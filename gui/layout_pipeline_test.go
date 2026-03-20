@@ -279,7 +279,7 @@ func TestLayoutArrangeWithToast(t *testing.T) {
 	}
 }
 
-func TestLayoutWrapTextNoop(t *testing.T) {
+func TestLayoutWrapTextNoop(_ *testing.T) {
 	// Should not panic.
 	layoutWrapText(nil, nil)
 }

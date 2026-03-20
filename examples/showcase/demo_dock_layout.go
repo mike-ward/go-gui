@@ -46,7 +46,7 @@ func demoDockLayout(w *gui.Window) gui.View {
 	})
 }
 
-func dockToolbar(app *ShowcaseApp) gui.View {
+func dockToolbar(_ *ShowcaseApp) gui.View {
 	return gui.Row(gui.ContainerCfg{
 		Sizing:     gui.FillFit,
 		Padding:    gui.NoPadding,

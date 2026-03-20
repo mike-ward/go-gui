@@ -24,9 +24,9 @@ func embeddedAssetPath(name string) string {
 		return ""
 	}
 	_, err = f.Write(data)
-	f.Close()
+	_ = f.Close()
 	if err != nil {
-		os.Remove(f.Name())
+		_ = os.Remove(f.Name())
 		return ""
 	}
 	embeddedPathCache[name] = f.Name()

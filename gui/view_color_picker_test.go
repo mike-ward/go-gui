@@ -203,7 +203,7 @@ func TestCpSVMouseActionWithOffset(t *testing.T) {
 	}
 }
 
-func TestCpSVMouseActionNilOnChange(t *testing.T) {
+func TestCpSVMouseActionNilOnChange(_ *testing.T) {
 	w := &Window{}
 	layout := &Layout{
 		Shape: &Shape{X: 0, Y: 0, Width: 100, Height: 100},
@@ -237,7 +237,7 @@ func TestCpHueMouseAction(t *testing.T) {
 	}
 }
 
-func TestCpHueMouseActionNilOnChange(t *testing.T) {
+func TestCpHueMouseActionNilOnChange(_ *testing.T) {
 	w := &Window{}
 	layout := &Layout{
 		Shape: &Shape{X: 0, Y: 0, Width: 30, Height: 360},

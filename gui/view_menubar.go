@@ -127,11 +127,11 @@ func applyMenubarDefaults(cfg *MenubarCfg) {
 	}
 }
 
-// MenuIdMap maps menu item IDs to directional nav nodes.
-type MenuIdMap map[string]MenuIdNode
+// MenuIDMap maps menu item IDs to directional nav nodes.
+type MenuIDMap map[string]MenuIDNode
 
-// MenuIdNode stores directional navigation targets.
-type MenuIdNode struct {
+// MenuIDNode stores directional navigation targets.
+type MenuIDNode struct {
 	Left  string
 	Right string
 	Up    string
@@ -147,8 +147,8 @@ func makeMenubarOnKeyDown(cfg MenubarCfg) func(*Layout, *Event, *Window) {
 // menuMapperVertical builds a directional navigation graph
 // for a vertical standalone menu (context menu). Top-level
 // items use Up/Down for siblings, Right to enter submenus.
-func menuMapperVertical(items []MenuItemCfg) MenuIdMap {
-	m := make(MenuIdMap)
+func menuMapperVertical(items []MenuItemCfg) MenuIDMap {
+	m := make(MenuIDMap)
 	selectables := make([]MenuItemCfg, 0, len(items))
 	for _, item := range items {
 		if isSelectableMenuID(item.ID) {
@@ -160,7 +160,7 @@ func menuMapperVertical(items []MenuItemCfg) MenuIdMap {
 	}
 
 	for i, item := range selectables {
-		node := MenuIdNode{
+		node := MenuIDNode{
 			Up:    menuItemUp(i, selectables),
 			Down:  menuItemDown(i, selectables),
 			Right: menuItemRight(item, ""),
@@ -177,8 +177,8 @@ func menuMapperVertical(items []MenuItemCfg) MenuIdMap {
 
 // menuMapper builds a directional navigation graph for all
 // menu items.
-func menuMapper(items []MenuItemCfg) MenuIdMap {
-	m := make(MenuIdMap)
+func menuMapper(items []MenuItemCfg) MenuIDMap {
+	m := make(MenuIDMap)
 	selectables := make([]MenuItemCfg, 0, len(items))
 	for _, item := range items {
 		if isSelectableMenuID(item.ID) {
@@ -193,7 +193,7 @@ func menuMapper(items []MenuItemCfg) MenuIdMap {
 		leftIdx := (i - 1 + len(selectables)) % len(selectables)
 		rightIdx := (i + 1) % len(selectables)
 
-		node := MenuIdNode{
+		node := MenuIDNode{
 			Left:  selectables[leftIdx].ID,
 			Right: selectables[rightIdx].ID,
 			Up:    item.ID,
@@ -222,8 +222,8 @@ func menuMapper(items []MenuItemCfg) MenuIdMap {
 // submenuMapper recursively builds navigation for submenu
 // items.
 func submenuMapper(items []MenuItemCfg, parentID string,
-	rootNode MenuIdNode, rootRight string,
-	m MenuIdMap) {
+	rootNode MenuIDNode, rootRight string,
+	m MenuIDMap) {
 
 	selectables := make([]MenuItemCfg, 0, len(items))
 	for _, item := range items {
@@ -236,7 +236,7 @@ func submenuMapper(items []MenuItemCfg, parentID string,
 	}
 
 	for i, item := range selectables {
-		node := MenuIdNode{
+		node := MenuIDNode{
 			Left:  parentID,
 			Right: menuItemRight(item, rootRight),
 			Up:    menuItemUp(i, selectables),

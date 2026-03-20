@@ -3,6 +3,7 @@ package gui
 // ScrollbarOverflow determines when scrollbars are shown.
 type ScrollbarOverflow uint8
 
+// ScrollbarOverflow values.
 const (
 	ScrollbarAuto ScrollbarOverflow = iota
 	ScrollbarHidden

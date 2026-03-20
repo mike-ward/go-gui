@@ -293,10 +293,7 @@ func distributeSpace(layout *Layout, remainingIn float32, mode distributeMode, a
 
 	collectDistributionCandidates(layout, axis, mode, candidates, fixedIndices)
 
-	for {
-		if !shouldContinueDistribution(remaining, mode, len(*candidates)) {
-			break
-		}
+	for shouldContinueDistribution(remaining, mode, len(*candidates)) {
 		if f32AreClose(remaining, prevRemaining) {
 			break
 		}
@@ -434,7 +431,8 @@ func layoutFillWidths(layout *Layout) {
 func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 	remainingWidth := layout.Shape.Width - layout.Shape.PaddingWidth()
 
-	if layout.Shape.Axis == AxisLeftToRight {
+	switch layout.Shape.Axis {
+	case AxisLeftToRight:
 		for i := range layout.Children {
 			remainingWidth -= layout.Children[i].Shape.Width
 		}
@@ -446,7 +444,7 @@ func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 		if remainingWidth < -f32Tolerance && !layout.Shape.Wrap && !layout.Shape.Overflow {
 			distributeSpace(layout, remainingWidth, distributeShrink, distributeHorizontal, candidates, fixedIndices)
 		}
-	} else if layout.Shape.Axis == AxisTopToBottom {
+	case AxisTopToBottom:
 		layoutFillCrossAxis(layout, distributeHorizontal)
 	}
 
@@ -464,7 +462,8 @@ func layoutFillHeights(layout *Layout) {
 func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 	remainingHeight := layout.Shape.Height - layout.Shape.PaddingHeight()
 
-	if layout.Shape.Axis == AxisTopToBottom {
+	switch layout.Shape.Axis {
+	case AxisTopToBottom:
 		for i := range layout.Children {
 			remainingHeight -= layout.Children[i].Shape.Height
 		}
@@ -477,7 +476,7 @@ func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 		if remainingHeight < -f32Tolerance {
 			distributeSpace(layout, remainingHeight, distributeShrink, distributeVertical, candidates, fixedIndices)
 		}
-	} else if layout.Shape.Axis == AxisLeftToRight {
+	case AxisLeftToRight:
 		layoutFillCrossAxis(layout, distributeVertical)
 	}
 

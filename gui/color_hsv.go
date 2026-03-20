@@ -21,10 +21,10 @@ func (c Color) ToHSV() (h, s, v float32) {
 	}
 
 	if delta != 0 {
-		switch {
-		case mx == r:
+		switch mx {
+		case r:
 			h = 60.0 * f32Mod((g-b)/delta, 6)
-		case mx == g:
+		case g:
 			h = 60.0 * (((b - r) / delta) + 2.0)
 		default:
 			h = 60.0 * (((r - g) / delta) + 4.0)

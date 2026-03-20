@@ -250,7 +250,7 @@ func TestTableColumnWidthCaching(t *testing.T) {
 	}
 }
 
-func TestClearTableCache(t *testing.T) {
+func TestClearTableCache(_ *testing.T) {
 	w := &Window{}
 	w.textMeasurer = &tableTestMeasurer{}
 	cfg := TableCfg{

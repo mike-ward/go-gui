@@ -102,7 +102,7 @@ func TestSymlinkTraversal(t *testing.T) {
 	}
 }
 
-func TestNULInPath(t *testing.T) {
+func TestNULInPath(_ *testing.T) {
 	// NUL bytes are not handled by imgpath itself (backends
 	// check before calling), but WithinRoot should not panic.
 	got := WithinRoot("/a/b\x00/c", "/a")

@@ -399,15 +399,15 @@ func dataGridPDFDocument(lines []string) string {
 	for i, pageLines := range pages {
 		var stream strings.Builder
 		stream.WriteString("BT\n")
-		stream.WriteString(fmt.Sprintf("/F1 %s Tf\n", pdfNum(dataGridPdfFontSize)))
-		stream.WriteString(fmt.Sprintf("%s TL\n", pdfNum(dataGridPdfLineHeight)))
-		stream.WriteString(fmt.Sprintf("%s %s Td\n",
-			pdfNum(dataGridPdfMargin), pdfNum(dataGridPdfPageHeight-dataGridPdfMargin)))
+		fmt.Fprintf(&stream, "/F1 %s Tf\n", pdfNum(dataGridPdfFontSize))
+		fmt.Fprintf(&stream, "%s TL\n", pdfNum(dataGridPdfLineHeight))
+		fmt.Fprintf(&stream, "%s %s Td\n",
+			pdfNum(dataGridPdfMargin), pdfNum(dataGridPdfPageHeight-dataGridPdfMargin))
 		for j, line := range pageLines {
 			if j > 0 {
 				stream.WriteString("T*\n")
 			}
-			stream.WriteString(fmt.Sprintf("(%s) Tj\n", pdfEscapeText(line)))
+			fmt.Fprintf(&stream, "(%s) Tj\n", pdfEscapeText(line))
 		}
 		stream.WriteString("ET\n")
 		content := stream.String()
@@ -463,7 +463,7 @@ func pdfEncode(objects []string) string {
 	offsets := make([]int, len(objects)+1)
 	for i, body := range objects {
 		offsets[i+1] = out.Len()
-		out.WriteString(fmt.Sprintf("%d 0 obj\n", i+1))
+		fmt.Fprintf(&out, "%d 0 obj\n", i+1)
 		out.WriteString(body)
 		if !strings.HasSuffix(body, "\n") {
 			out.WriteByte('\n')
@@ -472,15 +472,15 @@ func pdfEncode(objects []string) string {
 	}
 
 	xrefStart := out.Len()
-	out.WriteString(fmt.Sprintf("xref\n0 %d\n", len(objects)+1))
+	fmt.Fprintf(&out, "xref\n0 %d\n", len(objects)+1)
 	out.WriteString("0000000000 65535 f \n")
 	for i := 1; i <= len(objects); i++ {
-		out.WriteString(fmt.Sprintf("%010d 00000 n \n", offsets[i]))
+		fmt.Fprintf(&out, "%010d 00000 n \n", offsets[i])
 	}
 	out.WriteString("trailer\n")
-	out.WriteString(fmt.Sprintf("<< /Size %d /Root 1 0 R >>\n", len(objects)+1))
+	fmt.Fprintf(&out, "<< /Size %d /Root 1 0 R >>\n", len(objects)+1)
 	out.WriteString("startxref\n")
-	out.WriteString(fmt.Sprintf("%d\n", xrefStart))
+	fmt.Fprintf(&out, "%d\n", xrefStart)
 	out.WriteString("%%EOF\n")
 
 	return out.String()
@@ -537,7 +537,7 @@ func dataGridXLSXSheetXML(columns []GridColumnCfg, rows []GridRow, exportCfg Gri
 	}
 	for rowIdx, row := range rows {
 		xmlRow := rowIdx + 2
-		out.WriteString(fmt.Sprintf(`<row r="%d">`, xmlRow))
+		fmt.Fprintf(&out, `<row r="%d">`, xmlRow)
 		for colIdx, col := range columns {
 			cellRef := dataGridXLSXCellRef(colIdx, xmlRow)
 			value := dataGridExportText(row.Cells[col.ID], exportCfg)

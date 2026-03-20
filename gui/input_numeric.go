@@ -9,6 +9,7 @@ import (
 // NumericInputMode determines how numeric values are displayed.
 type NumericInputMode uint8
 
+// NumericInputMode values.
 const (
 	NumericNumber NumericInputMode = iota
 	NumericCurrency
@@ -18,6 +19,7 @@ const (
 // NumericAffixPosition determines prefix/suffix placement.
 type NumericAffixPosition uint8
 
+// NumericAffixPosition values.
 const (
 	AffixPrefix NumericAffixPosition = iota
 	AffixSuffix
@@ -280,10 +282,11 @@ func numericParse(raw string, loc NumericLocaleCfg) (float64, bool) {
 	sawGroupSep := false
 	decimalIndex := -1
 
-	if rs[0] == loc.MinusSign {
+	switch rs[0] {
+	case loc.MinusSign:
 		normalized = append(normalized, '-')
 		start = 1
-	} else if rs[0] == loc.PlusSign {
+	case loc.PlusSign:
 		start = 1
 	}
 	for i := start; i < len(rs); i++ {

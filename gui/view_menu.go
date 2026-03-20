@@ -62,7 +62,7 @@ func makeMenuOnKeyDown(cfg MenubarCfg) func(*Layout, *Event, *Window) {
 // standalone menus and menubars. The mapper function builds
 // the directional navigation graph for arrow-key movement.
 func menuOnKeyDown(cfg MenubarCfg,
-	mapper func([]MenuItemCfg) MenuIdMap,
+	mapper func([]MenuItemCfg) MenuIDMap,
 	e *Event, w *Window) {
 
 	sm := StateMap[uint32, string](w, nsMenu, capModerate)

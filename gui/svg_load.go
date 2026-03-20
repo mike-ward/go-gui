@@ -173,9 +173,10 @@ func cachedSvgTextDraws(texts []SvgText, scale float32,
 		ascent := fh * 0.8
 		x := t.X * scale
 		y := t.Y*scale - ascent
-		if t.Anchor == 1 {
+		switch t.Anchor {
+		case 1:
 			x -= tw / 2
-		} else if t.Anchor == 2 {
+		case 2:
 			x -= tw
 		}
 		draws = append(draws, CachedSvgTextDraw{
@@ -304,7 +305,7 @@ func validateSvgSourceWithRoots(svgSrc string, allowedRoots []string) error {
 	if cleanPath == "." {
 		return fmt.Errorf("invalid svg path")
 	}
-	for _, part := range strings.Split(filepath.ToSlash(cleanPath), "/") {
+	for part := range strings.SplitSeq(filepath.ToSlash(cleanPath), "/") {
 		if part == ".." {
 			return fmt.Errorf("invalid svg path: contains parent directory reference")
 		}

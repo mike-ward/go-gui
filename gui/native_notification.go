@@ -3,6 +3,7 @@ package gui
 // NativeNotificationStatus reports notification outcome.
 type NativeNotificationStatus uint8
 
+// NativeNotificationStatus values.
 const (
 	NotificationOK     NativeNotificationStatus = iota
 	NotificationDenied                          // permission denied

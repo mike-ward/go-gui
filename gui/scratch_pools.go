@@ -98,8 +98,8 @@ type scratchPools struct {
 
 	// Render-phase pools: reuse heap objects whose addresses are
 	// stored in RenderCmd pointer fields (avoids per-frame escapes).
-	renderTextStyles      scratchObjPool[TextStyle]
-	renderGlyphLayouts    scratchObjPool[glyph.Layout]
+	renderTextStyles       scratchObjPool[TextStyle]
+	renderGlyphLayouts     scratchObjPool[glyph.Layout]
 	renderAffineTransforms scratchObjPool[glyph.AffineTransform]
 
 	// Reusable event for layoutHover callbacks (avoids per-shape
@@ -124,15 +124,15 @@ const (
 
 func newScratchPools() scratchPools {
 	return scratchPools{
-		filterRenderers:     scratchSlice[RenderCmd]{retainMax: 131_072, shrinkTo: 8192},
-		focusCandidates:     scratchSlice[focusCandidate]{retainMax: 4096, shrinkTo: 512},
-		gradientNormStops:   scratchSlice[GradientStop]{retainMax: 64, shrinkTo: 8},
-		gradientSampleStops: scratchSlice[GradientStop]{retainMax: 64, shrinkTo: 8},
-		svgAnimVals:         scratchSlice[float32]{retainMax: 32, shrinkTo: 8},
-		wrapRows:            scratchSlice[wrapRowRange]{retainMax: 4096, shrinkTo: 256},
-		layerLayouts:        scratchSlice[Layout]{retainMax: 4096, shrinkTo: 256},
-		focusSeen:           scratchMap[uint32, struct{}]{retainMax: 4096},
-		svgAnimStates:       scratchMap[string, svgAnimState]{retainMax: 4096},
+		filterRenderers:        scratchSlice[RenderCmd]{retainMax: 131_072, shrinkTo: 8192},
+		focusCandidates:        scratchSlice[focusCandidate]{retainMax: 4096, shrinkTo: 512},
+		gradientNormStops:      scratchSlice[GradientStop]{retainMax: 64, shrinkTo: 8},
+		gradientSampleStops:    scratchSlice[GradientStop]{retainMax: 64, shrinkTo: 8},
+		svgAnimVals:            scratchSlice[float32]{retainMax: 32, shrinkTo: 8},
+		wrapRows:               scratchSlice[wrapRowRange]{retainMax: 4096, shrinkTo: 256},
+		layerLayouts:           scratchSlice[Layout]{retainMax: 4096, shrinkTo: 256},
+		focusSeen:              scratchMap[uint32, struct{}]{retainMax: 4096},
+		svgAnimStates:          scratchMap[string, svgAnimState]{retainMax: 4096},
 		renderTextStyles:       scratchObjPool[TextStyle]{retainMax: 4096, shrinkTo: 256},
 		renderGlyphLayouts:     scratchObjPool[glyph.Layout]{retainMax: 1024, shrinkTo: 64},
 		renderAffineTransforms: scratchObjPool[glyph.AffineTransform]{retainMax: 256, shrinkTo: 16},

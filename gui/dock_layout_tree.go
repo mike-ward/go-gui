@@ -264,11 +264,11 @@ func DockTreeWrapRoot(root *DockNode, panelID string, zone DockDropZone) *DockNo
 // new split (edge zones). Returns the new root.
 func DockTreeMovePanel(root *DockNode, panelID, targetGroupID string, zone DockDropZone) *DockNode {
 	newRoot := DockTreeRemovePanel(root, panelID)
-	switch {
-	case zone == DockDropCenter:
+	switch zone {
+	case DockDropCenter:
 		return DockTreeAddTab(newRoot, targetGroupID, panelID)
-	case zone == DockDropWindowTop || zone == DockDropWindowBottom ||
-		zone == DockDropWindowLeft || zone == DockDropWindowRight:
+	case DockDropWindowTop, DockDropWindowBottom,
+		DockDropWindowLeft, DockDropWindowRight:
 		return DockTreeWrapRoot(newRoot, panelID, zone)
 	default:
 		return DockTreeSplitAt(newRoot, targetGroupID, panelID, zone)

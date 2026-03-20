@@ -735,11 +735,6 @@ func TestClipContentsEmitsStencilBracket(t *testing.T) {
 
 	// Expect: StencilBegin, Clip(push), [child], Clip(pop),
 	//         StencilEnd
-	var kinds []RenderKind
-	for _, r := range w.renderers {
-		kinds = append(kinds, r.Kind)
-	}
-
 	foundBegin := false
 	foundEnd := false
 	for _, r := range w.renderers {

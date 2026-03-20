@@ -131,7 +131,7 @@ func TestNativeNotificationMockPlatformError(t *testing.T) {
 	}
 }
 
-func TestNativeNotificationNilOnDone(t *testing.T) {
+func TestNativeNotificationNilOnDone(_ *testing.T) {
 	w := &Window{}
 	cfg := NativeNotificationCfg{Title: "", Body: "B"}
 	// Must not panic with nil OnDone.

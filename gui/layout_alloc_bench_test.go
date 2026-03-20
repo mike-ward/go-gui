@@ -46,7 +46,7 @@ func BenchmarkLayoutArrange(b *testing.B) {
 	childShapes := make([]Shape, len(template.Children))
 
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		*layout.Shape = *template.Shape
 		layout.Parent = nil
 		for j := range template.Children {
@@ -86,7 +86,7 @@ func benchmarkWrapLayout() Layout {
 func BenchmarkLayoutWrapContainers(b *testing.B) {
 	w := &Window{scratch: newScratchPools()}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		layout := benchmarkWrapLayout()
 		layoutWrapContainers(&layout, w)
 	}
@@ -112,7 +112,7 @@ func BenchmarkFocusTraversal(b *testing.B) {
 	w := &Window{scratch: newScratchPools()}
 	root := benchmarkFocusLayout()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if s, ok := root.NextFocusable(w); ok {
 			w.SetIDFocus(s.IDFocus)
 		}

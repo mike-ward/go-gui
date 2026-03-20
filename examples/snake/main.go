@@ -225,7 +225,7 @@ func landingView(w *gui.Window, ww, wh float32) gui.View {
 	})
 }
 
-func landingBackdrop(ww, wh float32, frame int) gui.View {
+func landingBackdrop(ww, wh float32, _ int) gui.View {
 	content := []gui.View{
 		gui.Column(gui.ContainerCfg{
 			X:       32,
@@ -400,11 +400,6 @@ func controlButton(label string, id uint32, action func(*Game)) gui.View {
 
 func textStyle(base gui.TextStyle, size float32, color gui.Color) gui.TextStyle {
 	base.Size = size
-	base.Color = color
-	return base
-}
-
-func iconStyle(base gui.TextStyle, color gui.Color) gui.TextStyle {
 	base.Color = color
 	return base
 }

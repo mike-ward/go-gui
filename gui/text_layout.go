@@ -37,35 +37,6 @@ func plainTextLayoutWidthArg(
 	return 0
 }
 
-func plainTextGlyphConfig(style TextStyle, widthArg float32) glyph.TextConfig {
-	cfg := glyph.TextConfig{
-		Style:    style.ToGlyphStyle(),
-		Block:    glyph.DefaultBlockStyle(),
-		Gradient: style.Gradient,
-	}
-	cfg.Block.Align = textAlignmentToGlyph(style.Align)
-	cfg.Block.LineSpacing = style.LineSpacing
-	if widthArg > 0 {
-		cfg.Block.Width = widthArg
-		cfg.Block.Wrap = glyph.WrapWord
-	} else if widthArg < 0 {
-		cfg.Block.Width = -widthArg
-		cfg.Block.Wrap = glyph.WrapNone
-	}
-	return cfg
-}
-
-func textAlignmentToGlyph(align TextAlignment) glyph.Alignment {
-	switch align {
-	case TextAlignCenter:
-		return glyph.AlignCenter
-	case TextAlignRight:
-		return glyph.AlignRight
-	default:
-		return glyph.AlignLeft
-	}
-}
-
 func plainTextLayoutResolved(
 	text string,
 	shape *Shape,

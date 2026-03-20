@@ -5,6 +5,7 @@ import "strconv"
 // BadgeVariant selects the badge color preset.
 type BadgeVariant uint8
 
+// BadgeVariant values.
 const (
 	BadgeDefault BadgeVariant = iota
 	BadgeInfo
@@ -94,8 +95,8 @@ func Badge(cfg BadgeCfg) View {
 	})
 }
 
-func badgeLabel(label string, max int) string {
-	if max <= 0 || len(label) == 0 {
+func badgeLabel(label string, maxVal int) string {
+	if maxVal <= 0 || len(label) == 0 {
 		return label
 	}
 	n := 0
@@ -104,8 +105,8 @@ func badgeLabel(label string, max int) string {
 			return label
 		}
 		n = n*10 + int(c-'0')
-		if n > max {
-			return strconv.Itoa(max) + "+"
+		if n > maxVal {
+			return strconv.Itoa(maxVal) + "+"
 		}
 	}
 	return label

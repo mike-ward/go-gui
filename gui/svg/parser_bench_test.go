@@ -13,7 +13,7 @@ func BenchmarkParserCacheHitInline(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err := p.ParseSvg(src); err != nil {
 			b.Fatalf("parse failed: %v", err)
 		}
@@ -23,11 +23,13 @@ func BenchmarkParserCacheHitInline(b *testing.B) {
 func BenchmarkParserCacheMissInline(b *testing.B) {
 	p := New()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	n := 0
+	for b.Loop() {
 		src := `<svg viewBox="0 0 24 24"><rect x="0" y="0" width="24" height="24"/><text x="1" y="` +
-			strconv.Itoa(i%100) + `">x</text></svg>`
+			strconv.Itoa(n%100) + `">x</text></svg>`
 		if _, err := p.ParseSvg(src); err != nil {
 			b.Fatalf("parse failed: %v", err)
 		}
+		n++
 	}
 }

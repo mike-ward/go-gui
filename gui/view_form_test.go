@@ -240,7 +240,7 @@ func TestFormAsyncValidation(t *testing.T) {
 
 	asyncVal := func(
 		f FormFieldSnapshot, _ FormSnapshot,
-		signal *GridAbortSignal,
+		_ *GridAbortSignal,
 	) []FormIssue {
 		if f.Value == "bad" {
 			return []FormIssue{{Msg: "bad value"}}
@@ -300,7 +300,7 @@ func TestFormAbortOnRevalidation(t *testing.T) {
 	callCount := 0
 	slow := func(
 		_ FormFieldSnapshot, _ FormSnapshot,
-		signal *GridAbortSignal,
+		_ *GridAbortSignal,
 	) []FormIssue {
 		callCount++
 		return nil

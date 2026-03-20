@@ -265,13 +265,13 @@ func TestLoadSvgRespectsAllowedRoots(t *testing.T) {
 	}
 }
 
-func TestClearSvgCacheNoOp(t *testing.T) {
+func TestClearSvgCacheNoOp(_ *testing.T) {
 	w := &Window{}
 	// Should not panic.
 	w.ClearSvgCache()
 }
 
-func TestRemoveSvgFromCacheNoOp(t *testing.T) {
+func TestRemoveSvgFromCacheNoOp(_ *testing.T) {
 	w := &Window{}
 	// Should not panic.
 	w.RemoveSvgFromCache("nonexistent.svg")

@@ -431,8 +431,8 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 	if tc == nil {
 		return
 	}
-	if len(tc.Text) == 0 && !(shape.IDFocus > 0 &&
-		shape.IDFocus == w.IDFocus() && w.IMEComposing()) {
+	if len(tc.Text) == 0 &&
+		(shape.IDFocus <= 0 || shape.IDFocus != w.IDFocus() || !w.IMEComposing()) {
 		// Empty text — still render cursor if focused.
 		if shape.IDFocus > 0 && shape.IDFocus == w.IDFocus() {
 			baseX := shape.X + shape.PaddingLeft()

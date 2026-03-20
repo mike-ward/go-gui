@@ -595,7 +595,7 @@ func inspectorFindByPath(layout *Layout, path string) (*Layout, bool) {
 		return nil, false
 	}
 	node := layout
-	for _, part := range strings.Split(path, ".") {
+	for part := range strings.SplitSeq(path, ".") {
 		idx, err := strconv.Atoi(part)
 		if err != nil || idx < 0 || idx >= len(node.Children) {
 			return nil, false

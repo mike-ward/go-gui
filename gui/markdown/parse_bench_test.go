@@ -9,7 +9,7 @@ func BenchmarkParseSmall(b *testing.B) {
 	source := "# Title\n\nSimple paragraph with **bold**, *italic*, and [link](https://example.com)."
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = Parse(source, false)
 	}
 }
@@ -27,7 +27,7 @@ func BenchmarkParseLarge(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = Parse(source, false)
 	}
 }
@@ -46,7 +46,7 @@ func BenchmarkParseAbbrFootnotes(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = Parse(source, false)
 	}
 }

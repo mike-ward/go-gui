@@ -9,6 +9,7 @@ import (
 // DatePickerWeekdays identifies days of the week (1=Monday..7=Sunday).
 type DatePickerWeekdays uint8
 
+// DatePickerWeekdays values.
 const (
 	DatePickerMonday    DatePickerWeekdays = 1
 	DatePickerTuesday   DatePickerWeekdays = 2
@@ -22,6 +23,7 @@ const (
 // DatePickerMonths identifies months (1=January..12=December).
 type DatePickerMonths uint16
 
+// DatePickerMonths values.
 const (
 	DatePickerJanuary   DatePickerMonths = 1
 	DatePickerFebruary  DatePickerMonths = 2
@@ -40,6 +42,7 @@ const (
 // DatePickerWeekdayLen controls weekday header label length.
 type DatePickerWeekdayLen uint8
 
+// DatePickerWeekdayLen values.
 const (
 	WeekdayOneLetter   DatePickerWeekdayLen = iota // "S"
 	WeekdayThreeLetter                             // "Sun"

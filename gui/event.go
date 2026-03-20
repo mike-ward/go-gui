@@ -25,6 +25,7 @@ const reservedDialogID = "___dialog_reserved_do_not_use___"
 // EventType identifies the kind of input event.
 type EventType uint8
 
+// EventType values.
 const (
 	EventInvalid EventType = iota
 	EventKeyDown
@@ -56,6 +57,7 @@ const (
 // MouseButton identifies which mouse button was pressed/released.
 type MouseButton uint16
 
+// MouseButton values.
 const (
 	MouseLeft    MouseButton = 0
 	MouseRight   MouseButton = 1
@@ -66,6 +68,7 @@ const (
 // MouseCursor represents the shape of the mouse cursor.
 type MouseCursor uint8
 
+// MouseCursor values.
 const (
 	CursorDefault MouseCursor = iota
 	CursorArrow
@@ -83,6 +86,7 @@ const (
 // Modifier is a bitmask of keyboard/mouse modifier flags.
 type Modifier uint32
 
+// Modifier values.
 const (
 	ModNone  Modifier = 0
 	ModShift Modifier = 1
@@ -121,6 +125,7 @@ func (m Modifier) HasAny(mods ...Modifier) bool {
 // KeyCode identifies a keyboard key.
 type KeyCode uint16
 
+// KeyCode values.
 const (
 	KeyInvalid      KeyCode = 0
 	KeySpace        KeyCode = 32
@@ -248,6 +253,7 @@ const (
 // TouchToolType identifies the input device type for touch events.
 type TouchToolType uint8
 
+// TouchToolType values.
 const (
 	TouchToolUnknown TouchToolType = iota
 	TouchToolFinger

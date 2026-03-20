@@ -92,7 +92,7 @@ func mainView(w *gui.Window) gui.View {
 	})
 }
 
-func datePicker(app *App, w *gui.Window) gui.View {
+func datePicker(app *App, _ *gui.Window) gui.View {
 	var weekdaysLen gui.DatePickerWeekdayLen
 	switch app.WeekdaysLen {
 	case "three":
@@ -394,7 +394,7 @@ func clickAllowMonth(l *gui.Layout, e *gui.Event, w *gui.Window) {
 	e.IsHandled = true
 }
 
-func yearsDatesGroup(app *App, w *gui.Window) gui.View {
+func yearsDatesGroup(app *App, _ *gui.Window) gui.View {
 	return gui.Column(gui.ContainerCfg{
 		Padding: gui.NoPadding,
 		Sizing:  gui.FitFill,

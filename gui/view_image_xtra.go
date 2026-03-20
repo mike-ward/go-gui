@@ -31,7 +31,7 @@ func ValidateImagePath(fileName string) error {
 	clean := filepath.Clean(fileName)
 	if clean == ".." ||
 		strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
-		return fmt.Errorf("invalid image path: contains ..")
+		return fmt.Errorf("invalid image path: contains parent reference")
 	}
 	return ValidateImageExtension(clean)
 }

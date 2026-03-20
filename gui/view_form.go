@@ -12,6 +12,7 @@ import (
 // FormValidateOn controls when field validation triggers.
 type FormValidateOn uint8
 
+// FormValidateOn values.
 const (
 	FormValidateInherit      FormValidateOn = iota
 	FormValidateOnChange                    // every keystroke
@@ -23,6 +24,7 @@ const (
 // FormIssueKind distinguishes error from warning.
 type FormIssueKind uint8
 
+// FormIssueKind values.
 const (
 	FormIssueError FormIssueKind = iota
 	FormIssueWarning
@@ -32,6 +34,7 @@ const (
 // validation.
 type FormValidationTrigger uint8
 
+// FormValidationTrigger values.
 const (
 	FormTriggerChange FormValidationTrigger = iota
 	FormTriggerBlur

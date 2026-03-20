@@ -432,9 +432,10 @@ func renderToPDF(renderers []RenderCmd, job PrintJob,
 
 			// Apply text-anchor offset.
 			offset := float64(tp.Offset * scale)
-			if tp.Anchor == 1 {
+			switch tp.Anchor {
+			case 1:
 				offset -= totalAdv / 2
-			} else if tp.Anchor == 2 {
+			case 2:
 				offset -= totalAdv
 			}
 

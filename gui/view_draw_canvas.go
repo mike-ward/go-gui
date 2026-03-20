@@ -41,7 +41,7 @@ func DrawCanvas(cfg DrawCanvasCfg) View {
 
 func (dv *drawCanvasView) Content() []View { return nil }
 
-func (dv *drawCanvasView) GenerateLayout(w *Window) Layout {
+func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 	c := &dv.cfg
 
 	var events *EventHandlers

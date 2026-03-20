@@ -240,8 +240,6 @@ type ShapeTextConfig struct {
 	rtfMathHashes     []int64         // cache keys per inline math object
 	wrapCacheWidth    float32
 	wrapCacheValid    bool
-	wrapCacheText     string
-	wrapCacheStyle    TextStyle
 	wrapCacheHeight   float32
 	textLayoutWidth   float32
 	textLayoutValid   bool

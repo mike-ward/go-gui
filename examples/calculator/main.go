@@ -1,3 +1,4 @@
+// Package main implements a calculator example app.
 package main
 
 import (
@@ -28,8 +29,6 @@ var (
 	colorNumberButton = gui.ColorFromString("#46464a")
 	colorTopButton    = gui.ColorFromString("#8e8e92")
 	colorOperator     = gui.ColorFromString("#ff9f0a")
-	colorChrome       = gui.ColorFromString("#0f1014")
-	colorChromeBorder = gui.ColorFromString("#27282c")
 )
 
 type calculatorState struct {
@@ -341,7 +340,7 @@ func keypadRow(w *gui.Window, buttons []calcButton) gui.View {
 	})
 }
 
-func calcKey(w *gui.Window, button calcButton) gui.View {
+func calcKey(_ *gui.Window, button calcButton) gui.View {
 	labelStyle := gui.TextStyle{
 		Color: colorScreenText,
 		Size:  16,

@@ -466,8 +466,8 @@ func gridOrmValidateMutationColumns(
 	return nil
 }
 
-// GridOrmSqlBuilder holds SQL fragments built from a query spec.
-type GridOrmSqlBuilder struct {
+// GridOrmSQLBuilder holds SQL fragments built from a query spec.
+type GridOrmSQLBuilder struct {
 	WhereSQL  string
 	OrderSQL  string
 	LimitSQL  string
@@ -479,10 +479,10 @@ type GridOrmSqlBuilder struct {
 // columns and builds SQL fragments.
 func (s *GridOrmDataSource) BuildSQL(
 	spec GridOrmQuerySpec,
-) (GridOrmSqlBuilder, error) {
+) (GridOrmSQLBuilder, error) {
 	colMap, err := s.resolvedColumnMap()
 	if err != nil {
-		return GridOrmSqlBuilder{}, err
+		return GridOrmSQLBuilder{}, err
 	}
 	return GridOrmBuildSQL(spec, colMap)
 }
@@ -493,14 +493,14 @@ func (s *GridOrmDataSource) BuildSQL(
 func GridOrmBuildSQL(
 	spec GridOrmQuerySpec,
 	colMap map[string]GridOrmColumnSpec,
-) (GridOrmSqlBuilder, error) {
+) (GridOrmSQLBuilder, error) {
 	query, err := gridOrmValidateQueryWithMap(GridQueryState{
 		QuickFilter: spec.QuickFilter,
 		Sorts:       spec.Sorts,
 		Filters:     spec.Filters,
 	}, colMap)
 	if err != nil {
-		return GridOrmSqlBuilder{}, err
+		return GridOrmSQLBuilder{}, err
 	}
 	var params []string
 	var whereParts []string
@@ -525,7 +525,7 @@ func GridOrmBuildSQL(
 	params = append(params,
 		fmt.Sprintf("%d", limit),
 		fmt.Sprintf("%d", offset))
-	return GridOrmSqlBuilder{
+	return GridOrmSQLBuilder{
 		WhereSQL:  strings.Join(whereParts, " and "),
 		OrderSQL:  order,
 		LimitSQL:  "limit ?",
@@ -648,8 +648,8 @@ func GridOrmValidDBField(field string) bool {
 		return false
 	}
 	first := field[0]
-	if !((first >= 'a' && first <= 'z') ||
-		(first >= 'A' && first <= 'Z') || first == '_') {
+	if (first < 'a' || first > 'z') &&
+		(first < 'A' || first > 'Z') && first != '_' {
 		return false
 	}
 	dotCount := 0

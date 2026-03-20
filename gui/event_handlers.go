@@ -65,7 +65,8 @@ func keyDownScrollHandler(layout *Layout, e *Event, w *Window) {
 	deltaPage := guiTheme.ScrollDeltaPage
 	const deltaHome float32 = 10_000_000
 
-	if e.Modifiers == ModNone {
+	switch e.Modifiers {
+	case ModNone:
 		switch e.KeyCode {
 		case KeyUp:
 			e.IsHandled = scrollVertical(layout, deltaLine, w)
@@ -80,7 +81,7 @@ func keyDownScrollHandler(layout *Layout, e *Event, w *Window) {
 		case KeyPageDown:
 			e.IsHandled = scrollVertical(layout, -deltaPage, w)
 		}
-	} else if e.Modifiers == ModShift {
+	case ModShift:
 		switch e.KeyCode {
 		case KeyLeft:
 			e.IsHandled = scrollHorizontal(layout, deltaLine, w)
@@ -250,10 +251,11 @@ func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 	// Handle scroll on scroll container under cursor.
 	if layout.Shape.IDScroll > 0 {
 		if layout.Shape.PointInShape(e.MouseX, e.MouseY) {
-			if e.Modifiers == ModShift {
+			switch e.Modifiers {
+			case ModShift:
 				e.IsHandled = scrollHorizontal(
 					layout, e.ScrollX, w)
-			} else if e.Modifiers == ModNone {
+			case ModNone:
 				e.IsHandled = scrollVertical(
 					layout, e.ScrollY, w)
 			}

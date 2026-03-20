@@ -227,6 +227,7 @@ type InspectorStyle struct {
 	ColorPadding   Color
 }
 
+// DefaultInspectorStyle provides the default inspector color palette.
 var DefaultInspectorStyle = InspectorStyle{
 	ColorPanel:     RGBA(64, 64, 64, 245),
 	ColorTextHelp:  RGBA(225, 225, 225, 130),

@@ -507,10 +507,7 @@ func TestInMemoryConcurrentFetchMutate(t *testing.T) {
 	src := NewInMemoryDataSource(makeTestRows(20))
 	var stop atomic.Bool
 	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for !stop.Load() {
 			_, err := src.FetchData(GridDataRequest{
 				Page: GridCursorPageReq{Limit: 10},
@@ -520,10 +517,9 @@ func TestInMemoryConcurrentFetchMutate(t *testing.T) {
 				return
 			}
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for i := 0; i < 200; i++ {
 			_, err := src.MutateData(GridMutationRequest{
 				Kind: GridMutationUpdate,
@@ -537,7 +533,7 @@ func TestInMemoryConcurrentFetchMutate(t *testing.T) {
 			}
 		}
 		stop.Store(true)
-	}()
+	})
 
 	wg.Wait()
 }

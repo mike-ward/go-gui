@@ -220,17 +220,17 @@ func (b *Backend) applyColorMatrix(
 		ai := float32(px&0xFF) / 255
 
 		ro := cm[0]*ri + cm[4]*gi + cm[8]*bi + cm[12]*ai
-		go_ := cm[1]*ri + cm[5]*gi + cm[9]*bi + cm[13]*ai
+		gOut := cm[1]*ri + cm[5]*gi + cm[9]*bi + cm[13]*ai
 		bo := cm[2]*ri + cm[6]*gi + cm[10]*bi + cm[14]*ai
 		ao := cm[3]*ri + cm[7]*gi + cm[11]*bi + cm[15]*ai
 
 		ro = max(0, min(1, ro))
-		go_ = max(0, min(1, go_))
+		gOut = max(0, min(1, gOut))
 		bo = max(0, min(1, bo))
 		ao = max(0, min(1, ao))
 
 		b.filterPixels[i] = uint32(ro*255+0.5)<<24 |
-			uint32(go_*255+0.5)<<16 |
+			uint32(gOut*255+0.5)<<16 |
 			uint32(bo*255+0.5)<<8 |
 			uint32(ao*255+0.5)
 	}

@@ -569,39 +569,38 @@ func (w *mdWalker) walkAutoLink(
 func (w *mdWalker) walkInlineExt(
 	dst []Run, node ast.Node, state inlineState,
 ) []Run {
-	kind := node.Kind()
-	switch {
-	case kind == east.KindStrikethrough:
+	switch kind := node.Kind(); kind {
+	case east.KindStrikethrough:
 		ns := state
 		ns.strikethrough = true
 		return w.collectRunsInto(dst, node, ns)
-	case kind == east.KindTaskCheckBox:
+	case east.KindTaskCheckBox:
 		return dst
-	case kind == NodeKindMathInline:
+	case NodeKindMathInline:
 		mi := node.(*nodeMathInline)
 		id := fmt.Sprintf("math_%x", MathHash(mi.Latex))
 		return append(dst, Run{
 			MathID: id, MathLatex: mi.Latex, Format: state.format,
 		})
-	case kind == NodeKindMathDisplay:
+	case NodeKindMathDisplay:
 		md := node.(*nodeMathDisplay)
 		id := fmt.Sprintf("math_%x", MathHash(md.Latex))
 		return append(dst, Run{
 			MathID: id, MathLatex: md.Latex, Format: state.format,
 		})
-	case kind == NodeKindHighlight:
+	case NodeKindHighlight:
 		ns := state
 		ns.highlight = true
 		return w.collectRunsInto(dst, node, ns)
-	case kind == NodeKindUnderline:
+	case NodeKindUnderline:
 		ns := state
 		ns.underline = true
 		return w.collectRunsInto(dst, node, ns)
-	case kind == NodeKindSuperscript:
+	case NodeKindSuperscript:
 		ns := state
 		ns.superscript = true
 		return w.collectRunsInto(dst, node, ns)
-	case kind == NodeKindSubscript:
+	case NodeKindSubscript:
 		ns := state
 		ns.subscript = true
 		return w.collectRunsInto(dst, node, ns)
@@ -1001,9 +1000,9 @@ func isWordBoundary(text string, pos int) bool {
 		return true
 	}
 	c := text[pos]
-	return !((c >= 'a' && c <= 'z') ||
-		(c >= 'A' && c <= 'Z') ||
-		(c >= '0' && c <= '9') || c == '_')
+	return (c < 'a' || c > 'z') &&
+		(c < 'A' || c > 'Z') &&
+		(c < '0' || c > '9') && c != '_'
 }
 
 // --- Helpers ---

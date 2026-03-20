@@ -463,7 +463,7 @@ func TestCrudRemapSelection(t *testing.T) {
 	}
 }
 
-func TestCrudRemapSelectionNilCallback(t *testing.T) {
+func TestCrudRemapSelectionNilCallback(_ *testing.T) {
 	// Should not panic.
 	dataGridCrudRemapSelection(GridSelection{}, nil, map[string]string{"a": "b"}, &Event{}, nil)
 }

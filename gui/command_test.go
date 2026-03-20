@@ -279,7 +279,7 @@ func TestCommandButtonUnknownPanics(t *testing.T) {
 	CommandButton(w, "nonexistent", ButtonCfg{})
 }
 
-func TestUnregisterCommandNoOp(t *testing.T) {
+func TestUnregisterCommandNoOp(_ *testing.T) {
 	w := NewWindow(WindowCfg{State: new(int)})
 	// Should not panic when unregistering a non-existent ID.
 	w.UnregisterCommand("does-not-exist")

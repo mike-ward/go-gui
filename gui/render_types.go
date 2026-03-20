@@ -7,6 +7,7 @@ import "github.com/mike-ward/go-glyph"
 // the dispatch loop switches on Kind to draw each command.
 type RenderKind uint8
 
+// RenderKind values.
 const (
 	RenderNone RenderKind = iota
 	RenderClip

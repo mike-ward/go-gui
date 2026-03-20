@@ -25,7 +25,7 @@ func BenchmarkEventFnMouseMove(b *testing.B) {
 		MouseY:    25,
 		Modifiers: ModNone,
 	}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		e.IsHandled = false
 		w.EventFn(e)
 	}
@@ -64,7 +64,7 @@ func BenchmarkEventFnMouseScrollFocused(b *testing.B) {
 		ScrollY:   -1,
 		Modifiers: ModNone,
 	}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		e.IsHandled = false
 		w.EventFn(e)
 	}
@@ -88,7 +88,7 @@ func BenchmarkExecuteMouseCallback(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	e := &Event{MouseX: 25, MouseY: 25}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		e.IsHandled = false
 		e.MouseX = 25
 		e.MouseY = 25

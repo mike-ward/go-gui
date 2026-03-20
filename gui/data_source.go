@@ -158,6 +158,7 @@ func NewInMemoryDataSource(rows []GridRow) *InMemoryDataSource {
 	}
 }
 
+// Capabilities returns the supported operations for in-memory data.
 func (s *InMemoryDataSource) Capabilities() GridDataCapabilities {
 	return GridDataCapabilities{
 		SupportsCursorPagination: s.SupportsCursor,
@@ -171,6 +172,7 @@ func (s *InMemoryDataSource) Capabilities() GridDataCapabilities {
 	}
 }
 
+// FetchData returns paginated rows from in-memory storage.
 func (s *InMemoryDataSource) FetchData(req GridDataRequest) (GridDataResult, error) {
 	if err := dataGridSourceSleepWithAbort(req.Signal, s.LatencyMs); err != nil {
 		return GridDataResult{}, err
@@ -187,6 +189,7 @@ func (s *InMemoryDataSource) FetchData(req GridDataRequest) (GridDataResult, err
 		rows, defaultLimit, 0, rowCountKnown, req)
 }
 
+// MutateData applies create/update/delete mutations to in-memory rows.
 func (s *InMemoryDataSource) MutateData(req GridMutationRequest) (GridMutationResult, error) {
 	if err := dataGridSourceSleepWithAbort(req.Signal, s.LatencyMs); err != nil {
 		return GridMutationResult{}, err
@@ -836,9 +839,9 @@ func dataGridSourceNextCreateRowID(
 	if id != "" && !existing[id] {
 		return id, nil
 	}
-	cap := len(rows) + 1000
+	maxID := len(rows) + 1000
 	next := len(rows) + 1
-	for next <= cap {
+	for next <= maxID {
 		candidate := strconv.Itoa(next)
 		if !existing[candidate] {
 			return candidate, nil

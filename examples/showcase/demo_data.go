@@ -50,10 +50,10 @@ func demoTable(w *gui.Window) gui.View {
 	for idx, cell := range cfg.Data[0].Cells {
 		col := idx + 1
 		label := cell.Value
-		switch {
-		case app.TableSortBy == col:
+		switch app.TableSortBy {
+		case col:
 			label += "  ↓"
-		case app.TableSortBy == -col:
+		case -col:
 			label += " ↑"
 		}
 		header = append(header, gui.TableCellCfg{
@@ -61,10 +61,10 @@ func demoTable(w *gui.Window) gui.View {
 			HeadCell: true,
 			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 				app := gui.State[ShowcaseApp](w)
-				switch {
-				case app.TableSortBy == col:
+				switch app.TableSortBy {
+				case col:
 					app.TableSortBy = -col
-				case app.TableSortBy == -col:
+				case -col:
 					app.TableSortBy = 0
 				default:
 					app.TableSortBy = col

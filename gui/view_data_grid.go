@@ -37,6 +37,7 @@ const (
 // GridColumnPin specifies column pinning position.
 type GridColumnPin uint8
 
+// GridColumnPin values.
 const (
 	GridColumnPinNone GridColumnPin = iota
 	GridColumnPinLeft
@@ -46,6 +47,7 @@ const (
 // GridAggregateOp specifies the aggregation operation.
 type GridAggregateOp uint8
 
+// GridAggregateOp values.
 const (
 	GridAggregateCount GridAggregateOp = iota
 	GridAggregateSum
@@ -73,6 +75,7 @@ func (op GridAggregateOp) String() string {
 // GridCellEditorKind specifies the type of inline cell editor.
 type GridCellEditorKind uint8
 
+// GridCellEditorKind values.
 const (
 	GridCellEditorText GridCellEditorKind = iota
 	GridCellEditorSelect
@@ -613,7 +616,7 @@ func dataGridCachedPresentation(cfg *DataGridCfg, columns []GridColumnCfg, rowIn
 	return pres
 }
 
-func dataGridPresentationSignature(cfg *DataGridCfg, columns []GridColumnCfg, visibleIndices []int, groupCols []string, valueCols []string, groupTitles map[string]string) uint64 {
+func dataGridPresentationSignature(cfg *DataGridCfg, _ []GridColumnCfg, visibleIndices []int, groupCols []string, valueCols []string, groupTitles map[string]string) uint64 {
 	h := dataGridFnv64Offset
 	if len(groupCols) == 0 && len(cfg.Aggregates) == 0 && cfg.OnDetailRowView == nil {
 		h = dataGridFnv64Str(h, cfg.ID)
@@ -714,7 +717,7 @@ func dataGridPresentationRows(cfg *DataGridCfg, columns []GridColumnCfg, rowIndi
 	return dataGridPresentationRowsWithGroupRanges(cfg, columns, visibleIndices, groupCols, groupRanges, groupTitles)
 }
 
-func dataGridPresentationRowsWithGroupRanges(cfg *DataGridCfg, columns []GridColumnCfg, visibleIndices []int, groupCols []string, groupRanges map[string]int, groupTitles map[string]string) dataGridPresentation {
+func dataGridPresentationRowsWithGroupRanges(cfg *DataGridCfg, _ []GridColumnCfg, visibleIndices []int, groupCols []string, groupRanges map[string]int, groupTitles map[string]string) dataGridPresentation {
 	rows := make([]dataGridDisplayRow, 0, len(cfg.Rows)+8)
 	dataToDisplay := map[int]int{}
 	if len(groupCols) == 0 || len(visibleIndices) == 0 {

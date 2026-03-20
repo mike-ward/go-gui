@@ -52,7 +52,7 @@ func TestSpellCheckTriggerOnEnable(t *testing.T) {
 	}
 
 	// Enable spell check by switching the view generator.
-	w.viewGenerator = func(w *Window) View {
+	w.viewGenerator = func(_ *Window) View {
 		return Input(InputCfg{
 			IDFocus:    1,
 			Sizing:     FillFit,
@@ -146,7 +146,7 @@ func TestSpellCheckClearOnDisable(t *testing.T) {
 	}
 
 	// Disable spell check.
-	w.viewGenerator = func(w *Window) View {
+	w.viewGenerator = func(_ *Window) View {
 		return Input(InputCfg{
 			IDFocus:    1,
 			Sizing:     FillFit,

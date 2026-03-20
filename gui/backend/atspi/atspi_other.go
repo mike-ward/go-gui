@@ -9,7 +9,14 @@ import "github.com/mike-ward/go-gui/gui"
 // Bridge is a no-op on non-Linux platforms.
 type Bridge struct{}
 
-func (b *Bridge) Init(_ func(action, index int))  {}
+// Init is a no-op on non-Linux platforms.
+func (b *Bridge) Init(_ func(action, index int)) {}
+
+// Sync is a no-op on non-Linux platforms.
 func (b *Bridge) Sync(_ []gui.A11yNode, _, _ int) {}
-func (b *Bridge) Destroy()                        {}
-func (b *Bridge) Announce(_ string)               {}
+
+// Destroy is a no-op on non-Linux platforms.
+func (b *Bridge) Destroy() {}
+
+// Announce is a no-op on non-Linux platforms.
+func (b *Bridge) Announce(_ string) {}

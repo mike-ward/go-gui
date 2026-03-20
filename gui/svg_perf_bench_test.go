@@ -58,7 +58,7 @@ func BenchmarkRenderSvgAnimated(b *testing.B) {
 	}
 	clip := DrawClip{X: 0, Y: 0, Width: 200, Height: 200}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		w.renderers = w.renderers[:0]
 		renderSvg(shape, clip, w)
 	}
@@ -75,7 +75,7 @@ func BenchmarkBuildDefsPathDataCache(b *testing.B) {
 		"p3": "M 0 0 L 100 100",
 	}
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = buildDefsPathDataCache(textPaths, filtered, defs, 1.0)
 	}
 }

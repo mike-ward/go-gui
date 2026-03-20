@@ -223,7 +223,8 @@ func addLineCap(x, y, dx, dy, nx, ny, halfW float32, lineCap gui.StrokeCap, resu
 	dirX := dx / l
 	dirY := dy / l
 
-	if lineCap == gui.SquareCap {
+	switch lineCap {
+	case gui.SquareCap:
 		ex := x + dirX*halfW
 		ey := y + dirY*halfW
 		ax := x + nx*halfW
@@ -235,7 +236,7 @@ func addLineCap(x, y, dx, dy, nx, ny, halfW float32, lineCap gui.StrokeCap, resu
 		dx2 := ex + nx*halfW
 		dy2 := ey + ny*halfW
 		*result = append(*result, ax, ay, bx, by, cx, cy, ax, ay, cx, cy, dx2, dy2)
-	} else if lineCap == gui.RoundCap {
+	case gui.RoundCap:
 		startAngle := float32(math.Atan2(float64(ny), float64(nx)))
 		prevX := x + float32(math.Cos(float64(startAngle)))*halfW
 		prevY := y + float32(math.Sin(float64(startAngle)))*halfW

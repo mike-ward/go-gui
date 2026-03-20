@@ -6,11 +6,13 @@ func BenchmarkBoundedStackPushBelowCapacity(b *testing.B) {
 	s := NewBoundedStack[int](1024)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	n := 0
+	for b.Loop() {
 		if s.Len() == 1024 {
 			s.Clear()
 		}
-		s.Push(i)
+		s.Push(n)
+		n++
 	}
 }
 
@@ -21,8 +23,10 @@ func BenchmarkBoundedStackPushOverflow(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		s.Push(i)
+	n := 0
+	for b.Loop() {
+		s.Push(n)
+		n++
 	}
 }
 
@@ -30,8 +34,8 @@ func BenchmarkBoundedStackPushPopCycle(b *testing.B) {
 	s := NewBoundedStack[int](1024)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		s.Push(i)
+	for b.Loop() {
+		s.Push(0)
 		s.Pop()
 	}
 }

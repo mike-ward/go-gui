@@ -514,9 +514,10 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 
 	// Apply text-anchor adjustment.
 	offset := tp.Offset
-	if tp.Anchor == 1 {
+	switch tp.Anchor {
+	case 1:
 		offset -= totalAdvance / 2
-	} else if tp.Anchor == 2 {
+	case 2:
 		offset -= totalAdvance
 	}
 

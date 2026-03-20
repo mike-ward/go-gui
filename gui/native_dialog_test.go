@@ -203,7 +203,7 @@ func TestNativeFolderDialogNoPlatform(t *testing.T) {
 	}
 }
 
-func TestNativeDialogNilOnDone(t *testing.T) {
+func TestNativeDialogNilOnDone(_ *testing.T) {
 	w := &Window{}
 	// Nil OnDone must not panic.
 	nativeOpenDialogImpl(w, NativeOpenDialogCfg{})
@@ -211,7 +211,7 @@ func TestNativeDialogNilOnDone(t *testing.T) {
 	nativeFolderDialogImpl(w, NativeFolderDialogCfg{})
 }
 
-func TestNativeAlertNilOnDone(t *testing.T) {
+func TestNativeAlertNilOnDone(_ *testing.T) {
 	w := &Window{}
 	// Nil OnDone must not panic.
 	nativeMessageDialogImpl(w, NativeMessageDialogCfg{})

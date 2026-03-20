@@ -12,6 +12,7 @@ const splitterDefaultRatio = float32(0.5)
 // SplitterOrientation controls how panes are arranged.
 type SplitterOrientation uint8
 
+// SplitterOrientation values.
 const (
 	SplitterHorizontal SplitterOrientation = iota
 	SplitterVertical
@@ -20,6 +21,7 @@ const (
 // SplitterCollapsed tracks which pane is collapsed, if any.
 type SplitterCollapsed uint8
 
+// SplitterCollapsed values.
 const (
 	SplitterCollapseNone SplitterCollapsed = iota
 	SplitterCollapseFirst
