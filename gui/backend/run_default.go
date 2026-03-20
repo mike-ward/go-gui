@@ -10,3 +10,8 @@ import (
 
 // Run starts the application event loop using the OpenGL backend.
 func Run(w *gui.Window) { glbackend.Run(w) }
+
+// RunApp starts a multi-window event loop.
+func RunApp(app *gui.App, windows ...*gui.Window) {
+	glbackend.RunApp(app, windows...)
+}

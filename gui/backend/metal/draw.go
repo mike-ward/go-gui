@@ -20,7 +20,7 @@ import (
 )
 
 // renderersDraw iterates render commands and draws them.
-func (b *Backend) renderersDraw(w *gui.Window) {
+func (b *windowState) renderersDraw(w *gui.Window) {
 	cmds := w.Renderers()
 	for i := range cmds {
 		r := &cmds[i]
@@ -83,54 +83,54 @@ func (b *Backend) renderersDraw(w *gui.Window) {
 
 // --- Individual draw commands ---
 
-func (b *Backend) drawClip(r *gui.RenderCmd) {
+func (b *windowState) drawClip(r *gui.RenderCmd) {
 	s := b.dpiScale
 	x := int32(r.X * s)
 	y := int32(r.Y * s)
 	w := int32(r.W * s)
 	h := int32(r.H * s)
-	C.metalSetScissor(C.int(x), C.int(y), C.int(w), C.int(h),
-		C.int(b.physH))
+	C.metalSetScissor(b.ctx, C.int(x), C.int(y), C.int(w),
+		C.int(h), C.int(b.physH))
 }
 
-func (b *Backend) drawRect(r *gui.RenderCmd) {
+func (b *windowState) drawRect(r *gui.RenderCmd) {
 	if !r.Fill {
 		return
 	}
 	s := b.dpiScale
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		r.Color, r.Radius*s, 0)
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawStrokeRect(r *gui.RenderCmd) {
+func (b *windowState) drawStrokeRect(r *gui.RenderCmd) {
 	s := b.dpiScale
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		r.Color, r.Radius*s, r.Thickness*s)
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawCircle(r *gui.RenderCmd) {
+func (b *windowState) drawCircle(r *gui.RenderCmd) {
 	if !r.Fill || r.Radius <= 0 {
 		return
 	}
 	s := b.dpiScale
 	rad := r.Radius * s
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 	verts := buildQuad(
 		(r.X-r.Radius)*s,
 		(r.Y-r.Radius)*s,
 		2*rad, 2*rad,
 		r.Color, rad, 0)
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawLine(r *gui.RenderCmd) {
+func (b *windowState) drawLine(r *gui.RenderCmd) {
 	s := b.dpiScale
 	x0 := r.X * s
 	y0 := r.Y * s
@@ -156,12 +156,12 @@ func (b *Backend) drawLine(r *gui.RenderCmd) {
 		{x0 - nx, y0 - ny, 0, -1, 1, nc.r, nc.g, nc.b, nc.a},
 	}
 
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawShadow(r *gui.RenderCmd) {
+func (b *windowState) drawShadow(r *gui.RenderCmd) {
 	s := b.dpiScale
 	x := (r.X + r.OffsetX) * s
 	y := (r.Y + r.OffsetY) * s
@@ -176,37 +176,37 @@ func (b *Backend) drawShadow(r *gui.RenderCmd) {
 	qw := w + 2*expand
 	qh := h + 2*expand
 
-	C.metalSetPipeline(C.int(pipeShadow))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeShadow))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 
 	tm := identityTM()
 	tm[12] = r.OffsetX * s
 	tm[13] = r.OffsetY * s
-	C.metalSetTM((*C.float)(&tm[0]))
+	C.metalSetTM(b.ctx, (*C.float)(&tm[0]))
 
 	verts := buildQuad(qx, qy, qw, qh, r.Color, rad, blur)
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawBlur(r *gui.RenderCmd) {
+func (b *windowState) drawBlur(r *gui.RenderCmd) {
 	s := b.dpiScale
 	blur := r.BlurRadius * s
 	rad := r.Radius * s
 	expand := blur * 1.5
 
-	C.metalSetPipeline(C.int(pipeBlur))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeBlur))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 	tm := identityTM()
-	C.metalSetTM((*C.float)(&tm[0]))
+	C.metalSetTM(b.ctx, (*C.float)(&tm[0]))
 
 	verts := buildQuad(
 		r.X*s-expand, r.Y*s-expand,
 		r.W*s+2*expand, r.H*s+2*expand,
 		r.Color, rad+expand, blur)
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawGradient(r *gui.RenderCmd) {
+func (b *windowState) drawGradient(r *gui.RenderCmd) {
 	if r.Gradient == nil || len(r.Gradient.Stops) == 0 ||
 		r.W <= 0 || r.H <= 0 {
 		return
@@ -247,15 +247,15 @@ func (b *Backend) drawGradient(r *gui.RenderCmd) {
 	tm[3*4+1] = h / 2
 	tm[3*4+3] = float32(len(stops))
 
-	C.metalSetPipeline(C.int(pipeGradient))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
-	C.metalSetTM((*C.float)(&tm[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeGradient))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
+	C.metalSetTM(b.ctx, (*C.float)(&tm[0]))
 
 	verts := buildQuad(x, y, w, h, gui.White, rad, 0)
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
+func (b *windowState) drawGradientBorder(r *gui.RenderCmd) {
 	if r.Gradient == nil || len(r.Gradient.Stops) == 0 {
 		return
 	}
@@ -269,18 +269,18 @@ func (b *Backend) drawGradientBorder(r *gui.RenderCmd) {
 		{r.X * s, r.Y * s, th, r.H * s},
 		{(r.X+r.W)*s - th, r.Y * s, th, r.H * s},
 	}
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 	for i := range 4 {
 		c := gui.SampleGradientStopColor(
 			r.Gradient.Stops, positions[i])
 		rc := rects[i]
 		verts := buildQuad(rc.x, rc.y, rc.w, rc.h, c, 0, 0)
-		C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+		C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 	}
 }
 
-func (b *Backend) drawImage(r *gui.RenderCmd) {
+func (b *windowState) drawImage(r *gui.RenderCmd) {
 	path, ok := b.imagePathCache.Get(r.Resource)
 	if !ok {
 		var err error
@@ -318,15 +318,15 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 
 	// Fill background.
 	if r.Color.A > 0 {
-		C.metalSetPipeline(C.int(pipeSolid))
-		C.metalSetMVP((*C.float)(&b.mvp[0]))
+		C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+		C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 		verts := buildQuad(x, y, w, h, r.Color, 0, 0)
-		C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+		C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 	}
 
-	C.metalSetPipeline(C.int(pipeImageClip))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
-	C.metalBindTexture(C.int(tex.id))
+	C.metalSetPipeline(b.ctx, C.int(pipeImageClip))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
+	C.metalBindTexture(b.ctx, C.int(tex.id))
 
 	z := packParams(r.ClipRadius*s, 0)
 	nc := normColor(255, 255, 255, 255)
@@ -336,10 +336,10 @@ func (b *Backend) drawImage(r *gui.RenderCmd) {
 		{x + w, y + h, z, 1, 1, nc.r, nc.g, nc.b, nc.a},
 		{x, y + h, z, -1, 1, nc.r, nc.g, nc.b, nc.a},
 	}
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
-func (b *Backend) drawSvg(r *gui.RenderCmd) {
+func (b *windowState) drawSvg(r *gui.RenderCmd) {
 	if r.IsClipMask {
 		return // clip masks not yet supported in render pipeline
 	}
@@ -404,14 +404,14 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 		}
 	}
 
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
-	C.metalDrawTriangles(
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
+	C.metalDrawTriangles(b.ctx,
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(numVerts))
 }
 
-func (b *Backend) drawText(r *gui.RenderCmd) {
+func (b *windowState) drawText(r *gui.RenderCmd) {
 	if b.textSys == nil || len(r.Text) == 0 {
 		return
 	}
@@ -445,7 +445,7 @@ func (b *Backend) drawText(r *gui.RenderCmd) {
 	}
 }
 
-func (b *Backend) drawTextPath(r *gui.RenderCmd) {
+func (b *windowState) drawTextPath(r *gui.RenderCmd) {
 	if b.textSys == nil || r.TextPath == nil ||
 		r.TextStylePtr == nil {
 		return
@@ -517,7 +517,7 @@ func (b *Backend) drawTextPath(r *gui.RenderCmd) {
 	b.textSys.DrawLayoutPlaced(layout, placements)
 }
 
-func (b *Backend) drawLayout(r *gui.RenderCmd) {
+func (b *windowState) drawLayout(r *gui.RenderCmd) {
 	if b.textSys == nil || r.LayoutPtr == nil {
 		return
 	}
@@ -531,7 +531,7 @@ func (b *Backend) drawLayout(r *gui.RenderCmd) {
 	b.textSys.DrawLayout(*r.LayoutPtr, r.X, r.Y)
 }
 
-func (b *Backend) drawLayoutTransformed(r *gui.RenderCmd) {
+func (b *windowState) drawLayoutTransformed(r *gui.RenderCmd) {
 	if b.textSys == nil || r.LayoutPtr == nil ||
 		r.LayoutTransform == nil {
 		return
@@ -549,11 +549,11 @@ func (b *Backend) drawLayoutTransformed(r *gui.RenderCmd) {
 	)
 }
 
-func (b *Backend) drawRtf(r *gui.RenderCmd) {
+func (b *windowState) drawRtf(r *gui.RenderCmd) {
 	b.drawLayout(r)
 }
 
-func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
+func (b *windowState) drawCustomShader(r *gui.RenderCmd) {
 	if r.Shader == nil || r.Shader.Metal == "" {
 		return
 	}
@@ -566,7 +566,7 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 		}
 		msl := buildCustomMSL(r.Shader.Metal)
 		cmsl := C.CString(msl)
-		idx = C.int(C.metalBuildCustomPipeline(cmsl))
+		idx = C.int(C.metalBuildCustomPipeline(b.ctx, cmsl))
 		C.free(unsafe.Pointer(cmsl))
 		if idx < 0 {
 			return
@@ -575,18 +575,18 @@ func (b *Backend) drawCustomShader(r *gui.RenderCmd) {
 	}
 
 	s := b.dpiScale
-	C.metalSetCustomPipeline(idx)
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetCustomPipeline(b.ctx, idx)
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 
 	var tm [16]float32
 	for i := range min(len(r.Shader.Params), 16) {
 		tm[i] = r.Shader.Params[i]
 	}
-	C.metalSetTM((*C.float)(&tm[0]))
+	C.metalSetTM(b.ctx, (*C.float)(&tm[0]))
 
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		r.Color, r.Radius*s, 0)
-	C.metalDrawQuad((*C.float)(unsafe.Pointer(&verts[0])))
+	C.metalDrawQuad(b.ctx, (*C.float)(unsafe.Pointer(&verts[0])))
 }
 
 // buildCustomMSL produces a complete MSL source with vertex and
@@ -668,83 +668,83 @@ fragment float4 fs_main(
 
 // --- Stencil clip ---
 
-func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
+func (b *windowState) beginStencilClip(r *gui.RenderCmd) {
 	s := b.dpiScale
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		gui.White, r.Radius*s, 0)
-	C.metalBeginStencilClip(
+	C.metalBeginStencilClip(b.ctx,
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(r.StencilDepth))
 	// Restore solid pipeline for children.
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 }
 
-func (b *Backend) endStencilClip(r *gui.RenderCmd) {
+func (b *windowState) endStencilClip(r *gui.RenderCmd) {
 	s := b.dpiScale
 	verts := buildQuad(r.X*s, r.Y*s, r.W*s, r.H*s,
 		gui.White, r.Radius*s, 0)
-	C.metalEndStencilClip(
+	C.metalEndStencilClip(b.ctx,
 		(*C.float)(unsafe.Pointer(&verts[0])),
 		C.int(r.StencilDepth))
 	// Restore solid pipeline.
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 }
 
 // --- Rotation ---
 
-func (b *Backend) beginRotation(r *gui.RenderCmd) {
+func (b *windowState) beginRotation(r *gui.RenderCmd) {
 	b.mvpStack = append(b.mvpStack, b.mvp)
 	s := b.dpiScale
 	cx := r.RotCX * s
 	cy := r.RotCY * s
 	applyRotation(&b.mvp, r.RotAngle, cx, cy)
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 }
 
-func (b *Backend) endRotation() {
+func (b *windowState) endRotation() {
 	n := len(b.mvpStack)
 	if n == 0 {
 		return
 	}
 	b.mvp = b.mvpStack[n-1]
 	b.mvpStack = b.mvpStack[:n-1]
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 }
 
 // --- Filter (glow) ---
 
-func (b *Backend) beginFilter(r *gui.RenderCmd) {
+func (b *windowState) beginFilter(r *gui.RenderCmd) {
 	b.filterBlur = r.BlurRadius * b.dpiScale
 	b.filterLayer = r.Layers
 	b.filterColorMatrix = r.ColorMatrix
 
 	// Set pipelines and MVP before switching to filter target.
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 
-	rc := C.metalBeginFilter(C.int(b.physW), C.int(b.physH))
+	rc := C.metalBeginFilter(b.ctx, C.int(b.physW), C.int(b.physH))
 	if rc != 0 {
 		return
 	}
 	// Reset pipeline state on the new encoder.
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 }
 
-func (b *Backend) endFilter() {
+func (b *windowState) endFilter() {
 	var cmPtr *C.float
 	if b.filterColorMatrix != nil {
 		cmPtr = (*C.float)(&b.filterColorMatrix[0])
 	}
-	C.metalEndFilter(C.float(b.filterBlur),
+	C.metalEndFilter(b.ctx, C.float(b.filterBlur),
 		C.int(b.filterLayer), cmPtr)
 	// Restore pipeline state on the resumed main encoder.
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+	C.metalSetPipeline(b.ctx, C.int(pipeSolid))
+	C.metalSetMVP(b.ctx, (*C.float)(&b.mvp[0]))
 }

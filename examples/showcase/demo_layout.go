@@ -502,6 +502,155 @@ func demoScrollbar(_ *gui.Window) gui.View {
 	})
 }
 
+// multiWindowChildState holds state for the child window opened by
+// the multi-window demo.
+type multiWindowChildState struct {
+	Message string
+}
+
+func demoMultiWindow(w *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	app := gui.State[ShowcaseApp](w)
+
+	childActive := app.MultiWindowChildID != 0 &&
+		w.App() != nil &&
+		w.App().Window(app.MultiWindowChildID) != nil
+
+	// Reset stale ID when child was closed via OS chrome.
+	if !childActive && app.MultiWindowChildID != 0 {
+		app.MultiWindowChildID = 0
+	}
+
+	return gui.Column(gui.ContainerCfg{
+		Sizing:  gui.FillFit,
+		Spacing: gui.SomeF(12),
+		Padding: gui.NoPadding,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{
+				Text: "Open a child window from the showcase. Only one " +
+					"child window is allowed at a time.",
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
+			}),
+			gui.Button(gui.ButtonCfg{
+				ID:       "btn-open-child-window",
+				IDFocus:  9200,
+				Disabled: childActive,
+				Padding:  gui.SomeP(8, 16, 8, 16),
+				Content: []gui.View{
+					gui.Text(gui.TextCfg{
+						Text:      "Open Child Window",
+						TextStyle: t.N3,
+					}),
+				},
+				OnClick: func(_ *gui.Layout, e *gui.Event,
+					w *gui.Window) {
+					a := w.App()
+					if a == nil {
+						return
+					}
+					parent := w
+					a.OpenWindow(gui.WindowCfg{
+						State:  &multiWindowChildState{},
+						Title:  "Showcase Child",
+						Width:  320,
+						Height: 220,
+						OnInit: func(child *gui.Window) {
+							sa := gui.State[ShowcaseApp](parent)
+							sa.MultiWindowChildID = child.PlatformID()
+							parent.UpdateWindow()
+							child.UpdateView(multiWindowChildView(parent))
+						},
+					})
+					e.IsHandled = true
+				},
+			}),
+			multiWindowStatus(t, childActive),
+		},
+	})
+}
+
+func multiWindowChildView(parent *gui.Window) func(*gui.Window) gui.View {
+	return func(w *gui.Window) gui.View {
+		t := gui.CurrentTheme()
+		ww, wh := w.WindowSize()
+		cs := gui.State[multiWindowChildState](w)
+
+		return gui.Column(gui.ContainerCfg{
+			Width:   float32(ww),
+			Height:  float32(wh),
+			Sizing:  gui.FixedFixed,
+			Padding: gui.Some(gui.PadAll(12)),
+			Spacing: gui.SomeF(8),
+			Content: []gui.View{
+				gui.Text(gui.TextCfg{
+					Text:      "Child Window",
+					TextStyle: t.B2,
+				}),
+				gui.Button(gui.ButtonCfg{
+					IDFocus: 1,
+					Padding: gui.SomeP(8, 16, 8, 16),
+					Content: []gui.View{
+						gui.Text(gui.TextCfg{
+							Text:      "Say Hello to Parent",
+							TextStyle: t.N3,
+						}),
+					},
+					OnClick: func(_ *gui.Layout, e *gui.Event,
+						w *gui.Window) {
+						cs := gui.State[multiWindowChildState](w)
+						cs.Message = "Sent!"
+						parent.QueueCommand(func(p *gui.Window) {
+							gui.State[ShowcaseApp](p).DialogResult =
+								"Hello from child window"
+							p.UpdateWindow()
+						})
+						e.IsHandled = true
+					},
+				}),
+				gui.Text(gui.TextCfg{
+					Text:      cs.Message,
+					TextStyle: t.N4,
+				}),
+				gui.Row(gui.ContainerCfg{
+					Sizing:  gui.FillFit,
+					Padding: gui.NoPadding,
+				}),
+				gui.Button(gui.ButtonCfg{
+					IDFocus: 2,
+					Padding: gui.SomeP(8, 16, 8, 16),
+					Content: []gui.View{
+						gui.Text(gui.TextCfg{
+							Text:      "Close",
+							TextStyle: t.N3,
+						}),
+					},
+					OnClick: func(_ *gui.Layout, e *gui.Event,
+						w *gui.Window) {
+						w.Close()
+						parent.QueueCommand(func(p *gui.Window) {
+							gui.State[ShowcaseApp](p).MultiWindowChildID = 0
+							p.UpdateWindow()
+						})
+						e.IsHandled = true
+					},
+				}),
+			},
+		})
+	}
+}
+
+func multiWindowStatus(t gui.Theme, active bool) gui.View {
+	text := "No child window open"
+	color := t.N5
+	if active {
+		text = "Child window is open"
+		color = t.B4
+		color.Color = t.Cfg.ColorSuccess
+	}
+	return gui.Text(gui.TextCfg{Text: text, TextStyle: color})
+}
+
 func demoPrinting(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	app := gui.State[ShowcaseApp](w)

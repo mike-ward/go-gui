@@ -113,6 +113,30 @@ func mapEvent(ev sdl.Event, _ *Backend) (gui.Event, bool) {
 	return gui.Event{}, true
 }
 
+// mapEventMulti intercepts QuitEvent and WINDOWEVENT_CLOSE for
+// multi-window routing, delegating everything else to mapEvent.
+func mapEventMulti(ev sdl.Event,
+	b *Backend) (gui.Event, bool) {
+
+	switch e := ev.(type) {
+	case *sdl.QuitEvent:
+		return gui.Event{}, false
+
+	case *sdl.WindowEvent:
+		if e.Event == sdl.WINDOWEVENT_CLOSE {
+			return gui.Event{
+				Type: gui.EventQuitRequested,
+			}, true
+		}
+	}
+	// Delegate to normal mapping (b may be nil for
+	// unowned events).
+	if b != nil {
+		return mapEvent(ev, b)
+	}
+	return gui.Event{}, true
+}
+
 func mapMouseButton(b uint8) gui.MouseButton {
 	switch b {
 	case sdl.BUTTON_LEFT:

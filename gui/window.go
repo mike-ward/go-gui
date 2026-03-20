@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/mike-ward/go-glyph"
@@ -25,6 +26,11 @@ type Window struct {
 	// Mutexes.
 	mu         sync.Mutex // guards layout/renderer state
 	commandsMu sync.Mutex // guards command queue
+
+	// Multi-window: parent App and SDL window ID.
+	app        *App
+	platformID uint32
+	closeReq   atomic.Bool
 
 	// User state — accessed via State[T](w).
 	state any
@@ -417,3 +423,16 @@ func (w *Window) SetTheme(t Theme) {
 	SetTheme(t)
 	w.UpdateWindow()
 }
+
+// App returns the parent App, or nil for single-window mode.
+func (w *Window) App() *App { return w.app }
+
+// PlatformID returns the SDL window ID (0 if not yet registered).
+func (w *Window) PlatformID() uint32 { return w.platformID }
+
+// Close requests the window be closed on the next frame.
+// Safe to call from any goroutine.
+func (w *Window) Close() { w.closeReq.Store(true) }
+
+// CloseRequested returns true if Close() was called.
+func (w *Window) CloseRequested() bool { return w.closeReq.Load() }

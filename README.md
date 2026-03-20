@@ -55,6 +55,8 @@ between layout and rendering.
 - OS-level spell check for text inputs (macOS NSSpellChecker,
   Linux Hunspell)
 - IME support and accessibility tree (macOS, Linux AT-SPI2)
+- Multi-window support — open, close, and communicate across
+  OS windows via App, Broadcast, and QueueCommand
 - Native dialogs, notifications, and print/PDF
 - Locale and i18n support
 - Theme system with built-in dark/light variants and custom theme support
@@ -139,6 +141,22 @@ import "github.com/mike-ward/go-gui/gui/backend"
 
 backend.Run(w) // Metal on macOS, GL on Linux/Windows
 ```
+
+For multi-window applications, use `backend.RunApp`:
+
+```go
+app := gui.NewApp()
+app.ExitMode = gui.ExitOnMainClose // or ExitOnLastClose (default)
+
+w1 := gui.NewWindow(gui.WindowCfg{State: &Main{}, Title: "Main"})
+w2 := gui.NewWindow(gui.WindowCfg{State: &Inspector{}, Title: "Inspector"})
+
+backend.RunApp(app, w1, w2) // manages all windows
+```
+
+Open windows at runtime with `app.OpenWindow(cfg)`. Communicate across
+windows with `app.Broadcast(fn)` or `other.QueueCommand(fn)`. See
+[`examples/multi_window/`](examples/multi_window/) for a working example.
 
 To force a specific backend, import it directly:
 
@@ -236,6 +254,7 @@ version. For the WASM/browser version, see [`examples/web_demo/`](examples/web_d
 | [`listbox`](examples/listbox/)                             | ListBox widget demo                         |
 | [`markdown`](examples/markdown/)                           | Markdown rendering with code-block copy     |
 | [`menu_demo`](examples/menu_demo/)                         | Pull-down menu bar                          |
+| [`multi_window`](examples/multi_window/)                   | Multi-window with cross-window messaging    |
 | [`multiline_input`](examples/multiline_input/)             | Multiline text input                        |
 | [`rotated_box`](examples/rotated_box/)                     | Quarter-turn rotation widget                |
 | [`rtf`](examples/rtf/)                                     | RTF document viewer                         |

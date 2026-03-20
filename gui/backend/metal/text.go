@@ -18,6 +18,7 @@ import (
 
 // metalGlyphBackend implements glyph.DrawBackend using Metal.
 type metalGlyphBackend struct {
+	ctx      C.MetalCtx
 	textures map[glyph.TextureID]metalTexInfo
 	nextID   glyph.TextureID
 	dpiScale float32
@@ -28,8 +29,10 @@ type metalTexInfo struct {
 	w, h int32
 }
 
-func newMetalGlyphBackend(dpiScale float32) *metalGlyphBackend {
+func newMetalGlyphBackend(ctx C.MetalCtx,
+	dpiScale float32) *metalGlyphBackend {
 	return &metalGlyphBackend{
+		ctx:      ctx,
 		textures: make(map[glyph.TextureID]metalTexInfo),
 		dpiScale: dpiScale,
 	}
@@ -37,7 +40,7 @@ func newMetalGlyphBackend(dpiScale float32) *metalGlyphBackend {
 
 func (gb *metalGlyphBackend) destroy() {
 	for _, t := range gb.textures {
-		C.metalDeleteTexture(C.int(t.cID))
+		C.metalDeleteTexture(gb.ctx, C.int(t.cID))
 	}
 	gb.textures = nil
 }
@@ -47,8 +50,8 @@ func (gb *metalGlyphBackend) NewTexture(
 	gb.nextID++
 	id := gb.nextID
 
-	cID := C.metalCreateTexture(C.int(width), C.int(height),
-		nil, C.int(0))
+	cID := C.metalCreateTexture(gb.ctx, C.int(width),
+		C.int(height), nil, C.int(0))
 	gb.textures[id] = metalTexInfo{
 		cID: int32(cID), w: int32(width), h: int32(height),
 	}
@@ -61,7 +64,7 @@ func (gb *metalGlyphBackend) UpdateTexture(
 	if !ok || len(data) == 0 {
 		return
 	}
-	C.metalUpdateTexture(C.int(t.cID), 0, 0,
+	C.metalUpdateTexture(gb.ctx, C.int(t.cID), 0, 0,
 		C.int(t.w), C.int(t.h),
 		unsafe.Pointer(&data[0]))
 }
@@ -72,7 +75,7 @@ func (gb *metalGlyphBackend) DeleteTexture(
 	if !ok {
 		return
 	}
-	C.metalDeleteTexture(C.int(t.cID))
+	C.metalDeleteTexture(gb.ctx, C.int(t.cID))
 	delete(gb.textures, id)
 }
 
@@ -106,9 +109,9 @@ func (gb *metalGlyphBackend) DrawTexturedQuad(
 		{x0, y1, u0, v1, nc.r, nc.g, nc.b, nc.a},
 	}
 
-	C.metalSetPipeline(C.int(pipeGlyphTex))
-	C.metalBindTexture(C.int(t.cID))
-	C.metalDrawGlyphQuad(
+	C.metalSetPipeline(gb.ctx, C.int(pipeGlyphTex))
+	C.metalBindTexture(gb.ctx, C.int(t.cID))
+	C.metalDrawGlyphQuad(gb.ctx,
 		(*C.float)(unsafe.Pointer(&verts[0])))
 }
 
@@ -129,8 +132,8 @@ func (gb *metalGlyphBackend) DrawFilledRect(
 		{x0, y1, 0, 0, nc.r, nc.g, nc.b, nc.a},
 	}
 
-	C.metalSetPipeline(C.int(pipeGlyphColor))
-	C.metalDrawGlyphQuad(
+	C.metalSetPipeline(gb.ctx, C.int(pipeGlyphColor))
+	C.metalDrawGlyphQuad(gb.ctx,
 		(*C.float)(unsafe.Pointer(&verts[0])))
 }
 
@@ -174,9 +177,9 @@ func (gb *metalGlyphBackend) DrawTexturedQuadTransformed(
 		}
 	}
 
-	C.metalSetPipeline(C.int(pipeGlyphTex))
-	C.metalBindTexture(C.int(t.cID))
-	C.metalDrawGlyphQuad(
+	C.metalSetPipeline(gb.ctx, C.int(pipeGlyphTex))
+	C.metalBindTexture(gb.ctx, C.int(t.cID))
+	C.metalDrawGlyphQuad(gb.ctx,
 		(*C.float)(unsafe.Pointer(&verts[0])))
 }
 

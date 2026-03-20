@@ -277,6 +277,7 @@ type Event struct {
 	Touches           [8]TouchPoint
 	IMEText           string
 	FrameCount        uint64
+	WindowID          uint32
 	MouseX            float32
 	MouseY            float32
 	MouseDX           float32

@@ -20,18 +20,18 @@ type metalTexture struct {
 	w, h int32
 }
 
-func newMetalTexCacheLRU(
+func newMetalTexCacheLRU(ctx C.MetalCtx,
 	maxSize int,
 ) texcache.Cache[string, metalTexture] {
 	return texcache.New[string, metalTexture](maxSize,
 		func(tex metalTexture) {
 			if tex.id != 0 {
-				C.metalDeleteTexture(C.int(tex.id))
+				C.metalDeleteTexture(ctx, C.int(tex.id))
 			}
 		})
 }
 
-func createMetalTexture(w, h int32,
+func createMetalTexture(ctx C.MetalCtx, w, h int32,
 	pixels []byte) metalTexture {
 	hasData := C.int(0)
 	var ptr unsafe.Pointer
@@ -39,7 +39,7 @@ func createMetalTexture(w, h int32,
 		hasData = C.int(1)
 		ptr = unsafe.Pointer(&pixels[0])
 	}
-	id := C.metalCreateTexture(
+	id := C.metalCreateTexture(ctx,
 		C.int(w), C.int(h), ptr, hasData)
 	return metalTexture{id: int32(id), w: w, h: h}
 }
@@ -48,7 +48,7 @@ func createMetalTexture(w, h int32,
 
 // loadImageTexture opens, validates, decodes, and uploads an
 // image to a Metal texture.
-func (b *Backend) loadImageTexture(
+func (b *windowState) loadImageTexture(
 	path string) (metalTexture, error) {
 	f, err := imgload.OpenSafe(path, b.allowedImageRoots)
 	if err != nil {
@@ -64,5 +64,5 @@ func (b *Backend) loadImageTexture(
 	bounds := nrgba.Bounds()
 	w := int32(bounds.Dx())
 	h := int32(bounds.Dy())
-	return createMetalTexture(w, h, nrgba.Pix), nil
+	return createMetalTexture(b.ctx, w, h, nrgba.Pix), nil
 }

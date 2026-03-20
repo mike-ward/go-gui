@@ -23,6 +23,9 @@ func main() {
 	gui.SetTheme(gui.ThemeDarkBordered)
 	gui.SetMarkdownExternalAPIsEnabled(true)
 
+	app := gui.NewApp()
+	app.ExitMode = gui.ExitOnMainClose
+
 	w := gui.NewWindow(gui.WindowCfg{
 		State:  newShowcaseApp(),
 		Title:  "Gui Showcase",
@@ -30,8 +33,8 @@ func main() {
 		Height: 700,
 		OnInit: func(w *gui.Window) {
 			loadEmbeddedLocales()
-			app := gui.State[ShowcaseApp](w)
-			syncThemeGenFromCfg(app, gui.CurrentTheme().Cfg)
+			sa := gui.State[ShowcaseApp](w)
+			syncThemeGenFromCfg(sa, gui.CurrentTheme().Cfg)
 			w.RegisterCommands(
 				gui.Command{
 					ID: "sc.greet", Label: "Greet", Icon: gui.IconBell,
@@ -60,7 +63,7 @@ func main() {
 			})
 		},
 	})
-	backend.Run(w)
+	backend.RunApp(app, w)
 }
 
 func mainView(w *gui.Window) gui.View {

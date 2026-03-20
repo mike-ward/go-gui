@@ -4,7 +4,7 @@ Stuff I'm considering. No promises.
 
 | Feature                               | Notes                                                               |
 | ------------------------------------- | ------------------------------------------------------------------- |
-| Multi-window                          | Single window only. Qt/Flutter/SwiftUI all support N windows        |
+| ~~Multi-window~~                      | ✅ Implemented — App manages N windows with cross-window messaging  |
 | Charts                                | No bar/line/pie/scatter/area. DrawCanvas exists but no chart API    |
 | System tray / menubar                 | No tray icon, no native menu bar integration                        |
 | Touch / gesture input                 | No pinch, swipe, rotate, long-press. Required for tablet/mobile     |
@@ -15,14 +15,12 @@ Stuff I'm considering. No promises.
 | Autocomplete / suggestion list        | Text input with dropdown suggestions (Combobox may partially cover) |
 | ~~Keyboard shortcut hints~~           | ✅ Implemented — MenuItemCfg.CommandID renders shortcut hints       |
 | Native dark/light mode sync           | Auto-switch theme to match OS appearance                            |
-| Mobile target spike                   | gesture model, safe area, virtual keyboard insets                   |
+| ~~Mobile target spike~~               | ✅ gesture model, safe area, virtual keyboard insets                |
 | ~~Web target spike~~                  | ✅ Wasm renderer + browser clipboard/input backends                 |
 
 ## Charting / Graphing / Plotting (External Package)
 
-Separate package built on top of `gui`. Requires a canvas View in
-the framework — a View that exposes a draw callback with direct
-access to the GPU drawing primitives within a clipped layout region.
+Separate package built on top of `gui`
 
 ### Framework Prerequisites
 

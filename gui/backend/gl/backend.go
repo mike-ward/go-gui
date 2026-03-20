@@ -289,8 +289,9 @@ func (b *Backend) Run(w *gui.Window) {
 }
 
 // renderFrame clears the screen, draws the current layout, and
-// swaps buffers.
+// swaps buffers. Makes this window's GL context current first.
 func (b *Backend) renderFrame(w *gui.Window) {
+	_ = b.window.GLMakeCurrent(b.glCtx)
 	bg := w.Config.BgColor
 	if bg == (gui.Color{}) {
 		t := gui.CurrentTheme()
@@ -337,6 +338,207 @@ func Run(w *gui.Window) {
 	}
 	defer b.Destroy()
 	b.Run(w)
+}
+
+// RunApp starts a multi-window event loop. Each window in
+// initialWindows is created and registered with app. Blocks
+// until the app signals exit.
+func RunApp(app *gui.App, initialWindows ...*gui.Window) {
+	runtime.LockOSThread()
+
+	if err := sdl.Init(sdl.INIT_VIDEO | sdl.INIT_EVENTS); err != nil {
+		panic(fmt.Sprintf("gl: Init: %v", err))
+	}
+	defer sdl.Quit()
+
+	backends := make(map[uint32]*Backend)
+
+	// Create initial windows.
+	for _, w := range initialWindows {
+		b, err := New(w)
+		if err != nil {
+			panic(fmt.Sprintf("gl: create window: %v", err))
+		}
+		sdlID, _ := b.window.GetID()
+		backends[sdlID] = b
+		app.Register(sdlID, w)
+		if w.Config.OnInit != nil {
+			w.Config.OnInit(w)
+		}
+	}
+
+	// Event watcher for live resize on macOS.
+	resizeEvent := &gui.Event{Type: gui.EventResized}
+	var watchHandle sdl.EventWatchHandle
+	if runtime.GOOS == "darwin" {
+		watchHandle = sdl.AddEventWatchFunc(
+			func(ev sdl.Event, _ interface{}) bool {
+				we, ok := ev.(*sdl.WindowEvent)
+				if !ok ||
+					we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
+					return true
+				}
+				wid := we.WindowID
+				b := backends[wid]
+				w := app.Window(wid)
+				if b == nil || w == nil {
+					return true
+				}
+				b.handleResize()
+				resizeEvent.WindowID = wid
+				resizeEvent.WindowWidth = int(we.Data1)
+				resizeEvent.WindowHeight = int(we.Data2)
+				w.EventFn(resizeEvent)
+				w.FrameFn()
+				b.renderFrame(w)
+				return true
+			}, nil)
+		defer sdl.DelEventWatch(watchHandle)
+	}
+
+	running := true
+	evt := new(gui.Event)
+
+	for running {
+		// Drain pending window opens.
+	drain:
+		for {
+			select {
+			case cfg := <-app.PendingOpen():
+				w := gui.NewWindow(cfg)
+				b, err := New(w)
+				if err != nil {
+					log.Printf("gl: open window: %v", err)
+					continue
+				}
+				sdlID, _ := b.window.GetID()
+				backends[sdlID] = b
+				app.Register(sdlID, w)
+				if cfg.OnInit != nil {
+					cfg.OnInit(w)
+				}
+			default:
+				break drain
+			}
+		}
+
+		// Poll events.
+		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
+			wid := sdlEventWindowID(ev)
+			mapped, cont := mapEventMulti(ev, backends[wid])
+			*evt = mapped
+			evt.WindowID = wid
+			if !cont {
+				// QuitEvent — close all.
+				running = false
+				break
+			}
+			if evt.Type == gui.EventInvalid {
+				continue
+			}
+
+			// Window close event.
+			if isWindowClose(ev) {
+				if b := backends[wid]; b != nil {
+					if w := app.Window(wid); w != nil {
+						w.WindowCleanup()
+					}
+					b.Destroy()
+					delete(backends, wid)
+					if app.Unregister(wid) {
+						running = false
+						break
+					}
+				}
+				continue
+			}
+
+			if w := app.Window(wid); w != nil {
+				w.EventFn(evt)
+			}
+		}
+		if !running {
+			break
+		}
+
+		// Handle close requests.
+		for wid, b := range backends {
+			w := app.Window(wid)
+			if w == nil || !w.CloseRequested() {
+				continue
+			}
+			w.WindowCleanup()
+			b.Destroy()
+			delete(backends, wid)
+			if app.Unregister(wid) {
+				running = false
+				break
+			}
+		}
+		if !running {
+			break
+		}
+
+		// Frame + render each window.
+		for wid, b := range backends {
+			w := app.Window(wid)
+			if w == nil {
+				continue
+			}
+			w.FrameFn()
+			b.renderFrame(w)
+		}
+
+		// Cursor for focused window.
+		if focused := sdl.GetKeyboardFocus(); focused != nil {
+			fid, _ := focused.GetID()
+			if w := app.Window(fid); w != nil {
+				if b := backends[fid]; b != nil {
+					mc := w.MouseCursorState()
+					if int(mc) < len(b.cursors) &&
+						b.cursors[mc] != nil {
+						sdl.SetCursor(b.cursors[mc])
+					}
+				}
+			}
+		}
+	}
+
+	// Cleanup remaining windows.
+	for wid, b := range backends {
+		if w := app.Window(wid); w != nil {
+			w.WindowCleanup()
+		}
+		b.Destroy()
+		delete(backends, wid)
+	}
+}
+
+// sdlEventWindowID extracts the SDL window ID from any event.
+func sdlEventWindowID(ev sdl.Event) uint32 {
+	switch e := ev.(type) {
+	case *sdl.WindowEvent:
+		return e.WindowID
+	case *sdl.MouseButtonEvent:
+		return e.WindowID
+	case *sdl.MouseMotionEvent:
+		return e.WindowID
+	case *sdl.MouseWheelEvent:
+		return e.WindowID
+	case *sdl.KeyboardEvent:
+		return e.WindowID
+	case *sdl.TextInputEvent:
+		return e.WindowID
+	case *sdl.TextEditingEvent:
+		return e.WindowID
+	}
+	return 0
+}
+
+// isWindowClose returns true if the event is a window close.
+func isWindowClose(ev sdl.Event) bool {
+	we, ok := ev.(*sdl.WindowEvent)
+	return ok && we.Event == sdl.WINDOWEVENT_CLOSE
 }
 
 // Destroy releases all backend resources.

@@ -53,37 +53,12 @@ const (
 
 const maxCustomPipelines = 32
 
-// Backend is the Metal backend for go-gui.
+// Backend is the Metal backend for go-gui (single-window mode).
+// Embeds windowState so all draw methods are shared with
+// multi-window mode.
 type Backend struct {
-	window    *sdl.Window
-	metalView unsafe.Pointer
-	textSys   *glyph.TextSystem
-	dpiScale  float32
-	physW     int32
-	physH     int32
-	cursors   [11]*sdl.Cursor
-	mvp       [16]float32
-
-	mvpStack [][16]float32
-
-	// Reusable buffers.
-	svgVerts           []vertex
-	textPathPlacements []glyph.GlyphPlacement
-	normBuf            []gui.GradientStop
-	sampledBuf         []gui.GradientStop
-
-	textures          texcache.Cache[string, metalTexture]
-	glyphBack         *metalGlyphBackend
-	filterBlur        float32
-	filterLayer       int
-	filterColorMatrix *[16]float32
-	customCache       texcache.Cache[uint64, C.int]
-	iconFontPath      string
-
-	allowedImageRoots []string
-	imagePathCache    texcache.Cache[string, string]
-	maxImageBytes     int64
-	maxImagePixels    int64
+	windowState
+	cursors [11]*sdl.Cursor
 }
 
 // New creates a Metal backend and initializes the window.
@@ -94,145 +69,16 @@ func New(w *gui.Window) (*Backend, error) {
 		return nil, fmt.Errorf("metal: Init: %w", err)
 	}
 
-	cfg := w.Config
-	title := cfg.Title
-	if title == "" {
-		title = "go-gui"
-	}
-	width := int32(cfg.Width)
-	if width <= 0 {
-		width = 640
-	}
-	height := int32(cfg.Height)
-	if height <= 0 {
-		height = 480
-	}
-
-	const windowMetal = 0x20000000 // SDL_WINDOW_METAL
-	flags := uint32(sdl.WINDOW_SHOWN | sdl.WINDOW_ALLOW_HIGHDPI | windowMetal)
-	if !cfg.FixedSize {
-		flags |= sdl.WINDOW_RESIZABLE
-	}
-	win, err := sdl.CreateWindow(
-		title,
-		sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED,
-		width, height,
-		flags,
-	)
+	ws, err := createWindowState(w, nil)
 	if err != nil {
 		sdl.Quit()
-		return nil, fmt.Errorf("metal: CreateWindow: %w", err)
+		return nil, fmt.Errorf("metal: %w", err)
 	}
 
-	// Get the CAMetalLayer from SDL via C calls.
-	cWin := (*C.SDL_Window)(unsafe.Pointer(win))
-	metalView := unsafe.Pointer(
-		C.SDL_Metal_CreateView(cWin))
-	if metalView == nil {
-		_ = win.Destroy()
-		sdl.Quit()
-		return nil, fmt.Errorf("metal: MetalCreateView failed")
-	}
-	layer := C.SDL_Metal_GetLayer(
-		C.SDL_MetalView(metalView))
-	if layer == nil {
-		C.SDL_Metal_DestroyView(
-			C.SDL_MetalView(metalView))
-		_ = win.Destroy()
-		sdl.Quit()
-		return nil, fmt.Errorf("metal: MetalGetLayer failed")
-	}
+	b := &Backend{windowState: *ws}
+	b.cursors = createCursors()
 
-	// Initialize Metal device, pipelines, etc.
-	rc := C.metalInit(layer)
-	if rc != 0 {
-		C.SDL_Metal_DestroyView(
-			C.SDL_MetalView(metalView))
-		_ = win.Destroy()
-		sdl.Quit()
-		return nil, fmt.Errorf("metal: init failed: %d", rc)
-	}
-
-	// Compute DPI scale.
-	var dw, dh C.int
-	C.SDL_Metal_GetDrawableSize(cWin, &dw, &dh)
-	winW, _ := win.GetSize()
-	dpiScale := float32(1.0)
-	if winW > 0 {
-		dpiScale = float32(dw) / float32(winW)
-	}
-
-	C.metalResize(dw, dh)
-
-	b := &Backend{
-		window:    win,
-		metalView: metalView,
-		dpiScale:  dpiScale,
-		physW:     int32(dw),
-		physH:     int32(dh),
-		textures:  newMetalTexCacheLRU(128),
-		customCache: texcache.New[uint64, C.int](
-			maxCustomPipelines,
-			func(idx C.int) { C.metalDeleteCustomPipeline(idx) },
-		),
-		imagePathCache: texcache.New[string, string](1024, nil),
-		maxImageBytes:  cfg.MaxImageBytes,
-		maxImagePixels: cfg.MaxImagePixels,
-	}
-	b.allowedImageRoots = imgpath.NormalizeRoots(
-		cfg.AllowedImageRoots)
-	b.updateProjection()
-
-	// Initialize glyph text system with Metal backend.
-	b.glyphBack = newMetalGlyphBackend(dpiScale)
-	textSys, err := glyph.NewTextSystem(b.glyphBack)
-	if err != nil {
-		b.Destroy()
-		return nil, fmt.Errorf("metal: NewTextSystem: %w", err)
-	}
-	b.textSys = textSys
-
-	// Load embedded icon font. File must persist because
-	// FontConfig registers the path; FreeType reads it lazily.
-	if data := gui.IconFontData; len(data) > 0 {
-		tmp, err := tempfont.Write("go_gui_feathericon", data)
-		if err != nil {
-			log.Printf("metal: write icon font: %v", err)
-		} else if err := textSys.AddFontFile(tmp); err != nil {
-			log.Printf("metal: load icon font: %v", err)
-			_ = os.Remove(tmp)
-		} else {
-			b.iconFontPath = tmp
-		}
-	}
-
-	// Create system cursors.
-	b.cursors[gui.CursorDefault] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW)
-	b.cursors[gui.CursorArrow] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW)
-	b.cursors[gui.CursorIBeam] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_IBEAM)
-	b.cursors[gui.CursorCrosshair] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_CROSSHAIR)
-	b.cursors[gui.CursorPointingHand] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_HAND)
-	b.cursors[gui.CursorResizeEW] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZEWE)
-	b.cursors[gui.CursorResizeNS] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZENS)
-	b.cursors[gui.CursorResizeNWSE] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZENWSE)
-	b.cursors[gui.CursorResizeNESW] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZENESW)
-	b.cursors[gui.CursorResizeAll] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZEALL)
-	b.cursors[gui.CursorNotAllowed] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_NO)
-
-	// Set injected interfaces on gui Window.
-	w.SetTextMeasurer(&textMeasurer{textSys: textSys})
-	w.SetSvgParser(svg.New())
-	w.SetClipboardFn(func(text string) {
-		if err := sdl.SetClipboardText(text); err != nil {
-			log.Printf("metal: set clipboard: %v", err)
-		}
-	})
-	w.SetClipboardGetFn(func() string {
-		text, _ := sdl.GetClipboardText()
-		return text
-	})
-	w.SetNativePlatform(&nativePlatform{window: win})
-
+	injectInterfaces(w, &b.windowState)
 	return b, nil
 }
 
@@ -293,58 +139,6 @@ func (b *Backend) Run(w *gui.Window) {
 	}
 }
 
-// renderFrame clears the screen, draws the current layout, and
-// presents the Metal drawable.
-func (b *Backend) renderFrame(w *gui.Window) {
-	bg := w.Config.BgColor
-	if bg == (gui.Color{}) {
-		t := gui.CurrentTheme()
-		bg = t.ColorBackground
-	}
-
-	rc := C.metalBeginFrame(
-		C.float(float32(bg.R)/255.0),
-		C.float(float32(bg.G)/255.0),
-		C.float(float32(bg.B)/255.0),
-		C.float(float32(bg.A)/255.0),
-	)
-	if rc != 0 {
-		log.Printf("metal: beginFrame failed (rc=%d)", rc)
-		return
-	}
-
-	// Set initial pipeline state.
-	C.metalSetPipeline(C.int(pipeSolid))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
-
-	w.Lock()
-	b.renderersDraw(w)
-	w.Unlock()
-
-	// Render queued text.
-	b.useGlyphPipeline()
-	b.textSys.Commit()
-
-	C.metalEndFrame()
-}
-
-func (b *Backend) handleResize() {
-	var dw, dh C.int
-	cWin := (*C.SDL_Window)(unsafe.Pointer(b.window))
-	C.SDL_Metal_GetDrawableSize(cWin, &dw, &dh)
-	b.physW = int32(dw)
-	b.physH = int32(dh)
-	C.metalResize(dw, dh)
-	b.updateProjection()
-}
-
-func (b *Backend) updateProjection() {
-	ortho(&b.mvp,
-		0, float32(b.physW),
-		float32(b.physH), 0,
-		-1, 1)
-}
-
 // Run initializes the Metal backend, runs the event loop, and
 // cleans up on exit.
 func Run(w *gui.Window) {
@@ -356,41 +150,487 @@ func Run(w *gui.Window) {
 	b.Run(w)
 }
 
-// Destroy releases all backend resources.
-func (b *Backend) Destroy() {
-	b.textures.DestroyAll()
-	b.customCache.DestroyAll()
-	if b.glyphBack != nil {
-		b.glyphBack.destroy()
+// RunApp starts a multi-window event loop. Each window in
+// initialWindows is created and registered with app. Blocks
+// until the app signals exit.
+func RunApp(app *gui.App, initialWindows ...*gui.Window) {
+	runtime.LockOSThread()
+
+	if err := sdl.Init(sdl.INIT_VIDEO | sdl.INIT_EVENTS); err != nil {
+		panic(fmt.Sprintf("metal: Init: %v", err))
 	}
-	if b.textSys != nil {
-		b.textSys.Free()
-	}
-	if b.iconFontPath != "" {
-		_ = os.Remove(b.iconFontPath)
-		b.iconFontPath = ""
-	}
-	for i, c := range b.cursors {
-		if c != nil {
-			sdl.FreeCursor(c)
-			b.cursors[i] = nil
+	defer sdl.Quit()
+
+	// Shared resources.
+	cursors := createCursors()
+	defer freeCursors(&cursors)
+
+	states := make(map[uint32]*windowState)
+
+	// Create initial windows.
+	for _, w := range initialWindows {
+		ws, err := createWindowState(w, &cursors)
+		if err != nil {
+			panic(fmt.Sprintf("metal: create window: %v", err))
+		}
+		sdlID, _ := ws.window.GetID()
+		states[sdlID] = ws
+		app.Register(sdlID, w)
+		injectInterfaces(w, ws)
+		if w.Config.OnInit != nil {
+			w.Config.OnInit(w)
 		}
 	}
 
-	C.metalDestroy()
+	// Event watcher for live resize on macOS.
+	resizeEvent := &gui.Event{Type: gui.EventResized}
+	watchHandle := sdl.AddEventWatchFunc(
+		func(ev sdl.Event, _ interface{}) bool {
+			we, ok := ev.(*sdl.WindowEvent)
+			if !ok ||
+				we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
+				return true
+			}
+			wid := we.WindowID
+			ws := states[wid]
+			w := app.Window(wid)
+			if ws == nil || w == nil {
+				return true
+			}
+			ws.handleResize()
+			resizeEvent.WindowID = wid
+			resizeEvent.WindowWidth = int(we.Data1)
+			resizeEvent.WindowHeight = int(we.Data2)
+			w.EventFn(resizeEvent)
+			w.FrameFn()
+			ws.renderFrame(w)
+			return true
+		}, nil)
+	defer sdl.DelEventWatch(watchHandle)
 
-	if b.metalView != nil {
-		C.SDL_Metal_DestroyView(
-			C.SDL_MetalView(b.metalView))
+	running := true
+	evt := new(gui.Event)
+
+	for running {
+		// Drain pending window opens.
+	drain:
+		for {
+			select {
+			case cfg := <-app.PendingOpen():
+				w := gui.NewWindow(cfg)
+				ws, err := createWindowState(w, &cursors)
+				if err != nil {
+					log.Printf("metal: open window: %v", err)
+					continue
+				}
+				sdlID, _ := ws.window.GetID()
+				states[sdlID] = ws
+				app.Register(sdlID, w)
+				injectInterfaces(w, ws)
+				if cfg.OnInit != nil {
+					cfg.OnInit(w)
+				}
+			default:
+				break drain
+			}
+		}
+
+		// Poll events.
+		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
+			wid := sdlEventWindowID(ev)
+			mapped, cont := mapEventMulti(ev, states[wid])
+			*evt = mapped
+			evt.WindowID = wid
+			if !cont {
+				// QuitEvent — close all.
+				running = false
+				break
+			}
+			if evt.Type == gui.EventInvalid {
+				continue
+			}
+
+			// Window close event.
+			if isWindowClose(ev) {
+				if ws := states[wid]; ws != nil {
+					if w := app.Window(wid); w != nil {
+						w.WindowCleanup()
+					}
+					ws.destroy()
+					delete(states, wid)
+					if app.Unregister(wid) {
+						running = false
+						break
+					}
+				}
+				continue
+			}
+
+			if w := app.Window(wid); w != nil {
+				w.EventFn(evt)
+			}
+		}
+		if !running {
+			break
+		}
+
+		// Handle close requests.
+		for wid, ws := range states {
+			w := app.Window(wid)
+			if w == nil || !w.CloseRequested() {
+				continue
+			}
+			w.WindowCleanup()
+			ws.destroy()
+			delete(states, wid)
+			if app.Unregister(wid) {
+				running = false
+				break
+			}
+		}
+		if !running {
+			break
+		}
+
+		// Frame + render each window.
+		for wid, ws := range states {
+			w := app.Window(wid)
+			if w == nil {
+				continue
+			}
+			w.FrameFn()
+			ws.renderFrame(w)
+		}
+
+		// Cursor for focused window.
+		if focused := sdl.GetKeyboardFocus(); focused != nil {
+			fid, _ := focused.GetID()
+			if w := app.Window(fid); w != nil {
+				mc := w.MouseCursorState()
+				if int(mc) < len(cursors) && cursors[mc] != nil {
+					sdl.SetCursor(cursors[mc])
+				}
+			}
+		}
 	}
-	if b.window != nil {
-		_ = b.window.Destroy()
+
+	// Cleanup remaining windows.
+	for wid, ws := range states {
+		if w := app.Window(wid); w != nil {
+			w.WindowCleanup()
+		}
+		ws.destroy()
 	}
-	sdl.Quit()
 }
 
-// useGlyphPipeline sets up Metal state for glyph text rendering.
-func (b *Backend) useGlyphPipeline() {
-	C.metalSetPipeline(C.int(pipeGlyphTex))
-	C.metalSetMVP((*C.float)(&b.mvp[0]))
+// windowState holds per-window backend resources for
+// multi-window mode.
+type windowState struct {
+	ctx       C.MetalCtx
+	window    *sdl.Window
+	metalView unsafe.Pointer
+	textSys   *glyph.TextSystem
+	dpiScale  float32
+	physW     int32
+	physH     int32
+	mvp       [16]float32
+
+	mvpStack [][16]float32
+
+	svgVerts           []vertex
+	textPathPlacements []glyph.GlyphPlacement
+	normBuf            []gui.GradientStop
+	sampledBuf         []gui.GradientStop
+
+	textures          texcache.Cache[string, metalTexture]
+	glyphBack         *metalGlyphBackend
+	filterBlur        float32
+	filterLayer       int
+	filterColorMatrix *[16]float32
+	customCache       texcache.Cache[uint64, C.int]
+	iconFontPath      string
+
+	allowedImageRoots []string
+	imagePathCache    texcache.Cache[string, string]
+	maxImageBytes     int64
+	maxImagePixels    int64
+}
+
+func createWindowState(w *gui.Window,
+	_ *[11]*sdl.Cursor) (*windowState, error) {
+
+	cfg := w.Config
+	title := cfg.Title
+	if title == "" {
+		title = "go-gui"
+	}
+	width := int32(cfg.Width)
+	if width <= 0 {
+		width = 640
+	}
+	height := int32(cfg.Height)
+	if height <= 0 {
+		height = 480
+	}
+
+	const windowMetal = 0x20000000
+	flags := uint32(sdl.WINDOW_SHOWN |
+		sdl.WINDOW_ALLOW_HIGHDPI | windowMetal)
+	if !cfg.FixedSize {
+		flags |= sdl.WINDOW_RESIZABLE
+	}
+	win, err := sdl.CreateWindow(
+		title,
+		sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED,
+		width, height, flags,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("CreateWindow: %w", err)
+	}
+
+	cWin := (*C.SDL_Window)(unsafe.Pointer(win))
+	metalView := unsafe.Pointer(
+		C.SDL_Metal_CreateView(cWin))
+	if metalView == nil {
+		_ = win.Destroy()
+		return nil, fmt.Errorf("MetalCreateView failed")
+	}
+	layer := C.SDL_Metal_GetLayer(
+		C.SDL_MetalView(metalView))
+	if layer == nil {
+		C.SDL_Metal_DestroyView(C.SDL_MetalView(metalView))
+		_ = win.Destroy()
+		return nil, fmt.Errorf("MetalGetLayer failed")
+	}
+
+	ctx := C.metalCtxCreate(layer)
+	if ctx == nil {
+		C.SDL_Metal_DestroyView(C.SDL_MetalView(metalView))
+		_ = win.Destroy()
+		return nil, fmt.Errorf("metalCtxCreate failed")
+	}
+
+	var dw, dh C.int
+	C.SDL_Metal_GetDrawableSize(cWin, &dw, &dh)
+	winW, _ := win.GetSize()
+	dpiScale := float32(1.0)
+	if winW > 0 {
+		dpiScale = float32(dw) / float32(winW)
+	}
+	C.metalResize(ctx, dw, dh)
+
+	ws := &windowState{
+		ctx:       ctx,
+		window:    win,
+		metalView: metalView,
+		dpiScale:  dpiScale,
+		physW:     int32(dw),
+		physH:     int32(dh),
+		textures:  newMetalTexCacheLRU(ctx, 128),
+		customCache: texcache.New[uint64, C.int](
+			maxCustomPipelines,
+			func(idx C.int) {
+				C.metalDeleteCustomPipeline(ctx, idx)
+			},
+		),
+		imagePathCache: texcache.New[string, string](1024, nil),
+		maxImageBytes:  cfg.MaxImageBytes,
+		maxImagePixels: cfg.MaxImagePixels,
+	}
+	ws.allowedImageRoots = imgpath.NormalizeRoots(
+		cfg.AllowedImageRoots)
+	ws.updateProjection()
+
+	ws.glyphBack = newMetalGlyphBackend(ctx, dpiScale)
+	textSys, err := glyph.NewTextSystem(ws.glyphBack)
+	if err != nil {
+		ws.destroy()
+		return nil, fmt.Errorf("NewTextSystem: %w", err)
+	}
+	ws.textSys = textSys
+
+	if data := gui.IconFontData; len(data) > 0 {
+		tmp, err := tempfont.Write("go_gui_feathericon", data)
+		if err != nil {
+			log.Printf("metal: write icon font: %v", err)
+		} else if err := textSys.AddFontFile(tmp); err != nil {
+			log.Printf("metal: load icon font: %v", err)
+			_ = os.Remove(tmp)
+		} else {
+			ws.iconFontPath = tmp
+		}
+	}
+
+	return ws, nil
+}
+
+func injectInterfaces(w *gui.Window, ws *windowState) {
+	w.SetTextMeasurer(&textMeasurer{textSys: ws.textSys})
+	w.SetSvgParser(svg.New())
+	w.SetClipboardFn(func(text string) {
+		if err := sdl.SetClipboardText(text); err != nil {
+			log.Printf("metal: set clipboard: %v", err)
+		}
+	})
+	w.SetClipboardGetFn(func() string {
+		text, _ := sdl.GetClipboardText()
+		return text
+	})
+	w.SetNativePlatform(&nativePlatform{window: ws.window})
+}
+
+func (ws *windowState) destroy() {
+	ws.textures.DestroyAll()
+	ws.customCache.DestroyAll()
+	if ws.glyphBack != nil {
+		ws.glyphBack.destroy()
+	}
+	if ws.textSys != nil {
+		ws.textSys.Free()
+	}
+	if ws.iconFontPath != "" {
+		_ = os.Remove(ws.iconFontPath)
+	}
+	if ws.ctx != nil {
+		C.metalCtxDestroy(ws.ctx)
+		ws.ctx = nil
+	}
+	if ws.metalView != nil {
+		C.SDL_Metal_DestroyView(
+			C.SDL_MetalView(ws.metalView))
+	}
+	if ws.window != nil {
+		_ = ws.window.Destroy()
+	}
+}
+
+func (ws *windowState) renderFrame(w *gui.Window) {
+	bg := w.Config.BgColor
+	if bg == (gui.Color{}) {
+		t := gui.CurrentTheme()
+		bg = t.ColorBackground
+	}
+	rc := C.metalBeginFrame(ws.ctx,
+		C.float(float32(bg.R)/255.0),
+		C.float(float32(bg.G)/255.0),
+		C.float(float32(bg.B)/255.0),
+		C.float(float32(bg.A)/255.0),
+	)
+	if rc != 0 {
+		return
+	}
+	C.metalSetPipeline(ws.ctx, C.int(pipeSolid))
+	C.metalSetMVP(ws.ctx, (*C.float)(&ws.mvp[0]))
+
+	w.Lock()
+	ws.renderersDraw(w)
+	w.Unlock()
+
+	ws.useGlyphPipeline()
+	ws.textSys.Commit()
+	C.metalEndFrame(ws.ctx)
+}
+
+func (ws *windowState) handleResize() {
+	var dw, dh C.int
+	cWin := (*C.SDL_Window)(unsafe.Pointer(ws.window))
+	C.SDL_Metal_GetDrawableSize(cWin, &dw, &dh)
+	ws.physW = int32(dw)
+	ws.physH = int32(dh)
+	C.metalResize(ws.ctx, dw, dh)
+	ws.updateProjection()
+}
+
+func (ws *windowState) updateProjection() {
+	ortho(&ws.mvp,
+		0, float32(ws.physW),
+		float32(ws.physH), 0,
+		-1, 1)
+}
+
+func (ws *windowState) useGlyphPipeline() {
+	C.metalSetPipeline(ws.ctx, C.int(pipeGlyphTex))
+	C.metalSetMVP(ws.ctx, (*C.float)(&ws.mvp[0]))
+}
+
+func createCursors() [11]*sdl.Cursor {
+	var c [11]*sdl.Cursor
+	c[gui.CursorDefault] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW)
+	c[gui.CursorArrow] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW)
+	c[gui.CursorIBeam] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_IBEAM)
+	c[gui.CursorCrosshair] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_CROSSHAIR)
+	c[gui.CursorPointingHand] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_HAND)
+	c[gui.CursorResizeEW] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZEWE)
+	c[gui.CursorResizeNS] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZENS)
+	c[gui.CursorResizeNWSE] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZENWSE)
+	c[gui.CursorResizeNESW] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZENESW)
+	c[gui.CursorResizeAll] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_SIZEALL)
+	c[gui.CursorNotAllowed] = sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_NO)
+	return c
+}
+
+func freeCursors(c *[11]*sdl.Cursor) {
+	for i, cur := range c {
+		if cur != nil {
+			sdl.FreeCursor(cur)
+			c[i] = nil
+		}
+	}
+}
+
+// sdlEventWindowID extracts the SDL window ID from any event.
+func sdlEventWindowID(ev sdl.Event) uint32 {
+	switch e := ev.(type) {
+	case *sdl.WindowEvent:
+		return e.WindowID
+	case *sdl.MouseButtonEvent:
+		return e.WindowID
+	case *sdl.MouseMotionEvent:
+		return e.WindowID
+	case *sdl.MouseWheelEvent:
+		return e.WindowID
+	case *sdl.KeyboardEvent:
+		return e.WindowID
+	case *sdl.TextInputEvent:
+		return e.WindowID
+	case *sdl.TextEditingEvent:
+		return e.WindowID
+	}
+	return 0
+}
+
+// isWindowClose returns true if the event is a window close.
+func isWindowClose(ev sdl.Event) bool {
+	we, ok := ev.(*sdl.WindowEvent)
+	return ok && we.Event == sdl.WINDOWEVENT_CLOSE
+}
+
+// mapEventMulti is like mapEvent but for multi-window mode.
+// A QuitEvent returns false. Window close events are handled
+// by the caller.
+func mapEventMulti(ev sdl.Event,
+	ws *windowState) (gui.Event, bool) {
+
+	switch e := ev.(type) {
+	case *sdl.QuitEvent:
+		return gui.Event{}, false
+
+	case *sdl.WindowEvent:
+		if e.Event == sdl.WINDOWEVENT_CLOSE {
+			return gui.Event{Type: gui.EventQuitRequested}, true
+		}
+	}
+	// Delegate to normal mapping (ws may be nil for
+	// unowned events).
+	if ws != nil {
+		return mapEventWS(ev, ws)
+	}
+	return gui.Event{}, true
+}
+
+// Destroy releases all backend resources.
+func (b *Backend) Destroy() {
+	freeCursors(&b.cursors)
+	b.destroy()
+	sdl.Quit()
 }

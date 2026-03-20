@@ -20,51 +20,63 @@ enum {
     PIPE_COUNT,
 };
 
+// Opaque context handle — one per window. Internally a
+// MetalContext* defined in the .m file.
+typedef void* MetalCtx;
+
 // Lifecycle
-int  metalInit(void* metalLayer);
-void metalDestroy(void);
-void metalResize(int w, int h);
+MetalCtx metalCtxCreate(void* metalLayer);
+void metalCtxDestroy(MetalCtx ctx);
+void metalResize(MetalCtx ctx, int w, int h);
 
 // Frame
-int  metalBeginFrame(float r, float g, float b, float a);
-void metalEndFrame(void);
+int  metalBeginFrame(MetalCtx ctx,
+                     float r, float g, float b, float a);
+void metalEndFrame(MetalCtx ctx);
 
 // Pipeline and uniforms
-void metalSetPipeline(int id);
-void metalSetMVP(const float* m);
-void metalSetTM(const float* m);
+void metalSetPipeline(MetalCtx ctx, int id);
+void metalSetMVP(MetalCtx ctx, const float* m);
+void metalSetTM(MetalCtx ctx, const float* m);
 
 // Scissor
-void metalSetScissor(int x, int y, int w, int h, int viewH);
-void metalDisableScissor(void);
+void metalSetScissor(MetalCtx ctx,
+                     int x, int y, int w, int h, int viewH);
+void metalDisableScissor(MetalCtx ctx);
 
 // Drawing (main vertex format: 9 floats/vertex)
-void metalDrawQuad(const float* verts);
-void metalDrawTriangles(const float* verts, int numVerts);
+void metalDrawQuad(MetalCtx ctx, const float* verts);
+void metalDrawTriangles(MetalCtx ctx,
+                        const float* verts, int numVerts);
 
 // Drawing (glyph vertex format: 8 floats/vertex)
-void metalDrawGlyphQuad(const float* verts);
+void metalDrawGlyphQuad(MetalCtx ctx, const float* verts);
 
 // Textures
-int  metalCreateTexture(int w, int h, const void* pixels,
+int  metalCreateTexture(MetalCtx ctx,
+                        int w, int h, const void* pixels,
                         int hasData);
-void metalUpdateTexture(int id, int x, int y, int w, int h,
+void metalUpdateTexture(MetalCtx ctx,
+                        int id, int x, int y, int w, int h,
                         const void* data);
-void metalDeleteTexture(int id);
-void metalBindTexture(int id);
+void metalDeleteTexture(MetalCtx ctx, int id);
+void metalBindTexture(MetalCtx ctx, int id);
 
 // Custom shader pipelines
-int  metalBuildCustomPipeline(const char* mslSrc);
-void metalDeleteCustomPipeline(int idx);
-void metalSetCustomPipeline(int idx);
+int  metalBuildCustomPipeline(MetalCtx ctx,
+                              const char* mslSrc);
+void metalDeleteCustomPipeline(MetalCtx ctx, int idx);
+void metalSetCustomPipeline(MetalCtx ctx, int idx);
 
 // Filter (glow) system
-int  metalBeginFilter(int w, int h);
-void metalEndFilter(float blurRadius, int layers,
-                    const float* colorMatrix);
+int  metalBeginFilter(MetalCtx ctx, int w, int h);
+void metalEndFilter(MetalCtx ctx, float blurRadius,
+                    int layers, const float* colorMatrix);
 
 // Stencil clip
-void metalBeginStencilClip(const float* verts, int depth);
-void metalEndStencilClip(const float* verts, int depth);
+void metalBeginStencilClip(MetalCtx ctx,
+                           const float* verts, int depth);
+void metalEndStencilClip(MetalCtx ctx,
+                         const float* verts, int depth);
 
 #endif

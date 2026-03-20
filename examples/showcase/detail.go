@@ -192,6 +192,7 @@ var componentDemos = map[string]func(*gui.Window) gui.View{
 	"dock_layout":         demoDockLayout,
 	"command_button":      demoCommandButton,
 	"theme_picker":        demoThemePicker,
+	"multi_window":        demoMultiWindow,
 }
 
 func componentDemo(w *gui.Window, id string) gui.View {

@@ -136,7 +136,8 @@ type ShowcaseApp struct {
 	ThemeGenText       gui.Color
 	ThemeGenName       string
 
-	ShaderStartTime time.Time
+	ShaderStartTime    time.Time
+	MultiWindowChildID uint32
 }
 
 func newShowcaseApp() *ShowcaseApp {
@@ -316,6 +317,7 @@ var demoEntries = []DemoEntry{
 	{ID: "scrollbar", Label: "Scrollable Containers", Group: groupLayout, Summary: "Bind scrollable layouts to shared scroll ids.", Tags: []string{"scrollbar", "scroll", "container", "layout"}},
 	{ID: "splitter", Label: "Splitter", Group: groupLayout, Summary: "Resizable panes with drag, keyboard, and collapse.", Tags: []string{"split", "pane", "resize", "layout"}},
 	{ID: "dock_layout", Label: "Dock Layout", Group: groupLayout, Summary: "IDE-style docking panels with splits, tabs, and drag-and-drop.", Tags: []string{"dock", "split", "tabs", "drag", "ide", "layout"}},
+	{ID: "multi_window", Label: "Multi-Window", Group: groupLayout, Summary: "Open and manage additional windows with cross-window communication.", Tags: []string{"window", "multi", "app", "broadcast", "layout"}},
 }
 
 func init() {

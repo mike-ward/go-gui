@@ -158,6 +158,7 @@ var relatedExampleMap = map[string][]string{
 	"overflow_panel":      {"examples/showcase/demo_layout.go"},
 	"sidebar":             {"examples/showcase/demo_layout.go"},
 	"dock_layout":         {"examples/showcase/demo_dock_layout.go", "examples/dock_layout/main.go"},
+	"multi_window":        {"examples/showcase/demo_layout.go", "examples/multi_window/main.go"},
 	"command_button":      {"examples/showcase/demo_feedback.go", "examples/command_demo/main.go"},
 	"theme_picker":        {"examples/showcase/demo_feedback.go"},
 }
