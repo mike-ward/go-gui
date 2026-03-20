@@ -73,6 +73,9 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Lint
+        uses: golangci/golangci-lint-action@v7
+
   ios:
     name: iOS
     runs-on: macos-latest
