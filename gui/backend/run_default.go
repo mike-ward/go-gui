@@ -1,5 +1,6 @@
 //go:build !darwin && !js && !android
 
+// Package backend provides platform-specific backend initialization.
 package backend
 
 import (

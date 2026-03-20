@@ -1,5 +1,6 @@
 //go:build linux
 
+// Package atspi provides AT-SPI2 accessibility bridge for Linux.
 package atspi
 
 import (
