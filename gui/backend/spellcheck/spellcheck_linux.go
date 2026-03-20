@@ -116,7 +116,7 @@ func loadPersonalDict() {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 	first := true
@@ -244,6 +244,6 @@ func persistWord(word string) {
 	if err != nil {
 		return
 	}
-	defer f.Close()
-	f.WriteString(word + "\n")
+	defer func() { _ = f.Close() }()
+	_, _ = f.WriteString(word + "\n")
 }

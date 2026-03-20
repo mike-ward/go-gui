@@ -1,5 +1,6 @@
 //go:build linux
 
+// Package filedialog provides native file dialog support for Linux.
 package filedialog
 
 import (
@@ -87,7 +88,7 @@ func ShowOpenDialog(title, startDir string, extensions []string,
 }
 
 // ShowSaveDialog shows a file-save dialog via zenity or kdialog.
-func ShowSaveDialog(title, startDir, defaultName, defaultExt string,
+func ShowSaveDialog(title, startDir, defaultName, _ string,
 	extensions []string, confirmOverwrite bool) gui.PlatformDialogResult {
 
 	detectDialogTool()
@@ -193,7 +194,7 @@ func ShowMessageDialog(title, body string,
 
 // ShowConfirmDialog shows an OK/Cancel confirmation via zenity or kdialog.
 func ShowConfirmDialog(title, body string,
-	level gui.NativeAlertLevel) gui.NativeAlertResult {
+	_ gui.NativeAlertLevel) gui.NativeAlertResult {
 
 	detectDialogTool()
 	var args []string

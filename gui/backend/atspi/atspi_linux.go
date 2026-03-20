@@ -83,7 +83,7 @@ func (b *Bridge) Init(cb func(action, index int)) {
 	regObj := conn.Object(registryBus, registryObj)
 	call := regObj.Call(socketIface+".Embed", 0, plug)
 	if call.Err != nil {
-		b.conn.Close()
+		_ = b.conn.Close()
 		b.conn = nil
 		return
 	}
@@ -165,7 +165,7 @@ func (b *Bridge) Sync(nodes []gui.A11yNode, count, focusedIdx int) {
 // Destroy closes the AT-SPI2 bus connection.
 func (b *Bridge) Destroy() {
 	if b.conn != nil {
-		b.conn.Close()
+		_ = b.conn.Close()
 		b.conn = nil
 	}
 }
@@ -349,7 +349,7 @@ func (h *nodeHandler) GetParent() (string, dbus.ObjectPath, *dbus.Error) {
 // --- Component interface ---
 
 // GetExtents returns node position and size.
-func (h *nodeHandler) GetExtents(coordType uint32) (int32, int32, int32, int32, *dbus.Error) {
+func (h *nodeHandler) GetExtents(_ uint32) (int32, int32, int32, int32, *dbus.Error) {
 	h.bridge.mu.Lock()
 	defer h.bridge.mu.Unlock()
 
@@ -361,7 +361,7 @@ func (h *nodeHandler) GetExtents(coordType uint32) (int32, int32, int32, int32, 
 }
 
 // GetPosition returns the node position.
-func (h *nodeHandler) GetPosition(coordType uint32) (int32, int32, *dbus.Error) {
+func (h *nodeHandler) GetPosition(_ uint32) (int32, int32, *dbus.Error) {
 	h.bridge.mu.Lock()
 	defer h.bridge.mu.Unlock()
 

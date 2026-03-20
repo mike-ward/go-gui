@@ -1,5 +1,6 @@
 //go:build linux
 
+// Package printdialog provides native print dialog support for Linux.
 package printdialog
 
 import (
