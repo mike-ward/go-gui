@@ -12,6 +12,10 @@ linters:
     - errcheck
     - unused
     - revive
+  settings:
+    revive:
+      rules:
+        - name: exported
   exclusions:
     generated: lax
     rules:
