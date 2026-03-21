@@ -316,7 +316,7 @@ func TestSplitFrozenTopIndicesNoFrozen(t *testing.T) {
 
 func TestSplitFrozenTopIndicesWithFrozen(t *testing.T) {
 	cfg := &DataGridCfg{
-		Rows:           []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}},
+		Rows:            []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}},
 		FrozenTopRowIDs: []string{"b"},
 	}
 	frozen, body := dataGridSplitFrozenTopIndices(cfg, nil)
