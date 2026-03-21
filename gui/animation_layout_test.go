@@ -58,6 +58,39 @@ func TestApplyTransitionRecursive(t *testing.T) {
 	}
 }
 
+func TestLayoutTransitionID(t *testing.T) {
+	lt := &LayoutTransition{}
+	if lt.ID() != layoutTransitionID {
+		t.Errorf("ID = %q, want %q", lt.ID(), layoutTransitionID)
+	}
+}
+
+func TestLayoutTransitionRefreshKind(t *testing.T) {
+	lt := &LayoutTransition{}
+	if lt.RefreshKind() != AnimationRefreshLayout {
+		t.Errorf("RefreshKind = %d, want %d", lt.RefreshKind(), AnimationRefreshLayout)
+	}
+}
+
+func TestLayoutTransitionUpdateInterface(t *testing.T) {
+	lt := &LayoutTransition{
+		transitionBase: transitionBase{
+			duration: 200 * time.Millisecond,
+			easing:   EaseOutCubic,
+		},
+		snapshots: make(map[string]posSnapshot),
+	}
+	lt.start = time.Now().Add(-time.Second)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := lt.Update(nil, 0, &deferred)
+	if !ok {
+		t.Error("Update should return true")
+	}
+	if !lt.stopped {
+		t.Error("should be stopped")
+	}
+}
+
 func TestLayoutTransitionOnDone(t *testing.T) {
 	done := false
 	lt := &LayoutTransition{

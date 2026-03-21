@@ -154,6 +154,59 @@ func TestFocusFindPreviousByID(t *testing.T) {
 	}
 }
 
+func TestFindShapeFound(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{ID: "root"},
+		Children: []Layout{
+			{Shape: &Shape{ID: "child1"}},
+			{Shape: &Shape{ID: "child2"}},
+		},
+	}
+	s, ok := root.FindShape(func(l Layout) bool {
+		return l.Shape.ID == "child2"
+	})
+	if !ok {
+		t.Fatal("should find child2")
+	}
+	if s.ID != "child2" {
+		t.Errorf("ID = %q, want child2", s.ID)
+	}
+}
+
+func TestFindShapeNotFound(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{ID: "root"},
+	}
+	_, ok := root.FindShape(func(l Layout) bool {
+		return l.Shape.ID == "missing"
+	})
+	if ok {
+		t.Error("should not find missing shape")
+	}
+}
+
+func TestPointInRectangle(t *testing.T) {
+	rect := DrawClip{X: 10, Y: 10, Width: 100, Height: 50}
+	tests := []struct {
+		x, y float32
+		want bool
+	}{
+		{50, 30, true},   // inside
+		{10, 10, true},   // top-left corner
+		{109, 59, true},  // just inside bottom-right
+		{110, 60, false}, // at edge (exclusive)
+		{5, 30, false},   // left of rect
+		{50, 5, false},   // above rect
+	}
+	for _, tt := range tests {
+		got := PointInRectangle(tt.x, tt.y, rect)
+		if got != tt.want {
+			t.Errorf("PointInRectangle(%f,%f) = %v, want %v",
+				tt.x, tt.y, got, tt.want)
+		}
+	}
+}
+
 func TestNextPreviousFocusableNilWindow(t *testing.T) {
 	root := &Layout{
 		Shape: &Shape{},

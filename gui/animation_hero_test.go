@@ -56,6 +56,49 @@ func TestApplyHeroRecursive(t *testing.T) {
 	}
 }
 
+func TestHeroTransitionID(t *testing.T) {
+	ht := NewHeroTransition(HeroTransitionCfg{})
+	if ht.ID() != heroTransitionID {
+		t.Errorf("ID = %q, want %q", ht.ID(), heroTransitionID)
+	}
+}
+
+func TestHeroTransitionRefreshKind(t *testing.T) {
+	ht := NewHeroTransition(HeroTransitionCfg{})
+	if ht.RefreshKind() != AnimationRefreshLayout {
+		t.Errorf("RefreshKind = %d, want %d", ht.RefreshKind(), AnimationRefreshLayout)
+	}
+}
+
+func TestHeroTransitionUpdateInterface(t *testing.T) {
+	ht := NewHeroTransition(HeroTransitionCfg{})
+	ht.start = time.Now().Add(-time.Second)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := ht.Update(nil, 0, &deferred)
+	if !ok {
+		t.Error("Update should return true on completion")
+	}
+	if !ht.stopped {
+		t.Error("should be stopped")
+	}
+}
+
+func TestPropagateOpacity(t *testing.T) {
+	layout := Layout{
+		Shape: &Shape{Opacity: 1},
+		Children: []Layout{
+			{Shape: &Shape{Opacity: 1}},
+		},
+	}
+	propagateOpacity(&layout, 0.5)
+	if layout.Shape.Opacity != 0.5 {
+		t.Errorf("parent opacity = %f, want 0.5", layout.Shape.Opacity)
+	}
+	if layout.Children[0].Shape.Opacity != 0.5 {
+		t.Errorf("child opacity = %f, want 0.5", layout.Children[0].Shape.Opacity)
+	}
+}
+
 func TestHeroTransitionOnDone(t *testing.T) {
 	done := false
 	ht := NewHeroTransition(HeroTransitionCfg{

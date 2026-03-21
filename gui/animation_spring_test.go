@@ -56,6 +56,56 @@ func TestSpringStoppedSkips(t *testing.T) {
 	}
 }
 
+func TestSpringID(t *testing.T) {
+	sp := NewSpringAnimation("myspring", func(float32, *Window) {})
+	if sp.ID() != "myspring" {
+		t.Errorf("ID = %q, want myspring", sp.ID())
+	}
+}
+
+func TestSpringRefreshKind(t *testing.T) {
+	sp := NewSpringAnimation("s", func(float32, *Window) {})
+	if sp.RefreshKind() != AnimationRefreshLayout {
+		t.Errorf("RefreshKind = %d, want %d", sp.RefreshKind(), AnimationRefreshLayout)
+	}
+}
+
+func TestSpringIsStopped(t *testing.T) {
+	sp := NewSpringAnimation("s", func(float32, *Window) {})
+	if sp.IsStopped() {
+		t.Error("new spring should not be stopped")
+	}
+	sp.stopped = true
+	if !sp.IsStopped() {
+		t.Error("should report stopped")
+	}
+}
+
+func TestSpringSetStart(t *testing.T) {
+	sp := NewSpringAnimation("s", func(float32, *Window) {})
+	now := time.Now()
+	sp.SetStart(now)
+	if sp.start != now {
+		t.Error("SetStart should update start time")
+	}
+}
+
+func TestSpringUpdateInterface(t *testing.T) {
+	var got float32
+	sp := NewSpringAnimation("s", func(v float32, _ *Window) { got = v })
+	sp.Config = SpringStiff
+	sp.SpringTo(100, 100) // already at target
+	deferred := make([]queuedCommand, 0, 4)
+	ok := sp.Update(nil, 0.016, &deferred)
+	if !ok {
+		t.Error("Update should return true")
+	}
+	runQueuedCommands(deferred)
+	if got != 100 {
+		t.Errorf("got %f, want 100", got)
+	}
+}
+
 func TestSpringThresholdUsesUpdatedPosition(t *testing.T) {
 	var got float32
 	sp := NewSpringAnimation("s", func(v float32, _ *Window) { got = v })

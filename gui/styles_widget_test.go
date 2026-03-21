@@ -1,6 +1,10 @@
 package gui
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 func TestDefaultInputStyleColors(t *testing.T) {
 	s := DefaultInputStyle
@@ -75,6 +79,44 @@ func TestDefaultTooltipStyle(t *testing.T) {
 	}
 	if s.Radius != RadiusSmall {
 		t.Errorf("radius = %f, want %f", s.Radius, RadiusSmall)
+	}
+}
+
+func TestAffineTransformIsIdentity(t *testing.T) {
+	id := glyph.AffineIdentity()
+	if !affineTransformIsIdentity(id) {
+		t.Error("identity should be identity")
+	}
+	rot := glyph.AffineRotation(0.5)
+	if affineTransformIsIdentity(rot) {
+		t.Error("rotation should not be identity")
+	}
+}
+
+func TestEffectiveTextTransformExplicit(t *testing.T) {
+	af := glyph.AffineRotation(1.0)
+	ts := TextStyle{AffineTransform: &af}
+	got := ts.EffectiveTextTransform()
+	if got != af {
+		t.Error("should return explicit affine transform")
+	}
+}
+
+func TestEffectiveTextTransformRotation(t *testing.T) {
+	ts := TextStyle{RotationRadians: 0.5}
+	got := ts.EffectiveTextTransform()
+	want := glyph.AffineRotation(0.5)
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestEffectiveTextTransformDefault(t *testing.T) {
+	ts := TextStyle{}
+	got := ts.EffectiveTextTransform()
+	want := glyph.AffineIdentity()
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }
 

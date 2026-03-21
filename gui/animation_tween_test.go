@@ -43,6 +43,39 @@ func TestTweenOnDoneCalled(t *testing.T) {
 	}
 }
 
+func TestTweenRefreshKind(t *testing.T) {
+	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
+	if tw.RefreshKind() != AnimationRefreshLayout {
+		t.Errorf("RefreshKind = %d, want %d", tw.RefreshKind(), AnimationRefreshLayout)
+	}
+}
+
+func TestTweenIsStopped(t *testing.T) {
+	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
+	if tw.IsStopped() {
+		t.Error("new tween should not be stopped")
+	}
+	tw.stopped = true
+	if !tw.IsStopped() {
+		t.Error("should report stopped")
+	}
+}
+
+func TestTweenUpdateInterface(t *testing.T) {
+	var got float32
+	tw := NewTweenAnimation("t", 10, 50, func(v float32, _ *Window) { got = v })
+	tw.start = time.Now().Add(-time.Second)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := tw.Update(nil, 0, &deferred)
+	if !ok {
+		t.Error("Update should return true")
+	}
+	runQueuedCommands(deferred)
+	if got != 50 {
+		t.Errorf("got %f, want 50", got)
+	}
+}
+
 func TestTweenStopped(t *testing.T) {
 	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
 	tw.stopped = true

@@ -87,6 +87,45 @@ func TestKeyframeStopped(t *testing.T) {
 	}
 }
 
+func TestKeyframeRefreshKind(t *testing.T) {
+	kf := NewKeyframeAnimation("k", nil, func(float32, *Window) {})
+	if kf.RefreshKind() != AnimationRefreshLayout {
+		t.Errorf("RefreshKind = %d, want %d", kf.RefreshKind(), AnimationRefreshLayout)
+	}
+}
+
+func TestKeyframeIsStopped(t *testing.T) {
+	kf := NewKeyframeAnimation("k", nil, func(float32, *Window) {})
+	if kf.IsStopped() {
+		t.Error("new keyframe should not be stopped")
+	}
+	kf.stopped = true
+	if !kf.IsStopped() {
+		t.Error("should report stopped")
+	}
+}
+
+func TestKeyframeUpdateInterface(t *testing.T) {
+	var got float32
+	kf := NewKeyframeAnimation("k",
+		[]Keyframe{
+			{At: 0, Value: 0},
+			{At: 1, Value: 100, Easing: EaseLinear},
+		},
+		func(v float32, _ *Window) { got = v },
+	)
+	kf.start = time.Now().Add(-time.Second)
+	deferred := make([]queuedCommand, 0, 4)
+	ok := kf.Update(nil, 0, &deferred)
+	if !ok {
+		t.Error("Update should return true")
+	}
+	runQueuedCommands(deferred)
+	if got != 100 {
+		t.Errorf("got %f, want 100", got)
+	}
+}
+
 func TestKeyframeRepeatNoDrift(t *testing.T) {
 	kf := NewKeyframeAnimation("k",
 		[]Keyframe{
