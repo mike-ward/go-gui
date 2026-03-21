@@ -9,7 +9,7 @@ Stuff I'm considering. No promises.
 | System tray / menubar                 | No tray icon, no native menu bar integration                        |
 | Touch / gesture input                 | No pinch, swipe, rotate, long-press. Required for tablet/mobile     |
 | Embedded video/audio                  | No media playback widget                                            |
-| Skeleton / shimmer loading            | Placeholder UI during async loads                                   |
+| ~~Skeleton / shimmer loading~~        | ✅ Implemented — Skeleton widget with gradient shimmer animation    |
 | ~~Spell check integration~~           | ✅ Implemented — OS-level spell check via NSSpellChecker            |
 | ~~Global hotkeys / shortcut manager~~ | ✅ Implemented — Command registry with global/non-global dispatch   |
 | Autocomplete / suggestion list        | Text input with dropdown suggestions (Combobox may partially cover) |
