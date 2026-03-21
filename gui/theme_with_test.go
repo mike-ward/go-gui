@@ -49,6 +49,7 @@ func TestWithStyleMethodsCoverage(t *testing.T) {
 	th = th.WithMenubarStyle(MenubarStyle{})
 	th = th.WithDatePickerStyle(DatePickerStyle{})
 	th = th.WithColorPickerStyle(ColorPickerStyle{})
+	th = th.WithSkeletonStyle(SkeletonStyle{})
 	th = th.WithDataGridStyle(DataGridStyle{})
 	_ = th
 }

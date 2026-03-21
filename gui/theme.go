@@ -44,6 +44,7 @@ type Theme struct {
 	BadgeStyle          BadgeStyle
 	ExpandPanelStyle    ExpandPanelStyle
 	ProgressBarStyle    ProgressBarStyle
+	SkeletonStyle       SkeletonStyle
 	SliderStyle         SliderStyle
 	TabControlStyle     TabControlStyle
 	BreadcrumbStyle     BreadcrumbStyle
@@ -433,6 +434,11 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			TextShow:       true,
 			TextStyle:      ts,
 		},
+		SkeletonStyle: SkeletonStyle{
+			Color:          cfg.ColorInterior,
+			ColorHighlight: cfg.ColorInterior.Add(RGBA(20, 20, 20, 0)),
+			Radius:         cfg.RadiusSmall,
+		},
 		SliderStyle: SliderStyle{
 			Size:             cfg.SizeSlider,
 			ThumbSize:        cfg.SizeSliderThumb,
@@ -782,4 +788,5 @@ func SetTheme(t Theme) {
 	DefaultDatePickerStyle = t.DatePickerStyle
 	DefaultColorPickerStyle = t.ColorPickerStyle
 	DefaultDataGridStyle = t.DataGridStyle
+	DefaultSkeletonStyle = t.SkeletonStyle
 }

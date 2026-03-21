@@ -168,6 +168,12 @@ func (t Theme) WithColorPickerStyle(s ColorPickerStyle) Theme {
 	return t
 }
 
+// WithSkeletonStyle returns a Theme with the given style.
+func (t Theme) WithSkeletonStyle(s SkeletonStyle) Theme {
+	t.SkeletonStyle = s
+	return t
+}
+
 // WithDataGridStyle returns a Theme with the given style.
 func (t Theme) WithDataGridStyle(s DataGridStyle) Theme {
 	t.DataGridStyle = s

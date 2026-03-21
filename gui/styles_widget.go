@@ -448,6 +448,13 @@ type ColorPickerStyle struct {
 	TextStyle        TextStyle
 }
 
+// SkeletonStyle defines skeleton loader visual properties.
+type SkeletonStyle struct {
+	Color          Color
+	ColorHighlight Color
+	Radius         float32
+}
+
 // Default widget styles (dark theme).
 var (
 	DefaultInputStyle = InputStyle{
@@ -849,6 +856,12 @@ var (
 		SliderHeight:     24,
 		IndicatorSize:    16,
 		TextStyle:        DefaultTextStyle,
+	}
+
+	DefaultSkeletonStyle = SkeletonStyle{
+		Color:          colorInteriorDark,
+		ColorHighlight: colorInteriorDark.Add(RGBA(20, 20, 20, 0)),
+		Radius:         RadiusSmall,
 	}
 
 	DefaultMenubarStyle = MenubarStyle{
