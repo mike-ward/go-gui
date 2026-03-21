@@ -15,7 +15,7 @@ func Menu(w *Window, cfg MenubarCfg) View {
 
 	// Auto-select first item on focus.
 	if w.IsFocus(cfg.IDFocus) {
-		sel := StateReadOr[uint32, string](
+		sel := StateReadOr(
 			w, nsMenu, cfg.IDFocus, "")
 		if sel == "" {
 			if first, ok := firstSelectable(cfg.Items); ok {
@@ -130,7 +130,7 @@ func menuBuild(cfg MenubarCfg, level int, items []MenuItemCfg, w *Window) []View
 		sizing = FitFit
 	}
 
-	selectedID := StateReadOr[uint32, string](
+	selectedID := StateReadOr(
 		w, nsMenu, cfg.IDFocus, "")
 
 	views := make([]View, 0, len(items))

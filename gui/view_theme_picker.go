@@ -28,7 +28,7 @@ func (tv *themePickerView) Content() []View { return nil }
 
 func (tv *themePickerView) GenerateLayout(w *Window) Layout {
 	cfg := &tv.cfg
-	isOpen := StateReadOr[string, bool](w, nsSelect, cfg.ID, false)
+	isOpen := StateReadOr(w, nsSelect, cfg.ID, false)
 	id := cfg.ID
 	currentName := guiTheme.Name
 	idFocus := cfg.IDFocus
@@ -113,7 +113,7 @@ func (tv *themePickerView) GenerateLayout(w *Window) Layout {
 			}
 		},
 		OnKeyDown: func(_ *Layout, e *Event, w *Window) {
-			wasOpen := StateReadOr[string, bool](w, nsSelect, id, false)
+			wasOpen := StateReadOr(w, nsSelect, id, false)
 			if !wasOpen {
 				if e.KeyCode == KeySpace || e.KeyCode == KeyEnter {
 					ss := StateMap[string, bool](w, nsSelect, capModerate)

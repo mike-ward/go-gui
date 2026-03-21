@@ -107,7 +107,7 @@ func TestInspectorSelectExpandsAncestorsAndFocusesTree(t *testing.T) {
 	if got := inspectorSelectedPath(w); got != "0.2.1" {
 		t.Fatalf("selected path = %q, want %q", got, "0.2.1")
 	}
-	if got := StateReadOr[string, string](w, nsTreeFocus, inspectorTreeID, ""); got != "0.2.1" {
+	if got := StateReadOr(w, nsTreeFocus, inspectorTreeID, ""); got != "0.2.1" {
 		t.Fatalf("tree focus = %q, want %q", got, "0.2.1")
 	}
 	expanded := treeExpandedState(w, inspectorTreeID)

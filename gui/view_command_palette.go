@@ -72,13 +72,13 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 	dn := &DefaultCommandPaletteStyle
 	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	radius := cfg.Radius.Get(dn.Radius)
-	visible := StateReadOr[string, bool](w, nsCmdPalette, cfg.ID, false)
+	visible := StateReadOr(w, nsCmdPalette, cfg.ID, false)
 	if !visible {
 		return GenerateViewLayout(Row(ContainerCfg{Padding: NoPadding}), w)
 	}
 
-	query := StateReadOr[string, string](w, nsCmdPaletteQuery, cfg.ID, "")
-	highlighted := StateReadOr[string, int](w, nsCmdPaletteHighlight, cfg.ID, 0)
+	query := StateReadOr(w, nsCmdPaletteQuery, cfg.ID, "")
+	highlighted := StateReadOr(w, nsCmdPaletteHighlight, cfg.ID, 0)
 
 	cacheMap := StateMap[string, *cmdPaletteItemsCache](
 		w, nsCmdPaletteItems, capModerate)
@@ -118,7 +118,7 @@ func (cp *commandPaletteView) GenerateLayout(w *Window) Layout {
 	rowH := listCoreRowHeightEstimate(cfg.TextStyle, PaddingTwoFive)
 	var scrollY float32
 	if cfg.IDScroll > 0 {
-		scrollY = StateReadOr[uint32, float32](w, nsScrollY, cfg.IDScroll, 0)
+		scrollY = StateReadOr(w, nsScrollY, cfg.IDScroll, float32(0))
 	}
 	first, last := listCoreVisibleRange(len(filtered), rowH, cfg.MaxHeight, scrollY)
 
@@ -260,7 +260,7 @@ func CommandPaletteDismiss(id string, w *Window) {
 
 // CommandPaletteToggle toggles palette visibility.
 func CommandPaletteToggle(id string, idFocus, idScroll uint32, w *Window) {
-	visible := StateReadOr[string, bool](w, nsCmdPalette, id, false)
+	visible := StateReadOr(w, nsCmdPalette, id, false)
 	if visible {
 		CommandPaletteDismiss(id, w)
 	} else {
@@ -270,7 +270,7 @@ func CommandPaletteToggle(id string, idFocus, idScroll uint32, w *Window) {
 
 // CommandPaletteIsVisible returns whether the palette is showing.
 func CommandPaletteIsVisible(id string, w *Window) bool {
-	return StateReadOr[string, bool](w, nsCmdPalette, id, false)
+	return StateReadOr(w, nsCmdPalette, id, false)
 }
 
 func cmdPaletteItemToCore(item CommandPaletteItem) ListCoreItem {

@@ -430,7 +430,7 @@ func TestShowLinkContextMenuSetsState(t *testing.T) {
 	w := newTestWindow()
 	showLinkContextMenu(w, "https://example.com", 50, 100, 42)
 
-	st := StateReadOr[string, rtfLinkMenuState](
+	st := StateReadOr(
 		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
 	if !st.Open {
 		t.Fatal("expected Open=true")
@@ -457,7 +457,7 @@ func TestRtfLinkMenuDismissClearsState(t *testing.T) {
 	showLinkContextMenu(w, "https://example.com", 50, 100, 0)
 	rtfLinkMenuDismiss(w)
 
-	st := StateReadOr[string, rtfLinkMenuState](
+	st := StateReadOr(
 		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
 	if st.Open {
 		t.Fatal("expected Open=false after dismiss")
@@ -505,7 +505,7 @@ func TestRtfOnClickRightClickShowsMenu(t *testing.T) {
 	if !e.IsHandled {
 		t.Fatal("expected IsHandled=true")
 	}
-	st := StateReadOr[string, rtfLinkMenuState](
+	st := StateReadOr(
 		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
 	if !st.Open {
 		t.Fatal("expected context menu Open=true")
@@ -525,7 +525,7 @@ func TestRtfAmendTooltipDismissesMenuOnFocusLoss(t *testing.T) {
 	l := &Layout{Shape: &Shape{}}
 	rtfAmendTooltip(l, w)
 
-	st := StateReadOr[string, rtfLinkMenuState](
+	st := StateReadOr(
 		w, nsRtfLinkMenu, nsRtfLinkMenu, rtfLinkMenuState{})
 	if st.Open {
 		t.Fatal("expected menu dismissed on focus loss")

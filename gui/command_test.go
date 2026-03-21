@@ -74,27 +74,25 @@ func TestRegisterCommand(t *testing.T) {
 	}
 }
 
-func TestRegisterCommandDuplicatePanics(t *testing.T) {
+func TestRegisterCommandDuplicateReturnsError(t *testing.T) {
 	w := NewWindow(WindowCfg{State: new(int)})
-	w.RegisterCommand(Command{ID: "x"})
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic on duplicate ID")
-		}
-	}()
-	w.RegisterCommand(Command{ID: "x"})
+	if err := w.RegisterCommand(Command{ID: "x"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.RegisterCommand(Command{ID: "x"}); err == nil {
+		t.Error("expected error on duplicate ID")
+	}
 }
 
-func TestRegisterCommandDuplicateShortcutPanics(t *testing.T) {
+func TestRegisterCommandDuplicateShortcutReturnsError(t *testing.T) {
 	w := NewWindow(WindowCfg{State: new(int)})
 	s := Shortcut{Key: KeyS, Modifiers: ModCtrl}
-	w.RegisterCommand(Command{ID: "a", Shortcut: s})
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic on duplicate shortcut")
-		}
-	}()
-	w.RegisterCommand(Command{ID: "b", Shortcut: s})
+	if err := w.RegisterCommand(Command{ID: "a", Shortcut: s}); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.RegisterCommand(Command{ID: "b", Shortcut: s}); err == nil {
+		t.Error("expected error on duplicate shortcut")
+	}
 }
 
 func TestUnregisterCommand(t *testing.T) {
@@ -269,14 +267,12 @@ func TestKeyNameSpecial(t *testing.T) {
 	}
 }
 
-func TestCommandButtonUnknownPanics(t *testing.T) {
+func TestCommandButtonUnknownReturnsErrorView(t *testing.T) {
 	w := NewWindow(WindowCfg{State: new(int)})
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic on unknown command ID")
-		}
-	}()
-	CommandButton(w, "nonexistent", ButtonCfg{})
+	v := CommandButton(w, "nonexistent", ButtonCfg{})
+	if v == nil {
+		t.Fatal("should return error placeholder view")
+	}
 }
 
 func TestUnregisterCommandNoOp(_ *testing.T) {

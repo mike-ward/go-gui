@@ -41,12 +41,12 @@ func TestComboboxOpenLayout(t *testing.T) {
 func TestComboboxOpenClose(t *testing.T) {
 	w := &Window{}
 	comboboxOpen("test-oc", 0, w)
-	isOpen := StateReadOr[string, bool](w, nsCombobox, "test-oc", false)
+	isOpen := StateReadOr(w, nsCombobox, "test-oc", false)
 	if !isOpen {
 		t.Error("expected open")
 	}
 	comboboxClose("test-oc", w)
-	isOpen = StateReadOr[string, bool](w, nsCombobox, "test-oc", false)
+	isOpen = StateReadOr(w, nsCombobox, "test-oc", false)
 	if isOpen {
 		t.Error("expected closed")
 	}
@@ -60,7 +60,7 @@ func TestComboboxKeyDownOpenClose(t *testing.T) {
 	// Open via Enter.
 	e := &Event{KeyCode: KeyEnter}
 	comboboxOnKeyDown("cb-kd", onSel, 0, []string{"x", "y"}, 0, 0, 0, e, w)
-	if !StateReadOr[string, bool](w, nsCombobox, "cb-kd", false) {
+	if !StateReadOr(w, nsCombobox, "cb-kd", false) {
 		t.Error("enter should open")
 	}
 
@@ -89,12 +89,12 @@ func TestComboboxKeyNavScrolls(t *testing.T) {
 		comboboxOnKeyDown("cb-nav", onSel, 0, ids, idScroll, rowH, listH, e, w)
 	}
 
-	hl := StateReadOr[string, int](w, nsComboboxHighlight, "cb-nav", -1)
+	hl := StateReadOr(w, nsComboboxHighlight, "cb-nav", -1)
 	if hl != 8 {
 		t.Fatalf("highlight = %d, want 8", hl)
 	}
 
-	sy := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	sy := StateReadOr(w, nsScrollY, idScroll, float32(0))
 	if sy >= 0 {
 		t.Fatalf("scrollY = %f, want negative (scrolled down)", sy)
 	}
@@ -119,7 +119,7 @@ func TestScrollEnsureVisible(t *testing.T) {
 
 	// Initially scrollY = 0. Item 7: bottom = 208 > 187. Should scroll.
 	scrollEnsureVisible(idScroll, 7, rowH, listH, w)
-	sy := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	sy := StateReadOr(w, nsScrollY, idScroll, float32(0))
 	if sy >= 0 {
 		t.Errorf("expected negative scrollY, got %f", sy)
 	}
@@ -130,7 +130,7 @@ func TestScrollEnsureVisible(t *testing.T) {
 
 	// Scroll back up to item 0.
 	scrollEnsureVisible(idScroll, 0, rowH, listH, w)
-	sy = StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	sy = StateReadOr(w, nsScrollY, idScroll, float32(0))
 	if sy != 0 {
 		t.Errorf("scrollY = %f, want 0", sy)
 	}
@@ -196,7 +196,7 @@ func TestScrollEnsureVisibleSurvivesPipeline(t *testing.T) {
 	// Run the scroll offset adjustment.
 	layoutAdjustScrollOffsets(&dropdown, w)
 
-	sy := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	sy := StateReadOr(w, nsScrollY, idScroll, float32(0))
 	if sy != want {
 		t.Fatalf("scrollY after pipeline = %f, want %f", sy, want)
 	}
@@ -282,7 +282,7 @@ func TestComboboxScrollEndToEnd(t *testing.T) {
 	}
 
 	// Verify scroll state was set.
-	syBefore := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	syBefore := StateReadOr(w, nsScrollY, idScroll, float32(0))
 	if syBefore >= 0 {
 		t.Fatalf("scrollY before = %f, want negative", syBefore)
 	}
@@ -322,7 +322,7 @@ func TestComboboxScrollEndToEnd(t *testing.T) {
 	layoutPipeline(dropdown, w)
 
 	// Check scroll state survived pipeline.
-	syAfter := StateReadOr[uint32, float32](w, nsScrollY, idScroll, 0)
+	syAfter := StateReadOr(w, nsScrollY, idScroll, float32(0))
 	t.Logf("scrollY: before=%f, after=%f, dropdownH=%f, contentH=%f",
 		syBefore, syAfter, dropdown.Shape.Height,
 		contentHeight(dropdown))

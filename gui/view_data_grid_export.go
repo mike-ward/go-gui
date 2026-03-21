@@ -375,10 +375,7 @@ func dataGridPDFDocument(lines []string) string {
 	maxLines = max(maxLines, 1)
 	var pages [][]string
 	for i := 0; i < len(lines); i += maxLines {
-		end := i + maxLines
-		if end > len(lines) {
-			end = len(lines)
-		}
+		end := min(i+maxLines, len(lines))
 		pages = append(pages, lines[i:end])
 	}
 	objects := make([]string, 0, 2+len(pages)*2)

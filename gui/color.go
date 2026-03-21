@@ -91,10 +91,7 @@ func (c Color) Add(b Color) Color {
 
 // Sub returns c - b, clamping each channel to 0.
 func (c Color) Sub(b Color) Color {
-	ca := c.A
-	if b.A > ca {
-		ca = b.A
-	}
+	ca := max(c.A, b.A)
 	return Color{
 		R:   clampSub(c.R, b.R),
 		G:   clampSub(c.G, b.G),

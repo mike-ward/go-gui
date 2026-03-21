@@ -130,7 +130,7 @@ func (v *rtfView) GenerateLayout(w *Window) Layout {
 		}
 	}
 	// Link context menu popup — only on the owning RTF block.
-	if st := StateReadOr[string, rtfLinkMenuState](
+	if st := StateReadOr(
 		w, nsRtfLinkMenu, nsRtfLinkMenu,
 		rtfLinkMenuState{}); st.Open &&
 		st.BlockKey == blockKey {

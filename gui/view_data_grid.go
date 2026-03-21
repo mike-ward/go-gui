@@ -18,8 +18,6 @@ const (
 	dataGridAutofitPadding          = float32(18)
 	dataGridAutofitMaxRows          = 1000
 	dataGridIndicatorAlpha          = uint8(140)
-	dataGridResizeKeyStep           = float32(8)
-	dataGridResizeKeyStepLarge      = float32(24)
 	dataGridHeaderControlWidth      = float32(12)
 	dataGridHeaderReorderSpacing    = float32(1)
 	dataGridHeaderLabelMinWidth     = float32(24)

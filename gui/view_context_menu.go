@@ -54,7 +54,7 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 	checkForDuplicateMenuIDs(cfg.Items)
 	applyContextMenuDefaults(&cfg)
 
-	st := StateReadOr[string, contextMenuState](
+	st := StateReadOr(
 		w, nsContextMenu, cfg.ID, contextMenuState{})
 
 	content := cfg.Content

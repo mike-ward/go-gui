@@ -72,9 +72,9 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	dn := &DefaultComboboxStyle
 	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	radius := cfg.Radius.Get(dn.Radius)
-	isOpen := StateReadOr[string, bool](w, nsCombobox, cfg.ID, false)
-	query := StateReadOr[string, string](w, nsComboboxQuery, cfg.ID, "")
-	highlighted := StateReadOr[string, int](w, nsComboboxHighlight, cfg.ID, 0)
+	isOpen := StateReadOr(w, nsCombobox, cfg.ID, false)
+	query := StateReadOr(w, nsComboboxQuery, cfg.ID, "")
+	highlighted := StateReadOr(w, nsComboboxHighlight, cfg.ID, 0)
 
 	cacheMap := StateMap[string, *comboboxItemsCache](
 		w, nsComboboxItems, capModerate)
@@ -118,7 +118,7 @@ func (cv *comboboxView) GenerateLayout(w *Window) Layout {
 	listH := cfg.MaxDropdownHeight - 2*sizeBorder - pad.Top - pad.Bottom
 	var scrollY float32
 	if cfg.IDScroll > 0 {
-		scrollY = StateReadOr[uint32, float32](w, nsScrollY, cfg.IDScroll, 0)
+		scrollY = StateReadOr(w, nsScrollY, cfg.IDScroll, float32(0))
 	}
 	first, last := listCoreVisibleRange(len(filtered), rowH, listH, scrollY)
 

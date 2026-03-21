@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"errors"
 	"runtime"
 	"strconv"
 )
@@ -155,26 +156,33 @@ type Command struct {
 }
 
 // RegisterCommand adds a command to the window registry.
-// Panics on duplicate ID or duplicate shortcut.
-func (w *Window) RegisterCommand(cmd Command) {
+// Returns an error on duplicate ID or duplicate shortcut.
+func (w *Window) RegisterCommand(cmd Command) error {
 	for i := range w.cmdRegistry {
 		if w.cmdRegistry[i].ID == cmd.ID {
-			panic("gui: duplicate command ID: " + cmd.ID)
+			return errors.New(
+				"gui: duplicate command ID: " + cmd.ID)
 		}
 		if cmd.Shortcut.IsSet() &&
 			w.cmdRegistry[i].Shortcut == cmd.Shortcut {
-			panic("gui: duplicate shortcut for commands: " +
-				w.cmdRegistry[i].ID + " and " + cmd.ID)
+			return errors.New(
+				"gui: duplicate shortcut for commands: " +
+					w.cmdRegistry[i].ID + " and " + cmd.ID)
 		}
 	}
 	w.cmdRegistry = append(w.cmdRegistry, cmd)
+	return nil
 }
 
-// RegisterCommands adds multiple commands.
-func (w *Window) RegisterCommands(cmds ...Command) {
+// RegisterCommands adds multiple commands. Stops and returns
+// the first error encountered.
+func (w *Window) RegisterCommands(cmds ...Command) error {
 	for _, cmd := range cmds {
-		w.RegisterCommand(cmd)
+		if err := w.RegisterCommand(cmd); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // UnregisterCommand removes a command by ID. No-op if

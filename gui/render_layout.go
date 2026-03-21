@@ -482,10 +482,7 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		is := StateReadOr(w, nsInput, shape.IDFocus,
 			InputState{})
 		runes := []rune(text)
-		compInsertPos = is.CursorPos
-		if compInsertPos > len(runes) {
-			compInsertPos = len(runes)
-		}
+		compInsertPos = min(is.CursorPos, len(runes))
 		text = string(runes[:compInsertPos]) + compText +
 			string(runes[compInsertPos:])
 	}
@@ -685,7 +682,7 @@ func renderInputSelection(shape *Shape, text string, baseX, baseY float32,
 	layout := preLayout
 	ok := hasPreLayout
 	if !ok {
-		layout, ok = inputGlyphLayoutResolved(text, shape, style, w, tc != nil && tc.TextIsPassword)
+		layout, ok = inputGlyphLayoutResolved(text, shape, style, w, tc.TextIsPassword)
 	}
 	if ok {
 		rects := layout.GetSelectionRects(startByte, endByte)
@@ -757,10 +754,7 @@ func renderIMEPreeditUnderline(
 	// Thick underline for the selected clause.
 	if compSelLen > 0 {
 		selStart := insertPos + compCursor
-		selEnd := selStart + compSelLen
-		if selEnd > insertPos+compRuneLen {
-			selEnd = insertPos + compRuneLen
-		}
+		selEnd := min(selStart+compSelLen, insertPos+compRuneLen)
 		sb := runeToByteIndex(compositeText, selStart)
 		eb := runeToByteIndex(compositeText, selEnd)
 		selRects := gl.GetSelectionRects(sb, eb)

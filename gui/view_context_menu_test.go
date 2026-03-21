@@ -51,7 +51,7 @@ func TestContextMenuOpensOnRightClick(t *testing.T) {
 	if !e.IsHandled {
 		t.Error("expected IsHandled")
 	}
-	st := StateReadOr[string, contextMenuState](
+	st := StateReadOr(
 		w, nsContextMenu, "cm3", contextMenuState{})
 	if !st.Open {
 		t.Error("expected open")
@@ -75,7 +75,7 @@ func TestContextMenuClosesOnLeftClick(t *testing.T) {
 	e := &Event{MouseButton: MouseLeft}
 	layout.Shape.Events.OnClick(&layout, e, w)
 
-	st := StateReadOr[string, contextMenuState](
+	st := StateReadOr(
 		w, nsContextMenu, "cm4", contextMenuState{})
 	if st.Open {
 		t.Error("expected closed after left click")
@@ -101,7 +101,7 @@ func TestContextMenuClosesOnFocusLoss(t *testing.T) {
 	w.SetIDFocus(0)
 	layout.Shape.Events.AmendLayout(nil, w)
 
-	st := StateReadOr[string, contextMenuState](
+	st := StateReadOr(
 		w, nsContextMenu, "cm5", contextMenuState{})
 	if st.Open {
 		t.Error("expected closed on focus loss")
@@ -141,7 +141,7 @@ func TestContextMenuActionClosesMenu(t *testing.T) {
 	e := &Event{KeyCode: KeyEnter}
 	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
-	st := StateReadOr[string, contextMenuState](
+	st := StateReadOr(
 		w, nsContextMenu, "cm7", contextMenuState{})
 	if st.Open {
 		t.Error("expected closed after action")
@@ -223,7 +223,7 @@ func TestContextMenuUserOnAnyClickHandled(t *testing.T) {
 	layout.Shape.Events.OnClick(&layout, e, w)
 
 	// Menu should NOT have opened since user handler set IsHandled.
-	st := StateReadOr[string, contextMenuState](
+	st := StateReadOr(
 		w, nsContextMenu, "cm11", contextMenuState{})
 	if st.Open {
 		t.Error("menu should not open when user handler sets IsHandled")
@@ -290,7 +290,7 @@ func TestContextMenuKeyboardAutoSelectsFirst(t *testing.T) {
 	idFocus := fnvSum32("context_menu_" + cfg.ID)
 	contextMenuPopupLayout(t, w, cfg)
 
-	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel := StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "a" {
 		t.Errorf("expected first item 'a' selected, got %q", sel)
 	}
@@ -313,7 +313,7 @@ func TestContextMenuKeyboardDownNavigation(t *testing.T) {
 	e := &Event{KeyCode: KeyDown}
 	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
-	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel := StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "b" {
 		t.Errorf("expected 'b', got %q", sel)
 	}
@@ -322,7 +322,7 @@ func TestContextMenuKeyboardDownNavigation(t *testing.T) {
 	e = &Event{KeyCode: KeyDown}
 	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
-	sel = StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel = StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "c" {
 		t.Errorf("expected 'c', got %q", sel)
 	}
@@ -331,7 +331,7 @@ func TestContextMenuKeyboardDownNavigation(t *testing.T) {
 	e = &Event{KeyCode: KeyDown}
 	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
-	sel = StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel = StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "a" {
 		t.Errorf("expected wrap to 'a', got %q", sel)
 	}
@@ -353,7 +353,7 @@ func TestContextMenuKeyboardUpNavigation(t *testing.T) {
 	e := &Event{KeyCode: KeyUp}
 	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
-	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel := StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "b" {
 		t.Errorf("expected wrap to 'b', got %q", sel)
 	}
@@ -405,7 +405,7 @@ func TestContextMenuKeyboardSkipsSeparators(t *testing.T) {
 	e := &Event{KeyCode: KeyDown}
 	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
-	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel := StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "b" {
 		t.Errorf("expected 'b', got %q", sel)
 	}
@@ -451,7 +451,7 @@ func TestContextMenuKeyboardRightOpensSubmenu(t *testing.T) {
 	e := &Event{KeyCode: KeyRight}
 	popup.Shape.Events.OnKeyDown(&popup, e, w)
 
-	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel := StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "x" {
 		t.Errorf("expected 'x', got %q", sel)
 	}
@@ -473,14 +473,14 @@ func TestContextMenuKeyboardLeftClosesSubmenu(t *testing.T) {
 	// Right into submenu, then Left back.
 	popup.Shape.Events.OnKeyDown(&popup,
 		&Event{KeyCode: KeyRight}, w)
-	sel := StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel := StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "x" {
 		t.Fatalf("expected 'x', got %q", sel)
 	}
 
 	popup.Shape.Events.OnKeyDown(&popup,
 		&Event{KeyCode: KeyLeft}, w)
-	sel = StateReadOr[uint32, string](w, nsMenu, idFocus, "")
+	sel = StateReadOr(w, nsMenu, idFocus, "")
 	if sel != "more" {
 		t.Errorf("expected 'more', got %q", sel)
 	}

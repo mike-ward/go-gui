@@ -204,7 +204,7 @@ func TestTreeRowClickTogglesAndSelects(t *testing.T) {
 		w,
 	)
 
-	if got := StateReadOr[string, string](w, nsTreeFocus, "tree", ""); got != "remote" {
+	if got := StateReadOr(w, nsTreeFocus, "tree", ""); got != "remote" {
 		t.Fatalf("focused node = %q, want %q", got, "remote")
 	}
 	if !treeExpandedState(w, "tree")["remote"] {
@@ -265,19 +265,19 @@ func TestTreeOnKeyDownNavigation(t *testing.T) {
 
 	eUp := &Event{KeyCode: KeyUp}
 	treeOnKeyDown("tree", visibleIDs, rowByID, nil, nil, 0, 0, 0, eUp, w)
-	if got := StateReadOr[string, string](w, nsTreeFocus, "tree", ""); got != "a" {
+	if got := StateReadOr(w, nsTreeFocus, "tree", ""); got != "a" {
 		t.Fatalf("focus after KeyUp = %q, want %q", got, "a")
 	}
 
 	eEnd := &Event{KeyCode: KeyEnd}
 	treeOnKeyDown("tree", visibleIDs, rowByID, nil, nil, 0, 0, 0, eEnd, w)
-	if got := StateReadOr[string, string](w, nsTreeFocus, "tree", ""); got != "c" {
+	if got := StateReadOr(w, nsTreeFocus, "tree", ""); got != "c" {
 		t.Fatalf("focus after KeyEnd = %q, want %q", got, "c")
 	}
 
 	eHome := &Event{KeyCode: KeyHome}
 	treeOnKeyDown("tree", visibleIDs, rowByID, nil, nil, 0, 0, 0, eHome, w)
-	if got := StateReadOr[string, string](w, nsTreeFocus, "tree", ""); got != "a" {
+	if got := StateReadOr(w, nsTreeFocus, "tree", ""); got != "a" {
 		t.Fatalf("focus after KeyHome = %q, want %q", got, "a")
 	}
 

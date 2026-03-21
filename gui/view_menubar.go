@@ -48,7 +48,7 @@ func Menubar(w *Window, cfg MenubarCfg) View {
 
 	// On focus with no selection, select first item.
 	if w.IsFocus(cfg.IDFocus) {
-		sel := StateReadOr[uint32, string](
+		sel := StateReadOr(
 			w, nsMenu, cfg.IDFocus, "")
 		if sel == "" {
 			if first, ok := firstSelectable(cfg.Items); ok {

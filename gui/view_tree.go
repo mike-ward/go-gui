@@ -468,8 +468,8 @@ func treeVisibleRange(
 	if w == nil {
 		return 0, totalRows - 1
 	}
-	scrollY := StateReadOr[uint32, float32](
-		w, nsScrollY, idScroll, 0)
+	scrollY := StateReadOr(
+		w, nsScrollY, idScroll, float32(0))
 	return listCoreVisibleRange(totalRows, rowHeight, treeHeight, scrollY)
 }
 
@@ -759,7 +759,7 @@ func treeOnKeyDown(
 	if e.Modifiers != ModNone || len(visibleIDs) == 0 {
 		return
 	}
-	focusedID := StateReadOr[string, string](w, nsTreeFocus, treeID, "")
+	focusedID := StateReadOr(w, nsTreeFocus, treeID, "")
 	cur := treeFocusedIndex(visibleIDs, focusedID)
 	focusMap := StateMap[string, string](w, nsTreeFocus, capModerate)
 

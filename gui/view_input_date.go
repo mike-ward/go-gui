@@ -63,7 +63,7 @@ func InputDate(cfg InputDateCfg) View {
 func (idv *inputDateView) GenerateLayout(w *Window) Layout {
 	cfg := &idv.cfg
 
-	isOpen := StateReadOr[string, bool](w, nsInputDate, cfg.ID, false)
+	isOpen := StateReadOr(w, nsInputDate, cfg.ID, false)
 	cfgID := cfg.ID
 
 	// Format date for display.

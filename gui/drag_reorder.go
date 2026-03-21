@@ -380,11 +380,11 @@ func dragReorderOnMouseMove(
 		var scrollVal float32
 		switch axis {
 		case DragReorderVertical:
-			scrollVal = StateReadOr[uint32, float32](
-				w, nsScrollY, state.idScroll, 0)
+			scrollVal = StateReadOr(
+				w, nsScrollY, state.idScroll, float32(0))
 		case DragReorderHorizontal:
-			scrollVal = StateReadOr[uint32, float32](
-				w, nsScrollX, state.idScroll, 0)
+			scrollVal = StateReadOr(
+				w, nsScrollX, state.idScroll, float32(0))
 		}
 		var startScroll float32
 		switch axis {

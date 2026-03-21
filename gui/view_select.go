@@ -54,7 +54,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 	dn := &DefaultSelectStyle
 	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	radius := cfg.Radius.Get(dn.Radius)
-	isOpen := StateReadOr[string, bool](w, nsSelect, cfg.ID, false)
+	isOpen := StateReadOr(w, nsSelect, cfg.ID, false)
 	idScroll := fnvSum32(cfg.ID + ".dropdown")
 
 	empty := len(cfg.Selected) == 0 || len(cfg.Selected[0]) == 0
@@ -101,7 +101,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 	)
 
 	if isOpen {
-		highlightedIdx := StateReadOr[string, int](
+		highlightedIdx := StateReadOr(
 			w, nsSelectHL, cfg.ID, 0)
 		options := make([]View, 0, len(cfg.Options))
 		for i, option := range cfg.Options {
@@ -279,7 +279,7 @@ func selectSubHeaderView(cfg *SelectCfg, option string) View {
 			Row(ContainerCfg{
 				Padding: NoPadding,
 				Sizing:  FillFit,
-				Spacing: Some[float32](PadXSmall),
+				Spacing: SomeF(PadXSmall),
 				Content: []View{
 					Text(TextCfg{
 						Text: "✓",

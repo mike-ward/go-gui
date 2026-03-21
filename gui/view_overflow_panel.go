@@ -30,9 +30,9 @@ type OverflowPanelCfg struct {
 func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 	applyOverflowDefaults(&cfg)
 
-	visibleCount := StateReadOr[string, int](
+	visibleCount := StateReadOr(
 		w, nsOverflow, cfg.ID, len(cfg.Items))
-	isOpen := StateReadOr[string, bool](
+	isOpen := StateReadOr(
 		w, nsSelect, cfg.ID, false)
 
 	content := make([]View, 0, len(cfg.Items)+2)
@@ -63,7 +63,7 @@ func OverflowPanel(w *Window, cfg OverflowPanelCfg) View {
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			ss := StateMap[string, bool](
 				w, nsSelect, capModerate)
-			cur := StateReadOr[string, bool](
+			cur := StateReadOr(
 				w, nsSelect, id, false)
 			ss.Set(id, !cur)
 			e.IsHandled = true

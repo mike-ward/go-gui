@@ -83,7 +83,7 @@ func inspectorIsLeft(w *Window) bool {
 	if w == nil {
 		return false
 	}
-	side := StateReadOr[string, string](w, nsInspector, "side", "")
+	side := StateReadOr(w, nsInspector, "side", "")
 	return side == "left"
 }
 
@@ -105,7 +105,7 @@ func inspectorPanelWidth(w *Window) float32 {
 	if w == nil {
 		return inspectorPanelMinWidth
 	}
-	width := StateReadOr[string, float32](
+	width := StateReadOr(
 		w, nsInspectorWidth, "width", inspectorPanelMinWidth)
 	return f32Max(width, inspectorPanelMinWidth)
 }
@@ -279,7 +279,7 @@ func inspectorSelectedPath(w *Window) string {
 	if w == nil {
 		return ""
 	}
-	return StateReadOr[string, string](w, nsInspector, "selected", "")
+	return StateReadOr(w, nsInspector, "selected", "")
 }
 
 func inspectorBuildTreeNodes(

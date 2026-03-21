@@ -431,7 +431,7 @@ func datePickerMonth(
 				ColorBorder: borderColor,
 				ColorClick:  cfg.ColorSelect,
 				ColorHover:  colorHover,
-				SizeBorder:  Some[float32](2),
+				SizeBorder:  SomeF(2),
 				Radius:      Some(radius),
 				Padding:     Some(PaddingThree),
 				Disabled:    disabled,

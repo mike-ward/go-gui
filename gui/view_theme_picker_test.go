@@ -48,7 +48,7 @@ func TestThemePickerSyncHighlight(t *testing.T) {
 
 	w := &Window{}
 	themePickerSyncHighlight("test-lb", w)
-	idx := StateReadOr[string, int](w, nsListBoxFocus, "test-lb", -1)
+	idx := StateReadOr(w, nsListBoxFocus, "test-lb", -1)
 	// "alpha"=0, "beta"=1 (sorted).
 	if idx != 1 {
 		t.Errorf("highlight = %d, want 1", idx)

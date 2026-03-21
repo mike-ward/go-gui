@@ -34,10 +34,10 @@ func TestInputDateLayoutZeroDate(t *testing.T) {
 
 func TestInputDateDefaultsPreserve(t *testing.T) {
 	cfg := InputDateCfg{
-		SizeBorder:   Some[float32](1),
-		CellSpacing:  Some[float32](3),
-		Radius:       Some[float32](4),
-		RadiusBorder: Some[float32](4),
+		SizeBorder:   SomeF(1),
+		CellSpacing:  SomeF(3),
+		Radius:       SomeF(4),
+		RadiusBorder: SomeF(4),
 		TextStyle:    DefaultTextStyle,
 		Color:        RGB(30, 30, 30),
 	}

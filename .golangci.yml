@@ -10,12 +10,16 @@ linters:
     - govet
     - staticcheck
     - errcheck
+    - modernize
     - unused
     - revive
   settings:
     revive:
       rules:
         - name: exported
+        - name: if-return
+        - name: error-strings
+        - name: unexported-return
   exclusions:
     generated: lax
     rules:

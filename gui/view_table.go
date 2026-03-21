@@ -179,8 +179,8 @@ func tableView(cfg TableCfg, w *Window) View {
 	first, last := dataStart, lastRowIdx
 	if virtualize {
 		rowHeight = tableEstimateRowHeight(&cfg, w)
-		scrollY := StateReadOr[uint32, float32](
-			w, nsScrollY, cfg.IDScroll, 0)
+		scrollY := StateReadOr(
+			w, nsScrollY, cfg.IDScroll, float32(0))
 		vFirst, vLast := listCoreVisibleRange(
 			dataCount, rowHeight, listHeight, scrollY)
 		first = vFirst + dataStart

@@ -172,7 +172,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	}
 	rowH := listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
 	if virtualize && listH > 0 && len(cfg.Data) > 0 {
-		scrollY := StateReadOr[uint32, float32](w, nsScrollY, cfg.IDScroll, 0)
+		scrollY := StateReadOr(w, nsScrollY, cfg.IDScroll, float32(0))
 		first, last = listCoreVisibleRange(len(cfg.Data), rowH, listH, scrollY)
 	} else {
 		virtualize = false
@@ -480,7 +480,7 @@ func listBoxReorderItemView(
 func listBoxItemContent(dat ListBoxOption, cfg ListBoxCfg) View {
 	if dat.IsSubheading {
 		return Column(ContainerCfg{
-			Spacing: Some[float32](1),
+			Spacing: SomeF(1),
 			Padding: NoPadding,
 			Sizing:  FillFit,
 			Content: []View{
