@@ -4,6 +4,7 @@ package main
 
 import (
 	"math/rand"
+	"slices"
 	"time"
 )
 
@@ -189,10 +190,5 @@ func (g *Game) spawnFood() {
 }
 
 func containsPoint(points []Point, target Point) bool {
-	for _, p := range points {
-		if p == target {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(points, target)
 }

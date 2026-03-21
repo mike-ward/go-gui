@@ -35,7 +35,7 @@ func main() {
 			loadEmbeddedLocales()
 			sa := gui.State[ShowcaseApp](w)
 			syncThemeGenFromCfg(sa, gui.CurrentTheme().Cfg)
-			w.RegisterCommands(
+			_ = w.RegisterCommands(
 				gui.Command{
 					ID: "sc.greet", Label: "Greet", Icon: gui.IconBell,
 					Shortcut: gui.Shortcut{Key: gui.KeyF5},

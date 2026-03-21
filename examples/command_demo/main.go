@@ -41,7 +41,7 @@ func main() {
 }
 
 func registerCommands(w *gui.Window) {
-	w.RegisterCommands(
+	_ = w.RegisterCommands(
 		gui.Command{
 			ID:       "file.new",
 			Label:    "New",

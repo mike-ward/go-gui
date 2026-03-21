@@ -83,9 +83,7 @@ func demoIcons(w *gui.Window) gui.View {
 	rows := make([]gui.View, 0, (len(keys)+cols-1)/cols)
 	for i := 0; i < len(keys); i += cols {
 		end := i + cols
-		if end > len(keys) {
-			end = len(keys)
-		}
+		end = min(end, len(keys))
 
 		icons := make([]gui.View, 0, end-i)
 		for _, key := range keys[i:end] {
