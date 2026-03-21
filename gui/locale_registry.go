@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -58,12 +59,12 @@ func LocaleRegisteredNames() []string {
 func LocaleLoadDir(dir string) error {
 	files, err := filepath.Glob(filepath.Join(dir, "*.json"))
 	if err != nil {
-		return err
+		return fmt.Errorf("LocaleLoadDir: glob: %w", err)
 	}
 	for _, f := range files {
 		l, err := LocaleLoad(f)
 		if err != nil {
-			return err
+			return fmt.Errorf("LocaleLoadDir: load %s: %w", filepath.Base(f), err)
 		}
 		LocaleRegister(l)
 	}

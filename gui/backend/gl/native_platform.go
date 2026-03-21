@@ -34,7 +34,10 @@ func (n *nativePlatform) OpenURI(uri string) error {
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("OpenURI: %w", err)
+	}
+	return nil
 }
 
 func validateOpenURI(raw string) error {

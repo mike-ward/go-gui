@@ -25,7 +25,10 @@ func (n *nativePlatform) OpenURI(uri string) error {
 	if err := validateOpenURI(uri); err != nil {
 		return err
 	}
-	return exec.Command("open", uri).Run()
+	if err := exec.Command("open", uri).Run(); err != nil {
+		return fmt.Errorf("OpenURI: open: %w", err)
+	}
+	return nil
 }
 
 func validateOpenURI(raw string) error {

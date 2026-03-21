@@ -64,16 +64,16 @@ func OpenSafe(
 	}
 	pre, err := os.Stat(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open safe: stat: %w", err)
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open safe: open: %w", err)
 	}
 	post, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
-		return nil, err
+		return nil, fmt.Errorf("open safe: fstat: %w", err)
 	}
 	if !os.SameFile(pre, post) {
 		_ = f.Close()
@@ -91,14 +91,14 @@ func DecodeNRGBA(
 	maxBytes, maxPixels int64,
 ) (*image.NRGBA, error) {
 	if err := validateFile(path, f, maxBytes, maxPixels); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode image: validate: %w", err)
 	}
 	if _, err := f.Seek(0, 0); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode image: seek: %w", err)
 	}
 	src, _, err := image.Decode(f)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode image: %w", err)
 	}
 	if existing, ok := src.(*image.NRGBA); ok {
 		return existing, nil
@@ -118,7 +118,7 @@ func validateFile(
 	}
 	info, err := f.Stat()
 	if err != nil {
-		return err
+		return fmt.Errorf("validate image %s: stat: %w", path, err)
 	}
 	if info.Size() > maxBytes {
 		return fmt.Errorf("image file too large: %s", path)
@@ -128,7 +128,7 @@ func validateFile(
 	}
 	cfg, _, err := image.DecodeConfig(f)
 	if err != nil {
-		return err
+		return fmt.Errorf("validate image %s: decode config: %w", path, err)
 	}
 	if cfg.Width <= 0 || cfg.Height <= 0 {
 		return fmt.Errorf("invalid image dimensions: %s", path)

@@ -179,14 +179,17 @@ func GridRowsToPDFFile(path string, columns []GridColumnCfg, rows []GridRow) err
 	dir := filepath.Dir(target)
 	if dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			return err
+			return fmt.Errorf("pdf export: mkdir: %w", err)
 		}
 	}
 	payload := GridRowsToPDF(columns, rows)
 	if payload == "" {
 		return fmt.Errorf("no columns to export")
 	}
-	return os.WriteFile(target, []byte(payload), 0644)
+	if err := os.WriteFile(target, []byte(payload), 0644); err != nil {
+		return fmt.Errorf("pdf export: write: %w", err)
+	}
+	return nil
 }
 
 // GridRowsToXLSX creates a minimal XLSX workbook and
@@ -201,7 +204,7 @@ func GridRowsToXLSX(columns []GridColumnCfg, rows []GridRow) ([]byte, error) {
 func GridRowsToXLSXWithCfg(columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := gridRowsWriteXLSX(&buf, columns, rows, exportCfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("xlsx export: %w", err)
 	}
 	return buf.Bytes(), nil
 }
@@ -224,15 +227,18 @@ func GridRowsToXLSXFileWithCfg(path string, columns []GridColumnCfg, rows []Grid
 	dir := filepath.Dir(target)
 	if dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			return err
+			return fmt.Errorf("xlsx export: mkdir: %w", err)
 		}
 	}
 	f, err := os.Create(target)
 	if err != nil {
-		return err
+		return fmt.Errorf("xlsx export: create: %w", err)
 	}
 	defer func() { _ = f.Close() }()
-	return gridRowsWriteXLSX(f, columns, rows, exportCfg)
+	if err := gridRowsWriteXLSX(f, columns, rows, exportCfg); err != nil {
+		return fmt.Errorf("xlsx export: %w", err)
+	}
+	return nil
 }
 
 func gridRowsWriteXLSX(w io.Writer, columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg) error {
@@ -248,10 +254,10 @@ func gridRowsWriteXLSX(w io.Writer, columns []GridColumnCfg, rows []GridRow, exp
 	for _, entry := range entries {
 		fw, err := zw.Create(entry[0])
 		if err != nil {
-			return err
+			return fmt.Errorf("xlsx: create entry %s: %w", entry[0], err)
 		}
 		if _, err := fw.Write([]byte(entry[1])); err != nil {
-			return err
+			return fmt.Errorf("xlsx: write entry: %w", err)
 		}
 	}
 	return nil
