@@ -46,7 +46,7 @@ jobs:
             fontconfig
 
       - name: Test
-        run: go test ./gui/...
+        run: go test -cover ./gui/...
 
   vet:
     name: Vet
