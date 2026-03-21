@@ -249,6 +249,78 @@ func demoThemePicker(w *gui.Window) gui.View {
 	})
 }
 
+func demoSkeleton(_ *gui.Window) gui.View {
+	t := gui.CurrentTheme()
+	return gui.Column(gui.ContainerCfg{
+		Sizing:     gui.FillFit,
+		Spacing:    gui.SomeF(t.SpacingSmall),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
+		Content: []gui.View{
+			sectionLabel(t, "Text Lines"),
+			gui.Column(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(6),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
+				Content: []gui.View{
+					gui.Skeleton(gui.SkeletonCfg{ID: "sk-line1", Sizing: gui.FillFixed, Height: 14}),
+					gui.Skeleton(gui.SkeletonCfg{ID: "sk-line2", Sizing: gui.FixedFixed, Width: 260, Height: 14}),
+					gui.Skeleton(gui.SkeletonCfg{ID: "sk-line3", Sizing: gui.FixedFixed, Width: 180, Height: 14}),
+				},
+			}),
+
+			line(),
+			sectionLabel(t, "Circle Avatar"),
+			gui.Skeleton(gui.SkeletonCfg{
+				ID:      "sk-avatar",
+				Variant: gui.SkeletonCircle,
+				Width:   48,
+				Height:  48,
+			}),
+
+			line(),
+			sectionLabel(t, "Card Layout"),
+			gui.Row(gui.ContainerCfg{
+				Sizing:     gui.FillFit,
+				Spacing:    gui.SomeF(12),
+				Padding:    gui.NoPadding,
+				SizeBorder: gui.NoBorder,
+				VAlign:     gui.VAlignTop,
+				Content: []gui.View{
+					gui.Skeleton(gui.SkeletonCfg{
+						ID:      "sk-card-avatar",
+						Variant: gui.SkeletonCircle,
+						Width:   48,
+						Height:  48,
+					}),
+					gui.Column(gui.ContainerCfg{
+						Sizing:     gui.FillFit,
+						Spacing:    gui.SomeF(6),
+						Padding:    gui.NoPadding,
+						SizeBorder: gui.NoBorder,
+						Content: []gui.View{
+							gui.Skeleton(gui.SkeletonCfg{ID: "sk-card-l1", Sizing: gui.FillFixed, Height: 14}),
+							gui.Skeleton(gui.SkeletonCfg{ID: "sk-card-l2", Sizing: gui.FixedFixed, Width: 200, Height: 14}),
+							gui.Skeleton(gui.SkeletonCfg{ID: "sk-card-l3", Sizing: gui.FixedFixed, Width: 140, Height: 14}),
+						},
+					}),
+				},
+			}),
+
+			line(),
+			sectionLabel(t, "Custom Colors"),
+			gui.Skeleton(gui.SkeletonCfg{
+				ID:             "sk-custom",
+				Sizing:         gui.FillFixed,
+				Height:         24,
+				Color:          gui.RGB(60, 60, 80),
+				ColorHighlight: gui.RGB(100, 100, 140),
+			}),
+		},
+	})
+}
+
 func demoToast(_ *gui.Window) gui.View {
 	t := gui.CurrentTheme()
 	return gui.Row(gui.ContainerCfg{

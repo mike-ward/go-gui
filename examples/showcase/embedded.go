@@ -116,6 +116,7 @@ var relatedExampleMap = map[string][]string{
 	"toast":               {"examples/showcase/demo_feedback.go"},
 	"native_notification": {"examples/showcase/demo_overlays.go", "examples/dialogs/main.go"},
 	"badge":               {"examples/showcase/demo_feedback.go"},
+	"skeleton":            {"examples/showcase/demo_feedback.go"},
 	"breadcrumb":          {"examples/showcase/demo_navigation.go"},
 	"menus":               {"examples/showcase/demo_navigation.go", "examples/menu_demo/main.go", "examples/context_menu/main.go"},
 	"dialog":              {"examples/showcase/demo_overlays.go", "examples/dialogs/main.go"},

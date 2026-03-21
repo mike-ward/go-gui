@@ -144,6 +144,7 @@ var componentDemos = map[string]func(*gui.Window) gui.View{
 	"pulsar":              demoPulsar,
 	"toast":               demoToast,
 	"badge":               demoBadge,
+	"skeleton":            demoSkeleton,
 	"native_notification": demoNotification,
 	"breadcrumb":          demoBreadcrumb,
 	"menus":               demoMenus,
