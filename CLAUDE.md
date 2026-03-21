@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 go test ./...          # run all tests (headless, ~0.25s)
 go test ./gui/... -run TestFoo  # run single test
 go vet ./...           # static analysis
-golangci-lint run      # full lint (govet, staticcheck, errcheck, gosimple, unused, gofmt, goimports, revive)
+golangci-lint run ./gui/...  # full lint (govet, staticcheck, errcheck, gosimple, unused, gofmt, goimports, revive)
 go build ./...         # build all packages
 go run ./examples/get_started/  # run the example app (requires SDL2)
 ```
