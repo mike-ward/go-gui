@@ -1117,12 +1117,12 @@ func parseImageSrc(raw string) (string, float32, float32) {
 }
 
 func parseDims(s string) (float32, float32, bool) {
-	xIdx := strings.IndexByte(s, 'x')
-	if xIdx < 0 {
+	before, after, found := strings.Cut(s, "x")
+	if !found {
 		return 0, 0, false
 	}
-	w := parseFloat32(s[:xIdx])
-	h := parseFloat32(s[xIdx+1:])
+	w := parseFloat32(before)
+	h := parseFloat32(after)
 	return w, h, w > 0 || h > 0
 }
 

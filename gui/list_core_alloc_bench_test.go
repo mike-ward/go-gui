@@ -7,7 +7,7 @@ import (
 
 func benchmarkListCoreItems(n int) []ListCoreItem {
 	items := make([]ListCoreItem, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		s := "Item " + strconv.Itoa(i)
 		items[i] = ListCoreItem{ID: s, Label: s}
 	}
@@ -16,7 +16,7 @@ func benchmarkListCoreItems(n int) []ListCoreItem {
 
 func benchmarkOptions(n int) []string {
 	out := make([]string, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		out[i] = "Option " + strconv.Itoa(i)
 	}
 	return out
@@ -78,7 +78,7 @@ func BenchmarkComboboxGenerateLayout(b *testing.B) {
 
 func BenchmarkCommandPaletteGenerateLayout(b *testing.B) {
 	items := make([]CommandPaletteItem, 500)
-	for i := 0; i < len(items); i++ {
+	for i := range len(items) {
 		s := strconv.Itoa(i)
 		items[i] = CommandPaletteItem{
 			ID:     "cmd-" + s,
@@ -110,12 +110,12 @@ func BenchmarkCommandPaletteGenerateLayout(b *testing.B) {
 
 func BenchmarkListBoxGenerateLayout(b *testing.B) {
 	data := make([]ListBoxOption, 500)
-	for i := 0; i < len(data); i++ {
+	for i := range len(data) {
 		s := strconv.Itoa(i)
 		data[i] = NewListBoxOption("id-"+s, "Name "+s, "")
 	}
 	selected := make([]string, 0, 100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		selected = append(selected, "id-"+strconv.Itoa(i))
 	}
 

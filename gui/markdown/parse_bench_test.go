@@ -18,7 +18,7 @@ func BenchmarkParseLarge(b *testing.B) {
 	var sb strings.Builder
 	sb.Grow(128 * 1024)
 	sb.WriteString("# Large Document\n\n")
-	for i := 0; i < 800; i++ {
+	for range 800 {
 		sb.WriteString("Paragraph ")
 		sb.WriteString("with [link](https://example.com), ")
 		sb.WriteString("`code`, and --- typography ... updates.\n\n")
@@ -39,7 +39,7 @@ func BenchmarkParseAbbrFootnotes(b *testing.B) {
 	sb.WriteString("*[CPU]: Central Processing Unit\n")
 	sb.WriteString("[^1]: First footnote line.\n")
 	sb.WriteString("    Continuation line.\n\n")
-	for i := 0; i < 1200; i++ {
+	for range 1200 {
 		sb.WriteString("HTTP on CPU[^1] is common.\n")
 	}
 	source := sb.String()

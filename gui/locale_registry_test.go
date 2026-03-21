@@ -1,6 +1,9 @@
 package gui
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestLocaleRegistryInit(t *testing.T) {
 	names := LocaleRegisteredNames()
@@ -9,14 +12,7 @@ func TestLocaleRegistryInit(t *testing.T) {
 		"he-IL", "ja-JP", "ko-KR", "pt-BR", "zh-CN",
 	}
 	for _, id := range want {
-		found := false
-		for _, n := range names {
-			if n == id {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(names, id) {
 			t.Fatalf("missing registered locale: %s (have %v)",
 				id, names)
 		}

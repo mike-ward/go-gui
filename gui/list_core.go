@@ -432,17 +432,15 @@ func listBoxNextSelectedIDs(selectedIDs []string, datID string, isMultiple bool)
 	if !isMultiple {
 		return []string{datID}
 	}
-	for _, id := range selectedIDs {
-		if id == datID {
-			// Remove it.
-			next := make([]string, 0, len(selectedIDs)-1)
-			for _, id2 := range selectedIDs {
-				if id2 != datID {
-					next = append(next, id2)
-				}
+	if slices.Contains(selectedIDs, datID) {
+		// Remove it.
+		next := make([]string, 0, len(selectedIDs)-1)
+		for _, id2 := range selectedIDs {
+			if id2 != datID {
+				next = append(next, id2)
 			}
-			return next
 		}
+		return next
 	}
 	// Add it.
 	next := make([]string, 0, len(selectedIDs)+1)

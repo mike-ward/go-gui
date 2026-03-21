@@ -2,8 +2,6 @@ package gui
 
 import "testing"
 
-func boolPtr(v bool) *bool { return &v }
-
 // --- boolDefault ---
 
 func TestBoolDefaultNilReturnsDefault(t *testing.T) {
@@ -16,10 +14,11 @@ func TestBoolDefaultNilReturnsDefault(t *testing.T) {
 }
 
 func TestBoolDefaultNonNilReturnsValue(t *testing.T) {
-	if got := boolDefault(boolPtr(false), true); got {
+	if got := boolDefault(new(bool), true); got {
 		t.Error("non-nil false should return false")
 	}
-	if got := boolDefault(boolPtr(true), false); !got {
+	v := true
+	if got := boolDefault(&v, false); !got {
 		t.Error("non-nil true should return true")
 	}
 }

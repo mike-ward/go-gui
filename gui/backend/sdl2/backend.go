@@ -191,7 +191,7 @@ func (b *Backend) Run(w *gui.Window) {
 	if runtime.GOOS == "darwin" {
 		resizeEvent := &gui.Event{Type: gui.EventResized}
 		watchHandle = sdl.AddEventWatchFunc(
-			func(ev sdl.Event, _ interface{}) bool {
+			func(ev sdl.Event, _ any) bool {
 				we, ok := ev.(*sdl.WindowEvent)
 				if !ok || we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
 					return true
@@ -297,7 +297,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 	var watchHandle sdl.EventWatchHandle
 	if runtime.GOOS == "darwin" {
 		watchHandle = sdl.AddEventWatchFunc(
-			func(ev sdl.Event, _ interface{}) bool {
+			func(ev sdl.Event, _ any) bool {
 				we, ok := ev.(*sdl.WindowEvent)
 				if !ok ||
 					we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {

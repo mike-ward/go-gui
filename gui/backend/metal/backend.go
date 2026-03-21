@@ -95,7 +95,7 @@ func (b *Backend) Run(w *gui.Window) {
 	// loop, allowing re-layout and re-render at the new size.
 	resizeEvent := &gui.Event{Type: gui.EventResized}
 	watchHandle := sdl.AddEventWatchFunc(
-		func(ev sdl.Event, _ interface{}) bool {
+		func(ev sdl.Event, _ any) bool {
 			we, ok := ev.(*sdl.WindowEvent)
 			if !ok ||
 				we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
@@ -185,7 +185,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 	// Event watcher for live resize on macOS.
 	resizeEvent := &gui.Event{Type: gui.EventResized}
 	watchHandle := sdl.AddEventWatchFunc(
-		func(ev sdl.Event, _ interface{}) bool {
+		func(ev sdl.Event, _ any) bool {
 			we, ok := ev.(*sdl.WindowEvent)
 			if !ok ||
 				we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {

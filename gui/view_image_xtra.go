@@ -3,6 +3,7 @@ package gui
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -15,10 +16,8 @@ var ValidImageExtensions = []string{
 // image extension.
 func ValidateImageExtension(fileName string) error {
 	ext := strings.ToLower(filepath.Ext(fileName))
-	for _, valid := range ValidImageExtensions {
-		if ext == valid {
-			return nil
-		}
+	if slices.Contains(ValidImageExtensions, ext) {
+		return nil
 	}
 	return fmt.Errorf("unsupported image format: %s", ext)
 }

@@ -794,18 +794,18 @@ func parseFontWeight(fw string) int {
 // cleanFontFamily extracts the first font name from a CSS
 // font-family list (e.g. "Courier New, monospace" → "Courier New").
 func cleanFontFamily(ff string) string {
-	if i := strings.IndexByte(ff, ','); i >= 0 {
-		return strings.TrimSpace(ff[:i])
+	if before, _, found := strings.Cut(ff, ","); found {
+		return strings.TrimSpace(before)
 	}
 	return ff
 }
 
 func extractPlainText(body string) string {
-	lt := strings.IndexByte(body, '<')
-	if lt < 0 {
+	before, _, found := strings.Cut(body, "<")
+	if !found {
 		return html.UnescapeString(strings.TrimSpace(body))
 	}
-	return html.UnescapeString(strings.TrimSpace(body[:lt]))
+	return html.UnescapeString(strings.TrimSpace(before))
 }
 
 // --- Defs parsing ---

@@ -14,7 +14,7 @@ func benchmarkArrangeLayout() Layout {
 		},
 	}
 	root.Children = make([]Layout, 0, 120)
-	for i := 0; i < 120; i++ {
+	for i := range 120 {
 		ch := Layout{
 			Shape: &Shape{
 				ShapeType: ShapeRectangle,
@@ -71,7 +71,7 @@ func benchmarkWrapLayout() Layout {
 		},
 		Children: make([]Layout, 0, 200),
 	}
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		root.Children = append(root.Children, Layout{
 			Shape: &Shape{
 				ShapeType: ShapeRectangle,

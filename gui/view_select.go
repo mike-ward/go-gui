@@ -1,6 +1,9 @@
 package gui
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 const selectDropdownMaxH float32 = 200
 
@@ -207,11 +210,8 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 	}
 
 	checkColor := ColorTransparent
-	for _, s := range cfg.Selected {
-		if s == option {
-			checkColor = cfg.TextStyle.Color
-			break
-		}
+	if slices.Contains(cfg.Selected, option) {
+		checkColor = cfg.TextStyle.Color
 	}
 
 	return Row(ContainerCfg{

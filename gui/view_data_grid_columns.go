@@ -366,9 +366,7 @@ func dataGridSetColumnWidth(gridID string, col GridColumnCfg, width float32, w *
 	var widths map[string]float32
 	if cached, ok := dgCW.Get(gridID); ok {
 		widths = make(map[string]float32, len(cached.Widths))
-		for k, v := range cached.Widths {
-			widths[k] = v
-		}
+		maps.Copy(widths, cached.Widths)
 	} else {
 		widths = map[string]float32{}
 	}

@@ -18,7 +18,7 @@ func BenchmarkBoundedStackPushBelowCapacity(b *testing.B) {
 
 func BenchmarkBoundedStackPushOverflow(b *testing.B) {
 	s := NewBoundedStack[int](1024)
-	for i := 0; i < 1024; i++ {
+	for i := range 1024 {
 		s.Push(i)
 	}
 	b.ReportAllocs()

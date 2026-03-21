@@ -20,7 +20,7 @@ func BenchmarkBoundedMapSetUniqueToCapacity(b *testing.B) {
 func BenchmarkBoundedMapSetWithEvictions(b *testing.B) {
 	const capSize = 1024
 	m := NewBoundedMap[int, int](capSize)
-	for i := 0; i < capSize; i++ {
+	for i := range capSize {
 		m.Set(i, i)
 	}
 	b.ReportAllocs()
@@ -47,7 +47,7 @@ func BenchmarkBoundedMapDeleteInsertChurn(b *testing.B) {
 
 func BenchmarkBoundedMapKeysUnderChurn(b *testing.B) {
 	m := NewBoundedMap[int, int](128)
-	for i := 0; i < 2000; i++ {
+	for i := range 2000 {
 		m.Set(i, i)
 		if i%2 == 0 {
 			m.Delete(i)
@@ -62,7 +62,7 @@ func BenchmarkBoundedMapKeysUnderChurn(b *testing.B) {
 
 func BenchmarkBoundedMapRangeKeysUnderChurn(b *testing.B) {
 	m := NewBoundedMap[int, int](128)
-	for i := 0; i < 2000; i++ {
+	for i := range 2000 {
 		m.Set(i, i)
 		if i%2 == 0 {
 			m.Delete(i)

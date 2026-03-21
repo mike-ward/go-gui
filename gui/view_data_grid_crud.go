@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -486,9 +487,7 @@ func dataGridCrudApplyCellEdit(gridID string, crudEnabled bool, onCellEdit func(
 				continue
 			}
 			cells := make(map[string]string, len(row.Cells))
-			for k, v := range row.Cells {
-				cells[k] = v
-			}
+			maps.Copy(cells, row.Cells)
 			cells[edit.ColID] = edit.Value
 			state.WorkingRows[idx] = GridRow{
 				ID:    row.ID,
@@ -755,9 +754,7 @@ func cloneRows(rows []GridRow) []GridRow {
 	out := make([]GridRow, len(rows))
 	for i, row := range rows {
 		cells := make(map[string]string, len(row.Cells))
-		for k, v := range row.Cells {
-			cells[k] = v
-		}
+		maps.Copy(cells, row.Cells)
 		out[i] = GridRow{ID: row.ID, Cells: cells}
 	}
 	return out
