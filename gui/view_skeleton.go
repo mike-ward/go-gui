@@ -7,7 +7,7 @@ type SkeletonVariant uint8
 
 // SkeletonVariant constants.
 const (
-	SkeletonRect   SkeletonVariant = iota
+	SkeletonRect SkeletonVariant = iota
 	SkeletonCircle
 )
 
