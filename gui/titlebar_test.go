@@ -2,7 +2,7 @@ package gui
 
 import "testing"
 
-func TestTitlebarDarkNilPlatform(t *testing.T) {
+func TestTitlebarDarkNilPlatform(_ *testing.T) {
 	w := NewWindow(WindowCfg{})
 	defer w.Close()
 	// Should not panic with nil nativePlatform.

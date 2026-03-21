@@ -64,9 +64,9 @@ func TestHeaderIndicatorColumnNotSorted(t *testing.T) {
 
 func TestShowHeaderControls(t *testing.T) {
 	tests := []struct {
-		name                                          string
+		name                              string
 		colID, hovered, resizing, focused string
-		want                                          bool
+		want                              bool
 	}{
 		{"hovered", "c1", "c1", "", "", true},
 		{"resizing", "c1", "", "c1", "", true},

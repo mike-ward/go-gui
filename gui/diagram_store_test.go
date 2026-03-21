@@ -42,7 +42,7 @@ func TestRemoveDiagramPNGDeletesFile(t *testing.T) {
 	}
 }
 
-func TestRemoveDiagramPNGNonexistent(t *testing.T) {
+func TestRemoveDiagramPNGNonexistent(_ *testing.T) {
 	// Should not panic on missing file.
 	removeDiagramPNG("/tmp/nonexistent_diagram_test_12345.png")
 }

@@ -438,12 +438,12 @@ func TestHandleRowNavigationKeysArrowDown(t *testing.T) {
 			ActiveRowID:    "a",
 			SelectedRowIDs: map[string]bool{"a": true},
 		},
-		multiSelect:  true,
-		rangeSelect:  true,
-		pageRows:     10,
-		pageIndices:  []int{0, 1, 2},
-		colCount:     1,
-		frozenTopIDs: map[string]bool{},
+		multiSelect:   true,
+		rangeSelect:   true,
+		pageRows:      10,
+		pageIndices:   []int{0, 1, 2},
+		colCount:      1,
+		frozenTopIDs:  map[string]bool{},
 		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
 		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
 			selected = sel
@@ -472,12 +472,12 @@ func TestHandleRowNavigationKeysArrowUp(t *testing.T) {
 			ActiveRowID:    "b",
 			SelectedRowIDs: map[string]bool{"b": true},
 		},
-		multiSelect:  true,
-		rangeSelect:  true,
-		pageRows:     10,
-		pageIndices:  []int{0, 1, 2},
-		colCount:     1,
-		frozenTopIDs: map[string]bool{},
+		multiSelect:   true,
+		rangeSelect:   true,
+		pageRows:      10,
+		pageIndices:   []int{0, 1, 2},
+		colCount:      1,
+		frozenTopIDs:  map[string]bool{},
 		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
 		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
 			selected = sel
@@ -496,17 +496,17 @@ func TestHandleRowNavigationKeysHome(t *testing.T) {
 	rows := []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
 	var selected GridSelection
 	kc := dataGridKeydownContext{
-		gridID:  "g1",
-		rows:    rows,
+		gridID: "g1",
+		rows:   rows,
 		selection: GridSelection{
 			ActiveRowID:    "c",
 			SelectedRowIDs: map[string]bool{"c": true},
 		},
-		multiSelect:  true,
-		rangeSelect:  true,
-		pageRows:     10,
-		pageIndices:  []int{0, 1, 2},
-		frozenTopIDs: map[string]bool{},
+		multiSelect:   true,
+		rangeSelect:   true,
+		pageRows:      10,
+		pageIndices:   []int{0, 1, 2},
+		frozenTopIDs:  map[string]bool{},
 		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
 		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
 			selected = sel
@@ -525,17 +525,17 @@ func TestHandleRowNavigationKeysEnd(t *testing.T) {
 	rows := []GridRow{{ID: "a"}, {ID: "b"}, {ID: "c"}}
 	var selected GridSelection
 	kc := dataGridKeydownContext{
-		gridID:  "g1",
-		rows:    rows,
+		gridID: "g1",
+		rows:   rows,
 		selection: GridSelection{
 			ActiveRowID:    "a",
 			SelectedRowIDs: map[string]bool{"a": true},
 		},
-		multiSelect:  true,
-		rangeSelect:  true,
-		pageRows:     10,
-		pageIndices:  []int{0, 1, 2},
-		frozenTopIDs: map[string]bool{},
+		multiSelect:   true,
+		rangeSelect:   true,
+		pageRows:      10,
+		pageIndices:   []int{0, 1, 2},
+		frozenTopIDs:  map[string]bool{},
 		dataToDisplay: map[int]int{0: 0, 1: 1, 2: 2},
 		onSelectionChange: func(sel GridSelection, _ *Event, _ *Window) {
 			selected = sel
@@ -627,7 +627,7 @@ func TestOnKeydownSelectAll(t *testing.T) {
 
 // --- dataGridScrollRowIntoViewEx ---
 
-func TestScrollRowIntoViewExZeroViewport(t *testing.T) {
+func TestScrollRowIntoViewExZeroViewport(_ *testing.T) {
 	w := NewWindow(WindowCfg{})
 	defer w.Close()
 	// Should not panic.
