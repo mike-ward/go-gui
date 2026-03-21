@@ -10,6 +10,7 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend/filedialog"
+	"github.com/mike-ward/go-gui/gui/backend/nativemenu"
 	"github.com/mike-ward/go-gui/gui/backend/printdialog"
 	"github.com/mike-ward/go-gui/gui/backend/spellcheck"
 	"github.com/veandco/go-sdl2/sdl"
@@ -127,4 +128,30 @@ func (n *nativePlatform) SpellSuggest(text string, startByte, lenBytes int) []st
 
 func (n *nativePlatform) SpellLearn(word string) {
 	spellcheck.Learn(word)
+}
+
+func (n *nativePlatform) SetNativeMenubar(
+	cfg gui.NativeMenubarCfg, actionCb func(string),
+) {
+	nativemenu.SetMenubar(cfg, actionCb)
+}
+
+func (n *nativePlatform) ClearNativeMenubar() {
+	nativemenu.ClearMenubar()
+}
+
+func (n *nativePlatform) CreateSystemTray(
+	cfg gui.SystemTrayCfg, actionCb func(string),
+) (int, error) {
+	return nativemenu.CreateSystemTray(cfg, actionCb)
+}
+
+func (n *nativePlatform) UpdateSystemTray(
+	id int, cfg gui.SystemTrayCfg,
+) {
+	nativemenu.UpdateSystemTray(id, cfg)
+}
+
+func (n *nativePlatform) RemoveSystemTray(id int) {
+	nativemenu.RemoveSystemTray(id)
 }

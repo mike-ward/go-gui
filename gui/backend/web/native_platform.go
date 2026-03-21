@@ -101,6 +101,17 @@ func (n *nativePlatform) SpellCheck(_ string) []gui.SpellRange     { return nil 
 func (n *nativePlatform) SpellSuggest(_ string, _, _ int) []string { return nil }
 func (n *nativePlatform) SpellLearn(_ string)                      {}
 
+// Native menubar — no-op on web.
+func (n *nativePlatform) SetNativeMenubar(_ gui.NativeMenubarCfg, _ func(string)) {}
+func (n *nativePlatform) ClearNativeMenubar()                                     {}
+
+// System tray — no-op on web.
+func (n *nativePlatform) CreateSystemTray(_ gui.SystemTrayCfg, _ func(string)) (int, error) {
+	return 0, nil
+}
+func (n *nativePlatform) UpdateSystemTray(_ int, _ gui.SystemTrayCfg) {}
+func (n *nativePlatform) RemoveSystemTray(_ int)                     {}
+
 // hasPrefixFold reports whether s begins with prefix,
 // ignoring ASCII case.
 func hasPrefixFold(s, prefix string) bool {

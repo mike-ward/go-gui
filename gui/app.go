@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"errors"
 	"log"
 	"sync"
 )
@@ -13,6 +14,9 @@ const (
 	ExitOnLastClose ExitMode = iota
 	// ExitOnMainClose exits when the main (first) window is closed.
 	ExitOnMainClose
+	// ExitOnTrayRemoved keeps the app alive while a system tray
+	// icon exists, even if all windows are closed.
+	ExitOnTrayRemoved
 )
 
 // App manages multiple windows in a single application.
@@ -23,6 +27,7 @@ type App struct {
 	mainID   uint32
 	ExitMode ExitMode
 	pending  chan WindowCfg
+	trays    map[int]*SystemTrayHandle
 }
 
 // NewApp creates an App with an empty window registry.
@@ -75,6 +80,8 @@ func (a *App) Unregister(id uint32) bool {
 	switch a.ExitMode {
 	case ExitOnMainClose:
 		return id == a.mainID
+	case ExitOnTrayRemoved:
+		return len(a.windows) == 0 && len(a.trays) == 0
 	default:
 		return len(a.windows) == 0
 	}
@@ -127,4 +134,119 @@ func (a *App) Broadcast(fn func(*Window)) {
 			fn(w)
 		}
 	}
+}
+
+// SetNativeMenubar installs a native OS menubar. Resolves
+// CommandID fields from the main window's command registry
+// and routes actions through QueueCommand.
+func (a *App) SetNativeMenubar(cfg NativeMenubarCfg) {
+	a.mu.Lock()
+	mainW := a.windows[a.mainID]
+	a.mu.Unlock()
+	if mainW == nil {
+		return
+	}
+	np := mainW.NativePlatformBackend()
+	if np == nil {
+		return
+	}
+	actionCb := func(id string) {
+		mainW.QueueCommand(func(w *Window) {
+			if cmd, ok := w.CommandByID(id); ok {
+				cmd.Execute(nil, w)
+			} else if cfg.OnAction != nil {
+				cfg.OnAction(id)
+			}
+		})
+	}
+	np.SetNativeMenubar(cfg, actionCb)
+}
+
+// ClearNativeMenubar removes the native OS menubar.
+func (a *App) ClearNativeMenubar() {
+	a.mu.Lock()
+	mainW := a.windows[a.mainID]
+	a.mu.Unlock()
+	if mainW == nil {
+		return
+	}
+	np := mainW.NativePlatformBackend()
+	if np == nil {
+		return
+	}
+	np.ClearNativeMenubar()
+}
+
+// SetSystemTray creates a system tray icon with menu.
+func (a *App) SetSystemTray(
+	cfg SystemTrayCfg,
+) (*SystemTrayHandle, error) {
+	a.mu.Lock()
+	mainW := a.windows[a.mainID]
+	a.mu.Unlock()
+	if mainW == nil {
+		return nil, errors.New("gui: no main window")
+	}
+	np := mainW.NativePlatformBackend()
+	if np == nil {
+		return nil, errors.New("gui: no native platform")
+	}
+	actionCb := func(id string) {
+		if cfg.OnAction != nil {
+			mainW.QueueCommand(func(_ *Window) {
+				cfg.OnAction(id)
+			})
+		}
+	}
+	trayID, err := np.CreateSystemTray(cfg, actionCb)
+	if err != nil {
+		return nil, err
+	}
+	h := &SystemTrayHandle{id: trayID}
+	a.mu.Lock()
+	if a.trays == nil {
+		a.trays = make(map[int]*SystemTrayHandle)
+	}
+	a.trays[trayID] = h
+	a.mu.Unlock()
+	return h, nil
+}
+
+// UpdateSystemTray updates an existing system tray entry.
+func (a *App) UpdateSystemTray(
+	h *SystemTrayHandle, cfg SystemTrayCfg,
+) {
+	if h == nil {
+		return
+	}
+	a.mu.Lock()
+	mainW := a.windows[a.mainID]
+	a.mu.Unlock()
+	if mainW == nil {
+		return
+	}
+	np := mainW.NativePlatformBackend()
+	if np == nil {
+		return
+	}
+	np.UpdateSystemTray(h.id, cfg)
+}
+
+// RemoveSystemTray removes a system tray icon.
+func (a *App) RemoveSystemTray(h *SystemTrayHandle) {
+	if h == nil {
+		return
+	}
+	a.mu.Lock()
+	mainW := a.windows[a.mainID]
+	delete(a.trays, h.id)
+	a.mu.Unlock()
+	if mainW == nil {
+		return
+	}
+	np := mainW.NativePlatformBackend()
+	if np == nil {
+		return
+	}
+	np.RemoveSystemTray(h.id)
 }

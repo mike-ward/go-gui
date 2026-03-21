@@ -80,3 +80,14 @@ func (n *nativePlatform) SpellSuggest(text string, s, l int) []string {
 	return spellcheck.Suggest(text, s, l)
 }
 func (n *nativePlatform) SpellLearn(word string) { spellcheck.Learn(word) }
+
+// Native menubar — no-op on Android.
+func (n *nativePlatform) SetNativeMenubar(_ gui.NativeMenubarCfg, _ func(string)) {}
+func (n *nativePlatform) ClearNativeMenubar()                                     {}
+
+// System tray — no-op on Android.
+func (n *nativePlatform) CreateSystemTray(_ gui.SystemTrayCfg, _ func(string)) (int, error) {
+	return 0, nil
+}
+func (n *nativePlatform) UpdateSystemTray(_ int, _ gui.SystemTrayCfg) {}
+func (n *nativePlatform) RemoveSystemTray(_ int)                     {}

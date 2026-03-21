@@ -42,6 +42,15 @@ type NativePlatform interface {
 	SpellCheck(text string) []SpellRange
 	SpellSuggest(text string, startByte, lenBytes int) []string
 	SpellLearn(word string)
+
+	// Native menubar.
+	SetNativeMenubar(cfg NativeMenubarCfg, actionCb func(string))
+	ClearNativeMenubar()
+
+	// System tray.
+	CreateSystemTray(cfg SystemTrayCfg, actionCb func(string)) (int, error)
+	UpdateSystemTray(id int, cfg SystemTrayCfg)
+	RemoveSystemTray(id int)
 }
 
 // SpellRange represents a misspelled byte range in text.
