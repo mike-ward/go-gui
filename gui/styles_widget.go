@@ -439,7 +439,6 @@ type ColorPickerStyle struct {
 	Color            Color
 	ColorBorder      Color
 	ColorBorderFocus Color
-	Padding          Padding
 	SizeBorder       float32
 	Radius           float32
 	SVSize           float32
@@ -849,7 +848,6 @@ var (
 		Color:            colorInteriorDark,
 		ColorBorder:      colorBorderDark,
 		ColorBorderFocus: colorSelectDark,
-		Padding:          PaddingSmall,
 		SizeBorder:       SizeBorderDef,
 		Radius:           RadiusMedium,
 		SVSize:           200,

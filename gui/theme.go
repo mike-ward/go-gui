@@ -627,7 +627,6 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			Color:            cfg.ColorInterior,
 			ColorBorder:      cfg.ColorBorder,
 			ColorBorderFocus: borderFocus,
-			Padding:          cfg.PaddingSmall,
 			SizeBorder:       cfg.SizeBorder,
 			Radius:           cfg.RadiusMedium,
 			SVSize:           200,

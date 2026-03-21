@@ -89,7 +89,6 @@ func (cv *colorPickerView) GenerateLayout(w *Window) Layout {
 		ColorBorder: style.ColorBorder,
 		SizeBorder:  Some(style.SizeBorder),
 		Radius:      Some(style.Radius),
-		Padding:     Some(style.Padding),
 		Spacing:     Some(SpacingSmall),
 		Sizing:      cfg.Sizing,
 		Width:       cfg.Width,
