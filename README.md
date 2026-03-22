@@ -128,6 +128,8 @@ vcpkg install sdl2:x64-windows freetype:x64-windows \
 
 Set `CGO_CFLAGS` and `CGO_LDFLAGS` to your vcpkg include/lib paths before building.
 
+![Digital Rain Screenshot](assets/digital-rain.png)
+
 ## Installation
 
     go get github.com/mike-ward/go-gui
