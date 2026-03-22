@@ -134,3 +134,16 @@ func TestPulsarWidthCustom(t *testing.T) {
 		t.Errorf("MinWidth = %v, want 100", layout.Shape.MinWidth)
 	}
 }
+
+func TestPulsarRegistersLayoutAnimation(t *testing.T) {
+	w := &Window{}
+	Pulsar(PulsarCfg{}, w)
+	if !w.hasAnimationLocked(pulsarAnimationID) {
+		t.Error("pulsar layout animation not registered")
+	}
+	a := w.animations[pulsarAnimationID]
+	if a.RefreshKind() != AnimationRefreshLayout {
+		t.Errorf("RefreshKind = %v, want AnimationRefreshLayout",
+			a.RefreshKind())
+	}
+}

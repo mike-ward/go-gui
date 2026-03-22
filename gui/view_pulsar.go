@@ -1,5 +1,7 @@
 package gui
 
+const pulsarAnimationID = "___pulsar_animation___"
+
 // PulsarCfg configures a blinking text indicator.
 type PulsarCfg struct {
 	ID        string
@@ -32,8 +34,26 @@ func Pulsar(cfg PulsarCfg, w *Window) View {
 		ts.Size = cfg.Size.Get(0)
 	}
 
+	// Pulsar toggles text in the view function, so it needs a
+	// layout refresh — not the render-only refresh that
+	// BlinkCursorAnimation provides. Use a dedicated Animate
+	// that piggybacks on the same inputCursorOn state but
+	// requests AnimationRefreshLayout.
 	if !w.hasAnimationLocked(blinkCursorAnimationID) {
 		w.animationAdd(NewBlinkCursorAnimation())
+	}
+	if !w.hasAnimationLocked(pulsarAnimationID) {
+		w.animationAdd(&Animate{
+			AnimID:  pulsarAnimationID,
+			Delay:   blinkCursorAnimationDelay,
+			Repeat:  true,
+			Refresh: AnimationRefreshLayout,
+			Callback: func(a *Animate, _ *Window) {
+				// No-op: the blink cursor animation already
+				// toggles inputCursorOn. This animation exists
+				// solely to promote the refresh to layout.
+			},
+		})
 	}
 
 	txt := cfg.Text2

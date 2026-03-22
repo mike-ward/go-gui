@@ -139,7 +139,11 @@ func demoPulsar(w *gui.Window) gui.View {
 		VAlign:  gui.VAlignMiddle,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{Text: "Loading", TextStyle: gui.CurrentTheme().N3}),
-			gui.Pulsar(gui.PulsarCfg{}, w),
+			gui.Pulsar(gui.PulsarCfg{
+				Text1:     gui.IconSmile,
+				Text2:     gui.IconSmileAlt,
+				TextStyle: gui.CurrentTheme().Icon1,
+			}, w),
 		},
 	})
 }
