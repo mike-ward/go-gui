@@ -50,3 +50,26 @@ func TestContainerNoIDScrollNoScrollbars(t *testing.T) {
 		t.Errorf("expected 1 child, got %d", len(cv.content))
 	}
 }
+
+func TestContainerGenerateLayoutShapeIsolation(t *testing.T) {
+	v := Row(ContainerCfg{
+		Content: []View{Text(TextCfg{Text: "a"})},
+	})
+	w := &Window{}
+
+	l1 := GenerateViewLayout(v, w)
+	l1.Shape.X = 100
+	l1.Shape.Y = 200
+	l1.Shape.Width = 300
+
+	l2 := GenerateViewLayout(v, w)
+	if l2.Shape.X != 0 {
+		t.Errorf("X leaked across frames: got %g, want 0", l2.Shape.X)
+	}
+	if l2.Shape.Y != 0 {
+		t.Errorf("Y leaked across frames: got %g, want 0", l2.Shape.Y)
+	}
+	if l2.Shape.Width != 0 {
+		t.Errorf("Width leaked across frames: got %g, want 0", l2.Shape.Width)
+	}
+}

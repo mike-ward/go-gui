@@ -108,7 +108,15 @@ func applyContainerDefaults(cfg *ContainerCfg) (spacing, sizeBorder, radius floa
 
 // containerView implements View for container-based layouts.
 // Shape is pre-built at factory time so the full ContainerCfg
-// never escapes to heap with the view.
+// (~400 B) never escapes to heap with the view.
+//
+// IMPORTANT: GenerateLayout shallow-copies the shape on every
+// call. The layout pipeline mutates Shape fields in place
+// (X += offset, Width += childWidth, etc.), so returning the
+// same pointer would let mutations accumulate when a view is
+// cached and reused across frames (combobox/command-palette
+// dropdown caches). The copy keeps the template pristine while
+// still avoiding the per-frame ContainerCfg→Shape build cost.
 type containerView struct {
 	shape       *Shape
 	content     []View
@@ -121,7 +129,8 @@ type containerView struct {
 func (cv *containerView) Content() []View { return cv.content }
 
 func (cv *containerView) GenerateLayout(w *Window) Layout {
-	layout := Layout{Shape: cv.shape}
+	s := *cv.shape // shallow copy — see containerView doc
+	layout := Layout{Shape: &s}
 	addGroupBoxTitle(cv.title, cv.titleBG, cv.colorBorder,
 		cv.disabled, w, &layout)
 	return layout
