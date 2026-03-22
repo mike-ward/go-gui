@@ -80,7 +80,7 @@ func (b *Bridge) Init(cb func(action, index int)) {
 	b.export(-1, appPath)
 
 	// Register with AT-SPI2 registry.
-	plug := [2]interface{}{b.busName, dbus.ObjectPath(appPath)}
+	plug := [2]any{b.busName, dbus.ObjectPath(appPath)}
 	regObj := conn.Object(registryBus, registryObj)
 	call := regObj.Call(socketIface+".Embed", 0, plug)
 	if call.Err != nil {
