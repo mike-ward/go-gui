@@ -110,7 +110,7 @@ func (n *nativePlatform) CreateSystemTray(_ gui.SystemTrayCfg, _ func(string)) (
 	return 0, nil
 }
 func (n *nativePlatform) UpdateSystemTray(_ int, _ gui.SystemTrayCfg) {}
-func (n *nativePlatform) RemoveSystemTray(_ int)                     {}
+func (n *nativePlatform) RemoveSystemTray(_ int)                      {}
 
 // hasPrefixFold reports whether s begins with prefix,
 // ignoring ASCII case.
