@@ -56,11 +56,6 @@ func main() {
 				},
 			)
 			w.UpdateView(mainView)
-			w.AnimationAdd(&gui.Animate{
-				AnimID:   "shader_tick",
-				Repeat:   true,
-				Callback: func(_ *gui.Animate, _ *gui.Window) {},
-			})
 		},
 	})
 	backend.RunApp(app, w)

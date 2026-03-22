@@ -30,6 +30,14 @@ func detailPanel(w *gui.Window) gui.View {
 
 	entry := selectedEntry(entries, app.SelectedComponent)
 
+	// Stop shader animation when not viewing the shader demo.
+	// QueueCommand defers to next frame (view functions hold w.mu).
+	if entry.ID != "shader" {
+		w.QueueCommand(func(w *gui.Window) {
+			w.AnimationRemove("shader_tick")
+		})
+	}
+
 	var content gui.View
 	switch {
 	case entry.ID == "":

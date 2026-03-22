@@ -700,6 +700,19 @@ func demoBlur(_ *gui.Window) gui.View {
 }
 
 func demoShader(w *gui.Window) gui.View {
+	// Keep frame loop hot so shader params animate continuously.
+	// QueueCommand defers to next frame to avoid locking w.mu
+	// (view functions run under that lock).
+	w.QueueCommand(func(w *gui.Window) {
+		if !w.HasAnimation("shader_tick") {
+			w.AnimationAdd(&gui.Animate{
+				AnimID:   "shader_tick",
+				Repeat:   true,
+				Callback: func(_ *gui.Animate, _ *gui.Window) {},
+			})
+		}
+	})
+
 	t := gui.CurrentTheme()
 	app := gui.State[ShowcaseApp](w)
 	elapsed := float32(time.Since(app.ShaderStartTime).Milliseconds()) / 1000.0
