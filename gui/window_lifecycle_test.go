@@ -67,12 +67,15 @@ func TestFrameFnCallsUpdate(t *testing.T) {
 		return Text(TextCfg{Text: "x"})
 	}
 	w.refreshLayout = true
-	w.FrameFn()
+	got := w.FrameFn()
 	if !updated {
 		t.Error("FrameFn did not call Update")
 	}
 	if w.refreshLayout {
 		t.Error("refreshLayout should be cleared")
+	}
+	if !got {
+		t.Error("FrameFn should return true when layout refreshed")
 	}
 }
 
@@ -89,9 +92,35 @@ func TestFrameFnNoopWhenNoRefresh(t *testing.T) {
 	}
 	w.refreshLayout = false
 	w.refreshRenderOnly = false
-	w.FrameFn()
+	got := w.FrameFn()
 	if called {
 		t.Error("FrameFn should not call generator when no refresh")
+	}
+	if got {
+		t.Error("FrameFn should return false when no refresh")
+	}
+}
+
+func TestFrameFnReturnsTrueOnRenderOnly(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State:  new(int),
+		Width:  100,
+		Height: 100,
+	})
+	// Build initial layout so UpdateRenderOnly has something.
+	w.viewGenerator = func(_ *Window) View {
+		return Text(TextCfg{Text: "x"})
+	}
+	w.refreshLayout = true
+	w.FrameFn()
+
+	w.refreshRenderOnly = true
+	got := w.FrameFn()
+	if !got {
+		t.Error("FrameFn should return true on render-only refresh")
+	}
+	if w.refreshRenderOnly {
+		t.Error("refreshRenderOnly should be cleared")
 	}
 }
 
@@ -327,6 +356,16 @@ func TestRenderTextNoWrapOmitsWidth(t *testing.T) {
 					r.W)
 			}
 		}
+	}
+}
+
+func TestQueueCommandWakesMain(t *testing.T) {
+	w := &Window{}
+	woken := false
+	w.wakeMainFn = func() { woken = true }
+	w.QueueCommand(func(_ *Window) {})
+	if !woken {
+		t.Error("QueueCommand should call wakeMain")
 	}
 }
 

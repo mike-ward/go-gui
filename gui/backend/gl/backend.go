@@ -260,10 +260,20 @@ func (b *Backend) Run(w *gui.Window) {
 		defer sdl.DelEventWatch(watchHandle)
 	}
 
+	wakeType := sdl.RegisterEvents(1)
+	w.SetWakeMainFn(func() {
+		_, _ = sdl.PushEvent(&sdl.UserEvent{Type: wakeType})
+	})
+
 	running := true
+	rendered := true
 	evt := new(gui.Event)
 	for running {
-		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
+		waitMs := 0
+		if !rendered {
+			waitMs = 100
+		}
+		for ev := sdl.WaitEventTimeout(waitMs); ev != nil; ev = sdl.PollEvent() {
 			mapped, cont := mapEvent(ev, b)
 			*evt = mapped
 			if !cont {
@@ -278,8 +288,10 @@ func (b *Backend) Run(w *gui.Window) {
 			break
 		}
 
-		w.FrameFn()
-		b.renderFrame(w)
+		rendered = w.FrameFn()
+		if rendered {
+			b.renderFrame(w)
+		}
 
 		mc := w.MouseCursorState()
 		if int(mc) < len(b.cursors) && b.cursors[mc] != nil {
@@ -396,7 +408,18 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 		defer sdl.DelEventWatch(watchHandle)
 	}
 
+	wakeType := sdl.RegisterEvents(1)
+	setWakeFn := func(w *gui.Window) {
+		w.SetWakeMainFn(func() {
+			_, _ = sdl.PushEvent(&sdl.UserEvent{Type: wakeType})
+		})
+	}
+	for _, w := range initialWindows {
+		setWakeFn(w)
+	}
+
 	running := true
+	rendered := true
 	evt := new(gui.Event)
 
 	for running {
@@ -414,6 +437,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 				sdlID, _ := b.window.GetID()
 				backends[sdlID] = b
 				app.Register(sdlID, w)
+				setWakeFn(w)
 				if cfg.OnInit != nil {
 					cfg.OnInit(w)
 				}
@@ -422,8 +446,12 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 			}
 		}
 
-		// Poll events.
-		for ev := sdl.PollEvent(); ev != nil; ev = sdl.PollEvent() {
+		// Poll events. When idle, wait up to 100ms.
+		waitMs := 0
+		if !rendered {
+			waitMs = 100
+		}
+		for ev := sdl.WaitEventTimeout(waitMs); ev != nil; ev = sdl.PollEvent() {
 			wid := sdlEventWindowID(ev)
 			mapped, cont := mapEventMulti(ev, backends[wid])
 			*evt = mapped
@@ -480,13 +508,16 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 		}
 
 		// Frame + render each window.
+		rendered = false
 		for wid, b := range backends {
 			w := app.Window(wid)
 			if w == nil {
 				continue
 			}
-			w.FrameFn()
-			b.renderFrame(w)
+			if w.FrameFn() {
+				b.renderFrame(w)
+				rendered = true
+			}
 		}
 
 		// Cursor for focused window.

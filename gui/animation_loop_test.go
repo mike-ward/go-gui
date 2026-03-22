@@ -70,6 +70,54 @@ func TestUpdateBlinkCursor(t *testing.T) {
 	}
 }
 
+func TestAnimationAddResumesIdleTicker(t *testing.T) {
+	w := &Window{
+		animationResumeCh: make(chan struct{}, 1),
+	}
+	tw := NewTweenAnimation("t1", 0, 1, func(float32, *Window) {})
+	w.AnimationAdd(tw)
+
+	select {
+	case <-w.animationResumeCh:
+	default:
+		t.Error("animationAdd should signal resume when map was empty")
+	}
+}
+
+func TestAnimationAddNoResumeWhenNotEmpty(t *testing.T) {
+	w := &Window{
+		animationResumeCh: make(chan struct{}, 1),
+	}
+	tw1 := NewTweenAnimation("t1", 0, 1, func(float32, *Window) {})
+	tw2 := NewTweenAnimation("t2", 0, 1, func(float32, *Window) {})
+	w.AnimationAdd(tw1)
+	// Drain the resume signal from first add.
+	<-w.animationResumeCh
+
+	w.AnimationAdd(tw2)
+	select {
+	case <-w.animationResumeCh:
+		t.Error("should not signal resume when animations already exist")
+	default:
+	}
+}
+
+func TestWakeMainNilSafe(t *testing.T) {
+	w := &Window{}
+	// Should not panic when wakeMainFn is nil.
+	w.wakeMain()
+}
+
+func TestWakeMainCallsFn(t *testing.T) {
+	w := &Window{}
+	called := false
+	w.wakeMainFn = func() { called = true }
+	w.wakeMain()
+	if !called {
+		t.Error("wakeMain should call wakeMainFn")
+	}
+}
+
 func TestAnimateRepeatNoDrift(t *testing.T) {
 	a := &Animate{
 		AnimID:   "drift",

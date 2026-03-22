@@ -134,8 +134,13 @@ type Window struct {
 	// Animation loop lifecycle.
 	animationStop     chan struct{}
 	animationDone     chan struct{}
+	animationResumeCh chan struct{} // buffered(1), resumes ticker
 	animationStopOnce sync.Once
 	cleanupOnce       sync.Once
+
+	// wakeMainFn pushes an SDL user event to wake the main
+	// thread from WaitEventTimeout. Set by backend; nil-safe.
+	wakeMainFn func()
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a
@@ -365,6 +370,12 @@ func (w *Window) MouseUnlock() {
 // SetTextMeasurer sets the text measurement backend.
 func (w *Window) SetTextMeasurer(tm TextMeasurer) {
 	w.textMeasurer = tm
+}
+
+// SetWakeMainFn sets the function called to wake the main event
+// loop from WaitEventTimeout. The backend sets this at init time.
+func (w *Window) SetWakeMainFn(fn func()) {
+	w.wakeMainFn = fn
 }
 
 // TextWidth measures the rendered width of text for the supplied style.

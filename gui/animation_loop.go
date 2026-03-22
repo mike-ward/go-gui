@@ -19,7 +19,20 @@ func (w *Window) animationAdd(a Animation) {
 	if w.animations == nil {
 		w.animations = make(map[string]Animation)
 	}
+	wasEmpty := len(w.animations) == 0
 	w.animations[a.ID()] = a
+	if wasEmpty {
+		w.animationResume()
+	}
+}
+
+// animationResume signals the animation loop to restart its
+// ticker. Safe to call when already running (buffered channel).
+func (w *Window) animationResume() {
+	select {
+	case w.animationResumeCh <- struct{}{}:
+	default:
+	}
 }
 
 // AnimationRemove stops and removes an animation by ID.
@@ -44,23 +57,36 @@ func (w *Window) HasAnimation(id string) bool {
 
 // animationLoop runs in a goroutine, updating all animations each
 // tick and dispatching deferred callbacks via the command queue.
+// The ticker starts paused and resumes when animationAdd signals
+// via animationResumeCh. It pauses again when all animations stop.
 func (w *Window) animationLoop() {
 	if w.animationDone != nil {
 		defer close(w.animationDone)
 	}
-	ticker := time.NewTicker(animationCycle)
-	defer ticker.Stop()
 
 	dt := float32(animationCycle) / float32(time.Second)
 	deferred := make([]queuedCommand, 0, 8)
 	stoppedIDs := make([]string, 0, 4)
 
+	var ticker *time.Ticker
+	var tickCh <-chan time.Time
+
 	for {
 		select {
-		case <-ticker.C:
+		case <-tickCh:
+		case <-w.animationResumeCh:
+			if ticker == nil {
+				ticker = time.NewTicker(animationCycle)
+				tickCh = ticker.C
+			}
+			continue
 		case <-w.animationStop:
+			if ticker != nil {
+				ticker.Stop()
+			}
 			return
 		}
+
 		refreshKind := AnimationRefreshNone
 		deferred = deferred[:0]
 		stoppedIDs = stoppedIDs[:0]
@@ -69,7 +95,8 @@ func (w *Window) animationLoop() {
 		for _, a := range w.animations {
 			updated := a.Update(w, dt, &deferred)
 			if updated {
-				refreshKind = maxAnimationRefreshKind(refreshKind, a.RefreshKind())
+				refreshKind = maxAnimationRefreshKind(
+					refreshKind, a.RefreshKind())
 			}
 			if a.IsStopped() {
 				stoppedIDs = append(stoppedIDs, a.ID())
@@ -78,7 +105,14 @@ func (w *Window) animationLoop() {
 		for _, id := range stoppedIDs {
 			delete(w.animations, id)
 		}
+		idle := len(w.animations) == 0
 		w.mu.Unlock()
+
+		if idle && ticker != nil {
+			ticker.Stop()
+			ticker = nil
+			tickCh = nil
+		}
 
 		switch refreshKind {
 		case AnimationRefreshRenderOnly:
@@ -93,6 +127,17 @@ func (w *Window) animationLoop() {
 			})
 		}
 		w.queueCommandsBatch(deferred)
+		if len(deferred) > 0 {
+			w.wakeMain()
+		}
+	}
+}
+
+// wakeMain calls the backend's wake function to unblock the
+// main event loop from WaitEventTimeout. Nil-safe.
+func (w *Window) wakeMain() {
+	if fn := w.wakeMainFn; fn != nil {
+		fn()
 	}
 }
 

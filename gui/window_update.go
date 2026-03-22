@@ -20,6 +20,7 @@ func (w *Window) QueueCommand(cb func(*Window)) {
 		kind:     queuedCommandWindowFn,
 		windowFn: cb,
 	})
+	w.wakeMain()
 }
 
 // QueueValueCommand queues a value callback for execution on the main thread.
@@ -32,6 +33,7 @@ func (w *Window) QueueValueCommand(cb func(float32, *Window), value float32) {
 		valueFn: cb,
 		value:   value,
 	})
+	w.wakeMain()
 }
 
 // QueueAnimateCommand queues an Animate callback for execution on the main thread.
@@ -44,6 +46,7 @@ func (w *Window) QueueAnimateCommand(cb func(*Animate, *Window), a *Animate) {
 		animateFn: cb,
 		animate:   a,
 	})
+	w.wakeMain()
 }
 
 func (w *Window) queueCommand(cmd queuedCommand) {
@@ -135,15 +138,25 @@ func (w *Window) UpdateView(gen func(*Window) View) {
 
 // FrameFn is called by the backend each frame. It flushes
 // queued commands and rebuilds layout/renderers as needed.
-func (w *Window) FrameFn() {
+// Returns true when renderers were rebuilt and the backend
+// should call renderFrame.
+func (w *Window) FrameFn() bool {
 	w.flushCommands()
 	if w.refreshLayout {
 		w.Update()
-	} else if w.refreshRenderOnly {
+		w.initA11y()
+		w.syncA11y()
+		return true
+	}
+	if w.refreshRenderOnly {
 		w.UpdateRenderOnly()
+		w.initA11y()
+		w.syncA11y()
+		return true
 	}
 	w.initA11y()
 	w.syncA11y()
+	return false
 }
 
 // Update performs a full layout rebuild and re-renders.
