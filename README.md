@@ -211,6 +211,8 @@ building.
 go get github.com/mike-ward/go-gui
 ```
 
+![todo example](assets/todo.png)
+
 ---
 
 ## ⚙️ Configuration
@@ -497,6 +499,8 @@ go run ./examples/calculator/
 
 **Key types:** `Layout` (tree node), `Shape` (renderable), `RenderCmd`
 (draw op), `Window` (top-level + state slot)
+
+![calculator example](assets/calculator.png)
 
 ---
 
