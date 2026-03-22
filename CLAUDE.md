@@ -107,6 +107,8 @@ Backend injects at startup; nil in tests:
 - **No variable shadowing.** Never use `:=` to redeclare a variable that
   already exists in an outer scope. Use `=` to assign to the existing
   variable, or choose a distinct name.
+- **Clean lint and format.** All committed code must pass `golangci-lint run ./...`
+  and `gofmt` with zero issues. Run both before proposing a commit.
 
 # context-mode — MANDATORY routing rules
 
