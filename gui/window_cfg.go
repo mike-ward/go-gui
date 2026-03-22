@@ -23,9 +23,12 @@ type WindowCfg struct {
 	// MaxImagePixels caps decoded image dimensions (width*height).
 	// Zero or negative selects backend defaults.
 	MaxImagePixels int64
-	OnInit         func(*Window)
-	OnEvent        func(*Event, *Window)
-	BgColor        Color
+	// IconPNG is optional PNG-encoded icon data for the window.
+	// The backend sets this as the window icon when supported.
+	IconPNG []byte
+	OnInit  func(*Window)
+	OnEvent func(*Event, *Window)
+	BgColor Color
 	// Timings enables per-frame pipeline timing instrumentation.
 	Timings bool
 }

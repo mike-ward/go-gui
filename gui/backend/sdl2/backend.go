@@ -47,6 +47,7 @@ type Backend struct {
 	maxImagePixels     int64
 	normBuf            []gui.GradientStop // reusable buffer for gradient normalization
 	sampledBuf         []gui.GradientStop // reusable buffer for downsampled stops
+	appIconPNG         []byte             // deferred dock/taskbar icon
 }
 
 // New creates an SDL2 backend and initializes the window.
@@ -85,6 +86,12 @@ func New(w *gui.Window) (*Backend, error) {
 		sdl.Quit()
 		return nil, fmt.Errorf("sdl2: CreateWindow: %w", err)
 	}
+
+	iconPNG := cfg.IconPNG
+	if len(iconPNG) == 0 {
+		iconPNG = gui.DefaultIconPNG
+	}
+	setWindowIcon(win, iconPNG)
 
 	ren, err := sdl.CreateRenderer(win, -1,
 		sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
@@ -138,6 +145,7 @@ func New(w *gui.Window) (*Backend, error) {
 		imagePathCache:    texcache.New[string, string](1024, nil),
 		maxImageBytes:     cfg.MaxImageBytes,
 		maxImagePixels:    cfg.MaxImagePixels,
+		appIconPNG:        iconPNG,
 	}
 
 	// Create system cursors.
@@ -222,6 +230,13 @@ func (b *Backend) Run(w *gui.Window) {
 		}
 		if !running {
 			break
+		}
+
+		// Set dock/taskbar icon once, after the first event poll
+		// so SDL's Cocoa initialization is complete.
+		if len(b.appIconPNG) > 0 {
+			setAppIcon(b.appIconPNG)
+			b.appIconPNG = nil
 		}
 
 		w.FrameFn()
@@ -322,6 +337,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 
 	running := true
 	evt := new(gui.Event)
+	appIconSet := false
 
 	for running {
 		// Drain pending window opens.
@@ -383,6 +399,19 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 		}
 		if !running {
 			break
+		}
+
+		// Set dock/taskbar icon once, after the first event poll
+		// so SDL's Cocoa initialization is complete.
+		if !appIconSet {
+			appIconSet = true
+			for _, b := range backends {
+				if len(b.appIconPNG) > 0 {
+					setAppIcon(b.appIconPNG)
+					b.appIconPNG = nil
+					break
+				}
+			}
 		}
 
 		// Handle close requests.

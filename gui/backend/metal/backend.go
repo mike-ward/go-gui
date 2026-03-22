@@ -129,6 +129,13 @@ func (b *Backend) Run(w *gui.Window) {
 			break
 		}
 
+		// Set dock icon once, after the first event poll so
+		// SDL's Cocoa initialization is complete.
+		if len(b.appIconPNG) > 0 {
+			setAppIcon(b.appIconPNG)
+			b.appIconPNG = nil
+		}
+
 		w.FrameFn()
 		b.renderFrame(w)
 
@@ -210,6 +217,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 
 	running := true
 	evt := new(gui.Event)
+	appIconSet := false
 
 	for running {
 		// Drain pending window opens.
@@ -272,6 +280,18 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 		}
 		if !running {
 			break
+		}
+
+		// Set dock icon once, after the first event poll.
+		if !appIconSet {
+			appIconSet = true
+			for _, ws := range states {
+				if len(ws.appIconPNG) > 0 {
+					setAppIcon(ws.appIconPNG)
+					ws.appIconPNG = nil
+					break
+				}
+			}
 		}
 
 		// Handle close requests.
@@ -354,6 +374,7 @@ type windowState struct {
 	imagePathCache    texcache.Cache[string, string]
 	maxImageBytes     int64
 	maxImagePixels    int64
+	appIconPNG        []byte
 }
 
 func createWindowState(w *gui.Window,
@@ -387,6 +408,12 @@ func createWindowState(w *gui.Window,
 	if err != nil {
 		return nil, fmt.Errorf("CreateWindow: %w", err)
 	}
+
+	iconPNG := cfg.IconPNG
+	if len(iconPNG) == 0 {
+		iconPNG = gui.DefaultIconPNG
+	}
+	setWindowIcon(win, iconPNG)
 
 	cWin := (*C.SDL_Window)(unsafe.Pointer(win))
 	metalView := unsafe.Pointer(
@@ -436,6 +463,7 @@ func createWindowState(w *gui.Window,
 		imagePathCache: texcache.New[string, string](1024, nil),
 		maxImageBytes:  cfg.MaxImageBytes,
 		maxImagePixels: cfg.MaxImagePixels,
+		appIconPNG:     iconPNG,
 	}
 	ws.allowedImageRoots = imgpath.NormalizeRoots(
 		cfg.AllowedImageRoots)
