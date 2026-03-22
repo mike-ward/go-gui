@@ -4,9 +4,10 @@ package markdown
 // goldmark as the parser backend.
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -985,8 +986,8 @@ func buildAbbrMatcher(defs map[string]string) *abbrMatcher {
 		abbrs = append(abbrs, k)
 		firstChars[k[0]] = true
 	}
-	sort.Slice(abbrs, func(i, j int) bool {
-		return len(abbrs[i]) > len(abbrs[j])
+	slices.SortFunc(abbrs, func(a, b string) int {
+		return cmp.Compare(len(b), len(a))
 	})
 	return &abbrMatcher{
 		abbrs:      abbrs,

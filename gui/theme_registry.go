@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"sort"
+	"slices"
 	"sync"
 )
 
@@ -35,6 +35,6 @@ func ThemeRegisteredNames() []string {
 		names = append(names, k)
 	}
 	themeRegistryMu.RUnlock()
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }

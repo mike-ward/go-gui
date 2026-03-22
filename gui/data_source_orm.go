@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 )
 
@@ -232,7 +231,7 @@ func (s *GridOrmDataSource) MutateData(
 		for k := range idSet {
 			ids = append(ids, k)
 		}
-		sort.Strings(ids)
+		slices.Sort(ids)
 		if len(ids) == 0 {
 			return GridMutationResult{}, nil
 		}
@@ -554,7 +553,7 @@ func gridOrmBuildQuickFilter(
 	for k := range columns {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	for _, k := range keys {
 		col := columns[k]
 		if !col.QuickFilter {

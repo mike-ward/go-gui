@@ -1,8 +1,9 @@
 package svg
 
 import (
+	"cmp"
 	"math"
-	"sort"
+	"slices"
 
 	"github.com/mike-ward/go-gui/gui"
 )
@@ -407,8 +408,8 @@ func tessellatePolylines(polylines [][]float32) []float32 {
 		return nil
 	}
 
-	sort.Slice(contours, func(i, j int) bool {
-		return f32Abs(contours[i].area) > f32Abs(contours[j].area)
+	slices.SortFunc(contours, func(a, b contour) int {
+		return cmp.Compare(f32Abs(b.area), f32Abs(a.area))
 	})
 
 	outer := make([]float32, len(contours[0].points))

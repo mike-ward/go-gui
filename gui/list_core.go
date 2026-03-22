@@ -1,8 +1,8 @@
 package gui
 
 import (
+	"cmp"
 	"slices"
-	"sort"
 )
 
 // list_core.go provides pure functions shared by ListBox, Select,
@@ -194,8 +194,8 @@ func listCoreFilter(items []ListCoreItem, query string) []int {
 			scored = append(scored, listCoreScored{index: i, score: s})
 		}
 	}
-	sort.Slice(scored, func(a, b int) bool {
-		return scored[a].score < scored[b].score
+	slices.SortFunc(scored, func(a, b listCoreScored) int {
+		return cmp.Compare(a.score, b.score)
 	})
 	result := make([]int, len(scored))
 	for i, sc := range scored {
@@ -232,8 +232,8 @@ func listCorePrepareInto(
 				})
 			}
 		}
-		sort.Slice(scored, func(a, b int) bool {
-			return scored[a].score < scored[b].score
+		slices.SortFunc(scored, func(a, b listCoreScored) int {
+			return cmp.Compare(a.score, b.score)
 		})
 		for i := range scored {
 			idx := scored[i].index

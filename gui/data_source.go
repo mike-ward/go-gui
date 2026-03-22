@@ -1,12 +1,13 @@
 package gui
 
 import (
+	"cmp"
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"maps"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -426,15 +427,12 @@ func dataGridSourceApplyQuery(
 		if s0.Dir == GridSortDesc {
 			dir = -1
 		}
-		sort.Slice(idxs, func(a, b int) bool {
-			ka, kb := keys[idxs[a]], keys[idxs[b]]
+		slices.SortFunc(idxs, func(a, b int) int {
+			ka, kb := keys[a], keys[b]
 			if ka == kb {
-				return idxs[a] < idxs[b]
+				return cmp.Compare(a, b)
 			}
-			if ka < kb {
-				return dir > 0
-			}
-			return dir < 0
+			return dir * cmp.Compare(ka, kb)
 		})
 	} else {
 		sorts := query.Sorts
@@ -446,20 +444,18 @@ func dataGridSourceApplyQuery(
 			}
 			keyCols[si] = col
 		}
-		sort.Slice(idxs, func(a, b int) bool {
-			ia, ib := idxs[a], idxs[b]
+		slices.SortFunc(idxs, func(a, b int) int {
 			for si, s := range sorts {
-				ka := keyCols[si][ia]
-				kb := keyCols[si][ib]
-				if ka == kb {
-					continue
+				ka := keyCols[si][a]
+				kb := keyCols[si][b]
+				if c := cmp.Compare(ka, kb); c != 0 {
+					if s.Dir != GridSortAsc {
+						return -c
+					}
+					return c
 				}
-				if s.Dir == GridSortAsc {
-					return ka < kb
-				}
-				return ka > kb
 			}
-			return ia < ib
+			return cmp.Compare(a, b)
 		})
 	}
 	result := make([]GridRow, n)
@@ -619,15 +615,15 @@ func GridQuerySignature(query GridQueryState) uint64 {
 	for i := range idxs {
 		idxs[i] = i
 	}
-	sort.Slice(idxs, func(a, b int) bool {
-		fa, fb := filters[idxs[a]], filters[idxs[b]]
-		if fa.ColID != fb.ColID {
-			return fa.ColID < fb.ColID
+	slices.SortFunc(idxs, func(a, b int) int {
+		fa, fb := filters[a], filters[b]
+		if c := cmp.Compare(fa.ColID, fb.ColID); c != 0 {
+			return c
 		}
-		if fa.Op != fb.Op {
-			return fa.Op < fb.Op
+		if c := cmp.Compare(fa.Op, fb.Op); c != 0 {
+			return c
 		}
-		return fa.Value < fb.Value
+		return cmp.Compare(fa.Value, fb.Value)
 	})
 	for _, i := range idxs {
 		h = gridHashFilter(h, filters[i])
@@ -760,7 +756,7 @@ func dataGridSourceApplyUpdate(
 		}
 		pendingIDs = append(pendingIDs, rowID)
 	}
-	sort.Strings(pendingIDs)
+	slices.Sort(pendingIDs)
 	for _, rowID := range pendingIDs {
 		rowEdits := editsByRow[rowID]
 		idx, ok := rowIdx[rowID]

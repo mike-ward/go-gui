@@ -3,7 +3,7 @@ package gui
 import (
 	"fmt"
 	"path/filepath"
-	"sort"
+	"slices"
 	"sync"
 )
 
@@ -50,7 +50,7 @@ func LocaleRegisteredNames() []string {
 		names = append(names, k)
 	}
 	localeRegistryMu.RUnlock()
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 

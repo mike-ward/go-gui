@@ -3,7 +3,6 @@ package gui
 import (
 	"log"
 	"slices"
-	"sort"
 	"strings"
 )
 
@@ -228,7 +227,7 @@ func (fv *formView) GenerateLayout(w *Window) Layout {
 		for fid := range summary.Issues {
 			fieldIDs = append(fieldIDs, fid)
 		}
-		sort.Strings(fieldIDs)
+		slices.Sort(fieldIDs)
 		for _, fid := range fieldIDs {
 			children = append(children, cfg.ErrorSlot(fid, summary.Issues[fid]))
 		}
@@ -474,7 +473,7 @@ func formComputePending(
 			ids = append(ids, fid)
 		}
 	}
-	sort.Strings(ids)
+	slices.Sort(ids)
 	return FormPendingState{
 		FormID:       formID,
 		FieldIDs:     ids,
@@ -572,7 +571,7 @@ func formProcessRequests(
 	for fid := range state.fields {
 		fieldIDs = append(fieldIDs, fid)
 	}
-	sort.Strings(fieldIDs)
+	slices.Sort(fieldIDs)
 	for _, fieldID := range fieldIDs {
 		field := state.fields[fieldID]
 		if field == nil {
