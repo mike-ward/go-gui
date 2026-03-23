@@ -138,6 +138,20 @@ type ShowcaseApp struct {
 
 	ShaderStartTime    time.Time
 	MultiWindowChildID uint32
+
+	GesturePadMarkers  []GestureMarker
+	GesturePadOffsetX  float32
+	GesturePadOffsetY  float32
+	GesturePadScale    float32
+	GesturePadRotation float32
+	GesturePadLabel    string
+	GesturePadVersion  uint64
+}
+
+// GestureMarker records a tap or long-press position.
+type GestureMarker struct {
+	X, Y      float32
+	LongPress bool
 }
 
 func newShowcaseApp() *ShowcaseApp {
@@ -179,7 +193,8 @@ func newShowcaseApp() *ShowcaseApp {
 		DataSourceSelection: gui.GridSelection{
 			SelectedRowIDs: map[string]bool{},
 		},
-		TreeLazyNodes: make(map[string][]gui.TreeNodeCfg),
+		GesturePadScale: 1,
+		TreeLazyNodes:   make(map[string][]gui.TreeNodeCfg),
 		DragListItems: []gui.ListBoxOption{
 			gui.NewListBoxOption("apple", "Apple", ""),
 			gui.NewListBoxOption("banana", "Banana", ""),
@@ -259,6 +274,7 @@ var demoEntries = []DemoEntry{
 	{ID: "radio", Label: "Radio", Group: groupButtons, Summary: "Single radio control.", Tags: []string{"option", "boolean", "choice"}},
 	{ID: "radio_group", Label: "Radio Button Group", Group: groupButtons, Summary: "Mutually exclusive options in row or column.", Tags: []string{"group", "options", "select"}},
 	{ID: "slider", Label: "Slider", Group: groupInput, Summary: "Drag horizontal or vertical value controls.", Tags: []string{"slider", "value"}},
+	{ID: "gesture", Label: "Gestures", Group: groupInput, Summary: "Touch gesture recognition: tap, pan, pinch, rotate, swipe.", Tags: []string{"touch", "gesture", "pinch", "swipe", "pan", "rotate", "tap", "mobile"}},
 	{ID: "drag_reorder", Label: "Drag Reorder", Group: groupLayout, Summary: "Drag-to-reorder items in lists, tabs, and trees.", Tags: []string{"drag", "reorder", "list", "tabs", "tree", "keyboard"}},
 	{ID: "combobox", Label: "Combobox", Group: groupSelection, Summary: "Single-select with typeahead filtering.", Tags: []string{"dropdown", "filter", "typeahead", "autocomplete"}},
 	{ID: "select", Label: "Select", Group: groupSelection, Summary: "Dropdown with optional multi-select.", Tags: []string{"dropdown", "pick", "options"}},

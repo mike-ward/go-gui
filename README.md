@@ -64,6 +64,12 @@ View fn → Layout tree → layoutArrange() → renderLayout() → []RenderCmd �
 - ClipContents — stencil-based rounded-rect clip masking
 - Box shadows and blur effects
 
+**Input & Interaction**
+- Touch gesture recognition — tap, double-tap, long-press, pan, swipe,
+  pinch, rotate with automatic mouse-event synthesis for compatibility
+- Pan gestures auto-scroll containers; pinch/rotate available on
+  ContainerCfg and DrawCanvasCfg
+
 **Platform Integration**
 - OS-level spell check (macOS NSSpellChecker, Linux Hunspell)
 - IME support and accessibility tree (macOS, Linux AT-SPI2)

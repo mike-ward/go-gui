@@ -180,6 +180,7 @@ var componentDemos = map[string]func(*gui.Window) gui.View{
 	"box_shadows":         demoBoxShadows,
 	"shader":              demoShader,
 	"draw_canvas":         demoDrawCanvas,
+	"gesture":             demoGesture,
 	"animations":          demoAnimations,
 	"color_picker":        demoColorPicker,
 	"theme_gen":           demoThemeGen,
