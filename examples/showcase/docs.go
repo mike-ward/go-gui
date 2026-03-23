@@ -1632,6 +1632,20 @@ gui.ListBox(gui.ListBoxCfg{
 })
 ` + "```" + `
 
+## Virtualization
+
+Renders only visible rows when height is constrained. Requires
+` + "`IDScroll > 0`" + ` and ` + "`Height`" + ` or ` + "`MaxHeight > 0`" + `.
+
+` + "```go" + `
+gui.ListBox(gui.ListBoxCfg{
+    ID:        "virt-lb",
+    IDScroll:  500,
+    MaxHeight: 200,
+    Data:      items,
+})
+` + "```" + `
+
 ## Key Properties
 
 | Property    | Type             | Description                          |
@@ -1644,7 +1658,7 @@ gui.ListBox(gui.ListBoxCfg{
 | MaxWidth    | float32          | Maximum width                        |
 | MinHeight   | float32          | Minimum height                       |
 | MaxHeight   | float32          | Maximum height                       |
-| IDScroll    | uint32           | Scroll container ID                  |
+| IDScroll    | uint32           | Scroll ID (enables virtualization)   |
 | IDFocus     | uint32           | Tab-order focus ID (> 0 to enable)   |
 | Reorderable | bool             | Enable drag-reorder                  |
 | Sizing      | Sizing           | Combined axis sizing mode            |
@@ -1707,6 +1721,19 @@ gui.Combobox(gui.ComboboxCfg{
     OnSelect: func(v string, _ *gui.Event, w *gui.Window) {
         gui.State[App](w).Lang = v
     },
+})
+` + "```" + `
+
+## Virtualization
+
+The dropdown list virtualizes when ` + "`IDScroll > 0`" + ` and
+` + "`MaxDropdownHeight > 0`" + `.
+
+` + "```go" + `
+gui.Combobox(gui.ComboboxCfg{
+    IDScroll:          900,
+    MaxDropdownHeight: 200,
+    Options:           largeList,
 })
 ` + "```" + `
 
@@ -1878,6 +1905,16 @@ w.Table(gui.TableCfg{
 })
 ` + "```" + `
 
+## Virtualization
+
+Renders only visible rows when scrolling is enabled. Requires
+` + "`IDScroll > 0`" + ` and ` + "`Height`" + ` or ` + "`MaxHeight > 0`" + `.
+
+` + "```go" + `
+cfg.IDScroll  = 100
+cfg.MaxHeight = 260
+` + "```" + `
+
 ## Border Styles
 
 | Constant             | Description                        |
@@ -1938,8 +1975,8 @@ w.Table(gui.TableCfg{
 `,
 
 	"data_grid": `Full-featured data grid with sorting, filtering, pagination,
-column chooser, grouping, aggregation, inline editing, row selection,
-and CRUD toolbar support.
+virtualized scrolling, column chooser, grouping, aggregation, inline editing,
+row selection, and CRUD toolbar support.
 
 ## Usage
 
@@ -1970,6 +2007,19 @@ w.DataGrid(gui.DataGridCfg{
     DataSource:     source,
     PaginationKind: gui.GridPaginationCursor,
     PageLimit:      50,
+})
+` + "```" + `
+
+## Virtualization
+
+Automatically virtualizes when ` + "`Height`" + ` or ` + "`MaxHeight > 0`" + `. A scroll
+ID is derived from the widget ID; setting ` + "`IDScroll`" + ` is optional.
+
+` + "```go" + `
+w.DataGrid(gui.DataGridCfg{
+    ID:        "grid",
+    MaxHeight: 300,
+    // Virtualization is automatic.
 })
 ` + "```" + `
 
@@ -2006,7 +2056,7 @@ w.DataGrid(gui.DataGridCfg{
 | RowHeight              | float32            | Row height in pixels                 |
 | HeaderHeight           | float32            | Header height in pixels              |
 | IDFocus                | uint32             | Tab-order focus ID (> 0 to enable)   |
-| IDScroll               | uint32             | Scroll container ID                  |
+| IDScroll               | uint32             | Scroll ID (auto-generated if omitted)|
 | Disabled               | bool               | Disable interaction                  |
 | Invisible              | bool               | Hide without removing from layout    |
 | Sizing                 | Sizing             | Combined axis sizing mode            |
@@ -4952,6 +5002,12 @@ gui.Tree(gui.TreeCfg{
 ` + "```" + `
 
 ` + "`TreeNodeCfg.ID`" + ` defaults to ` + "`Text`" + ` when omitted. Node IDs must be unique within a tree.
+
+## Virtualization
+
+Renders only visible nodes (flattened) when height is constrained.
+Requires ` + "`IDScroll > 0`" + ` and ` + "`Height`" + ` or ` + "`MaxHeight > 0`" + `.
+The main usage example above shows the required configuration.
 
 ## Keyboard Navigation
 

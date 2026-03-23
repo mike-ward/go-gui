@@ -171,6 +171,7 @@ func demoListBox(w *gui.Window) gui.View {
 				Text:      fmt.Sprintf("Selected: %v", app.ListBoxSelected),
 				TextStyle: t.N3,
 			}),
+			gui.Text(gui.TextCfg{Text: "Virtualized list (scroll)", TextStyle: t.B3}),
 			gui.ListBox(gui.ListBoxCfg{
 				ID:          "listbox-demo",
 				IDFocus:     106,
