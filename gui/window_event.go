@@ -6,6 +6,7 @@ func (w *Window) EventFn(e *Event) {
 	if e == nil {
 		return
 	}
+	e.FrameCount = w.frameCount
 
 	// Focus gate: block events when unfocused except right-click,
 	// focused, scroll, and touch.

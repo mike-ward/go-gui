@@ -138,6 +138,10 @@ type Window struct {
 	animationStopOnce sync.Once
 	cleanupOnce       sync.Once
 
+	// Frame counter — incremented each FrameFn call, stamped
+	// on events for frame-based timing (double-click detection).
+	frameCount uint64
+
 	// wakeMainFn pushes an SDL user event to wake the main
 	// thread from WaitEventTimeout. Set by backend; nil-safe.
 	wakeMainFn func()

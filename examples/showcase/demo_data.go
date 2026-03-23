@@ -217,7 +217,7 @@ func demoDataSource(w *gui.Window) gui.View {
 				ID:              "catalog-data-source",
 				IDFocus:         9175,
 				Sizing:          gui.Some(gui.FitFit),
-				Columns:         showcaseDataGridColumns(),
+				Columns:         showcaseDataSourceColumns(),
 				DataSource:      app.DataSource,
 				PaginationKind:  gui.GridPaginationCursor,
 				PageLimit:       50,
@@ -329,6 +329,14 @@ func demoTree(w *gui.Window) gui.View {
 			}),
 		},
 	})
+}
+
+func showcaseDataSourceColumns() []gui.GridColumnCfg {
+	return []gui.GridColumnCfg{
+		{ID: "name", Title: "Name", Width: gui.SomeF(180), Sortable: true, Filterable: true, Reorderable: true, Editable: true, DefaultValue: "New"},
+		{ID: "team", Title: "Team", Width: gui.SomeF(140), Sortable: true, Filterable: true, Reorderable: true, Editable: true, Editor: gui.GridCellEditorSelect, EditorOptions: []string{"Core", "Data", "Platform", "R&D", "Web", "Security"}, DefaultValue: "Core"},
+		{ID: "status", Title: "Status", Width: gui.SomeF(120), Sortable: true, Filterable: true, Reorderable: true, Editable: true, Editor: gui.GridCellEditorSelect, EditorOptions: []string{"Open", "Paused", "Closed"}, DefaultValue: "Open"},
+	}
 }
 
 func showcaseDataGridColumns() []gui.GridColumnCfg {

@@ -349,3 +349,71 @@ func TestScrollPaddingVisible(t *testing.T) {
 		t.Errorf("visible scrollbar should have right padding > 0: %v", got)
 	}
 }
+
+// --- dataGridTrackRowEditClick (double-click to edit) ---
+
+func TestTrackRowEditClickDoubleClick(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	cols := []GridColumnCfg{{ID: "name", Editable: true}}
+
+	// First click at frame 5.
+	e1 := &Event{FrameCount: 5}
+	dataGridTrackRowEditClick("g1", true, 100, 1, cols, 0, "row1", 1, e1, w)
+	if got := dataGridEditingRowID("g1", w); got != "" {
+		t.Fatalf("after first click: editing=%q, want empty", got)
+	}
+
+	// Second click within threshold → double-click.
+	e2 := &Event{FrameCount: 10}
+	dataGridTrackRowEditClick("g1", true, 100, 1, cols, 0, "row1", 1, e2, w)
+	if got := dataGridEditingRowID("g1", w); got != "row1" {
+		t.Fatalf("after double click: editing=%q, want row1", got)
+	}
+}
+
+func TestTrackRowEditClickTooSlow(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	cols := []GridColumnCfg{{ID: "name", Editable: true}}
+
+	e1 := &Event{FrameCount: 5}
+	dataGridTrackRowEditClick("g1", true, 100, 1, cols, 0, "row1", 1, e1, w)
+
+	// Second click beyond threshold.
+	e2 := &Event{FrameCount: 5 + dataGridEditDoubleClickFrames + 1}
+	dataGridTrackRowEditClick("g1", true, 100, 1, cols, 0, "row1", 1, e2, w)
+	if got := dataGridEditingRowID("g1", w); got != "" {
+		t.Fatalf("slow double click: editing=%q, want empty", got)
+	}
+}
+
+func TestTrackRowEditClickDifferentRow(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	cols := []GridColumnCfg{{ID: "name", Editable: true}}
+
+	e1 := &Event{FrameCount: 5}
+	dataGridTrackRowEditClick("g1", true, 100, 1, cols, 0, "row1", 1, e1, w)
+
+	// Second click on different row — not a double click.
+	e2 := &Event{FrameCount: 10}
+	dataGridTrackRowEditClick("g1", true, 100, 1, cols, 0, "row2", 1, e2, w)
+	if got := dataGridEditingRowID("g1", w); got != "" {
+		t.Fatalf("different row: editing=%q, want empty", got)
+	}
+}
+
+func TestTrackRowEditClickDisabled(t *testing.T) {
+	w := NewWindow(WindowCfg{})
+	defer w.Close()
+	cols := []GridColumnCfg{{ID: "name", Editable: true}}
+
+	e1 := &Event{FrameCount: 5}
+	dataGridTrackRowEditClick("g1", false, 100, 1, cols, 0, "row1", 1, e1, w)
+	e2 := &Event{FrameCount: 10}
+	dataGridTrackRowEditClick("g1", false, 100, 1, cols, 0, "row1", 1, e2, w)
+	if got := dataGridEditingRowID("g1", w); got != "" {
+		t.Fatalf("edit disabled: editing=%q, want empty", got)
+	}
+}

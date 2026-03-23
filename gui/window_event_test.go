@@ -253,6 +253,27 @@ func TestEventFnNilEventNoPanic(t *testing.T) {
 	w.EventFn(nil)
 }
 
+func TestEventFnStampsFrameCount(t *testing.T) {
+	w := newEventTestWindow()
+	w.layout = Layout{Shape: &Shape{}}
+
+	// Before any FrameFn, frameCount is 0.
+	e := &Event{Type: EventMouseMove}
+	w.EventFn(e)
+	if e.FrameCount != 0 {
+		t.Errorf("before FrameFn: got %d, want 0", e.FrameCount)
+	}
+
+	// Advance two frames.
+	w.FrameFn()
+	w.FrameFn()
+	e2 := &Event{Type: EventMouseDown, MouseX: 50, MouseY: 50}
+	w.EventFn(e2)
+	if e2.FrameCount != 2 {
+		t.Errorf("after 2 FrameFn: got %d, want 2", e2.FrameCount)
+	}
+}
+
 func TestEventFnMouseScrollFocusedHandlerPrecedence(t *testing.T) {
 	w := newEventTestWindow()
 	focusedCalled := false

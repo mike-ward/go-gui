@@ -141,6 +141,7 @@ func (w *Window) UpdateView(gen func(*Window) View) {
 // Returns true when renderers were rebuilt and the backend
 // should call renderFrame.
 func (w *Window) FrameFn() bool {
+	w.frameCount++
 	w.flushCommands()
 	if w.refreshLayout {
 		w.Update()
