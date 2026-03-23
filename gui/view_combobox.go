@@ -311,7 +311,7 @@ func comboboxClose(id string, w *Window) {
 func makeComboboxOnChar(cfgID string) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
 		ss := StateMap[string, bool](w, nsCombobox, capModerate)
-		isOpen, _ := ss.Get(cfgID)
+		isOpen, _ := ss.Get(cfgID) // ok ignored: false means "not open"
 		if !isOpen {
 			return
 		}
@@ -320,6 +320,7 @@ func makeComboboxOnChar(cfgID string) func(*Layout, *Event, *Window) {
 			return
 		}
 		sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
+		// ok ignored: empty string is correct initial query.
 		query, _ := sq.Get(cfgID)
 		query += string(ch)
 		sq.Set(cfgID, query)
@@ -338,7 +339,7 @@ func makeComboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window),
 
 func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idFocus uint32, filteredIDs []string, idScroll uint32, rowH, listH float32, e *Event, w *Window) {
 	ss := StateMap[string, bool](w, nsCombobox, capModerate)
-	isOpen, _ := ss.Get(cfgID)
+	isOpen, _ := ss.Get(cfgID) // ok ignored: false means "not open"
 
 	if !isOpen {
 		if e.KeyCode == KeySpace || e.KeyCode == KeyEnter ||
@@ -357,7 +358,7 @@ func comboboxOnKeyDown(cfgID string, onSelect func(string, *Event, *Window), idF
 
 	if e.KeyCode == KeyBackspace {
 		sq := StateMap[string, string](w, nsComboboxQuery, capModerate)
-		query, _ := sq.Get(cfgID)
+		query, _ := sq.Get(cfgID) // ok ignored: empty string, len checked below
 		if len(query) > 0 {
 			_, sz := utf8.DecodeLastRuneInString(query)
 			sq.Set(cfgID, query[:len(query)-sz])

@@ -74,7 +74,7 @@ func menuOnKeyDown(cfg MenubarCfg,
 		e.IsHandled = true
 
 	case KeySpace, KeyEnter:
-		sel, _ := sm.Get(cfg.IDFocus)
+		sel, _ := sm.Get(cfg.IDFocus) // ok ignored: empty string checked immediately below
 		if sel == "" {
 			return
 		}
@@ -95,7 +95,7 @@ func menuOnKeyDown(cfg MenubarCfg,
 		e.IsHandled = true
 
 	case KeyLeft, KeyRight, KeyUp, KeyDown:
-		sel, _ := sm.Get(cfg.IDFocus)
+		sel, _ := sm.Get(cfg.IDFocus) // ok ignored: empty string checked immediately below
 		if sel == "" {
 			return
 		}

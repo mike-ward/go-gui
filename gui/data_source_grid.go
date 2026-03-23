@@ -39,6 +39,8 @@ func (w *Window) DataGridSourceStats(gridID string) DataGridSourceStats {
 
 func dataGridSourceApplyLocalMutation(gridID string, rows []GridRow, rowCount int, w *Window) {
 	dgSrc := StateMap[string, dataGridSourceState](w, nsDgSource, capModerate)
+	// ok ignored: zero state → cancelActive returns immediately,
+	// then state is fully overwritten below.
 	state, _ := dgSrc.Get(gridID)
 	dataGridSourceCancelActive(&state)
 	rows = dataGridSourceRowsWithStableIDs(rows, state.PaginationKind, state)
@@ -92,6 +94,7 @@ func dataGridResolveSourceCfg(cfg DataGridCfg, w *Window) (DataGridCfg, dataGrid
 
 	// Use cached capabilities when available.
 	dgSrc := StateMap[string, dataGridSourceState](w, nsDgSource, capModerate)
+	// ok ignored: zero CapsCached (false) triggers fresh Capabilities() call.
 	existing, _ := dgSrc.Get(cfg.ID)
 	var caps GridDataCapabilities
 	if existing.CapsCached {
@@ -582,7 +585,7 @@ func dataGridSourceSubmitJump(onSelectionChange func(GridSelection, *Event, *Win
 	}
 	total := *rowCount
 	dgJI := StateMap[string, string](w, nsDgJump, capModerate)
-	jumpText, _ := dgJI.Get(gridID)
+	jumpText, _ := dgJI.Get(gridID) // ok ignored: empty → parseJumpTarget returns (0, false)
 	targetIdx, ok := dataGridParseJumpTarget(jumpText, total)
 	if !ok {
 		return

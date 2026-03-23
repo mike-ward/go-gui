@@ -92,7 +92,7 @@ func inspectorToggleSide(w *Window) {
 		return
 	}
 	sm := StateMap[string, string](w, nsInspector, capInspector)
-	side, _ := sm.Get("side")
+	side, _ := sm.Get("side") // ok ignored: empty string means "right" (default)
 	if side == "left" {
 		sm.Delete("side")
 	} else {
@@ -218,7 +218,7 @@ func inspectorSelect(path string, w *Window) {
 		return
 	}
 	sm := StateMap[string, string](w, nsInspector, capInspector)
-	selected, _ := sm.Get("selected")
+	selected, _ := sm.Get("selected") // ok ignored: empty string means "nothing selected"
 	if selected == path {
 		sm.Delete("selected")
 		sm.Delete("scroll_to")

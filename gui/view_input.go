@@ -165,7 +165,7 @@ func Input(cfg InputCfg) View {
 				imap := StateMap[uint32, InputState](
 					w, nsInput, capMany,
 				)
-				is, _ := imap.Get(ly.Shape.IDFocus)
+				is, _ := imap.Get(ly.Shape.IDFocus) // ok ignored: zero value seeds initial state
 				is.CursorPos = 0
 				is.SelectBeg = 0
 				is.SelectEnd = 0
@@ -194,6 +194,8 @@ func Input(cfg InputCfg) View {
 			imap := StateMap[uint32, InputState](
 				w, nsInput, capMany,
 			)
+			// ok ignored: zero LastClickTime safely gates double-click
+			// (the > 0 check on line below prevents false match).
 			is, _ := imap.Get(ly.Shape.IDFocus)
 
 			// Double-click selects word.
@@ -241,7 +243,7 @@ func Input(cfg InputCfg) View {
 			if idScroll > 0 && layout.Parent != nil {
 				sy := StateMap[uint32, float32](
 					w, nsScrollY, capScroll)
-				ds.scrollY0, _ = sy.Get(idScroll)
+				ds.scrollY0, _ = sy.Get(idScroll) // ok ignored: zero offset is correct initial scroll
 				p := layout.Parent.Shape
 				ds.viewTop = p.Y + p.Padding.Top
 				viewH := p.Height - p.PaddingHeight()
@@ -305,7 +307,7 @@ func Input(cfg InputCfg) View {
 			// Blur detection: fire commit on focus loss.
 			focusMap := StateMap[uint32, bool](
 				w, nsInputFocus, capMany)
-			wasFocused, _ := focusMap.Get(layout.Shape.IDFocus)
+			wasFocused, _ := focusMap.Get(layout.Shape.IDFocus) // ok ignored: false means "wasn't focused"
 			focusMap.Set(layout.Shape.IDFocus, focused)
 			if wasFocused && !focused {
 				text := inputTextFromLayout(layout)
@@ -499,6 +501,8 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 		}
 		id := hcfg.IDFocus
 		imap := StateMap[uint32, InputState](w, nsInput, capMany)
+		// ok ignored: zero CursorOffset/CursorTrailing seed initial state;
+		// both are immediately overwritten below.
 		is, _ := imap.Get(id)
 		savedOffset := is.CursorOffset
 		savedTrailing := is.CursorTrailing
@@ -1021,7 +1025,7 @@ func (d *inputDragState) computeRunePos(
 	if d.idScroll > 0 {
 		sy := StateMap[uint32, float32](
 			w, nsScrollY, capScroll)
-		sNow, _ := sy.Get(d.idScroll)
+		sNow, _ := sy.Get(d.idScroll) // ok ignored: zero offset is correct initial scroll
 		scrollDelta = sNow - d.scrollY0
 	}
 	relX := mx - d.txtOffX

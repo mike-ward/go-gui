@@ -211,7 +211,7 @@ func dataGridMakeColumnChooserOnClick(onHiddenColumnsChange func(map[string]bool
 
 func dataGridToggleColumnChooserOpen(gridID string, w *Window) {
 	dgCO := StateMap[string, bool](w, nsDgChooserOpen, capModerate)
-	isOpen, _ := dgCO.Get(gridID)
+	isOpen, _ := dgCO.Get(gridID) // ok ignored: false means "not open", toggle correct
 	dgCO.Set(gridID, !isOpen)
 }
 
@@ -777,7 +777,7 @@ func dataGridScrollRowIntoViewEx(viewportH float32, rowIdx int, rowHeight, stati
 		return
 	}
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
-	currentNeg, _ := sy.Get(scrollID)
+	currentNeg, _ := sy.Get(scrollID) // ok ignored: zero offset is correct initial scroll
 	current := -currentNeg
 	rowTop := staticTop + float32(rowIdx)*rowHeight
 	rowBottom := rowTop + rowHeight
@@ -863,6 +863,7 @@ func dataGridSubmitLocalJump(ctx dataGridJumpContext, e *Event, w *Window) {
 		return
 	}
 	dgJI := StateMap[string, string](w, nsDgJump, capModerate)
+	// ok ignored: empty string → parseJumpTarget returns (0, false).
 	jumpText, _ := dgJI.Get(ctx.gridID)
 	targetIdx, ok := dataGridParseJumpTarget(jumpText, ctx.totalRows)
 	if !ok {

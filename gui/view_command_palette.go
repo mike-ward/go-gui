@@ -287,7 +287,7 @@ func cmdPaletteItemToCore(item CommandPaletteItem) ListCoreItem {
 func makePaletteOnEnter(paletteID string, onAction func(string, *Event, *Window), onDismiss func(*Window), filtered []ListCoreItem, filteredIDs []string) func(*Layout, *Event, *Window) {
 	return func(_ *Layout, e *Event, w *Window) {
 		sh := StateMap[string, int](w, nsCmdPaletteHighlight, capModerate)
-		cur, _ := sh.Get(paletteID)
+		cur, _ := sh.Get(paletteID) // ok ignored: zero index is valid, bounds-checked below
 		itemCount := len(filteredIDs)
 		if cur >= 0 && cur < itemCount && onAction != nil &&
 			!filtered[cur].Disabled {
@@ -358,7 +358,7 @@ func paletteOnKeyDown(paletteID string, onAction func(string, *Event, *Window), 
 
 	itemCount := len(filteredIDs)
 	sh := StateMap[string, int](w, nsCmdPaletteHighlight, capModerate)
-	cur, _ := sh.Get(paletteID)
+	cur, _ := sh.Get(paletteID) // ok ignored: zero index is valid, bounds-checked below
 	action := listCoreNavigate(e.KeyCode, itemCount)
 
 	if action == ListCoreSelectItem {

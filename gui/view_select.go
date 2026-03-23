@@ -176,7 +176,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 		OnClick: func(_ *Layout, e *Event, w *Window) {
 			ss := StateMap[string, bool](
 				w, nsSelect, capModerate)
-			cur, _ := ss.Get(id)
+			cur, _ := ss.Get(id) // ok ignored: false means "not selected", toggle correct
 			ss.Clear()
 			if !cur {
 				ss.Set(id, true)
@@ -258,7 +258,7 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 			layout.Shape.Color = colorSelect
 			sh := StateMap[string, int](
 				w, nsSelectHL, capModerate)
-			cur, _ := sh.Get(cfgID)
+			cur, _ := sh.Get(cfgID) // ok ignored: zero index is valid, compared immediately
 			if cur != index {
 				sh.Set(cfgID, index)
 			}
@@ -336,7 +336,7 @@ func selectOnKeyDown(cfg *SelectCfg, idScroll uint32, e *Event, w *Window) {
 
 	ss := StateMap[string, bool](w, nsSelect, capModerate)
 	sh := StateMap[string, int](w, nsSelectHL, capModerate)
-	isOpen, _ := ss.Get(cfg.ID)
+	isOpen, _ := ss.Get(cfg.ID) // ok ignored: false means "not open"
 
 	// Open on space/enter.
 	if (e.KeyCode == KeySpace || e.KeyCode == KeyEnter) && !isOpen {
@@ -358,7 +358,7 @@ func selectOnKeyDown(cfg *SelectCfg, idScroll uint32, e *Event, w *Window) {
 		return
 	}
 
-	currentIdx, _ := sh.Get(cfg.ID)
+	currentIdx, _ := sh.Get(cfg.ID) // ok ignored: zero index is valid, bounds-checked below
 	action := listCoreNavigate(e.KeyCode, len(cfg.Options))
 
 	if action == ListCoreSelectItem {

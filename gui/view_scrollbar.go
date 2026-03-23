@@ -287,7 +287,7 @@ func offsetMouseChangeX(layout *Layout, mouseDX float32, idScroll uint32, w *Win
 	totalWidth := contentWidth(layout)
 	shapeWidth := layout.Shape.Width - layout.Shape.PaddingWidth()
 	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
-	oldOffset, _ := sx.Get(idScroll)
+	oldOffset, _ := sx.Get(idScroll) // ok ignored: zero offset is correct initial scroll
 	newOffset := mouseDX * (totalWidth / shapeWidth)
 	offset := oldOffset - newOffset
 	return f32Min(0, f32Max(offset, shapeWidth-totalWidth))
@@ -299,7 +299,7 @@ func offsetMouseChangeY(layout *Layout, mouseDY float32, idScroll uint32, w *Win
 	totalHeight := contentHeight(layout)
 	shapeHeight := layout.Shape.Height - layout.Shape.PaddingHeight()
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
-	oldOffset, _ := sy.Get(idScroll)
+	oldOffset, _ := sy.Get(idScroll) // ok ignored: zero offset is correct initial scroll
 	newOffset := mouseDY * (totalHeight / shapeHeight)
 	offset := oldOffset - newOffset
 	return f32Min(0, f32Max(offset, shapeHeight-totalHeight))
