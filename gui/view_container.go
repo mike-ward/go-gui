@@ -79,6 +79,7 @@ type ContainerCfg struct {
 	OnScroll    func(*Layout, *Window)
 	AmendLayout func(*Layout, *Window)
 	OnHover     func(*Layout, *Event, *Window)
+	OnGesture   func(*Layout, *Event, *Window)
 	OnIMECommit func(*Layout, string, *Window)
 
 	// Position
@@ -223,6 +224,7 @@ func makeContainerEvents(c *ContainerCfg) *EventHandlers {
 	if c.OnClick == nil && c.OnChar == nil &&
 		c.OnKeyDown == nil && c.OnMouseMove == nil &&
 		c.OnMouseUp == nil && c.OnHover == nil &&
+		c.OnGesture == nil &&
 		c.OnIMECommit == nil && c.OnScroll == nil &&
 		c.AmendLayout == nil {
 		return nil
@@ -234,6 +236,7 @@ func makeContainerEvents(c *ContainerCfg) *EventHandlers {
 		OnMouseMove: c.OnMouseMove,
 		OnMouseUp:   c.OnMouseUp,
 		OnHover:     c.OnHover,
+		OnGesture:   c.OnGesture,
 		OnIMECommit: c.OnIMECommit,
 		OnScroll:    c.OnScroll,
 		AmendLayout: c.AmendLayout,

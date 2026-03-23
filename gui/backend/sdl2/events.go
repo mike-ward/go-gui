@@ -11,7 +11,7 @@ import (
 
 // mapEvent converts an SDL2 event to a gui.Event.
 // Returns the event and true to continue, or false to quit.
-func mapEvent(ev sdl.Event, _ *Backend) (gui.Event, bool) {
+func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 	switch e := ev.(type) {
 	case *sdl.QuitEvent:
 		return gui.Event{}, false
@@ -93,6 +93,36 @@ func mapEvent(ev sdl.Event, _ *Backend) (gui.Event, bool) {
 			IMEText:   e.GetText(),
 			IMEStart:  e.Start,
 			IMELength: e.Length,
+		}, true
+
+	case *sdl.TouchFingerEvent:
+		if b == nil {
+			return gui.Event{}, true
+		}
+		var typ gui.EventType
+		switch e.Type {
+		case sdl.FINGERDOWN:
+			typ = gui.EventTouchesBegan
+		case sdl.FINGERMOTION:
+			typ = gui.EventTouchesMoved
+		case sdl.FINGERUP:
+			typ = gui.EventTouchesEnded
+		default:
+			return gui.Event{}, true
+		}
+		// SDL2 reports normalized 0-1 coordinates;
+		// denormalize to window pixels.
+		ww, wh := b.window.GetSize()
+		return gui.Event{
+			Type:       typ,
+			NumTouches: 1,
+			Touches: [8]gui.TouchPoint{{
+				Identifier: uint64(e.FingerID),
+				PosX:       e.X * float32(ww),
+				PosY:       e.Y * float32(wh),
+				ToolType:   gui.TouchToolFinger,
+				Changed:    true,
+			}},
 		}, true
 
 	case *sdl.WindowEvent:

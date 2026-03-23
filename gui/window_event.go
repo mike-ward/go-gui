@@ -8,11 +8,15 @@ func (w *Window) EventFn(e *Event) {
 	}
 
 	// Focus gate: block events when unfocused except right-click,
-	// focused, and scroll.
+	// focused, scroll, and touch.
 	if !w.focused &&
 		(e.Type != EventMouseDown || e.MouseButton != MouseRight) &&
 		e.Type != EventFocused &&
-		e.Type != EventMouseScroll {
+		e.Type != EventMouseScroll &&
+		e.Type != EventTouchesBegan &&
+		e.Type != EventTouchesMoved &&
+		e.Type != EventTouchesEnded &&
+		e.Type != EventTouchesCancelled {
 		return
 	}
 
@@ -135,6 +139,10 @@ func (w *Window) EventFn(e *Event) {
 	case EventResized:
 		w.windowWidth = e.WindowWidth
 		w.windowHeight = e.WindowHeight
+
+	case EventTouchesBegan, EventTouchesMoved,
+		EventTouchesEnded, EventTouchesCancelled:
+		w.handleTouch(layout, e)
 
 	default:
 		// Unhandled event type.

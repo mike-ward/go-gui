@@ -165,6 +165,8 @@ type ViewState struct {
 	menuKeyNav    bool
 	tooltip       tooltipState
 
+	gesture gestureState
+
 	// Markdown caches (lazy-init: nil until first use).
 	markdownTheme            string
 	markdownCache            *BoundedMap[int64, []MarkdownBlock]

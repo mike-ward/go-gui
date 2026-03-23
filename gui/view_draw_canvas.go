@@ -20,6 +20,7 @@ type DrawCanvasCfg struct {
 	OnDraw          func(*DrawContext)
 	OnClick         func(*Layout, *Event, *Window)
 	OnHover         func(*Layout, *Event, *Window)
+	OnGesture       func(*Layout, *Event, *Window)
 	OnMouseScroll   func(*Layout, *Event, *Window)
 }
 
@@ -45,10 +46,12 @@ func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 	c := &dv.cfg
 
 	var events *EventHandlers
-	if c.OnClick != nil || c.OnHover != nil || c.OnMouseScroll != nil || c.OnDraw != nil {
+	if c.OnClick != nil || c.OnHover != nil || c.OnGesture != nil ||
+		c.OnMouseScroll != nil || c.OnDraw != nil {
 		events = &EventHandlers{
 			OnClick:       leftClickOnly(c.OnClick),
 			OnHover:       c.OnHover,
+			OnGesture:     c.OnGesture,
 			OnMouseScroll: c.OnMouseScroll,
 			OnDraw:        c.OnDraw,
 		}

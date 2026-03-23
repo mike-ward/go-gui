@@ -52,6 +52,7 @@ const (
 	EventClipboardPasted
 	EventFilesDropped
 	EventIMEComposition
+	EventGesture // gesture recognized from touch input
 )
 
 // MouseButton identifies which mouse button was pressed/released.
@@ -250,6 +251,32 @@ const (
 	KeyMenu         KeyCode = 348
 )
 
+// GestureType identifies a recognized gesture from touch input.
+type GestureType uint8
+
+// GestureType values.
+const (
+	GestureNone      GestureType = iota
+	GestureTap                   // single finger tap
+	GestureDoubleTap             // two taps in quick succession
+	GestureLongPress             // finger held without movement
+	GesturePan                   // single finger drag
+	GestureSwipe                 // fast pan ending with high velocity
+	GesturePinch                 // two-finger spread/squeeze
+	GestureRotate                // two-finger twist
+)
+
+// GesturePhase tracks the lifecycle of a continuous gesture.
+type GesturePhase uint8
+
+// GesturePhase values.
+const (
+	GesturePhaseBegan     GesturePhase = iota // first recognition
+	GesturePhaseChanged                       // ongoing update
+	GesturePhaseEnded                         // final event
+	GesturePhaseCancelled                     // cancelled
+)
+
 // TouchToolType identifies the input device type for touch events.
 type TouchToolType uint8
 
@@ -296,6 +323,17 @@ type Event struct {
 	Type              EventType
 	KeyCode           KeyCode
 	MouseButton       MouseButton
+	GestureType       GestureType
+	GesturePhase      GesturePhase
+	GestureDX         float32 // pan/swipe delta from previous
+	GestureDY         float32
+	VelocityX         float32 // px/s at gesture end
+	VelocityY         float32
+	PinchScale        float32 // cumulative scale (1.0 = unchanged)
+	GestureRotation   float32 // cumulative radians
+	CentroidX         float32 // center of active touches
+	CentroidY         float32
+	GestureTouches    int // touch count for this gesture
 	KeyRepeat         bool
 	IsHandled         bool
 }
