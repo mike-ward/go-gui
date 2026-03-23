@@ -1,6 +1,9 @@
 package gui
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // Accessibility action constants.
 const (
@@ -30,6 +33,11 @@ type liveNode struct {
 	value string
 }
 
+// a11ySyncInterval is the minimum time between accessibility
+// tree syncs. 100ms (~10Hz) is responsive enough for screen
+// readers while avoiding the cost of per-frame CGo calls.
+const a11ySyncInterval = 100 * time.Millisecond
+
 // a11y holds per-window accessibility backend state.
 type a11y struct {
 	initialized    bool
@@ -37,6 +45,7 @@ type a11y struct {
 	prevLiveValues map[string]string
 	nodes          []A11yNode // reused across frames
 	liveNodes      []liveNode // reused across frames
+	lastSync       time.Time  // throttle sync calls
 }
 
 // initA11y lazily creates the native accessibility container.
@@ -56,6 +65,8 @@ func (w *Window) initA11y() {
 
 // syncA11y walks the layout tree, builds a flat node array,
 // and pushes it to the native accessibility backend.
+// Throttled to a11ySyncInterval to avoid expensive per-frame
+// CGo calls.
 func (w *Window) syncA11y() {
 	if w.nativePlatform == nil || !w.a11y.initialized {
 		return
@@ -63,6 +74,11 @@ func (w *Window) syncA11y() {
 	if w.layout.Shape == nil {
 		return
 	}
+	now := time.Now()
+	if now.Sub(w.a11y.lastSync) < a11ySyncInterval {
+		return
+	}
+	w.a11y.lastSync = now
 
 	// Reuse slices across frames.
 	w.a11y.nodes = w.a11y.nodes[:0]

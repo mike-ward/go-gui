@@ -56,7 +56,7 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 	}
 
 	layout := Layout{
-		Shape: &Shape{
+		Shape: w.allocShape(Shape{
 			ShapeType: ShapeText,
 			ID:        c.ID,
 			IDFocus:   c.IDFocus,
@@ -72,7 +72,7 @@ func (tv *textView) GenerateLayout(w *Window) Layout {
 			Hero:      c.Hero,
 			Opacity:   c.Opacity.Get(1.0),
 			TC:        &tv.tc,
-		},
+		}),
 	}
 
 	layout.Shape.Width = w.TextWidth(c.Text, *ts)

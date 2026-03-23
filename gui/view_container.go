@@ -130,8 +130,7 @@ type containerView struct {
 func (cv *containerView) Content() []View { return cv.content }
 
 func (cv *containerView) GenerateLayout(w *Window) Layout {
-	s := *cv.shape // shallow copy — see containerView doc
-	layout := Layout{Shape: &s}
+	layout := Layout{Shape: w.allocShape(*cv.shape)}
 	addGroupBoxTitle(cv.title, cv.titleBG, cv.colorBorder,
 		cv.disabled, w, &layout)
 	return layout

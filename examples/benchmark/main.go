@@ -3,7 +3,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"strconv"
 	"time"
 
@@ -77,6 +80,15 @@ func (a *App) ResetAvgs() {
 }
 
 func main() {
+	pprofPort := flag.String("pprof", "6060", "pprof HTTP server port")
+	flag.Parse()
+
+	go func() {
+		addr := "localhost:" + *pprofPort
+		fmt.Println("pprof: http://" + addr + "/debug/pprof/")
+		http.ListenAndServe(addr, nil) //nolint:errcheck,gosec
+	}()
+
 	gui.SetTheme(gui.ThemeDarkBordered)
 
 	w := gui.NewWindow(gui.WindowCfg{

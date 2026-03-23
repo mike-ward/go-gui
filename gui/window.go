@@ -393,6 +393,17 @@ func (w *Window) TextWidth(text string, style TextStyle) float32 {
 	return w.textMeasurer.TextWidth(text, style)
 }
 
+// allocShape returns a pooled *Shape initialized to src. The
+// pointer is valid until the next frame's view-phase pool reset.
+// Falls back to a heap allocation when w has no pool (tests).
+func (w *Window) allocShape(src Shape) *Shape {
+	if w == nil {
+		cp := src
+		return &cp
+	}
+	return w.scratch.viewShapes.alloc(src)
+}
+
 // SetClipboardFn sets the function used to copy text to the clipboard.
 func (w *Window) SetClipboardFn(fn func(string)) {
 	w.clipboardSetFn = fn
