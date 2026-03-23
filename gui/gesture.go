@@ -38,6 +38,7 @@ type gestureState struct {
 	// Pan/swipe.
 	startX, startY float32
 	prevX, prevY   float32
+	prevTime       int64
 	velocityX      float32
 	velocityY      float32
 
@@ -89,6 +90,9 @@ func (gs *gestureState) reset() {
 // machine, synthesizes mouse events for backward compatibility,
 // and dispatches recognized gestures.
 func (w *Window) handleTouch(layout *Layout, e *Event) {
+	if e.NumTouches > len(e.Touches) {
+		e.NumTouches = len(e.Touches)
+	}
 	gs := &w.viewState.gesture
 
 	switch e.Type {
@@ -118,6 +122,7 @@ func handleTouchBegan(
 		// First finger down.
 		t := gs.touches[0]
 		gs.beganTime = gs.now()
+		gs.prevTime = gs.beganTime
 		gs.startX = t.x
 		gs.startY = t.y
 		gs.prevX = t.x
@@ -136,7 +141,7 @@ func handleTouchBegan(
 		gs.mouseEmitted = true
 	} else {
 		// Second+ finger: cancel single-touch gesture.
-		cancelLongPress(gs, w)
+		cancelLongPress(w)
 		if gs.mouseEmitted {
 			t := gs.touches[0]
 			synthMouse(EventMouseUp, t.x, t.y, MouseLeft, layout, w)
@@ -175,13 +180,15 @@ func handleTouchMoved(
 			dist := dx*dx + dy*dy
 			if dist > gesturePanDist*gesturePanDist {
 				// Pan recognized.
-				cancelLongPress(gs, w)
+				cancelLongPress(w)
 				gs.recognized = true
 				gs.gestureType = GesturePan
+				gs.prevTime = gs.now()
 				gs.prevX = gs.startX
 				gs.prevY = gs.startY
 				emitGesture(gs, GesturePan, GesturePhaseBegan,
 					t.x, t.y, layout, w)
+				return
 			} else {
 				// Below threshold: synthesize mouse move.
 				synthMouse(EventMouseMove, t.x, t.y, MouseLeft,
@@ -191,10 +198,18 @@ func handleTouchMoved(
 		if gs.recognized && gs.gestureType == GesturePan {
 			gdx := t.x - gs.prevX
 			gdy := t.y - gs.prevY
-			gs.velocityX = gestureVelocitySmooth*gdx/0.016 +
+			now := gs.now()
+			dt := float32(now-gs.prevTime) / 1e9
+			if dt < 0.001 {
+				dt = 0.001
+			} else if dt > 0.1 {
+				dt = 0.1
+			}
+			gs.velocityX = gestureVelocitySmooth*gdx/dt +
 				(1-gestureVelocitySmooth)*gs.velocityX
-			gs.velocityY = gestureVelocitySmooth*gdy/0.016 +
+			gs.velocityY = gestureVelocitySmooth*gdy/dt +
 				(1-gestureVelocitySmooth)*gs.velocityY
+			gs.prevTime = now
 			gs.prevX = t.x
 			gs.prevY = t.y
 			emitGestureWithDelta(gs, GesturePan, GesturePhaseChanged,
@@ -237,6 +252,7 @@ func handleTouchMoved(
 			phase := GesturePhaseChanged
 			if gs.gestureType != GestureRotate &&
 				gs.gestureType != GesturePinch {
+				gs.gestureType = GestureRotate
 				phase = GesturePhaseBegan
 			}
 			evt := gestureEvent(gs, GestureRotate, phase, cx, cy)
@@ -249,6 +265,10 @@ func handleTouchMoved(
 func handleTouchEnded(
 	gs *gestureState, layout *Layout, e *Event, w *Window,
 ) {
+	// Compute centroid before removing touches so end events
+	// have accurate coordinates.
+	cx, cy := touchCentroid(gs)
+
 	// Remove ended touches.
 	for i := range e.NumTouches {
 		if !e.Touches[i].Changed {
@@ -259,7 +279,7 @@ func handleTouchEnded(
 
 	if gs.numTouches == 0 {
 		// All fingers up.
-		cancelLongPress(gs, w)
+		cancelLongPress(w)
 
 		if gs.recognized && gs.gestureType == GesturePan {
 			vel := float32(math.Sqrt(float64(
@@ -272,15 +292,17 @@ func handleTouchEnded(
 					gs.prevX, gs.prevY, layout, w)
 			}
 		} else if gs.recognized &&
-			(gs.gestureType == GesturePinch ||
-				gs.gestureType == GestureRotate) {
-			cx, cy := gs.prevX, gs.prevY
-			if gs.gestureType == GesturePinch {
-				evt := gestureEvent(gs, GesturePinch,
-					GesturePhaseEnded, cx, cy)
-				evt.PinchScale = gs.scale
-				gestureHandler(layout, &evt, w)
-			}
+			gs.gestureType == GesturePinch {
+			evt := gestureEvent(gs, GesturePinch,
+				GesturePhaseEnded, cx, cy)
+			evt.PinchScale = gs.scale
+			gestureHandler(layout, &evt, w)
+		} else if gs.recognized &&
+			gs.gestureType == GestureRotate {
+			evt := gestureEvent(gs, GestureRotate,
+				GesturePhaseEnded, cx, cy)
+			evt.GestureRotation = gs.rotation
+			gestureHandler(layout, &evt, w)
 		} else if gs.recognized &&
 			gs.gestureType == GestureLongPress {
 			emitGesture(gs, GestureLongPress, GesturePhaseEnded,
@@ -324,11 +346,16 @@ func handleTouchEnded(
 	// 2→1 finger transition: end pinch/rotate, start pan.
 	if gs.gestureType == GesturePinch ||
 		gs.gestureType == GestureRotate {
-		cx, cy := touchCentroid(gs)
+		tcx, tcy := touchCentroid(gs)
 		if gs.gestureType == GesturePinch {
 			evt := gestureEvent(gs, GesturePinch,
-				GesturePhaseEnded, cx, cy)
+				GesturePhaseEnded, tcx, tcy)
 			evt.PinchScale = gs.scale
+			gestureHandler(layout, &evt, w)
+		} else {
+			evt := gestureEvent(gs, GestureRotate,
+				GesturePhaseEnded, tcx, tcy)
+			evt.GestureRotation = gs.rotation
 			gestureHandler(layout, &evt, w)
 		}
 		// Transition to single-touch pan.
@@ -349,7 +376,7 @@ func handleTouchEnded(
 func handleTouchCancelled(
 	gs *gestureState, layout *Layout, e *Event, w *Window,
 ) {
-	cancelLongPress(gs, w)
+	cancelLongPress(w)
 	if gs.recognized && gs.gestureType != GestureNone {
 		cx, cy := touchCentroid(gs)
 		emitGesture(gs, gs.gestureType, GesturePhaseCancelled,
@@ -394,8 +421,7 @@ func armLongPress(gs *gestureState, layout *Layout, w *Window) {
 	})
 }
 
-func cancelLongPress(gs *gestureState, w *Window) {
-	_ = gs
+func cancelLongPress(w *Window) {
 	w.AnimationRemove(gestureLongPressAnimID)
 }
 
@@ -611,11 +637,5 @@ func touchAngle(gs *gestureState) float32 {
 
 // normalizeAngle wraps an angle to [-pi, pi].
 func normalizeAngle(a float32) float32 {
-	for a > math.Pi {
-		a -= 2 * math.Pi
-	}
-	for a < -math.Pi {
-		a += 2 * math.Pi
-	}
-	return a
+	return float32(math.Remainder(float64(a), 2*math.Pi))
 }

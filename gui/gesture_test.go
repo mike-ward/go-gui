@@ -199,9 +199,11 @@ func TestGesturePan(t *testing.T) {
 	w.handleTouch(root, touchEvent(EventTouchesBegan, 1, 100, 100))
 
 	// Move beyond threshold.
+	gs.nowFn = fixedClock(16_000_000) // 16ms
 	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 115, 100))
 
 	// Continue moving.
+	gs.nowFn = fixedClock(32_000_000) // 32ms
 	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 130, 100))
 
 	// End.
@@ -237,9 +239,13 @@ func TestGestureSwipe(t *testing.T) {
 
 	w.handleTouch(root, touchEvent(EventTouchesBegan, 1, 100, 100))
 	// Move fast — large displacement in few frames builds velocity.
+	gs.nowFn = fixedClock(16_000_000) // 16ms
 	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 150, 100))
+	gs.nowFn = fixedClock(32_000_000)
 	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 200, 100))
+	gs.nowFn = fixedClock(48_000_000)
 	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 250, 100))
+	gs.nowFn = fixedClock(64_000_000)
 	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 300, 100))
 
 	gs.nowFn = fixedClock(100_000_000)
@@ -316,6 +322,93 @@ func TestGestureRotate(t *testing.T) {
 	}
 }
 
+// --- Rotate end ---
+
+func TestGestureRotateEnd(t *testing.T) {
+	var gotPhase GesturePhase
+	var gotRotation float32
+	root := gestureLayout(&EventHandlers{
+		OnGesture: func(_ *Layout, e *Event, _ *Window) {
+			if e.GestureType == GestureRotate {
+				gotPhase = e.GesturePhase
+				gotRotation = e.GestureRotation
+			}
+			e.IsHandled = true
+		},
+	})
+	w := &Window{}
+	w.animations = make(map[string]Animation)
+	gs := &w.viewState.gesture
+	gs.nowFn = fixedClock(0)
+
+	// Two fingers horizontal, centered at (200,200), span=100.
+	w.handleTouch(root, touchEvent(EventTouchesBegan, 1, 150, 200))
+	w.handleTouch(root, twoTouchEvent(EventTouchesBegan,
+		1, 150, 200, 2, 250, 200))
+
+	// Rotate ~30 degrees keeping span constant (~100px).
+	// Fingers orbit the centroid at radius 50.
+	w.handleTouch(root, twoTouchEvent(EventTouchesMoved,
+		1, 157, 175, 2, 243, 225))
+
+	// Lift all fingers.
+	w.handleTouch(root, twoTouchEvent(EventTouchesEnded,
+		1, 157, 175, 2, 243, 225))
+
+	if gotPhase != GesturePhaseEnded {
+		t.Errorf("expected Ended phase, got %d", gotPhase)
+	}
+	if gotRotation == 0 {
+		t.Error("expected non-zero rotation in Ended event")
+	}
+}
+
+// --- Rotate to single touch transition ---
+
+func TestRotateToSingleTouchTransition(t *testing.T) {
+	var lastType GestureType
+	var lastPhase GesturePhase
+	root := gestureLayout(&EventHandlers{
+		OnGesture: func(_ *Layout, e *Event, _ *Window) {
+			lastType = e.GestureType
+			lastPhase = e.GesturePhase
+			e.IsHandled = true
+		},
+	})
+	w := &Window{}
+	w.animations = make(map[string]Animation)
+	gs := &w.viewState.gesture
+	gs.nowFn = fixedClock(0)
+
+	// Two fingers centered at (200,200), span=100.
+	w.handleTouch(root, touchEvent(EventTouchesBegan, 1, 150, 200))
+	w.handleTouch(root, twoTouchEvent(EventTouchesBegan,
+		1, 150, 200, 2, 250, 200))
+
+	// Rotate ~30 degrees keeping span constant.
+	w.handleTouch(root, twoTouchEvent(EventTouchesMoved,
+		1, 157, 175, 2, 243, 225))
+
+	// Lift second finger.
+	endEvt := &Event{
+		Type:       EventTouchesEnded,
+		NumTouches: 1,
+		Touches: [8]TouchPoint{{
+			Identifier: 2,
+			PosX:       243, PosY: 225,
+			ToolType: TouchToolFinger,
+			Changed:  true,
+		}},
+	}
+	w.handleTouch(root, endEvt)
+
+	// Should have emitted Rotate/Ended then Pan/Began.
+	if lastType != GesturePan || lastPhase != GesturePhaseBegan {
+		t.Errorf("expected Pan/Began after lift, got %d/%d",
+			lastType, lastPhase)
+	}
+}
+
 // --- Single touch mouse compat ---
 
 func TestSingleTouchMouseCompat(t *testing.T) {
@@ -351,8 +444,12 @@ func TestPanFallbackScroll(t *testing.T) {
 	guiTheme.ScrollMultiplier = 1
 
 	w.handleTouch(root, touchEvent(EventTouchesBegan, 1, 100, 100))
-	// Pan downward (negative DY should scroll content).
+	// Pan downward — first move crosses threshold (Began).
+	gs.nowFn = fixedClock(16_000_000)
 	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 100, 80))
+	// Second move produces Changed with delta (triggers scroll).
+	gs.nowFn = fixedClock(32_000_000)
+	w.handleTouch(root, touchEvent(EventTouchesMoved, 1, 100, 60))
 
 	sy := StateMap[uint32, float32](w, nsScrollY, capScroll)
 	v, _ := sy.Get(1) // IDScroll = 1
