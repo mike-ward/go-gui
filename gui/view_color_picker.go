@@ -353,16 +353,18 @@ func cpPreviewRow(cfg *ColorPickerCfg) View {
 	})
 }
 
-// cpRGBAInputs builds the R/G/B channel inputs row.
+// cpRGBAInputs builds the R/G/B/A channel inputs row.
 func cpRGBAInputs(cfg *ColorPickerCfg) View {
 	c := cfg.Color
+	l := guiLocale
 	return Row(ContainerCfg{
 		Padding: NoPadding,
 		Spacing: Some(SpacingSmall),
 		Content: []View{
-			cpChannelInput(cfg, "Red", c.R, 0),
-			cpChannelInput(cfg, "Green", c.G, 1),
-			cpChannelInput(cfg, "Blue", c.B, 2),
+			cpChannelInput(cfg, l.StrRed, c.R, 0),
+			cpChannelInput(cfg, l.StrGreen, c.G, 1),
+			cpChannelInput(cfg, l.StrBlue, c.B, 2),
+			cpChannelInput(cfg, l.StrAlpha, c.A, 3),
 		},
 	})
 }
@@ -371,15 +373,16 @@ func cpRGBAInputs(cfg *ColorPickerCfg) View {
 func cpHSVInputs(
 	cfg *ColorPickerCfg, hsv colorPickerState,
 ) View {
+	l := guiLocale
 	return Row(ContainerCfg{
 		Padding: NoPadding,
 		Spacing: Some(SpacingSmall),
 		Content: []View{
-			cpHSVChannelInput(cfg, "Hue",
+			cpHSVChannelInput(cfg, l.StrHue,
 				int(hsv.H+0.5), 360, 0),
-			cpHSVChannelInput(cfg, "Sat",
+			cpHSVChannelInput(cfg, l.StrSat,
 				int(hsv.S*100+0.5), 100, 1),
-			cpHSVChannelInput(cfg, "Value",
+			cpHSVChannelInput(cfg, l.StrValue,
 				int(hsv.V*100+0.5), 100, 2),
 		},
 	})
@@ -574,6 +577,8 @@ func cpApplyRGB(
 		nc.G = v
 	case 2:
 		nc.B = v
+	case 3:
+		nc.A = v
 	}
 	h, s, vv := nc.ToHSV()
 	sm := StateMap[string, colorPickerState](

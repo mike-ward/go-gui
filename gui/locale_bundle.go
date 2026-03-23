@@ -121,6 +121,14 @@ func (b *localeBundle) toLocale() Locale {
 		StrPage:     bundleStr(b.Strings, "page", d.StrPage),
 		StrRows:     bundleStr(b.Strings, "rows", d.StrRows),
 
+		StrRed:   bundleStr(b.Strings, "red", d.StrRed),
+		StrGreen: bundleStr(b.Strings, "green", d.StrGreen),
+		StrBlue:  bundleStr(b.Strings, "blue", d.StrBlue),
+		StrAlpha: bundleStr(b.Strings, "alpha", d.StrAlpha),
+		StrHue:   bundleStr(b.Strings, "hue", d.StrHue),
+		StrSat:   bundleStr(b.Strings, "sat", d.StrSat),
+		StrValue: bundleStr(b.Strings, "value", d.StrValue),
+
 		WeekdaysShort: toFixed7(b.WeekdaysShort, d.WeekdaysShort),
 		WeekdaysMed:   toFixed7(b.WeekdaysMed, d.WeekdaysMed),
 		WeekdaysFull:  toFixed7(b.WeekdaysFull, d.WeekdaysFull),

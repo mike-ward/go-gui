@@ -55,7 +55,14 @@
     "dirty": "Geändert",
     "matches": "Treffer",
     "page": "Seite",
-    "rows": "Zeilen"
+    "rows": "Zeilen",
+    "red": "Rot",
+    "green": "Grün",
+    "blue": "Blau",
+    "alpha": "Alpha",
+    "hue": "Farbton",
+    "sat": "Sätt",
+    "value": "Wert"
   },
   "weekdays_short": ["S", "M", "D", "M", "D", "F", "S"],
   "weekdays_med":   ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],

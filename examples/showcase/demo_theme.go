@@ -18,6 +18,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 		pickerColor = app.ThemeGenText
 	}
 
+	pickText := app.ThemeGenPickText
 	strategyViews := make([]gui.View, len(strategies))
 	for i, strategy := range strategies {
 		selected := app.ThemeGenStrategy == strategy
@@ -29,11 +30,12 @@ func demoThemeGen(w *gui.Window) gui.View {
 		}
 		sv := strategy
 		strategyViews[i] = gui.Button(gui.ButtonCfg{
-			ID:      "strat-" + sv,
-			Color:   color,
-			Padding: gui.SomeP(4, 10, 4, 10),
-			Radius:  gui.SomeF(12),
-			Content: []gui.View{gui.Text(gui.TextCfg{Text: strategyLabel(sv), TextStyle: textStyle})},
+			ID:       "strat-" + sv,
+			Color:    color,
+			Disabled: pickText,
+			Padding:  gui.SomeP(4, 10, 4, 10),
+			Radius:   gui.SomeF(12),
+			Content:  []gui.View{gui.Text(gui.TextCfg{Text: strategyLabel(sv), TextStyle: textStyle})},
 			OnClick: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
 				gui.State[ShowcaseApp](w).ThemeGenStrategy = sv
 				applyGenTheme(w)
@@ -77,22 +79,6 @@ func demoThemeGen(w *gui.Window) gui.View {
 									applyGenTheme(w)
 								},
 							}),
-							gui.Text(gui.TextCfg{
-								Text:      fmt.Sprintf("Tint: %.0f%%", app.ThemeGenTint),
-								TextStyle: t.N3,
-							}),
-							gui.Slider(gui.SliderCfg{
-								ID:     "theme-gen-tint",
-								Value:  app.ThemeGenTint,
-								Min:    0,
-								Max:    100,
-								Width:  140,
-								Sizing: gui.FixedFit,
-								OnChange: func(v float32, _ *gui.Event, w *gui.Window) {
-									gui.State[ShowcaseApp](w).ThemeGenTint = v
-									applyGenTheme(w)
-								},
-							}),
 							gui.Row(gui.ContainerCfg{
 								Sizing:  gui.FillFit,
 								Spacing: gui.SomeF(12),
@@ -107,6 +93,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 											gui.NumericInput(gui.NumericInputCfg{
 												ID:       "theme-gen-radius",
 												IDFocus:  9180,
+												Disabled: pickText,
 												Text:     app.ThemeGenRadiusText,
 												Value:    gui.Some(float64(app.ThemeGenRadius)),
 												Decimals: 1,
@@ -137,6 +124,7 @@ func demoThemeGen(w *gui.Window) gui.View {
 											gui.NumericInput(gui.NumericInputCfg{
 												ID:       "theme-gen-border",
 												IDFocus:  9181,
+												Disabled: pickText,
 												Text:     app.ThemeGenBorderText,
 												Value:    gui.Some(float64(app.ThemeGenBorder)),
 												Decimals: 1,
@@ -281,6 +269,23 @@ func demoThemeGen(w *gui.Window) gui.View {
 											e.IsHandled = true
 										},
 									}),
+								},
+							}),
+							gui.Text(gui.TextCfg{
+								Text:      fmt.Sprintf("Tint: %.0f%%", app.ThemeGenTint),
+								TextStyle: t.N3,
+							}),
+							gui.Slider(gui.SliderCfg{
+								ID:       "theme-gen-tint",
+								Disabled: pickText,
+								Value:    app.ThemeGenTint,
+								Min:      0,
+								Max:      100,
+								Width:    140,
+								Sizing:   gui.FixedFit,
+								OnChange: func(v float32, _ *gui.Event, w *gui.Window) {
+									gui.State[ShowcaseApp](w).ThemeGenTint = v
+									applyGenTheme(w)
 								},
 							}),
 						},

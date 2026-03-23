@@ -158,7 +158,7 @@ func newShowcaseApp() *ShowcaseApp {
 		NumericPercentValue:  gui.Some(0.125),
 		InputDate:            time.Now(),
 		RollerDate:           time.Now(),
-		ColorPickerColor:     gui.RGBA(255, 85, 0, 255),
+		ColorPickerColor:     gui.RGBA(51, 79, 103, 255),
 		BCSelected:           "page",
 		BCPath:               append([]gui.BreadcrumbItemCfg(nil), showcaseBreadcrumbPath...),
 		TabSelected:          "overview",

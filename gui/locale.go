@@ -108,6 +108,15 @@ type Locale struct {
 	StrHorizontalScrollbar string
 	StrVerticalScrollbar   string
 
+	// Color picker
+	StrRed   string
+	StrGreen string
+	StrBlue  string
+	StrAlpha string
+	StrHue   string
+	StrSat   string
+	StrValue string
+
 	// Data grid
 	StrColumns  string
 	StrSelected string
@@ -170,6 +179,14 @@ func localeDefaults() Locale {
 
 		StrHorizontalScrollbar: "Horizontal scrollbar",
 		StrVerticalScrollbar:   "Vertical scrollbar",
+
+		StrRed:   "Red",
+		StrGreen: "Green",
+		StrBlue:  "Blue",
+		StrAlpha: "Alpha",
+		StrHue:   "Hue",
+		StrSat:   "Sat",
+		StrValue: "Value",
 
 		StrColumns:  "Columns",
 		StrSelected: "Selected",

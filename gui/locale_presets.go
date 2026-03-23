@@ -69,6 +69,14 @@ var LocaleDeDE = Locale{
 	StrPage:     "Seite",
 	StrRows:     "Zeilen",
 
+	StrRed:   "Rot",
+	StrGreen: "Grün",
+	StrBlue:  "Blau",
+	StrAlpha: "Alpha",
+	StrHue:   "Farbton",
+	StrSat:   "Sätt",
+	StrValue: "Wert",
+
 	WeekdaysShort: [7]string{"S", "M", "D", "M", "D", "F", "S"},
 	WeekdaysMed:   [7]string{"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"},
 	WeekdaysFull: [7]string{
@@ -152,6 +160,14 @@ var LocaleArSA = Locale{
 	StrMatches:  "\u062A\u0637\u0627\u0628\u0642",
 	StrPage:     "\u0635\u0641\u062D\u0629",
 	StrRows:     "\u0635\u0641\u0648\u0641",
+
+	StrRed:   "\u0623\u062D\u0645\u0631",
+	StrGreen: "\u0623\u062E\u0636\u0631",
+	StrBlue:  "\u0623\u0632\u0631\u0642",
+	StrAlpha: "\u0634\u0641\u0627\u0641\u064A\u0629",
+	StrHue:   "\u062F\u0631\u062C\u0629",
+	StrSat:   "\u062A\u0634\u0628\u0639",
+	StrValue: "\u0642\u064A\u0645\u0629",
 
 	WeekdaysShort: [7]string{
 		"\u062D", "\u0646", "\u062B", "\u0631",
@@ -262,6 +278,14 @@ var LocaleFrFR = Locale{
 	StrPage:     "Page",
 	StrRows:     "Lignes",
 
+	StrRed:   "Rouge",
+	StrGreen: "Vert",
+	StrBlue:  "Bleu",
+	StrAlpha: "Alpha",
+	StrHue:   "Teinte",
+	StrSat:   "Sat",
+	StrValue: "Val",
+
 	WeekdaysShort: [7]string{"D", "L", "M", "M", "J", "V", "S"},
 	WeekdaysMed:   [7]string{"dim", "lun", "mar", "mer", "jeu", "ven", "sam"},
 	WeekdaysFull: [7]string{
@@ -344,6 +368,14 @@ var LocaleEsES = Locale{
 	StrMatches:  "Coincidencias",
 	StrPage:     "P\u00E1gina",
 	StrRows:     "Filas",
+
+	StrRed:   "Rojo",
+	StrGreen: "Verde",
+	StrBlue:  "Azul",
+	StrAlpha: "Alfa",
+	StrHue:   "Tono",
+	StrSat:   "Sat",
+	StrValue: "Val",
 
 	WeekdaysShort: [7]string{"D", "L", "M", "X", "J", "V", "S"},
 	WeekdaysMed:   [7]string{"dom", "lun", "mar", "mi\u00E9", "jue", "vie", "s\u00E1b"},
@@ -428,6 +460,14 @@ var LocalePtBR = Locale{
 	StrPage:     "P\u00E1gina",
 	StrRows:     "Linhas",
 
+	StrRed:   "Verm",
+	StrGreen: "Verde",
+	StrBlue:  "Azul",
+	StrAlpha: "Alfa",
+	StrHue:   "Matiz",
+	StrSat:   "Sat",
+	StrValue: "Val",
+
 	WeekdaysShort: [7]string{"D", "S", "T", "Q", "Q", "S", "S"},
 	WeekdaysMed:   [7]string{"dom", "seg", "ter", "qua", "qui", "sex", "s\u00E1b"},
 	WeekdaysFull: [7]string{
@@ -510,6 +550,14 @@ var LocaleJaJP = Locale{
 	StrMatches:  "\u4E00\u81F4",
 	StrPage:     "\u30DA\u30FC\u30B8",
 	StrRows:     "\u884C",
+
+	StrRed:   "\u8D64",
+	StrGreen: "\u7DD1",
+	StrBlue:  "\u9752",
+	StrAlpha: "\u900F\u660E",
+	StrHue:   "\u8272\u76F8",
+	StrSat:   "\u5F69\u5EA6",
+	StrValue: "\u660E\u5EA6",
 
 	WeekdaysShort: [7]string{
 		"\u65E5", "\u6708", "\u706B", "\u6C34",
@@ -602,6 +650,14 @@ var LocaleZhCN = Locale{
 	StrMatches:  "\u5339\u914D",
 	StrPage:     "\u9875",
 	StrRows:     "\u884C",
+
+	StrRed:   "\u7EA2",
+	StrGreen: "\u7EFF",
+	StrBlue:  "\u84DD",
+	StrAlpha: "\u900F\u660E",
+	StrHue:   "\u8272\u76F8",
+	StrSat:   "\u9971\u548C",
+	StrValue: "\u660E\u5EA6",
 
 	WeekdaysShort: [7]string{
 		"\u65E5", "\u4E00", "\u4E8C", "\u4E09",
@@ -696,6 +752,14 @@ var LocaleKoKR = Locale{
 	StrPage:     "\uD398\uC774\uC9C0",
 	StrRows:     "\uD589",
 
+	StrRed:   "\uBE68\uAC15",
+	StrGreen: "\uCD08\uB85D",
+	StrBlue:  "\uD30C\uB791",
+	StrAlpha: "\uD22C\uBA85",
+	StrHue:   "\uC0C9\uC0C1",
+	StrSat:   "\uCC44\uB3C4",
+	StrValue: "\uBA85\uB3C4",
+
 	WeekdaysShort: [7]string{
 		"\uC77C", "\uC6D4", "\uD654", "\uC218",
 		"\uBAA9", "\uAE08", "\uD1A0",
@@ -789,6 +853,14 @@ var LocaleHeIL = Locale{
 	StrMatches:  "\u05D4\u05EA\u05D0\u05DE\u05D5\u05EA",
 	StrPage:     "\u05E2\u05DE\u05D5\u05D3",
 	StrRows:     "\u05E9\u05D5\u05E8\u05D5\u05EA",
+
+	StrRed:   "\u05D0\u05D3\u05D5\u05DD",
+	StrGreen: "\u05D9\u05E8\u05D5\u05E7",
+	StrBlue:  "\u05DB\u05D7\u05D5\u05DC",
+	StrAlpha: "\u05E9\u05E7\u05D9\u05E4\u05D5\u05EA",
+	StrHue:   "\u05D2\u05D5\u05D5\u05DF",
+	StrSat:   "\u05E8\u05D5\u05D5\u05D9",
+	StrValue: "\u05E2\u05E8\u05DA",
 
 	WeekdaysShort: [7]string{
 		"\u05D0", "\u05D1", "\u05D2", "\u05D3",
