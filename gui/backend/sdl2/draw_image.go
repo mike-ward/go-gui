@@ -3,6 +3,7 @@
 package sdl2
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"unsafe"
@@ -40,6 +41,14 @@ func (b *Backend) loadTexture(path string) (*sdl.Texture, error) {
 	bounds := nrgba.Bounds()
 	w := int32(bounds.Dx())
 	h := int32(bounds.Dy())
+	// Guard against empty/zero-sized decodes to avoid panics when
+	// passing &nrgba.Pix[0] to SDL.
+	if w <= 0 || h <= 0 || len(nrgba.Pix) == 0 {
+		return nil, fmt.Errorf(
+			"sdl2: decoded image has invalid dimensions (%dx%d) or empty pixel buffer (len=%d)",
+			w, h, len(nrgba.Pix),
+		)
+	}
 
 	// Go NRGBA stores [R,G,B,A] per pixel. On little-endian
 	// this maps to SDL's PIXELFORMAT_ABGR8888.

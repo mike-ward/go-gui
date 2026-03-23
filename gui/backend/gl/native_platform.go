@@ -84,7 +84,9 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 			"-e", "end run",
 			"--", title, body)
 	case "linux":
-		cmd = exec.Command("notify-send", title, body)
+		// Use "--" so attacker-controlled title/body never get
+		// interpreted as flags.
+		cmd = exec.Command("notify-send", "--", title, body)
 	default:
 		return gui.NativeNotificationResult{
 			Status:       gui.NotificationError,

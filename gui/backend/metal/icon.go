@@ -30,8 +30,16 @@ func setWindowIcon(win *sdl.Window, png []byte) {
 		return
 	}
 	bounds := src.Bounds()
+	// Guard against malformed PNG decodes with zero-sized
+	// image buffers to avoid panics when taking &rgba.Pix[0].
+	if bounds.Dx() <= 0 || bounds.Dy() <= 0 {
+		return
+	}
 	rgba := image.NewRGBA(bounds)
 	draw.Draw(rgba, bounds, src, bounds.Min, draw.Src)
+	if len(rgba.Pix) == 0 {
+		return
+	}
 
 	w := int32(bounds.Dx())
 	h := int32(bounds.Dy())

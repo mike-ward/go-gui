@@ -31,8 +31,7 @@ func (n *nativePlatform) OpenURI(uri string) error {
 	case "linux":
 		cmd = exec.Command("xdg-open", uri)
 	case "windows":
-		// "start" is a shell built-in; invoke via cmd.exe.
-		cmd = exec.Command("cmd", "/c", "start", "", uri)
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", uri)
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
@@ -86,7 +85,9 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 			"-e", "end run",
 			"--", title, body)
 	case "linux":
-		cmd = exec.Command("notify-send", title, body)
+		// Use "--" so attacker-controlled title/body never get
+		// interpreted as flags.
+		cmd = exec.Command("notify-send", "--", title, body)
 	default:
 		return gui.NativeNotificationResult{
 			Status:       gui.NotificationError,
