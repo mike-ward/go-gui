@@ -479,7 +479,7 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			RadiusHeader:        cfg.RadiusSmall,
 			RadiusContent:       cfg.RadiusMedium,
 			RadiusTab:           cfg.RadiusSmall,
-			SpacingHeader:       cfg.SpacingSmall,
+			SpacingHeader:       2,
 			TextStyle:           ts,
 			TextStyleSelected:   ts,
 			TextStyleDisabled: TextStyle{

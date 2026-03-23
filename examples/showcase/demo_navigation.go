@@ -35,7 +35,8 @@ func demoTabControl(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	t := gui.CurrentTheme()
 	return gui.TabControl(gui.TabControlCfg{
-		ID: "tab-demo",
+		ID:      "tab-demo",
+		IDFocus: focusTabDemo,
 		Items: []gui.TabItemCfg{
 			gui.NewTabItem("tab1", "Overview", []gui.View{
 				gui.Column(gui.ContainerCfg{

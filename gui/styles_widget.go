@@ -709,7 +709,7 @@ var (
 		RadiusHeader:        RadiusSmall,
 		RadiusContent:       RadiusMedium,
 		RadiusTab:           RadiusSmall,
-		SpacingHeader:       SpacingSmall,
+		SpacingHeader:       2,
 		TextStyle:           DefaultTextStyle,
 		TextStyleSelected: TextStyle{
 			Color: colorTextDark,

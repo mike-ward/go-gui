@@ -283,7 +283,6 @@ func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 			hoverColor = cfg.ColorTabSelected
 			focusColor = cfg.ColorTabSelected
 			clickColor = cfg.ColorTabSelected
-			borderColor = cfg.ColorTabBorderFocus
 		}
 
 		ts := cfg.TextStyle
