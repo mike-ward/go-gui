@@ -83,7 +83,9 @@ func (iv *imageView) GenerateLayout(w *Window) Layout {
 				w, nsActiveDownloads, capModerate)
 			if !downloads.Contains(c.Src) {
 				downloads.Set(c.Src, time.Now().Unix())
-				go downloadImage(c.Src, basePath, w)
+				wCtx := w.Ctx()
+				maxBytes := w.Config.MaxImageBytes
+				go downloadImage(wCtx, c.Src, basePath, maxBytes, w)
 			}
 			// Placeholder while downloading.
 			width := c.Width
@@ -182,15 +184,18 @@ func errorTextLayout(src string, w *Window) Layout {
 const defaultMaxDownloadBytes = int64(16 * 1024 * 1024)
 
 // downloadImage fetches a remote image to a local cache path.
-// Respects WindowCfg.MaxImageBytes (default 16MB).
-func downloadImage(url, basePath string, w *Window) {
-	maxSize := w.Config.MaxImageBytes
+// wCtx is the window's context — cancellation stops the download.
+// maxBytes is the size limit (0 uses defaultMaxDownloadBytes).
+func downloadImage(
+	wCtx context.Context, url, basePath string,
+	maxBytes int64, w *Window,
+) {
+	maxSize := maxBytes
 	if maxSize <= 0 {
 		maxSize = defaultMaxDownloadBytes
 	}
 
-	ctx, cancel := context.WithTimeout(
-		context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(wCtx, 30*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)

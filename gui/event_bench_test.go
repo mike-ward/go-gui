@@ -70,6 +70,41 @@ func BenchmarkEventFnMouseScrollFocused(b *testing.B) {
 	}
 }
 
+func BenchmarkEventFnDeepNesting(b *testing.B) {
+	w := newEventTestWindow()
+	// Build 12-level deep nesting; handler at the leaf.
+	leaf := Layout{Shape: &Shape{
+		ShapeClip: DrawClip{X: 0, Y: 0, Width: 800, Height: 600},
+		Events: &EventHandlers{
+			OnMouseMove: func(_ *Layout, e *Event, _ *Window) {
+				e.IsHandled = true
+			},
+		},
+	}}
+	for range 11 {
+		leaf = Layout{
+			Shape: &Shape{
+				ShapeClip: DrawClip{X: 0, Y: 0, Width: 800, Height: 600},
+			},
+			Children: []Layout{leaf},
+		}
+	}
+	w.layout = Layout{Shape: &Shape{}, Children: []Layout{leaf}}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	e := &Event{
+		Type:      EventMouseMove,
+		MouseX:    25,
+		MouseY:    25,
+		Modifiers: ModNone,
+	}
+	for b.Loop() {
+		e.IsHandled = false
+		w.EventFn(e)
+	}
+}
+
 func BenchmarkExecuteMouseCallback(b *testing.B) {
 	layout := &Layout{
 		Shape: &Shape{
