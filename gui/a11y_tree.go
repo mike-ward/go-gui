@@ -23,6 +23,9 @@ type A11yNode struct {
 	Value         string
 	Description   string
 	X, Y, W, H    float32
+	ValueNum      float32
+	ValueMin      float32
+	ValueMax      float32
 	ParentIdx     int
 	ChildrenStart int
 	ChildrenCount int
@@ -149,12 +152,16 @@ func a11yCollect(
 	label := ""
 	value := ""
 	description := ""
+	var valueNum, valueMin, valueMax float32
 	if s.A11Y != nil {
 		if s.A11Y.Label != "" {
 			label = s.A11Y.Label
 		}
 		description = s.A11Y.Description
 		value = a11yValueText(s.A11Y)
+		valueNum = s.A11Y.ValueNum
+		valueMin = s.A11Y.ValueMin
+		valueMax = s.A11Y.ValueMax
 	}
 	if label == "" {
 		label = shapeA11yLabel(s)
@@ -175,6 +182,9 @@ func a11yCollect(
 		Y:           s.Y,
 		W:           s.Width,
 		H:           s.Height,
+		ValueNum:    valueNum,
+		ValueMin:    valueMin,
+		ValueMax:    valueMax,
 		ParentIdx:   parentIdx,
 	})
 

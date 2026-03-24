@@ -135,10 +135,3 @@ func (n *nativePlatform) SpellLearn(word string) {
 // Native menubar — no-op on SDL2.
 func (n *nativePlatform) SetNativeMenubar(_ gui.NativeMenubarCfg, _ func(string)) {}
 func (n *nativePlatform) ClearNativeMenubar()                                     {}
-
-// System tray — no-op on SDL2.
-func (n *nativePlatform) CreateSystemTray(_ gui.SystemTrayCfg, _ func(string)) (int, error) {
-	return 0, nil
-}
-func (n *nativePlatform) UpdateSystemTray(_ int, _ gui.SystemTrayCfg) {}
-func (n *nativePlatform) RemoveSystemTray(_ int)                      {}

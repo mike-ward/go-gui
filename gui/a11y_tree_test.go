@@ -195,6 +195,56 @@ func TestA11yCollectLiveRegion(t *testing.T) {
 	}
 }
 
+func TestA11yCollectValueFields(t *testing.T) {
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole: AccessRoleSlider,
+			A11Y: &AccessInfo{
+				Label:    "Volume",
+				ValueNum: 75,
+				ValueMin: 0,
+				ValueMax: 100,
+			},
+		},
+	}
+	var nodes []A11yNode
+	var live []liveNode
+	a11yCollect(&layout, -1, &nodes, 0, &live)
+	if len(nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(nodes))
+	}
+	n := nodes[0]
+	if n.ValueNum != 75 {
+		t.Errorf("ValueNum: got %g, want 75", n.ValueNum)
+	}
+	if n.ValueMin != 0 {
+		t.Errorf("ValueMin: got %g, want 0", n.ValueMin)
+	}
+	if n.ValueMax != 100 {
+		t.Errorf("ValueMax: got %g, want 100", n.ValueMax)
+	}
+}
+
+func TestA11yCollectValueFieldsNilA11Y(t *testing.T) {
+	layout := Layout{
+		Shape: &Shape{
+			A11YRole: AccessRoleButton,
+			TC:       &ShapeTextConfig{Text: "OK"},
+		},
+	}
+	var nodes []A11yNode
+	var live []liveNode
+	a11yCollect(&layout, -1, &nodes, 0, &live)
+	if len(nodes) != 1 {
+		t.Fatalf("expected 1 node, got %d", len(nodes))
+	}
+	n := nodes[0]
+	if n.ValueNum != 0 || n.ValueMin != 0 || n.ValueMax != 0 {
+		t.Errorf("expected zero values, got %g/%g/%g",
+			n.ValueNum, n.ValueMin, n.ValueMax)
+	}
+}
+
 func TestA11yValueText(t *testing.T) {
 	tests := []struct {
 		info *AccessInfo

@@ -23,6 +23,7 @@ const (
 	ifaceAccessible = "org.a11y.atspi.Accessible"
 	ifaceComponent  = "org.a11y.atspi.Component"
 	ifaceAction     = "org.a11y.atspi.Action"
+	ifaceValue      = "org.a11y.atspi.Value"
 
 	appPath = "/org/gui/a11y/app"
 )
@@ -97,6 +98,7 @@ func (b *Bridge) export(index int, path string) {
 	_ = b.conn.Export(h, dbus.ObjectPath(path), ifaceAccessible)
 	_ = b.conn.Export(h, dbus.ObjectPath(path), ifaceComponent)
 	_ = b.conn.Export(h, dbus.ObjectPath(path), ifaceAction)
+	_ = b.conn.Export(h, dbus.ObjectPath(path), ifaceValue)
 
 	// Minimal introspection so D-Bus tools can discover
 	// interfaces.
@@ -107,6 +109,7 @@ func (b *Bridge) export(index int, path string) {
 			{Name: ifaceAccessible},
 			{Name: ifaceComponent},
 			{Name: ifaceAction},
+			{Name: ifaceValue},
 		},
 	}
 	_ = b.conn.Export(
@@ -287,23 +290,20 @@ func (h *nodeHandler) GetRole() (uint32, *dbus.Error) {
 
 // GetRoleName returns the role as a string.
 func (h *nodeHandler) GetRoleName() (string, *dbus.Error) {
-	r, _ := h.GetRole()
-	switch r {
-	case rolePushButton:
-		return "push button", nil
-	case roleCheckBox:
-		return "check box", nil
-	case roleEntry:
-		return "entry", nil
-	case roleLabel:
-		return "label", nil
-	case roleSlider:
-		return "slider", nil
-	case roleApplication:
+	h.bridge.mu.Lock()
+	defer h.bridge.mu.Unlock()
+
+	if h.index == -1 {
 		return "application", nil
-	default:
+	}
+	if h.index < 0 || h.index >= h.bridge.nodeCount {
 		return "unknown", nil
 	}
+	role := h.bridge.nodes[h.index].Role
+	if int(role) < len(atspiRoleName) && atspiRoleName[role] != "" {
+		return atspiRoleName[role], nil
+	}
+	return "unknown", nil
 }
 
 // GetState returns the AT-SPI2 state bitfield.
@@ -397,21 +397,45 @@ func (h *nodeHandler) GetNActions() (int32, *dbus.Error) {
 	}
 	role := h.bridge.nodes[h.index].Role
 	if role == gui.AccessRoleSlider {
-		return 3, nil // press, increment, decrement
+		return 5, nil // press, increment, decrement, confirm, cancel
 	}
-	return 1, nil // press
+	return 3, nil // press, confirm, cancel
 }
 
 // GetActionName returns the name of the action at the given
 // index.
 func (h *nodeHandler) GetActionName(idx int32) (string, *dbus.Error) {
+	h.bridge.mu.Lock()
+	defer h.bridge.mu.Unlock()
+
+	role := gui.AccessRoleNone
+	if h.index >= 0 && h.index < h.bridge.nodeCount {
+		role = h.bridge.nodes[h.index].Role
+	}
+
+	if role == gui.AccessRoleSlider {
+		switch idx {
+		case 0:
+			return "press", nil
+		case 1:
+			return "increment", nil
+		case 2:
+			return "decrement", nil
+		case 3:
+			return "confirm", nil
+		case 4:
+			return "cancel", nil
+		}
+		return "", nil
+	}
+
 	switch idx {
 	case 0:
 		return "press", nil
 	case 1:
-		return "increment", nil
+		return "confirm", nil
 	case 2:
-		return "decrement", nil
+		return "cancel", nil
 	}
 	return "", nil
 }
@@ -423,6 +447,10 @@ func (h *nodeHandler) DoAction(idx int32) (bool, *dbus.Error) {
 	}
 	h.bridge.mu.Lock()
 	nodeIdx := h.index
+	role := gui.AccessRoleNone
+	if nodeIdx >= 0 && nodeIdx < h.bridge.nodeCount {
+		role = h.bridge.nodes[nodeIdx].Role
+	}
 	h.bridge.mu.Unlock()
 
 	if nodeIdx < 0 {
@@ -430,17 +458,75 @@ func (h *nodeHandler) DoAction(idx int32) (bool, *dbus.Error) {
 	}
 
 	var action int
-	switch idx {
-	case 0:
-		action = gui.A11yActionPress
-	case 1:
-		action = gui.A11yActionIncrement
-	case 2:
-		action = gui.A11yActionDecrement
-	default:
-		return false, nil
+	if role == gui.AccessRoleSlider {
+		switch idx {
+		case 0:
+			action = gui.A11yActionPress
+		case 1:
+			action = gui.A11yActionIncrement
+		case 2:
+			action = gui.A11yActionDecrement
+		case 3:
+			action = gui.A11yActionConfirm
+		case 4:
+			action = gui.A11yActionCancel
+		default:
+			return false, nil
+		}
+	} else {
+		switch idx {
+		case 0:
+			action = gui.A11yActionPress
+		case 1:
+			action = gui.A11yActionConfirm
+		case 2:
+			action = gui.A11yActionCancel
+		default:
+			return false, nil
+		}
 	}
 
 	h.bridge.actionCallback(action, nodeIdx)
 	return true, nil
+}
+
+// --- Value interface ---
+
+// GetCurrentValue returns the current numeric value.
+func (h *nodeHandler) GetCurrentValue() (float64, *dbus.Error) {
+	h.bridge.mu.Lock()
+	defer h.bridge.mu.Unlock()
+
+	if h.index < 0 || h.index >= h.bridge.nodeCount {
+		return 0, nil
+	}
+	return float64(h.bridge.nodes[h.index].ValueNum), nil
+}
+
+// GetMaximumValue returns the maximum numeric value.
+func (h *nodeHandler) GetMaximumValue() (float64, *dbus.Error) {
+	h.bridge.mu.Lock()
+	defer h.bridge.mu.Unlock()
+
+	if h.index < 0 || h.index >= h.bridge.nodeCount {
+		return 0, nil
+	}
+	return float64(h.bridge.nodes[h.index].ValueMax), nil
+}
+
+// GetMinimumValue returns the minimum numeric value.
+func (h *nodeHandler) GetMinimumValue() (float64, *dbus.Error) {
+	h.bridge.mu.Lock()
+	defer h.bridge.mu.Unlock()
+
+	if h.index < 0 || h.index >= h.bridge.nodeCount {
+		return 0, nil
+	}
+	return float64(h.bridge.nodes[h.index].ValueMin), nil
+}
+
+// GetMinimumIncrement returns the smallest meaningful value
+// step. Returns 0 (unspecified).
+func (h *nodeHandler) GetMinimumIncrement() (float64, *dbus.Error) {
+	return 0, nil
 }

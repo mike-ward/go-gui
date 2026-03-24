@@ -46,6 +46,10 @@ const (
 // atspiRole maps AccessRole to AT-SPI2 role uint32.
 var atspiRole [35]uint32
 
+// atspiRoleName maps AccessRole to AT-SPI2 role name strings
+// used by screen readers.
+var atspiRoleName [35]string
+
 func init() {
 	atspiRole[gui.AccessRoleNone] = roleInvalid
 	atspiRole[gui.AccessRoleButton] = rolePushButton
@@ -82,4 +86,40 @@ func init() {
 	atspiRole[gui.AccessRoleToolbar] = roleToolbar
 	atspiRole[gui.AccessRoleTree] = roleTree
 	atspiRole[gui.AccessRoleTreeItem] = roleTreeItem
+
+	atspiRoleName[gui.AccessRoleNone] = "unknown"
+	atspiRoleName[gui.AccessRoleButton] = "push button"
+	atspiRoleName[gui.AccessRoleCheckbox] = "check box"
+	atspiRoleName[gui.AccessRoleColorWell] = "color chooser"
+	atspiRoleName[gui.AccessRoleComboBox] = "combo box"
+	atspiRoleName[gui.AccessRoleDateField] = "date editor"
+	atspiRoleName[gui.AccessRoleDialog] = "dialog"
+	atspiRoleName[gui.AccessRoleDisclosure] = "toggle button"
+	atspiRoleName[gui.AccessRoleGrid] = "panel"
+	atspiRoleName[gui.AccessRoleGridCell] = "panel"
+	atspiRoleName[gui.AccessRoleGroup] = "panel"
+	atspiRoleName[gui.AccessRoleHeading] = "heading"
+	atspiRoleName[gui.AccessRoleImage] = "image"
+	atspiRoleName[gui.AccessRoleLink] = "link"
+	atspiRoleName[gui.AccessRoleList] = "list"
+	atspiRoleName[gui.AccessRoleListItem] = "list item"
+	atspiRoleName[gui.AccessRoleMenu] = "menu"
+	atspiRoleName[gui.AccessRoleMenuBar] = "menu bar"
+	atspiRoleName[gui.AccessRoleMenuItem] = "menu item"
+	atspiRoleName[gui.AccessRoleProgressBar] = "progress bar"
+	atspiRoleName[gui.AccessRoleRadioButton] = "radio button"
+	atspiRoleName[gui.AccessRoleRadioGroup] = "panel"
+	atspiRoleName[gui.AccessRoleScrollArea] = "scroll pane"
+	atspiRoleName[gui.AccessRoleScrollBar] = "scroll bar"
+	atspiRoleName[gui.AccessRoleSlider] = "slider"
+	atspiRoleName[gui.AccessRoleSplitter] = "separator"
+	atspiRoleName[gui.AccessRoleStaticText] = "label"
+	atspiRoleName[gui.AccessRoleSwitchToggle] = "toggle button"
+	atspiRoleName[gui.AccessRoleTab] = "page tab list"
+	atspiRoleName[gui.AccessRoleTabItem] = "page tab"
+	atspiRoleName[gui.AccessRoleTextField] = "entry"
+	atspiRoleName[gui.AccessRoleTextArea] = "entry"
+	atspiRoleName[gui.AccessRoleToolbar] = "tool bar"
+	atspiRoleName[gui.AccessRoleTree] = "tree"
+	atspiRoleName[gui.AccessRoleTreeItem] = "tree item"
 }
