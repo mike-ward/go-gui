@@ -15,6 +15,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/mike-ward/go-glyph"
 
@@ -107,14 +109,44 @@ func Render() {
 	androidBackend.renderFrame(androidWindow)
 }
 
-// TouchBegan maps a touch-down to EventMouseDown.
-func TouchBegan(x, y float32) { touchDown(x, y) }
+// TouchInput dispatches a touch event with a unique finger
+// identifier for multi-touch support. Phase constants:
+// 0=began, 1=moved, 2=ended, 3=cancelled.
+// identifier is int64 (not uint64) for gomobile compatibility.
+func TouchInput(phase int, identifier int64, x, y float32) {
+	var typ gui.EventType
+	switch phase {
+	case 0:
+		typ = gui.EventTouchesBegan
+	case 1:
+		typ = gui.EventTouchesMoved
+	case 2:
+		typ = gui.EventTouchesEnded
+	case 3:
+		typ = gui.EventTouchesCancelled
+	default:
+		return
+	}
+	touchEvent(typ, uint64(identifier), x, y)
+}
 
-// TouchMoved maps a touch-move to EventMouseMove.
-func TouchMoved(x, y float32) { touchMoved(x, y) }
+// TouchBegan dispatches a single-touch began event with id 0.
+// Deprecated: use TouchInput for multi-touch support.
+func TouchBegan(x, y float32) {
+	touchEvent(gui.EventTouchesBegan, 0, x, y)
+}
 
-// TouchEnded maps a touch-up to EventMouseUp.
-func TouchEnded(x, y float32) { touchUp(x, y) }
+// TouchMoved dispatches a single-touch moved event with id 0.
+// Deprecated: use TouchInput for multi-touch support.
+func TouchMoved(x, y float32) {
+	touchEvent(gui.EventTouchesMoved, 0, x, y)
+}
+
+// TouchEnded dispatches a single-touch ended event with id 0.
+// Deprecated: use TouchInput for multi-touch support.
+func TouchEnded(x, y float32) {
+	touchEvent(gui.EventTouchesEnded, 0, x, y)
+}
 
 // Resize updates the viewport after a layout change.
 func Resize(w, h int, scale float32) {
@@ -306,4 +338,170 @@ func (b *Backend) invalidatePipelineState() {
 // useGlyphPipeline sets up GLES state for glyph text rendering.
 func (b *Backend) useGlyphPipeline() {
 	b.setPipeline(pipeGlyphTex)
+}
+
+// --- OpenURI bridge ---
+
+var (
+	pendingURIMu sync.Mutex
+	pendingURI   string
+)
+
+// setPendingURI stores a URI for Kotlin to pick up.
+func setPendingURI(uri string) {
+	pendingURIMu.Lock()
+	pendingURI = uri
+	pendingURIMu.Unlock()
+}
+
+// PendingURI returns and clears the pending URI. Kotlin polls
+// this each frame and opens via Intent.ACTION_VIEW.
+func PendingURI() string {
+	pendingURIMu.Lock()
+	uri := pendingURI
+	pendingURI = ""
+	pendingURIMu.Unlock()
+	return uri
+}
+
+// --- IME bridge ---
+
+var (
+	pendingIMEMu     sync.Mutex
+	pendingIMEAction int32 // 0=none, 1=show, 2=hide
+	pendingIMERectX  int32
+	pendingIMERectY  int32
+	pendingIMERectW  int32
+	pendingIMERectH  int32
+)
+
+// setPendingIMEAction sets the IME action for Kotlin to pick up.
+func setPendingIMEAction(action int32) {
+	pendingIMEMu.Lock()
+	pendingIMEAction = action
+	pendingIMEMu.Unlock()
+}
+
+// setPendingIMERect sets the cursor rect for Kotlin.
+func setPendingIMERect(x, y, w, h int32) {
+	pendingIMEMu.Lock()
+	pendingIMERectX = x
+	pendingIMERectY = y
+	pendingIMERectW = w
+	pendingIMERectH = h
+	pendingIMEMu.Unlock()
+}
+
+// PendingIMEAction returns and clears the pending IME action.
+// 0=none, 1=show keyboard, 2=hide keyboard.
+func PendingIMEAction() int32 {
+	pendingIMEMu.Lock()
+	a := pendingIMEAction
+	pendingIMEAction = 0
+	pendingIMEMu.Unlock()
+	return a
+}
+
+// PendingIMERectX returns the IME cursor rect X coordinate.
+func PendingIMERectX() int32 {
+	pendingIMEMu.Lock()
+	v := pendingIMERectX
+	pendingIMEMu.Unlock()
+	return v
+}
+
+// PendingIMERectY returns the IME cursor rect Y coordinate.
+func PendingIMERectY() int32 {
+	pendingIMEMu.Lock()
+	v := pendingIMERectY
+	pendingIMEMu.Unlock()
+	return v
+}
+
+// PendingIMERectW returns the IME cursor rect width.
+func PendingIMERectW() int32 {
+	pendingIMEMu.Lock()
+	v := pendingIMERectW
+	pendingIMEMu.Unlock()
+	return v
+}
+
+// PendingIMERectH returns the IME cursor rect height.
+func PendingIMERectH() int32 {
+	pendingIMEMu.Lock()
+	v := pendingIMERectH
+	pendingIMEMu.Unlock()
+	return v
+}
+
+// IMEComposition is called from Kotlin with preedit text.
+func IMEComposition(text string, cursor, selLen int64) {
+	imeComposition(text, int32(cursor), int32(selLen))
+}
+
+// IMECommit is called from Kotlin when text is committed.
+func IMECommit(text string) {
+	imeCommit(text)
+}
+
+// --- Notification bridge ---
+
+var (
+	pendingNotifMu    sync.Mutex
+	pendingNotifTitle string
+	pendingNotifBody  string
+	notifResultCh     = make(chan gui.NativeNotificationResult, 1)
+)
+
+// setPendingNotification queues a notification for Kotlin and
+// blocks until the result is reported back or timeout expires.
+func setPendingNotification(title, body string) gui.NativeNotificationResult {
+	pendingNotifMu.Lock()
+	pendingNotifTitle = title
+	pendingNotifBody = body
+	pendingNotifMu.Unlock()
+
+	select {
+	case r := <-notifResultCh:
+		return r
+	case <-time.After(10 * time.Second):
+		return gui.NativeNotificationResult{
+			Status:       gui.NotificationError,
+			ErrorCode:    "timeout",
+			ErrorMessage: "notification result not received",
+		}
+	}
+}
+
+// PendingNotificationTitle returns and clears the pending
+// notification title. Empty string means no pending notification.
+func PendingNotificationTitle() string {
+	pendingNotifMu.Lock()
+	t := pendingNotifTitle
+	pendingNotifTitle = ""
+	pendingNotifMu.Unlock()
+	return t
+}
+
+// PendingNotificationBody returns the pending notification body.
+func PendingNotificationBody() string {
+	pendingNotifMu.Lock()
+	b := pendingNotifBody
+	pendingNotifBody = ""
+	pendingNotifMu.Unlock()
+	return b
+}
+
+// NotificationResult is called from Kotlin to report the
+// notification outcome. Status: 0=OK, 1=denied, 2=error.
+func NotificationResult(status int64, errCode, errMsg string) {
+	r := gui.NativeNotificationResult{
+		Status:       gui.NativeNotificationStatus(status),
+		ErrorCode:    errCode,
+		ErrorMessage: errMsg,
+	}
+	select {
+	case notifResultCh <- r:
+	default:
+	}
 }

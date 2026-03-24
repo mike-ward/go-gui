@@ -4,44 +4,52 @@ package android
 
 import "github.com/mike-ward/go-gui/gui"
 
-// Touch-to-mouse event mapping. Single-touch maps to mouse
-// events for widget compatibility. Multi-touch: only first
-// touch drives mouse events.
-
-func touchDown(x, y float32) {
+// imeComposition dispatches an IME preedit composition event.
+func imeComposition(text string, cursor, selLen int32) {
 	if androidWindow == nil {
 		return
 	}
 	evt := gui.Event{
-		Type:        gui.EventMouseDown,
-		MouseX:      x,
-		MouseY:      y,
-		MouseButton: gui.MouseLeft,
+		Type:      gui.EventIMEComposition,
+		IMEText:   text,
+		IMEStart:  cursor,
+		IMELength: selLen,
 	}
 	androidWindow.EventFn(&evt)
 }
 
-func touchMoved(x, y float32) {
+// imeCommit dispatches committed text as individual EventChar
+// events, one per rune.
+func imeCommit(text string) {
 	if androidWindow == nil {
 		return
 	}
-	evt := gui.Event{
-		Type:   gui.EventMouseMove,
-		MouseX: x,
-		MouseY: y,
+	for _, r := range text {
+		evt := gui.Event{
+			Type:     gui.EventChar,
+			CharCode: uint32(r),
+		}
+		androidWindow.EventFn(&evt)
 	}
-	androidWindow.EventFn(&evt)
 }
 
-func touchUp(x, y float32) {
+// touchEvent dispatches a raw touch event to the window's event
+// pipeline. The gesture recognizer in gui/gesture.go processes
+// these into gesture events and synthesized mouse events.
+func touchEvent(typ gui.EventType, id uint64, x, y float32) {
 	if androidWindow == nil {
 		return
 	}
 	evt := gui.Event{
-		Type:        gui.EventMouseUp,
-		MouseX:      x,
-		MouseY:      y,
-		MouseButton: gui.MouseLeft,
+		Type:       typ,
+		NumTouches: 1,
+		Touches: [8]gui.TouchPoint{{
+			Identifier: id,
+			PosX:       x,
+			PosY:       y,
+			ToolType:   gui.TouchToolFinger,
+			Changed:    true,
+		}},
 	}
 	androidWindow.EventFn(&evt)
 }

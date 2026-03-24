@@ -28,7 +28,8 @@ func (n *nativePlatform) OpenURI(uri string) error {
 		return fmt.Errorf("unsupported URI scheme: %q",
 			u.Scheme)
 	}
-	return fmt.Errorf("OpenURI not implemented on Android")
+	setPendingURI(uri)
+	return nil
 }
 
 func (n *nativePlatform) ShowOpenDialog(title, startDir string, extensions []string, allowMultiple bool) gui.PlatformDialogResult {
@@ -51,12 +52,8 @@ func (n *nativePlatform) ShowConfirmDialog(title, body string, level gui.NativeA
 	return filedialog.ShowConfirmDialog(title, body, level)
 }
 
-func (n *nativePlatform) SendNotification(_, _ string) gui.NativeNotificationResult {
-	return gui.NativeNotificationResult{
-		Status:       gui.NotificationError,
-		ErrorCode:    "unsupported",
-		ErrorMessage: "notifications not available on Android",
-	}
+func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotificationResult {
+	return setPendingNotification(title, body)
 }
 
 func (n *nativePlatform) ShowPrintDialog(cfg gui.NativePrintParams) gui.PrintRunResult {
@@ -67,13 +64,17 @@ func (n *nativePlatform) BookmarkLoadAll(_ string) []gui.BookmarkEntry { return 
 func (n *nativePlatform) BookmarkPersist(_, _ string, _ []byte)        {}
 func (n *nativePlatform) BookmarkStopAccess(_ []byte)                  {}
 
-func (n *nativePlatform) A11yInit(_ func(action, index int))      {}
-func (n *nativePlatform) A11ySync(_ []gui.A11yNode, _, _ int)     {}
-func (n *nativePlatform) A11yDestroy()                            {}
-func (n *nativePlatform) A11yAnnounce(_ string)                   {}
-func (n *nativePlatform) IMEStart()                               {}
-func (n *nativePlatform) IMEStop()                                {}
-func (n *nativePlatform) IMESetRect(_, _, _, _ int32)             {}
+func (n *nativePlatform) A11yInit(cb func(action, index int)) { initA11y(cb) }
+func (n *nativePlatform) A11ySync(nodes []gui.A11yNode, count, focusedIdx int) {
+	syncA11y(nodes, count, focusedIdx)
+}
+func (n *nativePlatform) A11yDestroy()             { destroyA11y() }
+func (n *nativePlatform) A11yAnnounce(text string) { setA11yAnnounce(text) }
+func (n *nativePlatform) IMEStart()                { setPendingIMEAction(1) }
+func (n *nativePlatform) IMEStop()                 { setPendingIMEAction(2) }
+func (n *nativePlatform) IMESetRect(x, y, w, h int32) {
+	setPendingIMERect(x, y, w, h)
+}
 func (n *nativePlatform) TitlebarDark(_ bool)                     {}
 func (n *nativePlatform) SpellCheck(text string) []gui.SpellRange { return spellcheck.Check(text) }
 func (n *nativePlatform) SpellSuggest(text string, s, l int) []string {
