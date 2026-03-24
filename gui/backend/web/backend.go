@@ -152,7 +152,10 @@ func newBackend(w *gui.Window) *Backend {
 	w.SetClipboardGetFn(func() string {
 		return b.lastPasteText
 	})
-	w.SetNativePlatform(&nativePlatform{})
+	w.SetNativePlatform(&nativePlatform{
+		doc:    doc,
+		canvas: canvas,
+	})
 
 	return b
 }
