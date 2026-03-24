@@ -301,19 +301,11 @@ func goIOSResize(w, h C.int, scale C.float) {
 	}
 }
 
-//export goIOSTouchBegan
-func goIOSTouchBegan(x, y C.float) {
-	touchDown(float32(x), float32(y))
-}
-
-//export goIOSTouchMoved
-func goIOSTouchMoved(x, y C.float) {
-	touchMoved(float32(x), float32(y))
-}
-
-//export goIOSTouchEnded
-func goIOSTouchEnded(x, y C.float) {
-	touchUp(float32(x), float32(y))
+//export goIOSTouchEvent
+func goIOSTouchEvent(phase C.int, identifier C.uintptr_t,
+	x, y C.float) {
+	TouchInput(int(phase), uint64(identifier),
+		float32(x), float32(y))
 }
 
 // --- Public API for Swift host (Pattern B) ---
@@ -338,14 +330,43 @@ func Render() {
 	iosBackend.renderFrame(iosWindow)
 }
 
-// TouchBegan maps a touch-down to EventMouseDown.
-func TouchBegan(x, y float32) { touchDown(x, y) }
+// TouchBegan dispatches a single-touch began event with id 0.
+// Deprecated: use TouchInput for multi-touch support.
+func TouchBegan(x, y float32) {
+	touchEvent(gui.EventTouchesBegan, 0, x, y)
+}
 
-// TouchMoved maps a touch-move to EventMouseMove.
-func TouchMoved(x, y float32) { touchMoved(x, y) }
+// TouchMoved dispatches a single-touch moved event with id 0.
+// Deprecated: use TouchInput for multi-touch support.
+func TouchMoved(x, y float32) {
+	touchEvent(gui.EventTouchesMoved, 0, x, y)
+}
 
-// TouchEnded maps a touch-up to EventMouseUp.
-func TouchEnded(x, y float32) { touchUp(x, y) }
+// TouchEnded dispatches a single-touch ended event with id 0.
+// Deprecated: use TouchInput for multi-touch support.
+func TouchEnded(x, y float32) {
+	touchEvent(gui.EventTouchesEnded, 0, x, y)
+}
+
+// TouchInput dispatches a touch event with a unique finger
+// identifier for multi-touch support. Phase constants:
+// 0=began, 1=moved, 2=ended, 3=cancelled.
+func TouchInput(phase int, identifier uint64, x, y float32) {
+	var typ gui.EventType
+	switch phase {
+	case 0:
+		typ = gui.EventTouchesBegan
+	case 1:
+		typ = gui.EventTouchesMoved
+	case 2:
+		typ = gui.EventTouchesEnded
+	case 3:
+		typ = gui.EventTouchesCancelled
+	default:
+		return
+	}
+	touchEvent(typ, identifier, x, y)
+}
 
 // Resize updates the viewport after a layout change.
 func Resize(w, h int, scale float32) {

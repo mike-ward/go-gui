@@ -24,7 +24,7 @@
 - (void)loadView {
     GoGuiView *v = [[GoGuiView alloc] init];
     v.backgroundColor = [UIColor blackColor];
-    v.multipleTouchEnabled = NO;
+    v.multipleTouchEnabled = YES;
     self.view = v;
 }
 
@@ -83,36 +83,49 @@
     goIOSRender();
 }
 
+// ─── Touch handling ──────────────────────────────────────────
+// Each UITouch is dispatched individually with its pointer as
+// identifier. The gesture recognizer in gui/gesture.go tracks
+// multi-touch state across these per-finger events.
+
 - (void)touchesBegan:(NSSet<UITouch *> *)touches
            withEvent:(UIEvent *)event {
-    UITouch *touch = [touches anyObject];
-    if (!touch) return;
-    CGPoint loc = [touch locationInView:self.view];
-    goIOSTouchBegan((float)loc.x, (float)loc.y);
+    for (UITouch *touch in touches) {
+        CGPoint loc = [touch locationInView:self.view];
+        goIOSTouchEvent(IOS_TOUCH_BEGAN,
+            (uintptr_t)touch,
+            (float)loc.x, (float)loc.y);
+    }
 }
 
 - (void)touchesMoved:(NSSet<UITouch *> *)touches
            withEvent:(UIEvent *)event {
-    UITouch *touch = [touches anyObject];
-    if (!touch) return;
-    CGPoint loc = [touch locationInView:self.view];
-    goIOSTouchMoved((float)loc.x, (float)loc.y);
+    for (UITouch *touch in touches) {
+        CGPoint loc = [touch locationInView:self.view];
+        goIOSTouchEvent(IOS_TOUCH_MOVED,
+            (uintptr_t)touch,
+            (float)loc.x, (float)loc.y);
+    }
 }
 
 - (void)touchesEnded:(NSSet<UITouch *> *)touches
            withEvent:(UIEvent *)event {
-    UITouch *touch = [touches anyObject];
-    if (!touch) return;
-    CGPoint loc = [touch locationInView:self.view];
-    goIOSTouchEnded((float)loc.x, (float)loc.y);
+    for (UITouch *touch in touches) {
+        CGPoint loc = [touch locationInView:self.view];
+        goIOSTouchEvent(IOS_TOUCH_ENDED,
+            (uintptr_t)touch,
+            (float)loc.x, (float)loc.y);
+    }
 }
 
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches
                withEvent:(UIEvent *)event {
-    UITouch *touch = [touches anyObject];
-    if (!touch) return;
-    CGPoint loc = [touch locationInView:self.view];
-    goIOSTouchEnded((float)loc.x, (float)loc.y);
+    for (UITouch *touch in touches) {
+        CGPoint loc = [touch locationInView:self.view];
+        goIOSTouchEvent(IOS_TOUCH_CANCELLED,
+            (uintptr_t)touch,
+            (float)loc.x, (float)loc.y);
+    }
 }
 
 - (void)appWillResignActive:(NSNotification *)n {
