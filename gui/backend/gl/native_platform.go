@@ -87,6 +87,34 @@ func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotifica
 		// Use "--" so attacker-controlled title/body never get
 		// interpreted as flags.
 		cmd = exec.Command("notify-send", "--", title, body)
+	case "windows":
+		// BalloonTip via PowerShell — works on Windows 7+.
+		// Single-quoted strings prevent variable/escape injection;
+		// only ' needs escaping (doubled).
+		safeTitle := strings.ReplaceAll(title, "'", "''")
+		safeBody := strings.ReplaceAll(body, "'", "''")
+		cmd = exec.Command("powershell", "-NoProfile", "-NonInteractive",
+			"-Command", fmt.Sprintf(
+				`Add-Type -AssemblyName System.Windows.Forms;`+
+					`$n=New-Object System.Windows.Forms.NotifyIcon;`+
+					`$n.Icon=[System.Drawing.SystemIcons]::Information;`+
+					`$n.BalloonTipTitle='%s';`+
+					`$n.BalloonTipText='%s';`+
+					`$n.Visible=$true;`+
+					`$n.ShowBalloonTip(5000);`+
+					`Start-Sleep -Seconds 6;`+
+					`$n.Dispose()`,
+				safeTitle, safeBody))
+		// Fire-and-forget — notification outlives the call.
+		if err := cmd.Start(); err != nil {
+			return gui.NativeNotificationResult{
+				Status:       gui.NotificationError,
+				ErrorCode:    "exec_failed",
+				ErrorMessage: err.Error(),
+			}
+		}
+		go cmd.Wait() //nolint:errcheck
+		return gui.NativeNotificationResult{Status: gui.NotificationOK}
 	default:
 		return gui.NativeNotificationResult{
 			Status:       gui.NotificationError,
