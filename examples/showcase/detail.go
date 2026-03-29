@@ -137,6 +137,7 @@ func docButton(showDocs bool) gui.View {
 }
 
 var componentDemos = map[string]func(*gui.Window) gui.View{
+	"audio":               demoAudio,
 	"welcome":             demoWelcome,
 	"button":              demoButton,
 	"input":               demoInput,

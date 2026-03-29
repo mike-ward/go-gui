@@ -70,7 +70,13 @@ View fn → Layout tree → layoutArrange() → renderLayout() → []RenderCmd �
 - Pan gestures auto-scroll containers; pinch/rotate available on
   ContainerCfg and DrawCanvasCfg
 
+**Audio**
+- Opt-in audio via SDL_mixer — sound effects and music playback
+- Multiple mixing channels, volume control, fade in/out
+- Load from file or embedded bytes (WAV, OGG, MP3, FLAC, MOD)
+
 **Platform Integration**
+- Windows backend — native file dialogs, print, and notifications
 - OS-level spell check (macOS NSSpellChecker, Linux Hunspell)
 - IME support and accessibility tree (macOS, Linux AT-SPI2)
 - Multi-window support with cross-window messaging
@@ -163,7 +169,7 @@ Go-Gui requires **Go 1.26+** and SDL2 development libraries.
 #### macOS (Homebrew)
 
 ```bash
-brew install go pkg-config sdl2 freetype harfbuzz pango fontconfig
+brew install go pkg-config sdl2 sdl2_mixer freetype harfbuzz pango fontconfig
 ```
 
 #### Ubuntu / Debian
@@ -172,7 +178,7 @@ brew install go pkg-config sdl2 freetype harfbuzz pango fontconfig
 sudo apt-get update
 sudo apt-get install -y \
   golang build-essential pkg-config \
-  libsdl2-dev libfreetype6-dev libharfbuzz-dev \
+  libsdl2-dev libsdl2-mixer-dev libfreetype6-dev libharfbuzz-dev \
   libpango1.0-dev libfontconfig1-dev
 ```
 
@@ -180,14 +186,14 @@ sudo apt-get install -y \
 
 ```bash
 sudo dnf install -y golang gcc pkgconf-pkg-config \
-  SDL2-devel freetype-devel harfbuzz-devel pango-devel fontconfig-devel
+  SDL2-devel SDL2_mixer-devel freetype-devel harfbuzz-devel pango-devel fontconfig-devel
 ```
 
 #### Arch Linux
 
 ```bash
 sudo pacman -Syu --noconfirm go base-devel pkgconf \
-  sdl2 freetype2 harfbuzz pango fontconfig
+  sdl2 sdl2_mixer freetype2 harfbuzz pango fontconfig
 ```
 
 #### Windows (MSYS2 MinGW x64)
@@ -195,8 +201,9 @@ sudo pacman -Syu --noconfirm go base-devel pkgconf \
 ```bash
 pacman -S --needed mingw-w64-x86_64-go mingw-w64-x86_64-gcc \
   mingw-w64-x86_64-pkgconf mingw-w64-x86_64-SDL2 \
-  mingw-w64-x86_64-freetype mingw-w64-x86_64-harfbuzz \
-  mingw-w64-x86_64-pango mingw-w64-x86_64-fontconfig
+  mingw-w64-x86_64-SDL2_mixer mingw-w64-x86_64-freetype \
+  mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-pango \
+  mingw-w64-x86_64-fontconfig
 ```
 
 Use the `MSYS2 MinGW x64` shell for `go build` / `go run`.
@@ -204,8 +211,9 @@ Use the `MSYS2 MinGW x64` shell for `go build` / `go run`.
 #### Windows (vcpkg)
 
 ```bash
-vcpkg install sdl2:x64-windows freetype:x64-windows \
-  harfbuzz:x64-windows pango:x64-windows fontconfig:x64-windows
+vcpkg install sdl2:x64-windows sdl2-mixer:x64-windows \
+  freetype:x64-windows harfbuzz:x64-windows pango:x64-windows \
+  fontconfig:x64-windows
 ```
 
 Set `CGO_CFLAGS` and `CGO_LDFLAGS` to the vcpkg include/lib paths before

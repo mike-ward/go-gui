@@ -99,6 +99,7 @@ func relatedExamples(id string) string {
 }
 
 var relatedExampleMap = map[string][]string{
+	"audio":               {"examples/showcase/demo_audio.go"},
 	"welcome":             {"examples/showcase/demo_welcome.go", "examples/showcase/docs/welcome.md"},
 	"commands":            {"examples/showcase/docs/commands.md", "examples/command_demo/main.go"},
 	"button":              {"examples/showcase/demo_feedback.go"},

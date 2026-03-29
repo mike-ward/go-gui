@@ -95,6 +95,10 @@ type ShowcaseApp struct {
 	PrintingLastPath string
 	PrintingStatus   string
 
+	AudioReady  bool
+	AudioVolume float32
+	AudioStatus string
+
 	PaletteAction     string
 	ContextMenuResult string
 
@@ -176,6 +180,7 @@ func newShowcaseApp() *ShowcaseApp {
 		BCSelected:           "page",
 		BCPath:               append([]gui.BreadcrumbItemCfg(nil), showcaseBreadcrumbPath...),
 		TabSelected:          "overview",
+		AudioVolume:          0.8,
 		SplitterMainState:    gui.SplitterState{Ratio: 0.30},
 		SplitterDetailState:  gui.SplitterState{Ratio: 0.55},
 		SidebarOpen:          true,
@@ -317,6 +322,7 @@ var demoEntries = []DemoEntry{
 	{ID: "badge", Label: "Badge", Group: groupFeedback, Summary: "Numeric and colored pill labels for counts and status.", Tags: []string{"badge", "count", "status", "pill", "label"}},
 	{ID: "skeleton", Label: "Skeleton", Group: groupFeedback, Summary: "Shimmer placeholder for loading states.", Tags: []string{"skeleton", "shimmer", "loading", "placeholder"}},
 	{ID: "native_notification", Label: "Native Notification", Group: groupFeedback, Summary: "OS-level notifications on macOS, Windows, and Linux.", Tags: []string{"notification", "native", "os", "alert", "push"}},
+	{ID: "audio", Label: "Audio", Group: groupFeedback, Summary: "Opt-in sound effects and music playback via SDL_mixer.", Tags: []string{"audio", "sound", "music", "sfx", "beep", "mixer"}},
 
 	{ID: "dialog", Label: "Dialog", Group: groupOverlays, Summary: "Message, confirm, prompt, and custom dialogs.", Tags: []string{"modal", "confirm", "prompt"}},
 	{ID: "expand_panel", Label: "Expand Panel", Group: groupLayout, Summary: "Collapsible region with custom header and content.", Tags: []string{"accordion", "collapse", "panel"}},
