@@ -48,7 +48,15 @@ jobs:
             fontconfig
 
       - name: Test
-        run: go test -cover ./gui/...
+        run: go test ${{ runner.os == 'Linux' && '-race' || '' }} -coverprofile=coverage.out ./gui/...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: coverage.out
+          retention-days: 30
 
   vet:
     name: Vet
@@ -152,3 +160,126 @@ jobs:
           printf '#!/bin/bash\nexec node "%s" "$@"\n' "$NODE_JS" > /tmp/go_js_wasm_exec
           chmod +x /tmp/go_js_wasm_exec
           GOOS=js GOARCH=wasm go test -exec=/tmp/go_js_wasm_exec ./gui/...
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: go-gui
+
+      - uses: actions/checkout@v4
+        with:
+          repository: mike-ward/go-glyph
+          path: go-glyph
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-SDL2
+            mingw-w64-x86_64-SDL2_mixer
+            mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-harfbuzz
+            mingw-w64-x86_64-pango
+            mingw-w64-x86_64-fontconfig
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build
+        working-directory: go-gui
+        run: CGO_ENABLED=1 go build ./...
+
+      - name: Vet
+        working-directory: go-gui
+        run: CGO_ENABLED=1 go vet ./...
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: go-gui
+
+      - uses: actions/checkout@v4
+        with:
+          repository: mike-ward/go-glyph
+          path: go-glyph
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Build
+        working-directory: go-gui
+        run: |
+          NDK_CC=$(find $ANDROID_NDK_ROOT -name "aarch64-linux-android*-clang" \
+            | grep -v clang++ | sort | tail -1)
+          CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC=$NDK_CC \
+            go build ./gui/backend/android/...
+
+      - name: Vet
+        working-directory: go-gui
+        run: |
+          NDK_CC=$(find $ANDROID_NDK_ROOT -name "aarch64-linux-android*-clang" \
+            | grep -v clang++ | sort | tail -1)
+          CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC=$NDK_CC \
+            go vet ./gui/backend/android/...
+
+  benchmark:
+    name: Benchmarks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libsdl2-dev \
+            libsdl2-mixer-dev \
+            libfreetype6-dev \
+            libharfbuzz-dev \
+            libpango1.0-dev \
+            libfontconfig1-dev \
+            libhunspell-dev
+
+      - name: Run benchmarks
+        run: go test -bench=. -benchmem -count=5 -run='^$' -timeout=30m ./gui/... | tee benchmark-results.txt
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark-results.txt
+          retention-days: 90
+
+      - name: Track benchmarks
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: benchmark-results.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+          benchmark-data-dir-path: dev/bench
