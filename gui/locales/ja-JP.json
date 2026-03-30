@@ -1,0 +1,123 @@
+{
+  "id": "ja-JP",
+  "number": {
+    "decimal_sep": ".",
+    "group_sep": ",",
+    "group_sizes": [
+      3
+    ],
+    "minus_sign": "-",
+    "plus_sign": "+"
+  },
+  "date": {
+    "short_date": "YYYY/M/D",
+    "long_date": "YYYY年M月D日",
+    "month_year": "YYYY年M月",
+    "first_day_of_week": 0,
+    "use_24h": false
+  },
+  "currency": {
+    "symbol": "¥",
+    "code": "JPY",
+    "position": "prefix",
+    "spacing": false,
+    "decimals": 0
+  },
+  "strings": {
+    "add": "追加",
+    "alpha": "透明",
+    "blue": "青",
+    "cancel": "キャンセル",
+    "clean": "クリーン",
+    "clear": "クリア",
+    "columns": "列",
+    "copied": "コピー済み ✓",
+    "copy_link": "リンクをコピー",
+    "delete": "削除",
+    "dirty": "変更有り",
+    "draft": "下書き",
+    "error": "エラー",
+    "filter": "フィルター",
+    "go_to_target": "ターゲットへ",
+    "green": "緑",
+    "horizontal_scrollbar": "水平スクロールバー",
+    "hue": "色相",
+    "jump": "ジャンプ",
+    "load_error": "読み込みエラー",
+    "loading": "読み込み中...",
+    "loading_diagram": "図を読み込み中...",
+    "matches": "一致",
+    "no": "いいえ",
+    "ok": "OK",
+    "open_link": "リンクを開く",
+    "page": "ページ",
+    "red": "赤",
+    "reset": "リセット",
+    "rows": "行",
+    "sat": "彩度",
+    "save": "保存",
+    "save_failed": "保存失敗",
+    "saving": "保存中...",
+    "search": "検索",
+    "selected": "選択済み",
+    "submit": "送信",
+    "value": "明度",
+    "vertical_scrollbar": "垂直スクロールバー",
+    "yes": "はい"
+  },
+  "weekdays_short": [
+    "日",
+    "月",
+    "火",
+    "水",
+    "木",
+    "金",
+    "土"
+  ],
+  "weekdays_med": [
+    "日曜",
+    "月曜",
+    "火曜",
+    "水曜",
+    "木曜",
+    "金曜",
+    "土曜"
+  ],
+  "weekdays_full": [
+    "日曜日",
+    "月曜日",
+    "火曜日",
+    "水曜日",
+    "木曜日",
+    "金曜日",
+    "土曜日"
+  ],
+  "months_short": [
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月",
+    "7月",
+    "8月",
+    "9月",
+    "10月",
+    "11月",
+    "12月"
+  ],
+  "months_full": [
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月",
+    "7月",
+    "8月",
+    "9月",
+    "10月",
+    "11月",
+    "12月"
+  ]
+}

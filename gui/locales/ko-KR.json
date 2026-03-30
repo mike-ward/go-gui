@@ -1,0 +1,123 @@
+{
+  "id": "ko-KR",
+  "number": {
+    "decimal_sep": ".",
+    "group_sep": ",",
+    "group_sizes": [
+      3
+    ],
+    "minus_sign": "-",
+    "plus_sign": "+"
+  },
+  "date": {
+    "short_date": "YYYY.M.D",
+    "long_date": "YYYY년 M월 D일",
+    "month_year": "YYYY년 M월",
+    "first_day_of_week": 0,
+    "use_24h": false
+  },
+  "currency": {
+    "symbol": "₩",
+    "code": "KRW",
+    "position": "prefix",
+    "spacing": false,
+    "decimals": 0
+  },
+  "strings": {
+    "add": "추가",
+    "alpha": "투명",
+    "blue": "파랑",
+    "cancel": "취소",
+    "clean": "깨끗함",
+    "clear": "지우기",
+    "columns": "열",
+    "copied": "복사됨 ✓",
+    "copy_link": "링크 복사",
+    "delete": "삭제",
+    "dirty": "수정됨",
+    "draft": "초안",
+    "error": "오류",
+    "filter": "필터",
+    "go_to_target": "대상으로 이동",
+    "green": "초록",
+    "horizontal_scrollbar": "가로 스크롤바",
+    "hue": "색상",
+    "jump": "이동",
+    "load_error": "로드 오류",
+    "loading": "로딩 중...",
+    "loading_diagram": "다이어그램 로딩 중...",
+    "matches": "일치",
+    "no": "아니오",
+    "ok": "확인",
+    "open_link": "링크 열기",
+    "page": "페이지",
+    "red": "빨강",
+    "reset": "초기화",
+    "rows": "행",
+    "sat": "채도",
+    "save": "저장",
+    "save_failed": "저장 실패",
+    "saving": "저장 중...",
+    "search": "검색",
+    "selected": "선택됨",
+    "submit": "제출",
+    "value": "명도",
+    "vertical_scrollbar": "세로 스크롤바",
+    "yes": "예"
+  },
+  "weekdays_short": [
+    "일",
+    "월",
+    "화",
+    "수",
+    "목",
+    "금",
+    "토"
+  ],
+  "weekdays_med": [
+    "일요",
+    "월요",
+    "화요",
+    "수요",
+    "목요",
+    "금요",
+    "토요"
+  ],
+  "weekdays_full": [
+    "일요일",
+    "월요일",
+    "화요일",
+    "수요일",
+    "목요일",
+    "금요일",
+    "토요일"
+  ],
+  "months_short": [
+    "1월",
+    "2월",
+    "3월",
+    "4월",
+    "5월",
+    "6월",
+    "7월",
+    "8월",
+    "9월",
+    "10월",
+    "11월",
+    "12월"
+  ],
+  "months_full": [
+    "1월",
+    "2월",
+    "3월",
+    "4월",
+    "5월",
+    "6월",
+    "7월",
+    "8월",
+    "9월",
+    "10월",
+    "11월",
+    "12월"
+  ]
+}

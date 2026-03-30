@@ -1,0 +1,123 @@
+{
+  "id": "es-ES",
+  "number": {
+    "decimal_sep": ",",
+    "group_sep": ".",
+    "group_sizes": [
+      3
+    ],
+    "minus_sign": "-",
+    "plus_sign": "+"
+  },
+  "date": {
+    "short_date": "DD/MM/YYYY",
+    "long_date": "D de MMMM de YYYY",
+    "month_year": "MMMM de YYYY",
+    "first_day_of_week": 1,
+    "use_24h": false
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR",
+    "position": "suffix",
+    "spacing": true,
+    "decimals": 2
+  },
+  "strings": {
+    "add": "Añadir",
+    "alpha": "Alfa",
+    "blue": "Azul",
+    "cancel": "Cancelar",
+    "clean": "Limpio",
+    "clear": "Limpiar",
+    "columns": "Columnas",
+    "copied": "Copiado ✓",
+    "copy_link": "Copiar enlace",
+    "delete": "Eliminar",
+    "dirty": "Modificado",
+    "draft": "Borrador",
+    "error": "Error",
+    "filter": "Filtrar",
+    "go_to_target": "Ir al destino",
+    "green": "Verde",
+    "horizontal_scrollbar": "Barra de desplazamiento horizontal",
+    "hue": "Tono",
+    "jump": "Ir a",
+    "load_error": "Error de carga",
+    "loading": "Cargando...",
+    "loading_diagram": "Cargando diagrama...",
+    "matches": "Coincidencias",
+    "no": "No",
+    "ok": "Aceptar",
+    "open_link": "Abrir enlace",
+    "page": "Página",
+    "red": "Rojo",
+    "reset": "Restablecer",
+    "rows": "Filas",
+    "sat": "Sat",
+    "save": "Guardar",
+    "save_failed": "Error al guardar",
+    "saving": "Guardando...",
+    "search": "Buscar",
+    "selected": "Seleccionado",
+    "submit": "Enviar",
+    "value": "Val",
+    "vertical_scrollbar": "Barra de desplazamiento vertical",
+    "yes": "Sí"
+  },
+  "weekdays_short": [
+    "D",
+    "L",
+    "M",
+    "X",
+    "J",
+    "V",
+    "S"
+  ],
+  "weekdays_med": [
+    "dom",
+    "lun",
+    "mar",
+    "mié",
+    "jue",
+    "vie",
+    "sáb"
+  ],
+  "weekdays_full": [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado"
+  ],
+  "months_short": [
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic"
+  ],
+  "months_full": [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre"
+  ]
+}

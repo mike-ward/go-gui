@@ -1,0 +1,123 @@
+{
+  "id": "fr-FR",
+  "number": {
+    "decimal_sep": ",",
+    "group_sep": " ",
+    "group_sizes": [
+      3
+    ],
+    "minus_sign": "-",
+    "plus_sign": "+"
+  },
+  "date": {
+    "short_date": "DD/MM/YYYY",
+    "long_date": "D MMMM YYYY",
+    "month_year": "MMMM YYYY",
+    "first_day_of_week": 1,
+    "use_24h": false
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR",
+    "position": "suffix",
+    "spacing": true,
+    "decimals": 2
+  },
+  "strings": {
+    "add": "Ajouter",
+    "alpha": "Alpha",
+    "blue": "Bleu",
+    "cancel": "Annuler",
+    "clean": "Propre",
+    "clear": "Effacer",
+    "columns": "Colonnes",
+    "copied": "Copié ✓",
+    "copy_link": "Copier le lien",
+    "delete": "Supprimer",
+    "dirty": "Modifié",
+    "draft": "Brouillon",
+    "error": "Erreur",
+    "filter": "Filtrer",
+    "go_to_target": "Aller à la cible",
+    "green": "Vert",
+    "horizontal_scrollbar": "Barre de défilement horizontale",
+    "hue": "Teinte",
+    "jump": "Aller à",
+    "load_error": "Erreur de chargement",
+    "loading": "Chargement...",
+    "loading_diagram": "Chargement du diagramme...",
+    "matches": "Correspondances",
+    "no": "Non",
+    "ok": "OK",
+    "open_link": "Ouvrir le lien",
+    "page": "Page",
+    "red": "Rouge",
+    "reset": "Réinitialiser",
+    "rows": "Lignes",
+    "sat": "Sat",
+    "save": "Enregistrer",
+    "save_failed": "Échec de l’enregistrement",
+    "saving": "Enregistrement...",
+    "search": "Rechercher",
+    "selected": "Sélectionné",
+    "submit": "Envoyer",
+    "value": "Val",
+    "vertical_scrollbar": "Barre de défilement verticale",
+    "yes": "Oui"
+  },
+  "weekdays_short": [
+    "D",
+    "L",
+    "M",
+    "M",
+    "J",
+    "V",
+    "S"
+  ],
+  "weekdays_med": [
+    "dim",
+    "lun",
+    "mar",
+    "mer",
+    "jeu",
+    "ven",
+    "sam"
+  ],
+  "weekdays_full": [
+    "dimanche",
+    "lundi",
+    "mardi",
+    "mercredi",
+    "jeudi",
+    "vendredi",
+    "samedi"
+  ],
+  "months_short": [
+    "janv",
+    "févr",
+    "mars",
+    "avr",
+    "mai",
+    "juin",
+    "juil",
+    "août",
+    "sept",
+    "oct",
+    "nov",
+    "déc"
+  ],
+  "months_full": [
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre"
+  ]
+}

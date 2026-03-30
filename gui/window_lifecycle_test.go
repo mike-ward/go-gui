@@ -531,6 +531,62 @@ func TestGetClipboardNilSafe(t *testing.T) {
 	}
 }
 
+func TestUpdateProducesRenderers(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State:  new(int),
+		Width:  200,
+		Height: 200,
+	})
+	w.viewGenerator = func(_ *Window) View {
+		return Text(TextCfg{Text: "render me"})
+	}
+	w.refreshLayout = true
+	w.FrameFn()
+
+	if w.refreshLayout {
+		t.Error("refreshLayout should be cleared")
+	}
+	if len(w.renderers) == 0 {
+		t.Error("expected renderers after Update")
+	}
+}
+
+func TestUpdateRenderOnlyClearsFlag(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State:  new(int),
+		Width:  200,
+		Height: 200,
+	})
+	w.viewGenerator = func(_ *Window) View {
+		return Text(TextCfg{Text: "x"})
+	}
+	// Build initial layout.
+	w.refreshLayout = true
+	w.FrameFn()
+
+	w.refreshRenderOnly = true
+	got := w.FrameFn()
+	if w.refreshRenderOnly {
+		t.Error("refreshRenderOnly should be cleared")
+	}
+	if !got {
+		t.Error("FrameFn should return true on render-only")
+	}
+}
+
+func TestStatePanicsOnWrongType(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State: new(string),
+		Width: 50, Height: 50,
+	})
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for wrong type")
+		}
+	}()
+	State[int](w)
+}
+
 func TestWindowSizeAndRect(t *testing.T) {
 	w := &Window{windowWidth: 800, windowHeight: 600}
 	width, height := w.WindowSize()
