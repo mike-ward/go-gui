@@ -3,6 +3,7 @@ package gui
 import (
 	"runtime"
 	"testing"
+	"time"
 )
 
 func TestFormEmptyIDPanics(t *testing.T) {
@@ -273,7 +274,8 @@ func TestFormAsyncValidation(t *testing.T) {
 
 	// Wait for goroutine to queue its command.
 	var cmds []queuedCommand
-	for range 200 {
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
 		runtime.Gosched()
 		w.commandsMu.Lock()
 		cmds = append(cmds, w.commands...)
@@ -282,6 +284,7 @@ func TestFormAsyncValidation(t *testing.T) {
 		if len(cmds) > 0 {
 			break
 		}
+		time.Sleep(time.Millisecond)
 	}
 	for _, cmd := range cmds {
 		if cmd.windowFn != nil {

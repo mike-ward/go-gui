@@ -1,3 +1,5 @@
+//go:build !js && !ios && !windows
+
 package sdlkey
 
 import (
