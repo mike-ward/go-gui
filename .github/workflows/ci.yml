@@ -28,6 +28,7 @@ jobs:
           sudo apt-get install -y \
             pkg-config \
             libsdl2-dev \
+            libsdl2-mixer-dev \
             libfreetype6-dev \
             libharfbuzz-dev \
             libpango1.0-dev \
@@ -40,6 +41,7 @@ jobs:
           brew install \
             pkg-config \
             sdl2 \
+            sdl2_mixer \
             freetype \
             harfbuzz \
             pango \
@@ -64,6 +66,7 @@ jobs:
           sudo apt-get install -y \
             pkg-config \
             libsdl2-dev \
+            libsdl2-mixer-dev \
             libfreetype6-dev \
             libharfbuzz-dev \
             libpango1.0-dev \
