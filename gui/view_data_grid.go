@@ -1199,77 +1199,19 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		rowDeleteEnabled, w)
 	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
 	scrollX, _ := sx.Get(scrollID)
-	lastRowIdx := len(presentation.Rows) - 1
 
 	// Visible range for virtualization.
-	firstVisible, lastVisible := 0, lastRowIdx
+	firstVisible, lastVisible := 0, len(presentation.Rows)-1
 	if virtualize {
 		firstVisible, lastVisible = dataGridVisibleRangeForScroll(scrollY, gridHeight,
 			rowHeight, len(presentation.Rows), staticTop, dataGridVirtualBufferRows)
 	}
 
 	// Assemble scroll body rows.
-	rows := make([]View, 0, len(presentation.Rows)+8)
-	if resolvedCfg.ShowColumnChooser {
-		rows = append(rows, dataGridColumnChooserRow(&resolvedCfg, chooserOpen, focusID))
-	}
-	if headerInScrollBody {
-		rows = append(rows, headerView)
-	}
-	if resolvedCfg.ShowFilterRow {
-		rows = append(rows, dataGridFilterRow(&resolvedCfg, columns, columnWidths))
-	}
-	if hasSource && resolvedCfg.Loading && len(presentation.Rows) == 0 {
-		rows = append(rows, dataGridSourceStatusRow(&resolvedCfg, guiLocale.StrLoading))
-	}
-	if hasSource && resolvedCfg.LoadError != "" && len(presentation.Rows) == 0 {
-		rows = append(rows, dataGridSourceStatusRow(&resolvedCfg,
-			guiLocale.StrLoadError+": "+resolvedCfg.LoadError))
-	}
-
-	if virtualize && firstVisible > 0 {
-		rows = append(rows, Rectangle(RectangleCfg{
-			Color:  ColorTransparent,
-			Height: float32(firstVisible) * rowHeight,
-			Sizing: FillFixed,
-		}))
-	}
-
-	// Emit visible rows.
-	for rowIdx := firstVisible; rowIdx <= lastVisible; rowIdx++ {
-		if rowIdx < 0 || rowIdx >= len(presentation.Rows) {
-			continue
-		}
-		entry := presentation.Rows[rowIdx]
-		if entry.Kind == dataGridDisplayRowGroupHeader {
-			rows = append(rows, dataGridGroupHeaderRowView(&resolvedCfg, entry, rowHeight))
-			continue
-		}
-		if entry.Kind == dataGridDisplayRowDetail {
-			if entry.DataRowIdx < 0 || entry.DataRowIdx >= len(resolvedCfg.Rows) {
-				continue
-			}
-			rows = append(rows, dataGridDetailRowView(&resolvedCfg,
-				resolvedCfg.Rows[entry.DataRowIdx], entry.DataRowIdx, columns,
-				columnWidths, rowHeight, focusID, w))
-			continue
-		}
-		if entry.DataRowIdx < 0 || entry.DataRowIdx >= len(resolvedCfg.Rows) {
-			continue
-		}
-		rows = append(rows, dataGridRowView(&resolvedCfg,
-			resolvedCfg.Rows[entry.DataRowIdx], entry.DataRowIdx, columns,
-			columnWidths, rowHeight, focusID, editingRowID, rowDeleteEnabled, w))
-	}
-
-	if virtualize && lastVisible < lastRowIdx {
-		remaining := lastRowIdx - lastVisible
-		rows = append(rows, Rectangle(RectangleCfg{
-			Color:  ColorTransparent,
-			Height: float32(remaining) * rowHeight,
-			Sizing: FillFixed,
-		}))
-	}
+	rows := dataGridScrollBodyRows(&resolvedCfg, presentation, columns,
+		columnWidths, rowHeight, focusID, editingRowID, rowDeleteEnabled,
+		headerInScrollBody, headerView, chooserOpen, hasSource, virtualize,
+		firstVisible, lastVisible, w)
 
 	// Scrollable body.
 	scrollbarCfg := ScrollbarCfg{Overflow: resolvedCfg.Scrollbar}
@@ -1286,44 +1228,12 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 	})
 
 	// Final assembly.
-	content := make([]View, 0, 6)
-	if crudEnabled {
-		content = append(content, dataGridCrudToolbarRow(&resolvedCfg, crudState,
-			sourceCaps, hasSource, focusID))
-	}
-	if resolvedCfg.ShowQuickFilter {
-		qfHeight := dataGridQuickFilterHeight(&resolvedCfg)
-		content = append(content, dataGridFrozenTopZone(&resolvedCfg,
-			[]View{dataGridQuickFilterRow(&resolvedCfg)},
-			qfHeight, totalWidth, scrollX))
-	}
-	if boolDefault(resolvedCfg.ShowHeader, true) && resolvedCfg.FreezeHeader {
-		content = append(content, dataGridFrozenTopZone(&resolvedCfg,
-			[]View{headerView}, headerHeight, totalWidth, scrollX))
-	}
-	if frozenTopDisplayRows > 0 {
-		frozenHeight := float32(frozenTopDisplayRows) * rowHeight
-		content = append(content, dataGridFrozenTopZone(&resolvedCfg,
-			frozenTopViews, frozenHeight, totalWidth, scrollX))
-	}
-	content = append(content, scrollBody)
-	if pagerEnabled {
-		totalRows := len(resolvedCfg.Rows)
-		if resolvedCfg.RowCount != nil {
-			totalRows = *resolvedCfg.RowCount
-		}
-		dgJump := StateMap[string, string](w, nsDgJump, capModerate)
-		jumpText, _ := dgJump.Get(resolvedCfg.ID)
-		content = append(content, dataGridPagerRow(&resolvedCfg, focusID, pageIndex,
-			pageCount, pageStart, pageEnd, totalRows, gridHeight, rowHeight, staticTop,
-			scrollID, presentation.DataToDisplay, jumpText))
-	}
-	if sourcePagerEnabled {
-		dgJump := StateMap[string, string](w, nsDgJump, capModerate)
-		jumpText, _ := dgJump.Get(resolvedCfg.ID)
-		content = append(content, dataGridSourcePagerRow(&resolvedCfg, focusID,
-			sourceState, sourceCaps, jumpText))
-	}
+	content := dataGridFinalContent(&resolvedCfg, scrollBody, headerView,
+		headerHeight, rowHeight, totalWidth, scrollX, gridHeight, staticTop,
+		frozenTopViews, frozenTopDisplayRows, crudEnabled, crudState,
+		sourceCaps, hasSource, focusID, pagerEnabled, sourcePagerEnabled,
+		pageIndex, pageCount, pageStart, pageEnd, presentation,
+		sourceState, scrollID, w)
 
 	return Column(ContainerCfg{
 		ID:              resolvedCfg.ID,
@@ -1352,4 +1262,151 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 		MaxHeight:   resolvedCfg.MaxHeight,
 		Content:     content,
 	})
+}
+
+func dataGridScrollBodyRows(
+	cfg *DataGridCfg,
+	presentation dataGridPresentation,
+	columns []GridColumnCfg,
+	columnWidths map[string]float32,
+	rowHeight float32,
+	focusID uint32,
+	editingRowID string,
+	rowDeleteEnabled bool,
+	headerInScrollBody bool,
+	headerView View,
+	chooserOpen, hasSource, virtualize bool,
+	firstVisible, lastVisible int,
+	w *Window,
+) []View {
+	rows := make([]View, 0, len(presentation.Rows)+8)
+	if cfg.ShowColumnChooser {
+		rows = append(rows,
+			dataGridColumnChooserRow(cfg, chooserOpen, focusID))
+	}
+	if headerInScrollBody {
+		rows = append(rows, headerView)
+	}
+	if cfg.ShowFilterRow {
+		rows = append(rows,
+			dataGridFilterRow(cfg, columns, columnWidths))
+	}
+	if hasSource && cfg.Loading && len(presentation.Rows) == 0 {
+		rows = append(rows,
+			dataGridSourceStatusRow(cfg, guiLocale.StrLoading))
+	}
+	if hasSource && cfg.LoadError != "" && len(presentation.Rows) == 0 {
+		rows = append(rows, dataGridSourceStatusRow(cfg,
+			guiLocale.StrLoadError+": "+cfg.LoadError))
+	}
+
+	lastRowIdx := len(presentation.Rows) - 1
+	if virtualize && firstVisible > 0 {
+		rows = append(rows, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(firstVisible) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+
+	for rowIdx := firstVisible; rowIdx <= lastVisible; rowIdx++ {
+		if rowIdx < 0 || rowIdx >= len(presentation.Rows) {
+			continue
+		}
+		entry := presentation.Rows[rowIdx]
+		if entry.Kind == dataGridDisplayRowGroupHeader {
+			rows = append(rows,
+				dataGridGroupHeaderRowView(cfg, entry, rowHeight))
+			continue
+		}
+		if entry.Kind == dataGridDisplayRowDetail {
+			if entry.DataRowIdx < 0 ||
+				entry.DataRowIdx >= len(cfg.Rows) {
+				continue
+			}
+			rows = append(rows, dataGridDetailRowView(cfg,
+				cfg.Rows[entry.DataRowIdx], entry.DataRowIdx,
+				columns, columnWidths, rowHeight, focusID, w))
+			continue
+		}
+		if entry.DataRowIdx < 0 ||
+			entry.DataRowIdx >= len(cfg.Rows) {
+			continue
+		}
+		rows = append(rows, dataGridRowView(cfg,
+			cfg.Rows[entry.DataRowIdx], entry.DataRowIdx,
+			columns, columnWidths, rowHeight, focusID,
+			editingRowID, rowDeleteEnabled, w))
+	}
+
+	if virtualize && lastVisible < lastRowIdx {
+		remaining := lastRowIdx - lastVisible
+		rows = append(rows, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(remaining) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+	return rows
+}
+
+func dataGridFinalContent(
+	cfg *DataGridCfg,
+	scrollBody, headerView View,
+	headerHeight, rowHeight, totalWidth, scrollX float32,
+	gridHeight, staticTop float32,
+	frozenTopViews []View,
+	frozenTopDisplayRows int,
+	crudEnabled bool,
+	crudState dataGridCrudState,
+	sourceCaps GridDataCapabilities,
+	hasSource bool,
+	focusID uint32,
+	pagerEnabled, sourcePagerEnabled bool,
+	pageIndex, pageCount, pageStart, pageEnd int,
+	presentation dataGridPresentation,
+	sourceState dataGridSourceState,
+	scrollID uint32,
+	w *Window,
+) []View {
+	content := make([]View, 0, 6)
+	if crudEnabled {
+		content = append(content, dataGridCrudToolbarRow(cfg,
+			crudState, sourceCaps, hasSource, focusID))
+	}
+	if cfg.ShowQuickFilter {
+		qfHeight := dataGridQuickFilterHeight(cfg)
+		content = append(content, dataGridFrozenTopZone(cfg,
+			[]View{dataGridQuickFilterRow(cfg)},
+			qfHeight, totalWidth, scrollX))
+	}
+	if boolDefault(cfg.ShowHeader, true) && cfg.FreezeHeader {
+		content = append(content, dataGridFrozenTopZone(cfg,
+			[]View{headerView}, headerHeight, totalWidth, scrollX))
+	}
+	if frozenTopDisplayRows > 0 {
+		frozenHeight := float32(frozenTopDisplayRows) * rowHeight
+		content = append(content, dataGridFrozenTopZone(cfg,
+			frozenTopViews, frozenHeight, totalWidth, scrollX))
+	}
+	content = append(content, scrollBody)
+	if pagerEnabled {
+		totalRows := len(cfg.Rows)
+		if cfg.RowCount != nil {
+			totalRows = *cfg.RowCount
+		}
+		dgJump := StateMap[string, string](w, nsDgJump, capModerate)
+		jumpText, _ := dgJump.Get(cfg.ID)
+		content = append(content, dataGridPagerRow(cfg, focusID,
+			pageIndex, pageCount, pageStart, pageEnd, totalRows,
+			gridHeight, rowHeight, staticTop, scrollID,
+			presentation.DataToDisplay, jumpText))
+	}
+	if sourcePagerEnabled {
+		dgJump := StateMap[string, string](w, nsDgJump, capModerate)
+		jumpText, _ := dgJump.Get(cfg.ID)
+		content = append(content, dataGridSourcePagerRow(cfg,
+			focusID, sourceState, sourceCaps, jumpText))
+	}
+	return content
 }
