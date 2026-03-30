@@ -172,6 +172,8 @@ func Run(w *gui.Window) {
 // RunApp starts a multi-window event loop. Each window in
 // initialWindows is created and registered with app. Blocks
 // until the app signals exit.
+//
+//nolint:gocyclo // backend event loop
 func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 	runtime.LockOSThread()
 

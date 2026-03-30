@@ -1,6 +1,8 @@
 package gui
 
 // layoutPositions sets positions and handles alignment.
+//
+//nolint:gocyclo // alignment + float positioning
 func layoutPositions(layout *Layout, offsetX, offsetY float32, w *Window) {
 	layout.Shape.X += offsetX
 	layout.Shape.Y += offsetY

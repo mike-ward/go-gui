@@ -18,6 +18,8 @@ const ptToMM = 25.4 / 72.0
 // renderToPDF renders a slice of RenderCmd to a PDF file at
 // job.OutputPath. sourceW and sourceH are the source viewport
 // dimensions in pixels (points).
+//
+//nolint:gocyclo // large render-cmd switch
 func renderToPDF(renderers []RenderCmd, job PrintJob,
 	sourceW, sourceH float32) error {
 

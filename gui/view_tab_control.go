@@ -196,6 +196,7 @@ func makeTabDragClick(
 	}
 }
 
+//nolint:gocyclo // complex widget layout
 func (tv *tabControlView) GenerateLayout(w *Window) Layout {
 	cfg := &tv.cfg
 	s := &DefaultTabControlStyle

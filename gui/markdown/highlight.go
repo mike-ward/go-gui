@@ -78,6 +78,8 @@ func LangFromHint(language string) CodeLanguage {
 
 // tokenizeCode tokenizes source code and returns token spans.
 // Returns nil if code exceeds maxBytes.
+//
+//nolint:gocyclo // language token-type switch
 func tokenizeCode(
 	code string, lang CodeLanguage, maxBytes int,
 ) []CodeToken {

@@ -138,6 +138,8 @@ func parseSvgDimensions(content string) (float32, float32) {
 }
 
 // parseSvgContent parses SVG content recursively, handling groups.
+//
+//nolint:gocyclo // SVG element switch
 func parseSvgContent(content string, inherited groupStyle, depth int, state *parseState) []VectorPath {
 	var paths []VectorPath
 	pos := 0

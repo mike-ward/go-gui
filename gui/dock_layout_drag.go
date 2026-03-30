@@ -169,6 +169,8 @@ func dockDragCancel(dockID string, w *Window) {
 // dockDragDetectZone determines which drop zone the cursor is
 // over. panelNodes is pre-collected at drag activation to avoid
 // per-move allocations.
+//
+//nolint:gocyclo // zone hit-testing
 func dockDragDetectZone(
 	dockID string, panelNodes []*DockNode,
 	mouseX, mouseY float32,

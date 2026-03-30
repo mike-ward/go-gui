@@ -79,6 +79,7 @@ func Tree(cfg TreeCfg) View {
 
 func (tv *treeView) Content() []View { return nil }
 
+//nolint:gocyclo // complex widget layout
 func (tv *treeView) GenerateLayout(w *Window) Layout {
 	cfg := &tv.cfg
 

@@ -409,6 +409,8 @@ func renderMdCode(
 
 // Markdown creates a markdown view. Method on *Window to
 // access viewState for caching.
+//
+//nolint:gocyclo // markdown node-type switch
 func (w *Window) Markdown(cfg MarkdownCfg) View {
 	if cfg.Invisible {
 		return invisibleContainerView()

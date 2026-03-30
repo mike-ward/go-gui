@@ -15,6 +15,8 @@ type cachedDefsPathData struct {
 // flattenDefsPath parses an SVG path d attribute and flattens it
 // to a polyline with coordinates scaled by scale. Supports M, L,
 // C, Q, A commands (absolute and relative).
+//
+//nolint:gocyclo // SVG path command switch
 func flattenDefsPath(d string, scale float32) []float32 {
 	tokens := tokenizeSvgPath(d)
 	if len(tokens) == 0 {

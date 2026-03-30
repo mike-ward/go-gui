@@ -70,6 +70,8 @@ func shortcutStringOther(m Modifier, buf []byte) []byte {
 }
 
 // keyName returns a display name for a key code.
+//
+//nolint:gocyclo // key-mapping switch
 func keyName(k KeyCode) string {
 	switch {
 	case k >= KeyA && k <= KeyZ:

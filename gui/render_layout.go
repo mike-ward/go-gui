@@ -426,6 +426,8 @@ func renderCircle(shape *Shape, clip DrawClip, w *Window) {
 }
 
 // renderText emits a RenderText command for a text shape.
+//
+//nolint:gocyclo // text rendering options
 func renderText(shape *Shape, clip DrawClip, w *Window) {
 	tc := shape.TC
 	if tc == nil {

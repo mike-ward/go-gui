@@ -7,6 +7,8 @@ import (
 )
 
 // parsePathD parses the SVG path d attribute into segments.
+//
+//nolint:gocyclo // SVG path command switch
 func parsePathD(d string) []PathSegment {
 	segments := make([]PathSegment, 0, 32)
 	tokens := tokenizePath(d)
@@ -398,6 +400,8 @@ func arcSegmentToCubic(cx, cy, rx, ry, phi, theta, dtheta float32) PathSegment {
 }
 
 // tokenizePath splits path d string into tokens.
+//
+//nolint:gocyclo // character-level tokenizer
 func tokenizePath(d string) []string {
 	tokens := make([]string, 0, len(d)/4+1)
 	var current strings.Builder

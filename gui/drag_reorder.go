@@ -324,6 +324,8 @@ func dragReorderMakeLock(
 
 // dragReorderOnMouseMove handles threshold detection and
 // index tracking during a drag.
+//
+//nolint:gocyclo // drag state machine
 func dragReorderOnMouseMove(
 	dragKey string,
 	axis DragReorderAxis,

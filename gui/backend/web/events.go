@@ -299,6 +299,7 @@ func shouldPreventDefault(code string) bool {
 	return false
 }
 
+//nolint:gocyclo // key-mapping switch
 func mapKeyCode(code string) gui.KeyCode {
 	// Single-letter keys: KeyA..KeyZ.
 	if len(code) == 4 && code[:3] == "Key" {

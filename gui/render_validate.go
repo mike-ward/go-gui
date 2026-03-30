@@ -3,6 +3,8 @@ package gui
 // rendererValidForDraw checks whether a RenderCmd has valid
 // parameters for drawing. Returns false for NaN/Inf coordinates,
 // negative sizes, nil pointers, etc.
+//
+//nolint:gocyclo // render-type validation switch
 func rendererValidForDraw(r RenderCmd) bool {
 	switch r.Kind {
 	case RenderClip:

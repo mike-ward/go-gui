@@ -134,6 +134,7 @@ func listBoxCanVirtualize(cfg *ListBoxCfg) bool {
 
 func (lv *listBoxView) Content() []View { return nil }
 
+//nolint:gocyclo // complex widget layout
 func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	cfg := &lv.cfg
 

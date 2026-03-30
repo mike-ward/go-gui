@@ -198,6 +198,8 @@ func mapKeyMod(mod sdl.Keymod) gui.Modifier {
 }
 
 // mapKeyCode maps SDL keycodes to GLFW-style gui.KeyCode values.
+//
+//nolint:gocyclo // key-mapping switch
 func mapKeyCode(sym sdl.Keycode) gui.KeyCode {
 	// Printable ASCII range (a-z → A-Z for GLFW compat).
 	if sym >= 'a' && sym <= 'z' {

@@ -228,6 +228,8 @@ func textOnClick(layout *Layout, e *Event, w *Window) {
 
 // textOnKeyDown is a read-only key handler for text navigation
 // and copy. No editing keys (paste, cut, delete).
+//
+//nolint:gocyclo // key-action dispatch
 func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 	shape := layout.Shape
 	if shape.TC == nil || shape.IDFocus == 0 ||

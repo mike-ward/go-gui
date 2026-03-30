@@ -507,6 +507,7 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 	}
 }
 
+//nolint:gocyclo // key-action dispatch
 func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 	mask := hcfg.CompiledMask
 	return func(layout *Layout, e *Event, w *Window) {

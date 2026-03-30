@@ -10,10 +10,13 @@ linters:
     - govet
     - staticcheck
     - errcheck
+    - gocyclo
     - modernize
     - unused
     - revive
   settings:
+    gocyclo:
+      max-complexity: 30
     revive:
       rules:
         - name: exported
@@ -26,6 +29,7 @@ linters:
       - path: _test\.go
         linters:
           - errcheck
+          - gocyclo
       - path: native_platform_noop\.go
         linters:
           - revive

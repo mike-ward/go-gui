@@ -154,6 +154,7 @@ func mapKeyMod(mod sdl.Keymod) gui.Modifier {
 	return m
 }
 
+//nolint:gocyclo // key-mapping switch
 func mapKeyCode(sym sdl.Keycode) gui.KeyCode {
 	if sym >= 'a' && sym <= 'z' {
 		return gui.KeyCode(sym - 32)

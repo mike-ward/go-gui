@@ -2,6 +2,8 @@ package gui
 
 // EventFn handles user events, dispatching to child views.
 // Called by the backend event loop.
+//
+//nolint:gocyclo // event dispatch switch
 func (w *Window) EventFn(e *Event) {
 	if e == nil {
 		return
