@@ -1,0 +1,27 @@
+package main
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/mike-ward/go-gui/gui"
+)
+
+func TestMainViewNoPanic(t *testing.T) {
+	t.Parallel()
+	gui.SetTheme(gui.ThemeDarkBordered)
+	items := make([]gui.ListBoxOption, 0, 10)
+	for i := 1; i <= 10; i++ {
+		id := fmt.Sprintf("%05d", i)
+		items = append(items, gui.NewListBoxOption(id, id+" text", id))
+	}
+	w := gui.NewWindow(gui.WindowCfg{
+		State:  &App{Items: items},
+		Width:  240,
+		Height: 420,
+	})
+	layout := gui.GenerateViewLayout(mainView(w), w)
+	if len(layout.Children) == 0 {
+		t.Fatal("expected non-empty layout")
+	}
+}
