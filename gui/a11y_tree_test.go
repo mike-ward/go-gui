@@ -537,14 +537,14 @@ func TestWindowCleanupClearsRegistryAndContext(t *testing.T) {
 		t.Fatal("registry not populated")
 	}
 	// Populate render guard.
-	w.renderGuardWarned = map[string]bool{"rect": true}
+	w.renderGuardWarned = 1 << RenderRect
 	// Cleanup should clear all.
 	w.WindowCleanup()
 	if w.viewState.registry.entryCount("test.ns") != 0 {
 		t.Errorf("registry not cleared: %d entries",
 			w.viewState.registry.entryCount("test.ns"))
 	}
-	if w.renderGuardWarned != nil {
+	if w.renderGuardWarned != 0 {
 		t.Error("renderGuardWarned not cleared")
 	}
 	if w.Ctx().Err() == nil {

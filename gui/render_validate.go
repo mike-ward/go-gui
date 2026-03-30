@@ -99,12 +99,9 @@ func guardRendererOrSkip(r RenderCmd, w *Window) bool {
 	if rendererValidForDraw(r) {
 		return true
 	}
-	kind := renderCmdKindName(r.Kind)
-	if w.renderGuardWarned == nil {
-		w.renderGuardWarned = make(map[string]bool)
-	}
-	if !w.renderGuardWarned[kind] {
-		w.renderGuardWarned[kind] = true
+	bit := uint32(1) << r.Kind
+	if w.renderGuardWarned&bit == 0 {
+		w.renderGuardWarned |= bit
 	}
 	return false
 }

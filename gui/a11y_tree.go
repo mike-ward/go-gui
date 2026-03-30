@@ -315,6 +315,6 @@ func (w *Window) WindowCleanup() {
 			w.nativePlatform.A11yDestroy()
 		}
 		w.viewState.registry.Clear()
-		w.renderGuardWarned = nil
+		w.renderGuardWarned = 0
 	})
 }

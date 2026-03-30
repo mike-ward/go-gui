@@ -31,8 +31,8 @@ type windowRender struct {
 	stencilDepth uint8
 	// Nesting guard for filter brackets.
 	inFilter bool
-	// Render guard — warnings emitted once per kind.
-	renderGuardWarned map[string]bool
+	// Render guard — warnings emitted once per kind (bitmask over RenderKind).
+	renderGuardWarned uint32
 }
 
 // windowAnimation holds animation lifecycle state.
