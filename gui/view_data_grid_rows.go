@@ -36,20 +36,22 @@ func dataGridGroupHeaderRowView(cfg *DataGridCfg, entry dataGridDisplayRow, rowH
 	})
 }
 
-func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []GridColumnCfg, columnWidths map[string]float32, rowHeight float32, focusID uint32, w *Window) View {
+func dataGridDetailRowView(dctx dataGridCtx, rowData GridRow, rowIdx int) View {
+	cfg := dctx.cfg
 	if cfg.OnDetailRowView == nil {
 		return Rectangle(RectangleCfg{
-			Height: rowHeight,
+			Height: dctx.rowHeight,
 			Sizing: FillFixed,
 			Color:  ColorTransparent,
 		})
 	}
 	rowID := dataGridRowID(rowData, rowIdx)
-	detailView := cfg.OnDetailRowView(rowData, w)
+	detailView := cfg.OnDetailRowView(rowData, dctx.w)
 	pc := cfg.PaddingCell.Get(Padding{})
+	focusID := dctx.focusID
 	return Row(ContainerCfg{
 		ID:          cfg.ID + ":detail:" + rowID,
-		Height:      rowHeight,
+		Height:      dctx.rowHeight,
 		Sizing:      FillFixed,
 		Color:       cfg.ColorBackground,
 		ColorBorder: cfg.ColorBorder,
@@ -58,7 +60,7 @@ func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, column
 		Spacing:     Some(-cfg.SizeBorder.Get(0)),
 		Content: []View{
 			Row(ContainerCfg{
-				Width:       dataGridColumnsTotalWidth(columns, columnWidths),
+				Width:       dataGridColumnsTotalWidth(dctx.columns, dctx.columnWidths),
 				Sizing:      FixedFill,
 				Padding:     NoPadding,
 				Color:       ColorTransparent,
@@ -76,7 +78,13 @@ func dataGridDetailRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, column
 	})
 }
 
-func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []GridColumnCfg, columnWidths map[string]float32, rowHeight float32, focusID uint32, editingRowID string, showDeleteAction bool, w *Window) View {
+func dataGridRowView(dctx dataGridCtx, rowData GridRow, rowIdx int, showDeleteAction bool) View {
+	cfg := dctx.cfg
+	columns := dctx.columns
+	columnWidths := dctx.columnWidths
+	rowHeight := dctx.rowHeight
+	focusID := dctx.focusID
+	w := dctx.w
 	rowID := dataGridRowID(rowData, rowIdx)
 	isSelected := cfg.Selection.SelectedRowIDs[rowID]
 	gridID := cfg.ID
@@ -91,7 +99,7 @@ func dataGridRowView(cfg *DataGridCfg, rowData GridRow, rowIdx int, columns []Gr
 	detailEnabled := cfg.OnDetailRowView != nil
 	detailToggleEnabled := cfg.OnDetailExpandedChange != nil
 	detailExpanded := dataGridDetailRowExpanded(cfg, rowID)
-	isEditingRow := editingRowID == rowID && editEnabled
+	isEditingRow := dctx.editingRowID == rowID && editEnabled
 
 	cells := make([]View, 0, len(columns)+1)
 	for colIdx, col := range columns {
@@ -757,7 +765,8 @@ func dataGridFrozenTopZone(cfg *DataGridCfg, rowViews []View, zoneHeight, totalW
 	})
 }
 
-func dataGridFrozenTopViews(cfg *DataGridCfg, frozenTopIndices []int, columns []GridColumnCfg, columnWidths map[string]float32, rowHeight float32, focusID uint32, editingRowID string, showDeleteAction bool, w *Window) ([]View, int) {
+func dataGridFrozenTopViews(dctx dataGridCtx, frozenTopIndices []int, showDeleteAction bool) ([]View, int) {
+	cfg := dctx.cfg
 	if len(frozenTopIndices) == 0 {
 		return nil, 0
 	}
@@ -769,10 +778,10 @@ func dataGridFrozenTopViews(cfg *DataGridCfg, frozenTopIndices []int, columns []
 		}
 		rowData := cfg.Rows[rowIdx]
 		rowID := dataGridRowID(rowData, rowIdx)
-		views = append(views, dataGridRowView(cfg, rowData, rowIdx, columns, columnWidths, rowHeight, focusID, editingRowID, showDeleteAction, w))
+		views = append(views, dataGridRowView(dctx, rowData, rowIdx, showDeleteAction))
 		displayRows++
 		if cfg.OnDetailRowView != nil && dataGridDetailRowExpanded(cfg, rowID) {
-			views = append(views, dataGridDetailRowView(cfg, rowData, rowIdx, columns, columnWidths, rowHeight, focusID, w))
+			views = append(views, dataGridDetailRowView(dctx, rowData, rowIdx))
 			displayRows++
 		}
 	}

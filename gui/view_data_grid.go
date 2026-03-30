@@ -426,6 +426,20 @@ type dataGridSourceState struct {
 	RowsSignature  uint64
 }
 
+// dataGridCtx bundles commonly repeated DataGrid parameters
+// to reduce function signatures. Constructed once per frame
+// in DataGrid() and passed by value.
+type dataGridCtx struct {
+	cfg          *DataGridCfg
+	columns      []GridColumnCfg
+	columnWidths map[string]float32
+	rowHeight    float32
+	focusID      uint32
+	scrollID     uint32
+	editingRowID string
+	w            *Window
+}
+
 // DataGrid renders a controlled, virtualized data grid view.
 func (w *Window) DataGrid(cfg DataGridCfg) View {
 	applyDataGridDefaults(&cfg)
@@ -510,13 +524,22 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 
 	// Column widths and header.
 	columnWidths := dataGridColumnWidths(resolvedCfg.ID, resolvedCfg.Columns, w)
+	dctx := dataGridCtx{
+		cfg:          &resolvedCfg,
+		columns:      columns,
+		columnWidths: columnWidths,
+		rowHeight:    rowHeight,
+		focusID:      focusID,
+		scrollID:     scrollID,
+		editingRowID: editingRowID,
+		w:            w,
+	}
 	totalWidth := dataGridColumnsTotalWidth(columns, columnWidths)
 	headerView := dataGridHeaderRow(&resolvedCfg, columns, columnWidths, focusID,
 		hoveredColID, resizingColID, focusedColID)
 	headerHeight := dataGridHeaderHeight(&resolvedCfg)
-	frozenTopViews, frozenTopDisplayRows := dataGridFrozenTopViews(&resolvedCfg,
-		frozenTopIndices, columns, columnWidths, rowHeight, focusID, editingRowID,
-		rowDeleteEnabled, w)
+	frozenTopViews, frozenTopDisplayRows := dataGridFrozenTopViews(dctx,
+		frozenTopIndices, rowDeleteEnabled)
 	sx := StateMap[uint32, float32](w, nsScrollX, capScroll)
 	scrollX, _ := sx.Get(scrollID)
 
@@ -528,10 +551,10 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 	}
 
 	// Assemble scroll body rows.
-	rows := dataGridScrollBodyRows(&resolvedCfg, presentation, columns,
-		columnWidths, rowHeight, focusID, editingRowID, rowDeleteEnabled,
-		headerInScrollBody, headerView, chooserOpen, hasSource, virtualize,
-		firstVisible, lastVisible, w)
+	rows := dataGridScrollBodyRows(dctx, presentation,
+		rowDeleteEnabled, headerInScrollBody, headerView,
+		chooserOpen, hasSource, virtualize,
+		firstVisible, lastVisible)
 
 	// Scrollable body.
 	scrollbarCfg := ScrollbarCfg{Overflow: resolvedCfg.Scrollbar}
@@ -548,12 +571,12 @@ func (w *Window) DataGrid(cfg DataGridCfg) View {
 	})
 
 	// Final assembly.
-	content := dataGridFinalContent(&resolvedCfg, scrollBody, headerView,
-		headerHeight, rowHeight, totalWidth, scrollX, gridHeight, staticTop,
+	content := dataGridFinalContent(dctx, scrollBody, headerView,
+		headerHeight, totalWidth, scrollX, gridHeight, staticTop,
 		frozenTopViews, frozenTopDisplayRows, crudEnabled, crudState,
-		sourceCaps, hasSource, focusID, pagerEnabled, sourcePagerEnabled,
+		sourceCaps, hasSource, pagerEnabled, sourcePagerEnabled,
 		pageIndex, pageCount, pageStart, pageEnd, presentation,
-		sourceState, scrollID, w)
+		sourceState)
 
 	return Column(ContainerCfg{
 		ID:              resolvedCfg.ID,

@@ -409,31 +409,26 @@ func dataGridFormatNumber(value float64) string {
 // --- Assembly functions ---
 
 func dataGridScrollBodyRows(
-	cfg *DataGridCfg,
+	dctx dataGridCtx,
 	presentation dataGridPresentation,
-	columns []GridColumnCfg,
-	columnWidths map[string]float32,
-	rowHeight float32,
-	focusID uint32,
-	editingRowID string,
 	rowDeleteEnabled bool,
 	headerInScrollBody bool,
 	headerView View,
 	chooserOpen, hasSource, virtualize bool,
 	firstVisible, lastVisible int,
-	w *Window,
 ) []View {
+	cfg := dctx.cfg
 	rows := make([]View, 0, len(presentation.Rows)+8)
 	if cfg.ShowColumnChooser {
 		rows = append(rows,
-			dataGridColumnChooserRow(cfg, chooserOpen, focusID))
+			dataGridColumnChooserRow(cfg, chooserOpen, dctx.focusID))
 	}
 	if headerInScrollBody {
 		rows = append(rows, headerView)
 	}
 	if cfg.ShowFilterRow {
 		rows = append(rows,
-			dataGridFilterRow(cfg, columns, columnWidths))
+			dataGridFilterRow(cfg, dctx.columns, dctx.columnWidths))
 	}
 	if hasSource && cfg.Loading && len(presentation.Rows) == 0 {
 		rows = append(rows,
@@ -448,7 +443,7 @@ func dataGridScrollBodyRows(
 	if virtualize && firstVisible > 0 {
 		rows = append(rows, Rectangle(RectangleCfg{
 			Color:  ColorTransparent,
-			Height: float32(firstVisible) * rowHeight,
+			Height: float32(firstVisible) * dctx.rowHeight,
 			Sizing: FillFixed,
 		}))
 	}
@@ -460,7 +455,7 @@ func dataGridScrollBodyRows(
 		entry := presentation.Rows[rowIdx]
 		if entry.Kind == dataGridDisplayRowGroupHeader {
 			rows = append(rows,
-				dataGridGroupHeaderRowView(cfg, entry, rowHeight))
+				dataGridGroupHeaderRowView(cfg, entry, dctx.rowHeight))
 			continue
 		}
 		if entry.Kind == dataGridDisplayRowDetail {
@@ -468,26 +463,24 @@ func dataGridScrollBodyRows(
 				entry.DataRowIdx >= len(cfg.Rows) {
 				continue
 			}
-			rows = append(rows, dataGridDetailRowView(cfg,
-				cfg.Rows[entry.DataRowIdx], entry.DataRowIdx,
-				columns, columnWidths, rowHeight, focusID, w))
+			rows = append(rows, dataGridDetailRowView(dctx,
+				cfg.Rows[entry.DataRowIdx], entry.DataRowIdx))
 			continue
 		}
 		if entry.DataRowIdx < 0 ||
 			entry.DataRowIdx >= len(cfg.Rows) {
 			continue
 		}
-		rows = append(rows, dataGridRowView(cfg,
+		rows = append(rows, dataGridRowView(dctx,
 			cfg.Rows[entry.DataRowIdx], entry.DataRowIdx,
-			columns, columnWidths, rowHeight, focusID,
-			editingRowID, rowDeleteEnabled, w))
+			rowDeleteEnabled))
 	}
 
 	if virtualize && lastVisible < lastRowIdx {
 		remaining := lastRowIdx - lastVisible
 		rows = append(rows, Rectangle(RectangleCfg{
 			Color:  ColorTransparent,
-			Height: float32(remaining) * rowHeight,
+			Height: float32(remaining) * dctx.rowHeight,
 			Sizing: FillFixed,
 		}))
 	}
@@ -495,9 +488,9 @@ func dataGridScrollBodyRows(
 }
 
 func dataGridFinalContent(
-	cfg *DataGridCfg,
+	dctx dataGridCtx,
 	scrollBody, headerView View,
-	headerHeight, rowHeight, totalWidth, scrollX float32,
+	headerHeight, totalWidth, scrollX float32,
 	gridHeight, staticTop float32,
 	frozenTopViews []View,
 	frozenTopDisplayRows int,
@@ -505,18 +498,16 @@ func dataGridFinalContent(
 	crudState dataGridCrudState,
 	sourceCaps GridDataCapabilities,
 	hasSource bool,
-	focusID uint32,
 	pagerEnabled, sourcePagerEnabled bool,
 	pageIndex, pageCount, pageStart, pageEnd int,
 	presentation dataGridPresentation,
 	sourceState dataGridSourceState,
-	scrollID uint32,
-	w *Window,
 ) []View {
+	cfg := dctx.cfg
 	content := make([]View, 0, 6)
 	if crudEnabled {
 		content = append(content, dataGridCrudToolbarRow(cfg,
-			crudState, sourceCaps, hasSource, focusID))
+			crudState, sourceCaps, hasSource, dctx.focusID))
 	}
 	if cfg.ShowQuickFilter {
 		qfHeight := dataGridQuickFilterHeight(cfg)
@@ -529,7 +520,7 @@ func dataGridFinalContent(
 			[]View{headerView}, headerHeight, totalWidth, scrollX))
 	}
 	if frozenTopDisplayRows > 0 {
-		frozenHeight := float32(frozenTopDisplayRows) * rowHeight
+		frozenHeight := float32(frozenTopDisplayRows) * dctx.rowHeight
 		content = append(content, dataGridFrozenTopZone(cfg,
 			frozenTopViews, frozenHeight, totalWidth, scrollX))
 	}
@@ -539,18 +530,18 @@ func dataGridFinalContent(
 		if cfg.RowCount != nil {
 			totalRows = *cfg.RowCount
 		}
-		dgJump := StateMap[string, string](w, nsDgJump, capModerate)
+		dgJump := StateMap[string, string](dctx.w, nsDgJump, capModerate)
 		jumpText, _ := dgJump.Get(cfg.ID)
-		content = append(content, dataGridPagerRow(cfg, focusID,
+		content = append(content, dataGridPagerRow(cfg, dctx.focusID,
 			pageIndex, pageCount, pageStart, pageEnd, totalRows,
-			gridHeight, rowHeight, staticTop, scrollID,
+			gridHeight, dctx.rowHeight, staticTop, dctx.scrollID,
 			presentation.DataToDisplay, jumpText))
 	}
 	if sourcePagerEnabled {
-		dgJump := StateMap[string, string](w, nsDgJump, capModerate)
+		dgJump := StateMap[string, string](dctx.w, nsDgJump, capModerate)
 		jumpText, _ := dgJump.Get(cfg.ID)
 		content = append(content, dataGridSourcePagerRow(cfg,
-			focusID, sourceState, sourceCaps, jumpText))
+			dctx.focusID, sourceState, sourceCaps, jumpText))
 	}
 	return content
 }
