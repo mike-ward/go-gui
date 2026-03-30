@@ -72,7 +72,9 @@ func TestUpdateBlinkCursor(t *testing.T) {
 
 func TestAnimationAddResumesIdleTicker(t *testing.T) {
 	w := &Window{
-		animationResumeCh: make(chan struct{}, 1),
+		windowAnimation: windowAnimation{
+			animationResumeCh: make(chan struct{}, 1),
+		},
 	}
 	tw := NewTweenAnimation("t1", 0, 1, func(float32, *Window) {})
 	w.AnimationAdd(tw)
@@ -86,7 +88,9 @@ func TestAnimationAddResumesIdleTicker(t *testing.T) {
 
 func TestAnimationAddNoResumeWhenNotEmpty(t *testing.T) {
 	w := &Window{
-		animationResumeCh: make(chan struct{}, 1),
+		windowAnimation: windowAnimation{
+			animationResumeCh: make(chan struct{}, 1),
+		},
 	}
 	tw1 := NewTweenAnimation("t1", 0, 1, func(float32, *Window) {})
 	tw2 := NewTweenAnimation("t2", 0, 1, func(float32, *Window) {})

@@ -21,6 +21,59 @@ type TextMeasurer interface {
 	LayoutText(text string, style TextStyle, wrapWidth float32) (glyph.Layout, error)
 }
 
+// windowRender holds render-walk state reset each frame.
+type windowRender struct {
+	// Renderers — flat draw command list, reused via [:0].
+	renderers []RenderCmd
+	// Clip radius propagated during render walk.
+	clipRadius float32
+	// Stencil depth for nested ClipContents.
+	stencilDepth uint8
+	// Nesting guard for filter brackets.
+	inFilter bool
+	// Render guard — warnings emitted once per kind.
+	renderGuardWarned map[string]bool
+}
+
+// windowAnimation holds animation lifecycle state.
+type windowAnimation struct {
+	// Active animations keyed by ID.
+	animations map[string]Animation
+	// Animation loop lifecycle.
+	animationStop     chan struct{}
+	animationDone     chan struct{}
+	animationResumeCh chan struct{} // buffered(1), resumes ticker
+	animationStopOnce sync.Once
+	// Per-frame pipeline timings.
+	frameTimings FrameTimings
+}
+
+// windowBackend holds backend-injected dependencies. All fields
+// are set once at init by the backend and nil in tests.
+type windowBackend struct {
+	textMeasurer   TextMeasurer
+	svgParser      SvgParser
+	nativePlatform NativePlatform
+	clipboardSetFn func(string)
+	clipboardGetFn func() string
+	// wakeMainFn pushes an SDL user event to wake the main
+	// thread from WaitEventTimeout. Set by backend; nil-safe.
+	wakeMainFn func()
+}
+
+// windowToast holds toast notification state.
+type windowToast struct {
+	toasts       []toastNotification
+	toastCounter uint64
+}
+
+// windowInspector holds dev-tools inspector state.
+type windowInspector struct {
+	inspectorEnabled    bool
+	inspectorTreeCache  []TreeNodeCfg
+	inspectorPropsCache map[string]inspectorNodeProps
+}
+
 // Window is the main application window.
 type Window struct {
 	// Mutexes.
@@ -38,26 +91,31 @@ type Window struct {
 	// View state.
 	viewState ViewState
 
+	// View generator — produces the root View each frame.
+	viewGenerator func(*Window) View
+
 	// Command queue — flushed at frame start.
 	commands []queuedCommand
+
+	// Command registry — registered commands for shortcut
+	// dispatch, menu/button integration.
+	cmdRegistry []Command
+
 	// Scratch queue used to avoid reallocating command storage each frame.
 	commandScratch []queuedCommand
 
 	// Layout tree — current frame.
 	layout Layout
 
-	// Renderers — flat draw command list, reused via [:0].
-	renderers []RenderCmd
-
-	// Clip radius propagated during render walk.
-	clipRadius float32
-	// Stencil depth for nested ClipContents.
-	stencilDepth uint8
-	// Nesting guard for filter brackets.
-	inFilter bool
-
-	// Per-frame pipeline timings.
-	frameTimings FrameTimings
+	// Embedded concern groups.
+	windowRender
+	windowAnimation
+	windowBackend
+	windowToast
+	windowInspector
+	a11y    a11y         // Accessibility backend state.
+	ime     ime          // Input Method Editor state.
+	scratch scratchPools // Reusable per-frame scratch buffers.
 
 	// Refresh flags.
 	refreshLayout     bool
@@ -67,23 +125,8 @@ type Window struct {
 	windowWidth  int
 	windowHeight int
 
-	// Render guard — warnings emitted once per kind.
-	renderGuardWarned map[string]bool
-
-	// Active animations keyed by ID.
-	animations map[string]Animation
-
 	// Dialog state.
 	dialogCfg DialogCfg
-
-	// Inspector state.
-	inspectorEnabled    bool
-	inspectorTreeCache  []TreeNodeCfg
-	inspectorPropsCache map[string]inspectorNodeProps
-
-	// Toast state.
-	toasts       []toastNotification
-	toastCounter uint64
 
 	// Window focus state — backend sets false on unfocus event.
 	focused bool
@@ -91,60 +134,23 @@ type Window struct {
 	// OnEvent is called for unhandled events. Nil-safe.
 	OnEvent func(*Event, *Window)
 
-	// Command registry — registered commands for shortcut
-	// dispatch, menu/button integration.
-	cmdRegistry []Command
-
-	// Text measurement — set by backend, nil in tests.
-	textMeasurer TextMeasurer
-
-	// SVG parser — set by backend, nil in tests.
-	svgParser SvgParser
-
-	// Native platform — set by backend, nil in tests.
-	nativePlatform NativePlatform
-
 	// File access / security-scoped bookmarks.
 	fileAccess fileAccessState
 
-	// Accessibility backend state.
-	a11y a11y
-
-	// Clipboard — set by backend, nil in tests.
-	clipboardSetFn func(string)
-	clipboardGetFn func() string
-
-	// Input Method Editor state.
-	ime ime
-
-	// View generator — produces the root View each frame.
-	viewGenerator func(*Window) View
-
 	// Config stores the WindowCfg for backend access.
 	Config WindowCfg
-
-	// Reusable per-frame scratch buffers.
-	scratch scratchPools
 
 	// Lifecycle context — cancelled in WindowCleanup to abort
 	// in-flight async goroutines (HTTP fetches, notifications, etc.).
 	ctx       context.Context
 	cancelCtx context.CancelFunc
 
-	// Animation loop lifecycle.
-	animationStop     chan struct{}
-	animationDone     chan struct{}
-	animationResumeCh chan struct{} // buffered(1), resumes ticker
-	animationStopOnce sync.Once
-	cleanupOnce       sync.Once
+	// Cleanup guard.
+	cleanupOnce sync.Once
 
 	// Frame counter — incremented each FrameFn call, stamped
 	// on events for frame-based timing (double-click detection).
 	frameCount uint64
-
-	// wakeMainFn pushes an SDL user event to wake the main
-	// thread from WaitEventTimeout. Set by backend; nil-safe.
-	wakeMainFn func()
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a

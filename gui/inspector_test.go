@@ -178,10 +178,12 @@ func TestLayoutArrangeWithInspector(t *testing.T) {
 func TestUpdateCachesInspectorTreeFromPreviousLayout(t *testing.T) {
 	requireInspector(t)
 	w := &Window{
-		windowWidth:      400,
-		windowHeight:     300,
-		refreshLayout:    true,
-		inspectorEnabled: true,
+		windowWidth:   400,
+		windowHeight:  300,
+		refreshLayout: true,
+		windowInspector: windowInspector{
+			inspectorEnabled: true,
+		},
 		viewGenerator: func(*Window) View {
 			return Rectangle(RectangleCfg{Width: 10, Height: 10, Color: Blue})
 		},

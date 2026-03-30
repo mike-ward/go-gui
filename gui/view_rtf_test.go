@@ -266,7 +266,7 @@ func TestRtfMouseMoveLinkSetsPointingHand(t *testing.T) {
 }
 
 func TestRtfGenerateLayoutSuppressesInlineObjectGlyphs(t *testing.T) {
-	w := &Window{
+	w := &Window{windowBackend: windowBackend{
 		textMeasurer: &rtfStubTextMeasurer{
 			layout: glyph.Layout{
 				Width:  120,
@@ -277,7 +277,7 @@ func TestRtfGenerateLayoutSuppressesInlineObjectGlyphs(t *testing.T) {
 				},
 			},
 		},
-	}
+	}}
 
 	layout := GenerateViewLayout(RTF(RtfCfg{
 		RichText: RichText{
@@ -299,7 +299,7 @@ func TestRtfGenerateLayoutSuppressesInlineObjectGlyphs(t *testing.T) {
 }
 
 func TestLayoutWrapRTFSuppressesInlineObjectGlyphs(t *testing.T) {
-	w := &Window{
+	w := &Window{windowBackend: windowBackend{
 		textMeasurer: &rtfStubTextMeasurer{
 			layout: glyph.Layout{
 				Width:  80,
@@ -309,7 +309,7 @@ func TestLayoutWrapRTFSuppressesInlineObjectGlyphs(t *testing.T) {
 				},
 			},
 		},
-	}
+	}}
 
 	baseStyle := glyph.TextStyle{Size: 12}
 	rt := RichText{
@@ -561,11 +561,11 @@ func TestRtfGenerateLayoutAddsTooltipChild(t *testing.T) {
 }
 
 func TestRtfGenerateLayoutEmptyRichText(t *testing.T) {
-	w := &Window{
+	w := &Window{windowBackend: windowBackend{
 		textMeasurer: &rtfStubTextMeasurer{
 			layout: glyph.Layout{},
 		},
-	}
+	}}
 	layout := GenerateViewLayout(RTF(RtfCfg{
 		RichText: RichText{},
 	}), w)
@@ -587,7 +587,7 @@ func (m *rtfErrorMeasurer) LayoutRichText(
 }
 
 func TestRtfGenerateLayoutHandlesError(t *testing.T) {
-	w := &Window{textMeasurer: &rtfErrorMeasurer{}}
+	w := &Window{windowBackend: windowBackend{textMeasurer: &rtfErrorMeasurer{}}}
 	layout := GenerateViewLayout(RTF(RtfCfg{
 		RichText: RichText{
 			Runs: []RichTextRun{{Text: "hello"}},

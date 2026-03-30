@@ -37,19 +37,21 @@ type WindowCfg struct {
 func NewWindow(cfg WindowCfg) *Window {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &Window{
-		state:             cfg.State,
-		windowWidth:       cfg.Width,
-		windowHeight:      cfg.Height,
-		focused:           true,
-		refreshLayout:     true,
-		OnEvent:           cfg.OnEvent,
-		Config:            cfg,
-		scratch:           newScratchPools(),
-		ctx:               ctx,
-		cancelCtx:         cancel,
-		animationStop:     make(chan struct{}),
-		animationDone:     make(chan struct{}),
-		animationResumeCh: make(chan struct{}, 1),
+		state:         cfg.State,
+		windowWidth:   cfg.Width,
+		windowHeight:  cfg.Height,
+		focused:       true,
+		refreshLayout: true,
+		OnEvent:       cfg.OnEvent,
+		Config:        cfg,
+		scratch:       newScratchPools(),
+		ctx:           ctx,
+		cancelCtx:     cancel,
+		windowAnimation: windowAnimation{
+			animationStop:     make(chan struct{}),
+			animationDone:     make(chan struct{}),
+			animationResumeCh: make(chan struct{}, 1),
+		},
 	}
 	go w.animationLoop()
 	return w
