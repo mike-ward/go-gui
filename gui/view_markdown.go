@@ -409,8 +409,6 @@ func renderMdCode(
 
 // Markdown creates a markdown view. Method on *Window to
 // access viewState for caching.
-//
-//nolint:gocyclo // markdown node-type switch
 func (w *Window) Markdown(cfg MarkdownCfg) View {
 	if cfg.Invisible {
 		return invisibleContainerView()
@@ -434,278 +432,11 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 
 	allowExternalAPIs := markdownExternalAPIsEnabled &&
 		!cfg.DisableExternalAPIs
-
-	// Trigger inline math fetches.
 	if allowExternalAPIs {
-		markdownWarnExternalAPIOnce(w)
-		inlineCache := ensureDiagramCache(w)
-		for _, block := range blocks {
-			for _, run := range block.Content.Runs {
-				if run.MathID == "" {
-					continue
-				}
-				mhash := diagramCacheHash(run.MathID)
-				if _, ok := inlineCache.Get(mhash); ok {
-					continue
-				}
-				if inlineCache.LoadingCount() >=
-					maxConcurrentDiagramFetches {
-					continue
-				}
-				reqID := nextDiagramRequestID(w)
-				inlineCache.Set(mhash,
-					DiagramCacheEntry{
-						State:     DiagramLoading,
-						RequestID: reqID,
-					})
-				fetchMathAsync(w, run.MathLatex, mhash,
-					reqID, cfg.Style.MathDPIInline,
-					cfg.Style.Text.Color)
-			}
-		}
+		markdownTriggerMathFetches(blocks, cfg, w)
 	}
 
-	// Build content views from blocks.
-	content := make([]View, 0, len(blocks))
-	var listItems []View
-	prevWasBQ := false
-
-	for i, block := range blocks {
-		// Extra space after blockquote group.
-		if prevWasBQ && !block.IsBlockquote {
-			content = append(content, Rectangle(RectangleCfg{
-				Sizing: FillFixed,
-				Height: cfg.Style.BlockSpacing,
-			}))
-		}
-		prevWasBQ = block.IsBlockquote
-
-		// Flush accumulated list items.
-		if !block.IsList && len(listItems) > 0 {
-			content = append(content, Column(ContainerCfg{
-				Sizing:     FillFit,
-				Padding:    NoPadding,
-				SizeBorder: NoBorder,
-				Spacing:    Some(cfg.Style.BlockSpacing / 2),
-				Content:    listItems,
-			}))
-			listItems = nil
-		}
-
-		switch {
-		case block.IsMath:
-			content = append(content, Column(ContainerCfg{
-				Sizing:     FillFit,
-				HAlign:     HAlignCenter,
-				SizeBorder: NoBorder,
-				Content: []View{
-					renderMdMath(block, cfg, w),
-				},
-			}))
-
-		case block.IsCode:
-			if block.CodeLanguage == "mermaid" {
-				content = append(content, Column(ContainerCfg{
-					Sizing:     FillFit,
-					HAlign:     HAlignCenter,
-					SizeBorder: NoBorder,
-					Content: []View{
-						renderMdMermaid(block, cfg, w),
-					},
-				}))
-			} else {
-				content = append(content,
-					renderMdCode(block, cfg, w, i))
-			}
-
-		case block.IsTable:
-			if block.TableData != nil {
-				content = append(content,
-					Column(ContainerCfg{
-						Sizing:  FillFit,
-						Padding: NoPadding,
-						Clip:    true,
-						Content: []View{
-							w.Table(TableCfg{
-								BorderStyle:      cfg.Style.TableBorderStyle,
-								ColorBorder:      cfg.Style.TableBorderColor,
-								SizeBorder:       cfg.Style.TableBorderSize,
-								TextStyleHead:    cfg.Style.TableHeadStyle,
-								TextStyle:        cfg.Style.TableCellStyle,
-								CellPadding:      cfg.Style.TableCellPadding,
-								ColorRowAlt:      cfg.Style.TableRowAlt,
-								ColumnAlignments: block.TableData.Alignments,
-								Data:             buildMarkdownTableData(*block.TableData, cfg.Style),
-							}),
-						},
-					}))
-			}
-
-		case block.IsHR:
-			content = append(content, Rectangle(RectangleCfg{
-				Sizing: FillFixed,
-				Height: 1,
-				Color:  cfg.Style.HRColor,
-			}))
-
-		case block.IsBlockquote:
-			leftMargin := float32(
-				block.BlockquoteDepth-1) * cfg.Style.NestIndent
-			content = append(content, Row(ContainerCfg{
-				Sizing:     FillFit,
-				Padding:    SomeP(0, 0, 0, leftMargin),
-				SizeBorder: NoBorder,
-				Content: []View{
-					Rectangle(RectangleCfg{
-						Sizing: FixedFill,
-						Width:  3,
-						Color:  cfg.Style.BlockquoteBorder,
-					}),
-					Column(ContainerCfg{
-						Color:      cfg.Style.BlockquoteBG,
-						Sizing:     FillFit,
-						Padding:    NoPadding,
-						SizeBorder: NoBorder,
-						Content: []View{
-							RTF(RtfCfg{
-								RichText:      block.Content,
-								Mode:          mode,
-								BaseTextStyle: &block.BaseStyle,
-							}),
-						},
-					}),
-				},
-			}))
-
-		case block.IsImage:
-			content = append(content, Image(ImageCfg{
-				Src:    block.ImageSrc,
-				Width:  block.ImageWidth,
-				Height: block.ImageHeight,
-			}))
-
-		case block.HeaderLevel > 0:
-			if block.HeaderLevel == 1 {
-				content = append(content, Rectangle(RectangleCfg{
-					Sizing: FillFixed,
-					Height: 3,
-				}))
-			}
-			headingContent := []View{
-				RTF(RtfCfg{
-					ID:            block.AnchorSlug,
-					RichText:      block.Content,
-					Mode:          mode,
-					BaseTextStyle: &block.BaseStyle,
-				}),
-			}
-			if (block.HeaderLevel == 1 &&
-				cfg.Style.H1Separator) ||
-				(block.HeaderLevel == 2 &&
-					cfg.Style.H2Separator) {
-				headingContent = append(headingContent,
-					Rectangle(RectangleCfg{
-						Sizing: FillFixed,
-						Height: 1,
-						Color:  cfg.Style.HRColor,
-					}))
-			}
-			content = append(content, Column(ContainerCfg{
-				Sizing:   FillFit,
-				Padding:  NoPadding,
-				A11YRole: AccessRoleHeading,
-				A11Y:     &AccessInfo{},
-				Content:  headingContent,
-			}))
-
-		case block.IsDefTerm:
-			content = append(content, RTF(RtfCfg{
-				RichText:      block.Content,
-				Mode:          mode,
-				BaseTextStyle: &block.BaseStyle,
-			}))
-
-		case block.IsDefValue:
-			content = append(content, Row(ContainerCfg{
-				Sizing: FillFit,
-				Padding: SomeP(
-					0, 0, 0, cfg.Style.NestIndent),
-				Content: []View{
-					RTF(RtfCfg{
-						RichText:      block.Content,
-						Mode:          mode,
-						BaseTextStyle: &block.BaseStyle,
-					}),
-				},
-			}))
-
-		case block.IsList:
-			indentW := float32(block.ListIndent) *
-				cfg.Style.NestIndent
-			prefixW := float32(len(block.ListPrefix)) *
-				cfg.Style.PrefixCharWidth
-			if block.ListPrefix == "• " {
-				prefixW /= 2
-			} else if block.ListIndent > 0 {
-				indentW += 4
-			}
-			listItems = append(listItems, Row(ContainerCfg{
-				Sizing:     FillFit,
-				Padding:    SomeP(0, 0, 0, indentW),
-				SizeBorder: NoBorder,
-				Content: []View{
-					Column(ContainerCfg{
-						Sizing:     FixedFit,
-						Padding:    NoPadding,
-						SizeBorder: NoBorder,
-						Width:      prefixW,
-						Content: []View{
-							Text(TextCfg{
-								Text:      block.ListPrefix,
-								TextStyle: cfg.Style.Text,
-							}),
-						},
-					}),
-					Column(ContainerCfg{
-						Sizing:     FillFit,
-						Padding:    NoPadding,
-						SizeBorder: NoBorder,
-						Content: []View{
-							RTF(RtfCfg{
-								RichText:      block.Content,
-								Mode:          mode,
-								BaseTextStyle: &block.BaseStyle,
-							}),
-						},
-					}),
-				},
-			}))
-			// Flush if last block.
-			if i == len(blocks)-1 && len(listItems) > 0 {
-				content = append(content, Column(ContainerCfg{
-					Sizing:     FillFit,
-					Padding:    NoPadding,
-					SizeBorder: NoBorder,
-					Spacing:    Some(cfg.Style.BlockSpacing / 2),
-					Content:    listItems,
-				}))
-				listItems = nil
-			}
-
-		default:
-			content = append(content, RTF(RtfCfg{
-				ID:            cfg.ID,
-				IDFocus:       cfg.IDFocus,
-				Clip:          cfg.Clip,
-				FocusSkip:     cfg.FocusSkip,
-				Disabled:      cfg.Disabled,
-				MinWidth:      cfg.MinWidth,
-				Mode:          mode,
-				RichText:      block.Content,
-				BaseTextStyle: &block.BaseStyle,
-			}))
-		}
-	}
+	content := markdownBuildContent(blocks, cfg, mode, w)
 
 	sizing := FitFit
 	if mode == TextModeWrap ||
@@ -737,5 +468,339 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		Spacing:     Some(cfg.Style.BlockSpacing),
 		Sizing:      sizing,
 		Content:     content,
+	})
+}
+
+// markdownTriggerMathFetches starts async fetches for inline math
+// expressions that are not already cached.
+func markdownTriggerMathFetches(
+	blocks []MarkdownBlock, cfg MarkdownCfg, w *Window,
+) {
+	markdownWarnExternalAPIOnce(w)
+	inlineCache := ensureDiagramCache(w)
+	for _, block := range blocks {
+		for _, run := range block.Content.Runs {
+			if run.MathID == "" {
+				continue
+			}
+			mhash := diagramCacheHash(run.MathID)
+			if _, ok := inlineCache.Get(mhash); ok {
+				continue
+			}
+			if inlineCache.LoadingCount() >=
+				maxConcurrentDiagramFetches {
+				continue
+			}
+			reqID := nextDiagramRequestID(w)
+			inlineCache.Set(mhash,
+				DiagramCacheEntry{
+					State:     DiagramLoading,
+					RequestID: reqID,
+				})
+			fetchMathAsync(w, run.MathLatex, mhash,
+				reqID, cfg.Style.MathDPIInline,
+				cfg.Style.Text.Color)
+		}
+	}
+}
+
+// markdownBuildContent converts parsed blocks into views,
+// handling list accumulation and blockquote spacing.
+func markdownBuildContent(
+	blocks []MarkdownBlock, cfg MarkdownCfg,
+	mode TextMode, w *Window,
+) []View {
+	content := make([]View, 0, len(blocks))
+	var listItems []View
+	prevWasBQ := false
+
+	for i, block := range blocks {
+		if prevWasBQ && !block.IsBlockquote {
+			content = append(content, Rectangle(RectangleCfg{
+				Sizing: FillFixed,
+				Height: cfg.Style.BlockSpacing,
+			}))
+		}
+		prevWasBQ = block.IsBlockquote
+
+		if !block.IsList && len(listItems) > 0 {
+			content = append(content,
+				mdFlushListItems(listItems, cfg))
+			listItems = nil
+		}
+
+		switch {
+		case block.IsMath:
+			content = append(content, mdRenderMathBlock(block, cfg, w))
+		case block.IsCode:
+			content = append(content, mdRenderCodeBlock(block, cfg, w, i))
+		case block.IsTable:
+			if v := mdRenderTable(block, cfg, w); v != nil {
+				content = append(content, v)
+			}
+		case block.IsHR:
+			content = append(content, mdRenderHR(cfg))
+		case block.IsBlockquote:
+			content = append(content, mdRenderBlockquote(block, cfg, mode))
+		case block.IsImage:
+			content = append(content, mdRenderImage(block))
+		case block.HeaderLevel > 0:
+			content = append(content, mdRenderHeading(block, cfg, mode)...)
+		case block.IsDefTerm:
+			content = append(content, mdRenderDefTerm(block, mode))
+		case block.IsDefValue:
+			content = append(content, mdRenderDefValue(block, cfg, mode))
+		case block.IsList:
+			listItems = append(listItems,
+				mdRenderListItem(block, cfg, mode))
+			if i == len(blocks)-1 && len(listItems) > 0 {
+				content = append(content,
+					mdFlushListItems(listItems, cfg))
+				listItems = nil
+			}
+		default:
+			content = append(content, mdRenderParagraph(block, cfg, mode))
+		}
+	}
+	return content
+}
+
+func mdFlushListItems(
+	listItems []View, cfg MarkdownCfg,
+) View {
+	return Column(ContainerCfg{
+		Sizing:     FillFit,
+		Padding:    NoPadding,
+		SizeBorder: NoBorder,
+		Spacing:    Some(cfg.Style.BlockSpacing / 2),
+		Content:    listItems,
+	})
+}
+
+func mdRenderMathBlock(
+	block MarkdownBlock, cfg MarkdownCfg, w *Window,
+) View {
+	return Column(ContainerCfg{
+		Sizing:     FillFit,
+		HAlign:     HAlignCenter,
+		SizeBorder: NoBorder,
+		Content: []View{
+			renderMdMath(block, cfg, w),
+		},
+	})
+}
+
+func mdRenderCodeBlock(
+	block MarkdownBlock, cfg MarkdownCfg, w *Window, idx int,
+) View {
+	if block.CodeLanguage == "mermaid" {
+		return Column(ContainerCfg{
+			Sizing:     FillFit,
+			HAlign:     HAlignCenter,
+			SizeBorder: NoBorder,
+			Content: []View{
+				renderMdMermaid(block, cfg, w),
+			},
+		})
+	}
+	return renderMdCode(block, cfg, w, idx)
+}
+
+func mdRenderTable(
+	block MarkdownBlock, cfg MarkdownCfg, w *Window,
+) View {
+	if block.TableData == nil {
+		return nil
+	}
+	return Column(ContainerCfg{
+		Sizing:  FillFit,
+		Padding: NoPadding,
+		Clip:    true,
+		Content: []View{
+			w.Table(TableCfg{
+				BorderStyle:      cfg.Style.TableBorderStyle,
+				ColorBorder:      cfg.Style.TableBorderColor,
+				SizeBorder:       cfg.Style.TableBorderSize,
+				TextStyleHead:    cfg.Style.TableHeadStyle,
+				TextStyle:        cfg.Style.TableCellStyle,
+				CellPadding:      cfg.Style.TableCellPadding,
+				ColorRowAlt:      cfg.Style.TableRowAlt,
+				ColumnAlignments: block.TableData.Alignments,
+				Data:             buildMarkdownTableData(*block.TableData, cfg.Style),
+			}),
+		},
+	})
+}
+
+func mdRenderHR(cfg MarkdownCfg) View {
+	return Rectangle(RectangleCfg{
+		Sizing: FillFixed,
+		Height: 1,
+		Color:  cfg.Style.HRColor,
+	})
+}
+
+func mdRenderBlockquote(
+	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+) View {
+	leftMargin := float32(
+		block.BlockquoteDepth-1) * cfg.Style.NestIndent
+	return Row(ContainerCfg{
+		Sizing:     FillFit,
+		Padding:    SomeP(0, 0, 0, leftMargin),
+		SizeBorder: NoBorder,
+		Content: []View{
+			Rectangle(RectangleCfg{
+				Sizing: FixedFill,
+				Width:  3,
+				Color:  cfg.Style.BlockquoteBorder,
+			}),
+			Column(ContainerCfg{
+				Color:      cfg.Style.BlockquoteBG,
+				Sizing:     FillFit,
+				Padding:    NoPadding,
+				SizeBorder: NoBorder,
+				Content: []View{
+					RTF(RtfCfg{
+						RichText:      block.Content,
+						Mode:          mode,
+						BaseTextStyle: &block.BaseStyle,
+					}),
+				},
+			}),
+		},
+	})
+}
+
+func mdRenderImage(block MarkdownBlock) View {
+	return Image(ImageCfg{
+		Src:    block.ImageSrc,
+		Width:  block.ImageWidth,
+		Height: block.ImageHeight,
+	})
+}
+
+// mdRenderHeading returns 1 or 2 views: an optional H1 spacer
+// plus the heading container.
+func mdRenderHeading(
+	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+) []View {
+	var views []View
+	if block.HeaderLevel == 1 {
+		views = append(views, Rectangle(RectangleCfg{
+			Sizing: FillFixed,
+			Height: 3,
+		}))
+	}
+	headingContent := []View{
+		RTF(RtfCfg{
+			ID:            block.AnchorSlug,
+			RichText:      block.Content,
+			Mode:          mode,
+			BaseTextStyle: &block.BaseStyle,
+		}),
+	}
+	if (block.HeaderLevel == 1 && cfg.Style.H1Separator) ||
+		(block.HeaderLevel == 2 && cfg.Style.H2Separator) {
+		headingContent = append(headingContent,
+			Rectangle(RectangleCfg{
+				Sizing: FillFixed,
+				Height: 1,
+				Color:  cfg.Style.HRColor,
+			}))
+	}
+	views = append(views, Column(ContainerCfg{
+		Sizing:   FillFit,
+		Padding:  NoPadding,
+		A11YRole: AccessRoleHeading,
+		A11Y:     &AccessInfo{},
+		Content:  headingContent,
+	}))
+	return views
+}
+
+func mdRenderDefTerm(block MarkdownBlock, mode TextMode) View {
+	return RTF(RtfCfg{
+		RichText:      block.Content,
+		Mode:          mode,
+		BaseTextStyle: &block.BaseStyle,
+	})
+}
+
+func mdRenderDefValue(
+	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+) View {
+	return Row(ContainerCfg{
+		Sizing: FillFit,
+		Padding: SomeP(
+			0, 0, 0, cfg.Style.NestIndent),
+		Content: []View{
+			RTF(RtfCfg{
+				RichText:      block.Content,
+				Mode:          mode,
+				BaseTextStyle: &block.BaseStyle,
+			}),
+		},
+	})
+}
+
+func mdRenderListItem(
+	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+) View {
+	indentW := float32(block.ListIndent) *
+		cfg.Style.NestIndent
+	prefixW := float32(len(block.ListPrefix)) *
+		cfg.Style.PrefixCharWidth
+	if block.ListPrefix == "• " {
+		prefixW /= 2
+	} else if block.ListIndent > 0 {
+		indentW += 4
+	}
+	return Row(ContainerCfg{
+		Sizing:     FillFit,
+		Padding:    SomeP(0, 0, 0, indentW),
+		SizeBorder: NoBorder,
+		Content: []View{
+			Column(ContainerCfg{
+				Sizing:     FixedFit,
+				Padding:    NoPadding,
+				SizeBorder: NoBorder,
+				Width:      prefixW,
+				Content: []View{
+					Text(TextCfg{
+						Text:      block.ListPrefix,
+						TextStyle: cfg.Style.Text,
+					}),
+				},
+			}),
+			Column(ContainerCfg{
+				Sizing:     FillFit,
+				Padding:    NoPadding,
+				SizeBorder: NoBorder,
+				Content: []View{
+					RTF(RtfCfg{
+						RichText:      block.Content,
+						Mode:          mode,
+						BaseTextStyle: &block.BaseStyle,
+					}),
+				},
+			}),
+		},
+	})
+}
+
+func mdRenderParagraph(
+	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+) View {
+	return RTF(RtfCfg{
+		ID:            cfg.ID,
+		IDFocus:       cfg.IDFocus,
+		Clip:          cfg.Clip,
+		FocusSkip:     cfg.FocusSkip,
+		Disabled:      cfg.Disabled,
+		MinWidth:      cfg.MinWidth,
+		Mode:          mode,
+		RichText:      block.Content,
+		BaseTextStyle: &block.BaseStyle,
 	})
 }

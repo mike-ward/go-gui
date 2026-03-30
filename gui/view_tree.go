@@ -79,7 +79,6 @@ func Tree(cfg TreeCfg) View {
 
 func (tv *treeView) Content() []View { return nil }
 
-//nolint:gocyclo // complex widget layout
 func (tv *treeView) GenerateLayout(w *Window) Layout {
 	cfg := &tv.cfg
 
@@ -90,16 +89,7 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 	treeCollectFlatRows(
 		cfg.Nodes, expanded, cfg.ID, lazyState, &flatRows, 0, "")
 
-	visibleIDs := make([]string, 0, len(flatRows))
-	rowByID := make(map[string]treeFlatRow, len(flatRows))
-	for i := range flatRows {
-		row := flatRows[i]
-		if row.IsLoading {
-			continue
-		}
-		visibleIDs = append(visibleIDs, row.ID)
-		rowByID[row.ID] = row
-	}
+	visibleIDs, rowByID := treeFlatRowIndex(flatRows)
 
 	listHeight := cfg.Height
 	if listHeight <= 0 {
@@ -121,58 +111,11 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 	onReorder := cfg.OnReorder
 	idScroll := cfg.IDScroll
 
-	// Build per-parent sibling maps for drag-reorder scoping.
-	var parentOf map[string]string           // nodeID → parentID
-	var siblingsByParent map[string][]string // parentID → []nodeID
-	if canReorder {
-		parentOf = make(map[string]string, len(visibleIDs))
-		siblingsByParent = make(map[string][]string)
-		for i := range flatRows {
-			row := flatRows[i]
-			if row.IsLoading {
-				continue
-			}
-			parentOf[row.ID] = row.ParentID
-			siblingsByParent[row.ParentID] = append(
-				siblingsByParent[row.ParentID], row.ID)
-		}
-	}
-
-	// Build sibling index and per-parent layout info.
-	var siblingIdx map[string]int
-	var parentLayoutIDs map[string][]string
-	var parentMidsOff map[string]int
-	if canReorder {
-		siblingIdx = make(map[string]int, len(visibleIDs))
-		parentLayoutIDs = make(map[string][]string)
-		parentMidsOff = make(map[string]int)
-
-		flatIdxOf := make(map[string]int, len(flatRows))
-		for i := range flatRows {
-			if !flatRows[i].IsLoading {
-				flatIdxOf[flatRows[i].ID] = i
-			}
-		}
-		for pid, sibs := range siblingsByParent {
-			moff := 0
-			var lids []string
-			for si, sid := range sibs {
-				siblingIdx[sid] = si
-				fi, ok := flatIdxOf[sid]
-				if !ok {
-					continue
-				}
-				if fi < first {
-					moff++
-				} else if fi <= last {
-					lids = append(lids,
-						"tr_"+cfg.ID+"_"+sid)
-				}
-			}
-			parentLayoutIDs[pid] = lids
-			parentMidsOff[pid] = moff
-		}
-	}
+	parentOf, siblingsByParent := treeBuildParentMaps(
+		flatRows, visibleIDs, canReorder)
+	siblingIdx, parentLayoutIDs, parentMidsOff :=
+		treeBuildSiblingInfo(cfg.ID, flatRows,
+			siblingsByParent, canReorder, first, last)
 
 	var drag dragReorderState
 	var dragging bool
@@ -187,66 +130,12 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 		}
 	}
 
-	rowsCap := len(flatRows) + 2
-	if dragging {
-		rowsCap += 3
-	}
-	rows := make([]View, 0, rowsCap)
-	if virtualize && first > 0 {
-		rows = append(rows, Rectangle(RectangleCfg{
-			Color:  ColorTransparent,
-			Height: float32(first) * rowHeight,
-			Sizing: FillFixed,
-		}))
-	}
-
-	var ghostContent View
-	for i := first; i <= last; i++ {
-		if i < 0 || i >= len(flatRows) {
-			continue
-		}
-		row := flatRows[i]
-		var rowParent string
-		if canReorder {
-			rowParent = parentOf[row.ID]
-		}
-		isDragSibling := dragging && rowParent == dragParent
-
-		if isDragSibling {
-			si := siblingIdx[row.ID]
-			if si == drag.currentIndex {
-				rows = append(rows,
-					dragReorderGapView(drag, DragReorderVertical))
-			}
-			if si == drag.sourceIndex {
-				ghostContent = treeRowContent(
-					*cfg, row, iconWidth, focusedID)
-				continue
-			}
-		}
-
-		if canReorder {
-			rows = append(rows, treeDragRowView(
-				*cfg, row, iconWidth, focusedID,
-				siblingIdx[row.ID],
-				siblingsByParent[rowParent],
-				parentLayoutIDs[rowParent],
-				parentMidsOff[rowParent],
-				idScroll))
-		} else {
-			rows = append(rows, treeRowView(
-				*cfg, row, iconWidth, focusedID))
-		}
-	}
-
-	if virtualize && last < len(flatRows)-1 {
-		remaining := len(flatRows) - 1 - last
-		rows = append(rows, Rectangle(RectangleCfg{
-			Color:  ColorTransparent,
-			Height: float32(remaining) * rowHeight,
-			Sizing: FillFixed,
-		}))
-	}
+	rows, ghostContent := treeBuildRows(
+		cfg, flatRows, focusedID, iconWidth,
+		parentOf, siblingsByParent, siblingIdx,
+		parentLayoutIDs, parentMidsOff, idScroll,
+		canReorder, dragging, drag, dragParent,
+		virtualize, rowHeight, first, last)
 
 	if dragging {
 		dragSibs := siblingsByParent[dragParent]
@@ -315,6 +204,169 @@ func (tv *treeView) GenerateLayout(w *Window) Layout {
 		Invisible:   cfg.Invisible,
 		Content:     rows,
 	}), w)
+}
+
+// treeFlatRowIndex builds the visible ID list and a lookup map
+// from flat rows, skipping loading placeholders.
+func treeFlatRowIndex(
+	flatRows []treeFlatRow,
+) ([]string, map[string]treeFlatRow) {
+	visibleIDs := make([]string, 0, len(flatRows))
+	rowByID := make(map[string]treeFlatRow, len(flatRows))
+	for i := range flatRows {
+		row := flatRows[i]
+		if row.IsLoading {
+			continue
+		}
+		visibleIDs = append(visibleIDs, row.ID)
+		rowByID[row.ID] = row
+	}
+	return visibleIDs, rowByID
+}
+
+// treeBuildParentMaps builds parentOf and siblingsByParent maps
+// for drag-reorder scoping.
+func treeBuildParentMaps(
+	flatRows []treeFlatRow, visibleIDs []string, canReorder bool,
+) (map[string]string, map[string][]string) {
+	if !canReorder {
+		return nil, nil
+	}
+	parentOf := make(map[string]string, len(visibleIDs))
+	siblingsByParent := make(map[string][]string)
+	for i := range flatRows {
+		row := flatRows[i]
+		if row.IsLoading {
+			continue
+		}
+		parentOf[row.ID] = row.ParentID
+		siblingsByParent[row.ParentID] = append(
+			siblingsByParent[row.ParentID], row.ID)
+	}
+	return parentOf, siblingsByParent
+}
+
+// treeBuildSiblingInfo builds sibling index, per-parent layout
+// IDs, and per-parent midsOffset for drag-reorder tracking.
+func treeBuildSiblingInfo(
+	treeID string, flatRows []treeFlatRow,
+	siblingsByParent map[string][]string,
+	canReorder bool, first, last int,
+) (map[string]int, map[string][]string, map[string]int) {
+	if !canReorder {
+		return nil, nil, nil
+	}
+	siblingIdx := make(map[string]int)
+	parentLayoutIDs := make(map[string][]string)
+	parentMidsOff := make(map[string]int)
+
+	flatIdxOf := make(map[string]int, len(flatRows))
+	for i := range flatRows {
+		if !flatRows[i].IsLoading {
+			flatIdxOf[flatRows[i].ID] = i
+		}
+	}
+	for pid, sibs := range siblingsByParent {
+		moff := 0
+		var lids []string
+		for si, sid := range sibs {
+			siblingIdx[sid] = si
+			fi, ok := flatIdxOf[sid]
+			if !ok {
+				continue
+			}
+			if fi < first {
+				moff++
+			} else if fi <= last {
+				lids = append(lids,
+					"tr_"+treeID+"_"+sid)
+			}
+		}
+		parentLayoutIDs[pid] = lids
+		parentMidsOff[pid] = moff
+	}
+	return siblingIdx, parentLayoutIDs, parentMidsOff
+}
+
+// treeBuildRows builds the list of row views, including
+// virtualization spacers and drag-reorder gap/ghost handling.
+func treeBuildRows(
+	cfg *TreeCfg,
+	flatRows []treeFlatRow,
+	focusedID string, iconWidth float32,
+	parentOf map[string]string,
+	siblingsByParent map[string][]string,
+	siblingIdx map[string]int,
+	parentLayoutIDs map[string][]string,
+	parentMidsOff map[string]int,
+	idScroll uint32,
+	canReorder, dragging bool,
+	drag dragReorderState, dragParent string,
+	virtualize bool, rowHeight float32,
+	first, last int,
+) ([]View, View) {
+	rowsCap := len(flatRows) + 2
+	if dragging {
+		rowsCap += 3
+	}
+	rows := make([]View, 0, rowsCap)
+	if virtualize && first > 0 {
+		rows = append(rows, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(first) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+
+	var ghostContent View
+	for i := first; i <= last; i++ {
+		if i < 0 || i >= len(flatRows) {
+			continue
+		}
+		row := flatRows[i]
+		var rowParent string
+		if canReorder {
+			rowParent = parentOf[row.ID]
+		}
+		isDragSibling := dragging && rowParent == dragParent
+
+		if isDragSibling {
+			si := siblingIdx[row.ID]
+			if si == drag.currentIndex {
+				rows = append(rows,
+					dragReorderGapView(drag, DragReorderVertical))
+			}
+			if si == drag.sourceIndex {
+				ghostContent = treeRowContent(
+					*cfg, row, iconWidth, focusedID)
+				continue
+			}
+		}
+
+		if canReorder {
+			rows = append(rows, treeDragRowView(
+				*cfg, row, iconWidth, focusedID,
+				siblingIdx[row.ID],
+				siblingsByParent[rowParent],
+				parentLayoutIDs[rowParent],
+				parentMidsOff[rowParent],
+				idScroll))
+		} else {
+			rows = append(rows, treeRowView(
+				*cfg, row, iconWidth, focusedID))
+		}
+	}
+
+	if virtualize && last < len(flatRows)-1 {
+		remaining := len(flatRows) - 1 - last
+		rows = append(rows, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(remaining) * rowHeight,
+			Sizing: FillFixed,
+		}))
+	}
+
+	return rows, ghostContent
 }
 
 func applyTreeDefaults(cfg *TreeCfg) {

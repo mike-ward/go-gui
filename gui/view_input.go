@@ -504,7 +504,6 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 	}
 }
 
-//nolint:gocyclo // key-action dispatch
 func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 	mask := hcfg.CompiledMask
 	return func(layout *Layout, e *Event, w *Window) {
@@ -552,16 +551,10 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			handled = inputKeyVertical(imap, id, is, text, pos,
 				isShift, savedOffset, false, hcfg.Mode, gl, glOK)
 		case KeyEnter:
-			if hcfg.Mode == InputMultiline {
-				text = inputInsert(text, "\n", id, w)
-				textChanged = true
-			} else {
-				inputCommitEnter(hcfg, layout, text, e, w)
-			}
+			text, textChanged = inputKeyEnter(
+				hcfg, layout, text, id, e, w)
 		case KeyEscape:
-			is.SelectBeg = 0
-			is.SelectEnd = 0
-			imap.Set(id, is)
+			inputKeyEscape(imap, id, is)
 			handled = false
 		case KeyA:
 			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
@@ -570,14 +563,8 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				handled = false
 			}
 		case KeyC:
-			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
-				if copied, ok := inputCopy(text, id,
-					hcfg.IsPassword, w); ok {
-					w.SetClipboard(copied)
-				}
-			} else {
-				handled = false
-			}
+			handled = inputKeyCopy(
+				text, id, hcfg.IsPassword, e, w)
 		case KeyV:
 			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
 				text, textChanged = inputKeyPaste(
@@ -587,47 +574,17 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 				handled = false
 			}
 		case KeyX:
-			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
-				newText, copied, ok := inputCut(text, id,
-					hcfg.IsPassword, w)
-				if ok {
-					w.SetClipboard(copied)
-					text = newText
-					textChanged = true
-				}
-			} else {
-				handled = false
-			}
+			text, textChanged, handled = inputKeyCut(
+				text, id, hcfg.IsPassword, e, w)
 		case KeyZ:
-			if e.Modifiers.HasAny(ModCtrl, ModSuper) {
-				if e.Modifiers.Has(ModShift) {
-					if nt := inputRedo(text, id, w); nt != text {
-						text = nt
-						textChanged = true
-					}
-				} else {
-					if nt := inputUndo(text, id, w); nt != text {
-						text = nt
-						textChanged = true
-					}
-				}
-			} else {
-				handled = false
-			}
+			text, textChanged, handled = inputKeyUndoRedo(
+				text, id, e, w)
 		case KeyBackspace:
-			if newText, ok := inputHandleDelete(
-				text, id, false, mask, layout, w,
-			); ok {
-				text = newText
-				textChanged = true
-			}
+			text, textChanged = inputKeyBackspaceOrDelete(
+				text, id, false, mask, layout, w)
 		case KeyDelete:
-			if newText, ok := inputHandleDelete(
-				text, id, true, mask, layout, w,
-			); ok {
-				text = newText
-				textChanged = true
-			}
+			text, textChanged = inputKeyBackspaceOrDelete(
+				text, id, true, mask, layout, w)
 		default:
 			handled = false
 		}
@@ -645,4 +602,79 @@ func makeInputOnKeyDown(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			hcfg.OnKeyDown(layout, e, w)
 		}
 	}
+}
+
+func inputKeyEnter(
+	hcfg inputHandlerCfg, layout *Layout, text string,
+	id uint32, e *Event, w *Window,
+) (string, bool) {
+	if hcfg.Mode == InputMultiline {
+		return inputInsert(text, "\n", id, w), true
+	}
+	inputCommitEnter(hcfg, layout, text, e, w)
+	return text, false
+}
+
+func inputKeyEscape(
+	imap *BoundedMap[uint32, InputState], id uint32, is InputState,
+) {
+	is.SelectBeg = 0
+	is.SelectEnd = 0
+	imap.Set(id, is)
+}
+
+func inputKeyCopy(
+	text string, id uint32, isPassword bool, e *Event, w *Window,
+) bool {
+	if !e.Modifiers.HasAny(ModCtrl, ModSuper) {
+		return false
+	}
+	if copied, ok := inputCopy(text, id, isPassword, w); ok {
+		w.SetClipboard(copied)
+	}
+	return true
+}
+
+func inputKeyCut(
+	text string, id uint32, isPassword bool, e *Event, w *Window,
+) (string, bool, bool) {
+	if !e.Modifiers.HasAny(ModCtrl, ModSuper) {
+		return text, false, false
+	}
+	newText, copied, ok := inputCut(text, id, isPassword, w)
+	if ok {
+		w.SetClipboard(copied)
+		return newText, true, true
+	}
+	return text, false, true
+}
+
+func inputKeyUndoRedo(
+	text string, id uint32, e *Event, w *Window,
+) (string, bool, bool) {
+	if !e.Modifiers.HasAny(ModCtrl, ModSuper) {
+		return text, false, false
+	}
+	if e.Modifiers.Has(ModShift) {
+		if nt := inputRedo(text, id, w); nt != text {
+			return nt, true, true
+		}
+	} else {
+		if nt := inputUndo(text, id, w); nt != text {
+			return nt, true, true
+		}
+	}
+	return text, false, true
+}
+
+func inputKeyBackspaceOrDelete(
+	text string, id uint32, forward bool,
+	mask *CompiledInputMask, layout *Layout, w *Window,
+) (string, bool) {
+	if newText, ok := inputHandleDelete(
+		text, id, forward, mask, layout, w,
+	); ok {
+		return newText, true
+	}
+	return text, false
 }

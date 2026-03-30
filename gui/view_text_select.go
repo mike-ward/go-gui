@@ -1,6 +1,10 @@
 package gui
 
-import "time"
+import (
+	"time"
+
+	"github.com/mike-ward/go-glyph"
+)
 
 const (
 	animIDTextDragScroll   = "text-drag-scroll"
@@ -228,8 +232,6 @@ func textOnClick(layout *Layout, e *Event, w *Window) {
 
 // textOnKeyDown is a read-only key handler for text navigation
 // and copy. No editing keys (paste, cut, delete).
-//
-//nolint:gocyclo // key-action dispatch
 func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 	shape := layout.Shape
 	if shape.TC == nil || shape.IDFocus == 0 ||
@@ -261,187 +263,27 @@ func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 
 	switch e.KeyCode {
 	case KeyLeft:
-		if isWordMod {
-			var newPos int
-			if glOK {
-				bi := runeToByteIndex(text, pos)
-				newPos = byteToRuneIndex(text,
-					gl.MoveCursorWordLeft(bi))
-			} else {
-				newPos = moveCursorWordLeft(
-					[]rune(text), pos)
-			}
-			updateCursorAndSelection(
-				imap, id, is, newPos, isShift)
-		} else if !isShift &&
-			is.SelectBeg != is.SelectEnd {
-			beg, _ := u32Sort(
-				is.SelectBeg, is.SelectEnd)
-			updateCursorAndSelection(
-				imap, id, is, int(beg), false)
-		} else {
-			var newPos int
-			if glOK {
-				bi := runeToByteIndex(text, pos)
-				newPos = byteToRuneIndex(text,
-					gl.MoveCursorLeft(bi))
-			} else {
-				newPos = pos - 1
-				newPos = max(newPos, 0)
-			}
-			updateCursorAndSelection(
-				imap, id, is, newPos, isShift)
-		}
+		inputKeyLeft(imap, id, is, text, pos,
+			isShift, isWordMod, gl, glOK)
 	case KeyRight:
-		if isWordMod {
-			var newPos int
-			if glOK {
-				bi := runeToByteIndex(text, pos)
-				newPos = byteToRuneIndex(text,
-					gl.MoveCursorWordRight(bi))
-			} else {
-				newPos = moveCursorWordRight(
-					[]rune(text), pos)
-			}
-			updateCursorAndSelection(
-				imap, id, is, newPos, isShift)
-		} else if !isShift &&
-			is.SelectBeg != is.SelectEnd {
-			_, end := u32Sort(
-				is.SelectBeg, is.SelectEnd)
-			updateCursorAndSelection(
-				imap, id, is, int(end), false)
-		} else {
-			var newPos int
-			if glOK {
-				bi := runeToByteIndex(text, pos)
-				newPos = byteToRuneIndex(text,
-					gl.MoveCursorRight(bi))
-			} else {
-				newPos = pos + 1
-				newPos = min(newPos, runeLen)
-			}
-			updateCursorAndSelection(
-				imap, id, is, newPos, isShift)
-		}
+		inputKeyRight(imap, id, is, text, pos, runeLen,
+			isShift, isWordMod, gl, glOK)
 	case KeyHome:
-		var newPos int
-		if glOK {
-			bi := runeToByteIndex(text, pos)
-			sb := gl.MoveCursorLineStart(bi)
-			if savedTrailing {
-				sb = trailingLineStart(
-					gl.Lines, bi, sb)
-			}
-			lineStart := byteToRuneIndex(text, sb)
-			if pos != lineStart {
-				newPos = lineStart
-			} else {
-				ps := cursorStartOfParagraph(
-					text, pos)
-				if pos != ps {
-					newPos = ps
-				} else {
-					newPos = cursorHome()
-				}
-			}
-		} else {
-			ls := moveCursorLineStart(
-				[]rune(text), pos)
-			if pos != ls {
-				newPos = ls
-			} else {
-				newPos = cursorHome()
-			}
-		}
-		updateCursorAndSelection(
-			imap, id, is, newPos, isShift)
+		inputKeyHome(imap, id, is, text, pos,
+			isShift, savedTrailing, gl, glOK)
 	case KeyEnd:
-		var newPos int
-		trailingLevel1 := false
-		if glOK {
-			bi := runeToByteIndex(text, pos)
-			eb := gl.MoveCursorLineEnd(bi)
-			if savedTrailing {
-				eb = trailingLineEnd(
-					gl.Lines, bi, eb)
-			}
-			lineEnd := byteToRuneIndex(text, eb)
-			if pos != lineEnd {
-				newPos = lineEnd
-				trailingLevel1 = true
-			} else {
-				pe := cursorEndOfParagraph(
-					text, pos)
-				if pos != pe {
-					newPos = pe
-				} else {
-					newPos = cursorEnd(text)
-				}
-			}
-		} else {
-			le := moveCursorLineEnd(
-				[]rune(text), pos)
-			if pos != le {
-				newPos = le
-				trailingLevel1 = true
-			} else {
-				newPos = cursorEnd(text)
-			}
-		}
-		is.CursorTrailing = trailingLevel1
-		updateCursorAndSelection(
-			imap, id, is, newPos, isShift)
+		inputKeyEnd(imap, id, is, text, pos,
+			isShift, savedTrailing, gl, glOK)
 	case KeyUp:
-		if shape.TC.TextMode == TextModeSingleLine {
-			handled = false
-		} else {
-			var newPos int
-			if glOK {
-				bi := runeToByteIndex(text, pos)
-				px := savedOffset
-				if px < 0 {
-					if cp, ok := gl.GetCursorPos(bi); ok {
-						px = cp.X
-					}
-				}
-				is.CursorOffset = px
-				newPos = byteToRuneIndex(text,
-					gl.MoveCursorUp(bi, px))
-			} else {
-				newPos = moveCursorUp(
-					[]rune(text), pos)
-			}
-			updateCursorAndSelection(
-				imap, id, is, newPos, isShift)
-		}
+		handled = textKeyVertical(imap, id, is, text,
+			pos, isShift, savedOffset, true,
+			shape.TC.TextMode, gl, glOK)
 	case KeyDown:
-		if shape.TC.TextMode == TextModeSingleLine {
-			handled = false
-		} else {
-			var newPos int
-			if glOK {
-				bi := runeToByteIndex(text, pos)
-				px := savedOffset
-				if px < 0 {
-					if cp, ok := gl.GetCursorPos(bi); ok {
-						px = cp.X
-					}
-				}
-				is.CursorOffset = px
-				newPos = byteToRuneIndex(text,
-					gl.MoveCursorDown(bi, px))
-			} else {
-				newPos = moveCursorDown(
-					[]rune(text), pos)
-			}
-			updateCursorAndSelection(
-				imap, id, is, newPos, isShift)
-		}
+		handled = textKeyVertical(imap, id, is, text,
+			pos, isShift, savedOffset, false,
+			shape.TC.TextMode, gl, glOK)
 	case KeyEscape:
-		is.SelectBeg = 0
-		is.SelectEnd = 0
-		imap.Set(id, is)
+		inputKeyEscape(imap, id, is)
 		handled = false
 	case KeyA:
 		if e.Modifiers.HasAny(ModCtrl, ModSuper) {
@@ -450,16 +292,8 @@ func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 			handled = false
 		}
 	case KeyC:
-		if e.Modifiers.HasAny(ModCtrl, ModSuper) {
-			if copied, ok := inputCopy(
-				text, id,
-				shape.TC.TextIsPassword, w,
-			); ok {
-				w.SetClipboard(copied)
-			}
-		} else {
-			handled = false
-		}
+		handled = inputKeyCopy(
+			text, id, shape.TC.TextIsPassword, e, w)
 	default:
 		handled = false
 	}
@@ -469,6 +303,45 @@ func textOnKeyDown(layout *Layout, e *Event, w *Window) {
 		textScrollCursorIntoView(layout, w)
 		e.IsHandled = true
 	}
+}
+
+// textKeyVertical handles KeyUp/KeyDown for text selection.
+// Returns false when the key is unhandled (single-line mode).
+func textKeyVertical(
+	imap *BoundedMap[uint32, InputState], id uint32, is InputState,
+	text string, pos int, isShift bool,
+	savedOffset float32, up bool, mode TextMode,
+	gl glyph.Layout, glOK bool,
+) bool {
+	if mode == TextModeSingleLine {
+		return false
+	}
+	var newPos int
+	if glOK {
+		bi := runeToByteIndex(text, pos)
+		px := savedOffset
+		if px < 0 {
+			if cp, ok := gl.GetCursorPos(bi); ok {
+				px = cp.X
+			}
+		}
+		is.CursorOffset = px
+		if up {
+			newPos = byteToRuneIndex(text,
+				gl.MoveCursorUp(bi, px))
+		} else {
+			newPos = byteToRuneIndex(text,
+				gl.MoveCursorDown(bi, px))
+		}
+	} else {
+		if up {
+			newPos = moveCursorUp([]rune(text), pos)
+		} else {
+			newPos = moveCursorDown([]rune(text), pos)
+		}
+	}
+	updateCursorAndSelection(imap, id, is, newPos, isShift)
+	return true
 }
 
 // textAmendLayout copies InputState selection to the shape's

@@ -134,7 +134,6 @@ func listBoxCanVirtualize(cfg *ListBoxCfg) bool {
 
 func (lv *listBoxView) Content() []View { return nil }
 
-//nolint:gocyclo // complex widget layout
 func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	cfg := &lv.cfg
 
@@ -142,42 +141,11 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	sizeBorder := cfg.SizeBorder.Get(dn.SizeBorder)
 	radius := cfg.Radius.Get(dn.Radius)
 
-	cacheMap := StateMap[string, *listBoxCache](w, nsListBoxCache, capModerate)
-	cache, ok := cacheMap.Get(cfg.ID)
-	if !ok || cache == nil {
-		cache = &listBoxCache{}
-		cacheMap.Set(cfg.ID, cache)
-	}
-	dataHash := listBoxDataHash(cfg.Data)
-	if cache.dataHash != dataHash || len(cache.itemIDs) == 0 {
-		itemIDs := make([]string, 0, len(cfg.Data))
-		indices := make([]int, 0, len(cfg.Data))
-		for i := range cfg.Data {
-			if !cfg.Data[i].IsSubheading {
-				itemIDs = append(itemIDs, cfg.Data[i].ID)
-				indices = append(indices, i)
-			}
-		}
-		cache.itemIDs = itemIDs
-		cache.itemDataIndices = indices
-		cache.dataHash = dataHash
-	}
-
+	cache := listBoxEnsureCache(cfg, w)
 	selectedSet := listCoreSelectedSet(cfg.SelectedIDs)
 
-	first, last := 0, len(cfg.Data)-1
-	virtualize := cfg.IDScroll > 0
-	listH := cfg.Height
-	if listH <= 0 {
-		listH = cfg.MaxHeight
-	}
-	rowH := listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
-	if virtualize && listH > 0 && len(cfg.Data) > 0 {
-		scrollY := StateReadOr(w, nsScrollY, cfg.IDScroll, float32(0))
-		first, last = listCoreVisibleRange(len(cfg.Data), rowH, listH, scrollY)
-	} else {
-		virtualize = false
-	}
+	first, last, virtualize, listH, rowH :=
+		listBoxVisibleRange(cfg, w)
 
 	listBoxID := cfg.ID
 	isMultiple := cfg.Multiple
@@ -203,103 +171,19 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 	onReorder := cfg.OnReorder
 	idScroll := cfg.IDScroll
 
-	var dragIdxByRow []int
-	if canReorder {
-		dragIdxByRow = make([]int, len(cfg.Data))
-		di := 0
-		for i := range cfg.Data {
-			if !cfg.Data[i].IsSubheading {
-				dragIdxByRow[i] = di
-				di++
-			} else {
-				dragIdxByRow[i] = -1
-			}
-		}
-	}
-
-	var itemLayoutIDs []string
-	midsOffset := 0
-	if canReorder {
-		itemLayoutIDs = make([]string, 0, last-first+1)
-		for idx := range first {
-			if idx < len(cfg.Data) &&
-				!cfg.Data[idx].IsSubheading {
-				midsOffset++
-			}
-		}
-		for idx := first; idx <= last; idx++ {
-			if idx >= 0 && idx < len(cfg.Data) &&
-				!cfg.Data[idx].IsSubheading {
-				itemLayoutIDs = append(itemLayoutIDs,
-					"lb_"+cfg.ID+"_"+cfg.Data[idx].ID)
-			}
-		}
-	}
+	dragIdxByRow := listBoxDragIndexByRow(cfg, canReorder)
+	itemLayoutIDs, midsOffset := listBoxItemLayoutIDs(
+		cfg, canReorder, first, last)
 
 	if canReorder && (drag.started || drag.active) {
 		dragReorderIDsMetaSet(w, cfg.ID, itemIDs)
 	}
 
-	listCap := len(cfg.Data)
-	if virtualize && last >= first {
-		listCap = last - first + 3
-	}
-	if dragging {
-		listCap += 3
-	}
-	list := make([]View, 0, listCap)
-
-	if virtualize && first > 0 {
-		rowH := listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
-		list = append(list, Rectangle(RectangleCfg{
-			Color:  ColorTransparent,
-			Height: float32(first) * rowH,
-			Sizing: FillFixed,
-		}))
-	}
-
-	var ghostContent View
-	for idx := first; idx <= last; idx++ {
-		if idx < 0 || idx >= len(cfg.Data) {
-			continue
-		}
-		di := -1
-		isDraggable := false
-		if dragIdxByRow != nil && idx < len(dragIdxByRow) {
-			di = dragIdxByRow[idx]
-			isDraggable = di >= 0
-		}
-
-		if dragging && isDraggable && di == drag.currentIndex {
-			list = append(list,
-				dragReorderGapView(drag, DragReorderVertical))
-		}
-
-		if dragging && isDraggable && di == drag.sourceIndex {
-			ghostContent = listBoxItemContent(
-				cfg.Data[idx], *cfg)
-			continue
-		}
-
-		if canReorder && isDraggable {
-			list = append(list, listBoxReorderItemView(
-				cfg.Data[idx], *cfg, selectedSet, di,
-				itemIDs, itemLayoutIDs, midsOffset, idScroll))
-		} else {
-			list = append(list,
-				listBoxItemView(cfg.Data[idx], *cfg, selectedSet, focusedID))
-		}
-	}
-
-	if virtualize && last < len(cfg.Data)-1 {
-		rowH := listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
-		remaining := len(cfg.Data) - 1 - last
-		list = append(list, Rectangle(RectangleCfg{
-			Color:  ColorTransparent,
-			Height: float32(remaining) * rowH,
-			Sizing: FillFixed,
-		}))
-	}
+	list, ghostContent := listBoxBuildItems(
+		cfg, selectedSet, focusedID, dragIdxByRow,
+		itemIDs, itemLayoutIDs, midsOffset, idScroll,
+		canReorder, dragging, drag,
+		virtualize, first, last)
 
 	if dragging && drag.currentIndex >= len(itemIDs) {
 		list = append(list,
@@ -355,6 +239,184 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 		Invisible:   cfg.Invisible,
 		Content:     list,
 	}), w)
+}
+
+// listBoxEnsureCache returns or creates the list box cache for
+// the given config, refreshing item IDs when data changes.
+func listBoxEnsureCache(cfg *ListBoxCfg, w *Window) *listBoxCache {
+	cacheMap := StateMap[string, *listBoxCache](
+		w, nsListBoxCache, capModerate)
+	cache, ok := cacheMap.Get(cfg.ID)
+	if !ok || cache == nil {
+		cache = &listBoxCache{}
+		cacheMap.Set(cfg.ID, cache)
+	}
+	dataHash := listBoxDataHash(cfg.Data)
+	if cache.dataHash != dataHash || len(cache.itemIDs) == 0 {
+		itemIDs := make([]string, 0, len(cfg.Data))
+		indices := make([]int, 0, len(cfg.Data))
+		for i := range cfg.Data {
+			if !cfg.Data[i].IsSubheading {
+				itemIDs = append(itemIDs, cfg.Data[i].ID)
+				indices = append(indices, i)
+			}
+		}
+		cache.itemIDs = itemIDs
+		cache.itemDataIndices = indices
+		cache.dataHash = dataHash
+	}
+	return cache
+}
+
+// listBoxVisibleRange computes the visible row range and
+// virtualization parameters for the list box.
+func listBoxVisibleRange(
+	cfg *ListBoxCfg, w *Window,
+) (first, last int, virtualize bool, listH, rowH float32) {
+	first = 0
+	last = len(cfg.Data) - 1
+	virtualize = cfg.IDScroll > 0
+	listH = cfg.Height
+	if listH <= 0 {
+		listH = cfg.MaxHeight
+	}
+	rowH = listCoreRowHeightEstimate(cfg.TextStyle, listBoxItemPad)
+	if virtualize && listH > 0 && len(cfg.Data) > 0 {
+		scrollY := StateReadOr(
+			w, nsScrollY, cfg.IDScroll, float32(0))
+		first, last = listCoreVisibleRange(
+			len(cfg.Data), rowH, listH, scrollY)
+	} else {
+		virtualize = false
+	}
+	return first, last, virtualize, listH, rowH
+}
+
+// listBoxDragIndexByRow builds a mapping from data row index to
+// draggable item index (-1 for subheadings).
+func listBoxDragIndexByRow(
+	cfg *ListBoxCfg, canReorder bool,
+) []int {
+	if !canReorder {
+		return nil
+	}
+	dragIdxByRow := make([]int, len(cfg.Data))
+	di := 0
+	for i := range cfg.Data {
+		if !cfg.Data[i].IsSubheading {
+			dragIdxByRow[i] = di
+			di++
+		} else {
+			dragIdxByRow[i] = -1
+		}
+	}
+	return dragIdxByRow
+}
+
+// listBoxItemLayoutIDs builds layout IDs and midsOffset for
+// drag-reorder tracking.
+func listBoxItemLayoutIDs(
+	cfg *ListBoxCfg, canReorder bool, first, last int,
+) ([]string, int) {
+	if !canReorder {
+		return nil, 0
+	}
+	itemLayoutIDs := make([]string, 0, last-first+1)
+	midsOffset := 0
+	for idx := range first {
+		if idx < len(cfg.Data) &&
+			!cfg.Data[idx].IsSubheading {
+			midsOffset++
+		}
+	}
+	for idx := first; idx <= last; idx++ {
+		if idx >= 0 && idx < len(cfg.Data) &&
+			!cfg.Data[idx].IsSubheading {
+			itemLayoutIDs = append(itemLayoutIDs,
+				"lb_"+cfg.ID+"_"+cfg.Data[idx].ID)
+		}
+	}
+	return itemLayoutIDs, midsOffset
+}
+
+// listBoxBuildItems builds the list of item views, including
+// virtualization spacers and drag-reorder gap/ghost handling.
+func listBoxBuildItems(
+	cfg *ListBoxCfg,
+	selectedSet map[string]struct{},
+	focusedID string,
+	dragIdxByRow []int,
+	itemIDs, itemLayoutIDs []string,
+	midsOffset int, idScroll uint32,
+	canReorder, dragging bool,
+	drag dragReorderState,
+	virtualize bool, first, last int,
+) ([]View, View) {
+	listCap := len(cfg.Data)
+	if virtualize && last >= first {
+		listCap = last - first + 3
+	}
+	if dragging {
+		listCap += 3
+	}
+	list := make([]View, 0, listCap)
+
+	if virtualize && first > 0 {
+		rh := listCoreRowHeightEstimate(
+			cfg.TextStyle, listBoxItemPad)
+		list = append(list, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(first) * rh,
+			Sizing: FillFixed,
+		}))
+	}
+
+	var ghostContent View
+	for idx := first; idx <= last; idx++ {
+		if idx < 0 || idx >= len(cfg.Data) {
+			continue
+		}
+		di := -1
+		isDraggable := false
+		if dragIdxByRow != nil && idx < len(dragIdxByRow) {
+			di = dragIdxByRow[idx]
+			isDraggable = di >= 0
+		}
+
+		if dragging && isDraggable && di == drag.currentIndex {
+			list = append(list,
+				dragReorderGapView(drag, DragReorderVertical))
+		}
+
+		if dragging && isDraggable && di == drag.sourceIndex {
+			ghostContent = listBoxItemContent(
+				cfg.Data[idx], *cfg)
+			continue
+		}
+
+		if canReorder && isDraggable {
+			list = append(list, listBoxReorderItemView(
+				cfg.Data[idx], *cfg, selectedSet, di,
+				itemIDs, itemLayoutIDs, midsOffset, idScroll))
+		} else {
+			list = append(list,
+				listBoxItemView(
+					cfg.Data[idx], *cfg, selectedSet, focusedID))
+		}
+	}
+
+	if virtualize && last < len(cfg.Data)-1 {
+		rh := listCoreRowHeightEstimate(
+			cfg.TextStyle, listBoxItemPad)
+		remaining := len(cfg.Data) - 1 - last
+		list = append(list, Rectangle(RectangleCfg{
+			Color:  ColorTransparent,
+			Height: float32(remaining) * rh,
+			Sizing: FillFixed,
+		}))
+	}
+
+	return list, ghostContent
 }
 
 func listBoxItemView(dat ListBoxOption, cfg ListBoxCfg, selectedSet map[string]struct{}, focusedID string) View {
