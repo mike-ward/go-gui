@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774905376402,
+  "lastUpdate": 1774913810629,
   "repoUrl": "https://github.com/mike-ward/go-gui",
   "entries": {
     "Benchmark": [
@@ -17856,6 +17856,6150 @@ window.BENCHMARK_DATA = {
             "value": 1,
             "unit": "allocs/op",
             "extra": "4593560 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mike@mike-ward.net",
+            "name": "mike-ward",
+            "username": "mike-ward"
+          },
+          "committer": {
+            "email": "mike@mike-ward.net",
+            "name": "mike-ward",
+            "username": "mike-ward"
+          },
+          "distinct": true,
+          "id": "7a16fe828bb9202f00935d5aafed4c4395e3c020",
+          "message": "Add layout/view/theme benchmarks and SVG/markdown/layout fuzz tests\n\nCo-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-03-30T18:28:19-05:00",
+          "tree_id": "2ca4c7a0a84d63139957fcb8335b31fdf2a38156",
+          "url": "https://github.com/mike-ward/go-gui/commit/7a16fe828bb9202f00935d5aafed4c4395e3c020"
+        },
+        "date": 1774913809477,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui)",
+            "value": 62.53,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "18986482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 62.53,
+            "unit": "ns/op",
+            "extra": "18986482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "18986482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "18986482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui)",
+            "value": 62.78,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "19228214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 62.78,
+            "unit": "ns/op",
+            "extra": "19228214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "19228214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "19228214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui)",
+            "value": 62.85,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "19002355 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 62.85,
+            "unit": "ns/op",
+            "extra": "19002355 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "19002355 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "19002355 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui)",
+            "value": 62.89,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "19135527 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 62.89,
+            "unit": "ns/op",
+            "extra": "19135527 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "19135527 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "19135527 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui)",
+            "value": 63.29,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "19340702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 63.29,
+            "unit": "ns/op",
+            "extra": "19340702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "19340702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateAnimate (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "19340702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui)",
+            "value": 68.14,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17630606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 68.14,
+            "unit": "ns/op",
+            "extra": "17630606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17630606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17630606 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui)",
+            "value": 68.16,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17644797 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 68.16,
+            "unit": "ns/op",
+            "extra": "17644797 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17644797 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17644797 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui)",
+            "value": 69.06,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17585438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 69.06,
+            "unit": "ns/op",
+            "extra": "17585438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17585438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17585438 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui)",
+            "value": 68.04,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17640942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 68.04,
+            "unit": "ns/op",
+            "extra": "17640942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17640942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17640942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui)",
+            "value": 75.42,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "15835542 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 75.42,
+            "unit": "ns/op",
+            "extra": "15835542 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "15835542 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateTween (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "15835542 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui)",
+            "value": 73.77,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "16295101 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 73.77,
+            "unit": "ns/op",
+            "extra": "16295101 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "16295101 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "16295101 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui)",
+            "value": 68.48,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17527514 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 68.48,
+            "unit": "ns/op",
+            "extra": "17527514 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17527514 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17527514 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui)",
+            "value": 68.53,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17518862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 68.53,
+            "unit": "ns/op",
+            "extra": "17518862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17518862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17518862 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui)",
+            "value": 68.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17490193 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 68.3,
+            "unit": "ns/op",
+            "extra": "17490193 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17490193 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17490193 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui)",
+            "value": 68.2,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17438764 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 68.2,
+            "unit": "ns/op",
+            "extra": "17438764 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17438764 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateKeyframe (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17438764 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui)",
+            "value": 31.55,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37808564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.55,
+            "unit": "ns/op",
+            "extra": "37808564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37808564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37808564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui)",
+            "value": 31.55,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37880172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.55,
+            "unit": "ns/op",
+            "extra": "37880172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37880172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37880172 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui)",
+            "value": 31.83,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37939722 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.83,
+            "unit": "ns/op",
+            "extra": "37939722 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37939722 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37939722 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui)",
+            "value": 31.67,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37963340 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.67,
+            "unit": "ns/op",
+            "extra": "37963340 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37963340 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37963340 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui)",
+            "value": 31.56,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "38002716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.56,
+            "unit": "ns/op",
+            "extra": "38002716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "38002716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUpdateSpring (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "38002716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 31.73,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37647452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.73,
+            "unit": "ns/op",
+            "extra": "37647452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37647452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37647452 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 31.95,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37590855 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.95,
+            "unit": "ns/op",
+            "extra": "37590855 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37590855 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37590855 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 31.77,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37614655 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.77,
+            "unit": "ns/op",
+            "extra": "37614655 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37614655 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37614655 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 31.58,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37743333 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.58,
+            "unit": "ns/op",
+            "extra": "37743333 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37743333 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37743333 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 31.87,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "37495077 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 31.87,
+            "unit": "ns/op",
+            "extra": "37495077 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "37495077 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetUniqueToCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "37495077 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui)",
+            "value": 285.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4184068 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 285.5,
+            "unit": "ns/op",
+            "extra": "4184068 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4184068 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4184068 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui)",
+            "value": 287.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4109294 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 287.5,
+            "unit": "ns/op",
+            "extra": "4109294 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4109294 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4109294 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui)",
+            "value": 286,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4177681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 286,
+            "unit": "ns/op",
+            "extra": "4177681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4177681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4177681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui)",
+            "value": 283.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4235756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 283.5,
+            "unit": "ns/op",
+            "extra": "4235756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4235756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4235756 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui)",
+            "value": 286.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4166253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 286.3,
+            "unit": "ns/op",
+            "extra": "4166253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4166253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapSetWithEvictions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4166253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 64.06,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "18548080 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 64.06,
+            "unit": "ns/op",
+            "extra": "18548080 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "18548080 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "18548080 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 64.03,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "18674187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 64.03,
+            "unit": "ns/op",
+            "extra": "18674187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "18674187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "18674187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 63.97,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "18696046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 63.97,
+            "unit": "ns/op",
+            "extra": "18696046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "18696046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "18696046 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 64.02,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "18842385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 64.02,
+            "unit": "ns/op",
+            "extra": "18842385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "18842385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "18842385 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 64.05,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "18705744 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 64.05,
+            "unit": "ns/op",
+            "extra": "18705744 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "18705744 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapDeleteInsertChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "18705744 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1734,
+            "unit": "ns/op\t    1024 B/op\t       1 allocs/op",
+            "extra": "669429 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1734,
+            "unit": "ns/op",
+            "extra": "669429 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1024,
+            "unit": "B/op",
+            "extra": "669429 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "669429 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1759,
+            "unit": "ns/op\t    1024 B/op\t       1 allocs/op",
+            "extra": "654994 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1759,
+            "unit": "ns/op",
+            "extra": "654994 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1024,
+            "unit": "B/op",
+            "extra": "654994 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "654994 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1935,
+            "unit": "ns/op\t    1024 B/op\t       1 allocs/op",
+            "extra": "621274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1935,
+            "unit": "ns/op",
+            "extra": "621274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1024,
+            "unit": "B/op",
+            "extra": "621274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "621274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1899,
+            "unit": "ns/op\t    1024 B/op\t       1 allocs/op",
+            "extra": "631419 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1899,
+            "unit": "ns/op",
+            "extra": "631419 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1024,
+            "unit": "B/op",
+            "extra": "631419 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "631419 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1752,
+            "unit": "ns/op\t    1024 B/op\t       1 allocs/op",
+            "extra": "682702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1752,
+            "unit": "ns/op",
+            "extra": "682702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1024,
+            "unit": "B/op",
+            "extra": "682702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "682702 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1714,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "691592 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1714,
+            "unit": "ns/op",
+            "extra": "691592 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "691592 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "691592 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1588,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "751856 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1588,
+            "unit": "ns/op",
+            "extra": "751856 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "751856 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "751856 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1539,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "783687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1539,
+            "unit": "ns/op",
+            "extra": "783687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "783687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "783687 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1679,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "712075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1679,
+            "unit": "ns/op",
+            "extra": "712075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "712075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "712075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui)",
+            "value": 1482,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "806320 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1482,
+            "unit": "ns/op",
+            "extra": "806320 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "806320 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedMapRangeKeysUnderChurn (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "806320 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 4.422,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "271381081 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4.422,
+            "unit": "ns/op",
+            "extra": "271381081 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "271381081 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "271381081 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 4.511,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "272577093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4.511,
+            "unit": "ns/op",
+            "extra": "272577093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "272577093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "272577093 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 4.44,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "270333418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4.44,
+            "unit": "ns/op",
+            "extra": "270333418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "270333418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "270333418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 4.407,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "272022918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4.407,
+            "unit": "ns/op",
+            "extra": "272022918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "272022918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "272022918 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui)",
+            "value": 4.406,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "272252376 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4.406,
+            "unit": "ns/op",
+            "extra": "272252376 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "272252376 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushBelowCapacity (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "272252376 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 3.566,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "336424564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 3.566,
+            "unit": "ns/op",
+            "extra": "336424564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "336424564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "336424564 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 3.529,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "340078604 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 3.529,
+            "unit": "ns/op",
+            "extra": "340078604 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "340078604 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "340078604 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 3.566,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "336792958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 3.566,
+            "unit": "ns/op",
+            "extra": "336792958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "336792958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "336792958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 3.536,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "339694641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 3.536,
+            "unit": "ns/op",
+            "extra": "339694641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "339694641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "339694641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 3.565,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "336408231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 3.565,
+            "unit": "ns/op",
+            "extra": "336408231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "336408231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "336408231 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui)",
+            "value": 5.986,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "200405192 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 5.986,
+            "unit": "ns/op",
+            "extra": "200405192 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "200405192 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "200405192 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui)",
+            "value": 6.102,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "196929747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6.102,
+            "unit": "ns/op",
+            "extra": "196929747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "196929747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "196929747 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui)",
+            "value": 6.142,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "196407578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6.142,
+            "unit": "ns/op",
+            "extra": "196407578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "196407578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "196407578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui)",
+            "value": 6.074,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "196371902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6.074,
+            "unit": "ns/op",
+            "extra": "196371902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "196371902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "196371902 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui)",
+            "value": 6.069,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "196618296 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6.069,
+            "unit": "ns/op",
+            "extra": "196618296 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "196618296 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBoundedStackPushPopCycle (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "196618296 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui)",
+            "value": 30.52,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "39231247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 30.52,
+            "unit": "ns/op",
+            "extra": "39231247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "39231247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "39231247 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui)",
+            "value": 30.33,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "39088602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 30.33,
+            "unit": "ns/op",
+            "extra": "39088602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "39088602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "39088602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui)",
+            "value": 30.51,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "39243531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 30.51,
+            "unit": "ns/op",
+            "extra": "39243531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "39243531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "39243531 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui)",
+            "value": 30.37,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "39151414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 30.37,
+            "unit": "ns/op",
+            "extra": "39151414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "39151414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "39151414 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui)",
+            "value": 30.25,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "38932156 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 30.25,
+            "unit": "ns/op",
+            "extra": "38932156 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "38932156 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseMove (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "38932156 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui)",
+            "value": 12.73,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "95448642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 12.73,
+            "unit": "ns/op",
+            "extra": "95448642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "95448642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "95448642 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui)",
+            "value": 12.72,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "95452058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 12.72,
+            "unit": "ns/op",
+            "extra": "95452058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "95452058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "95452058 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui)",
+            "value": 13.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "96119641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 13.4,
+            "unit": "ns/op",
+            "extra": "96119641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "96119641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "96119641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui)",
+            "value": 13.14,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "96172356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 13.14,
+            "unit": "ns/op",
+            "extra": "96172356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "96172356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "96172356 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui)",
+            "value": 12.76,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "96015308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 12.76,
+            "unit": "ns/op",
+            "extra": "96015308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "96015308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnMouseScrollFocused (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "96015308 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui)",
+            "value": 89.06,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13487440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 89.06,
+            "unit": "ns/op",
+            "extra": "13487440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13487440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13487440 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui)",
+            "value": 89.06,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13476958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 89.06,
+            "unit": "ns/op",
+            "extra": "13476958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13476958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13476958 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui)",
+            "value": 89.01,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13435522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 89.01,
+            "unit": "ns/op",
+            "extra": "13435522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13435522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13435522 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui)",
+            "value": 89.68,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "12470418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 89.68,
+            "unit": "ns/op",
+            "extra": "12470418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "12470418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "12470418 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui)",
+            "value": 89,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13490524 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 89,
+            "unit": "ns/op",
+            "extra": "13490524 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13490524 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkEventFnDeepNesting (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13490524 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui)",
+            "value": 23.7,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "50428075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 23.7,
+            "unit": "ns/op",
+            "extra": "50428075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50428075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50428075 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui)",
+            "value": 23.65,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "50900554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 23.65,
+            "unit": "ns/op",
+            "extra": "50900554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50900554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50900554 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui)",
+            "value": 23.63,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "50667638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 23.63,
+            "unit": "ns/op",
+            "extra": "50667638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50667638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50667638 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui)",
+            "value": 23.64,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "50691013 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 23.64,
+            "unit": "ns/op",
+            "extra": "50691013 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50691013 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50691013 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui)",
+            "value": 23.66,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "50419222 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 23.66,
+            "unit": "ns/op",
+            "extra": "50419222 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "50419222 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkExecuteMouseCallback (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "50419222 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui)",
+            "value": 13212,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "92056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 13212,
+            "unit": "ns/op",
+            "extra": "92056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "92056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "92056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui)",
+            "value": 13216,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "90788 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 13216,
+            "unit": "ns/op",
+            "extra": "90788 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "90788 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "90788 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui)",
+            "value": 13218,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 13218,
+            "unit": "ns/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui)",
+            "value": 13162,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 13162,
+            "unit": "ns/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "91354 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui)",
+            "value": 13145,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "91586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 13145,
+            "unit": "ns/op",
+            "extra": "91586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "91586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutArrange (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "91586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui)",
+            "value": 22908,
+            "unit": "ns/op\t   64720 B/op\t     233 allocs/op",
+            "extra": "51780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 22908,
+            "unit": "ns/op",
+            "extra": "51780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 64720,
+            "unit": "B/op",
+            "extra": "51780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 233,
+            "unit": "allocs/op",
+            "extra": "51780 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui)",
+            "value": 22832,
+            "unit": "ns/op\t   64720 B/op\t     233 allocs/op",
+            "extra": "52423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 22832,
+            "unit": "ns/op",
+            "extra": "52423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 64720,
+            "unit": "B/op",
+            "extra": "52423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 233,
+            "unit": "allocs/op",
+            "extra": "52423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui)",
+            "value": 22917,
+            "unit": "ns/op\t   64720 B/op\t     233 allocs/op",
+            "extra": "51961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 22917,
+            "unit": "ns/op",
+            "extra": "51961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 64720,
+            "unit": "B/op",
+            "extra": "51961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 233,
+            "unit": "allocs/op",
+            "extra": "51961 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui)",
+            "value": 22640,
+            "unit": "ns/op\t   64720 B/op\t     233 allocs/op",
+            "extra": "52686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 22640,
+            "unit": "ns/op",
+            "extra": "52686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 64720,
+            "unit": "B/op",
+            "extra": "52686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 233,
+            "unit": "allocs/op",
+            "extra": "52686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui)",
+            "value": 22659,
+            "unit": "ns/op\t   64720 B/op\t     233 allocs/op",
+            "extra": "52905 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 22659,
+            "unit": "ns/op",
+            "extra": "52905 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 64720,
+            "unit": "B/op",
+            "extra": "52905 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWrapContainers (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 233,
+            "unit": "allocs/op",
+            "extra": "52905 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui)",
+            "value": 6361,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "187267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6361,
+            "unit": "ns/op",
+            "extra": "187267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "187267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "187267 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui)",
+            "value": 6376,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "188275 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6376,
+            "unit": "ns/op",
+            "extra": "188275 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "188275 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "188275 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui)",
+            "value": 6469,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "185647 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6469,
+            "unit": "ns/op",
+            "extra": "185647 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "185647 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "185647 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui)",
+            "value": 6449,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "188871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6449,
+            "unit": "ns/op",
+            "extra": "188871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "188871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "188871 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui)",
+            "value": 6389,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "187042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 6389,
+            "unit": "ns/op",
+            "extra": "187042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "187042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFocusTraversal (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "187042 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 11544,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "103816 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 11544,
+            "unit": "ns/op",
+            "extra": "103816 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "103816 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "103816 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 11443,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "104864 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 11443,
+            "unit": "ns/op",
+            "extra": "104864 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "104864 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "104864 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 11609,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "103215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 11609,
+            "unit": "ns/op",
+            "extra": "103215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "103215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "103215 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 11454,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "105021 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 11454,
+            "unit": "ns/op",
+            "extra": "105021 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "105021 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "105021 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 11647,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "103008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 11647,
+            "unit": "ns/op",
+            "extra": "103008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "103008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "103008 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 2221217,
+            "unit": "ns/op\t 3128918 B/op\t   12224 allocs/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2221217,
+            "unit": "ns/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3128918,
+            "unit": "B/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 12224,
+            "unit": "allocs/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 2218324,
+            "unit": "ns/op\t 3128917 B/op\t   12224 allocs/op",
+            "extra": "543 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2218324,
+            "unit": "ns/op",
+            "extra": "543 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3128917,
+            "unit": "B/op",
+            "extra": "543 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 12224,
+            "unit": "allocs/op",
+            "extra": "543 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 2217834,
+            "unit": "ns/op\t 3128917 B/op\t   12224 allocs/op",
+            "extra": "538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2217834,
+            "unit": "ns/op",
+            "extra": "538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3128917,
+            "unit": "B/op",
+            "extra": "538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 12224,
+            "unit": "allocs/op",
+            "extra": "538 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 2234797,
+            "unit": "ns/op\t 3128914 B/op\t   12224 allocs/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2234797,
+            "unit": "ns/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3128914,
+            "unit": "B/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 12224,
+            "unit": "allocs/op",
+            "extra": "535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 2222128,
+            "unit": "ns/op\t 3128915 B/op\t   12224 allocs/op",
+            "extra": "532 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2222128,
+            "unit": "ns/op",
+            "extra": "532 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3128915,
+            "unit": "B/op",
+            "extra": "532 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPipeline/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 12224,
+            "unit": "allocs/op",
+            "extra": "532 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 1916,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "617311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1916,
+            "unit": "ns/op",
+            "extra": "617311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "617311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "617311 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 2065,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "577731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2065,
+            "unit": "ns/op",
+            "extra": "577731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "577731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "577731 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 1930,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "618424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1930,
+            "unit": "ns/op",
+            "extra": "618424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "618424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "618424 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 2023,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "588535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2023,
+            "unit": "ns/op",
+            "extra": "588535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "588535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "588535 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 1865,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "639528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1865,
+            "unit": "ns/op",
+            "extra": "639528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "639528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "639528 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 2478,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "484915 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2478,
+            "unit": "ns/op",
+            "extra": "484915 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "484915 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "484915 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 2403,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "498232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2403,
+            "unit": "ns/op",
+            "extra": "498232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "498232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "498232 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 2470,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "484726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2470,
+            "unit": "ns/op",
+            "extra": "484726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "484726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "484726 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 2389,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "506728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2389,
+            "unit": "ns/op",
+            "extra": "506728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "506728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "506728 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui)",
+            "value": 2469,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "485931 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2469,
+            "unit": "ns/op",
+            "extra": "485931 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "485931 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillWidths (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "485931 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 1754,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "684534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1754,
+            "unit": "ns/op",
+            "extra": "684534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "684534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "684534 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 1870,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "637776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1870,
+            "unit": "ns/op",
+            "extra": "637776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "637776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "637776 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 1768,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "677214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1768,
+            "unit": "ns/op",
+            "extra": "677214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "677214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "677214 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 1891,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "629268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1891,
+            "unit": "ns/op",
+            "extra": "629268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "629268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "629268 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 1768,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "679352 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1768,
+            "unit": "ns/op",
+            "extra": "679352 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "679352 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "679352 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 2333,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "513506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2333,
+            "unit": "ns/op",
+            "extra": "513506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "513506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "513506 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 2265,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "525727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2265,
+            "unit": "ns/op",
+            "extra": "525727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "525727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "525727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 2325,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "516975 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2325,
+            "unit": "ns/op",
+            "extra": "516975 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "516975 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "516975 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 2269,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "526479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2269,
+            "unit": "ns/op",
+            "extra": "526479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "526479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "526479 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui)",
+            "value": 2272,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "525697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2272,
+            "unit": "ns/op",
+            "extra": "525697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "525697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutFillHeights (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "525697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui)",
+            "value": 1977,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "601178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1977,
+            "unit": "ns/op",
+            "extra": "601178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "601178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "601178 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui)",
+            "value": 1976,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "602650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1976,
+            "unit": "ns/op",
+            "extra": "602650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "602650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "602650 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui)",
+            "value": 1986,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "604428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1986,
+            "unit": "ns/op",
+            "extra": "604428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "604428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "604428 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui)",
+            "value": 1979,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "602382 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1979,
+            "unit": "ns/op",
+            "extra": "602382 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "602382 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "602382 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui)",
+            "value": 1981,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "606248 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1981,
+            "unit": "ns/op",
+            "extra": "606248 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "606248 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutPositions (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "606248 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui)",
+            "value": 92701,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "12940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 92701,
+            "unit": "ns/op",
+            "extra": "12940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "12940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "12940 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui)",
+            "value": 105862,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 105862,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui)",
+            "value": 107099,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 107099,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui)",
+            "value": 92901,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "12939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 92901,
+            "unit": "ns/op",
+            "extra": "12939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "12939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "12939 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui)",
+            "value": 91972,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13057 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 91972,
+            "unit": "ns/op",
+            "extra": "13057 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13057 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutSetShapeClips (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13057 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui)",
+            "value": 2034,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "625260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2034,
+            "unit": "ns/op",
+            "extra": "625260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "625260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "625260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui)",
+            "value": 2052,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "567106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2052,
+            "unit": "ns/op",
+            "extra": "567106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "567106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "567106 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui)",
+            "value": 2037,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "589641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2037,
+            "unit": "ns/op",
+            "extra": "589641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "589641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "589641 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui)",
+            "value": 2089,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "566792 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2089,
+            "unit": "ns/op",
+            "extra": "566792 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "566792 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "566792 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui)",
+            "value": 2015,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "587091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 2015,
+            "unit": "ns/op",
+            "extra": "587091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "587091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutAdjustScrollOffsets (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "587091 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 132.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "8995076 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 132.3,
+            "unit": "ns/op",
+            "extra": "8995076 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "8995076 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "8995076 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 131.7,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "8967663 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 131.7,
+            "unit": "ns/op",
+            "extra": "8967663 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "8967663 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "8967663 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 131.3,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "8943260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 131.3,
+            "unit": "ns/op",
+            "extra": "8943260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "8943260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "8943260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 128.1,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "9173269 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 128.1,
+            "unit": "ns/op",
+            "extra": "9173269 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "9173269 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "9173269 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui)",
+            "value": 128.6,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "9706633 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 128.6,
+            "unit": "ns/op",
+            "extra": "9706633 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "9706633 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkLayoutOverflow (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "9706633 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui)",
+            "value": 110519,
+            "unit": "ns/op\t  280945 B/op\t      14 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 110519,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 280945,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 14,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui)",
+            "value": 111202,
+            "unit": "ns/op\t  280946 B/op\t      14 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 111202,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 280946,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 14,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui)",
+            "value": 109571,
+            "unit": "ns/op\t  280945 B/op\t      14 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 109571,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 280945,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 14,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui)",
+            "value": 111414,
+            "unit": "ns/op\t  280945 B/op\t      14 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 111414,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 280945,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 14,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui)",
+            "value": 111188,
+            "unit": "ns/op\t  280945 B/op\t      14 allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 111188,
+            "unit": "ns/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 280945,
+            "unit": "B/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/empty_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 14,
+            "unit": "allocs/op",
+            "extra": "10000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui)",
+            "value": 42746,
+            "unit": "ns/op\t    8016 B/op\t      18 allocs/op",
+            "extra": "28138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 42746,
+            "unit": "ns/op",
+            "extra": "28138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 8016,
+            "unit": "B/op",
+            "extra": "28138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 18,
+            "unit": "allocs/op",
+            "extra": "28138 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui)",
+            "value": 42686,
+            "unit": "ns/op\t    8016 B/op\t      18 allocs/op",
+            "extra": "28059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 42686,
+            "unit": "ns/op",
+            "extra": "28059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 8016,
+            "unit": "B/op",
+            "extra": "28059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 18,
+            "unit": "allocs/op",
+            "extra": "28059 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui)",
+            "value": 43147,
+            "unit": "ns/op\t    8016 B/op\t      18 allocs/op",
+            "extra": "27499 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 43147,
+            "unit": "ns/op",
+            "extra": "27499 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 8016,
+            "unit": "B/op",
+            "extra": "27499 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 18,
+            "unit": "allocs/op",
+            "extra": "27499 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui)",
+            "value": 42814,
+            "unit": "ns/op\t    8016 B/op\t      18 allocs/op",
+            "extra": "27945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 42814,
+            "unit": "ns/op",
+            "extra": "27945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 8016,
+            "unit": "B/op",
+            "extra": "27945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 18,
+            "unit": "allocs/op",
+            "extra": "27945 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui)",
+            "value": 42895,
+            "unit": "ns/op\t    8016 B/op\t      18 allocs/op",
+            "extra": "27798 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 42895,
+            "unit": "ns/op",
+            "extra": "27798 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 8016,
+            "unit": "B/op",
+            "extra": "27798 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListCorePrepare/fuzzy_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 18,
+            "unit": "allocs/op",
+            "extra": "27798 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui)",
+            "value": 10652,
+            "unit": "ns/op\t    3320 B/op\t      20 allocs/op",
+            "extra": "108686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 10652,
+            "unit": "ns/op",
+            "extra": "108686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3320,
+            "unit": "B/op",
+            "extra": "108686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "108686 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui)",
+            "value": 10413,
+            "unit": "ns/op\t    3302 B/op\t      20 allocs/op",
+            "extra": "117602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 10413,
+            "unit": "ns/op",
+            "extra": "117602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3302,
+            "unit": "B/op",
+            "extra": "117602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "117602 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui)",
+            "value": 9905,
+            "unit": "ns/op\t    3330 B/op\t      20 allocs/op",
+            "extra": "114339 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 9905,
+            "unit": "ns/op",
+            "extra": "114339 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3330,
+            "unit": "B/op",
+            "extra": "114339 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "114339 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui)",
+            "value": 10021,
+            "unit": "ns/op\t    3428 B/op\t      20 allocs/op",
+            "extra": "115450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 10021,
+            "unit": "ns/op",
+            "extra": "115450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3428,
+            "unit": "B/op",
+            "extra": "115450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "115450 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui)",
+            "value": 10028,
+            "unit": "ns/op\t    3349 B/op\t      20 allocs/op",
+            "extra": "112533 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 10028,
+            "unit": "ns/op",
+            "extra": "112533 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 3349,
+            "unit": "B/op",
+            "extra": "112533 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/closed (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 20,
+            "unit": "allocs/op",
+            "extra": "112533 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui)",
+            "value": 25628,
+            "unit": "ns/op\t   14539 B/op\t      97 allocs/op",
+            "extra": "44253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 25628,
+            "unit": "ns/op",
+            "extra": "44253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 14539,
+            "unit": "B/op",
+            "extra": "44253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 97,
+            "unit": "allocs/op",
+            "extra": "44253 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui)",
+            "value": 25590,
+            "unit": "ns/op\t   14100 B/op\t      97 allocs/op",
+            "extra": "44634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 25590,
+            "unit": "ns/op",
+            "extra": "44634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 14100,
+            "unit": "B/op",
+            "extra": "44634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 97,
+            "unit": "allocs/op",
+            "extra": "44634 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui)",
+            "value": 25732,
+            "unit": "ns/op\t   14361 B/op\t      97 allocs/op",
+            "extra": "43977 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 25732,
+            "unit": "ns/op",
+            "extra": "43977 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 14361,
+            "unit": "B/op",
+            "extra": "43977 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 97,
+            "unit": "allocs/op",
+            "extra": "43977 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui)",
+            "value": 25939,
+            "unit": "ns/op\t   14721 B/op\t      97 allocs/op",
+            "extra": "42544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 25939,
+            "unit": "ns/op",
+            "extra": "42544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 14721,
+            "unit": "B/op",
+            "extra": "42544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 97,
+            "unit": "allocs/op",
+            "extra": "42544 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui)",
+            "value": 25848,
+            "unit": "ns/op\t   13128 B/op\t      97 allocs/op",
+            "extra": "42378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 25848,
+            "unit": "ns/op",
+            "extra": "42378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 13128,
+            "unit": "B/op",
+            "extra": "42378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkComboboxGenerateLayout/open_query (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 97,
+            "unit": "allocs/op",
+            "extra": "42378 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui)",
+            "value": 56966,
+            "unit": "ns/op\t   36997 B/op\t     218 allocs/op",
+            "extra": "21213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 56966,
+            "unit": "ns/op",
+            "extra": "21213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 36997,
+            "unit": "B/op",
+            "extra": "21213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 218,
+            "unit": "allocs/op",
+            "extra": "21213 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui)",
+            "value": 56685,
+            "unit": "ns/op\t   36949 B/op\t     218 allocs/op",
+            "extra": "21463 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 56685,
+            "unit": "ns/op",
+            "extra": "21463 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 36949,
+            "unit": "B/op",
+            "extra": "21463 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 218,
+            "unit": "allocs/op",
+            "extra": "21463 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui)",
+            "value": 56715,
+            "unit": "ns/op\t   36976 B/op\t     218 allocs/op",
+            "extra": "21321 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 56715,
+            "unit": "ns/op",
+            "extra": "21321 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 36976,
+            "unit": "B/op",
+            "extra": "21321 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 218,
+            "unit": "allocs/op",
+            "extra": "21321 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui)",
+            "value": 55907,
+            "unit": "ns/op\t   37051 B/op\t     218 allocs/op",
+            "extra": "20944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 55907,
+            "unit": "ns/op",
+            "extra": "20944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 37051,
+            "unit": "B/op",
+            "extra": "20944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 218,
+            "unit": "allocs/op",
+            "extra": "20944 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui)",
+            "value": 56744,
+            "unit": "ns/op\t   36955 B/op\t     218 allocs/op",
+            "extra": "21430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 56744,
+            "unit": "ns/op",
+            "extra": "21430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 36955,
+            "unit": "B/op",
+            "extra": "21430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCommandPaletteGenerateLayout (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 218,
+            "unit": "allocs/op",
+            "extra": "21430 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui)",
+            "value": 238181,
+            "unit": "ns/op\t  352747 B/op\t    2002 allocs/op",
+            "extra": "4914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 238181,
+            "unit": "ns/op",
+            "extra": "4914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 352747,
+            "unit": "B/op",
+            "extra": "4914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2002,
+            "unit": "allocs/op",
+            "extra": "4914 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui)",
+            "value": 234256,
+            "unit": "ns/op\t  358013 B/op\t    2002 allocs/op",
+            "extra": "4389 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 234256,
+            "unit": "ns/op",
+            "extra": "4389 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 358013,
+            "unit": "B/op",
+            "extra": "4389 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2002,
+            "unit": "allocs/op",
+            "extra": "4389 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui)",
+            "value": 237561,
+            "unit": "ns/op\t  348923 B/op\t    2002 allocs/op",
+            "extra": "4302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 237561,
+            "unit": "ns/op",
+            "extra": "4302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 348923,
+            "unit": "B/op",
+            "extra": "4302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2002,
+            "unit": "allocs/op",
+            "extra": "4302 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui)",
+            "value": 243939,
+            "unit": "ns/op\t  354595 B/op\t    2002 allocs/op",
+            "extra": "4716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 243939,
+            "unit": "ns/op",
+            "extra": "4716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 354595,
+            "unit": "B/op",
+            "extra": "4716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2002,
+            "unit": "allocs/op",
+            "extra": "4716 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui)",
+            "value": 232303,
+            "unit": "ns/op\t  356154 B/op\t    2002 allocs/op",
+            "extra": "4561 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 232303,
+            "unit": "ns/op",
+            "extra": "4561 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 356154,
+            "unit": "B/op",
+            "extra": "4561 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/unbounded (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2002,
+            "unit": "allocs/op",
+            "extra": "4561 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui)",
+            "value": 37679,
+            "unit": "ns/op\t   34816 B/op\t     232 allocs/op",
+            "extra": "34003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 37679,
+            "unit": "ns/op",
+            "extra": "34003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 34816,
+            "unit": "B/op",
+            "extra": "34003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 232,
+            "unit": "allocs/op",
+            "extra": "34003 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui)",
+            "value": 36645,
+            "unit": "ns/op\t   34807 B/op\t     232 allocs/op",
+            "extra": "34195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 36645,
+            "unit": "ns/op",
+            "extra": "34195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 34807,
+            "unit": "B/op",
+            "extra": "34195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 232,
+            "unit": "allocs/op",
+            "extra": "34195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui)",
+            "value": 34300,
+            "unit": "ns/op\t   34789 B/op\t     232 allocs/op",
+            "extra": "34578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 34300,
+            "unit": "ns/op",
+            "extra": "34578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 34789,
+            "unit": "B/op",
+            "extra": "34578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 232,
+            "unit": "allocs/op",
+            "extra": "34578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui)",
+            "value": 37817,
+            "unit": "ns/op\t   34820 B/op\t     232 allocs/op",
+            "extra": "33913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 37817,
+            "unit": "ns/op",
+            "extra": "33913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 34820,
+            "unit": "B/op",
+            "extra": "33913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 232,
+            "unit": "allocs/op",
+            "extra": "33913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui)",
+            "value": 35541,
+            "unit": "ns/op\t   34874 B/op\t     232 allocs/op",
+            "extra": "32860 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 35541,
+            "unit": "ns/op",
+            "extra": "32860 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 34874,
+            "unit": "B/op",
+            "extra": "32860 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkListBoxGenerateLayout/bounded_virtualized (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 232,
+            "unit": "allocs/op",
+            "extra": "32860 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 4734,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "247413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4734,
+            "unit": "ns/op",
+            "extra": "247413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "247413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "247413 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 4778,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "246280 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4778,
+            "unit": "ns/op",
+            "extra": "246280 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "246280 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "246280 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 4768,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "251386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4768,
+            "unit": "ns/op",
+            "extra": "251386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "251386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "251386 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 4774,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "251124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4774,
+            "unit": "ns/op",
+            "extra": "251124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "251124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "251124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui)",
+            "value": 4784,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "251487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4784,
+            "unit": "ns/op",
+            "extra": "251487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "251487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/flat_120 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "251487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 461317,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "2607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 461317,
+            "unit": "ns/op",
+            "extra": "2607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2607 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 460928,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "2605 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 460928,
+            "unit": "ns/op",
+            "extra": "2605 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2605 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2605 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 461223,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "2586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 461223,
+            "unit": "ns/op",
+            "extra": "2586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2586 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 461121,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "2569 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 461121,
+            "unit": "ns/op",
+            "extra": "2569 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2569 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2569 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 461977,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 461977,
+            "unit": "ns/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderLayout/nested_4x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "2551 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 1.117,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1.117,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 1.104,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1.104,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 1.104,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1.104,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 1.116,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1.116,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 1.114,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1.114,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateTypeLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 8.444,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "141938054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 8.444,
+            "unit": "ns/op",
+            "extra": "141938054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "141938054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "141938054 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 8.224,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "145070478 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 8.224,
+            "unit": "ns/op",
+            "extra": "145070478 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "145070478 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "145070478 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 8.155,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "148278727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 8.155,
+            "unit": "ns/op",
+            "extra": "148278727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "148278727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "148278727 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 10.52,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 10.52,
+            "unit": "ns/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "100000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui)",
+            "value": 8.153,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "146951168 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 8.153,
+            "unit": "ns/op",
+            "extra": "146951168 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "146951168 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkStateMapLookup (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "146951168 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui)",
+            "value": 383.9,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "3149842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 383.9,
+            "unit": "ns/op",
+            "extra": "3149842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "3149842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "3149842 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui)",
+            "value": 379.9,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "3149781 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 379.9,
+            "unit": "ns/op",
+            "extra": "3149781 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "3149781 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "3149781 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui)",
+            "value": 379.1,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "3237103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 379.1,
+            "unit": "ns/op",
+            "extra": "3237103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "3237103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "3237103 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui)",
+            "value": 385.1,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "3215252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 385.1,
+            "unit": "ns/op",
+            "extra": "3215252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "3215252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "3215252 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui)",
+            "value": 389,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "3110803 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 389,
+            "unit": "ns/op",
+            "extra": "3110803 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "3110803 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkRenderSvgAnimated (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "3110803 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui)",
+            "value": 1642,
+            "unit": "ns/op\t    1360 B/op\t      17 allocs/op",
+            "extra": "705578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1642,
+            "unit": "ns/op",
+            "extra": "705578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1360,
+            "unit": "B/op",
+            "extra": "705578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 17,
+            "unit": "allocs/op",
+            "extra": "705578 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui)",
+            "value": 1651,
+            "unit": "ns/op\t    1360 B/op\t      17 allocs/op",
+            "extra": "690733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1651,
+            "unit": "ns/op",
+            "extra": "690733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1360,
+            "unit": "B/op",
+            "extra": "690733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 17,
+            "unit": "allocs/op",
+            "extra": "690733 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui)",
+            "value": 1680,
+            "unit": "ns/op\t    1360 B/op\t      17 allocs/op",
+            "extra": "738760 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1680,
+            "unit": "ns/op",
+            "extra": "738760 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1360,
+            "unit": "B/op",
+            "extra": "738760 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 17,
+            "unit": "allocs/op",
+            "extra": "738760 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui)",
+            "value": 1638,
+            "unit": "ns/op\t    1360 B/op\t      17 allocs/op",
+            "extra": "726426 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1638,
+            "unit": "ns/op",
+            "extra": "726426 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1360,
+            "unit": "B/op",
+            "extra": "726426 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 17,
+            "unit": "allocs/op",
+            "extra": "726426 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui)",
+            "value": 1634,
+            "unit": "ns/op\t    1360 B/op\t      17 allocs/op",
+            "extra": "734187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1634,
+            "unit": "ns/op",
+            "extra": "734187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 1360,
+            "unit": "B/op",
+            "extra": "734187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildDefsPathDataCache (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 17,
+            "unit": "allocs/op",
+            "extra": "734187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui)",
+            "value": 0.3136,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 0.3136,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui)",
+            "value": 0.3062,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 0.3062,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui)",
+            "value": 0.3214,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 0.3214,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui)",
+            "value": 0.3011,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 0.3011,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui)",
+            "value": 0.3245,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 0.3245,
+            "unit": "ns/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCurrentTheme (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "1000000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui)",
+            "value": 4960,
+            "unit": "ns/op\t    5888 B/op\t       2 allocs/op",
+            "extra": "235423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4960,
+            "unit": "ns/op",
+            "extra": "235423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 5888,
+            "unit": "B/op",
+            "extra": "235423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "235423 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui)",
+            "value": 4948,
+            "unit": "ns/op\t    5888 B/op\t       2 allocs/op",
+            "extra": "242152 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4948,
+            "unit": "ns/op",
+            "extra": "242152 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 5888,
+            "unit": "B/op",
+            "extra": "242152 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "242152 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui)",
+            "value": 4946,
+            "unit": "ns/op\t    5888 B/op\t       2 allocs/op",
+            "extra": "239894 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4946,
+            "unit": "ns/op",
+            "extra": "239894 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 5888,
+            "unit": "B/op",
+            "extra": "239894 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "239894 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui)",
+            "value": 4936,
+            "unit": "ns/op\t    5888 B/op\t       2 allocs/op",
+            "extra": "241210 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4936,
+            "unit": "ns/op",
+            "extra": "241210 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 5888,
+            "unit": "B/op",
+            "extra": "241210 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "241210 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui)",
+            "value": 4915,
+            "unit": "ns/op\t    5888 B/op\t       2 allocs/op",
+            "extra": "244657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 4915,
+            "unit": "ns/op",
+            "extra": "244657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 5888,
+            "unit": "B/op",
+            "extra": "244657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/flat_100 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "244657 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 61512,
+            "unit": "ns/op\t   63936 B/op\t     222 allocs/op",
+            "extra": "19266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 61512,
+            "unit": "ns/op",
+            "extra": "19266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 63936,
+            "unit": "B/op",
+            "extra": "19266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 222,
+            "unit": "allocs/op",
+            "extra": "19266 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 61893,
+            "unit": "ns/op\t   63936 B/op\t     222 allocs/op",
+            "extra": "19545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 61893,
+            "unit": "ns/op",
+            "extra": "19545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 63936,
+            "unit": "B/op",
+            "extra": "19545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 222,
+            "unit": "allocs/op",
+            "extra": "19545 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 62195,
+            "unit": "ns/op\t   63936 B/op\t     222 allocs/op",
+            "extra": "19504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 62195,
+            "unit": "ns/op",
+            "extra": "19504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 63936,
+            "unit": "B/op",
+            "extra": "19504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 222,
+            "unit": "allocs/op",
+            "extra": "19504 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 63092,
+            "unit": "ns/op\t   63936 B/op\t     222 allocs/op",
+            "extra": "19056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 63092,
+            "unit": "ns/op",
+            "extra": "19056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 63936,
+            "unit": "B/op",
+            "extra": "19056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 222,
+            "unit": "allocs/op",
+            "extra": "19056 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui)",
+            "value": 61419,
+            "unit": "ns/op\t   63936 B/op\t     222 allocs/op",
+            "extra": "19437 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 61419,
+            "unit": "ns/op",
+            "extra": "19437 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 63936,
+            "unit": "B/op",
+            "extra": "19437 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/nested_3x10 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 222,
+            "unit": "allocs/op",
+            "extra": "19437 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui)",
+            "value": 1094,
+            "unit": "ns/op\t     768 B/op\t      24 allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1094,
+            "unit": "ns/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 768,
+            "unit": "B/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 24,
+            "unit": "allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui)",
+            "value": 1082,
+            "unit": "ns/op\t     768 B/op\t      24 allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1082,
+            "unit": "ns/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 768,
+            "unit": "B/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 24,
+            "unit": "allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui)",
+            "value": 1105,
+            "unit": "ns/op\t     768 B/op\t      24 allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1105,
+            "unit": "ns/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 768,
+            "unit": "B/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 24,
+            "unit": "allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui)",
+            "value": 1085,
+            "unit": "ns/op\t     768 B/op\t      24 allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1085,
+            "unit": "ns/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 768,
+            "unit": "B/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 24,
+            "unit": "allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui)",
+            "value": 1096,
+            "unit": "ns/op\t     768 B/op\t      24 allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - ns/op",
+            "value": 1096,
+            "unit": "ns/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - B/op",
+            "value": 768,
+            "unit": "B/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkGenerateViewLayout/deep_12x1 (github.com/mike-ward/go-gui/gui) - allocs/op",
+            "value": 24,
+            "unit": "allocs/op",
+            "extra": "1000000 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 8339,
+            "unit": "ns/op\t    6859 B/op\t      57 allocs/op",
+            "extra": "148813 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 8339,
+            "unit": "ns/op",
+            "extra": "148813 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 6859,
+            "unit": "B/op",
+            "extra": "148813 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 57,
+            "unit": "allocs/op",
+            "extra": "148813 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 8512,
+            "unit": "ns/op\t    6857 B/op\t      57 allocs/op",
+            "extra": "139966 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 8512,
+            "unit": "ns/op",
+            "extra": "139966 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 6857,
+            "unit": "B/op",
+            "extra": "139966 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 57,
+            "unit": "allocs/op",
+            "extra": "139966 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 8329,
+            "unit": "ns/op\t    6857 B/op\t      57 allocs/op",
+            "extra": "145796 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 8329,
+            "unit": "ns/op",
+            "extra": "145796 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 6857,
+            "unit": "B/op",
+            "extra": "145796 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 57,
+            "unit": "allocs/op",
+            "extra": "145796 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 8178,
+            "unit": "ns/op\t    6854 B/op\t      57 allocs/op",
+            "extra": "147697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 8178,
+            "unit": "ns/op",
+            "extra": "147697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 6854,
+            "unit": "B/op",
+            "extra": "147697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 57,
+            "unit": "allocs/op",
+            "extra": "147697 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 8265,
+            "unit": "ns/op\t    6857 B/op\t      57 allocs/op",
+            "extra": "144778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 8265,
+            "unit": "ns/op",
+            "extra": "144778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 6857,
+            "unit": "B/op",
+            "extra": "144778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseSmall (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 57,
+            "unit": "allocs/op",
+            "extra": "144778 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 4562238,
+            "unit": "ns/op\t 3342120 B/op\t   20862 allocs/op",
+            "extra": "259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 4562238,
+            "unit": "ns/op",
+            "extra": "259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 3342120,
+            "unit": "B/op",
+            "extra": "259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 20862,
+            "unit": "allocs/op",
+            "extra": "259 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 4530009,
+            "unit": "ns/op\t 3341964 B/op\t   20861 allocs/op",
+            "extra": "261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 4530009,
+            "unit": "ns/op",
+            "extra": "261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 3341964,
+            "unit": "B/op",
+            "extra": "261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 20861,
+            "unit": "allocs/op",
+            "extra": "261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 4689210,
+            "unit": "ns/op\t 3342198 B/op\t   20862 allocs/op",
+            "extra": "254 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 4689210,
+            "unit": "ns/op",
+            "extra": "254 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 3342198,
+            "unit": "B/op",
+            "extra": "254 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 20862,
+            "unit": "allocs/op",
+            "extra": "254 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 4528470,
+            "unit": "ns/op\t 3341990 B/op\t   20862 allocs/op",
+            "extra": "260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 4528470,
+            "unit": "ns/op",
+            "extra": "260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 3341990,
+            "unit": "B/op",
+            "extra": "260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 20862,
+            "unit": "allocs/op",
+            "extra": "260 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 4477005,
+            "unit": "ns/op\t 3342095 B/op\t   20862 allocs/op",
+            "extra": "270 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 4477005,
+            "unit": "ns/op",
+            "extra": "270 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 3342095,
+            "unit": "B/op",
+            "extra": "270 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseLarge (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 20862,
+            "unit": "allocs/op",
+            "extra": "270 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 6334173,
+            "unit": "ns/op\t 7697446 B/op\t   14493 allocs/op",
+            "extra": "186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 6334173,
+            "unit": "ns/op",
+            "extra": "186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 7697446,
+            "unit": "B/op",
+            "extra": "186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 14493,
+            "unit": "allocs/op",
+            "extra": "186 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 6318550,
+            "unit": "ns/op\t 7697455 B/op\t   14493 allocs/op",
+            "extra": "187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 6318550,
+            "unit": "ns/op",
+            "extra": "187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 7697455,
+            "unit": "B/op",
+            "extra": "187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 14493,
+            "unit": "allocs/op",
+            "extra": "187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 6353044,
+            "unit": "ns/op\t 7697450 B/op\t   14493 allocs/op",
+            "extra": "188 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 6353044,
+            "unit": "ns/op",
+            "extra": "188 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 7697450,
+            "unit": "B/op",
+            "extra": "188 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 14493,
+            "unit": "allocs/op",
+            "extra": "188 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 6460615,
+            "unit": "ns/op\t 7697442 B/op\t   14493 allocs/op",
+            "extra": "184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 6460615,
+            "unit": "ns/op",
+            "extra": "184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 7697442,
+            "unit": "B/op",
+            "extra": "184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 14493,
+            "unit": "allocs/op",
+            "extra": "184 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown)",
+            "value": 6224751,
+            "unit": "ns/op\t 7697456 B/op\t   14493 allocs/op",
+            "extra": "195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - ns/op",
+            "value": 6224751,
+            "unit": "ns/op",
+            "extra": "195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - B/op",
+            "value": 7697456,
+            "unit": "B/op",
+            "extra": "195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParseAbbrFootnotes (github.com/mike-ward/go-gui/gui/markdown) - allocs/op",
+            "value": 14493,
+            "unit": "allocs/op",
+            "extra": "195 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 91.06,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13539187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 91.06,
+            "unit": "ns/op",
+            "extra": "13539187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13539187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13539187 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 91.94,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "12979575 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 91.94,
+            "unit": "ns/op",
+            "extra": "12979575 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "12979575 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "12979575 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 92.97,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "12829020 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 92.97,
+            "unit": "ns/op",
+            "extra": "12829020 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "12829020 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "12829020 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 91.97,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13031028 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 91.97,
+            "unit": "ns/op",
+            "extra": "13031028 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13031028 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13031028 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 90.53,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "13038840 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 90.53,
+            "unit": "ns/op",
+            "extra": "13038840 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "13038840 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheHitInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "13038840 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 258.7,
+            "unit": "ns/op\t     112 B/op\t       1 allocs/op",
+            "extra": "4656487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 258.7,
+            "unit": "ns/op",
+            "extra": "4656487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "4656487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "4656487 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 255.1,
+            "unit": "ns/op\t     112 B/op\t       1 allocs/op",
+            "extra": "4626391 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 255.1,
+            "unit": "ns/op",
+            "extra": "4626391 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "4626391 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "4626391 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 259.9,
+            "unit": "ns/op\t     112 B/op\t       1 allocs/op",
+            "extra": "4594900 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 259.9,
+            "unit": "ns/op",
+            "extra": "4594900 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "4594900 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "4594900 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 261.5,
+            "unit": "ns/op\t     112 B/op\t       1 allocs/op",
+            "extra": "4603274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 261.5,
+            "unit": "ns/op",
+            "extra": "4603274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "4603274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "4603274 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg)",
+            "value": 260.3,
+            "unit": "ns/op\t     112 B/op\t       1 allocs/op",
+            "extra": "4586212 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - ns/op",
+            "value": 260.3,
+            "unit": "ns/op",
+            "extra": "4586212 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "4586212 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkParserCacheMissInline (github.com/mike-ward/go-gui/gui/svg) - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "4586212 times\n4 procs"
           }
         ]
       }
