@@ -26,3 +26,6 @@ linters:
       - path: _test\.go
         linters:
           - errcheck
+      - path: native_platform_noop\.go
+        linters:
+          - revive

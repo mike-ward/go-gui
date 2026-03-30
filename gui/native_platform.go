@@ -1,56 +1,82 @@
 package gui
 
-// NativePlatform provides platform-specific native OS operations.
-// Set by the backend; nil in tests (operations no-op / return error).
-type NativePlatform interface {
-	// File dialogs — blocking; call from command queue.
+// NativeDialogs provides native file and message dialogs.
+// Blocking — call from command queue.
+type NativeDialogs interface {
 	ShowOpenDialog(title, startDir string, extensions []string, allowMultiple bool) PlatformDialogResult
 	ShowSaveDialog(title, startDir, defaultName, defaultExt string, extensions []string, confirmOverwrite bool) PlatformDialogResult
 	ShowFolderDialog(title, startDir string) PlatformDialogResult
 	ShowMessageDialog(title, body string, level NativeAlertLevel) NativeAlertResult
 	ShowConfirmDialog(title, body string, level NativeAlertLevel) NativeAlertResult
+}
 
-	// Notifications.
+// NativeNotifier sends OS-level notifications.
+type NativeNotifier interface {
 	SendNotification(title, body string) NativeNotificationResult
+}
 
-	// Print — blocking; call from command queue.
+// NativePrinter shows the native print dialog.
+// Blocking — call from command queue.
+type NativePrinter interface {
 	ShowPrintDialog(cfg NativePrintParams) PrintRunResult
+}
 
-	// File access / security-scoped bookmarks.
+// NativeBookmarks manages security-scoped file bookmarks.
+type NativeBookmarks interface {
 	BookmarkLoadAll(appID string) []BookmarkEntry
 	BookmarkPersist(appID, path string, data []byte)
 	BookmarkStopAccess(data []byte)
+}
 
-	// Accessibility.
+// NativeAccessibility bridges the OS accessibility tree.
+type NativeAccessibility interface {
 	A11yInit(actionCallback func(action, index int))
 	A11ySync(nodes []A11yNode, count, focusedIdx int)
 	A11yDestroy()
 	A11yAnnounce(text string)
+}
 
-	// IME — input method editor lifecycle.
+// NativeIME controls the input method editor lifecycle.
+type NativeIME interface {
 	IMEStart()
 	IMEStop()
 	IMESetRect(x, y, w, h int32)
+}
 
-	// URI — opens in default handler.
-	OpenURI(uri string) error
-
-	// Window appearance.
-	TitlebarDark(dark bool)
-
-	// Spell check.
+// NativeSpellChecker provides OS-level spell checking.
+type NativeSpellChecker interface {
 	SpellCheck(text string) []SpellRange
 	SpellSuggest(text string, startByte, lenBytes int) []string
 	SpellLearn(word string)
+}
 
-	// Native menubar.
+// NativeMenubar manages the native OS menubar.
+type NativeMenubar interface {
 	SetNativeMenubar(cfg NativeMenubarCfg, actionCb func(string))
 	ClearNativeMenubar()
+}
 
-	// System tray.
+// NativeSystemTray manages system tray icons and menus.
+type NativeSystemTray interface {
 	CreateSystemTray(cfg SystemTrayCfg, actionCb func(string)) (int, error)
 	UpdateSystemTray(id int, cfg SystemTrayCfg)
 	RemoveSystemTray(id int)
+}
+
+// NativePlatform composes all native OS sub-interfaces.
+// Set by the backend; nil in tests (operations no-op / return error).
+type NativePlatform interface {
+	NativeDialogs
+	NativeNotifier
+	NativePrinter
+	NativeBookmarks
+	NativeAccessibility
+	NativeIME
+	NativeSpellChecker
+	NativeMenubar
+	NativeSystemTray
+	OpenURI(uri string) error
+	TitlebarDark(dark bool)
 }
 
 // SpellRange represents a misspelled byte range in text.

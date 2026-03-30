@@ -8,53 +8,13 @@ import (
 // mockNotificationPlatform stubs NativePlatform with a configurable
 // SendNotification result.
 type mockNotificationPlatform struct {
+	NoopNativePlatform
 	result NativeNotificationResult
 }
 
 func (m *mockNotificationPlatform) SendNotification(_, _ string) NativeNotificationResult {
 	return m.result
 }
-
-func (m *mockNotificationPlatform) OpenURI(_ string) error { return nil }
-func (m *mockNotificationPlatform) ShowOpenDialog(_, _ string, _ []string, _ bool) PlatformDialogResult {
-	return PlatformDialogResult{}
-}
-func (m *mockNotificationPlatform) ShowSaveDialog(_, _, _, _ string, _ []string, _ bool) PlatformDialogResult {
-	return PlatformDialogResult{}
-}
-func (m *mockNotificationPlatform) ShowFolderDialog(_, _ string) PlatformDialogResult {
-	return PlatformDialogResult{}
-}
-func (m *mockNotificationPlatform) ShowMessageDialog(_, _ string, _ NativeAlertLevel) NativeAlertResult {
-	return NativeAlertResult{}
-}
-func (m *mockNotificationPlatform) ShowConfirmDialog(_, _ string, _ NativeAlertLevel) NativeAlertResult {
-	return NativeAlertResult{}
-}
-func (m *mockNotificationPlatform) ShowPrintDialog(_ NativePrintParams) PrintRunResult {
-	return PrintRunResult{}
-}
-func (m *mockNotificationPlatform) BookmarkLoadAll(_ string) []BookmarkEntry            { return nil }
-func (m *mockNotificationPlatform) BookmarkPersist(_, _ string, _ []byte)               {}
-func (m *mockNotificationPlatform) BookmarkStopAccess(_ []byte)                         {}
-func (m *mockNotificationPlatform) A11yInit(_ func(action, index int))                  {}
-func (m *mockNotificationPlatform) A11ySync(_ []A11yNode, _, _ int)                     {}
-func (m *mockNotificationPlatform) A11yDestroy()                                        {}
-func (m *mockNotificationPlatform) A11yAnnounce(_ string)                               {}
-func (m *mockNotificationPlatform) IMEStart()                                           {}
-func (m *mockNotificationPlatform) IMEStop()                                            {}
-func (m *mockNotificationPlatform) IMESetRect(_, _, _, _ int32)                         {}
-func (m *mockNotificationPlatform) TitlebarDark(_ bool)                                 {}
-func (m *mockNotificationPlatform) SpellCheck(_ string) []SpellRange                    { return nil }
-func (m *mockNotificationPlatform) SpellSuggest(_ string, _, _ int) []string            { return nil }
-func (m *mockNotificationPlatform) SpellLearn(_ string)                                 {}
-func (m *mockNotificationPlatform) SetNativeMenubar(_ NativeMenubarCfg, _ func(string)) {}
-func (m *mockNotificationPlatform) ClearNativeMenubar()                                 {}
-func (m *mockNotificationPlatform) CreateSystemTray(_ SystemTrayCfg, _ func(string)) (int, error) {
-	return 0, nil
-}
-func (m *mockNotificationPlatform) UpdateSystemTray(_ int, _ SystemTrayCfg) {}
-func (m *mockNotificationPlatform) RemoveSystemTray(_ int)                  {}
 
 func TestNativeNotificationEmptyTitle(t *testing.T) {
 	w := &Window{}
