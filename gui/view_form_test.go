@@ -5,21 +5,26 @@ import (
 	"testing"
 )
 
-func TestFormEmptyIDFallback(t *testing.T) {
-	w := newTestWindow()
-	v := Form(FormCfg{
+func TestFormEmptyIDPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for empty Form.ID")
+		}
+	}()
+	Form(FormCfg{
 		Content: []View{
 			Text(TextCfg{Text: "hello"}),
 		},
 	})
-	layout := GenerateViewLayout(v, w)
-	if layout.Shape == nil {
-		t.Fatal("expected layout shape")
-	}
-	// Empty ID → plain column; shape.ID should NOT have form prefix.
-	if formDecodeLayoutID(layout.Shape.ID) != "" {
-		t.Fatalf("expected no form prefix, got %q", layout.Shape.ID)
-	}
+}
+
+func TestFormValidateInheritPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for unresolved FormValidateInherit")
+		}
+	}()
+	formShouldValidate(FormValidateInherit, FormTriggerBlur)
 }
 
 func TestFormGeneratesLayout(t *testing.T) {
@@ -348,8 +353,6 @@ func TestFormShouldValidate(t *testing.T) {
 		{FormValidateOnSubmit, FormTriggerSubmit, true},
 		{FormValidateOnBlurSubmit, FormTriggerChange, false},
 		{FormValidateOnBlurSubmit, FormTriggerBlur, true},
-		{FormValidateInherit, FormTriggerChange, false},
-		{FormValidateInherit, FormTriggerBlur, true},
 	}
 	for _, tt := range tests {
 		got := formShouldValidate(tt.mode, tt.trigger)

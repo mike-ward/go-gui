@@ -1,6 +1,6 @@
 package gui
 
-import "log"
+import "fmt"
 
 // Menu creates a standalone columnar menu (used by
 // OverflowPanel and context menus). Supports keyboard
@@ -254,12 +254,12 @@ func findMenuItemCfg(items []MenuItemCfg, id string) (MenuItemCfg, bool) {
 	return MenuItemCfg{}, false
 }
 
-// checkForDuplicateMenuIDs logs a warning if duplicate
-// IDs exist (ignoring sentinel IDs).
+// checkForDuplicateMenuIDs panics if duplicate IDs exist
+// (ignoring sentinel IDs).
 func checkForDuplicateMenuIDs(items []MenuItemCfg) {
 	seen := make(map[string]bool)
 	if dup, ok := checkMenuIDs(items, seen); ok {
-		log.Printf("menu: duplicate item ID %q", dup)
+		panic(fmt.Sprintf("gui: duplicate menu item ID %q", dup))
 	}
 }
 

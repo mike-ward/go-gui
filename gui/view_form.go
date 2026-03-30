@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"log"
 	"slices"
 	"strings"
 )
@@ -183,25 +182,7 @@ type formView struct {
 // submit/reset semantics.
 func Form(cfg FormCfg) View {
 	if cfg.ID == "" {
-		log.Print("gui: Form.ID required; rendering plain column")
-		return Column(ContainerCfg{
-			Sizing:      cfg.Sizing,
-			Width:       cfg.Width,
-			Height:      cfg.Height,
-			MinWidth:    cfg.MinWidth,
-			MaxWidth:    cfg.MaxWidth,
-			MinHeight:   cfg.MinHeight,
-			MaxHeight:   cfg.MaxHeight,
-			Padding:     cfg.Padding,
-			Spacing:     cfg.Spacing,
-			Color:       cfg.Color,
-			SizeBorder:  cfg.SizeBorder,
-			ColorBorder: cfg.ColorBorder,
-			Radius:      cfg.Radius,
-			Disabled:    cfg.Disabled,
-			Invisible:   cfg.Invisible,
-			Content:     cfg.Content,
-		})
+		panic("gui: Form requires a non-empty ID")
 	}
 	content := make([]View, len(cfg.Content))
 	copy(content, cfg.Content)
@@ -354,11 +335,9 @@ func formShouldValidate(
 	switch mode {
 	case FormValidateInherit:
 		// Should not reach here — formResolveValidateOn resolves
-		// Inherit before validation. Treat as BlurSubmit defensively.
-		log.Print("gui: formShouldValidate called with " +
-			"FormValidateInherit; should have been resolved")
-		return trigger == FormTriggerBlur ||
-			trigger == FormTriggerSubmit
+		// Inherit before validation.
+		panic("gui: formShouldValidate called with unresolved " +
+			"FormValidateInherit")
 	case FormValidateOnChange:
 		return true
 	case FormValidateOnBlur, FormValidateOnBlurSubmit:

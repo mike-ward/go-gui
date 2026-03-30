@@ -52,6 +52,18 @@ func TestMenuSubmenuFactory(t *testing.T) {
 	}
 }
 
+func TestDuplicateMenuIDPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for duplicate menu item ID")
+		}
+	}()
+	checkForDuplicateMenuIDs([]MenuItemCfg{
+		{ID: "dup"},
+		{ID: "dup"},
+	})
+}
+
 func TestIsSelectableMenuID(t *testing.T) {
 	tests := []struct {
 		id   string

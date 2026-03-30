@@ -346,7 +346,7 @@ func (b *Backend) updateProjection() {
 func Run(w *gui.Window) {
 	b, err := New(w)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("gl: %v", err))
 	}
 	defer b.Destroy()
 	b.Run(w)
