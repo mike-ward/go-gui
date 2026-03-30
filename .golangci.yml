@@ -16,7 +16,7 @@ linters:
     - revive
   settings:
     gocyclo:
-      max-complexity: 30
+      min-complexity: 30
     revive:
       rules:
         - name: exported
