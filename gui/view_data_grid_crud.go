@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+// dataGridCrudClearPendingChanges resets dirty/draft/deleted
+// tracking maps to empty.
+func dataGridCrudClearPendingChanges(state *dataGridCrudState) {
+	state.DirtyRowIDs = map[string]bool{}
+	state.DraftRowIDs = map[string]bool{}
+	state.DeletedRowIDs = map[string]bool{}
+}
+
 func dataGridCrudHasUnsaved(state dataGridCrudState) bool {
 	return len(state.DirtyRowIDs) > 0 || len(state.DraftRowIDs) > 0 ||
 		len(state.DeletedRowIDs) > 0
@@ -38,7 +46,7 @@ func dataGridRowsSignature(rows []GridRow, colIDs []string) uint64 {
 				keySet[key] = true
 			}
 		}
-		fallbackKeys = sortedMapKeysFromSet(keySet)
+		fallbackKeys = sortedMapKeys(keySet)
 	}
 	for idx, row := range rows {
 		if idx > 0 {
@@ -110,9 +118,7 @@ func dataGridCrudResolveCfg(cfg DataGridCfg, w *Window) (DataGridCfg, dataGridCr
 		state.CommittedRows = cloneRows(cfg.Rows)
 		state.WorkingRows = cloneRows(cfg.Rows)
 		state.SourceSignature = signature
-		state.DirtyRowIDs = map[string]bool{}
-		state.DraftRowIDs = map[string]bool{}
-		state.DeletedRowIDs = map[string]bool{}
+		dataGridCrudClearPendingChanges(&state)
 	}
 	dgCrud.Set(cfg.ID, state)
 
@@ -391,7 +397,7 @@ func dataGridCrudBuildPayload(state dataGridCrudState) (createRows, updateRows [
 		for k := range before.Cells {
 			keySet[k] = true
 		}
-		keys := sortedMapKeysFromSet(keySet)
+		keys := sortedMapKeys(keySet)
 		for _, key := range keys {
 			nextVal := row.Cells[key]
 			prevVal := before.Cells[key]
@@ -511,9 +517,7 @@ func dataGridCrudCancel(gridID string, focusID uint32, e *Event, w *Window) {
 	dgCrud := StateMap[string, dataGridCrudState](w, nsDgCrud, capModerate)
 	state, _ := dgCrud.Get(gridID)
 	state.WorkingRows = cloneRows(state.CommittedRows)
-	state.DirtyRowIDs = map[string]bool{}
-	state.DraftRowIDs = map[string]bool{}
-	state.DeletedRowIDs = map[string]bool{}
+	dataGridCrudClearPendingChanges(&state)
 	state.SaveError = ""
 	state.Saving = false
 	dgCrud.Set(gridID, state)
@@ -697,9 +701,7 @@ func dataGridCrudFinishSave(gridID string, _ map[string]string, rowCount int, on
 	dgCrud := StateMap[string, dataGridCrudState](w, nsDgCrud, capModerate)
 	state, _ := dgCrud.Get(gridID)
 	state.CommittedRows = cloneRows(state.WorkingRows)
-	state.DirtyRowIDs = map[string]bool{}
-	state.DraftRowIDs = map[string]bool{}
-	state.DeletedRowIDs = map[string]bool{}
+	dataGridCrudClearPendingChanges(&state)
 	state.Saving = false
 	state.SaveError = ""
 	state.SourceSignature = dataGridRowsSignature(state.CommittedRows, nil)
@@ -727,9 +729,7 @@ func dataGridCrudRestoreOnError(gridID, phase string, onCRUDError func(string, *
 	state, _ := dgCrud.Get(gridID)
 	state.CommittedRows = snapshotRows
 	state.WorkingRows = cloneRows(snapshotRows)
-	state.DirtyRowIDs = map[string]bool{}
-	state.DraftRowIDs = map[string]bool{}
-	state.DeletedRowIDs = map[string]bool{}
+	dataGridCrudClearPendingChanges(&state)
 	state.Saving = false
 	if phase != "" {
 		state.SaveError = phase + ": " + errMsg
@@ -760,16 +760,7 @@ func cloneRows(rows []GridRow) []GridRow {
 	return out
 }
 
-func sortedMapKeys(m map[string]string) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
-}
-
-func sortedMapKeysFromSet(m map[string]bool) []string {
+func sortedMapKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)

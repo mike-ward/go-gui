@@ -118,11 +118,11 @@ func TestEffectiveColumnsPinPartitioning(t *testing.T) {
 	}
 }
 
-// --- dataGridNormalizedColumnOrder ---
+// --- dataGridColumnOrderAndMap (order normalization) ---
 
 func TestNormalizedColumnOrderRespectsOrder(t *testing.T) {
 	c := cols("a", "b", "c")
-	got := dataGridNormalizedColumnOrder(c, []string{"c", "a"})
+	got, _ := dataGridColumnOrderAndMap(c, []string{"c", "a"})
 	want := []string{"c", "a", "b"}
 	if !strSliceEq(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
@@ -131,7 +131,7 @@ func TestNormalizedColumnOrderRespectsOrder(t *testing.T) {
 
 func TestNormalizedColumnOrderSkipsUnknown(t *testing.T) {
 	c := cols("a", "b")
-	got := dataGridNormalizedColumnOrder(c, []string{"z", "b", "a"})
+	got, _ := dataGridColumnOrderAndMap(c, []string{"z", "b", "a"})
 	want := []string{"b", "a"}
 	if !strSliceEq(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
@@ -139,15 +139,15 @@ func TestNormalizedColumnOrderSkipsUnknown(t *testing.T) {
 }
 
 func TestNormalizedColumnOrderNilColumns(t *testing.T) {
-	got := dataGridNormalizedColumnOrder(nil, []string{"a"})
-	if got != nil {
-		t.Fatalf("expected nil, got %v", got)
+	got, _ := dataGridColumnOrderAndMap(nil, []string{"a"})
+	if len(got) != 0 {
+		t.Fatalf("expected empty, got %v", got)
 	}
 }
 
 func TestNormalizedColumnOrderDeduplicates(t *testing.T) {
 	c := cols("a", "b")
-	got := dataGridNormalizedColumnOrder(c, []string{"a", "a", "b"})
+	got, _ := dataGridColumnOrderAndMap(c, []string{"a", "a", "b"})
 	want := []string{"a", "b"}
 	if !strSliceEq(got, want) {
 		t.Fatalf("got %v, want %v", got, want)

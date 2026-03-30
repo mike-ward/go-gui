@@ -112,23 +112,7 @@ func GridRowsToTSV(columns []GridColumnCfg, rows []GridRow) string {
 
 // GridRowsToTSVWithCfg converts rows to tab-separated text.
 func GridRowsToTSVWithCfg(columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg) string {
-	if len(columns) == 0 {
-		return ""
-	}
-	lines := make([]string, 0, len(rows)+1)
-	header := make([]string, len(columns))
-	for i, col := range columns {
-		header[i] = dataGridTSVEscape(dataGridExportText(col.Title, exportCfg))
-	}
-	lines = append(lines, strings.Join(header, "\t"))
-	for _, row := range rows {
-		fields := make([]string, len(columns))
-		for i, col := range columns {
-			fields[i] = dataGridTSVEscape(dataGridExportText(row.Cells[col.ID], exportCfg))
-		}
-		lines = append(lines, strings.Join(fields, "\t"))
-	}
-	return strings.Join(lines, "\n")
+	return dataGridRowsToDelimited(columns, rows, exportCfg, "\t", dataGridTSVEscape)
 }
 
 // GridRowsToCSV converts rows to comma-separated text with
@@ -141,23 +125,7 @@ func GridRowsToCSV(columns []GridColumnCfg, rows []GridRow) string {
 
 // GridRowsToCSVWithCfg converts rows to comma-separated text.
 func GridRowsToCSVWithCfg(columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg) string {
-	if len(columns) == 0 {
-		return ""
-	}
-	lines := make([]string, 0, len(rows)+1)
-	header := make([]string, len(columns))
-	for i, col := range columns {
-		header[i] = dataGridCSVEscape(dataGridExportText(col.Title, exportCfg))
-	}
-	lines = append(lines, strings.Join(header, ","))
-	for _, row := range rows {
-		fields := make([]string, len(columns))
-		for i, col := range columns {
-			fields[i] = dataGridCSVEscape(dataGridExportText(row.Cells[col.ID], exportCfg))
-		}
-		lines = append(lines, strings.Join(fields, ","))
-	}
-	return strings.Join(lines, "\n")
+	return dataGridRowsToDelimited(columns, rows, exportCfg, ",", dataGridCSVEscape)
 }
 
 // GridRowsToPDF converts rows to a simple PDF table export.
@@ -261,6 +229,28 @@ func gridRowsWriteXLSX(w io.Writer, columns []GridColumnCfg, rows []GridRow, exp
 		}
 	}
 	return nil
+}
+
+// dataGridRowsToDelimited converts columns and rows to
+// delimited text using the given separator and escape function.
+func dataGridRowsToDelimited(columns []GridColumnCfg, rows []GridRow, exportCfg GridExportCfg, sep string, escape func(string) string) string {
+	if len(columns) == 0 {
+		return ""
+	}
+	lines := make([]string, 0, len(rows)+1)
+	header := make([]string, len(columns))
+	for i, col := range columns {
+		header[i] = escape(dataGridExportText(col.Title, exportCfg))
+	}
+	lines = append(lines, strings.Join(header, sep))
+	for _, row := range rows {
+		fields := make([]string, len(columns))
+		for i, col := range columns {
+			fields[i] = escape(dataGridExportText(row.Cells[col.ID], exportCfg))
+		}
+		lines = append(lines, strings.Join(fields, sep))
+	}
+	return strings.Join(lines, "\n")
 }
 
 // --- PDF helpers ---

@@ -401,7 +401,7 @@ func TestCloneRowsEmptySlice(t *testing.T) {
 	}
 }
 
-// --- sortedMapKeys / sortedMapKeysFromSet ---
+// --- sortedMapKeys (generic) ---
 
 func TestSortedMapKeys(t *testing.T) {
 	m := map[string]string{"z": "1", "a": "2", "m": "3"}
@@ -418,16 +418,16 @@ func TestSortedMapKeysEmpty(t *testing.T) {
 	}
 }
 
-func TestSortedMapKeysFromSet(t *testing.T) {
+func TestSortedMapKeysBoolMap(t *testing.T) {
 	m := map[string]bool{"z": true, "a": true, "m": true}
-	keys := sortedMapKeysFromSet(m)
+	keys := sortedMapKeys(m)
 	if len(keys) != 3 || keys[0] != "a" || keys[1] != "m" || keys[2] != "z" {
 		t.Fatalf("expected [a m z], got %v", keys)
 	}
 }
 
-func TestSortedMapKeysFromSetEmpty(t *testing.T) {
-	keys := sortedMapKeysFromSet(map[string]bool{})
+func TestSortedMapKeysBoolMapEmpty(t *testing.T) {
+	keys := sortedMapKeys(map[string]bool{})
 	if len(keys) != 0 {
 		t.Fatalf("expected empty, got %v", keys)
 	}

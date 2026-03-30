@@ -36,37 +36,6 @@ func dataGridEffectiveColumns(columns []GridColumnCfg, columnOrder []string, hid
 	return dataGridPartitionPins(ordered)
 }
 
-func dataGridNormalizedColumnOrder(columns []GridColumnCfg, columnOrder []string) []string {
-	if len(columns) == 0 {
-		return nil
-	}
-	colIDs := map[string]bool{}
-	for _, col := range columns {
-		if col.ID != "" {
-			colIDs[col.ID] = true
-		}
-	}
-	seen := map[string]bool{}
-	order := make([]string, 0, len(columns))
-	for _, id := range columnOrder {
-		if id == "" || seen[id] {
-			continue
-		}
-		if colIDs[id] {
-			seen[id] = true
-			order = append(order, id)
-		}
-	}
-	for _, col := range columns {
-		if col.ID == "" || seen[col.ID] {
-			continue
-		}
-		seen[col.ID] = true
-		order = append(order, col.ID)
-	}
-	return order
-}
-
 // dataGridColumnOrderAndMap builds the normalized column
 // order list and the id→column map in a single pass.
 func dataGridColumnOrderAndMap(columns []GridColumnCfg, columnOrder []string) ([]string, map[string]GridColumnCfg) {

@@ -177,12 +177,28 @@ func dataGridResizeHandle(cfg *DataGridCfg, col GridColumnCfg, focusID uint32) V
 
 func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 	onColumnOrderChange := cfg.OnColumnOrderChange
-	baseOrder := dataGridNormalizedColumnOrder(cfg.Columns, cfg.ColumnOrder)
+	baseOrder, _ := dataGridColumnOrderAndMap(cfg.Columns, cfg.ColumnOrder)
 	colID := col.ID
 	leftArrow := "\u25C0"  // ◀
 	rightArrow := "\u25B6" // ▶
 	if guiLocale.TextDir == TextDirRTL {
 		leftArrow, rightArrow = rightArrow, leftArrow
+	}
+
+	reorderCB := func(delta int) func(*Event, *Window) {
+		return func(e *Event, w *Window) {
+			if onColumnOrderChange == nil {
+				e.IsHandled = true
+				return
+			}
+			nextOrder := DataGridColumnOrderMove(baseOrder, colID, delta)
+			if len(nextOrder) == len(baseOrder) && slices.Equal(nextOrder, baseOrder) {
+				e.IsHandled = true
+				return
+			}
+			onColumnOrderChange(nextOrder, e, w)
+			e.IsHandled = true
+		}
 	}
 
 	return Row(ContainerCfg{
@@ -191,34 +207,8 @@ func dataGridReorderControls(cfg *DataGridCfg, col GridColumnCfg) View {
 		Width:   dataGridHeaderControlsWidth(true, false, false),
 		Sizing:  FixedFill,
 		Content: []View{
-			dataGridOrderButton(leftArrow, cfg.TextStyleHeader, cfg.ColorHeaderHover,
-				func(e *Event, w *Window) {
-					if onColumnOrderChange == nil {
-						e.IsHandled = true
-						return
-					}
-					nextOrder := DataGridColumnOrderMove(baseOrder, colID, -1)
-					if len(nextOrder) == len(baseOrder) && slices.Equal(nextOrder, baseOrder) {
-						e.IsHandled = true
-						return
-					}
-					onColumnOrderChange(nextOrder, e, w)
-					e.IsHandled = true
-				}),
-			dataGridOrderButton(rightArrow, cfg.TextStyleHeader, cfg.ColorHeaderHover,
-				func(e *Event, w *Window) {
-					if onColumnOrderChange == nil {
-						e.IsHandled = true
-						return
-					}
-					nextOrder := DataGridColumnOrderMove(baseOrder, colID, 1)
-					if len(nextOrder) == len(baseOrder) && slices.Equal(nextOrder, baseOrder) {
-						e.IsHandled = true
-						return
-					}
-					onColumnOrderChange(nextOrder, e, w)
-					e.IsHandled = true
-				}),
+			dataGridOrderButton(leftArrow, cfg.TextStyleHeader, cfg.ColorHeaderHover, reorderCB(-1)),
+			dataGridOrderButton(rightArrow, cfg.TextStyleHeader, cfg.ColorHeaderHover, reorderCB(1)),
 		},
 	})
 }
