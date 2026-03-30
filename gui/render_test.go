@@ -9,6 +9,10 @@ func makeWindow() *Window {
 	return &Window{}
 }
 
+func makeWindowWithScratch() *Window {
+	return &Window{scratch: newScratchPools()}
+}
+
 func makeClip(x, y, w, h float32) DrawClip {
 	return DrawClip{X: x, Y: y, Width: w, Height: h}
 }

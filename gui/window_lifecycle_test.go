@@ -385,3 +385,163 @@ func TestSetClipboardNilSafe(t *testing.T) {
 	// Should not panic when no fn set.
 	w.SetClipboard("ignored")
 }
+
+func TestSetIDFocusClearsInputSelections(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int), Width: 100, Height: 100})
+	setInputState(w, 10, InputState{SelectBeg: 1, SelectEnd: 5})
+	w.SetIDFocus(20)
+
+	is := getInputState(w, 10)
+	if is.SelectBeg != 0 || is.SelectEnd != 0 {
+		t.Errorf("selection not cleared: beg=%d end=%d",
+			is.SelectBeg, is.SelectEnd)
+	}
+}
+
+func TestSetIDFocusEnablesCursorBlink(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int), Width: 100, Height: 100})
+	w.viewState.inputCursorOn = false
+	w.SetIDFocus(42)
+
+	if !w.viewState.inputCursorOn {
+		t.Error("inputCursorOn should be true after SetIDFocus")
+	}
+}
+
+func TestMouseLockAndUnlock(t *testing.T) {
+	w := &Window{}
+	if w.MouseIsLocked() {
+		t.Error("should not be locked initially")
+	}
+	w.MouseLock(MouseLockCfg{
+		MouseMove: func(_ *Layout, _ *Event, _ *Window) {},
+	})
+	if !w.MouseIsLocked() {
+		t.Error("should be locked after MouseLock")
+	}
+	w.MouseUnlock()
+	if w.MouseIsLocked() {
+		t.Error("should not be locked after MouseUnlock")
+	}
+}
+
+func TestPointerOverAppInside(t *testing.T) {
+	w := &Window{windowWidth: 800, windowHeight: 600}
+	e := &Event{MouseX: 400, MouseY: 300}
+	if !w.PointerOverApp(e) {
+		t.Error("center point should be inside")
+	}
+}
+
+func TestPointerOverAppOutside(t *testing.T) {
+	w := &Window{windowWidth: 800, windowHeight: 600}
+	e := &Event{MouseX: -1, MouseY: 300}
+	if w.PointerOverApp(e) {
+		t.Error("negative X should be outside")
+	}
+	e2 := &Event{MouseX: 900, MouseY: 300}
+	if w.PointerOverApp(e2) {
+		t.Error("beyond width should be outside")
+	}
+}
+
+func TestCloseAndCloseRequested(t *testing.T) {
+	w := &Window{}
+	if w.CloseRequested() {
+		t.Error("should not be close-requested initially")
+	}
+	w.Close()
+	if !w.CloseRequested() {
+		t.Error("should be close-requested after Close()")
+	}
+}
+
+func TestResetBlinkCursorVisible(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int), Width: 100, Height: 100})
+	w.viewState.inputCursorOn = false
+	resetBlinkCursorVisible(w)
+	if !w.viewState.inputCursorOn {
+		t.Error("inputCursorOn should be true after reset")
+	}
+}
+
+func TestWindowCtxNonNil(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int), Width: 100, Height: 100})
+	if w.Ctx() == nil {
+		t.Error("Ctx() should not be nil for NewWindow")
+	}
+}
+
+func TestWindowCtxNilFallback(t *testing.T) {
+	w := &Window{}
+	ctx := w.Ctx()
+	if ctx == nil {
+		t.Error("Ctx() should return background context for nil ctx")
+	}
+}
+
+func TestClearViewStateResetsIDFocus(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int), Width: 100, Height: 100})
+	w.viewState.idFocus = 42
+	w.ClearViewState()
+	if w.IDFocus() != 0 {
+		t.Errorf("IDFocus = %d, want 0 after ClearViewState",
+			w.IDFocus())
+	}
+}
+
+func TestIsFocusMatchesAndZero(t *testing.T) {
+	w := &Window{}
+	w.viewState.idFocus = 10
+	if !w.IsFocus(10) {
+		t.Error("IsFocus(10) should be true")
+	}
+	if w.IsFocus(99) {
+		t.Error("IsFocus(99) should be false")
+	}
+	w.viewState.idFocus = 0
+	if w.IsFocus(0) {
+		t.Error("IsFocus(0) should always be false")
+	}
+}
+
+func TestAllocShapeNilWindow(t *testing.T) {
+	var w *Window
+	src := Shape{Width: 42}
+	got := w.allocShape(src)
+	if got == nil || got.Width != 42 {
+		t.Error("allocShape nil window should return heap copy")
+	}
+}
+
+func TestAllocShapeUsesPool(t *testing.T) {
+	w := NewWindow(WindowCfg{State: new(int), Width: 100, Height: 100})
+	src := Shape{Width: 99}
+	got := w.allocShape(src)
+	if got == nil || got.Width != 99 {
+		t.Error("allocShape should return pooled copy")
+	}
+}
+
+func TestGetClipboardNilSafe(t *testing.T) {
+	w := &Window{}
+	got := w.GetClipboard()
+	if got != "" {
+		t.Errorf("GetClipboard = %q, want empty for nil fn", got)
+	}
+}
+
+func TestWindowSizeAndRect(t *testing.T) {
+	w := &Window{windowWidth: 800, windowHeight: 600}
+	width, height := w.WindowSize()
+	if width != 800 || height != 600 {
+		t.Errorf("size = %dx%d, want 800x600", width, height)
+	}
+	rect := w.WindowRect()
+	if rect.Width != 800 || rect.Height != 600 {
+		t.Errorf("rect = %fx%f, want 800x600", rect.Width, rect.Height)
+	}
+	if rect.X != 0 || rect.Y != 0 {
+		t.Errorf("rect origin = %f,%f, want 0,0", rect.X, rect.Y)
+	}
+}
