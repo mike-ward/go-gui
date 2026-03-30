@@ -18,57 +18,58 @@ func focusedChild(idFocus uint32, eh *EventHandlers) *Layout {
 	}
 }
 
-// --- charHandler ---
-
-func TestCharHandlerDelivers(t *testing.T) {
-	called := false
-	root := focusedChild(1, &EventHandlers{
-		OnChar: func(_ *Layout, e *Event, _ *Window) {
-			called = true
-			e.IsHandled = true
-		},
+func TestCharHandler(t *testing.T) {
+	t.Parallel()
+	t.Run("delivers", func(t *testing.T) {
+		t.Parallel()
+		called := false
+		root := focusedChild(1, &EventHandlers{
+			OnChar: func(_ *Layout, e *Event, _ *Window) {
+				called = true
+				e.IsHandled = true
+			},
+		})
+		w := &Window{}
+		w.SetIDFocus(1)
+		e := &Event{CharCode: 'a'}
+		charHandler(root, e, w)
+		if !called {
+			t.Error("OnChar not called")
+		}
+		if !e.IsHandled {
+			t.Error("event not handled")
+		}
 	})
-	w := &Window{}
-	w.SetIDFocus(1)
-	e := &Event{CharCode: 'a'}
-	charHandler(root, e, w)
-	if !called {
-		t.Error("OnChar not called")
-	}
-	if !e.IsHandled {
-		t.Error("event not handled")
-	}
-}
-
-func TestCharHandlerSkipsDisabled(t *testing.T) {
-	called := false
-	root := &Layout{
-		Shape: &Shape{},
-		Children: []Layout{
-			{Shape: &Shape{
-				IDFocus:  1,
-				Disabled: true,
-				Events: &EventHandlers{
-					OnChar: func(_ *Layout, e *Event, _ *Window) {
-						called = true
-						e.IsHandled = true
+	t.Run("skips_disabled", func(t *testing.T) {
+		t.Parallel()
+		called := false
+		root := &Layout{
+			Shape: &Shape{},
+			Children: []Layout{
+				{Shape: &Shape{
+					IDFocus:  1,
+					Disabled: true,
+					Events: &EventHandlers{
+						OnChar: func(_ *Layout, e *Event, _ *Window) {
+							called = true
+							e.IsHandled = true
+						},
 					},
-				},
-			}},
-		},
-	}
-	w := &Window{}
-	w.SetIDFocus(1)
-	e := &Event{CharCode: 'a'}
-	charHandler(root, e, w)
-	if called {
-		t.Error("should skip disabled")
-	}
+				}},
+			},
+		}
+		w := &Window{}
+		w.SetIDFocus(1)
+		e := &Event{CharCode: 'a'}
+		charHandler(root, e, w)
+		if called {
+			t.Error("should skip disabled")
+		}
+	})
 }
-
-// --- keydownHandler ---
 
 func TestKeydownHandlerDelivers(t *testing.T) {
+	t.Parallel()
 	called := false
 	root := focusedChild(1, &EventHandlers{
 		OnKeyDown: func(_ *Layout, e *Event, _ *Window) {
@@ -86,7 +87,6 @@ func TestKeydownHandlerDelivers(t *testing.T) {
 }
 
 func TestKeydownHandlerFallbackScroll(t *testing.T) {
-	// Focused element with IDScroll but no OnKeyDown handler.
 	root := &Layout{
 		Shape: &Shape{},
 		Children: []Layout{
@@ -99,7 +99,9 @@ func TestKeydownHandlerFallbackScroll(t *testing.T) {
 					Axis:     AxisTopToBottom,
 				},
 				Children: []Layout{
-					{Shape: &Shape{ShapeType: ShapeRectangle, Height: 500}},
+					{Shape: &Shape{
+						ShapeType: ShapeRectangle, Height: 500,
+					}},
 				},
 			},
 		},
@@ -114,8 +116,6 @@ func TestKeydownHandlerFallbackScroll(t *testing.T) {
 	}
 }
 
-// --- keyDownScrollHandler ---
-
 func TestKeyDownScrollHandlerArrows(t *testing.T) {
 	guiTheme.ScrollDeltaLine = 20
 	guiTheme.ScrollDeltaPage = 100
@@ -127,7 +127,8 @@ func TestKeyDownScrollHandlerArrows(t *testing.T) {
 			Axis: AxisTopToBottom,
 		},
 		Children: []Layout{
-			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 500, Height: 500}},
+			{Shape: &Shape{ShapeType: ShapeRectangle,
+				Width: 500, Height: 500}},
 		},
 	}
 	w := &Window{}
@@ -147,128 +148,149 @@ func TestKeyDownScrollHandlerArrows(t *testing.T) {
 		{"shift+left", KeyLeft, ModShift},
 	}
 	for _, tc := range tests {
-		e := &Event{KeyCode: tc.key, Modifiers: tc.mod}
-		keyDownScrollHandler(layout, e, w)
-		if !e.IsHandled {
-			t.Errorf("%s not handled", tc.name)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			e := &Event{KeyCode: tc.key, Modifiers: tc.mod}
+			keyDownScrollHandler(layout, e, w)
+			if !e.IsHandled {
+				t.Errorf("%s not handled", tc.name)
+			}
+		})
 	}
 }
 
-// --- mouseDownHandler ---
-
-func TestMouseDownHandlerDelivers(t *testing.T) {
-	clicked := false
-	root := &Layout{
-		Shape: &Shape{},
-		Children: []Layout{
-			{Shape: &Shape{
-				ShapeClip: DrawClip{X: 0, Y: 0,
+func TestMouseDownHandler(t *testing.T) {
+	t.Parallel()
+	t.Run("delivers", func(t *testing.T) {
+		t.Parallel()
+		clicked := false
+		root := &Layout{
+			Shape: &Shape{},
+			Children: []Layout{
+				{Shape: &Shape{
+					ShapeClip: DrawClip{X: 0, Y: 0,
+						Width: 100, Height: 100},
+					Events: &EventHandlers{
+						OnClick: func(_ *Layout, e *Event, _ *Window) {
+							clicked = true
+							e.IsHandled = true
+						},
+					},
+				}},
+			},
+		}
+		w := &Window{windowWidth: 800, windowHeight: 600}
+		e := &Event{MouseX: 50, MouseY: 50, Type: EventMouseDown}
+		mouseDownHandler(root, false, e, w)
+		if !clicked {
+			t.Error("OnClick not called")
+		}
+	})
+	t.Run("sets_focus", func(t *testing.T) {
+		t.Parallel()
+		root := &Layout{
+			Shape: &Shape{},
+			Children: []Layout{
+				{Shape: &Shape{
+					IDFocus: 42,
+					ShapeClip: DrawClip{X: 0, Y: 0,
+						Width: 100, Height: 100},
+				}},
+			},
+		}
+		w := &Window{windowWidth: 800, windowHeight: 600}
+		e := &Event{MouseX: 50, MouseY: 50}
+		mouseDownHandler(root, false, e, w)
+		if w.IDFocus() != 42 {
+			t.Errorf("focus: got %d, want 42", w.IDFocus())
+		}
+	})
+	t.Run("respects_mouse_lock", func(t *testing.T) {
+		t.Parallel()
+		lockCalled := false
+		w := &Window{windowWidth: 800, windowHeight: 600}
+		w.MouseLock(MouseLockCfg{
+			MouseDown: func(_ *Layout, e *Event, _ *Window) {
+				lockCalled = true
+				e.IsHandled = true
+			},
+		})
+		root := &Layout{Shape: &Shape{}}
+		e := &Event{MouseX: 50, MouseY: 50}
+		mouseDownHandler(root, false, e, w)
+		if !lockCalled {
+			t.Error("mouse lock should intercept")
+		}
+	})
+	t.Run("reverse_order", func(t *testing.T) {
+		t.Parallel()
+		var hitID string
+		mkChild := func(id string, x float32) Layout {
+			return Layout{Shape: &Shape{
+				ID: id,
+				ShapeClip: DrawClip{X: x, Y: 0,
 					Width: 100, Height: 100},
 				Events: &EventHandlers{
-					OnClick: func(_ *Layout, e *Event, _ *Window) {
-						clicked = true
+					OnClick: func(l *Layout, e *Event, _ *Window) {
+						hitID = l.Shape.ID
 						e.IsHandled = true
 					},
 				},
-			}},
-		},
-	}
-	w := &Window{windowWidth: 800, windowHeight: 600}
-	e := &Event{MouseX: 50, MouseY: 50, Type: EventMouseDown}
-	mouseDownHandler(root, false, e, w)
-	if !clicked {
-		t.Error("OnClick not called")
-	}
-}
-
-func TestMouseDownHandlerSetsFocus(t *testing.T) {
-	root := &Layout{
-		Shape: &Shape{},
-		Children: []Layout{
-			{Shape: &Shape{
-				IDFocus: 42,
-				ShapeClip: DrawClip{X: 0, Y: 0,
-					Width: 100, Height: 100},
-			}},
-		},
-	}
-	w := &Window{windowWidth: 800, windowHeight: 600}
-	e := &Event{MouseX: 50, MouseY: 50}
-	mouseDownHandler(root, false, e, w)
-	if w.IDFocus() != 42 {
-		t.Errorf("focus: got %d, want 42", w.IDFocus())
-	}
-}
-
-func TestMouseDownHandlerRespectsMouseLock(t *testing.T) {
-	lockCalled := false
-	w := &Window{windowWidth: 800, windowHeight: 600}
-	w.MouseLock(MouseLockCfg{
-		MouseDown: func(_ *Layout, e *Event, _ *Window) {
-			lockCalled = true
-			e.IsHandled = true
-		},
-	})
-	root := &Layout{Shape: &Shape{}}
-	e := &Event{MouseX: 50, MouseY: 50}
-	mouseDownHandler(root, false, e, w)
-	if !lockCalled {
-		t.Error("mouse lock should intercept")
-	}
-}
-
-func TestMouseDownHandlerReverseOrder(t *testing.T) {
-	// Last child (topmost) should receive the event first.
-	var hitID string
-	mkChild := func(id string, x float32) Layout {
-		return Layout{Shape: &Shape{
-			ID: id,
-			ShapeClip: DrawClip{X: x, Y: 0,
-				Width: 100, Height: 100},
-			Events: &EventHandlers{
-				OnClick: func(l *Layout, e *Event, _ *Window) {
-					hitID = l.Shape.ID
-					e.IsHandled = true
-				},
+			}}
+		}
+		root := &Layout{
+			Shape: &Shape{},
+			Children: []Layout{
+				mkChild("first", 0),
+				mkChild("second", 0),
 			},
-		}}
-	}
-	// Both children overlap at x=50.
-	root := &Layout{
-		Shape: &Shape{},
-		Children: []Layout{
-			mkChild("first", 0),
-			mkChild("second", 0),
-		},
-	}
-	w := &Window{windowWidth: 800, windowHeight: 600}
-	e := &Event{MouseX: 50, MouseY: 50}
-	mouseDownHandler(root, false, e, w)
-	if hitID != "second" {
-		t.Errorf("hit: got %q, want second", hitID)
-	}
+		}
+		w := &Window{windowWidth: 800, windowHeight: 600}
+		e := &Event{MouseX: 50, MouseY: 50}
+		mouseDownHandler(root, false, e, w)
+		if hitID != "second" {
+			t.Errorf("hit: got %q, want second", hitID)
+		}
+	})
 }
 
-// --- mouseMoveHandler ---
-
-func TestMouseMoveHandlerRespectsMouseLock(t *testing.T) {
-	lockCalled := false
-	w := &Window{windowWidth: 800, windowHeight: 600}
-	w.MouseLock(MouseLockCfg{
-		MouseMove: func(_ *Layout, _ *Event, _ *Window) {
-			lockCalled = true
-		},
+func TestMouseLockHandlers(t *testing.T) {
+	t.Parallel()
+	t.Run("move", func(t *testing.T) {
+		t.Parallel()
+		lockCalled := false
+		w := &Window{windowWidth: 800, windowHeight: 600}
+		w.MouseLock(MouseLockCfg{
+			MouseMove: func(_ *Layout, _ *Event, _ *Window) {
+				lockCalled = true
+			},
+		})
+		root := &Layout{Shape: &Shape{}}
+		e := &Event{MouseX: 50, MouseY: 50}
+		mouseMoveHandler(root, e, w)
+		if !lockCalled {
+			t.Error("mouse lock should intercept move")
+		}
 	})
-	root := &Layout{Shape: &Shape{}}
-	e := &Event{MouseX: 50, MouseY: 50}
-	mouseMoveHandler(root, e, w)
-	if !lockCalled {
-		t.Error("mouse lock should intercept move")
-	}
+	t.Run("up", func(t *testing.T) {
+		t.Parallel()
+		lockCalled := false
+		w := &Window{windowWidth: 800, windowHeight: 600}
+		w.MouseLock(MouseLockCfg{
+			MouseUp: func(_ *Layout, _ *Event, _ *Window) {
+				lockCalled = true
+			},
+		})
+		root := &Layout{Shape: &Shape{}}
+		e := &Event{MouseX: 50, MouseY: 50}
+		mouseUpHandler(root, e, w)
+		if !lockCalled {
+			t.Error("mouse lock should intercept up")
+		}
+	})
 }
 
 func TestMouseMoveHandlerSkipsOutOfWindow(t *testing.T) {
+	t.Parallel()
 	called := false
 	root := &Layout{
 		Shape: &Shape{
@@ -290,26 +312,6 @@ func TestMouseMoveHandlerSkipsOutOfWindow(t *testing.T) {
 	}
 }
 
-// --- mouseUpHandler ---
-
-func TestMouseUpHandlerRespectsMouseLock(t *testing.T) {
-	lockCalled := false
-	w := &Window{windowWidth: 800, windowHeight: 600}
-	w.MouseLock(MouseLockCfg{
-		MouseUp: func(_ *Layout, _ *Event, _ *Window) {
-			lockCalled = true
-		},
-	})
-	root := &Layout{Shape: &Shape{}}
-	e := &Event{MouseX: 50, MouseY: 50}
-	mouseUpHandler(root, e, w)
-	if !lockCalled {
-		t.Error("mouse lock should intercept up")
-	}
-}
-
-// --- mouseScrollHandler ---
-
 func TestMouseScrollHandlerVertical(t *testing.T) {
 	guiTheme.ScrollMultiplier = 1
 	root := &Layout{Shape: &Shape{
@@ -319,7 +321,7 @@ func TestMouseScrollHandlerVertical(t *testing.T) {
 		ShapeClip: DrawClip{X: 0, Y: 0,
 			Width: 100, Height: 50},
 	}, Children: []Layout{
-		{Shape: &Shape{Height: 200}}, // tall content
+		{Shape: &Shape{Height: 200}},
 	}}
 	w := &Window{windowWidth: 800, windowHeight: 600}
 	e := &Event{
@@ -344,7 +346,7 @@ func TestMouseScrollHandlerHorizontalShift(t *testing.T) {
 			Width: 50, Height: 100},
 		Axis: AxisLeftToRight,
 	}, Children: []Layout{
-		{Shape: &Shape{Width: 200}}, // wide content
+		{Shape: &Shape{Width: 200}},
 	}}
 	w := &Window{windowWidth: 800, windowHeight: 600}
 	e := &Event{
@@ -360,6 +362,7 @@ func TestMouseScrollHandlerHorizontalShift(t *testing.T) {
 }
 
 func TestMouseScrollHandlerFocusedOnMouseScroll(t *testing.T) {
+	t.Parallel()
 	called := false
 	root := &Layout{
 		Shape: &Shape{},

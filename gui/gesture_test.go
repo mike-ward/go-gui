@@ -88,6 +88,7 @@ func fixedClock(nanos int64) func() int64 {
 // --- Tap ---
 
 func TestGestureTap(t *testing.T) {
+	t.Parallel()
 	var got GestureType
 	root := gestureLayout(&EventHandlers{
 		OnGesture: func(_ *Layout, e *Event, _ *Window) {
@@ -112,6 +113,7 @@ func TestGestureTap(t *testing.T) {
 // --- Double Tap ---
 
 func TestGestureDoubleTap(t *testing.T) {
+	t.Parallel()
 	var got GestureType
 	root := gestureLayout(&EventHandlers{
 		OnGesture: func(_ *Layout, e *Event, _ *Window) {
@@ -146,6 +148,7 @@ func TestGestureDoubleTap(t *testing.T) {
 // --- Long Press ---
 
 func TestGestureLongPress(t *testing.T) {
+	t.Parallel()
 	var got GestureType
 	root := gestureLayout(&EventHandlers{
 		OnGesture: func(_ *Layout, e *Event, _ *Window) {
@@ -182,6 +185,7 @@ func TestGestureLongPress(t *testing.T) {
 // --- Pan ---
 
 func TestGesturePan(t *testing.T) {
+	t.Parallel()
 	var phases []GesturePhase
 	root := gestureLayout(&EventHandlers{
 		OnGesture: func(_ *Layout, e *Event, _ *Window) {
@@ -225,6 +229,7 @@ func TestGesturePan(t *testing.T) {
 // --- Swipe ---
 
 func TestGestureSwipe(t *testing.T) {
+	t.Parallel()
 	var got GestureType
 	root := gestureLayout(&EventHandlers{
 		OnGesture: func(_ *Layout, e *Event, _ *Window) {
@@ -259,6 +264,7 @@ func TestGestureSwipe(t *testing.T) {
 // --- Pinch ---
 
 func TestGesturePinch(t *testing.T) {
+	t.Parallel()
 	var gotScale float32
 	var gotPhase GesturePhase
 	root := gestureLayout(&EventHandlers{
@@ -294,6 +300,7 @@ func TestGesturePinch(t *testing.T) {
 // --- Rotate ---
 
 func TestGestureRotate(t *testing.T) {
+	t.Parallel()
 	var gotRotation float32
 	root := gestureLayout(&EventHandlers{
 		OnGesture: func(_ *Layout, e *Event, _ *Window) {
@@ -325,6 +332,7 @@ func TestGestureRotate(t *testing.T) {
 // --- Rotate end ---
 
 func TestGestureRotateEnd(t *testing.T) {
+	t.Parallel()
 	var gotPhase GesturePhase
 	var gotRotation float32
 	root := gestureLayout(&EventHandlers{
@@ -366,6 +374,7 @@ func TestGestureRotateEnd(t *testing.T) {
 // --- Rotate to single touch transition ---
 
 func TestRotateToSingleTouchTransition(t *testing.T) {
+	t.Parallel()
 	var lastType GestureType
 	var lastPhase GesturePhase
 	root := gestureLayout(&EventHandlers{
@@ -412,6 +421,7 @@ func TestRotateToSingleTouchTransition(t *testing.T) {
 // --- Single touch mouse compat ---
 
 func TestSingleTouchMouseCompat(t *testing.T) {
+	t.Parallel()
 	var clicked bool
 	root := gestureLayout(&EventHandlers{
 		OnClick: func(_ *Layout, e *Event, _ *Window) {
@@ -461,6 +471,7 @@ func TestPanFallbackScroll(t *testing.T) {
 // --- Touch cancelled ---
 
 func TestTouchCancelled(t *testing.T) {
+	t.Parallel()
 	var gotPhase GesturePhase
 	var gotCancelled bool
 	root := gestureLayout(&EventHandlers{
@@ -494,6 +505,7 @@ func TestTouchCancelled(t *testing.T) {
 // --- Pinch to single touch transition ---
 
 func TestPinchToSingleTouchTransition(t *testing.T) {
+	t.Parallel()
 	var lastType GestureType
 	var lastPhase GesturePhase
 	root := gestureLayout(&EventHandlers{

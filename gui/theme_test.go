@@ -7,6 +7,7 @@ import (
 )
 
 func TestThemeMaker(t *testing.T) {
+	t.Parallel()
 	cfg := ThemeCfg{
 		Name:             "test",
 		ColorBackground:  RGB(48, 48, 48),
@@ -58,7 +59,7 @@ func TestThemeMaker(t *testing.T) {
 
 func TestSetTheme(t *testing.T) {
 	saved := guiTheme
-	defer SetTheme(saved)
+	t.Cleanup(func() { SetTheme(saved) })
 
 	theme := Theme{
 		ButtonStyle: ButtonStyle{Color: Red},
@@ -74,6 +75,7 @@ func TestSetTheme(t *testing.T) {
 }
 
 func TestWithColors(t *testing.T) {
+	t.Parallel()
 	theme := Theme{
 		ColorHover: RGB(1, 1, 1),
 		ButtonStyle: ButtonStyle{
@@ -94,6 +96,7 @@ func TestWithColors(t *testing.T) {
 }
 
 func TestAdjustFontSize(t *testing.T) {
+	t.Parallel()
 	cfg := ThemeCfg{
 		TextStyleDef:     TextStyle{Color: RGB(225, 225, 225), Size: 16},
 		SizeTextTiny:     10,
@@ -133,6 +136,7 @@ func TestAdjustFontSize(t *testing.T) {
 }
 
 func TestWithButtonStyle(t *testing.T) {
+	t.Parallel()
 	theme := Theme{}
 	s := ButtonStyle{Color: Blue}
 	updated := theme.WithButtonStyle(s)
@@ -142,6 +146,7 @@ func TestWithButtonStyle(t *testing.T) {
 }
 
 func TestThemeMakerBadgeStyle(t *testing.T) {
+	t.Parallel()
 	cfg := baseDarkCfg()
 	theme := ThemeMaker(cfg)
 	if theme.BadgeStyle.ColorInfo != cfg.ColorSelect {
@@ -153,6 +158,7 @@ func TestThemeMakerBadgeStyle(t *testing.T) {
 }
 
 func TestThemeMakerProgressBarStyle(t *testing.T) {
+	t.Parallel()
 	cfg := baseDarkCfg()
 	theme := ThemeMaker(cfg)
 	if theme.ProgressBarStyle.Size != cfg.SizeProgressBar {
@@ -165,6 +171,7 @@ func TestThemeMakerProgressBarStyle(t *testing.T) {
 }
 
 func TestWithColorsBadge(t *testing.T) {
+	t.Parallel()
 	theme := ThemeMaker(baseDarkCfg())
 	sel := RGB(100, 200, 50)
 	updated := theme.WithColors(ColorOverrides{
@@ -176,6 +183,7 @@ func TestWithColorsBadge(t *testing.T) {
 }
 
 func TestThemeBoldTypeface(t *testing.T) {
+	t.Parallel()
 	theme := ThemeMaker(baseDarkCfg())
 	bold := []struct {
 		name  string
@@ -185,10 +193,13 @@ func TestThemeBoldTypeface(t *testing.T) {
 		{"B4", theme.B4}, {"B5", theme.B5}, {"B6", theme.B6},
 	}
 	for _, s := range bold {
-		if s.style.Typeface != glyph.TypefaceBold {
-			t.Errorf("%s.Typeface = %d, want TypefaceBold(%d)",
-				s.name, s.style.Typeface, glyph.TypefaceBold)
-		}
+		t.Run(s.name, func(t *testing.T) {
+			t.Parallel()
+			if s.style.Typeface != glyph.TypefaceBold {
+				t.Errorf("%s.Typeface = %d, want TypefaceBold(%d)",
+					s.name, s.style.Typeface, glyph.TypefaceBold)
+			}
+		})
 	}
 	normal := []struct {
 		name  string
@@ -198,14 +209,18 @@ func TestThemeBoldTypeface(t *testing.T) {
 		{"N4", theme.N4}, {"N5", theme.N5}, {"N6", theme.N6},
 	}
 	for _, s := range normal {
-		if s.style.Typeface != 0 {
-			t.Errorf("%s.Typeface = %d, want 0 (regular)",
-				s.name, s.style.Typeface)
-		}
+		t.Run(s.name, func(t *testing.T) {
+			t.Parallel()
+			if s.style.Typeface != 0 {
+				t.Errorf("%s.Typeface = %d, want 0 (regular)",
+					s.name, s.style.Typeface)
+			}
+		})
 	}
 }
 
 func TestWithColorsSlider(t *testing.T) {
+	t.Parallel()
 	theme := ThemeMaker(baseDarkCfg())
 	hover := RGB(99, 99, 99)
 	updated := theme.WithColors(ColorOverrides{
@@ -217,12 +232,15 @@ func TestWithColorsSlider(t *testing.T) {
 }
 
 func TestThemeMakerTreeStyle(t *testing.T) {
+	t.Parallel()
 	cfg := baseDarkCfg()
 	theme := ThemeMaker(cfg)
 	if theme.TreeStyle.ColorHover != cfg.ColorHover {
-		t.Errorf("TreeStyle.ColorHover = %v, want %v", theme.TreeStyle.ColorHover, cfg.ColorHover)
+		t.Errorf("TreeStyle.ColorHover = %v, want %v",
+			theme.TreeStyle.ColorHover, cfg.ColorHover)
 	}
 	if theme.TreeStyle.Indent != 25 {
-		t.Errorf("TreeStyle.Indent = %f, want 25", theme.TreeStyle.Indent)
+		t.Errorf("TreeStyle.Indent = %f, want 25",
+			theme.TreeStyle.Indent)
 	}
 }

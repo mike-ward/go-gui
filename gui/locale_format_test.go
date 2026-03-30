@@ -5,139 +5,122 @@ import (
 	"time"
 )
 
-func TestLocaleFormatDateShort(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
-	guiLocale = LocaleEnUS
+func TestLocaleFormatDate(t *testing.T) {
+	saved := guiLocale
+	t.Cleanup(func() { guiLocale = saved })
 
-	dt := time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC)
-	got := LocaleFormatDate(dt, "M/D/YYYY")
-	if got != "3/15/2025" {
-		t.Fatalf("got %q, want 3/15/2025", got)
+	tests := []struct {
+		name   string
+		locale Locale
+		date   time.Time
+		format string
+		want   string
+	}{
+		{"short", LocaleEnUS,
+			time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC),
+			"M/D/YYYY", "3/15/2025"},
+		{"long_month", LocaleEnUS,
+			time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC),
+			"MMMM D, YYYY", "March 15, 2025"},
+		{"short_month", LocaleEnUS,
+			time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC),
+			"MMM YYYY", "Dec 2025"},
+		{"german", LocaleDeDE,
+			time.Date(2025, 3, 5, 0, 0, 0, 0, time.UTC),
+			"D. MMMM YYYY", "5. M\u00E4rz 2025"},
+		{"datetime", LocaleEnUS,
+			time.Date(2025, 1, 2, 14, 5, 9, 0, time.UTC),
+			"YYYY-MM-DD HH:mm:ss", "2025-01-02 14:05:09"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			guiLocale = tt.locale
+			got := LocaleFormatDate(tt.date, tt.format)
+			if got != tt.want {
+				t.Errorf("got %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
-func TestLocaleFormatDateLongMonth(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
+func TestLocaleFmt(t *testing.T) {
+	saved := guiLocale
+	t.Cleanup(func() { guiLocale = saved })
 	guiLocale = LocaleEnUS
 
-	dt := time.Date(2025, 3, 15, 0, 0, 0, 0, time.UTC)
-	got := LocaleFormatDate(dt, "MMMM D, YYYY")
-	if got != "March 15, 2025" {
-		t.Fatalf("got %q, want March 15, 2025", got)
-	}
-}
-
-func TestLocaleFormatDateShortMonth(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
-	guiLocale = LocaleEnUS
-
-	dt := time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)
-	got := LocaleFormatDate(dt, "MMM YYYY")
-	if got != "Dec 2025" {
-		t.Fatalf("got %q, want Dec 2025", got)
-	}
-}
-
-func TestLocaleFormatDateGerman(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
-	guiLocale = LocaleDeDE
-
-	dt := time.Date(2025, 3, 5, 0, 0, 0, 0, time.UTC)
-	got := LocaleFormatDate(dt, "D. MMMM YYYY")
-	want := "5. M\u00E4rz 2025"
-	if got != want {
-		t.Fatalf("got %q, want %q", got, want)
-	}
-}
-
-func TestLocaleFormatDateTime(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
-	guiLocale = LocaleEnUS
-
-	dt := time.Date(2025, 1, 2, 14, 5, 9, 0, time.UTC)
-	got := LocaleFormatDate(dt, "YYYY-MM-DD HH:mm:ss")
-	if got != "2025-01-02 14:05:09" {
-		t.Fatalf("got %q, want 2025-01-02 14:05:09", got)
-	}
-}
-
-func TestLocaleRowsFmt(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
-	guiLocale = LocaleEnUS
-
-	got := localeRowsFmt(1, 50, 200)
-	if got != "Rows 1-50/200" {
-		t.Fatalf("got %q", got)
-	}
-}
-
-func TestLocalePageFmt(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
-	guiLocale = LocaleEnUS
-
-	got := localePageFmt(3, 10)
-	if got != "Page 3/10" {
-		t.Fatalf("got %q", got)
-	}
-}
-
-func TestLocaleMatchesFmt(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
-	guiLocale = LocaleEnUS
-
-	got := localeMatchesFmt(5, "100")
-	if got != "Matches 5/100" {
-		t.Fatalf("got %q", got)
-	}
+	t.Run("rows", func(t *testing.T) {
+		got := localeRowsFmt(1, 50, 200)
+		if got != "Rows 1-50/200" {
+			t.Fatalf("got %q", got)
+		}
+	})
+	t.Run("page", func(t *testing.T) {
+		got := localePageFmt(3, 10)
+		if got != "Page 3/10" {
+			t.Fatalf("got %q", got)
+		}
+	})
+	t.Run("matches", func(t *testing.T) {
+		got := localeMatchesFmt(5, "100")
+		if got != "Matches 5/100" {
+			t.Fatalf("got %q", got)
+		}
+	})
 }
 
 func TestLocaleDatePadFormat(t *testing.T) {
-	tests := []struct{ in, want string }{
-		{"M/D/YYYY", "MM/DD/YYYY"},
-		{"D.M.YYYY", "DD.MM.YYYY"},
-		{"DD/MM/YYYY", "DD/MM/YYYY"},
-		{"YYYY/M/D", "YYYY/MM/DD"},
-		{"YYYY-M-D", "YYYY-MM-DD"},
-		{"YYYY.M.D", "YYYY.MM.DD"},
+	t.Parallel()
+	tests := []struct {
+		name     string
+		in, want string
+	}{
+		{"M/D/YYYY", "M/D/YYYY", "MM/DD/YYYY"},
+		{"D.M.YYYY", "D.M.YYYY", "DD.MM.YYYY"},
+		{"DD/MM/YYYY", "DD/MM/YYYY", "DD/MM/YYYY"},
+		{"YYYY/M/D", "YYYY/M/D", "YYYY/MM/DD"},
+		{"YYYY-M-D", "YYYY-M-D", "YYYY-MM-DD"},
+		{"YYYY.M.D", "YYYY.M.D", "YYYY.MM.DD"},
 	}
 	for _, tt := range tests {
-		got := localeDatePadFormat(tt.in)
-		if got != tt.want {
-			t.Errorf("localeDatePadFormat(%q) = %q, want %q",
-				tt.in, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := localeDatePadFormat(tt.in)
+			if got != tt.want {
+				t.Errorf("localeDatePadFormat(%q) = %q, want %q",
+					tt.in, got, tt.want)
+			}
+		})
 	}
 }
 
 func TestLocaleDateMaskPattern(t *testing.T) {
-	tests := []struct{ in, want string }{
-		{"M/D/YYYY", "99/99/9999"},
-		{"D.M.YYYY", "99.99.9999"},
-		{"DD/MM/YYYY", "99/99/9999"},
-		{"YYYY/M/D", "9999/99/99"},
-		{"YYYY-M-D", "9999-99-99"},
-		{"YYYY.M.D", "9999.99.99"},
+	t.Parallel()
+	tests := []struct {
+		name     string
+		in, want string
+	}{
+		{"M/D/YYYY", "M/D/YYYY", "99/99/9999"},
+		{"D.M.YYYY", "D.M.YYYY", "99.99.9999"},
+		{"DD/MM/YYYY", "DD/MM/YYYY", "99/99/9999"},
+		{"YYYY/M/D", "YYYY/M/D", "9999/99/99"},
+		{"YYYY-M-D", "YYYY-M-D", "9999-99-99"},
+		{"YYYY.M.D", "YYYY.M.D", "9999.99.99"},
 	}
 	for _, tt := range tests {
-		got := localeDateMaskPattern(tt.in)
-		if got != tt.want {
-			t.Errorf("localeDateMaskPattern(%q) = %q, want %q",
-				tt.in, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := localeDateMaskPattern(tt.in)
+			if got != tt.want {
+				t.Errorf("localeDateMaskPattern(%q) = %q, want %q",
+					tt.in, got, tt.want)
+			}
+		})
 	}
 }
 
 func TestLocaleT(t *testing.T) {
-	old := guiLocale
-	defer func() { guiLocale = old }()
+	saved := guiLocale
+	t.Cleanup(func() { guiLocale = saved })
 
 	guiLocale = Locale{
 		Translations: map[string]string{
