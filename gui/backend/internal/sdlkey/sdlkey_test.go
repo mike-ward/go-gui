@@ -1,6 +1,4 @@
-//go:build !js
-
-package sdl2
+package sdlkey
 
 import (
 	"testing"
@@ -10,8 +8,8 @@ import (
 )
 
 func TestMapKeyCodeKeypadEnter(t *testing.T) {
-	if got := mapKeyCode(sdl.K_KP_ENTER); got != gui.KeyEnter {
-		t.Fatalf("mapKeyCode(K_KP_ENTER) = %v, want %v",
+	if got := MapKeyCode(sdl.K_KP_ENTER); got != gui.KeyEnter {
+		t.Fatalf("MapKeyCode(K_KP_ENTER) = %v, want %v",
 			got, gui.KeyEnter)
 	}
 }
@@ -32,8 +30,8 @@ func TestMapKeyCodeModifiers(t *testing.T) {
 		{sdl.K_CAPSLOCK, gui.KeyCapsLock},
 	}
 	for _, tt := range tests {
-		if got := mapKeyCode(tt.sym); got != tt.want {
-			t.Errorf("mapKeyCode(%v) = %v, want %v",
+		if got := MapKeyCode(tt.sym); got != tt.want {
+			t.Errorf("MapKeyCode(%v) = %v, want %v",
 				tt.sym, got, tt.want)
 		}
 	}
@@ -50,8 +48,8 @@ func TestMapKeyCodeArrows(t *testing.T) {
 		{sdl.K_RIGHT, gui.KeyRight},
 	}
 	for _, tt := range tests {
-		if got := mapKeyCode(tt.sym); got != tt.want {
-			t.Errorf("mapKeyCode(%v) = %v, want %v",
+		if got := MapKeyCode(tt.sym); got != tt.want {
+			t.Errorf("MapKeyCode(%v) = %v, want %v",
 				tt.sym, got, tt.want)
 		}
 	}
@@ -69,25 +67,25 @@ func TestMapKeyCodeFunctionKeys(t *testing.T) {
 		gui.KeyF9, gui.KeyF10, gui.KeyF11, gui.KeyF12,
 	}
 	for i, sym := range fkeys {
-		if got := mapKeyCode(sym); got != expected[i] {
-			t.Errorf("mapKeyCode(F%d) = %v, want %v",
+		if got := MapKeyCode(sym); got != expected[i] {
+			t.Errorf("MapKeyCode(F%d) = %v, want %v",
 				i+1, got, expected[i])
 		}
 	}
 }
 
 func TestMapKeyCodePrintable(t *testing.T) {
-	if got := mapKeyCode('a'); got != gui.KeyCode('A') {
-		t.Errorf("mapKeyCode('a') = %v, want %v", got, gui.KeyCode('A'))
+	if got := MapKeyCode('a'); got != gui.KeyCode('A') {
+		t.Errorf("MapKeyCode('a') = %v, want %v", got, gui.KeyCode('A'))
 	}
-	if got := mapKeyCode('z'); got != gui.KeyCode('Z') {
-		t.Errorf("mapKeyCode('z') = %v, want %v", got, gui.KeyCode('Z'))
+	if got := MapKeyCode('z'); got != gui.KeyCode('Z') {
+		t.Errorf("MapKeyCode('z') = %v, want %v", got, gui.KeyCode('Z'))
 	}
-	if got := mapKeyCode('0'); got != gui.KeyCode('0') {
-		t.Errorf("mapKeyCode('0') = %v, want %v", got, gui.KeyCode('0'))
+	if got := MapKeyCode('0'); got != gui.KeyCode('0') {
+		t.Errorf("MapKeyCode('0') = %v, want %v", got, gui.KeyCode('0'))
 	}
-	if got := mapKeyCode('9'); got != gui.KeyCode('9') {
-		t.Errorf("mapKeyCode('9') = %v, want %v", got, gui.KeyCode('9'))
+	if got := MapKeyCode('9'); got != gui.KeyCode('9') {
+		t.Errorf("MapKeyCode('9') = %v, want %v", got, gui.KeyCode('9'))
 	}
 }
 
@@ -108,16 +106,16 @@ func TestMapKeyCodeNavigation(t *testing.T) {
 		{sdl.K_SPACE, gui.KeySpace},
 	}
 	for _, tt := range tests {
-		if got := mapKeyCode(tt.sym); got != tt.want {
-			t.Errorf("mapKeyCode(%v) = %v, want %v",
+		if got := MapKeyCode(tt.sym); got != tt.want {
+			t.Errorf("MapKeyCode(%v) = %v, want %v",
 				tt.sym, got, tt.want)
 		}
 	}
 }
 
 func TestMapKeyCodeUnknown(t *testing.T) {
-	if got := mapKeyCode(0xFFFF); got != gui.KeyInvalid {
-		t.Errorf("mapKeyCode(unknown) = %v, want KeyInvalid", got)
+	if got := MapKeyCode(0xFFFF); got != gui.KeyInvalid {
+		t.Errorf("MapKeyCode(unknown) = %v, want KeyInvalid", got)
 	}
 }
 
@@ -132,8 +130,8 @@ func TestMapMouseButton(t *testing.T) {
 		{255, gui.MouseInvalid},
 	}
 	for _, tt := range tests {
-		if got := mapMouseButton(tt.btn); got != tt.want {
-			t.Errorf("mapMouseButton(%d) = %v, want %v",
+		if got := MapMouseButton(tt.btn); got != tt.want {
+			t.Errorf("MapMouseButton(%d) = %v, want %v",
 				tt.btn, got, tt.want)
 		}
 	}
@@ -154,8 +152,8 @@ func TestMapKeyMod(t *testing.T) {
 			gui.ModShift | gui.ModAlt | gui.ModSuper},
 	}
 	for _, tt := range tests {
-		if got := mapKeyMod(tt.mod); got != tt.want {
-			t.Errorf("mapKeyMod(%v) = %v, want %v",
+		if got := MapKeyMod(tt.mod); got != tt.want {
+			t.Errorf("MapKeyMod(%v) = %v, want %v",
 				tt.mod, got, tt.want)
 		}
 	}
