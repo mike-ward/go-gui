@@ -1,4 +1,4 @@
-//go:build !js && !ios && !windows
+//go:build !js && !ios
 
 package sdlkey
 
