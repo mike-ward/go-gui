@@ -222,14 +222,13 @@ func (w *Window) UpdateRenderOnly() {
 
 // composeLayout wraps layer layouts into a single root.
 func composeLayout(layers []Layout, w *Window) Layout {
-	root := Layout{
-		Shape: &Shape{
+	return Layout{
+		Shape: w.allocShape(Shape{
 			Width:  float32(w.windowWidth),
 			Height: float32(w.windowHeight),
-		},
+		}),
 		Children: layers,
 	}
-	return root
 }
 
 // buildRenderers resets and rebuilds the render command list.
