@@ -87,6 +87,7 @@ func BenchmarkLayoutWrapContainers(b *testing.B) {
 	w := &Window{scratch: newScratchPools()}
 	b.ReportAllocs()
 	for b.Loop() {
+		w.scratch.resetViewPools()
 		layout := benchmarkWrapLayout()
 		layoutWrapContainers(&layout, w)
 	}
