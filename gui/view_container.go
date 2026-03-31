@@ -167,17 +167,18 @@ func addGroupBoxTitle(title string, titleBG, colorBorder Color,
 	}
 
 	// Eraser hides the border behind the title text.
+	eraserShape := Shape{
+		ShapeType: ShapeRectangle,
+		Width:     textWidth + pad + pad - 1,
+		Height:    fontHeight,
+		X:         20,
+		Y:         -offset,
+		Color:     eraserColor,
+		Opacity:   1.0,
+		Float:     true,
+	}
 	layout.Children = append(layout.Children, Layout{
-		Shape: &Shape{
-			ShapeType: ShapeRectangle,
-			Width:     textWidth + pad + pad - 1,
-			Height:    fontHeight,
-			X:         20,
-			Y:         -offset,
-			Color:     eraserColor,
-			Opacity:   1.0,
-			Float:     true,
-		},
+		Shape: w.allocShape(eraserShape),
 	})
 
 	textColor := colorBorder
@@ -185,21 +186,22 @@ func addGroupBoxTitle(title string, titleBG, colorBorder Color,
 		textColor = dimAlpha(textColor)
 	}
 	ts.Color = textColor
-	layout.Children = append(layout.Children, Layout{
-		Shape: &Shape{
-			ShapeType: ShapeText,
-			Width:     textWidth,
-			Height:    fontHeight,
-			X:         20 + pad,
-			Y:         -offset,
-			Color:     textColor,
-			Opacity:   1.0,
-			Float:     true,
-			TC: &ShapeTextConfig{
-				Text:      title,
-				TextStyle: &ts,
-			},
+	textShape := Shape{
+		ShapeType: ShapeText,
+		Width:     textWidth,
+		Height:    fontHeight,
+		X:         20 + pad,
+		Y:         -offset,
+		Color:     textColor,
+		Opacity:   1.0,
+		Float:     true,
+		TC: &ShapeTextConfig{
+			Text:      title,
+			TextStyle: &ts,
 		},
+	}
+	layout.Children = append(layout.Children, Layout{
+		Shape: w.allocShape(textShape),
 	})
 }
 
