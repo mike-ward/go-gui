@@ -96,7 +96,8 @@ type scratchPools struct {
 
 	// View-phase pool: reuse Shape allocations across frames.
 	// Reset before GenerateViewLayout; valid through buildRenderers.
-	viewShapes scratchObjPool[Shape]
+	viewShapes   scratchObjPool[Shape]
+	buttonColors scratchObjPool[ShapeButtonColors]
 
 	// Render-phase pools: reuse heap objects whose addresses are
 	// stored in RenderCmd pointer fields (avoids per-frame escapes).
@@ -136,6 +137,7 @@ func newScratchPools() scratchPools {
 		focusSeen:              scratchMap[uint32, struct{}]{retainMax: 4096},
 		svgAnimStates:          scratchMap[string, svgAnimState]{retainMax: 4096},
 		viewShapes:             scratchObjPool[Shape]{retainMax: 16384, shrinkTo: 1024},
+		buttonColors:           scratchObjPool[ShapeButtonColors]{retainMax: 512, shrinkTo: 32},
 		renderTextStyles:       scratchObjPool[TextStyle]{retainMax: 4096, shrinkTo: 256},
 		renderGlyphLayouts:     scratchObjPool[glyph.Layout]{retainMax: 1024, shrinkTo: 64},
 		renderAffineTransforms: scratchObjPool[glyph.AffineTransform]{retainMax: 256, shrinkTo: 16},
@@ -146,6 +148,7 @@ func newScratchPools() scratchPools {
 // before GenerateViewLayout.
 func (p *scratchPools) resetViewPools() {
 	p.viewShapes.reset()
+	p.buttonColors.reset()
 }
 
 // resetRenderPools resets the render-phase object pools. Called at the

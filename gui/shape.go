@@ -18,10 +18,11 @@ type Shape struct {
 	FloatZIndex int
 
 	// Optional sub-structs (nil when unused)
-	Events *EventHandlers   // event handlers
-	TC     *ShapeTextConfig // text/RTF fields
-	FX     *ShapeEffects    // visual effects
-	A11Y   *AccessInfo      // accessibility metadata
+	Events *EventHandlers     // event handlers
+	TC     *ShapeTextConfig   // text/RTF fields
+	FX     *ShapeEffects      // visual effects
+	A11Y   *AccessInfo        // accessibility metadata
+	BC     *ShapeButtonColors // button hover/focus colors
 
 	// Structs
 	ShapeClip DrawClip // calculated clipping rectangle
@@ -278,6 +279,17 @@ type EventHandlers struct {
 	OnGesture     func(*Layout, *Event, *Window)
 	OnIMECommit   func(*Layout, string, *Window)
 	OnDraw        func(*DrawContext)
+}
+
+// ShapeButtonColors holds per-button color state read by
+// package-level button event handlers, avoiding per-frame
+// closure allocations.
+type ShapeButtonColors struct {
+	ColorHover       Color
+	ColorClick       Color
+	ColorFocus       Color
+	ColorBorderFocus Color
+	OnHover          func(*Layout, *Event, *Window)
 }
 
 // ShapeEffects holds optional visual effect fields.

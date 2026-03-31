@@ -46,11 +46,80 @@ type ButtonCfg struct {
 	A11YDescription string
 }
 
+// buttonView wraps a containerView with per-button hover/focus
+// colors, replacing per-frame closure allocations with pooled
+// ShapeButtonColors and package-level handler functions.
+type buttonView struct {
+	cv               *containerView
+	colorHover       Color
+	colorClick       Color
+	colorFocus       Color
+	colorBorderFocus Color
+	userOnHover      func(*Layout, *Event, *Window)
+}
+
+func (bv *buttonView) Content() []View { return bv.cv.Content() }
+
+func (bv *buttonView) GenerateLayout(w *Window) Layout {
+	layout := bv.cv.GenerateLayout(w)
+	if layout.Shape.Events != nil {
+		bc := ShapeButtonColors{
+			ColorHover:       bv.colorHover,
+			ColorClick:       bv.colorClick,
+			ColorFocus:       bv.colorFocus,
+			ColorBorderFocus: bv.colorBorderFocus,
+			OnHover:          bv.userOnHover,
+		}
+		if w != nil {
+			layout.Shape.BC = w.scratch.buttonColors.alloc(bc)
+		} else {
+			layout.Shape.BC = &bc
+		}
+		layout.Shape.Events.AmendLayout = buttonAmendLayout
+		layout.Shape.Events.OnHover = buttonOnHover
+	}
+	return layout
+}
+
+func buttonAmendLayout(layout *Layout, w *Window) {
+	if layout.Shape.Disabled ||
+		!layout.Shape.HasEvents() ||
+		layout.Shape.Events.OnClick == nil {
+		return
+	}
+	if w.IsFocus(layout.Shape.IDFocus) {
+		layout.Shape.Color = layout.Shape.BC.ColorFocus
+		layout.Shape.ColorBorder = layout.Shape.BC.ColorBorderFocus
+	}
+}
+
+func buttonOnHover(layout *Layout, e *Event, w *Window) {
+	if layout.Shape.Disabled ||
+		!layout.Shape.HasEvents() ||
+		layout.Shape.Events.OnClick == nil {
+		return
+	}
+	w.SetMouseCursor(CursorPointingHand)
+	if !w.IsFocus(layout.Shape.IDFocus) {
+		layout.Shape.Color = layout.Shape.BC.ColorHover
+	}
+	if e.MouseButton == MouseLeft {
+		layout.Shape.Color = layout.Shape.BC.ColorClick
+	}
+	if layout.Shape.BC.OnHover != nil {
+		layout.Shape.BC.OnHover(layout, e, w)
+	}
+}
+
 // Button creates a clickable button. Delegates to Row with
-// amend_layout for focus coloring and on_hover for cursor/color
-// state changes.
+// package-level amend_layout for focus coloring and on_hover
+// for cursor/color state changes. Colors are stored in a pooled
+// ShapeButtonColors to avoid per-frame closure allocations.
 func Button(cfg ButtonCfg) View {
-	// Apply defaults from button style.
+	if cfg.Invisible {
+		return invisibleContainerView()
+	}
+
 	applyButtonDefaults(&cfg)
 
 	d := &DefaultButtonStyle
@@ -59,12 +128,6 @@ func Button(cfg ButtonCfg) View {
 	hAlign := cfg.HAlign.Get(HAlignCenter)
 	vAlign := cfg.VAlign.Get(VAlignMiddle)
 
-	// Capture values for closures.
-	colorHover := cfg.ColorHover
-	colorClick := cfg.ColorClick
-	colorFocus := cfg.ColorFocus
-	colorBorderFocus := cfg.ColorBorderFocus
-	userOnHover := cfg.OnHover
 	onClick := cfg.OnClick
 
 	a11yRole := cfg.A11YRole
@@ -72,7 +135,7 @@ func Button(cfg ButtonCfg) View {
 		a11yRole = AccessRoleButton
 	}
 
-	return Row(ContainerCfg{
+	cv := Row(ContainerCfg{
 		ID:              cfg.ID,
 		IDFocus:         cfg.IDFocus,
 		A11YRole:        a11yRole,
@@ -95,7 +158,6 @@ func Button(cfg ButtonCfg) View {
 		MaxHeight:       cfg.MaxHeight,
 		Sizing:          cfg.Sizing,
 		Disabled:        cfg.Disabled,
-		Invisible:       cfg.Invisible,
 		HAlign:          hAlign,
 		VAlign:          vAlign,
 		Float:           cfg.Float,
@@ -106,36 +168,17 @@ func Button(cfg ButtonCfg) View {
 		OnClick:         onClick,
 		OnChar:          spacebarToClick(onClick),
 		OnKeyDown:       enterToClick(onClick),
-		AmendLayout: func(layout *Layout, w *Window) {
-			if layout.Shape.Disabled ||
-				!layout.Shape.HasEvents() ||
-				layout.Shape.Events.OnClick == nil {
-				return
-			}
-			if w.IsFocus(layout.Shape.IDFocus) {
-				layout.Shape.Color = colorFocus
-				layout.Shape.ColorBorder = colorBorderFocus
-			}
-		},
-		OnHover: func(layout *Layout, e *Event, w *Window) {
-			if layout.Shape.Disabled ||
-				!layout.Shape.HasEvents() ||
-				layout.Shape.Events.OnClick == nil {
-				return
-			}
-			w.SetMouseCursor(CursorPointingHand)
-			if !w.IsFocus(layout.Shape.IDFocus) {
-				layout.Shape.Color = colorHover
-			}
-			if e.MouseButton == MouseLeft {
-				layout.Shape.Color = colorClick
-			}
-			if userOnHover != nil {
-				userOnHover(layout, e, w)
-			}
-		},
-		Content: cfg.Content,
-	})
+		Content:         cfg.Content,
+	}).(*containerView)
+
+	return &buttonView{
+		cv:               cv,
+		colorHover:       cfg.ColorHover,
+		colorClick:       cfg.ColorClick,
+		colorFocus:       cfg.ColorFocus,
+		colorBorderFocus: cfg.ColorBorderFocus,
+		userOnHover:      cfg.OnHover,
+	}
 }
 
 // CommandButton creates a button wired to a registered
