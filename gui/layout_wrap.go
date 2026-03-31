@@ -69,18 +69,25 @@ func layoutWrapContainers(layout *Layout, w *Window) {
 	for i := range rows {
 		row := rows[i]
 		rowChildren := layout.Children[row.start:row.end:row.end]
+		rowShape := Shape{
+			ShapeType: ShapeRectangle,
+			Axis:      AxisLeftToRight,
+			Sizing:    FixedFit,
+			Width:     available,
+			Spacing:   spacing,
+			Color:     Color{},
+			HAlign:    layout.Shape.HAlign,
+			VAlign:    layout.Shape.VAlign,
+			TextDir:   layout.Shape.TextDir,
+		}
+		var sp *Shape
+		if w != nil {
+			sp = w.scratch.viewShapes.alloc(rowShape)
+		} else {
+			sp = &rowShape
+		}
 		newChildren = append(newChildren, Layout{
-			Shape: &Shape{
-				ShapeType: ShapeRectangle,
-				Axis:      AxisLeftToRight,
-				Sizing:    FixedFit,
-				Width:     available,
-				Spacing:   spacing,
-				Color:     Color{},
-				HAlign:    layout.Shape.HAlign,
-				VAlign:    layout.Shape.VAlign,
-				TextDir:   layout.Shape.TextDir,
-			},
+			Shape:    sp,
 			Children: rowChildren,
 		})
 	}
