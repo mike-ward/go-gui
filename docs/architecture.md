@@ -149,7 +149,7 @@ entire UI from the view function.
 ┌───────────────────────────────────┐  ┌──────────────────────────────┐
 │ ACCESSIBILITY                     │  │ TEXT (via glyph)             │
 │                                   │  │                              │
-│ A11yNode tree built from Layout   │  │ go-glyph (local replace):    │
+│ A11yNode tree built from Layout   │  │ go-glyph (versioned module): │
 │ Exposes to platform via           │  │  ├─ text shaping             │
 │   NativePlatform (AT-SPI on       │  │  ├─ rendering                │
 │   Linux, NSAccessibility on mac)  │  │  ├─ line wrapping            │
@@ -163,7 +163,7 @@ entire UI from the view function.
 
 ```
 go-gui/
-├── gui/                          ← core (~160 files)
+├── gui/                          ← core (~365 files)
 │   ├── view*.go                  ← View interface, GenerateViewLayout
 │   ├── layout*.go                ← Layout tree, arrange, query
 │   ├── shape*.go                 ← Shape type + ShapeTextConfig
@@ -181,9 +181,16 @@ go-gui/
 │       ├── gl/                   ← OpenGL renderer (Linux/Windows)
 │       ├── filedialog/           ← Native file dialogs
 │       ├── printdialog/          ← Native print dialogs
+│       ├── android/              ← Android backend
+│       ├── ios/                  ← iOS backend
+│       ├── web/                  ← Web/WASM backend
+│       ├── nativemenu/           ← Native menu support
+│       ├── atspi/                ← AT-SPI accessibility (Linux)
+│       ├── sni/                  ← StatusNotifierItem / system tray
+│       ├── spellcheck/           ← Spell checking
 │       ├── internal/             ← Shared backend internals
 │       └── test/                 ← Headless no-op backend
-└── examples/                     ← 32 example apps
+└── examples/                     ← 40 example apps
     ├── get_started/
     ├── showcase/
     ├── calculator/

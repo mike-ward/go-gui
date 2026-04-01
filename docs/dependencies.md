@@ -1,39 +1,21 @@
 # Dependency Updates
 
-This project depends on Go modules under `github.com/mike-ward/*`,
-including `github.com/mike-ward/go-glyph` and
-`github.com/mike-ward/go-glyph/backend/sdl2`.
+This project depends on `github.com/mike-ward/go-glyph` for text
+shaping/rendering. The module is public and fetched directly from GitHub.
 
 ## How dependency resolution works
 
-- [`go.mod`](/Users/mikeward/Documents/github/go-gui/go.mod) declares the module
-  requirements for both modules.
-- [`go.sum`](/Users/mikeward/Documents/github/go-gui/go.sum) records checksums
-  for the exact dependency contents and their `go.mod` files.
-- `go-glyph` is now public, so the Go toolchain can fetch it directly from
-  GitHub without extra CI authentication.
+- [`go.mod`](../go.mod) declares module requirements.
+- [`go.sum`](../go.sum) records checksums for exact dependency contents.
 
 ## Updating `go-glyph`
 
-`go-glyph` and `go-glyph/backend/sdl2` are now versioned modules. Update both
-to the same release tag.
-
 ```bash
-cd /Users/mikeward/Documents/github/go-gui
-
-go get github.com/mike-ward/go-glyph@v1.0.0 \
-  github.com/mike-ward/go-glyph/backend/sdl2@v1.0.0
-
+go get github.com/mike-ward/go-glyph@vX.Y.Z
 go mod tidy
 ```
 
-After that, confirm that [`go.mod`](/Users/mikeward/Documents/github/go-gui/go.mod)
-keeps `github.com/mike-ward/go-glyph` and
-`github.com/mike-ward/go-glyph/backend/sdl2` pinned to the same release.
-
-## Updating public dependencies
-
-For public modules, the normal Go workflow is enough:
+## Updating other dependencies
 
 ```bash
 go get <module>@<version>
@@ -49,6 +31,4 @@ go test ./gui/...
 go vet ./...
 ```
 
-Commit both [`go.mod`](/Users/mikeward/Documents/github/go-gui/go.mod) and
-[`go.sum`](/Users/mikeward/Documents/github/go-gui/go.sum) whenever dependencies
-change.
+Commit both `go.mod` and `go.sum` whenever dependencies change.
