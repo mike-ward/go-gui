@@ -577,3 +577,9 @@ func (dc *DrawContext) Texts() []DrawCanvasTextEntry {
 func (dc *DrawContext) Batches() []DrawCanvasTriBatch {
 	return dc.batches
 }
+
+// NewDrawContext creates a DrawContext for headless rendering.
+// tm may be nil when text measurement is not required.
+func NewDrawContext(w, h float32, tm TextMeasurer) *DrawContext {
+	return &DrawContext{Width: w, Height: h, textMeasure: tm}
+}
