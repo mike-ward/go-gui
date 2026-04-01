@@ -565,3 +565,15 @@ func (dc *DrawContext) FontHeight(style TextStyle) float32 {
 	}
 	return dc.textMeasure.FontHeight(style)
 }
+
+// Texts returns accumulated text entries. Useful for testing
+// DrawCanvas output.
+func (dc *DrawContext) Texts() []DrawCanvasTextEntry {
+	return dc.texts
+}
+
+// Batches returns accumulated triangle batches. Useful for
+// testing DrawCanvas output.
+func (dc *DrawContext) Batches() []DrawCanvasTriBatch {
+	return dc.batches
+}
