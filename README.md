@@ -3,6 +3,7 @@
 ![Go version](https://img.shields.io/badge/go-1.26%2B-blue)
 ![License](https://img.shields.io/badge/license-PolyForm%20NC%201.0-blue)
 ![CI](https://github.com/mike-ward/go-gui/actions/workflows/ci.yml/badge.svg)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mike-ward/go-gui)
 
 **Cross-platform, immediate-mode GUI framework for Go — no virtual DOM,
 no diffing, just fast, composable UI.**
