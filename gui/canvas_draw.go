@@ -9,6 +9,14 @@ type DrawCanvasCache struct {
 	TessWidth  float32
 	TessHeight float32
 	Batches    []DrawCanvasTriBatch
+	Texts      []DrawCanvasTextEntry
+}
+
+// DrawCanvasTextEntry stores a deferred text drawing command.
+type DrawCanvasTextEntry struct {
+	X, Y  float32
+	Text  string
+	Style TextStyle
 }
 
 // DrawCanvasTriBatch is one flat-color triangle batch.
@@ -19,7 +27,8 @@ type DrawCanvasTriBatch struct {
 
 // DrawContext is passed to the OnDraw callback. Drawing methods
 // append tessellated triangle batches which are later emitted as
-// RenderSvg commands.
+// RenderSvg commands. Text methods append deferred text entries
+// emitted as RenderText commands.
 type DrawContext struct {
 	Width  float32
 	Height float32
@@ -27,7 +36,9 @@ type DrawContext struct {
 	lastColor       Color
 	currentBatchIdx int
 	batches         []DrawCanvasTriBatch
+	texts           []DrawCanvasTextEntry
 	arcBuf          []float32
+	textMeasure     TextMeasurer
 }
 
 func (dc *DrawContext) getBatch(color Color) *DrawCanvasTriBatch {
@@ -232,4 +243,325 @@ func (dc *DrawContext) arcPoints(cx, cy, rx, ry, start, sweep float32) []float32
 			cy+ry*float32(math.Sin(a)))
 	}
 	return dc.arcBuf
+}
+
+// FilledRoundedRect draws a filled rectangle with rounded corners.
+// Radius is clamped to half the smaller dimension.
+func (dc *DrawContext) FilledRoundedRect(x, y, w, h, radius float32, color Color) {
+	if w <= 0 || h <= 0 {
+		return
+	}
+	radius = min(radius, w/2, h/2)
+	if radius <= 0 {
+		dc.FilledRect(x, y, w, h, color)
+		return
+	}
+	b := dc.getBatch(color)
+	r := radius
+
+	// Center cross (vertical strip).
+	appendQuad(b, x+r, y, x+w-r, y, x+w-r, y+h, x+r, y+h)
+	// Left strip.
+	appendQuad(b, x, y+r, x+r, y+r, x+r, y+h-r, x, y+h-r)
+	// Right strip.
+	appendQuad(b, x+w-r, y+r, x+w, y+r, x+w, y+h-r, x+w-r, y+h-r)
+
+	// Corner arcs (filled fans).
+	const segs = 8
+	appendCornerFan(b, x+r, y+r, r, math.Pi, segs)       // TL
+	appendCornerFan(b, x+w-r, y+r, r, 3*math.Pi/2, segs) // TR
+	appendCornerFan(b, x+w-r, y+h-r, r, 0, segs)         // BR
+	appendCornerFan(b, x+r, y+h-r, r, math.Pi/2, segs)   // BL
+}
+
+// appendQuad appends two triangles forming a quad.
+func appendQuad(b *DrawCanvasTriBatch,
+	x0, y0, x1, y1, x2, y2, x3, y3 float32) {
+	b.Triangles = append(b.Triangles,
+		x0, y0, x1, y1, x2, y2,
+		x0, y0, x2, y2, x3, y3,
+	)
+}
+
+// appendCornerFan appends a 90-degree filled arc fan.
+func appendCornerFan(b *DrawCanvasTriBatch,
+	cx, cy, r, startAngle float32, segs int) {
+	step := float32(math.Pi/2) / float32(segs)
+	for i := range segs {
+		a0 := float64(startAngle + step*float32(i))
+		a1 := float64(startAngle + step*float32(i+1))
+		b.Triangles = append(b.Triangles,
+			cx, cy,
+			cx+r*float32(math.Cos(a0)), cy+r*float32(math.Sin(a0)),
+			cx+r*float32(math.Cos(a1)), cy+r*float32(math.Sin(a1)),
+		)
+	}
+}
+
+// RoundedRect draws a stroked rectangle with rounded corners.
+func (dc *DrawContext) RoundedRect(x, y, w, h, radius float32, color Color, width float32) {
+	if w <= 0 || h <= 0 || width <= 0 {
+		return
+	}
+	radius = min(radius, w/2, h/2)
+	if radius <= 0 {
+		dc.Rect(x, y, w, h, color, width)
+		return
+	}
+	r := radius
+	// Build polyline: top → TR arc → right → BR arc → bottom →
+	// BL arc → left → TL arc → close.
+	const segs = 8
+	pts := make([]float32, 0, (4*segs+4+1)*2)
+	// Top-left corner arc.
+	pts = appendArcPoints(pts, x+r, y+r, r, math.Pi, segs)
+	// Top-right corner arc.
+	pts = appendArcPoints(pts, x+w-r, y+r, r, 3*math.Pi/2, segs)
+	// Bottom-right corner arc.
+	pts = appendArcPoints(pts, x+w-r, y+h-r, r, 0, segs)
+	// Bottom-left corner arc.
+	pts = appendArcPoints(pts, x+r, y+h-r, r, math.Pi/2, segs)
+	// Close the shape.
+	pts = append(pts, pts[0], pts[1])
+	dc.Polyline(pts, color, width)
+}
+
+// appendArcPoints appends points for a 90-degree arc.
+func appendArcPoints(pts []float32,
+	cx, cy, r, startAngle float32, segs int) []float32 {
+	step := float32(math.Pi/2) / float32(segs)
+	for i := range segs + 1 {
+		a := float64(startAngle + step*float32(i))
+		pts = append(pts,
+			cx+r*float32(math.Cos(a)),
+			cy+r*float32(math.Sin(a)))
+	}
+	return pts
+}
+
+// DashedLine draws a dashed line segment. dashLen and gapLen
+// control the pattern. Zero or negative values fall back to
+// solid.
+func (dc *DrawContext) DashedLine(
+	x0, y0, x1, y1 float32,
+	color Color, width, dashLen, gapLen float32,
+) {
+	if dashLen <= 0 || gapLen <= 0 {
+		dc.Line(x0, y0, x1, y1, color, width)
+		return
+	}
+	dx := x1 - x0
+	dy := y1 - y0
+	totalLen := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+	if totalLen < 1e-6 {
+		return
+	}
+	ux := dx / totalLen
+	uy := dy / totalLen
+	patternLen := dashLen + gapLen
+	drawn := float32(0)
+	for drawn < totalLen {
+		end := drawn + dashLen
+		if end > totalLen {
+			end = totalLen
+		}
+		dc.Line(
+			x0+ux*drawn, y0+uy*drawn,
+			x0+ux*end, y0+uy*end,
+			color, width,
+		)
+		drawn += patternLen
+	}
+}
+
+// DashedPolyline draws a polyline with a dash pattern applied
+// continuously across all segments.
+func (dc *DrawContext) DashedPolyline(
+	points []float32,
+	color Color, width, dashLen, gapLen float32,
+) {
+	if len(points) < 4 {
+		return
+	}
+	if dashLen <= 0 || gapLen <= 0 {
+		dc.Polyline(points, color, width)
+		return
+	}
+	patternLen := dashLen + gapLen
+	offset := float32(0) // position within pattern
+	for i := 0; i+3 < len(points); i += 2 {
+		x0, y0 := points[i], points[i+1]
+		x1, y1 := points[i+2], points[i+3]
+		dx := x1 - x0
+		dy := y1 - y0
+		segLen := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+		if segLen < 1e-6 {
+			continue
+		}
+		ux := dx / segLen
+		uy := dy / segLen
+		pos := float32(0)
+		for pos < segLen {
+			inPattern := float32(math.Mod(float64(offset+pos),
+				float64(patternLen)))
+			if inPattern < dashLen {
+				// In dash portion.
+				remain := dashLen - inPattern
+				end := pos + remain
+				if end > segLen {
+					end = segLen
+				}
+				dc.Line(
+					x0+ux*pos, y0+uy*pos,
+					x0+ux*end, y0+uy*end,
+					color, width,
+				)
+				pos += remain
+			} else {
+				// In gap portion.
+				pos += patternLen - inPattern
+			}
+		}
+		offset += segLen
+	}
+}
+
+// PolylineJoined draws a stroked polyline with miter joins
+// at vertices. Falls back to bevel when the miter exceeds
+// 4× the half-width.
+func (dc *DrawContext) PolylineJoined(
+	points []float32, color Color, width float32,
+) {
+	n := len(points) / 2
+	if n < 2 || width <= 0 {
+		return
+	}
+	hw := width / 2
+	const miterLimit = 4.0
+	b := dc.getBatch(color)
+
+	// Compute perpendicular normals per segment.
+	type vec struct{ x, y float32 }
+	normals := make([]vec, 0, n-1)
+	for i := 0; i < n-1; i++ {
+		dx := points[(i+1)*2] - points[i*2]
+		dy := points[(i+1)*2+1] - points[i*2+1]
+		ln := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+		if ln < 1e-6 {
+			normals = append(normals, vec{0, 0})
+			continue
+		}
+		normals = append(normals, vec{-dy / ln, dx / ln})
+	}
+
+	// Compute offset points (left/right) at each vertex.
+	type offsetPt struct{ lx, ly, rx, ry float32 }
+	offsets := make([]offsetPt, n)
+
+	// First vertex: use first segment normal.
+	offsets[0] = offsetPt{
+		lx: points[0] + normals[0].x*hw,
+		ly: points[1] + normals[0].y*hw,
+		rx: points[0] - normals[0].x*hw,
+		ry: points[1] - normals[0].y*hw,
+	}
+	// Last vertex: use last segment normal.
+	last := n - 1
+	li := len(normals) - 1
+	offsets[last] = offsetPt{
+		lx: points[last*2] + normals[li].x*hw,
+		ly: points[last*2+1] + normals[li].y*hw,
+		rx: points[last*2] - normals[li].x*hw,
+		ry: points[last*2+1] - normals[li].y*hw,
+	}
+
+	// Interior vertices: miter join.
+	for i := 1; i < last; i++ {
+		n0 := normals[i-1]
+		n1 := normals[i]
+		if (n0 == vec{0, 0}) || (n1 == vec{0, 0}) {
+			// Degenerate segment, use whichever is valid.
+			nv := n0
+			if nv == (vec{0, 0}) {
+				nv = n1
+			}
+			offsets[i] = offsetPt{
+				lx: points[i*2] + nv.x*hw,
+				ly: points[i*2+1] + nv.y*hw,
+				rx: points[i*2] - nv.x*hw,
+				ry: points[i*2+1] - nv.y*hw,
+			}
+			continue
+		}
+		// Average normal direction.
+		mx := n0.x + n1.x
+		my := n0.y + n1.y
+		ml := float32(math.Sqrt(float64(mx*mx + my*my)))
+		if ml < 1e-6 {
+			// Nearly opposite normals — bevel.
+			offsets[i] = offsetPt{
+				lx: points[i*2] + n1.x*hw,
+				ly: points[i*2+1] + n1.y*hw,
+				rx: points[i*2] - n1.x*hw,
+				ry: points[i*2+1] - n1.y*hw,
+			}
+			continue
+		}
+		mx /= ml
+		my /= ml
+		// Miter length = hw / dot(miter, normal).
+		dot := mx*n0.x + my*n0.y
+		if f32Abs(dot) < 1e-6 {
+			dot = 1e-6
+		}
+		miterLen := hw / dot
+		if f32Abs(miterLen) > hw*miterLimit {
+			// Exceeds miter limit — bevel.
+			miterLen = hw
+			mx = n1.x
+			my = n1.y
+		}
+		offsets[i] = offsetPt{
+			lx: points[i*2] + mx*miterLen,
+			ly: points[i*2+1] + my*miterLen,
+			rx: points[i*2] - mx*miterLen,
+			ry: points[i*2+1] - my*miterLen,
+		}
+	}
+
+	// Emit quads between consecutive offset pairs.
+	for i := 0; i < n-1; i++ {
+		a := offsets[i]
+		c := offsets[i+1]
+		b.Triangles = append(b.Triangles,
+			a.lx, a.ly, a.rx, a.ry, c.rx, c.ry,
+			a.lx, a.ly, c.rx, c.ry, c.lx, c.ly,
+		)
+	}
+}
+
+// Text draws text at the given position using the specified style.
+// The position is the top-left of the text bounding box.
+func (dc *DrawContext) Text(x, y float32, text string, style TextStyle) {
+	dc.texts = append(dc.texts, DrawCanvasTextEntry{
+		X: x, Y: y, Text: text, Style: style,
+	})
+}
+
+// TextWidth returns the measured width of text in the given style.
+// Returns 0 when no text measurer is available (e.g. in tests).
+func (dc *DrawContext) TextWidth(text string, style TextStyle) float32 {
+	if dc.textMeasure == nil {
+		return 0
+	}
+	return dc.textMeasure.TextWidth(text, style)
+}
+
+// FontHeight returns the line height for the given text style.
+// Falls back to Style.Size when no measurer is available.
+func (dc *DrawContext) FontHeight(style TextStyle) float32 {
+	if dc.textMeasure == nil {
+		return style.Size
+	}
+	return dc.textMeasure.FontHeight(style)
 }

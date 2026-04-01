@@ -187,3 +187,257 @@ func TestDrawContextRectDegenerate(t *testing.T) {
 		t.Errorf("degenerate rects: batches = %d, want 0", len(dc.batches))
 	}
 }
+
+// --- FilledRoundedRect ---
+
+func TestDrawContextFilledRoundedRect(t *testing.T) {
+	dc := DrawContext{Width: 200, Height: 200}
+	dc.FilledRoundedRect(10, 10, 80, 60, 10, Red)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// 3 rects (6 tris) + 4 corners × 8 segs = 32+6 = 38 tris.
+	want := 38 * 6
+	if len(dc.batches[0].Triangles) != want {
+		t.Errorf("triangles = %d, want %d", len(dc.batches[0].Triangles), want)
+	}
+}
+
+func TestDrawContextFilledRoundedRectZeroRadius(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.FilledRoundedRect(0, 0, 40, 30, 0, Blue)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// Falls back to plain FilledRect: 2 triangles = 12 floats.
+	if len(dc.batches[0].Triangles) != 12 {
+		t.Errorf("triangles = %d, want 12", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextFilledRoundedRectRadiusClamped(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	// Radius exceeds half the smaller dimension (20/2=10).
+	dc.FilledRoundedRect(0, 0, 40, 20, 50, Green)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// Should still produce rounded rect output (not degenerate).
+	if len(dc.batches[0].Triangles) == 0 {
+		t.Error("expected triangles for clamped radius")
+	}
+}
+
+func TestDrawContextFilledRoundedRectDegenerate(t *testing.T) {
+	dc := DrawContext{}
+	dc.FilledRoundedRect(0, 0, 0, 10, 5, Red)
+	dc.FilledRoundedRect(0, 0, 10, 0, 5, Red)
+	dc.FilledRoundedRect(0, 0, -5, 10, 5, Red)
+	if len(dc.batches) != 0 {
+		t.Errorf("degenerate: batches = %d, want 0", len(dc.batches))
+	}
+}
+
+// --- RoundedRect (stroked) ---
+
+func TestDrawContextRoundedRect(t *testing.T) {
+	dc := DrawContext{Width: 200, Height: 200}
+	dc.RoundedRect(10, 10, 80, 60, 10, Red, 2)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	if len(dc.batches[0].Triangles) < 24 {
+		t.Errorf("too few triangles: %d", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextRoundedRectZeroRadius(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.RoundedRect(0, 0, 40, 30, 0, Blue, 1)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// Falls back to plain Rect: 4 quads × 2 tris × 6 = 48.
+	if len(dc.batches[0].Triangles) != 48 {
+		t.Errorf("triangles = %d, want 48", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextRoundedRectDegenerate(t *testing.T) {
+	dc := DrawContext{}
+	dc.RoundedRect(0, 0, 0, 10, 5, Red, 1)
+	dc.RoundedRect(0, 0, 10, 0, 5, Red, 1)
+	dc.RoundedRect(0, 0, 10, 10, 5, Red, 0)
+	if len(dc.batches) != 0 {
+		t.Errorf("degenerate: batches = %d, want 0", len(dc.batches))
+	}
+}
+
+// --- DashedLine ---
+
+func TestDrawContextDashedLine(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	// Horizontal line of length 100, dash=20, gap=10.
+	// Pattern repeats: 20+10=30, fits 3 full + partial.
+	// Dashes: [0,20], [30,50], [60,80], [90,100] = 4 dashes.
+	dc.DashedLine(0, 50, 100, 50, Red, 2, 20, 10)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// 4 dash segments × 1 quad × 2 tris × 6 floats = 48.
+	if len(dc.batches[0].Triangles) != 48 {
+		t.Errorf("triangles = %d, want 48", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextDashedLineFallback(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	// Zero dashLen → falls back to solid line.
+	dc.DashedLine(0, 0, 50, 0, Blue, 2, 0, 5)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// Solid line: 1 quad = 12 floats.
+	if len(dc.batches[0].Triangles) != 12 {
+		t.Errorf("triangles = %d, want 12", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextDashedLineZeroLength(t *testing.T) {
+	dc := DrawContext{}
+	dc.DashedLine(50, 50, 50, 50, Red, 2, 10, 5)
+	if len(dc.batches) != 0 {
+		t.Errorf("zero-length: batches = %d, want 0", len(dc.batches))
+	}
+}
+
+// --- DashedPolyline ---
+
+func TestDrawContextDashedPolyline(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	// L-shape: (0,0)→(50,0)→(50,50), total length = 100.
+	dc.DashedPolyline(
+		[]float32{0, 0, 50, 0, 50, 50},
+		Red, 2, 20, 10,
+	)
+	if len(dc.batches) == 0 {
+		t.Fatal("expected at least 1 batch")
+	}
+	if len(dc.batches[0].Triangles) < 12 {
+		t.Error("too few triangles for dashed polyline")
+	}
+}
+
+func TestDrawContextDashedPolylineFallback(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.DashedPolyline(
+		[]float32{0, 0, 50, 0, 100, 0},
+		Blue, 2, 0, 5,
+	)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// Falls back to solid Polyline: 2 segments × 12 = 24.
+	if len(dc.batches[0].Triangles) != 24 {
+		t.Errorf("triangles = %d, want 24", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextDashedPolylineTooFewPoints(t *testing.T) {
+	dc := DrawContext{}
+	dc.DashedPolyline([]float32{0, 0}, Red, 2, 10, 5)
+	if len(dc.batches) != 0 {
+		t.Errorf("batches = %d, want 0", len(dc.batches))
+	}
+}
+
+// --- PolylineJoined ---
+
+func TestDrawContextPolylineJoined(t *testing.T) {
+	dc := DrawContext{Width: 200, Height: 200}
+	// V-shape: 3 points = 2 segments.
+	dc.PolylineJoined(
+		[]float32{0, 0, 50, 50, 100, 0},
+		Red, 4,
+	)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	// 2 segments × 2 triangles × 6 floats = 24.
+	if len(dc.batches[0].Triangles) != 24 {
+		t.Errorf("triangles = %d, want 24", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextPolylineJoinedStraight(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	// Collinear points: miter should be same as simple polyline.
+	dc.PolylineJoined(
+		[]float32{0, 50, 50, 50, 100, 50},
+		Blue, 2,
+	)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	if len(dc.batches[0].Triangles) != 24 {
+		t.Errorf("triangles = %d, want 24", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextPolylineJoinedDegenerate(t *testing.T) {
+	dc := DrawContext{}
+	dc.PolylineJoined([]float32{0, 0}, Red, 2)       // too few
+	dc.PolylineJoined([]float32{0, 0, 1, 1}, Red, 0) // zero width
+	if len(dc.batches) != 0 {
+		t.Errorf("degenerate: batches = %d, want 0", len(dc.batches))
+	}
+}
+
+func TestDrawContextPolylineJoinedSharpAngle(t *testing.T) {
+	dc := DrawContext{Width: 200, Height: 200}
+	// Sharp hairpin: should trigger miter limit → bevel.
+	dc.PolylineJoined(
+		[]float32{0, 0, 50, 0, 0, 1},
+		Green, 4,
+	)
+	if len(dc.batches) == 0 {
+		t.Fatal("expected output for sharp-angle polyline")
+	}
+	if len(dc.batches[0].Triangles) != 24 {
+		t.Errorf("triangles = %d, want 24", len(dc.batches[0].Triangles))
+	}
+}
+
+// --- Text ---
+
+func TestDrawContextText(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	style := TextStyle{Size: 12, Family: "sans-serif"}
+	dc.Text(10, 20, "hello", style)
+	if len(dc.texts) != 1 {
+		t.Fatalf("texts = %d, want 1", len(dc.texts))
+	}
+	if dc.texts[0].Text != "hello" {
+		t.Errorf("text = %q, want %q", dc.texts[0].Text, "hello")
+	}
+	if dc.texts[0].X != 10 || dc.texts[0].Y != 20 {
+		t.Errorf("position = (%v,%v), want (10,20)",
+			dc.texts[0].X, dc.texts[0].Y)
+	}
+}
+
+func TestDrawContextTextWidthNoMeasurer(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	w := dc.TextWidth("hello", TextStyle{Size: 12})
+	if w != 0 {
+		t.Errorf("TextWidth without measurer = %v, want 0", w)
+	}
+}
+
+func TestDrawContextFontHeightNoMeasurer(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	h := dc.FontHeight(TextStyle{Size: 14})
+	if h != 14 {
+		t.Errorf("FontHeight fallback = %v, want 14", h)
+	}
+}

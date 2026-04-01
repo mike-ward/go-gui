@@ -546,6 +546,7 @@ func demoImage(_ *gui.Window) gui.View {
 
 func demoDrawCanvas(_ *gui.Window) gui.View {
 	chartData := []float32{2, 5, 3, 8, 6, 4, 7, 9, 5, 10, 8, 6, 11, 7}
+	barData := []float32{40, 65, 50, 80, 55, 70}
 	t := gui.CurrentTheme()
 
 	return gui.Column(gui.ContainerCfg{
@@ -555,82 +556,174 @@ func demoDrawCanvas(_ *gui.Window) gui.View {
 		SizeBorder: gui.NoBorder,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
-				Text:      "Line chart drawn with DrawCanvas (polyline, filled polygon, circles).",
+				Text: "Line chart with joined polyline, dashed grid," +
+					" filled area, and text labels.",
 				TextStyle: t.N3,
 				Mode:      gui.TextModeWrap,
 			}),
-			gui.DrawCanvas(gui.DrawCanvasCfg{
-				ID:      "showcase-draw-canvas",
-				Version: 1,
-				Width:   480,
-				Height:  280,
-				Color:   gui.RGBA(30, 30, 40, 255),
-				Radius:  8,
-				Padding: gui.Some(gui.Padding{
-					Top: 24, Right: 24, Bottom: 24, Left: 24,
-				}),
-				OnDraw: func(dc *gui.DrawContext) {
-					cw := dc.Width
-					ch := dc.Height
-					gridColor := gui.RGBA(80, 80, 100, 255)
-
-					// Horizontal grid.
-					rows := 5
-					for i := range rows + 1 {
-						y := ch * float32(i) / float32(rows)
-						dc.Line(0, y, cw, y, gridColor, 1)
-					}
-					// Vertical grid.
-					cols := len(chartData) - 1
-					for i := range cols + 1 {
-						x := cw * float32(i) / float32(cols)
-						dc.Line(x, 0, x, ch, gridColor, 1)
-					}
-
-					// Data range.
-					mn, mx := chartData[0], chartData[0]
-					for _, v := range chartData {
-						if v < mn {
-							mn = v
-						}
-						if v > mx {
-							mx = v
-						}
-					}
-					span := mx - mn
-					if span == 0 {
-						span = 1
-					}
-
-					// Build polyline points.
-					pts := make([]float32, 0, len(chartData)*2)
-					for i, v := range chartData {
-						x := cw * float32(i) / float32(len(chartData)-1)
-						y := ch - ch*(v-mn)/span
-						pts = append(pts, x, y)
-					}
-
-					// Filled area under curve.
-					fillColor := gui.RGBA(70, 130, 220, 60)
-					for i := 0; i+3 < len(pts); i += 2 {
-						dc.FilledPolygon([]float32{
-							pts[i], pts[i+1],
-							pts[i+2], pts[i+3],
-							pts[i+2], ch,
-							pts[i], ch,
-						}, fillColor)
-					}
-
-					// Polyline.
-					dc.Polyline(pts, gui.RGBA(70, 130, 220, 255), 2.5)
-
-					// Dot markers.
-					for i := 0; i < len(pts); i += 2 {
-						dc.FilledCircle(pts[i], pts[i+1], 4,
-							gui.RGBA(220, 220, 255, 255))
-					}
-				},
+			demoDrawCanvasLineChart(chartData),
+			gui.Text(gui.TextCfg{
+				Text: "Bar chart with rounded-rect bars and" +
+					" dashed reference line.",
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
 			}),
+			demoDrawCanvasBarChart(barData),
+		},
+	})
+}
+
+func demoDrawCanvasLineChart(chartData []float32) gui.View {
+	return gui.DrawCanvas(gui.DrawCanvasCfg{
+		ID:      "showcase-draw-canvas-line",
+		Version: 1,
+		Width:   480,
+		Height:  280,
+		Color:   gui.RGBA(30, 30, 40, 255),
+		Radius:  8,
+		Padding: gui.Some(gui.Padding{
+			Top: 24, Right: 24, Bottom: 24, Left: 24,
+		}),
+		OnDraw: func(dc *gui.DrawContext) {
+			cw := dc.Width
+			ch := dc.Height
+			gridColor := gui.RGBA(80, 80, 100, 255)
+
+			// Dashed horizontal grid.
+			rows := 5
+			for i := range rows + 1 {
+				y := ch * float32(i) / float32(rows)
+				dc.DashedLine(0, y, cw, y,
+					gridColor, 1, 6, 4)
+			}
+			// Dashed vertical grid.
+			cols := len(chartData) - 1
+			for i := range cols + 1 {
+				x := cw * float32(i) / float32(cols)
+				dc.DashedLine(x, 0, x, ch,
+					gridColor, 1, 6, 4)
+			}
+
+			// Data range.
+			mn, mx := chartData[0], chartData[0]
+			for _, v := range chartData {
+				if v < mn {
+					mn = v
+				}
+				if v > mx {
+					mx = v
+				}
+			}
+			span := mx - mn
+			if span == 0 {
+				span = 1
+			}
+
+			// Build polyline points.
+			pts := make([]float32, 0, len(chartData)*2)
+			for i, v := range chartData {
+				x := cw * float32(i) / float32(len(chartData)-1)
+				y := ch - ch*(v-mn)/span
+				pts = append(pts, x, y)
+			}
+
+			// Filled area under curve.
+			fillColor := gui.RGBA(70, 130, 220, 60)
+			for i := 0; i+3 < len(pts); i += 2 {
+				dc.FilledPolygon([]float32{
+					pts[i], pts[i+1],
+					pts[i+2], pts[i+3],
+					pts[i+2], ch,
+					pts[i], ch,
+				}, fillColor)
+			}
+
+			// Joined polyline (miter joins at vertices).
+			dc.PolylineJoined(pts,
+				gui.RGBA(70, 130, 220, 255), 2.5)
+
+			// Dot markers.
+			for i := 0; i < len(pts); i += 2 {
+				dc.FilledCircle(pts[i], pts[i+1], 4,
+					gui.RGBA(220, 220, 255, 255))
+			}
+
+			// Text label at peak.
+			peakIdx := 0
+			for i, v := range chartData {
+				if v > chartData[peakIdx] {
+					peakIdx = i
+				}
+			}
+			labelStyle := gui.TextStyle{
+				Size:  11,
+				Color: gui.RGBA(220, 220, 255, 255),
+			}
+			label := "peak"
+			lw := dc.TextWidth(label, labelStyle)
+			px := pts[peakIdx*2]
+			py := pts[peakIdx*2+1]
+			dc.Text(px-lw/2, py-18, label, labelStyle)
+		},
+	})
+}
+
+func demoDrawCanvasBarChart(barData []float32) gui.View {
+	return gui.DrawCanvas(gui.DrawCanvasCfg{
+		ID:      "showcase-draw-canvas-bar",
+		Version: 1,
+		Width:   480,
+		Height:  220,
+		Color:   gui.RGBA(30, 30, 40, 255),
+		Radius:  8,
+		Padding: gui.Some(gui.Padding{
+			Top: 24, Right: 24, Bottom: 24, Left: 24,
+		}),
+		OnDraw: func(dc *gui.DrawContext) {
+			cw := dc.Width
+			ch := dc.Height
+
+			// Find max for scaling.
+			mx := barData[0]
+			for _, v := range barData {
+				if v > mx {
+					mx = v
+				}
+			}
+			if mx == 0 {
+				mx = 1
+			}
+
+			n := len(barData)
+			gap := cw * 0.04
+			barW := (cw - gap*float32(n+1)) / float32(n)
+			barColor := gui.RGBA(90, 180, 130, 255)
+
+			// Bars with rounded corners.
+			for i, v := range barData {
+				x := gap + float32(i)*(barW+gap)
+				h := ch * v / mx
+				y := ch - h
+				dc.FilledRoundedRect(x, y, barW, h,
+					6, barColor)
+			}
+
+			// Dashed average reference line.
+			avg := float32(0)
+			for _, v := range barData {
+				avg += v
+			}
+			avg /= float32(n)
+			refY := ch - ch*avg/mx
+			dc.DashedLine(0, refY, cw, refY,
+				gui.RGBA(255, 200, 80, 200), 1.5, 8, 5)
+
+			// "avg" label.
+			labelStyle := gui.TextStyle{
+				Size:  11,
+				Color: gui.RGBA(255, 200, 80, 200),
+			}
+			dc.Text(4, refY-16, "avg", labelStyle)
 		},
 	})
 }

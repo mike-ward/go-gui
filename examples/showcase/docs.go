@@ -2646,9 +2646,9 @@ Use Chrome DevTools touch emulation or a touchscreen to test.
 `,
 
 	"draw_canvas": `Procedural 2D drawing canvas with cached tessellation.
-Draw lines, circles, rectangles, polygons, and arcs via the
-` + "`OnDraw`" + ` callback. Output is tessellated into triangles and
-cached by ` + "`Version`" + ` — only re-drawn when the version changes.
+Draw shapes, lines, text, and arcs via the ` + "`OnDraw`" + ` callback.
+Output is tessellated into triangles and cached by ` + "`Version`" + ` —
+only re-drawn when the version changes.
 
 ## Usage
 
@@ -2663,25 +2663,47 @@ gui.DrawCanvas(gui.DrawCanvasCfg{
     Padding: gui.Some(gui.Padding{Top: 20, Right: 20,
         Bottom: 20, Left: 20}),
     OnDraw: func(dc *gui.DrawContext) {
-        dc.FilledRect(10, 10, 100, 60, gui.White)
-        dc.Circle(200, 150, 50, gui.White, 2)
+        dc.FilledRoundedRect(10, 10, 100, 60, 8, gui.White)
+        dc.DashedLine(0, 80, 400, 80, gui.Gray, 1, 6, 4)
+        dc.PolylineJoined(pts, gui.White, 2)
+        dc.Text(10, 90, "label", style)
     },
 })
 ` + "```" + `
 
 ## Drawing API
 
-| Method        | Signature                                                        | Description                   |
-|---------------|------------------------------------------------------------------|-------------------------------|
-| FilledRect    | (x, y, w, h float32, color Color)                               | Filled rectangle              |
-| Rect          | (x, y, w, h float32, color Color, width float32)                | Stroked rectangle             |
-| Line          | (x0, y0, x1, y1 float32, color Color, width float32)            | Single line segment           |
-| Polyline      | (points []float32, color Color, width float32)                   | Stroked open polyline         |
-| FilledPolygon | (points []float32, color Color)                                  | Filled convex polygon         |
-| FilledCircle  | (cx, cy, radius float32, color Color)                            | Filled circle                 |
-| Circle        | (cx, cy, radius float32, color Color, width float32)             | Stroked circle                |
-| FilledArc     | (cx, cy, rx, ry, start, sweep float32, color Color)              | Filled elliptical arc         |
-| Arc           | (cx, cy, rx, ry, start, sweep float32, color Color, width float32) | Stroked elliptical arc      |
+### Shapes
+
+| Method           | Signature                                                          | Description                        |
+|------------------|--------------------------------------------------------------------|------------------------------------|
+| FilledRect       | (x, y, w, h float32, color Color)                                 | Filled rectangle                   |
+| Rect             | (x, y, w, h float32, color Color, width float32)                  | Stroked rectangle                  |
+| FilledRoundedRect| (x, y, w, h, radius float32, color Color)                         | Filled rectangle with rounded corners |
+| RoundedRect      | (x, y, w, h, radius float32, color Color, width float32)          | Stroked rectangle with rounded corners |
+| FilledPolygon    | (points []float32, color Color)                                    | Filled convex polygon              |
+| FilledCircle     | (cx, cy, radius float32, color Color)                              | Filled circle                      |
+| Circle           | (cx, cy, radius float32, color Color, width float32)               | Stroked circle                     |
+| FilledArc        | (cx, cy, rx, ry, start, sweep float32, color Color)                | Filled elliptical arc              |
+| Arc              | (cx, cy, rx, ry, start, sweep float32, color Color, width float32) | Stroked elliptical arc             |
+
+### Lines
+
+| Method          | Signature                                                                     | Description                             |
+|-----------------|-------------------------------------------------------------------------------|-----------------------------------------|
+| Line            | (x0, y0, x1, y1 float32, color Color, width float32)                         | Single solid line segment               |
+| Polyline        | (points []float32, color Color, width float32)                                | Stroked open polyline (no joins)        |
+| PolylineJoined  | (points []float32, color Color, width float32)                                | Polyline with miter joins at vertices   |
+| DashedLine      | (x0, y0, x1, y1 float32, color Color, width, dashLen, gapLen float32)        | Dashed line segment                     |
+| DashedPolyline  | (points []float32, color Color, width, dashLen, gapLen float32)               | Polyline with continuous dash pattern   |
+
+### Text
+
+| Method     | Signature                                       | Description                                 |
+|------------|--------------------------------------------------|---------------------------------------------|
+| Text       | (x, y float32, text string, style TextStyle)     | Draw text at position (top-left origin)     |
+| TextWidth  | (text string, style TextStyle) float32           | Measure text width in given style           |
+| FontHeight | (style TextStyle) float32                        | Line height for given style                 |
 
 ## Key Properties
 

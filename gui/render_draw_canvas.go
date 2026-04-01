@@ -34,8 +34,9 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 
 	if needsDraw && shape.Events != nil && shape.Events.OnDraw != nil {
 		dc := DrawContext{
-			Width:  cw,
-			Height: ch,
+			Width:       cw,
+			Height:      ch,
+			textMeasure: w.textMeasurer,
 		}
 		shape.Events.OnDraw(&dc)
 		cached = DrawCanvasCache{
@@ -43,13 +44,14 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			TessWidth:  cw,
 			TessHeight: ch,
 			Batches:    dc.batches,
+			Texts:      dc.texts,
 		}
 		if shape.ID != "" {
 			sm.Set(shape.ID, cached)
 		}
 	}
 
-	if len(cached.Batches) == 0 {
+	if len(cached.Batches) == 0 && len(cached.Texts) == 0 {
 		return
 	}
 
@@ -76,6 +78,30 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			X:         ox,
 			Y:         oy,
 			Scale:     1.0,
+		}, w)
+	}
+
+	// Emit deferred text commands.
+	for i := range cached.Texts {
+		t := &cached.Texts[i]
+		fontAscent := t.Style.Size * 0.8
+		var textWidth float32
+		if w.textMeasurer != nil {
+			fontAscent = w.textMeasurer.FontAscent(t.Style)
+			textWidth = w.textMeasurer.TextWidth(t.Text, t.Style)
+		}
+		emitRenderer(RenderCmd{
+			Kind:         RenderText,
+			X:            ox + t.X,
+			Y:            oy + t.Y,
+			Color:        t.Style.Color,
+			Text:         t.Text,
+			FontName:     t.Style.Family,
+			FontSize:     t.Style.Size,
+			FontAscent:   fontAscent,
+			TextWidth:    textWidth,
+			TextStylePtr: w.scratch.renderTextStyles.alloc(t.Style),
+			TextGradient: t.Style.Gradient,
 		}, w)
 	}
 
