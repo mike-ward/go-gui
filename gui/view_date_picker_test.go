@@ -208,9 +208,12 @@ func TestDatePickerDefaults(t *testing.T) {
 
 func TestDatePickerSubElementClickFocus(t *testing.T) {
 	w := &Window{}
+	// Pin to June 2025 — June 1 is Sunday so the first cell in
+	// row 0 is day 1 (no blank placeholders).
 	cfg := DatePickerCfg{
 		ID:      "dp-sub-click",
 		IDFocus: 10,
+		Dates:   []time.Time{time.Date(2025, 6, 1, 0, 0, 0, 0, time.Local)},
 	}
 	applyDatePickerDefaults(&cfg)
 
@@ -231,12 +234,12 @@ func TestDatePickerSubElementClickFocus(t *testing.T) {
 	}
 
 	// Day cell focus.
-	// Layout structure for calendar: Column -> [Controls, Column([Weekdays, Row1, Row2, ...])]
+	// Layout: Column -> [Controls, Column([Weekdays, Row1, Row2, ...])]
 	calendarBody := &layout.Children[1]
 	// calendarBody.Children[0] is Weekdays Row
 	// calendarBody.Children[1] is the first day row
 	firstRow := &calendarBody.Children[1]
-	firstDay := &firstRow.Children[0] // Might be Mar 1 or an adjacent day.
+	firstDay := &firstRow.Children[0] // June 1
 
 	if firstDay.Shape.Events.OnClick == nil {
 		t.Fatal("day cell OnClick missing")
