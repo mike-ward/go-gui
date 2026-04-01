@@ -90,10 +90,25 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			fontAscent = w.textMeasurer.FontAscent(t.Style)
 			textWidth = w.textMeasurer.TextWidth(t.Text, t.Style)
 		}
+
+		tx := ox + t.X
+		ty := oy + t.Y
+		rotated := t.Style.RotationRadians != 0
+
+		if rotated {
+			deg := t.Style.RotationRadians * (180 / 3.14159265)
+			emitRenderer(RenderCmd{
+				Kind:     RenderRotateBegin,
+				RotAngle: deg,
+				RotCX:    tx,
+				RotCY:    ty,
+			}, w)
+		}
+
 		emitRenderer(RenderCmd{
 			Kind:         RenderText,
-			X:            ox + t.X,
-			Y:            oy + t.Y,
+			X:            tx,
+			Y:            ty,
 			Color:        t.Style.Color,
 			Text:         t.Text,
 			FontName:     t.Style.Family,
@@ -103,6 +118,12 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			TextStylePtr: w.scratch.renderTextStyles.alloc(t.Style),
 			TextGradient: t.Style.Gradient,
 		}, w)
+
+		if rotated {
+			emitRenderer(RenderCmd{
+				Kind: RenderRotateEnd,
+			}, w)
+		}
 	}
 
 	// Restore parent clip.
