@@ -221,8 +221,6 @@ jobs:
         with:
           go-version: stable
 
-      - uses: android-actions/setup-android@v3
-
       - name: Build
         working-directory: go-gui
         run: |
