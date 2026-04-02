@@ -107,7 +107,7 @@ func (c Color) Over(b Color) Color {
 	ba := float32(b.A) / 255
 	ra := ca + ba*(1-ca)
 	if ra == 0 {
-		return Color{}
+		return ColorTransparent
 	}
 	rr := (float32(c.R)*ca + float32(b.R)*ba*(1-ca)) / ra
 	gr := (float32(c.G)*ca + float32(b.G)*ba*(1-ca)) / ra

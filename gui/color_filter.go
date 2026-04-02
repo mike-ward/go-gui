@@ -9,48 +9,42 @@ type ColorFilter struct {
 	Matrix [16]float32
 }
 
-// Pre-computed matrices for constant filters.
+// Package-level singletons for constant filters (immutable, zero alloc).
 var (
-	identityMatrix = [16]float32{
+	colorFilterIdentity = ColorFilter{Matrix: [16]float32{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1,
-	}
-	grayscaleMatrix = [16]float32{
+	}}
+	colorFilterGrayscale = ColorFilter{Matrix: [16]float32{
 		0.2126, 0.2126, 0.2126, 0,
 		0.7152, 0.7152, 0.7152, 0,
 		0.0722, 0.0722, 0.0722, 0,
 		0, 0, 0, 1,
-	}
-	sepiaMatrix = [16]float32{
+	}}
+	colorFilterSepia = ColorFilter{Matrix: [16]float32{
 		0.393, 0.349, 0.272, 0,
 		0.769, 0.686, 0.534, 0,
 		0.189, 0.168, 0.131, 0,
 		0, 0, 0, 1,
-	}
-	invertMatrix = [16]float32{
+	}}
+	colorFilterInvert = ColorFilter{Matrix: [16]float32{
 		-1, 0, 0, 0,
 		0, -1, 0, 0,
 		0, 0, -1, 0,
 		1, 1, 1, 1,
-	}
+	}}
 )
 
 // ColorFilterIdentity returns a no-op color filter.
-func ColorFilterIdentity() *ColorFilter {
-	return &ColorFilter{Matrix: identityMatrix}
-}
+func ColorFilterIdentity() *ColorFilter { return &colorFilterIdentity }
 
 // ColorFilterGrayscale converts to luminance-weighted grayscale.
-func ColorFilterGrayscale() *ColorFilter {
-	return &ColorFilter{Matrix: grayscaleMatrix}
-}
+func ColorFilterGrayscale() *ColorFilter { return &colorFilterGrayscale }
 
 // ColorFilterSepia applies a warm sepia tone.
-func ColorFilterSepia() *ColorFilter {
-	return &ColorFilter{Matrix: sepiaMatrix}
-}
+func ColorFilterSepia() *ColorFilter { return &colorFilterSepia }
 
 // ColorFilterSaturate adjusts saturation. 0=grayscale, 1=identity,
 // >1=oversaturated.
@@ -108,13 +102,17 @@ func ColorFilterHueRotate(degrees float32) *ColorFilter {
 
 // ColorFilterInvert negates RGB, keeps alpha. Uses the alpha
 // column to inject bias (output.rgb = alpha - input.rgb).
-func ColorFilterInvert() *ColorFilter {
-	return &ColorFilter{Matrix: invertMatrix}
-}
+func ColorFilterInvert() *ColorFilter { return &colorFilterInvert }
 
 // ColorFilterCompose multiplies two color filters (a applied
 // first, then b). Returns a new filter representing b*a.
 func ColorFilterCompose(a, b *ColorFilter) *ColorFilter {
+	if a == nil {
+		return b
+	}
+	if b == nil {
+		return a
+	}
 	var out ColorFilter
 	for col := range 4 {
 		for row := range 4 {

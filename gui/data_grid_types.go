@@ -14,7 +14,8 @@ type GridPaginationKind uint8
 
 // GridPaginationKind constants.
 const (
-	GridPaginationCursor GridPaginationKind = iota
+	GridPaginationNone GridPaginationKind = iota
+	GridPaginationCursor
 	GridPaginationOffset
 )
 

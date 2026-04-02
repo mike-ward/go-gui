@@ -15,42 +15,49 @@ func (w *Window) ExportPrintJob(job PrintJob) PrintExportResult {
 	sourceW := job.SourceWidth
 	sourceH := job.SourceHeight
 
-	w.Lock()
-	if sourceW <= 0 {
-		sourceW = float32(w.windowWidth)
+	renderersCopy, err := func() ([]RenderCmd, error) {
+		w.Lock()
+		defer w.Unlock()
+
+		if sourceW <= 0 {
+			sourceW = float32(w.windowWidth)
+		}
+		if sourceH <= 0 {
+			sourceH = float32(w.windowHeight)
+		}
+		if len(w.renderers) == 0 {
+			return nil, &printError{"no renderers available for export"}
+		}
+		// Prepend window background as first render command so the
+		// PDF matches on-screen appearance (the backend paints the
+		// background via Clear(), which is not in the renderers).
+		bg := w.Config.BgColor
+		if bg == (Color{}) {
+			bg = CurrentTheme().ColorBackground
+		}
+		out := make([]RenderCmd, 0, len(w.renderers)+1)
+		out = append(out, RenderCmd{
+			Kind:  RenderRect,
+			X:     0,
+			Y:     0,
+			W:     sourceW,
+			H:     sourceH,
+			Color: bg,
+			Fill:  true,
+		})
+		out = append(out, w.renderers...)
+		return out, nil
+	}()
+	if err != nil {
+		return printExportErrorResult(job.OutputPath, printErrorRender, err.Error())
 	}
-	if sourceH <= 0 {
-		sourceH = float32(w.windowHeight)
-	}
-	if len(w.renderers) == 0 {
-		w.Unlock()
-		return printExportErrorResult(job.OutputPath, printErrorRender, "no renderers available for export")
-	}
-	// Prepend window background as first render command so the
-	// PDF matches on-screen appearance (the backend paints the
-	// background via Clear(), which is not in the renderers).
-	bg := w.Config.BgColor
-	if bg == (Color{}) {
-		bg = CurrentTheme().ColorBackground
-	}
-	renderersCopy := make([]RenderCmd, 0, len(w.renderers)+1)
-	renderersCopy = append(renderersCopy, RenderCmd{
-		Kind:  RenderRect,
-		X:     0,
-		Y:     0,
-		W:     sourceW,
-		H:     sourceH,
-		Color: bg,
-		Fill:  true,
-	})
-	renderersCopy = append(renderersCopy, w.renderers...)
-	w.Unlock()
+
 	if sourceW <= 0 || sourceH <= 0 {
 		return printExportErrorResult(job.OutputPath, printErrorInvalidCfg, "source dimensions must be positive")
 	}
 
-	if err := renderToPDF(renderersCopy, job, sourceW, sourceH); err != nil {
-		return printExportErrorResult(job.OutputPath, printErrorRender, err.Error())
+	if pdfErr := renderToPDF(renderersCopy, job, sourceW, sourceH); pdfErr != nil {
+		return printExportErrorResult(job.OutputPath, printErrorRender, pdfErr.Error())
 	}
 	return printExportOKResult(job.OutputPath)
 }

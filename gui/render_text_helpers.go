@@ -19,21 +19,3 @@ func passwordMaskKeepNewlines(text string) string {
 	}
 	return b.String()
 }
-
-// passwordMaskSlice masks a byte-range substring using a
-// pre-computed mask string. Operates on rune indices derived
-// from byte offsets.
-func passwordMaskSlice(mask, text string, startByte, endByte int) string {
-	if len(mask) == 0 || endByte <= startByte {
-		return ""
-	}
-	start := min(max(byteToRuneIndex(text, startByte), 0), len(mask))
-	end := min(max(byteToRuneIndex(text, endByte), start), len(mask))
-	return mask[start:end]
-}
-
-// hashCombineU64 combines two uint64 values using FNV-style
-// multiplication.
-func hashCombineU64(seed, value uint64) uint64 {
-	return (seed ^ value) * 1099511628211
-}

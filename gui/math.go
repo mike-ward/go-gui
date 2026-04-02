@@ -65,22 +65,6 @@ func f32Max(a, b float32) float32 {
 }
 
 // f32IsFinite returns true if value is not NaN or Inf.
-func f32IsFinite(value float32) bool {
-	return !math.IsNaN(float64(value)) && !math.IsInf(float64(value), 0)
-}
-
-// intMin returns the smaller of a and b.
-func intMin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// intMax returns the larger of a and b.
-func intMax(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
+func f32IsFinite(f float32) bool {
+	return math.Float32bits(f)&0x7F800000 != 0x7F800000
 }

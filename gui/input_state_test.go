@@ -2,6 +2,12 @@ package gui
 
 import "testing"
 
+// inputHasSelection returns true if text is selected.
+func inputHasSelection(idFocus uint32, w *Window) bool {
+	is := StateReadOr(w, nsInput, idFocus, InputState{})
+	return is.SelectBeg != is.SelectEnd
+}
+
 func newTestWindow() *Window {
 	return &Window{}
 }

@@ -47,7 +47,7 @@ func TestExecuteFocusCallbackNoFocus(t *testing.T) {
 	called := false
 	cb := func(_ *Layout, _ *Event, _ *Window) { called = true }
 
-	if executeFocusCallback(layout, e, w, cb, "test") {
+	if executeFocusCallback(layout, e, w, cb) {
 		t.Error("should not execute with IDFocus=0")
 	}
 	if called {
@@ -63,7 +63,7 @@ func TestExecuteFocusCallbackNotFocused(t *testing.T) {
 	called := false
 	cb := func(_ *Layout, _ *Event, _ *Window) { called = true }
 
-	if executeFocusCallback(layout, e, w, cb, "test") {
+	if executeFocusCallback(layout, e, w, cb) {
 		t.Error("should not execute when not focused")
 	}
 	if called {
@@ -80,7 +80,7 @@ func TestExecuteFocusCallbackFocused(t *testing.T) {
 	cb := func(_ *Layout, e *Event, _ *Window) {
 		e.IsHandled = true
 	}
-	if !executeFocusCallback(layout, e, w, cb, "test") {
+	if !executeFocusCallback(layout, e, w, cb) {
 		t.Error("should execute when focused")
 	}
 	if !e.IsHandled {
@@ -94,7 +94,7 @@ func TestExecuteFocusCallbackNilCallback(t *testing.T) {
 	w := &Window{}
 	w.SetIDFocus(1)
 
-	if executeFocusCallback(layout, e, w, nil, "test") {
+	if executeFocusCallback(layout, e, w, nil) {
 		t.Error("nil callback should return false")
 	}
 }
@@ -108,7 +108,7 @@ func TestExecuteMouseCallbackOutsideBounds(t *testing.T) {
 	called := false
 	cb := func(_ *Layout, _ *Event, _ *Window) { called = true }
 
-	if executeMouseCallback(layout, e, w, cb, "test") {
+	if executeMouseCallback(layout, e, w, cb) {
 		t.Error("should not execute outside bounds")
 	}
 	if called {
@@ -126,7 +126,7 @@ func TestExecuteMouseCallbackInsideBounds(t *testing.T) {
 	cb := func(_ *Layout, e *Event, _ *Window) {
 		e.IsHandled = true
 	}
-	if !executeMouseCallback(layout, e, w, cb, "test") {
+	if !executeMouseCallback(layout, e, w, cb) {
 		t.Error("should execute inside bounds")
 	}
 	if !e.IsHandled {

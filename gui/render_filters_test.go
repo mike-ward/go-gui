@@ -40,6 +40,40 @@ func TestFilterTextureDimsMaxTexZero(t *testing.T) {
 	}
 }
 
+// indexFilterBracketEnds builds a map from FilterBegin index to
+// FilterEnd index using a stack-based scan.
+func indexFilterBracketEnds(renderers []RenderCmd) map[int]int {
+	endByBegin := make(map[int]int)
+	var stack []int
+	for i := range renderers {
+		switch renderers[i].Kind {
+		case RenderFilterBegin:
+			stack = append(stack, i)
+		case RenderFilterEnd:
+			if len(stack) > 0 {
+				beginIdx := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				endByBegin[beginIdx] = i
+			}
+		}
+	}
+	return endByBegin
+}
+
+// appendRendererRange appends renderers[start:end] to dst.
+func appendRendererRange(dst, src []RenderCmd, start, end int) []RenderCmd {
+	if len(src) == 0 || start < 0 || start >= len(src) || end <= start {
+		return dst
+	}
+	if end > len(src) {
+		end = len(src)
+	}
+	if end <= start {
+		return dst
+	}
+	return append(dst, src[start:end]...)
+}
+
 func TestIndexFilterBracketEndsEmpty(t *testing.T) {
 	m := indexFilterBracketEnds(nil)
 	if len(m) != 0 {

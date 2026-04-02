@@ -205,7 +205,7 @@ func dataGridPresentationRowsWithGroupRanges(cfg *DataGridCfg, _ []GridColumnCfg
 				if !ok {
 					rangeEndLocal = localIdx
 				}
-				count := intMax(0, rangeEndLocal-localIdx+1)
+				count := max(0, rangeEndLocal-localIdx+1)
 				rangeEnd := visibleIndices[rangeEndLocal]
 				rows = append(rows, dataGridDisplayRow{
 					Kind:          dataGridDisplayRowGroupHeader,

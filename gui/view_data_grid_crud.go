@@ -112,13 +112,17 @@ func dataGridCrudResolveCfg(cfg DataGridCfg, w *Window) (DataGridCfg, dataGridCr
 	}
 
 	hasUnsaved := dataGridCrudHasUnsaved(state)
-	if (!hasUnsaved && (state.SourceSignature != signature ||
+	sourceChanged := state.SourceSignature != 0 && state.SourceSignature != signature
+	if (!hasUnsaved && (sourceChanged ||
 		len(state.WorkingRows) != len(cfg.Rows))) ||
 		(len(state.WorkingRows) == 0 && len(state.CommittedRows) == 0 && len(cfg.Rows) > 0) {
 		state.CommittedRows = cloneRows(cfg.Rows)
 		state.WorkingRows = cloneRows(cfg.Rows)
 		state.SourceSignature = signature
+		state.SourceChanged = false
 		dataGridCrudClearPendingChanges(&state)
+	} else if hasUnsaved && sourceChanged {
+		state.SourceChanged = true
 	}
 	dgCrud.Set(cfg.ID, state)
 
@@ -165,6 +169,9 @@ func dataGridCrudToolbarRow(cfg *DataGridCfg, state dataGridCrudState, caps Grid
 			guiLocale.StrDraft, draftCount,
 			guiLocale.StrDirty, dirtyCount,
 			guiLocale.StrDelete, deleteCount)
+		if state.SourceChanged {
+			status += " | " + guiLocale.StrSourceChanged
+		}
 	} else {
 		status = guiLocale.StrClean
 	}
@@ -520,6 +527,7 @@ func dataGridCrudCancel(gridID string, focusID uint32, e *Event, w *Window) {
 	dataGridCrudClearPendingChanges(&state)
 	state.SaveError = ""
 	state.Saving = false
+	state.SourceChanged = false
 	dgCrud.Set(gridID, state)
 	dataGridClearEditingRow(gridID, w)
 	if focusID > 0 {
@@ -704,6 +712,7 @@ func dataGridCrudFinishSave(gridID string, _ map[string]string, rowCount int, on
 	dataGridCrudClearPendingChanges(&state)
 	state.Saving = false
 	state.SaveError = ""
+	state.SourceChanged = false
 	state.SourceSignature = dataGridRowsSignature(state.CommittedRows, nil)
 	dgCrud.Set(gridID, state)
 	dataGridClearEditingRow(gridID, w)
@@ -731,6 +740,7 @@ func dataGridCrudRestoreOnError(gridID, phase string, onCRUDError func(string, *
 	state.WorkingRows = cloneRows(snapshotRows)
 	dataGridCrudClearPendingChanges(&state)
 	state.Saving = false
+	state.SourceChanged = false
 	if phase != "" {
 		state.SaveError = phase + ": " + errMsg
 	} else {

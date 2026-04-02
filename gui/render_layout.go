@@ -67,9 +67,11 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 	}
 
 	// Emit stencil clip bracket before children.
+	didIncrement := false
 	if layout.Shape.ClipContents {
 		if w.stencilDepth < 255 {
 			w.stencilDepth++
+			didIncrement = true
 		}
 		emitRenderer(RenderCmd{
 			Kind:         RenderStencilBegin,
@@ -150,7 +152,9 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 			Radius:       layout.Shape.Radius,
 			StencilDepth: w.stencilDepth,
 		}, w)
-		w.stencilDepth--
+		if didIncrement {
+			w.stencilDepth--
+		}
 	}
 
 	if layout.Shape.Clip || layout.Shape.OverDraw {
@@ -183,9 +187,11 @@ func renderShape(shape *Shape, parentColor Color, clip DrawClip, w *Window) {
 		origBorder := shape.ColorBorder
 		shape.Color = shape.Color.WithOpacity(shape.Opacity)
 		shape.ColorBorder = shape.ColorBorder.WithOpacity(shape.Opacity)
+		defer func() {
+			shape.Color = origColor
+			shape.ColorBorder = origBorder
+		}()
 		renderShapeInner(shape, parentColor, clip, w)
-		shape.Color = origColor
-		shape.ColorBorder = origBorder
 	} else {
 		renderShapeInner(shape, parentColor, clip, w)
 	}

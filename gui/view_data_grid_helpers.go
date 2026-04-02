@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"fmt"
 	"slices"
 	"strconv"
 )
@@ -47,7 +46,7 @@ func dataGridRowAutoID(row GridRow) string {
 		h = dataGridFnv64Byte(h, '=')
 		h = dataGridFnv64Str(h, row.Cells[key])
 	}
-	return fmt.Sprintf("__auto_%016x", h)
+	return "__auto_" + zeroPadHex16(h)
 }
 
 func dataGridHeight(cfg *DataGridCfg) float32 {
@@ -172,11 +171,11 @@ func dataGridPageBounds(totalRows, pageSize, requestedPage int) (start, end, pag
 	if pageSize <= 0 {
 		return 0, totalRows, 0, 1
 	}
-	ps := intMin(pageSize, totalRows)
-	pageCount = intMax(1, (totalRows+ps-1)/ps)
-	pageIndex = intClamp(requestedPage, 0, pageCount-1)
+	ps := min(pageSize, totalRows)
+	pageCount = max(1, (totalRows+ps-1)/ps)
+	pageIndex = max(0, min(pageCount-1, requestedPage))
 	start = pageIndex * ps
-	end = intMin(totalRows, start+ps)
+	end = min(totalRows, start+ps)
 	return
 }
 
@@ -195,7 +194,7 @@ func dataGridVisibleRowIndices(rowCount int, pageIndices []int) []int {
 	if len(pageIndices) > 0 {
 		return pageIndices
 	}
-	return dataGridPageRowIndices(0, intMax(0, rowCount))
+	return dataGridPageRowIndices(0, max(0, rowCount))
 }
 
 func dataGridHasRowID(rows []GridRow, rowID string) bool {

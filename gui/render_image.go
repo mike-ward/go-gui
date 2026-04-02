@@ -15,8 +15,8 @@ func renderImage(shape *Shape, clip DrawClip, w *Window) {
 	// redundant bg rect; the backend handles the fill itself.
 	bgColor := shape.Color
 	shape.Color = ColorTransparent
+	defer func() { shape.Color = bgColor }()
 	renderContainer(shape, ColorTransparent, clip, w)
-	shape.Color = bgColor
 
 	emitRenderer(RenderCmd{
 		Kind:       RenderImage,

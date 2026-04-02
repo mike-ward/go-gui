@@ -19,7 +19,7 @@ func charHandler(layout *Layout, e *Event, w *Window) {
 	if layout.Shape.HasEvents() {
 		onChar = layout.Shape.Events.OnChar
 	}
-	executeFocusCallback(layout, e, w, onChar, "charHandler")
+	executeFocusCallback(layout, e, w, onChar)
 }
 
 // imeCompositionHandler handles IME composition events.
@@ -49,7 +49,7 @@ func keydownHandler(layout *Layout, e *Event, w *Window) {
 	if layout.Shape.HasEvents() {
 		onKeyDown = layout.Shape.Events.OnKeyDown
 	}
-	executeFocusCallback(layout, e, w, onKeyDown, "keydownHandler")
+	executeFocusCallback(layout, e, w, onKeyDown)
 	if e.IsHandled {
 		return
 	}
@@ -123,13 +123,13 @@ func mouseDownHandler(
 	if layout.Shape.PointInShape(e.MouseX, e.MouseY) {
 		if layout.Shape.IDFocus > 0 {
 			w.SetIDFocus(layout.Shape.IDFocus)
+			e.IsHandled = true
 		}
 		var onClick ShapeCallback
 		if layout.Shape.HasEvents() {
 			onClick = layout.Shape.Events.OnClick
 		}
-		executeMouseCallback(layout, e, w, onClick,
-			"mouseDownHandler")
+		executeMouseCallback(layout, e, w, onClick)
 	}
 }
 
@@ -162,8 +162,7 @@ func mouseMoveHandler(layout *Layout, e *Event, w *Window) {
 	if layout.Shape.HasEvents() {
 		onMouseMove = layout.Shape.Events.OnMouseMove
 	}
-	executeMouseCallback(layout, e, w, onMouseMove,
-		"mouseMoveHandler")
+	executeMouseCallback(layout, e, w, onMouseMove)
 }
 
 // mouseUpHandler handles mouse button release events.
@@ -192,8 +191,7 @@ func mouseUpHandler(layout *Layout, e *Event, w *Window) {
 	if layout.Shape.HasEvents() {
 		onMouseUp = layout.Shape.Events.OnMouseUp
 	}
-	executeMouseCallback(layout, e, w, onMouseUp,
-		"mouseUpHandler")
+	executeMouseCallback(layout, e, w, onMouseUp)
 }
 
 func focusedScrollTarget(layout *Layout, w *Window) *Layout {
@@ -218,7 +216,12 @@ func focusedScrollTarget(layout *Layout, w *Window) *Layout {
 // and falls back to the scroll container under cursor.
 func mouseScrollHandler(layout *Layout, e *Event, w *Window) {
 	if ly := focusedScrollTarget(layout, w); ly != nil {
+		saved := *e
+		e.MouseX = saved.MouseX - ly.Shape.X
+		e.MouseY = saved.MouseY - ly.Shape.Y
 		ly.Shape.Events.OnMouseScroll(ly, e, w)
+		*e = saved
+		e.IsHandled = true
 		return
 	}
 	mouseScrollFallbackHandler(layout, e, w)
@@ -245,6 +248,7 @@ func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 		layout.Shape.Events.OnMouseScroll != nil {
 		if layout.Shape.PointInShape(e.MouseX, e.MouseY) {
 			layout.Shape.Events.OnMouseScroll(layout, e, w)
+			e.IsHandled = true
 			return
 		}
 	}

@@ -127,6 +127,6 @@ func BenchmarkExecuteMouseCallback(b *testing.B) {
 		e.IsHandled = false
 		e.MouseX = 25
 		e.MouseY = 25
-		executeMouseCallback(layout, e, w, cb, "bench")
+		executeMouseCallback(layout, e, w, cb)
 	}
 }

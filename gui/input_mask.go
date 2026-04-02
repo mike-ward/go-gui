@@ -213,7 +213,7 @@ func (m *CompiledInputMask) formatRaw(raw []rune) string {
 }
 
 func (m *CompiledInputMask) formattedToRawIndex(formattedLen, formattedIndex, rawLen int) int {
-	idx := intClamp(formattedIndex, 0, formattedLen)
+	idx := max(0, min(formattedLen, formattedIndex))
 	limit := min(idx, len(m.entries))
 	rawIndex := 0
 	for i := range limit {
@@ -221,7 +221,7 @@ func (m *CompiledInputMask) formattedToRawIndex(formattedLen, formattedIndex, ra
 			rawIndex++
 		}
 	}
-	return intClamp(rawIndex, 0, rawLen)
+	return max(0, min(rawLen, rawIndex))
 }
 
 func (m *CompiledInputMask) selectionRawRange(formattedLen, cursorPos int, selectBeg, selectEnd uint32, rawLen int) (int, int) {
@@ -258,7 +258,7 @@ func (m *CompiledInputMask) rebuildRaw(prefix, suffix []rune) []rune {
 }
 
 func (m *CompiledInputMask) cursorFromRawIndex(raw []rune, rawIndex int) int {
-	idx := intClamp(rawIndex, 0, len(raw))
+	idx := max(0, min(len(raw), rawIndex))
 	if idx == 0 {
 		return 0
 	}

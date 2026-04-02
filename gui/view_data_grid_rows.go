@@ -206,11 +206,11 @@ func dataGridRowView(dctx dataGridCtx, rowData GridRow, rowIdx int, showDeleteAc
 				onSelectionChange, editEnabled, editorFocusBase, colCount,
 				rowIdx, rowID, focusID, columns, e, w)
 		},
-		OnHover: func(layout *Layout, _ *Event, _ *Window) {
+		OnHover: func(layout *Layout, _ *Event, win *Window) {
 			if disabled {
 				return
 			}
-			w.SetMouseCursorPointingHand()
+			win.SetMouseCursorPointingHand()
 			if !isSelected {
 				layout.Shape.Color = colorRowHover
 			}

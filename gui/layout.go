@@ -42,7 +42,7 @@ func (layout *Layout) spacing() float32 {
 		}
 		count++
 	}
-	return float32(intMax(0, count-1)) * layout.Shape.Spacing
+	return float32(max(0, count-1)) * layout.Shape.Spacing
 }
 
 // contentWidth returns total content width.
@@ -51,17 +51,19 @@ func contentWidth(layout *Layout) float32 {
 	if layout.Shape.Axis == AxisLeftToRight {
 		width += layout.spacing()
 		for i := range layout.Children {
-			if layout.Children[i].Shape.OverDraw {
+			c := &layout.Children[i]
+			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
 				continue
 			}
-			width += layout.Children[i].Shape.Width
+			width += c.Shape.Width
 		}
 	} else {
 		for i := range layout.Children {
-			if layout.Children[i].Shape.OverDraw {
+			c := &layout.Children[i]
+			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
 				continue
 			}
-			width = f32Max(width, layout.Children[i].Shape.Width)
+			width = f32Max(width, c.Shape.Width)
 		}
 	}
 	return width
@@ -73,17 +75,19 @@ func contentHeight(layout *Layout) float32 {
 	if layout.Shape.Axis == AxisTopToBottom {
 		height += layout.spacing()
 		for i := range layout.Children {
-			if layout.Children[i].Shape.OverDraw {
+			c := &layout.Children[i]
+			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
 				continue
 			}
-			height += layout.Children[i].Shape.Height
+			height += c.Shape.Height
 		}
 	} else {
 		for i := range layout.Children {
-			if layout.Children[i].Shape.OverDraw {
+			c := &layout.Children[i]
+			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
 				continue
 			}
-			height = f32Max(height, layout.Children[i].Shape.Height)
+			height = f32Max(height, c.Shape.Height)
 		}
 	}
 	return height

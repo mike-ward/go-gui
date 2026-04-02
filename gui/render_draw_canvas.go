@@ -1,5 +1,7 @@
 package gui
 
+import "math"
+
 // renderDrawCanvas renders cached draw-canvas triangle batches.
 func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 	dr := DrawClip{
@@ -96,7 +98,7 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 		rotated := t.Style.RotationRadians != 0
 
 		if rotated {
-			deg := t.Style.RotationRadians * (180 / 3.14159265)
+			deg := t.Style.RotationRadians * (180 / math.Pi)
 			emitRenderer(RenderCmd{
 				Kind:     RenderRotateBegin,
 				RotAngle: deg,

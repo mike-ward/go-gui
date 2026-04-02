@@ -5,6 +5,26 @@ import (
 	"testing"
 )
 
+// numericFormat is the test-facing entry point. It normalizes
+// the locale once, then delegates to numericFormatValue.
+func numericFormat(value float64, decimals int, locale NumericLocaleCfg) string {
+	loc := numericLocaleNormalize(locale)
+	if value == 0 {
+		value = 0 // collapse -0.0 → 0.0
+	}
+	return numericFormatValue(value, decimals, loc)
+}
+
+// numericInputCommitResult resolves text → (value, formatted).
+func numericInputCommitResult(text string, value, minVal, maxVal Opt[float64], decimals int, locale NumericLocaleCfg) (Opt[float64], string) {
+	return numericInputCommitResultMode(text, value, minVal, maxVal, decimals, locale, numericModeCfg{displayMultiplier: 1.0})
+}
+
+// numericInputStepResult steps a value in the given direction.
+func numericInputStepResult(text string, value, minVal, maxVal Opt[float64], decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier) (Opt[float64], string) {
+	return numericInputStepResultMode(text, value, minVal, maxVal, decimals, stepCfg, locale, direction, modifiers, numericModeCfg{displayMultiplier: 1.0})
+}
+
 func assertF64Near(t *testing.T, got, want float64) {
 	t.Helper()
 	if math.Abs(got-want) >= 0.000001 {

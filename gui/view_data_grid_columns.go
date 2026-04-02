@@ -114,7 +114,7 @@ func DataGridColumnOrderMove(order []string, colID string, delta int) []string {
 	if idx < 0 {
 		return order
 	}
-	target := intClamp(idx+delta, 0, len(order)-1)
+	target := max(0, min(len(order)-1, idx+delta))
 	if target == idx {
 		return order
 	}

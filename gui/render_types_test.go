@@ -2,6 +2,66 @@ package gui
 
 import "testing"
 
+// renderCmdKindName returns a debug name for the given RenderKind.
+func renderCmdKindName(k RenderKind) string {
+	switch k {
+	case RenderNone:
+		return "RenderNone"
+	case RenderClip:
+		return "RenderClip"
+	case RenderRect:
+		return "RenderRect"
+	case RenderStrokeRect:
+		return "RenderStrokeRect"
+	case RenderCircle:
+		return "RenderCircle"
+	case RenderImage:
+		return "RenderImage"
+	case RenderText:
+		return "RenderText"
+	case RenderLine:
+		return "RenderLine"
+	case RenderShadow:
+		return "RenderShadow"
+	case RenderBlur:
+		return "RenderBlur"
+	case RenderGradient:
+		return "RenderGradient"
+	case RenderGradientBorder:
+		return "RenderGradientBorder"
+	case RenderSvg:
+		return "RenderSvg"
+	case RenderLayout:
+		return "RenderLayout"
+	case RenderLayoutTransformed:
+		return "RenderLayoutTransformed"
+	case RenderLayoutPlaced:
+		return "RenderLayoutPlaced"
+	case RenderFilterBegin:
+		return "RenderFilterBegin"
+	case RenderFilterEnd:
+		return "RenderFilterEnd"
+	case RenderFilterComposite:
+		return "RenderFilterComposite"
+	case RenderCustomShader:
+		return "RenderCustomShader"
+	case RenderTextPath:
+		return "RenderTextPath"
+	case RenderRTF:
+		return "RenderRTF"
+	case RenderRotateBegin:
+		return "RenderRotateBegin"
+	case RenderRotateEnd:
+		return "RenderRotateEnd"
+	case RenderStencilBegin:
+		return "RenderStencilBegin"
+	case RenderStencilEnd:
+		return "RenderStencilEnd"
+	default:
+		return "Unknown"
+	}
+}
+
 func TestRenderCmdKindNameExhaustive(t *testing.T) {
 	tests := []struct {
 		kind RenderKind

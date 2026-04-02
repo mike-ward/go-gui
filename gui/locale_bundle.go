@@ -67,7 +67,7 @@ func LocaleLoad(path string) (Locale, error) {
 		return Locale{}, err
 	}
 	var b localeBundle
-	if err := json.Unmarshal(data, &b); err != nil {
+	if err = json.Unmarshal(data, &b); err != nil {
 		return Locale{}, err
 	}
 	return b.toLocale(), nil
@@ -101,6 +101,7 @@ func (b *localeBundle) toLocale() Locale {
 		StrLoadingDiagram: bundleStr(b.Strings, "loading_diagram", d.StrLoadingDiagram),
 		StrSaving:         bundleStr(b.Strings, "saving", d.StrSaving),
 		StrSaveFailed:     bundleStr(b.Strings, "save_failed", d.StrSaveFailed),
+		StrSourceChanged:  bundleStr(b.Strings, "source_changed", d.StrSourceChanged),
 		StrLoadError:      bundleStr(b.Strings, "load_error", d.StrLoadError),
 		StrError:          bundleStr(b.Strings, "error", d.StrError),
 		StrClean:          bundleStr(b.Strings, "clean", d.StrClean),

@@ -33,7 +33,7 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	focus := colorOr(o.ColorFocus, t.ColorFocus)
 	active := colorOr(o.ColorActive, t.ColorActive)
 	border := colorOr(o.ColorBorder, t.ColorBorder)
-	borderFocus := colorOr(o.ColorBorderFocus, t.ButtonStyle.ColorBorderFocus)
+	borderFocus := colorOr(o.ColorBorderFocus, t.ColorSelect)
 	sel := colorOr(o.ColorSelect, t.ColorSelect)
 
 	t.ColorBackground = bg
@@ -206,6 +206,11 @@ func (t Theme) WithColors(o ColorOverrides) Theme {
 	t.DataGridStyle.ColorResizeHandle = border
 	t.DataGridStyle.ColorResizeActive = sel
 
+	t.SkeletonStyle.Color = interior
+	t.SkeletonStyle.ColorHighlight = hover
+
+	t.InspectorStyle.ColorPanel = panel
+
 	return t
 }
 
@@ -221,11 +226,11 @@ func (t Theme) AdjustFontSize(delta, minSize, maxSize float32) (Theme, error) {
 		return t, errors.New("new font size out of range")
 	}
 	cfg.TextStyleDef.Size = newSize
-	cfg.SizeTextTiny += delta
-	cfg.SizeTextXSmall += delta
-	cfg.SizeTextSmall += delta
-	cfg.SizeTextMedium += delta
-	cfg.SizeTextLarge += delta
-	cfg.SizeTextXLarge += delta
+	cfg.SizeTextTiny = max(cfg.SizeTextTiny+delta, 6)
+	cfg.SizeTextXSmall = max(cfg.SizeTextXSmall+delta, 6)
+	cfg.SizeTextSmall = max(cfg.SizeTextSmall+delta, 6)
+	cfg.SizeTextMedium = max(cfg.SizeTextMedium+delta, 6)
+	cfg.SizeTextLarge = max(cfg.SizeTextLarge+delta, 6)
+	cfg.SizeTextXLarge = max(cfg.SizeTextXLarge+delta, 6)
 	return ThemeMaker(cfg), nil
 }

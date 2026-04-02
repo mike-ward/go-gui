@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+func inputDateOpen(id string, w *Window) {
+	sm := StateMap[string, bool](w, nsInputDate, capModerate)
+	sm.Set(id, true)
+	w.UpdateWindow()
+}
+
 func TestInputDateLayout(t *testing.T) {
 	w := &Window{}
 	v := InputDate(InputDateCfg{

@@ -165,6 +165,9 @@ func dockNodeView(
 	core *dockLayoutCore, node *DockNode,
 	cfg *DockLayoutCfg, drag dockDragState,
 ) View {
+	if node == nil {
+		return nil
+	}
 	if node.Kind == DockNodeSplit {
 		return dockSplitView(core, node, cfg, drag)
 	}

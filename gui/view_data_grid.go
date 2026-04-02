@@ -396,6 +396,7 @@ type dataGridCrudState struct {
 	NextDraftSeq            int
 	Saving                  bool
 	SaveError               string
+	SourceChanged           bool
 }
 
 type dataGridSourceState struct {

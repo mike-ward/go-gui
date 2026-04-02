@@ -196,8 +196,11 @@ func TestHexChannels(t *testing.T) {
 func TestOverBothTransparent(t *testing.T) {
 	t.Parallel()
 	r := RGBA(0, 0, 0, 0).Over(RGBA(0, 0, 0, 0))
-	if r.IsSet() {
-		t.Error("Over of two transparent colors should return zero")
+	if !r.IsSet() {
+		t.Error("Over of two transparent colors should return ColorTransparent (set)")
+	}
+	if r.A != 0 {
+		t.Errorf("expected alpha 0, got %d", r.A)
 	}
 }
 

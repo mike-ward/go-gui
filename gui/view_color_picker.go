@@ -565,10 +565,11 @@ func cpApplyRGB(
 	text string, idx int, c Color, cfgID string,
 	onChange func(Color, *Event, *Window), w *Window,
 ) {
-	v, ok := cpParseUint8(text)
-	if !ok || onChange == nil {
+	parsed, err := strconv.ParseUint(text, 10, 8)
+	if err != nil || onChange == nil {
 		return
 	}
+	v := uint8(parsed)
 	nc := c
 	switch idx {
 	case 0:

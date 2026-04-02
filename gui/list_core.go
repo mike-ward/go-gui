@@ -118,10 +118,10 @@ func listCoreVisibleRange(itemCount int, rowHeight, listHeight, scrollY float32)
 	if absScroll < 0 {
 		absScroll = -absScroll
 	}
-	first := intClamp(int(absScroll/rowHeight), 0, maxIdx)
+	first := max(0, min(maxIdx, int(absScroll/rowHeight)))
 	visibleRows := int(listHeight/rowHeight) + 1
 	buf := listCoreVirtualBufferRows
-	firstVisible := intMax(0, first-buf)
+	firstVisible := max(0, first-buf)
 	lastVisible := min(maxIdx, first+visibleRows+buf)
 	lastVisible = max(lastVisible, firstVisible)
 	return firstVisible, lastVisible
@@ -246,7 +246,7 @@ func listCorePrepareInto(
 
 	hl := 0
 	if len(filtered) > 0 {
-		hl = intClamp(rawHighlight, 0, len(filtered)-1)
+		hl = max(0, min(len(filtered)-1, rawHighlight))
 	}
 
 	ids := idsDst[:0]

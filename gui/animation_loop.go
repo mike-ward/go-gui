@@ -168,6 +168,7 @@ func updateAnimate(a *Animate, deferred *[]queuedCommand) bool {
 			animate:   a,
 		})
 		if a.Repeat {
+			// Zero delay with repeat fires every tick (~16ms).
 			a.start = a.start.Add(a.Delay)
 		} else {
 			a.stopped = true

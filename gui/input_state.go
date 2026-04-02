@@ -316,12 +316,6 @@ func inputSelectAll(text string, idFocus uint32, w *Window) {
 	imap.Set(idFocus, is)
 }
 
-// inputHasSelection returns true if text is selected.
-func inputHasSelection(idFocus uint32, w *Window) bool {
-	is := StateReadOr(w, nsInput, idFocus, InputState{})
-	return is.SelectBeg != is.SelectEnd
-}
-
 // updateCursorAndSelection moves cursor to newPos, extending
 // or resetting selection based on shift modifier.
 func updateCursorAndSelection(

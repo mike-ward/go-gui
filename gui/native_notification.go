@@ -48,7 +48,9 @@ func nativeNotificationImpl(w *Window, cfg NativeNotificationCfg) {
 		})
 		return
 	}
-	// Notification may block; run in goroutine.
+	// Notification may block; run in goroutine. QueueCommand is
+	// thread-safe (uses commandsMu), so the ctx check + queue
+	// pattern is safe even without atomicity.
 	ctx := w.Ctx()
 	go func() {
 		result := w.nativePlatform.SendNotification(cfg.Title, cfg.Body)

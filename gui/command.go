@@ -27,7 +27,7 @@ func (s Shortcut) String() string {
 	if s.Key == KeyInvalid {
 		return ""
 	}
-	var buf []byte
+	buf := make([]byte, 0, 16)
 	if runtime.GOOS == "darwin" {
 		buf = shortcutStringDarwin(s.Modifiers, buf)
 	} else {
@@ -80,7 +80,7 @@ func keyName(k KeyCode) string {
 		return string(rune('0' + (k - Key0)))
 	case k >= KeyF1 && k <= KeyF25:
 		n := int(k - KeyF1 + 1)
-		return "F" + itoa(n)
+		return "F" + strconv.Itoa(n)
 	case k >= KeyKP0 && k <= KeyKP9:
 		return "KP" + string(rune('0'+(k-KeyKP0)))
 	}
@@ -140,9 +140,6 @@ func keyName(k KeyCode) string {
 	}
 	return "?"
 }
-
-// itoa converts an int to its decimal string.
-func itoa(n int) string { return strconv.Itoa(n) }
 
 // Command bundles an action with its identity, shortcut,
 // and enable/disable logic.

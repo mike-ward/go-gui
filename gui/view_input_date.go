@@ -238,7 +238,7 @@ func inputDateTextField(
 		OnTextCommit: func(_ *Layout, text string, _ InputCommitReason, w *Window) {
 			if text == "" {
 				if cfg.OnSelect != nil {
-					cfg.OnSelect(nil, nil, w)
+					cfg.OnSelect(nil, &Event{}, w)
 				}
 				w.UpdateWindow()
 				return
@@ -249,7 +249,7 @@ func inputDateTextField(
 				return
 			}
 			if cfg.OnSelect != nil {
-				cfg.OnSelect([]time.Time{t}, nil, w)
+				cfg.OnSelect([]time.Time{t}, &Event{}, w)
 			}
 			w.UpdateWindow()
 		},
@@ -273,12 +273,6 @@ func inputDateToggle(id string, w *Window) {
 	sm := StateMap[string, bool](w, nsInputDate, capModerate)
 	cur, _ := sm.Get(id)
 	sm.Set(id, !cur)
-	w.UpdateWindow()
-}
-
-func inputDateOpen(id string, w *Window) {
-	sm := StateMap[string, bool](w, nsInputDate, capModerate)
-	sm.Set(id, true)
 	w.UpdateWindow()
 }
 

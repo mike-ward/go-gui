@@ -58,6 +58,21 @@ func rendererValidForDraw(r RenderCmd) bool {
 	case RenderStencilBegin, RenderStencilEnd:
 		return f32AllFinite5(r.X, r.Y, r.W, r.H, r.Radius) &&
 			r.W > 0 && r.H > 0 && r.StencilDepth > 0
+	case RenderGradientBorder:
+		return f32AllFinite6(r.X, r.Y, r.W, r.H, r.Radius, r.Thickness) &&
+			r.W >= 0 && r.H >= 0 && r.Thickness > 0 && r.Gradient != nil
+	case RenderShadow:
+		return f32AllFinite6(r.X, r.Y, r.W, r.H, r.BlurRadius, r.Radius) &&
+			r.W >= 0 && r.H >= 0 &&
+			f32AllFinite2(r.OffsetX, r.OffsetY)
+	case RenderBlur:
+		return f32AllFinite5(r.X, r.Y, r.W, r.H, r.BlurRadius) &&
+			r.W >= 0 && r.H >= 0
+	case RenderCustomShader:
+		return f32AllFinite4(r.X, r.Y, r.W, r.H) &&
+			r.W > 0 && r.H > 0 && r.Shader != nil
+	case RenderRotateBegin:
+		return f32AllFinite3(r.RotAngle, r.RotCX, r.RotCY)
 	default:
 		return true
 	}

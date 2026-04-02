@@ -207,7 +207,7 @@ func (lv *listBoxView) GenerateLayout(w *Window) Layout {
 					e.IsHandled = true
 					return
 				}
-				lbf := StateMap[string, int](
+				lbf = StateMap[string, int](
 					w, nsListBoxFocus, capModerate)
 				curIdx, _ := lbf.Get(listBoxID)
 				if curIdx >= 0 && curIdx < len(itemIDs) &&

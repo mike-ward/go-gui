@@ -4,6 +4,8 @@ import "time"
 
 // SpringCfg controls spring physics behavior.
 type SpringCfg struct {
+	// Stiffness controls spring force. Values >= ~15600 (with
+	// Mass=1) will diverge at the 16ms fixed timestep.
 	Stiffness float32
 	Damping   float32
 	Mass      float32

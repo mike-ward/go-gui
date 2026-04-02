@@ -243,8 +243,9 @@ func (s *GridOrmDataSource) MutateData(
 			}
 		} else if s.DeleteFn != nil {
 			out := make([]string, 0, len(ids))
+			var deleted string
 			for _, rowID := range ids {
-				deleted, err := s.DeleteFn(rowID, req.Signal)
+				deleted, err = s.DeleteFn(rowID, req.Signal)
 				if err != nil {
 					return GridMutationResult{}, err
 				}
@@ -345,21 +346,19 @@ func gridOrmValidateQueryWithMap(
 func gridOrmResolvePage(
 	page GridPageRequest, configuredLimit int,
 ) (limit, offset int, cursor string) {
-	defLimit := intClamp(
-		nonZero(configuredLimit, 100),
-		1, dataGridSourceMaxPageLimit)
+	defLimit := max(1, min(dataGridSourceMaxPageLimit,
+		nonZero(configuredLimit, 100)))
 	switch p := page.(type) {
 	case GridCursorPageReq:
-		limit = intClamp(nonZero(p.Limit, defLimit),
-			1, dataGridSourceMaxPageLimit)
-		offset = intMax(0,
+		limit = max(1, min(dataGridSourceMaxPageLimit,
+			nonZero(p.Limit, defLimit)))
+		offset = max(0,
 			dataGridSourceCursorToIndex(p.Cursor))
 		cursor = p.Cursor
 	case GridOffsetPageReq:
-		offset = intMax(0, p.StartIndex)
-		limit = intClamp(nonZero(
-			p.EndIndex-p.StartIndex, defLimit),
-			1, dataGridSourceMaxPageLimit)
+		offset = max(0, p.StartIndex)
+		limit = max(1, min(dataGridSourceMaxPageLimit,
+			nonZero(p.EndIndex-p.StartIndex, defLimit)))
 	default:
 		limit = defLimit
 	}
@@ -510,8 +509,8 @@ func GridOrmBuildSQL(
 		whereParts = append(whereParts, clause)
 	}
 	order := gridOrmBuildOrder(query.Sorts, colMap)
-	limit := intClamp(nonZero(spec.Limit, 100), 1, dataGridSourceMaxPageLimit)
-	offset := intMax(0, spec.Offset)
+	limit := max(1, min(dataGridSourceMaxPageLimit, nonZero(spec.Limit, 100)))
+	offset := max(0, spec.Offset)
 	params = append(params,
 		fmt.Sprintf("%d", limit),
 		fmt.Sprintf("%d", offset))

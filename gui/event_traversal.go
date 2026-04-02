@@ -20,7 +20,7 @@ func isFocusedTarget(layout *Layout, w *Window) bool {
 
 func executeFocusCallback(
 	layout *Layout, e *Event, w *Window,
-	callback ShapeCallback, _ string,
+	callback ShapeCallback,
 ) bool {
 	if !isFocusedTarget(layout, w) {
 		return false
@@ -37,7 +37,7 @@ func executeFocusCallback(
 // calling. Returns true if handled.
 func executeMouseCallback(
 	layout *Layout, e *Event, w *Window,
-	callback ShapeCallback, _ string,
+	callback ShapeCallback,
 ) bool {
 	if layout.Shape == nil ||
 		!layout.Shape.PointInShape(e.MouseX, e.MouseY) {

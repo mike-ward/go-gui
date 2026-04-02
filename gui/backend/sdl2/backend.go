@@ -197,15 +197,17 @@ func (b *Backend) Run(w *gui.Window) {
 	// allowing re-layout and re-render at the new size.
 	var watchHandle sdl.EventWatchHandle
 	if runtime.GOOS == "darwin" {
-		resizeEvent := &gui.Event{Type: gui.EventResized}
 		watchHandle = sdl.AddEventWatchFunc(
 			func(ev sdl.Event, _ any) bool {
 				we, ok := ev.(*sdl.WindowEvent)
 				if !ok || we.Event != sdl.WINDOWEVENT_SIZE_CHANGED {
 					return true
 				}
-				resizeEvent.WindowWidth = int(we.Data1)
-				resizeEvent.WindowHeight = int(we.Data2)
+				resizeEvent := &gui.Event{
+					Type:         gui.EventResized,
+					WindowWidth:  int(we.Data1),
+					WindowHeight: int(we.Data2),
+				}
 				w.EventFn(resizeEvent)
 				w.FrameFn()
 				b.renderFrame(w)

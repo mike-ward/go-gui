@@ -94,6 +94,7 @@ type Locale struct {
 	StrLoadingDiagram string
 	StrSaving         string
 	StrSaveFailed     string
+	StrSourceChanged  string
 	StrLoadError      string
 	StrError          string
 	StrClean          string
@@ -168,6 +169,7 @@ func localeDefaults() Locale {
 		StrLoadingDiagram: "Loading diagram...",
 		StrSaving:         "Saving...",
 		StrSaveFailed:     "Save failed",
+		StrSourceChanged:  "Source changed",
 		StrLoadError:      "Load error",
 		StrError:          "Error",
 		StrClean:          "Clean",

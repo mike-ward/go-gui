@@ -1,13 +1,17 @@
 package gui
 
 import (
+	"sync"
 	"time"
 
 	"github.com/mike-ward/go-glyph"
 )
 
 // guiTheme is the package-level active theme.
-var guiTheme Theme
+var (
+	guiTheme   Theme
+	guiThemeMu sync.RWMutex
+)
 
 // Theme describes a complete GUI theme. Only styles for existing
 // Go views are populated (Button, Container, Rectangle, Text,
@@ -451,7 +455,7 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 			ColorBorder:      cfg.ColorBorder,
 			ColorBorderFocus: borderFocus,
 			Padding:          PaddingNone,
-			SizeBorder:       1,
+			SizeBorder:       cfg.SizeBorder,
 			Radius:           cfg.SizeSlider / 2,
 		},
 		TabControlStyle: TabControlStyle{
@@ -752,11 +756,15 @@ func ThemeMaker(cfg ThemeCfg) Theme {
 
 // CurrentTheme returns the active theme.
 func CurrentTheme() Theme {
+	guiThemeMu.RLock()
+	defer guiThemeMu.RUnlock()
 	return guiTheme
 }
 
 // SetTheme sets the active theme and updates all Default*Style vars.
 func SetTheme(t Theme) {
+	guiThemeMu.Lock()
+	defer guiThemeMu.Unlock()
 	guiTheme = t
 	DefaultTextStyle = t.TextStyleDef
 	DefaultButtonStyle = t.ButtonStyle
@@ -788,4 +796,5 @@ func SetTheme(t Theme) {
 	DefaultColorPickerStyle = t.ColorPickerStyle
 	DefaultDataGridStyle = t.DataGridStyle
 	DefaultSkeletonStyle = t.SkeletonStyle
+	DefaultInspectorStyle = t.InspectorStyle
 }

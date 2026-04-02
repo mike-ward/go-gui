@@ -99,7 +99,6 @@ func (w *Window) syncA11y() {
 	}
 
 	w.nativePlatform.A11ySync(w.a11y.nodes, len(w.a11y.nodes), focusedIdx)
-	_ = w.viewState.idFocus // suppress unused warning on focusedIdx
 
 	// Live region change detection.
 	for _, ln := range w.a11y.liveNodes {

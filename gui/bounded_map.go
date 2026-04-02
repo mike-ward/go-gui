@@ -35,14 +35,12 @@ func (m *BoundedMap[K, V]) Set(key K, value V) {
 		m.data[key] = value
 		return
 	}
-	if len(m.data) >= m.maxSize && len(m.order) > m.head {
-		for m.head < len(m.order) {
-			oldestKey := m.order[m.head]
-			m.head++
-			if _, exists := m.data[oldestKey]; exists {
-				delete(m.data, oldestKey)
-				break
-			}
+	for len(m.data) >= m.maxSize && m.head < len(m.order) {
+		oldestKey := m.order[m.head]
+		m.head++
+		if _, exists := m.data[oldestKey]; exists {
+			delete(m.data, oldestKey)
+			break
 		}
 	}
 	m.order = append(m.order, key)

@@ -219,16 +219,6 @@ func numericFormatValue(value float64, decimals int, loc NumericLocaleCfg) strin
 	return sign + grouped + string(loc.DecimalSep) + fracPart
 }
 
-// numericFormat is the test-facing entry point. It normalizes
-// the locale once, then delegates to numericFormatValue.
-func numericFormat(value float64, decimals int, locale NumericLocaleCfg) string {
-	loc := numericLocaleNormalize(locale)
-	if value == 0 {
-		value = 0 // collapse -0.0 → 0.0
-	}
-	return numericFormatValue(value, decimals, loc)
-}
-
 func numericIntegerGroupsValid(intSegment []rune, groupSep rune, groupSizes []int) bool {
 	var groupLengths []int
 	count := 0
@@ -565,11 +555,6 @@ func numericStepSeedMode(text string, value, minVal Opt[float64], decimals int, 
 	return 0.0
 }
 
-// numericInputCommitResult resolves text → (value, formatted).
-func numericInputCommitResult(text string, value, minVal, maxVal Opt[float64], decimals int, locale NumericLocaleCfg) (Opt[float64], string) {
-	return numericInputCommitResultMode(text, value, minVal, maxVal, decimals, locale, numericModeCfg{displayMultiplier: 1.0})
-}
-
 func numericInputCommitResultMode(text string, value, minVal, maxVal Opt[float64], decimals int, locale NumericLocaleCfg, mc numericModeCfg) (Opt[float64], string) {
 	loc := numericLocaleNormalize(locale)
 	trimmed := strings.TrimSpace(text)
@@ -585,11 +570,6 @@ func numericInputCommitResultMode(text string, value, minVal, maxVal Opt[float64
 		return Some(clamped), numericModeFormatValue(clamped, decimals, loc, mc)
 	}
 	return Opt[float64]{}, ""
-}
-
-// numericInputStepResult steps a value in the given direction.
-func numericInputStepResult(text string, value, minVal, maxVal Opt[float64], decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier) (Opt[float64], string) {
-	return numericInputStepResultMode(text, value, minVal, maxVal, decimals, stepCfg, locale, direction, modifiers, numericModeCfg{displayMultiplier: 1.0})
 }
 
 func numericInputStepResultMode(text string, value, minVal, maxVal Opt[float64], decimals int, stepCfg NumericStepCfg, locale NumericLocaleCfg, direction float64, modifiers Modifier, mc numericModeCfg) (Opt[float64], string) {

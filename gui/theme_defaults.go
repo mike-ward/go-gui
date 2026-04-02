@@ -191,7 +191,7 @@ func init() {
 		TitlebarDark:     true,
 		TextStyleDef: TextStyle{
 			Color: ColorFromString("#E1E1E1"),
-			Size:  16,
+			Size:  SizeTextMedium,
 		},
 		SizeBorder:       SizeBorderDef,
 		Padding:          PaddingMedium,

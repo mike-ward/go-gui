@@ -434,6 +434,9 @@ func layoutFillWidthsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 	switch layout.Shape.Axis {
 	case AxisLeftToRight:
 		for i := range layout.Children {
+			if layout.Children[i].Shape.OverDraw {
+				continue
+			}
 			remainingWidth -= layout.Children[i].Shape.Width
 		}
 		remainingWidth -= layout.spacing()
@@ -465,6 +468,9 @@ func layoutFillHeightsImpl(layout *Layout, candidates, fixedIndices *[]int) {
 	switch layout.Shape.Axis {
 	case AxisTopToBottom:
 		for i := range layout.Children {
+			if layout.Children[i].Shape.OverDraw {
+				continue
+			}
 			remainingHeight -= layout.Children[i].Shape.Height
 		}
 		remainingHeight -= layout.spacing()

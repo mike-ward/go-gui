@@ -45,6 +45,10 @@ func ColorFromHSV(h, s, v float32) Color {
 // ColorFromHSVA creates a Color from HSVA values.
 // h: 0–360, s: 0–1, v: 0–1, a: 0–255.
 func ColorFromHSVA(h, s, v float32, a uint8) Color {
+	h = f32Mod(h, 360)
+	if h < 0 {
+		h += 360
+	}
 	c := v * s
 	hh := f32Mod(h/60.0, 6)
 	x := c * (1.0 - f32Abs(f32Mod(hh, 2)-1.0))

@@ -321,7 +321,7 @@ func TestMouseScrollHandlerVertical(t *testing.T) {
 		ShapeClip: DrawClip{X: 0, Y: 0,
 			Width: 100, Height: 50},
 	}, Children: []Layout{
-		{Shape: &Shape{Height: 200}},
+		{Shape: &Shape{ShapeType: ShapeRectangle, Height: 200}},
 	}}
 	w := &Window{windowWidth: 800, windowHeight: 600}
 	e := &Event{
@@ -346,7 +346,7 @@ func TestMouseScrollHandlerHorizontalShift(t *testing.T) {
 			Width: 50, Height: 100},
 		Axis: AxisLeftToRight,
 	}, Children: []Layout{
-		{Shape: &Shape{Width: 200}},
+		{Shape: &Shape{ShapeType: ShapeRectangle, Width: 200}},
 	}}
 	w := &Window{windowWidth: 800, windowHeight: 600}
 	e := &Event{

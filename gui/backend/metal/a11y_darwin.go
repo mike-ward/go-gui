@@ -11,6 +11,7 @@ package metal
 import "C"
 
 import (
+	"sync"
 	"unsafe"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -30,6 +31,7 @@ func goA11yAction(action, index C.int) {
 
 // Reusable C buffers — grow only, never shrink.
 var (
+	a11yMu     sync.Mutex
 	cNodeBuf   []C.A11yCNode
 	cStringBuf []*C.char
 )
@@ -43,6 +45,8 @@ func a11ySyncBridge(nodes []gui.A11yNode, count, focusedIdx int, windowH float32
 	if count <= 0 {
 		return
 	}
+	a11yMu.Lock()
+	defer a11yMu.Unlock()
 	// Grow buffer if needed.
 	if cap(cNodeBuf) < count {
 		cNodeBuf = make([]C.A11yCNode, count)

@@ -179,3 +179,9 @@ func (t Theme) WithDataGridStyle(s DataGridStyle) Theme {
 	t.DataGridStyle = s
 	return t
 }
+
+// WithInspectorStyle returns a Theme with the given style.
+func (t Theme) WithInspectorStyle(s InspectorStyle) Theme {
+	t.InspectorStyle = s
+	return t
+}

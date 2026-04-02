@@ -1,6 +1,9 @@
 package gui
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // DataGridSourceStats provides runtime stats for a
 // data-source-backed grid. Returned by Window.DataGridSourceStats.
@@ -132,7 +135,7 @@ func dataGridSourceResolveState(cfg DataGridCfg, caps GridDataCapabilities, dgSr
 	if !ok {
 		state = dataGridSourceState{
 			CurrentCursor:  cfg.Cursor,
-			OffsetStart:    intMax(0, cfg.PageIndex*dataGridPageLimit(&cfg)),
+			OffsetStart:    max(0, cfg.PageIndex*dataGridPageLimit(&cfg)),
 			PaginationKind: cfg.PaginationKind,
 			ConfigCursor:   cfg.Cursor,
 		}
@@ -155,7 +158,7 @@ func dataGridSourceResolveState(cfg DataGridCfg, caps GridDataCapabilities, dgSr
 	querySig := GridQuerySignature(cfg.Query)
 	dataGridSourceApplyQueryReset(&state, &cfg, querySig)
 	if kind == GridPaginationOffset && cfg.PageSize > 0 {
-		desiredStart := intMax(0, cfg.PageIndex*cfg.PageSize)
+		desiredStart := max(0, cfg.PageIndex*cfg.PageSize)
 		if desiredStart != state.OffsetStart {
 			state.OffsetStart = desiredStart
 			state.RequestKey = ""
@@ -224,7 +227,7 @@ func dataGridSourceEffectivePaginationKind(preferred GridPaginationKind, caps Gr
 		if caps.SupportsOffsetPagination {
 			return GridPaginationOffset
 		}
-		return GridPaginationCursor
+		return GridPaginationNone
 	}
 	if caps.SupportsOffsetPagination {
 		return GridPaginationOffset
@@ -232,7 +235,7 @@ func dataGridSourceEffectivePaginationKind(preferred GridPaginationKind, caps Gr
 	if caps.SupportsCursorPagination {
 		return GridPaginationCursor
 	}
-	return GridPaginationOffset
+	return GridPaginationNone
 }
 
 func dataGridPageLimit(cfg *DataGridCfg) int {
@@ -249,10 +252,10 @@ func dataGridSourceRequestKey(cfg *DataGridCfg, state dataGridSourceState, kind 
 	limit := dataGridPageLimit(cfg)
 	switch kind {
 	case GridPaginationCursor:
-		return fmt.Sprintf("k:cursor|cursor:%s|limit:%d|q:%d", state.CurrentCursor, limit, querySig)
+		return "k:cursor|cursor:" + state.CurrentCursor + "|limit:" + strconv.Itoa(limit) + "|q:" + strconv.FormatUint(querySig, 10)
 	default: // offset
 		end := state.OffsetStart + limit
-		return fmt.Sprintf("k:offset|start:%d|end:%d|q:%d", state.OffsetStart, end, querySig)
+		return "k:offset|start:" + strconv.Itoa(state.OffsetStart) + "|end:" + strconv.Itoa(end) + "|q:" + strconv.FormatUint(querySig, 10)
 	}
 }
 
@@ -388,14 +391,14 @@ func dataGridSourceSyntheticRowID(kind GridPaginationKind, state dataGridSourceS
 	localIdx = max(localIdx, 0)
 	switch kind {
 	case GridPaginationOffset:
-		absIdx := intMax(0, state.OffsetStart) + localIdx
-		return fmt.Sprintf("__src_o_%d", absIdx)
+		absIdx := max(0, state.OffsetStart) + localIdx
+		return "__src_o_" + strconv.Itoa(absIdx)
 	default:
 		if start, ok := dataGridSourceCursorToIndexOpt(state.CurrentCursor); ok {
-			return fmt.Sprintf("__src_c_%d", intMax(0, start)+localIdx)
+			return "__src_c_" + strconv.Itoa(max(0, start)+localIdx)
 		}
 		h := dataGridFnv64Str(dataGridFnv64Offset, state.CurrentCursor)
-		return fmt.Sprintf("__src_cx_%016x_%d", h, localIdx)
+		return "__src_cx_" + zeroPadHex16(h) + "_" + strconv.Itoa(localIdx)
 	}
 }
 
@@ -461,7 +464,7 @@ func dataGridSourceCanNext(kind GridPaginationKind, state dataGridSourceState, p
 	if state.HasMore {
 		return true
 	}
-	return state.ReceivedCount >= intMax(1, pageLimit)
+	return state.ReceivedCount >= max(1, pageLimit)
 }
 
 func dataGridSourcePrevPage(gridID string, kind GridPaginationKind, pageLimit int, w *Window) {
@@ -482,7 +485,7 @@ func dataGridSourcePrevPage(gridID string, kind GridPaginationKind, pageLimit in
 		if pageLimit <= 0 {
 			return
 		}
-		state.OffsetStart = intMax(0, state.OffsetStart-pageLimit)
+		state.OffsetStart = max(0, state.OffsetStart-pageLimit)
 	}
 	state.RequestKey = ""
 	state.LoadError = ""
@@ -505,9 +508,9 @@ func dataGridSourceNextPage(gridID string, kind GridPaginationKind, pageLimit in
 		}
 		state.CurrentCursor = state.NextCursor
 	} else {
-		state.OffsetStart += intMax(1, pageLimit)
+		state.OffsetStart += max(1, pageLimit)
 		if state.RowCount != nil {
-			state.OffsetStart = intMin(state.OffsetStart, intMax(0, *state.RowCount-1))
+			state.OffsetStart = min(state.OffsetStart, max(0, *state.RowCount-1))
 		}
 	}
 	state.RequestKey = ""
@@ -558,7 +561,7 @@ func dataGridSourceRowPositionText(cfg *DataGridCfg, state dataGridSourceState, 
 		current = start + localIdx + 1
 	}
 	if state.RowCount != nil {
-		current = intClamp(current, 1, *state.RowCount)
+		current = max(1, min(*state.RowCount, current))
 	}
 	return fmt.Sprintf("Row %d of %s", current, totalText)
 }

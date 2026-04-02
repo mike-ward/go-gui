@@ -56,6 +56,7 @@ type gestureState struct {
 	singleTouchID uint64
 	mouseEmitted  bool
 	recognized    bool
+	rotateBegan   bool
 
 	// Clock injection for tests (nil = time.Now).
 	nowFn func() int64
@@ -253,7 +254,14 @@ func handleTouchMoved(
 			if gs.gestureType != GestureRotate &&
 				gs.gestureType != GesturePinch {
 				gs.gestureType = GestureRotate
+				gs.rotateBegan = true
 				phase = GesturePhaseBegan
+			} else if !gs.rotateBegan {
+				gs.rotateBegan = true
+				beganEvt := gestureEvent(
+					gs, GestureRotate, GesturePhaseBegan, cx, cy)
+				beganEvt.GestureRotation = gs.rotation
+				gestureHandler(layout, &beganEvt, w)
 			}
 			evt := gestureEvent(gs, GestureRotate, phase, cx, cy)
 			evt.GestureRotation = gs.rotation
@@ -399,23 +407,23 @@ func armLongPress(gs *gestureState, layout *Layout, w *Window) {
 		Delay:  gestureLongPressDur,
 		Repeat: false,
 		Callback: func(_ *Animate, w *Window) {
-			gs := &w.viewState.gesture
-			if gs.numTouches != 1 || gs.recognized {
+			gst := &w.viewState.gesture
+			if gst.numTouches != 1 || gst.recognized {
 				return
 			}
-			t := gs.touches[0]
+			t := gst.touches[0]
 			dx := t.x - startX
 			dy := t.y - startY
 			if dx*dx+dy*dy > gesturePanDist*gesturePanDist {
 				return
 			}
-			gs.recognized = true
-			gs.gestureType = GestureLongPress
+			gst.recognized = true
+			gst.gestureType = GestureLongPress
 			ly := &w.layout
 			if w.dialogCfg.visible && len(w.layout.Children) > 0 {
 				ly = &w.layout.Children[len(w.layout.Children)-1]
 			}
-			emitGesture(gs, GestureLongPress, GesturePhaseBegan,
+			emitGesture(gst, GestureLongPress, GesturePhaseBegan,
 				startX, startY, ly, w)
 		},
 	})

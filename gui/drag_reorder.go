@@ -537,7 +537,7 @@ func dragReorderCalcIndex(
 	listStart := itemStart - float32(sourceIndex)*itemSize
 	rel := mouseMain - listStart
 	idx := int(rel / itemSize)
-	return intClamp(idx, 0, itemCount)
+	return max(0, min(itemCount, idx))
 }
 
 // dragReorderCalcIndexFromMids estimates the drop target index
@@ -711,7 +711,7 @@ func dragReorderKeyboardMove(
 			}
 		case KeyDown:
 			if currentIndex < itemCount-1 {
-				newIndex = intMin(currentIndex+2, itemCount)
+				newIndex = min(currentIndex+2, itemCount)
 			}
 		}
 	case DragReorderHorizontal:
@@ -722,7 +722,7 @@ func dragReorderKeyboardMove(
 			}
 		case KeyRight:
 			if currentIndex < itemCount-1 {
-				newIndex = intMin(currentIndex+2, itemCount)
+				newIndex = min(currentIndex+2, itemCount)
 			}
 		}
 	}

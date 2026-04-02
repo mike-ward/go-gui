@@ -29,11 +29,11 @@ func TestEffectivePaginationKindCursorFallbackToOffset(t *testing.T) {
 }
 
 func TestEffectivePaginationKindCursorNeitherSupported(t *testing.T) {
-	// Cursor preferred, nothing supported → still cursor (default).
+	// Cursor preferred, nothing supported → none.
 	caps := GridDataCapabilities{}
 	got := dataGridSourceEffectivePaginationKind(GridPaginationCursor, caps)
-	if got != GridPaginationCursor {
-		t.Fatalf("got %d, want GridPaginationCursor", got)
+	if got != GridPaginationNone {
+		t.Fatalf("got %d, want GridPaginationNone", got)
 	}
 }
 

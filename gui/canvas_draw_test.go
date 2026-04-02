@@ -99,6 +99,29 @@ func TestDrawContextBatching(t *testing.T) {
 	}
 }
 
+// arcToPolyline converts an elliptical arc to a flat x,y
+// polyline via angular subdivision.
+func arcToPolyline(cx, cy, rx, ry, start, sweep float32) []float32 {
+	r := rx
+	r = max(r, ry)
+	if r <= 0 {
+		return nil
+	}
+	n := int(math.Ceil(
+		float64(f32Abs(sweep)) / (2 * math.Pi) * 64 *
+			math.Sqrt(float64(r)/50+1)))
+	n = max(n, 4)
+	step := sweep / float32(n)
+	pts := make([]float32, 0, (n+1)*2)
+	for i := 0; i <= n; i++ {
+		a := float64(start + step*float32(i))
+		pts = append(pts,
+			cx+rx*float32(math.Cos(a)),
+			cy+ry*float32(math.Sin(a)))
+	}
+	return pts
+}
+
 func TestArcToPolyline(t *testing.T) {
 	pts := arcToPolyline(50, 50, 25, 25, 0, 2*math.Pi)
 	if len(pts) < 8 {

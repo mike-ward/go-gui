@@ -25,6 +25,7 @@ func layoutOverflow(layout *Layout, w *Window) {
 
 	var used float32
 	visibleCount := 0
+	firstHideIdx := triggerIdx // child index where hiding starts
 
 	for i := range triggerIdx {
 		child := &layout.Children[i]
@@ -38,6 +39,7 @@ func layoutOverflow(layout *Layout, w *Window) {
 		}
 		needed := used + gap + child.Shape.Width
 		if needed+spacing+triggerW > available {
+			firstHideIdx = i
 			break
 		}
 		used = needed
@@ -48,7 +50,12 @@ func layoutOverflow(layout *Layout, w *Window) {
 		hideOverflowChild(&layout.Children[triggerIdx])
 		visibleCount = triggerIdx
 	} else {
-		for i := visibleCount; i < triggerIdx; i++ {
+		for i := firstHideIdx; i < triggerIdx; i++ {
+			if layout.Children[i].Shape.Float ||
+				layout.Children[i].Shape.ShapeType == ShapeNone ||
+				layout.Children[i].Shape.OverDraw {
+				continue
+			}
 			hideOverflowChild(&layout.Children[i])
 		}
 	}

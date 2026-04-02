@@ -36,12 +36,15 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	sy := shape.Y + (shape.Height-cached.Height*cached.Scale)/2
 
 	// Clip to intersection of parent clip and scaled viewBox.
-	svgClip, _ := rectIntersection(clip, DrawClip{
+	svgClip, ok := rectIntersection(clip, DrawClip{
 		X:      sx,
 		Y:      sy,
 		Width:  cached.Width * cached.Scale,
 		Height: cached.Height * cached.Scale,
 	})
+	if !ok {
+		return
+	}
 	emitRenderer(RenderCmd{
 		Kind: RenderClip,
 		X:    svgClip.X,

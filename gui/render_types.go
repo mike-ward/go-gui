@@ -110,66 +110,6 @@ type TextPathData struct {
 	Method   int     // 0=align, 1=stretch
 }
 
-// renderCmdKindName returns a debug name for the given RenderKind.
-func renderCmdKindName(k RenderKind) string {
-	switch k {
-	case RenderNone:
-		return "RenderNone"
-	case RenderClip:
-		return "RenderClip"
-	case RenderRect:
-		return "RenderRect"
-	case RenderStrokeRect:
-		return "RenderStrokeRect"
-	case RenderCircle:
-		return "RenderCircle"
-	case RenderImage:
-		return "RenderImage"
-	case RenderText:
-		return "RenderText"
-	case RenderLine:
-		return "RenderLine"
-	case RenderShadow:
-		return "RenderShadow"
-	case RenderBlur:
-		return "RenderBlur"
-	case RenderGradient:
-		return "RenderGradient"
-	case RenderGradientBorder:
-		return "RenderGradientBorder"
-	case RenderSvg:
-		return "RenderSvg"
-	case RenderLayout:
-		return "RenderLayout"
-	case RenderLayoutTransformed:
-		return "RenderLayoutTransformed"
-	case RenderLayoutPlaced:
-		return "RenderLayoutPlaced"
-	case RenderFilterBegin:
-		return "RenderFilterBegin"
-	case RenderFilterEnd:
-		return "RenderFilterEnd"
-	case RenderFilterComposite:
-		return "RenderFilterComposite"
-	case RenderCustomShader:
-		return "RenderCustomShader"
-	case RenderTextPath:
-		return "RenderTextPath"
-	case RenderRTF:
-		return "RenderRTF"
-	case RenderRotateBegin:
-		return "RenderRotateBegin"
-	case RenderRotateEnd:
-		return "RenderRotateEnd"
-	case RenderStencilBegin:
-		return "RenderStencilBegin"
-	case RenderStencilEnd:
-		return "RenderStencilEnd"
-	default:
-		return "Unknown"
-	}
-}
-
 // FilterBracketRange describes a matched DrawFilterBegin..DrawFilterEnd
 // range within the renderers slice.
 type FilterBracketRange struct {
@@ -181,6 +121,8 @@ type FilterBracketRange struct {
 
 // findFilterBracketRange scans renderers from startIdx looking for
 // a DrawFilterBegin..DrawFilterEnd pair.
+// Precondition: filter brackets do not nest. w.inFilter prevents
+// nested RenderFilterBegin emissions during layout rendering.
 func findFilterBracketRange(renderers []RenderCmd, startIdx int) FilterBracketRange {
 	for i := startIdx; i < len(renderers); i++ {
 		if renderers[i].Kind == RenderFilterEnd {

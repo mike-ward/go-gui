@@ -124,15 +124,20 @@ func (a *App) PendingOpen() <-chan WindowCfg {
 	return a.pending
 }
 
-// Broadcast calls fn for every registered window. Iterates under
-// the lock to avoid allocating a snapshot slice.
+// Broadcast calls fn for every registered window. Snapshots the
+// window list under lock, then iterates without holding the lock
+// so fn may safely call other App methods.
 func (a *App) Broadcast(fn func(*Window)) {
 	a.mu.Lock()
-	defer a.mu.Unlock()
+	windows := make([]*Window, 0, len(a.order))
 	for _, id := range a.order {
 		if w, ok := a.windows[id]; ok {
-			fn(w)
+			windows = append(windows, w)
 		}
+	}
+	a.mu.Unlock()
+	for _, w := range windows {
+		fn(w)
 	}
 }
 

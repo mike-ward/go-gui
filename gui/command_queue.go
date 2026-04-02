@@ -28,6 +28,9 @@ func queueOnDone(deferred *[]queuedCommand, fn func(*Window)) {
 }
 
 func queueOnValue(deferred *[]queuedCommand, fn func(float32, *Window), val float32) {
+	if fn == nil {
+		return
+	}
 	*deferred = append(*deferred, queuedCommand{
 		kind: queuedCommandValueFn, valueFn: fn, value: val,
 	})

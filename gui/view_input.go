@@ -468,9 +468,10 @@ func makeInputOnChar(hcfg inputHandlerCfg) func(*Layout, *Event, *Window) {
 			is := inputStateOrDefault(id, w)
 			res := InputMaskInsert(text, is.CursorPos, is.SelectBeg, is.SelectEnd, ins, mask)
 			if res.Changed {
+				undo := inputPushUndo(is, text)
 				text = res.Text
 				StateMap[uint32, InputState](w, nsInput, capMany).Set(id, InputState{
-					CursorPos: res.CursorPos, Undo: is.Undo,
+					CursorPos: res.CursorPos, Undo: undo,
 				})
 				changed = true
 			}

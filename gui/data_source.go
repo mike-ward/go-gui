@@ -162,6 +162,8 @@ func NewInMemoryDataSource(rows []GridRow) *InMemoryDataSource {
 
 // Capabilities returns the supported operations for in-memory data.
 func (s *InMemoryDataSource) Capabilities() GridDataCapabilities {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return GridDataCapabilities{
 		SupportsCursorPagination: s.SupportsCursor,
 		SupportsOffsetPagination: s.SupportsOffset,
@@ -210,21 +212,21 @@ func dataGridSourceInMemoryFetch(
 		return GridDataResult{}, err
 	}
 	filtered := dataGridSourceApplyQuery(rows, req.Query)
-	limit := intClamp(
-		nonZero(defaultLimit, 100), 1, dataGridSourceMaxPageLimit)
+	limit := max(1, min(dataGridSourceMaxPageLimit,
+		nonZero(defaultLimit, 100)))
 	var start, end int
 	switch p := req.Page.(type) {
 	case GridCursorPageReq:
-		s := intClamp(dataGridSourceCursorToIndex(p.Cursor),
-			0, len(filtered))
-		chunk := intClamp(nonZero(p.Limit, limit),
-			1, dataGridSourceMaxPageLimit)
-		start, end = s, intMin(len(filtered), s+chunk)
+		s := max(0, min(len(filtered),
+			dataGridSourceCursorToIndex(p.Cursor)))
+		chunk := max(1, min(dataGridSourceMaxPageLimit,
+			nonZero(p.Limit, limit)))
+		start, end = s, min(len(filtered), s+chunk)
 	case GridOffsetPageReq:
 		start, end = dataGridSourceOffsetBounds(
 			p.StartIndex, p.EndIndex, len(filtered), limit)
 	default:
-		start, end = 0, intMin(len(filtered), limit)
+		start, end = 0, min(len(filtered), limit)
 	}
 	page := make([]GridRow, end-start)
 	copy(page, filtered[start:end])
@@ -288,10 +290,10 @@ func dataGridSourceInMemoryMutate(
 func dataGridSourceOffsetBounds(
 	startIndex, endIndex, total, defaultLimit int,
 ) (int, int) {
-	start := intClamp(startIndex, 0, total)
-	end := intClamp(endIndex, start, total)
+	start := max(0, min(total, startIndex))
+	end := max(start, min(total, endIndex))
 	if end <= start {
-		end = intMin(total, start+defaultLimit)
+		end = min(total, start+defaultLimit)
 	}
 	return start, end
 }
@@ -316,7 +318,7 @@ func dataGridSourceSleepWithAbort(
 		if err := gridAbortCheck(signal); err != nil {
 			return err
 		}
-		step := intMin(remaining, 20)
+		step := min(remaining, 20)
 		time.Sleep(time.Duration(step) * time.Millisecond)
 		remaining -= step
 	}
@@ -324,7 +326,7 @@ func dataGridSourceSleepWithAbort(
 }
 
 func dataGridSourceCursorFromIndex(index int) string {
-	return fmt.Sprintf("i:%d", intMax(0, index))
+	return "i:" + strconv.Itoa(max(0, index))
 }
 
 func dataGridSourcePrevCursor(start, pageSize int) string {
@@ -332,7 +334,7 @@ func dataGridSourcePrevCursor(start, pageSize int) string {
 		return ""
 	}
 	return dataGridSourceCursorFromIndex(
-		intMax(0, start-pageSize))
+		max(0, start-pageSize))
 }
 
 func dataGridSourceCursorToIndex(cursor string) int {
@@ -354,13 +356,13 @@ func dataGridSourceCursorToIndexOpt(cursor string) (int, bool) {
 			return 0, false
 		}
 		n, _ := strconv.Atoi(val)
-		return intMax(0, n), true
+		return max(0, n), true
 	}
 	if !dataGridSourceIsDecimal(trimmed) {
 		return 0, false
 	}
 	n, _ := strconv.Atoi(trimmed)
-	return intMax(0, n), true
+	return max(0, n), true
 }
 
 func dataGridSourceIsDecimal(input string) bool {
@@ -642,6 +644,17 @@ func dataGridFnv64Byte(h uint64, b byte) uint64 {
 	return (h ^ uint64(b)) * dataGridFnv64Prime
 }
 
+// zeroPadHex16 formats a uint64 as a zero-padded 16-char
+// lowercase hex string, equivalent to fmt.Sprintf("%016x", v).
+func zeroPadHex16(v uint64) string {
+	s := strconv.FormatUint(v, 16)
+	const pad = "0000000000000000" // 16 zeros
+	if len(s) < 16 {
+		s = pad[:16-len(s)] + s
+	}
+	return s
+}
+
 func gridHashFilter(h uint64, f GridFilter) uint64 {
 	hash := dataGridFnv64Byte(h, 0x1e)
 	hash = dataGridFnv64Str(hash, f.ColID)
@@ -740,7 +753,7 @@ func dataGridSourceApplyUpdate(
 			len((*rows)[idx].Cells))
 		maps.Copy(cells, (*rows)[idx].Cells)
 		maps.Copy(cells, reqRow.Cells)
-		if rowEdits, ok := editsByRow[reqRow.ID]; ok {
+		if rowEdits, hasEdits := editsByRow[reqRow.ID]; hasEdits {
 			for _, edit := range rowEdits {
 				cells[edit.ColID] = edit.Value
 			}

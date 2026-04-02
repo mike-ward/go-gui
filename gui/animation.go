@@ -117,9 +117,11 @@ type Animate struct {
 	Callback func(*Animate, *Window)
 	Delay    time.Duration
 	Repeat   bool
-	Refresh  AnimationRefreshKind // 0 defaults to layout
-	start    time.Time
-	stopped  bool
+	// Refresh controls what is refreshed each tick. Zero
+	// defaults to AnimationRefreshLayout (full layout rebuild).
+	Refresh AnimationRefreshKind
+	start   time.Time
+	stopped bool
 }
 
 // ID implements Animation.

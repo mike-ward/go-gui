@@ -309,7 +309,7 @@ func dataGridPagerPrevButton(cfg *DataGridCfg, onPageChange func(int, *Event, *W
 			if onPageChange == nil {
 				return
 			}
-			next := intMax(0, pageIndex-1)
+			next := max(0, pageIndex-1)
 			onPageChange(next, e, w)
 			if focusID > 0 {
 				w.SetIDFocus(focusID)
@@ -325,7 +325,7 @@ func dataGridPagerNextButton(cfg *DataGridCfg, onPageChange func(int, *Event, *W
 			if onPageChange == nil {
 				return
 			}
-			next := intMin(pageCount-1, pageIndex+1)
+			next := min(pageCount-1, pageIndex+1)
 			onPageChange(next, e, w)
 			if focusID > 0 {
 				w.SetIDFocus(focusID)
@@ -720,7 +720,7 @@ func dataGridHandleRowNavigationKeys(kc dataGridKeydownContext, visibleIndices [
 		e.IsHandled = true
 		return
 	}
-	targetPos = intClamp(targetPos, 0, len(visibleIndices)-1)
+	targetPos = max(0, min(len(visibleIndices)-1, targetPos))
 	targetIdx := visibleIndices[targetPos]
 	targetRowID := dataGridRowID(kc.rows[targetIdx], targetIdx)
 	nextSelection := dataGridSelectionForTargetRow(kc, targetRowID, isShift, w)
@@ -811,9 +811,9 @@ func dataGridNextPageIndexForKey(pageIndex, pageCount int, e *Event) (int, bool)
 	}
 	switch e.KeyCode {
 	case KeyPageUp:
-		return intMax(0, pageIndex-1), true
+		return max(0, pageIndex-1), true
 	case KeyPageDown:
-		return intMin(pageCount-1, pageIndex+1), true
+		return min(pageCount-1, pageIndex+1), true
 	}
 	return 0, false
 }
@@ -855,7 +855,7 @@ func dataGridParseJumpTarget(text string, totalRows int) (int, bool) {
 	if err != nil || target <= 0 {
 		return 0, false
 	}
-	return intClamp(target, 1, totalRows) - 1, true
+	return max(1, min(totalRows, target)) - 1, true
 }
 
 func dataGridSubmitLocalJump(ctx dataGridJumpContext, e *Event, w *Window) {

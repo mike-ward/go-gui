@@ -313,7 +313,7 @@ func TestEventFnMouseScrollFocusedHandlerPrecedence(t *testing.T) {
 	if !focusedCalled {
 		t.Error("focused OnMouseScroll should be called")
 	}
-	if e.IsHandled {
-		t.Error("fallback scroll should not run when focused handler exists")
+	if !e.IsHandled {
+		t.Error("focused OnMouseScroll should mark event as handled")
 	}
 }
