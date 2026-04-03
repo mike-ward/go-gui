@@ -182,11 +182,11 @@ func (s *InMemoryDataSource) FetchData(req GridDataRequest) (GridDataResult, err
 		return GridDataResult{}, err
 	}
 	s.mu.RLock()
+	defer s.mu.RUnlock()
 	rows := make([]GridRow, len(s.Rows))
 	copy(rows, s.Rows)
 	defaultLimit := s.DefaultLimit
 	rowCountKnown := s.RowCountKnown
-	s.mu.RUnlock()
 	// latencyMs=0: sleep already applied above; inner call
 	// degenerates to abort-check only.
 	return dataGridSourceInMemoryFetch(

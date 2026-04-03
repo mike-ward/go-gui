@@ -88,13 +88,13 @@ func (p *Parser) ReleaseParsed(parsed *gui.SvgParsed) {
 		return
 	}
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	hash, ok := p.byParsed[parsed]
 	if ok {
 		delete(p.byParsed, parsed)
 		delete(p.byHash, hash)
 		p.removeHashFromOrder(hash)
 	}
-	p.mu.Unlock()
 }
 
 // InvalidateSvgSource invalidates parser cache for one SVG source.
@@ -117,10 +117,10 @@ func (p *Parser) InvalidateSvgSource(svgSrc string) {
 // ClearSvgParserCache removes all retained parsed entries.
 func (p *Parser) ClearSvgParserCache() {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	clear(p.byHash)
 	clear(p.byParsed)
 	p.order = nil
-	p.mu.Unlock()
 }
 
 func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui.SvgParsed {
@@ -137,6 +137,7 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 		Height:         vg.Height,
 	}
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.byHash[hash] = parserCacheEntry{parsed: result, vg: vg}
 	p.byParsed[result] = hash
 	p.order = append(p.order, hash)
@@ -151,7 +152,6 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 			delete(p.byHash, evictHash)
 		}
 	}
-	p.mu.Unlock()
 	return result
 }
 
@@ -188,12 +188,12 @@ func (p *Parser) removeHashFromOrder(hash uint64) {
 
 func (p *Parser) removeHash(hash uint64) {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	if entry, ok := p.byHash[hash]; ok {
 		delete(p.byParsed, entry.parsed)
 		delete(p.byHash, hash)
 		p.removeHashFromOrder(hash)
 	}
-	p.mu.Unlock()
 }
 
 func parserSourceHash(src string, inline bool) uint64 {

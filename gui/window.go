@@ -211,6 +211,8 @@ func (w *Window) Ctx() context.Context {
 
 // ClearViewState resets all view state.
 func (w *Window) ClearViewState() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	w.viewState.registry.Clear()
 	w.viewState.idFocus = 0
 }
