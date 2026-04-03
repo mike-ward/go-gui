@@ -126,8 +126,9 @@ func init() {
 		ColorSelect:      colorSelectLight,
 		ColorError:       RGBA(200, 40, 40, 255),
 		TextStyleDef: TextStyle{
-			Color: colorTextLight,
-			Size:  SizeTextMedium,
+			Family: defaultFontFamily,
+			Color:  colorTextLight,
+			Size:   SizeTextMedium,
 		},
 		MonoFontFamily:   defaultMonoFontFamily,
 		Padding:          PaddingMedium,
@@ -190,8 +191,9 @@ func init() {
 		ColorError:       RGBA(218, 54, 51, 255),
 		TitlebarDark:     true,
 		TextStyleDef: TextStyle{
-			Color: ColorFromString("#E1E1E1"),
-			Size:  SizeTextMedium,
+			Family: defaultFontFamily,
+			Color:  ColorFromString("#E1E1E1"),
+			Size:   SizeTextMedium,
 		},
 		SizeBorder:       SizeBorderDef,
 		Padding:          PaddingMedium,

@@ -12,7 +12,7 @@ type FontVariants struct {
 
 // Font name constants.
 const (
-	BaseFontName = ""
+	BaseFontName = defaultFontFamily
 	IconFontName = "feathericon"
 )
 

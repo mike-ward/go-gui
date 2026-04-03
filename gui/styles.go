@@ -160,8 +160,9 @@ type RectangleStyle struct {
 // Default styles (dark theme).
 var (
 	DefaultTextStyle = TextStyle{
-		Color: colorTextDark,
-		Size:  SizeTextMedium,
+		Family: defaultFontFamily,
+		Color:  colorTextDark,
+		Size:   SizeTextMedium,
 	}
 
 	DefaultButtonStyle = ButtonStyle{
