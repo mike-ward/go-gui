@@ -127,6 +127,12 @@ func (w *Window) RequestRenderOnly() {
 	w.markRenderOnlyRefresh()
 }
 
+// RequestRedraw marks the window for render-only refresh. Safe to call
+// from OnHover/OnMouseLeave callbacks. No-op if a layout refresh is pending.
+func (w *Window) RequestRedraw() {
+	w.markRenderOnlyRefresh()
+}
+
 // UpdateView sets the view generator and triggers a full refresh.
 func (w *Window) UpdateView(gen func(*Window) View) {
 	w.mu.Lock()

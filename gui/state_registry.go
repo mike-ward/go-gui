@@ -115,6 +115,7 @@ const (
 	nsForm                = "gui.form"
 	nsSpellCheck          = "gui.spell_check"
 	nsSkeleton            = "gui.skeleton"
+	nsHoverInside         = "gui.hover.inside"
 )
 
 // Capacity tiers.

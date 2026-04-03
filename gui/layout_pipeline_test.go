@@ -502,6 +502,121 @@ func TestTooltipColumnMaxWidthConstrainsText(t *testing.T) {
 		col.Shape.Width, textShape.Width, textShape.Height)
 }
 
+func makeHoverShape(id string) *Shape {
+	return &Shape{
+		ShapeType: ShapeRectangle,
+		ID:        id,
+		ShapeClip: DrawClip{X: 0, Y: 0, Width: 50, Height: 50},
+		Opacity:   1,
+	}
+}
+
+func TestLayoutMouseLeaveEnterFiresNothing(t *testing.T) {
+	w := &Window{}
+	w.viewState.mousePosX = 15
+	w.viewState.mousePosY = 15
+
+	left := 0
+	shape := makeHoverShape("c1")
+	shape.Events = &EventHandlers{
+		OnMouseLeave: func(_ *Layout, _ *Event, _ *Window) { left++ },
+	}
+	layout := Layout{Shape: shape}
+	layoutMouseLeave(&layout, w)
+
+	if left != 0 {
+		t.Errorf("OnMouseLeave fired on enter: got %d, want 0", left)
+	}
+}
+
+func TestLayoutMouseLeaveExitFiresOnMouseLeave(t *testing.T) {
+	w := &Window{}
+
+	left := 0
+	shape := makeHoverShape("c2")
+	shape.Events = &EventHandlers{
+		OnMouseLeave: func(_ *Layout, _ *Event, _ *Window) { left++ },
+	}
+	layout := Layout{Shape: shape}
+
+	// Frame 1: inside.
+	w.viewState.mousePosX = 15
+	w.viewState.mousePosY = 15
+	layoutMouseLeave(&layout, w)
+
+	// Frame 2: outside.
+	w.viewState.mousePosX = 100
+	w.viewState.mousePosY = 100
+	layoutMouseLeave(&layout, w)
+
+	if left != 1 {
+		t.Errorf("OnMouseLeave fire count: got %d, want 1", left)
+	}
+}
+
+func TestLayoutMouseLeaveNoRepeatWhileOutside(t *testing.T) {
+	w := &Window{}
+
+	left := 0
+	shape := makeHoverShape("c3")
+	shape.Events = &EventHandlers{
+		OnMouseLeave: func(_ *Layout, _ *Event, _ *Window) { left++ },
+	}
+	layout := Layout{Shape: shape}
+
+	// Frame 1: inside.
+	w.viewState.mousePosX = 15
+	w.viewState.mousePosY = 15
+	layoutMouseLeave(&layout, w)
+
+	// Frames 2-4: outside — should fire once only.
+	for range 3 {
+		w.viewState.mousePosX = 100
+		w.viewState.mousePosY = 100
+		layoutMouseLeave(&layout, w)
+	}
+
+	if left != 1 {
+		t.Errorf("OnMouseLeave fired %d times while outside, want 1", left)
+	}
+}
+
+func TestLayoutMouseLeaveReEnterResetsState(t *testing.T) {
+	w := &Window{}
+
+	entered, left := 0, 0
+	shape := makeHoverShape("c4")
+	shape.Events = &EventHandlers{
+		OnHover:      func(_ *Layout, _ *Event, _ *Window) { entered++ },
+		OnMouseLeave: func(_ *Layout, _ *Event, _ *Window) { left++ },
+	}
+	layout := Layout{Shape: shape}
+
+	// Frame 1: inside.
+	w.viewState.mousePosX = 15
+	w.viewState.mousePosY = 15
+	layoutMouseLeave(&layout, w)
+
+	// Frame 2: outside → fires leave.
+	w.viewState.mousePosX = 100
+	w.viewState.mousePosY = 100
+	layoutMouseLeave(&layout, w)
+
+	// Frame 3: inside again → no leave.
+	w.viewState.mousePosX = 15
+	w.viewState.mousePosY = 15
+	layoutMouseLeave(&layout, w)
+
+	// Frame 4: outside again → fires leave again.
+	w.viewState.mousePosX = 100
+	w.viewState.mousePosY = 100
+	layoutMouseLeave(&layout, w)
+
+	if left != 2 {
+		t.Errorf("OnMouseLeave fire count: got %d, want 2", left)
+	}
+}
+
 func abs32(x float32) float32 {
 	if x < 0 {
 		return -x
