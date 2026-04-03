@@ -1,4 +1,4 @@
 package gui
 
-const defaultFontFamily     = ""
+const defaultFontFamily = ""
 const defaultMonoFontFamily = "monospace"
