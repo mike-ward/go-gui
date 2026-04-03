@@ -95,6 +95,49 @@ func layoutHover(layout *Layout, w *Window) bool {
 	return true
 }
 
+// layoutMouseLeave walks the entire layout tree, firing OnMouseLeave on any
+// shape whose hover state transitioned inside→outside this frame. shape.ID
+// must be non-empty; shapes with an empty ID are silently skipped.
+func layoutMouseLeave(layout *Layout, w *Window) {
+	if w.MouseIsLocked() {
+		return
+	}
+	savedX, savedY := w.viewState.mousePosX, w.viewState.mousePosY
+	if turns := layout.Shape.QuarterTurns; turns > 0 {
+		e := &Event{MouseX: savedX, MouseY: savedY}
+		rotateMouseInverse(layout.Shape, e)
+		w.viewState.mousePosX = e.MouseX
+		w.viewState.mousePosY = e.MouseY
+	}
+	for i := range layout.Children {
+		layoutMouseLeave(&layout.Children[i], w)
+	}
+	w.viewState.mousePosX, w.viewState.mousePosY = savedX, savedY
+
+	shape := layout.Shape
+	if shape == nil || shape.Disabled || shape.Events == nil ||
+		shape.Events.OnMouseLeave == nil || shape.ID == "" {
+		return
+	}
+	sm := StateMap[string, bool](w, nsHoverInside, capModerate)
+	inside := shape.PointInShape(w.viewState.mousePosX, w.viewState.mousePosY)
+	wasInside, _ := sm.Get(shape.ID)
+	if wasInside && !inside {
+		e := Event{
+			MouseX:      w.viewState.mousePosX,
+			MouseY:      w.viewState.mousePosY,
+			Type:        EventMouseMove,
+			MouseButton: MouseInvalid,
+		}
+		shape.Events.OnMouseLeave(layout, &e, w)
+	}
+	if inside {
+		sm.Set(shape.ID, true)
+	} else {
+		sm.Delete(shape.ID)
+	}
+}
+
 // layoutInDialogLayout walks the parent chain checking if any
 // ancestor has ID == reservedDialogID.
 func layoutInDialogLayout(layout *Layout) bool {

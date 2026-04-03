@@ -60,6 +60,10 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 			break
 		}
 	}
+	// Mouse-leave processing: all layers, all shapes.
+	for i := range layouts {
+		layoutMouseLeave(&layouts[i], w)
+	}
 
 	return layouts
 }

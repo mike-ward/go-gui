@@ -76,3 +76,14 @@ func TestAnimateRefreshKindOverride(t *testing.T) {
 		t.Errorf("got %d, want render_only", a.RefreshKind())
 	}
 }
+
+func TestRequestRedrawSetsRenderOnly(t *testing.T) {
+	w := &Window{}
+	w.RequestRedraw()
+	if w.refreshLayout {
+		t.Error("refreshLayout should be false")
+	}
+	if !w.refreshRenderOnly {
+		t.Error("refreshRenderOnly should be true")
+	}
+}
