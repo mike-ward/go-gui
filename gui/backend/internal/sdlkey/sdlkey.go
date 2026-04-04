@@ -21,6 +21,23 @@ func MapMouseButton(b uint8) gui.MouseButton {
 	}
 }
 
+// MapMouseButtons merges SDL mouse button state into a
+// gui.Modifier bitmask. The state parameter is the button
+// mask from SDL mouse-motion events.
+func MapMouseButtons(state uint32) gui.Modifier {
+	var m gui.Modifier
+	if state&sdl.ButtonLMask() != 0 {
+		m |= gui.ModLMB
+	}
+	if state&sdl.ButtonRMask() != 0 {
+		m |= gui.ModRMB
+	}
+	if state&sdl.ButtonMMask() != 0 {
+		m |= gui.ModMMB
+	}
+	return m
+}
+
 // MapKeyMod maps SDL key modifiers to gui.Modifier.
 func MapKeyMod(mod sdl.Keymod) gui.Modifier {
 	var m gui.Modifier

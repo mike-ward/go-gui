@@ -139,6 +139,27 @@ func TestMapMouseButton(t *testing.T) {
 	}
 }
 
+func TestMapMouseButtons(t *testing.T) {
+	tests := []struct {
+		state uint32
+		want  gui.Modifier
+	}{
+		{0, 0},
+		{sdl.ButtonLMask(), gui.ModLMB},
+		{sdl.ButtonRMask(), gui.ModRMB},
+		{sdl.ButtonMMask(), gui.ModMMB},
+		{sdl.ButtonLMask() | sdl.ButtonRMask(), gui.ModLMB | gui.ModRMB},
+		{sdl.ButtonLMask() | sdl.ButtonRMask() | sdl.ButtonMMask(),
+			gui.ModLMB | gui.ModRMB | gui.ModMMB},
+	}
+	for _, tt := range tests {
+		if got := MapMouseButtons(tt.state); got != tt.want {
+			t.Errorf("MapMouseButtons(%v) = %v, want %v",
+				tt.state, got, tt.want)
+		}
+	}
+}
+
 func TestMapKeyMod(t *testing.T) {
 	tests := []struct {
 		mod  sdl.Keymod

@@ -287,6 +287,17 @@ func mapModifiers(e js.Value) gui.Modifier {
 	if e.Get("metaKey").Bool() {
 		m |= gui.ModSuper
 	}
+	// JS MouseEvent.buttons bitmask: 1=LMB, 2=RMB, 4=MMB.
+	buttons := e.Get("buttons").Int()
+	if buttons&1 != 0 {
+		m |= gui.ModLMB
+	}
+	if buttons&2 != 0 {
+		m |= gui.ModRMB
+	}
+	if buttons&4 != 0 {
+		m |= gui.ModMMB
+	}
 	return m
 }
 

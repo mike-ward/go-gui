@@ -50,7 +50,7 @@ func mapEventWS(ev sdl.Event,
 			MouseY:    float32(e.Y),
 			MouseDX:   float32(e.XRel),
 			MouseDY:   float32(e.YRel),
-			Modifiers: sdlkey.MapKeyMod(sdl.GetModState()),
+			Modifiers: sdlkey.MapKeyMod(sdl.GetModState()) | sdlkey.MapMouseButtons(e.State),
 		}, true
 
 	case *sdl.MouseWheelEvent:
