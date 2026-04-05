@@ -48,6 +48,11 @@ func (r *StateRegistry) Clear() {
 	clear(r.maps)
 }
 
+// ClearNamespace drops all entries in a single namespace.
+func (r *StateRegistry) ClearNamespace(ns string) {
+	delete(r.maps, ns)
+}
+
 // entryCount returns the number of entries in the BoundedMap
 // for the given namespace, or 0 if not found.
 func (r *StateRegistry) entryCount(ns string) int {

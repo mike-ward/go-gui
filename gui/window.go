@@ -217,6 +217,14 @@ func (w *Window) ClearViewState() {
 	w.viewState.idFocus = 0
 }
 
+// ClearDrawCanvasCache drops all cached tessellation data,
+// forcing every DrawCanvas widget to re-render next frame.
+func (w *Window) ClearDrawCanvasCache() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.viewState.registry.ClearNamespace(nsDrawCanvas)
+}
+
 // Lock locks the window's mutex.
 func (w *Window) Lock() {
 	w.mu.Lock()
