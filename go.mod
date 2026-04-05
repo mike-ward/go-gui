@@ -3,7 +3,7 @@ module github.com/mike-ward/go-gui
 go 1.26.0
 
 require (
-	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71
+	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 	github.com/go-pdf/fpdf v0.9.0
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/mike-ward/go-glyph v1.6.2
