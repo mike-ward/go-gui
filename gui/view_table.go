@@ -119,10 +119,20 @@ type tableColWidthCache struct {
 	widths []float32
 }
 
-// Table generates a table from the given TableCfg. For column
-// auto-sizing and caching, use w.Table(cfg) instead.
+// Table generates a table from the given TableCfg. Column widths
+// are auto-sized when a Window is available during layout.
 func Table(cfg TableCfg) View {
-	return tableView(cfg, nil)
+	return &deferredTableView{cfg: cfg}
+}
+
+type deferredTableView struct {
+	cfg TableCfg
+}
+
+func (d *deferredTableView) Content() []View { return nil }
+
+func (d *deferredTableView) GenerateLayout(w *Window) Layout {
+	return GenerateViewLayout(tableView(d.cfg, w), w)
 }
 
 // Table generates a table with text measurement, column width

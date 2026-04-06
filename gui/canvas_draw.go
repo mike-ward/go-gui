@@ -25,6 +25,27 @@ type DrawCanvasTriBatch struct {
 	Color     Color
 }
 
+// DrawRecorder receives high-level draw commands before
+// tessellation. Attach via DrawContext.SetRecorder to capture
+// structured primitives (e.g. for SVG export).
+type DrawRecorder interface {
+	Line(x0, y0, x1, y1 float32, color Color, width float32)
+	Polyline(points []float32, color Color, width float32)
+	FilledRect(x, y, w, h float32, color Color)
+	Rect(x, y, w, h float32, color Color, width float32)
+	FilledCircle(cx, cy, radius float32, color Color)
+	Circle(cx, cy, radius float32, color Color, width float32)
+	FilledArc(cx, cy, rx, ry, start, sweep float32, color Color)
+	Arc(cx, cy, rx, ry, start, sweep float32, color Color, width float32)
+	FilledPolygon(points []float32, color Color)
+	FilledRoundedRect(x, y, w, h, radius float32, color Color)
+	RoundedRect(x, y, w, h, radius float32, color Color, width float32)
+	DashedLine(x0, y0, x1, y1 float32, color Color, width, dashLen, gapLen float32)
+	DashedPolyline(points []float32, color Color, width, dashLen, gapLen float32)
+	PolylineJoined(points []float32, color Color, width float32)
+	Text(x, y float32, text string, style TextStyle)
+}
+
 // DrawContext is passed to the OnDraw callback. Drawing methods
 // append tessellated triangle batches which are later emitted as
 // RenderSvg commands. Text methods append deferred text entries
@@ -39,7 +60,12 @@ type DrawContext struct {
 	texts           []DrawCanvasTextEntry
 	arcBuf          []float32
 	textMeasure     TextMeasurer
+	recorder        DrawRecorder
 }
+
+// SetRecorder attaches a DrawRecorder that receives high-level
+// draw commands in addition to normal tessellation.
+func (dc *DrawContext) SetRecorder(r DrawRecorder) { dc.recorder = r }
 
 func (dc *DrawContext) getBatch(color Color) *DrawCanvasTriBatch {
 	if len(dc.batches) > 0 && dc.lastColor == color {
@@ -59,6 +85,10 @@ func (dc *DrawContext) FilledRect(x, y, w, h float32, color Color) {
 	if w <= 0 || h <= 0 {
 		return
 	}
+	if dc.recorder != nil {
+		dc.recorder.FilledRect(x, y, w, h, color)
+		return
+	}
 	b := dc.getBatch(color)
 	b.Triangles = append(b.Triangles,
 		x, y,
@@ -72,6 +102,10 @@ func (dc *DrawContext) FilledRect(x, y, w, h float32, color Color) {
 
 // Line draws a single line segment.
 func (dc *DrawContext) Line(x0, y0, x1, y1 float32, color Color, width float32) {
+	if dc.recorder != nil {
+		dc.recorder.Line(x0, y0, x1, y1, color, width)
+		return
+	}
 	dc.Polyline([]float32{x0, y0, x1, y1}, color, width)
 }
 
@@ -79,6 +113,10 @@ func (dc *DrawContext) Line(x0, y0, x1, y1 float32, color Color, width float32) 
 // per-segment rectangle expansion (no joins/caps).
 func (dc *DrawContext) Polyline(points []float32, color Color, width float32) {
 	if len(points) < 4 || width <= 0 {
+		return
+	}
+	if dc.recorder != nil {
+		dc.recorder.Polyline(points, color, width)
 		return
 	}
 	hw := width / 2
@@ -114,6 +152,10 @@ func (dc *DrawContext) Rect(x, y, w, h float32, color Color, width float32) {
 	if w <= 0 || h <= 0 || width <= 0 {
 		return
 	}
+	if dc.recorder != nil {
+		dc.recorder.Rect(x, y, w, h, color, width)
+		return
+	}
 	hw := width / 2
 	b := dc.getBatch(color)
 	// Top.
@@ -144,6 +186,10 @@ func (dc *DrawContext) FilledPolygon(points []float32, color Color) {
 	if len(points) < 6 {
 		return
 	}
+	if dc.recorder != nil {
+		dc.recorder.FilledPolygon(points, color)
+		return
+	}
 	n := len(points) / 2
 	b := dc.getBatch(color)
 	x0, y0 := points[0], points[1]
@@ -158,17 +204,29 @@ func (dc *DrawContext) FilledPolygon(points []float32, color Color) {
 
 // FilledCircle draws a filled circle.
 func (dc *DrawContext) FilledCircle(cx, cy, radius float32, color Color) {
+	if dc.recorder != nil {
+		dc.recorder.FilledCircle(cx, cy, radius, color)
+		return
+	}
 	dc.FilledArc(cx, cy, radius, radius, 0, 2*math.Pi, color)
 }
 
 // Circle draws a stroked circle.
 func (dc *DrawContext) Circle(cx, cy, radius float32, color Color, width float32) {
+	if dc.recorder != nil {
+		dc.recorder.Circle(cx, cy, radius, color, width)
+		return
+	}
 	dc.Arc(cx, cy, radius, radius, 0, 2*math.Pi, color, width)
 }
 
 // Arc draws a stroked elliptical arc.
 func (dc *DrawContext) Arc(cx, cy, rx, ry, start, sweep float32, color Color, width float32) {
 	if width <= 0 {
+		return
+	}
+	if dc.recorder != nil {
+		dc.recorder.Arc(cx, cy, rx, ry, start, sweep, color, width)
 		return
 	}
 	pts := dc.arcPoints(cx, cy, rx, ry, start, sweep)
@@ -181,6 +239,10 @@ func (dc *DrawContext) Arc(cx, cy, rx, ry, start, sweep float32, color Color, wi
 // Emits fan triangles directly from center to arc points,
 // avoiding an intermediate polygon allocation.
 func (dc *DrawContext) FilledArc(cx, cy, rx, ry, start, sweep float32, color Color) {
+	if dc.recorder != nil {
+		dc.recorder.FilledArc(cx, cy, rx, ry, start, sweep, color)
+		return
+	}
 	pts := dc.arcPoints(cx, cy, rx, ry, start, sweep)
 	if len(pts) < 4 {
 		return
@@ -226,6 +288,10 @@ func (dc *DrawContext) arcPoints(cx, cy, rx, ry, start, sweep float32) []float32
 // Radius is clamped to half the smaller dimension.
 func (dc *DrawContext) FilledRoundedRect(x, y, w, h, radius float32, color Color) {
 	if w <= 0 || h <= 0 {
+		return
+	}
+	if dc.recorder != nil {
+		dc.recorder.FilledRoundedRect(x, y, w, h, radius, color)
 		return
 	}
 	radius = min(radius, w/2, h/2)
@@ -280,6 +346,10 @@ func (dc *DrawContext) RoundedRect(x, y, w, h, radius float32, color Color, widt
 	if w <= 0 || h <= 0 || width <= 0 {
 		return
 	}
+	if dc.recorder != nil {
+		dc.recorder.RoundedRect(x, y, w, h, radius, color, width)
+		return
+	}
 	radius = min(radius, w/2, h/2)
 	if radius <= 0 {
 		dc.Rect(x, y, w, h, color, width)
@@ -327,6 +397,10 @@ func (dc *DrawContext) DashedLine(
 		dc.Line(x0, y0, x1, y1, color, width)
 		return
 	}
+	if dc.recorder != nil {
+		dc.recorder.DashedLine(x0, y0, x1, y1, color, width, dashLen, gapLen)
+		return
+	}
 	dx := x1 - x0
 	dy := y1 - y0
 	totalLen := float32(math.Sqrt(float64(dx*dx + dy*dy)))
@@ -362,6 +436,10 @@ func (dc *DrawContext) DashedPolyline(
 	}
 	if dashLen <= 0 || gapLen <= 0 {
 		dc.Polyline(points, color, width)
+		return
+	}
+	if dc.recorder != nil {
+		dc.recorder.DashedPolyline(points, color, width, dashLen, gapLen)
 		return
 	}
 	patternLen := dashLen + gapLen
@@ -411,6 +489,10 @@ func (dc *DrawContext) PolylineJoined(
 ) {
 	n := len(points) / 2
 	if n < 2 || width <= 0 {
+		return
+	}
+	if dc.recorder != nil {
+		dc.recorder.PolylineJoined(points, color, width)
 		return
 	}
 	hw := width / 2
@@ -520,6 +602,10 @@ func (dc *DrawContext) PolylineJoined(
 // Text draws text at the given position using the specified style.
 // The position is the top-left of the text bounding box.
 func (dc *DrawContext) Text(x, y float32, text string, style TextStyle) {
+	if dc.recorder != nil {
+		dc.recorder.Text(x, y, text, style)
+		return
+	}
 	dc.texts = append(dc.texts, DrawCanvasTextEntry{
 		X: x, Y: y, Text: text, Style: style,
 	})
