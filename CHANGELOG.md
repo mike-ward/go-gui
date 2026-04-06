@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.8.0] - 2026-04-06
+
+### Added
+
+- `Spinner` widget: animated mathematical curve loading indicator with 21 named `CurveType` constants (rose, lissajous, hypotrochoid, butterfly, cardioid, lemniscate, epitrochoid, heart wave, spiral, fourier and variants)
+- Spinner particle-trail rendering via `DrawCanvas` with faint ghost path outline
+- Spinner optional slow rotation (`Rotate` field, 30s per revolution)
+- Spinner `Opt[float32]` params (ParamA/B/D) for custom curve tuning
+- DrawContext: `QuadBezier`, `CubicBezier` drawing primitives
+- DrawCanvas: `OnMouseUp` event
+- `ClearNamespace` and `ClearDrawCanvasCache` for targeted cache flush
+- Mouse button state in motion events; `OnMouseMove` on `DrawCanvas`
+- `OnMouseLeave` event and `RequestRedraw()` for tooltip support
+- Showcase: Spinner demo with all 21 curves, varied colors, and rotation examples
+
+### Fixed
+
+- Table column auto-sizing; DrawRecorder `Text()` fall-through
+- Live resize redraw on Windows (SDL event watcher)
+- Mutex safety: defer Unlock, add missing lock in `ClearViewState`
+- gofmt alignment in theme_defaults const blocks
+
+### Changed
+
+- Bump go-gl/gl to 2025-03-31 snapshot
+- Bump go-glyph v1.6.1 → v1.6.2
+- Set default font to Segoe UI on Windows
+
 ## [v0.7.0] - 2026-04-02
 
 ### Breaking
