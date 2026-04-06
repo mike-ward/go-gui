@@ -43,6 +43,8 @@ type DrawRecorder interface {
 	DashedLine(x0, y0, x1, y1 float32, color Color, width, dashLen, gapLen float32)
 	DashedPolyline(points []float32, color Color, width, dashLen, gapLen float32)
 	PolylineJoined(points []float32, color Color, width float32)
+	QuadBezier(x0, y0, cx, cy, x1, y1 float32, color Color, width float32)
+	CubicBezier(x0, y0, c1x, c1y, c2x, c2y, x1, y1 float32, color Color, width float32)
 	Text(x, y float32, text string, style TextStyle)
 }
 
@@ -59,6 +61,7 @@ type DrawContext struct {
 	batches         []DrawCanvasTriBatch
 	texts           []DrawCanvasTextEntry
 	arcBuf          []float32
+	bezierBuf       []float32
 	textMeasure     TextMeasurer
 	recorder        DrawRecorder
 }
@@ -596,6 +599,134 @@ func (dc *DrawContext) PolylineJoined(
 			a.lx, a.ly, a.rx, a.ry, c.rx, c.ry,
 			a.lx, a.ly, c.rx, c.ry, c.lx, c.ly,
 		)
+	}
+}
+
+const (
+	bezierTol      = float32(0.5)    // pixel tolerance
+	bezierMaxDepth = 16              // max subdivision depth
+	bezierDegenTol = float32(0.0001) // near-degenerate threshold
+)
+
+// hasNaNInf returns true if any value is NaN or ±Inf.
+func hasNaNInf(vals ...float32) bool {
+	for _, v := range vals {
+		if v != v || v-v != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (dc *DrawContext) resetBezierBuf(x0, y0 float32) []float32 {
+	if cap(dc.bezierBuf) < 64 {
+		dc.bezierBuf = make([]float32, 0, 64)
+	}
+	return append(dc.bezierBuf[:0], x0, y0)
+}
+
+func flattenQuadBezier(
+	buf *[]float32,
+	x0, y0, cx, cy, x1, y1, tol float32, depth int,
+) {
+	mx := (x0 + x1) / 2
+	my := (y0 + y1) / 2
+	dx := cx - mx
+	dy := cy - my
+	d := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+
+	if d <= tol || depth >= bezierMaxDepth {
+		*buf = append(*buf, x1, y1)
+		return
+	}
+	ax := (x0 + cx) / 2
+	ay := (y0 + cy) / 2
+	bx := (cx + x1) / 2
+	by := (cy + y1) / 2
+	abx := (ax + bx) / 2
+	aby := (ay + by) / 2
+	flattenQuadBezier(buf, x0, y0, ax, ay, abx, aby, tol, depth+1)
+	flattenQuadBezier(buf, abx, aby, bx, by, x1, y1, tol, depth+1)
+}
+
+func flattenCubicBezier(
+	buf *[]float32,
+	x0, y0, c1x, c1y, c2x, c2y, x1, y1, tol float32, depth int,
+) {
+	dx := x1 - x0
+	dy := y1 - y0
+	d := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+
+	if d < bezierDegenTol {
+		*buf = append(*buf, x1, y1)
+		return
+	}
+
+	d1 := f32Abs((c1x-x0)*dy-(c1y-y0)*dx) / d
+	d2 := f32Abs((c2x-x0)*dy-(c2y-y0)*dx) / d
+
+	if d1+d2 <= tol || depth >= bezierMaxDepth {
+		*buf = append(*buf, x1, y1)
+		return
+	}
+	ax := (x0 + c1x) / 2
+	ay := (y0 + c1y) / 2
+	bx := (c1x + c2x) / 2
+	by := (c1y + c2y) / 2
+	ex := (c2x + x1) / 2
+	ey := (c2y + y1) / 2
+	abx := (ax + bx) / 2
+	aby := (ay + by) / 2
+	bex := (bx + ex) / 2
+	bey := (by + ey) / 2
+	midx := (abx + bex) / 2
+	midy := (aby + bey) / 2
+	flattenCubicBezier(buf, x0, y0, ax, ay, abx, aby, midx, midy,
+		tol, depth+1)
+	flattenCubicBezier(buf, midx, midy, bex, bey, ex, ey, x1, y1,
+		tol, depth+1)
+}
+
+// QuadBezier draws a stroked quadratic Bezier curve defined by
+// start (x0,y0), control (cx,cy) and end (x1,y1).
+func (dc *DrawContext) QuadBezier(
+	x0, y0, cx, cy, x1, y1 float32, color Color, width float32,
+) {
+	if width <= 0 || hasNaNInf(x0, y0, cx, cy, x1, y1, width) {
+		return
+	}
+	if dc.recorder != nil {
+		dc.recorder.QuadBezier(x0, y0, cx, cy, x1, y1, color, width)
+		return
+	}
+	dc.bezierBuf = dc.resetBezierBuf(x0, y0)
+	flattenQuadBezier(&dc.bezierBuf, x0, y0, cx, cy, x1, y1,
+		bezierTol, 0)
+	if len(dc.bezierBuf) >= 4 {
+		dc.Polyline(dc.bezierBuf, color, width)
+	}
+}
+
+// CubicBezier draws a stroked cubic Bezier curve defined by
+// start (x0,y0), controls (c1x,c1y) (c2x,c2y) and end (x1,y1).
+func (dc *DrawContext) CubicBezier(
+	x0, y0, c1x, c1y, c2x, c2y, x1, y1 float32,
+	color Color, width float32,
+) {
+	if width <= 0 ||
+		hasNaNInf(x0, y0, c1x, c1y, c2x, c2y, x1, y1, width) {
+		return
+	}
+	if dc.recorder != nil {
+		dc.recorder.CubicBezier(x0, y0, c1x, c1y, c2x, c2y, x1, y1,
+			color, width)
+		return
+	}
+	dc.bezierBuf = dc.resetBezierBuf(x0, y0)
+	flattenCubicBezier(&dc.bezierBuf, x0, y0, c1x, c1y, c2x, c2y,
+		x1, y1, bezierTol, 0)
+	if len(dc.bezierBuf) >= 4 {
+		dc.Polyline(dc.bezierBuf, color, width)
 	}
 }
 

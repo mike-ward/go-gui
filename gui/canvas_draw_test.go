@@ -431,6 +431,70 @@ func TestDrawContextPolylineJoinedSharpAngle(t *testing.T) {
 	}
 }
 
+// --- QuadBezier ---
+
+func TestDrawContextQuadBezier(t *testing.T) {
+	dc := DrawContext{Width: 200, Height: 200}
+	dc.QuadBezier(0, 0, 50, 100, 100, 0, Red, 2)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	if len(dc.batches[0].Triangles) < 12 {
+		t.Errorf("too few triangles: %d", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextQuadBezierNaN(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	nan := float32(math.NaN())
+	inf := float32(math.Inf(1))
+	dc.QuadBezier(nan, 0, 50, 100, 100, 0, Red, 2)
+	dc.QuadBezier(0, 0, inf, 100, 100, 0, Red, 2)
+	if len(dc.batches) != 0 {
+		t.Errorf("NaN/Inf: batches = %d, want 0", len(dc.batches))
+	}
+}
+
+func TestDrawContextQuadBezierZeroWidth(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.QuadBezier(0, 0, 50, 100, 100, 0, Red, 0)
+	if len(dc.batches) != 0 {
+		t.Errorf("zero width: batches = %d, want 0", len(dc.batches))
+	}
+}
+
+// --- CubicBezier ---
+
+func TestDrawContextCubicBezier(t *testing.T) {
+	dc := DrawContext{Width: 200, Height: 200}
+	dc.CubicBezier(0, 0, 30, 100, 70, 100, 100, 0, Red, 2)
+	if len(dc.batches) != 1 {
+		t.Fatalf("batches = %d, want 1", len(dc.batches))
+	}
+	if len(dc.batches[0].Triangles) < 12 {
+		t.Errorf("too few triangles: %d", len(dc.batches[0].Triangles))
+	}
+}
+
+func TestDrawContextCubicBezierNaN(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	nan := float32(math.NaN())
+	inf := float32(math.Inf(-1))
+	dc.CubicBezier(0, 0, nan, 100, 70, 100, 100, 0, Red, 2)
+	dc.CubicBezier(0, 0, 30, 100, 70, inf, 100, 0, Red, 2)
+	if len(dc.batches) != 0 {
+		t.Errorf("NaN/Inf: batches = %d, want 0", len(dc.batches))
+	}
+}
+
+func TestDrawContextCubicBezierZeroWidth(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.CubicBezier(0, 0, 30, 100, 70, 100, 100, 0, Red, 0)
+	if len(dc.batches) != 0 {
+		t.Errorf("zero width: batches = %d, want 0", len(dc.batches))
+	}
+}
+
 // --- Text ---
 
 func TestDrawContextText(t *testing.T) {
