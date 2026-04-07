@@ -1,6 +1,9 @@
 package main
 
-import "github.com/mike-ward/go-gui/gui"
+import (
+	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/highlight"
+)
 
 func demoDialog(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
@@ -245,6 +248,8 @@ func demoNotification(w *gui.Window) gui.View {
 
 func demoInspector(w *gui.Window) gui.View {
 	t := gui.CurrentTheme()
+	inspectorStyle := gui.DefaultMarkdownStyle()
+	inspectorStyle.CodeHighlighter = highlight.Default()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.SomeF(16),
@@ -253,7 +258,7 @@ func demoInspector(w *gui.Window) gui.View {
 			w.Markdown(gui.MarkdownCfg{
 				ID:      "inspector-info",
 				Padding: gui.NoPadding,
-				Style:   gui.DefaultMarkdownStyle(),
+				Style:   inspectorStyle,
 				Source: `Press **F12** to toggle the inspector. ` +
 					`Excluded in prod builds (` + "`-tags prod`" + `).
 

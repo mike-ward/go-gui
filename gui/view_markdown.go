@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/mike-ward/go-gui/gui/highlight"
 	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
@@ -32,29 +33,37 @@ type MarkdownStyle struct {
 	CodeNumberColor   Color
 	CodeCommentColor  Color
 	CodeOperatorColor Color
-	HRColor           Color
-	LinkColor         Color
-	BlockquoteBorder  Color
-	BlockquoteBG      Color
-	BlockSpacing      float32
-	NestIndent        float32
-	PrefixCharWidth   float32
-	CodeBlockPadding  Opt[Padding]
-	CodeBlockRadius   float32
-	H1Separator       bool
-	H2Separator       bool
-	TableBorderStyle  TableBorderStyle
-	TableBorderColor  Color
-	TableBorderSize   float32
-	TableHeadStyle    TextStyle
-	TableCellStyle    TextStyle
-	TableCellPadding  Opt[Padding]
-	TableRowAlt       *Color
-	HighlightBG       Color
-	HardLineBreaks    bool
-	MathDPIDisplay    int
-	MathDPIInline     int
-	MermaidBG         Color
+	CodeTypeColor     Color
+	CodeFunctionColor Color
+	CodeBuiltinColor  Color
+	// CodeHighlighter, when non-nil, is used to re-tokenize fenced
+	// code blocks whose info string names a supported language.
+	// When nil, the markdown parser's built-in primitive tokenizer
+	// is used. Use highlight.Default() for chroma-backed coverage.
+	CodeHighlighter  highlight.Highlighter
+	HRColor          Color
+	LinkColor        Color
+	BlockquoteBorder Color
+	BlockquoteBG     Color
+	BlockSpacing     float32
+	NestIndent       float32
+	PrefixCharWidth  float32
+	CodeBlockPadding Opt[Padding]
+	CodeBlockRadius  float32
+	H1Separator      bool
+	H2Separator      bool
+	TableBorderStyle TableBorderStyle
+	TableBorderColor Color
+	TableBorderSize  float32
+	TableHeadStyle   TextStyle
+	TableCellStyle   TextStyle
+	TableCellPadding Opt[Padding]
+	TableRowAlt      *Color
+	HighlightBG      Color
+	HardLineBreaks   bool
+	MathDPIDisplay   int
+	MathDPIInline    int
+	MermaidBG        Color
 }
 
 // DefaultMarkdownStyle returns a MarkdownStyle using the
@@ -79,6 +88,9 @@ func DefaultMarkdownStyle() MarkdownStyle {
 		CodeNumberColor:   RGB(169, 114, 62),
 		CodeCommentColor:  guiTheme.ColorBorder,
 		CodeOperatorColor: guiTheme.N3.Color,
+		CodeTypeColor:     RGB(78, 140, 178),
+		CodeFunctionColor: RGB(160, 100, 170),
+		CodeBuiltinColor:  RGB(78, 140, 178),
 		HRColor:           guiTheme.ColorBorder,
 		LinkColor:         guiTheme.ColorSelect,
 		BlockquoteBorder:  guiTheme.ColorBorder,

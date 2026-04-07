@@ -1,12 +1,17 @@
 package main
 
-import "github.com/mike-ward/go-gui/gui"
+import (
+	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/highlight"
+)
 
 func demoWelcome(w *gui.Window) gui.View {
 	return showcaseMarkdownPanel(w, "showcase-welcome", docPageSource("welcome"))
 }
 
 func showcaseMarkdownPanel(w *gui.Window, id, source string) gui.View {
+	style := gui.DefaultMarkdownStyle()
+	style.CodeHighlighter = highlight.Default()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:     gui.FillFit,
 		Padding:    gui.Some(gui.PaddingSmall),
@@ -15,7 +20,7 @@ func showcaseMarkdownPanel(w *gui.Window, id, source string) gui.View {
 		Content: []gui.View{
 			w.Markdown(gui.MarkdownCfg{
 				ID:      id,
-				Style:   gui.DefaultMarkdownStyle(),
+				Style:   style,
 				Source:  source,
 				Mode:    gui.Some(gui.TextModeWrap),
 				Padding: gui.NoPadding,

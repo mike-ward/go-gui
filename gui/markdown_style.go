@@ -8,6 +8,7 @@ import (
 
 	"github.com/mike-ward/go-glyph"
 
+	"github.com/mike-ward/go-gui/gui/highlight"
 	"github.com/mike-ward/go-gui/gui/markdown"
 )
 
@@ -107,6 +108,17 @@ func styleMdBlock(
 		sz := style.CodeBlockText.Size
 		for i := range mb.Content.Runs {
 			mb.Content.Runs[i].Style.Size = sz
+		}
+	}
+
+	// Fenced code block: replace parser's primitive tokenization
+	// with the configured Highlighter when available.
+	if block.IsCode && style.CodeHighlighter != nil &&
+		block.CodeLanguage != "" {
+		if runs := highlightCodeBlock(
+			mb.Content.Runs, block.CodeLanguage, &style,
+		); runs != nil {
+			mb.Content.Runs = runs
 		}
 	}
 
@@ -228,6 +240,62 @@ func mdFormatToStyle(
 	default:
 		return base
 	}
+}
+
+// highlightCodeBlock re-tokenizes a fenced code block's text using
+// style.CodeHighlighter. Returns nil on failure so the caller keeps
+// the parser's fallback runs. Base font/size come from the existing
+// run; color is assigned per token Kind.
+func highlightCodeBlock(
+	existing []RichTextRun, lang string, style *MarkdownStyle,
+) []RichTextRun {
+	if len(existing) == 0 {
+		return nil
+	}
+	total := 0
+	for _, r := range existing {
+		total += len(r.Text)
+	}
+	var src strings.Builder
+	src.Grow(total)
+	for _, r := range existing {
+		src.WriteString(r.Text)
+	}
+	toks := style.CodeHighlighter.Tokenize(lang, src.String())
+	if len(toks) == 0 {
+		return nil
+	}
+	base := existing[0].Style
+	base.Color = style.CodeOperatorColor
+	out := make([]RichTextRun, len(toks))
+	for i, tk := range toks {
+		s := base
+		s.Color = colorForKind(tk.Kind, style)
+		out[i] = RichTextRun{Text: tk.Text, Style: s}
+	}
+	return out
+}
+
+func colorForKind(k highlight.Kind, style *MarkdownStyle) Color {
+	switch k {
+	case highlight.KindKeyword:
+		return style.CodeKeywordColor
+	case highlight.KindString:
+		return style.CodeStringColor
+	case highlight.KindNumber:
+		return style.CodeNumberColor
+	case highlight.KindComment:
+		return style.CodeCommentColor
+	case highlight.KindOperator, highlight.KindPunctuation:
+		return style.CodeOperatorColor
+	case highlight.KindType:
+		return style.CodeTypeColor
+	case highlight.KindFunction:
+		return style.CodeFunctionColor
+	case highlight.KindBuiltin:
+		return style.CodeBuiltinColor
+	}
+	return style.CodeOperatorColor
 }
 
 func mdCodeTokenStyle(

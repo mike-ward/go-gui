@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/mike-ward/go-glyph"
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/highlight"
 )
 
 func demoText(_ *gui.Window) gui.View {
@@ -394,8 +395,10 @@ func demoRtf(_ *gui.Window) gui.View {
 }
 
 func demoMarkdown(w *gui.Window) gui.View {
+	style := gui.DefaultMarkdownStyle()
+	style.CodeHighlighter = highlight.Default()
 	return w.Markdown(gui.MarkdownCfg{
-		Style:  gui.DefaultMarkdownStyle(),
+		Style:  style,
 		Source: embeddedText("docs/markdown_demo.md"),
 	})
 }

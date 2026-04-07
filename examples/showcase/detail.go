@@ -1,6 +1,9 @@
 package main
 
-import "github.com/mike-ward/go-gui/gui"
+import (
+	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/highlight"
+)
 
 func detailPanel(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
@@ -45,6 +48,7 @@ func detailPanel(w *gui.Window) gui.View {
 	case app.ShowDocs && entry.Group != groupWelcome:
 		style := gui.DefaultMarkdownStyle()
 		style.H2 = gui.CurrentTheme().B3
+		style.CodeHighlighter = highlight.Default()
 		content = w.Markdown(gui.MarkdownCfg{
 			ID:      "doc-" + entry.ID,
 			Source:  componentDoc(entry.ID),

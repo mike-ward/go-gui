@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/highlight"
 )
 
 const showcaseDataGridFeaturesSource = `# Data Grid Features
@@ -153,6 +154,8 @@ func demoTable(w *gui.Window) gui.View {
 func demoDataGrid(w *gui.Window) gui.View {
 	app := gui.State[ShowcaseApp](w)
 	rows := showcaseDataGridApplyQuery(showcaseDataGridRows(), app.DataGridQuery)
+	gridFeaturesStyle := gui.DefaultMarkdownStyle()
+	gridFeaturesStyle.CodeHighlighter = highlight.Default()
 	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.SomeF(10),
@@ -188,7 +191,7 @@ func demoDataGrid(w *gui.Window) gui.View {
 			w.Markdown(gui.MarkdownCfg{
 				ID:     "catalog-data-grid-features",
 				Source: showcaseDataGridFeaturesSource,
-				Style:  gui.DefaultMarkdownStyle(),
+				Style:  gridFeaturesStyle,
 			}),
 		},
 	})
