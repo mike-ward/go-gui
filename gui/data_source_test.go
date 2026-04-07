@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"runtime"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -516,6 +517,7 @@ func TestInMemoryConcurrentFetchMutate(t *testing.T) {
 				t.Errorf("fetch error: %v", err)
 				return
 			}
+			runtime.Gosched()
 		}
 	})
 

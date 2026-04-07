@@ -22,8 +22,21 @@ func (w *Window) animationAdd(a Animation) {
 	wasEmpty := len(w.animations) == 0
 	w.animations[a.ID()] = a
 	if wasEmpty {
+		w.ensureAnimationLoop()
 		w.animationResume()
 	}
+}
+
+// ensureAnimationLoop starts the animation goroutine on first use.
+// No-op for windows without lifecycle channels (unit-test stubs).
+func (w *Window) ensureAnimationLoop() {
+	if w.animationStop == nil {
+		return
+	}
+	w.animationStartOnce.Do(func() {
+		w.animationStarted = true
+		go w.animationLoop()
+	})
 }
 
 // animationResume signals the animation loop to restart its
@@ -142,7 +155,7 @@ func (w *Window) wakeMain() {
 }
 
 func (w *Window) stopAnimationLoop() {
-	if w.animationStop == nil {
+	if w.animationStop == nil || !w.animationStarted {
 		return
 	}
 	w.animationStopOnce.Do(func() {

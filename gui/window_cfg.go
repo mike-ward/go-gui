@@ -53,6 +53,5 @@ func NewWindow(cfg WindowCfg) *Window {
 			animationResumeCh: make(chan struct{}, 1),
 		},
 	}
-	go w.animationLoop()
 	return w
 }

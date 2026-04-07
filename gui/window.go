@@ -40,10 +40,12 @@ type windowAnimation struct {
 	// Active animations keyed by ID.
 	animations map[string]Animation
 	// Animation loop lifecycle.
-	animationStop     chan struct{}
-	animationDone     chan struct{}
-	animationResumeCh chan struct{} // buffered(1), resumes ticker
-	animationStopOnce sync.Once
+	animationStop      chan struct{}
+	animationDone      chan struct{}
+	animationResumeCh  chan struct{} // buffered(1), resumes ticker
+	animationStopOnce  sync.Once
+	animationStartOnce sync.Once
+	animationStarted   bool
 	// Per-frame pipeline timings.
 	frameTimings FrameTimings
 }
