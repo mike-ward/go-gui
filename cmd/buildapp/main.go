@@ -91,7 +91,7 @@ func build(o bundleOpts) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(stage)
+	defer func() { _ = os.RemoveAll(stage) }()
 
 	appDir := filepath.Join(stage, o.Name+".app")
 	contents := filepath.Join(appDir, "Contents")
@@ -153,12 +153,12 @@ func validateMachO(path string) error {
 	if err != nil {
 		// also accept fat binaries
 		if ff, ferr := macho.OpenFat(path); ferr == nil {
-			ff.Close()
+			_ = ff.Close()
 			return nil
 		}
 		return fmt.Errorf("%s is not a Mach-O executable: %w", path, err)
 	}
-	f.Close()
+	_ = f.Close()
 	return nil
 }
 
@@ -168,7 +168,7 @@ func writePlist(path, execName, id, name, version, icon string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	return t.Execute(f, map[string]string{
 		"Exec": execName, "ID": id, "Name": name, "Version": version, "Icon": icon,
 	})
@@ -179,13 +179,13 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
 	}
 	if _, err = io.Copy(out, in); err != nil {
-		out.Close()
+		_ = out.Close()
 		return err
 	}
 	return out.Close()
@@ -223,7 +223,7 @@ func pngToIcns(png, outIcns string) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 	iconset := filepath.Join(tmp, "icon.iconset")
 	if err = os.Mkdir(iconset, 0o755); err != nil {
 		return err
