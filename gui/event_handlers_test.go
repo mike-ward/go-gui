@@ -386,3 +386,130 @@ func TestMouseScrollHandlerFocusedOnMouseScroll(t *testing.T) {
 		t.Error("focused OnMouseScroll should be called")
 	}
 }
+
+func TestMouseScrollUnhandledCascadesToScrollContainer(t *testing.T) {
+	t.Parallel()
+	guiTheme.ScrollMultiplier = 1
+	// Focused handler does NOT set IsHandled — scroll should
+	// cascade to the scroll container fallback.
+	focusCalled := false
+	root := &Layout{
+		Shape: &Shape{},
+		Children: []Layout{
+			{Shape: &Shape{
+				IDFocus: 7,
+				Events: &EventHandlers{
+					OnMouseScroll: func(_ *Layout, _ *Event, _ *Window) {
+						focusCalled = true
+						// deliberately not setting e.IsHandled
+					},
+				},
+			}},
+			{Shape: &Shape{
+				IDScroll: 1,
+				Width:    100,
+				Height:   50,
+				ShapeClip: DrawClip{
+					X: 0, Y: 0, Width: 100, Height: 50,
+				},
+			}, Children: []Layout{
+				{Shape: &Shape{ShapeType: ShapeRectangle, Height: 200}},
+			}},
+		},
+	}
+	w := &Window{windowWidth: 800, windowHeight: 600}
+	w.SetIDFocus(7)
+	e := &Event{
+		MouseX: 50, MouseY: 25,
+		ScrollY: -10, Modifiers: ModNone,
+	}
+	mouseScrollHandler(root, e, w)
+	if !focusCalled {
+		t.Error("focused handler should still be called")
+	}
+	if !e.IsHandled {
+		t.Error("scroll container should handle the event")
+	}
+}
+
+func TestMouseScrollFallbackRespectsIsHandled(t *testing.T) {
+	t.Parallel()
+	// Layout callback sets IsHandled — should stop propagation
+	// and NOT reach the scroll container.
+	handlerCalled := false
+	root := &Layout{
+		Shape: &Shape{
+			IDScroll: 1,
+			Width:    200, Height: 100,
+			ShapeClip: DrawClip{
+				X: 0, Y: 0, Width: 200, Height: 100,
+			},
+		},
+		Children: []Layout{
+			{Shape: &Shape{
+				Width: 200, Height: 100,
+				ShapeClip: DrawClip{
+					X: 0, Y: 0, Width: 200, Height: 100,
+				},
+				Events: &EventHandlers{
+					OnMouseScroll: func(_ *Layout, e *Event, _ *Window) {
+						handlerCalled = true
+						e.IsHandled = true
+					},
+				},
+			}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Height: 400}},
+		},
+	}
+	w := &Window{windowWidth: 800, windowHeight: 600}
+	e := &Event{
+		MouseX: 50, MouseY: 25,
+		ScrollY: -10, Modifiers: ModNone,
+	}
+	mouseScrollFallbackHandler(root, e, w)
+	if !handlerCalled {
+		t.Error("child handler should be called")
+	}
+	if !e.IsHandled {
+		t.Error("event should be handled by child")
+	}
+}
+
+func TestMouseScrollFallbackUnhandledReachesContainer(t *testing.T) {
+	t.Parallel()
+	guiTheme.ScrollMultiplier = 1
+	// Layout callback does NOT set IsHandled — scroll should
+	// fall through to the parent scroll container.
+	root := &Layout{
+		Shape: &Shape{
+			IDScroll: 1,
+			Width:    200, Height: 100,
+			ShapeClip: DrawClip{
+				X: 0, Y: 0, Width: 200, Height: 100,
+			},
+		},
+		Children: []Layout{
+			{Shape: &Shape{
+				Width: 200, Height: 100,
+				ShapeClip: DrawClip{
+					X: 0, Y: 0, Width: 200, Height: 100,
+				},
+				Events: &EventHandlers{
+					OnMouseScroll: func(_ *Layout, _ *Event, _ *Window) {
+						// deliberately not setting e.IsHandled
+					},
+				},
+			}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Height: 400}},
+		},
+	}
+	w := &Window{windowWidth: 800, windowHeight: 600}
+	e := &Event{
+		MouseX: 50, MouseY: 25,
+		ScrollY: -10, Modifiers: ModNone,
+	}
+	mouseScrollFallbackHandler(root, e, w)
+	if !e.IsHandled {
+		t.Error("scroll container should handle unhandled event")
+	}
+}

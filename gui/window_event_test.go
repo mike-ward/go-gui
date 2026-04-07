@@ -283,8 +283,9 @@ func TestEventFnMouseScrollFocusedHandlerPrecedence(t *testing.T) {
 			{Shape: &Shape{
 				IDFocus: 11,
 				Events: &EventHandlers{
-					OnMouseScroll: func(_ *Layout, _ *Event, _ *Window) {
+					OnMouseScroll: func(_ *Layout, e *Event, _ *Window) {
 						focusedCalled = true
+						e.IsHandled = true
 					},
 				},
 			}},

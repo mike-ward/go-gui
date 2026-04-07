@@ -24,6 +24,71 @@ func TestLayoutParents(t *testing.T) {
 	}
 }
 
+func TestLayoutSpacingSkipsHiddenFloatingAndOverDraw(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{
+			Axis:    AxisLeftToRight,
+			Spacing: 8,
+		},
+		Children: []Layout{
+			{Shape: &Shape{ShapeType: ShapeRectangle}},
+			{Shape: &Shape{ShapeType: ShapeNone}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Float: true}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, OverDraw: true}},
+			{Shape: &Shape{ShapeType: ShapeRectangle}},
+		},
+	}
+
+	got := root.spacing()
+	if !f32AreClose(got, 8.0) {
+		t.Errorf("spacing: got %f, want 8", got)
+	}
+}
+
+func TestContentWidthLTRSkipsHiddenFloatingAndOverDraw(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{
+			Axis:    AxisLeftToRight,
+			Spacing: 8,
+		},
+		Children: []Layout{
+			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 10}},
+			{Shape: &Shape{ShapeType: ShapeNone, Width: 1000}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 1000, Float: true}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 1000, OverDraw: true}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Width: 20}},
+		},
+	}
+
+	got := contentWidth(root)
+	// Visible width: 10 + 20, spacing: (2-1)*8
+	if !f32AreClose(got, 38.0) {
+		t.Errorf("content width: got %f, want 38", got)
+	}
+}
+
+func TestContentHeightTTBSkipsHiddenFloatingAndOverDraw(t *testing.T) {
+	root := &Layout{
+		Shape: &Shape{
+			Axis:    AxisTopToBottom,
+			Spacing: 6,
+		},
+		Children: []Layout{
+			{Shape: &Shape{ShapeType: ShapeRectangle, Height: 7}},
+			{Shape: &Shape{ShapeType: ShapeNone, Height: 1000}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Height: 1000, Float: true}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Height: 1000, OverDraw: true}},
+			{Shape: &Shape{ShapeType: ShapeRectangle, Height: 9}},
+		},
+	}
+
+	got := contentHeight(root)
+	// Visible height: 7 + 9, spacing: (2-1)*6
+	if !f32AreClose(got, 22.0) {
+		t.Errorf("content height: got %f, want 22", got)
+	}
+}
+
 func TestLayoutWidthsLTR(t *testing.T) {
 	root := &Layout{
 		Shape: &Shape{
