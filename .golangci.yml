@@ -30,6 +30,8 @@ linters:
         linters:
           - errcheck
           - gocyclo
+      - path: _test\.go
+        text: SA5011
       - path: native_platform_noop\.go
         linters:
           - revive
