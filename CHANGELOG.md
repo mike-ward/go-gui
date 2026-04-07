@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.0] - 2026-04-07
+
+### Added
+
+- `gui/highlight` subpackage: chroma-backed syntax highlighter with curated lexer set (go, python, js/ts, rust, c/cpp, java, ruby, shell, html, css, json, yaml, toml, sql, markdown, diff, dockerfile, make) and DoS caps (256KB source, 100k tokens)
+- `MarkdownStyle.CodeHighlighter` field: optional highlighter for fenced code blocks; nil preserves parser's built-in tokenizer
+- `MarkdownStyle.CodeTypeColor`, `CodeFunctionColor`, `CodeBuiltinColor` palette fields
+- Showcase: component docs, welcome, data grid features, markdown demo, and inspector overlay all use `highlight.Default()`
+
 ## [v0.8.0] - 2026-04-06
 
 ### Added
