@@ -247,6 +247,7 @@ func TestFindHint(t *testing.T) {
 	hint := FindHint(g)
 	if hint == nil {
 		t.Fatal("expected a hint")
+		return
 	}
 	// Should suggest (0,0) or (0,2) as safe.
 	if (hint.Row != 0 || hint.Col != 0) &&

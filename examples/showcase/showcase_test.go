@@ -142,6 +142,7 @@ func TestDemoTreeWrapsIntroText(t *testing.T) {
 		tc := layout.Children[idx].Shape.TC
 		if tc == nil {
 			t.Fatalf("layout.Children[%d].Shape.TC = nil, want text config", idx)
+			return
 		}
 		if tc.TextMode != gui.TextModeWrap {
 			t.Fatalf("layout.Children[%d].Shape.TC.TextMode = %v, want %v", idx, tc.TextMode, gui.TextModeWrap)
@@ -164,6 +165,7 @@ func TestDetailPanelSummaryWraps(t *testing.T) {
 	tc := layout.Children[1].Shape.TC
 	if tc == nil {
 		t.Fatal("layout.Children[1].Shape.TC = nil, want summary text")
+		return
 	}
 	if tc.TextMode != gui.TextModeWrap {
 		t.Fatalf("layout.Children[1].Shape.TC.TextMode = %v, want %v", tc.TextMode, gui.TextModeWrap)
