@@ -388,7 +388,6 @@ func TestMouseScrollHandlerFocusedOnMouseScroll(t *testing.T) {
 }
 
 func TestMouseScrollUnhandledCascadesToScrollContainer(t *testing.T) {
-	t.Parallel()
 	guiTheme.ScrollMultiplier = 1
 	// Focused handler does NOT set IsHandled — scroll should
 	// cascade to the scroll container fallback.
@@ -476,7 +475,6 @@ func TestMouseScrollFallbackRespectsIsHandled(t *testing.T) {
 }
 
 func TestMouseScrollFallbackUnhandledReachesContainer(t *testing.T) {
-	t.Parallel()
 	guiTheme.ScrollMultiplier = 1
 	// Layout callback does NOT set IsHandled — scroll should
 	// fall through to the parent scroll container.
