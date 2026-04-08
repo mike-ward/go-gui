@@ -46,6 +46,11 @@ jobs:
             harfbuzz \
             pango \
             fontconfig
+          brew upgrade \
+            freetype \
+            harfbuzz \
+            pango \
+            fontconfig || true
 
       - name: Test
         run: go test ${{ runner.os == 'Linux' && '-race' || '' }} -coverprofile=coverage.out ./gui/...
