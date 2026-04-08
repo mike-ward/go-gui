@@ -16,6 +16,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: go-gui
+
+      - uses: actions/checkout@v4
+        with:
+          repository: mike-ward/go-glyph
+          path: go-glyph
 
       - uses: actions/setup-go@v5
         with:
@@ -46,13 +53,13 @@ jobs:
             harfbuzz \
             pango \
             fontconfig
-          brew reinstall \
-            freetype \
-            harfbuzz \
-            pango \
-            fontconfig
+
+      - name: Add go-glyph replace
+        working-directory: go-gui
+        run: go mod edit -replace=github.com/mike-ward/go-glyph=../go-glyph
 
       - name: Test
+        working-directory: go-gui
         run: go test ${{ runner.os == 'Linux' && '-race' || '' }} -coverprofile=coverage.out ./gui/...
 
       - name: Upload coverage
@@ -60,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.os }}
-          path: coverage.out
+          path: go-gui/coverage.out
           retention-days: 30
 
   vet:
