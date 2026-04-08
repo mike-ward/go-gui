@@ -396,6 +396,12 @@ func (w *Window) SetTextMeasurer(tm TextMeasurer) {
 	w.textMeasurer = tm
 }
 
+// TextMeasurer returns the window's text measurement backend, or nil
+// if none has been set (e.g. headless tests without a backend).
+func (w *Window) TextMeasurer() TextMeasurer {
+	return w.textMeasurer
+}
+
 // SetWakeMainFn sets the function called to wake the main event
 // loop from WaitEventTimeout. The backend sets this at init time.
 func (w *Window) SetWakeMainFn(fn func()) {
