@@ -51,6 +51,7 @@ jobs:
             harfbuzz \
             pango \
             fontconfig || true
+          brew reinstall pango
 
       - name: Test
         run: go test ${{ runner.os == 'Linux' && '-race' || '' }} -coverprofile=coverage.out ./gui/...
