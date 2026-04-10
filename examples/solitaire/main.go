@@ -1,6 +1,6 @@
 // Solitaire example — Klondike solitaire with a 1980s arcade
 // landing page, drag-and-drop card movement, scoring, and
-// auto-complete.
+// right-click auto-complete.
 package main
 
 import (
@@ -40,10 +40,6 @@ type App struct {
 	DragOffsetY float32
 	DragMouseX  float32
 	DragMouseY  float32
-
-	// Double-click detection
-	LastClickTime time.Time
-	LastClickSrc  string // "waste" or "tableau:col"
 }
 
 const blinkAnim = "solitaire-blink"
@@ -231,7 +227,7 @@ func landingView(w *gui.Window, ww, wh float32) gui.View {
 				TextStyle: ts(theme.M4, 12, colorDimText),
 			}),
 			gui.Text(gui.TextCfg{
-				Text:      "DOUBLE-CLICK: AUTO-MOVE \u2022 N: NEW \u2022 ESC: MENU",
+				Text:      "RIGHT-CLICK: AUTO-MOVE \u2022 N: NEW \u2022 ESC: MENU",
 				TextStyle: ts(theme.M4, 12, colorDimText),
 			}),
 		},
@@ -335,6 +331,9 @@ func stockView(game *Game) gui.View {
 	x := colX(0)
 	if len(game.Stock) > 0 {
 		return cardBackView(x, boardTopY, func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+			if e.MouseButton != gui.MouseLeft {
+				return
+			}
 			app := gui.State[App](w)
 			app.Game.Draw()
 			e.IsHandled = true
@@ -342,6 +341,9 @@ func stockView(game *Game) gui.View {
 	}
 	// Empty stock — click to recycle.
 	return emptySlot(x, boardTopY, func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+		if e.MouseButton != gui.MouseLeft {
+			return
+		}
 		app := gui.State[App](w)
 		app.Game.Draw()
 		e.IsHandled = true
@@ -386,21 +388,14 @@ func makeWasteClickHandler() func(*gui.Layout, *gui.Event, *gui.Window) {
 			return
 		}
 
-		// Double-click detection.
-		now := time.Now()
-		src := "waste"
-		if now.Sub(app.LastClickTime) < 300*time.Millisecond &&
-			app.LastClickSrc == src {
-			// Try foundation, then tableau.
+		// Right-click: auto-place to foundation or tableau.
+		if e.MouseButton == gui.MouseRight {
 			if game.AutoMoveToFoundation(SourceWaste, 0) ||
 				game.AutoMoveToTableau(SourceWaste) {
-				app.LastClickTime = time.Time{}
 				e.IsHandled = true
-				return
 			}
+			return
 		}
-		app.LastClickTime = now
-		app.LastClickSrc = src
 
 		// Start drag.
 		startDrag(app, layout, e, w, DragSource{Type: SourceWaste},
@@ -491,22 +486,14 @@ func makeTableauClickHandler(col, cardIdx int) func(*gui.Layout, *gui.Event, *gu
 		app := gui.State[App](w)
 		game := app.Game
 
-		// Double-click detection.
-		now := time.Now()
-		src := fmt.Sprintf("tableau:%d", col)
-		isTopCard := cardIdx == len(game.Tableau[col])-1
-
-		if isTopCard &&
-			now.Sub(app.LastClickTime) < 300*time.Millisecond &&
-			app.LastClickSrc == src {
-			if game.AutoMoveToFoundation(SourceTableau, col) {
-				app.LastClickTime = time.Time{}
+		// Right-click: auto-place top card to foundation.
+		if e.MouseButton == gui.MouseRight {
+			isTopCard := cardIdx == len(game.Tableau[col])-1
+			if isTopCard && game.AutoMoveToFoundation(SourceTableau, col) {
 				e.IsHandled = true
-				return
 			}
+			return
 		}
-		app.LastClickTime = now
-		app.LastClickSrc = src
 
 		// Build card stack from cardIdx onward.
 		pile := game.Tableau[col]
@@ -543,7 +530,7 @@ func cardFaceUpView(c Card, x, y float32, onClick func(*gui.Layout, *gui.Event, 
 		Radius:      gui.SomeF(6),
 		Padding:     gui.SomeP(4, 5, 4, 5),
 		Clip:        true,
-		OnClick:     onClick,
+		OnAnyClick:  onClick,
 		Content: []gui.View{
 			gui.Text(gui.TextCfg{
 				Text:      label,
@@ -581,7 +568,7 @@ func cardBackView(x, y float32, onClick func(*gui.Layout, *gui.Event, *gui.Windo
 		ColorBorder: colorNeonCyan,
 		SizeBorder:  gui.SomeF(2),
 		Radius:      gui.SomeF(6),
-		OnClick:     onClick,
+		OnAnyClick:  onClick,
 	})
 }
 
