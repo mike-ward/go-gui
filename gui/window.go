@@ -2,6 +2,7 @@ package gui
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -58,6 +59,8 @@ type windowBackend struct {
 	nativePlatform NativePlatform
 	clipboardSetFn func(string)
 	clipboardGetFn func() string
+	// setTitleFn updates the OS window title. Set by backend; nil-safe.
+	setTitleFn func(string)
 	// wakeMainFn pushes an SDL user event to wake the main
 	// thread from WaitEventTimeout. Set by backend; nil-safe.
 	wakeMainFn func()
@@ -455,6 +458,55 @@ func (w *Window) GetClipboard() string {
 		return w.clipboardGetFn()
 	}
 	return ""
+}
+
+// SetTitleFn sets the function used to update the OS window title.
+// Called by the backend at init.
+func (w *Window) SetTitleFn(fn func(string)) {
+	w.setTitleFn = fn
+}
+
+// maxTitleBytes caps SetTitle input to bound per-call allocation
+// cost (the backend copies to a C string). Real window titles are
+// rarely over ~100 bytes; 4 KiB is generous and forgiving.
+const maxTitleBytes = 4096
+
+// SetTitle updates the OS window title and Config.Title. No-op if
+// the backend has not wired a title function (e.g. headless tests).
+// Input is truncated to maxTitleBytes and stripped of embedded NUL
+// bytes (which would silently cut the title in C.CString). Must be
+// called from the main thread; SDL_SetWindowTitle is not thread-safe
+// on macOS.
+func (w *Window) SetTitle(title string) {
+	title = sanitizeTitle(title)
+	w.Config.Title = title
+	if w.setTitleFn != nil {
+		w.setTitleFn(title)
+	}
+}
+
+// sanitizeTitle truncates overlong titles and strips NUL bytes.
+func sanitizeTitle(title string) string {
+	if len(title) > maxTitleBytes {
+		// Truncate on a valid UTF-8 boundary to avoid producing
+		// invalid sequences.
+		cut := maxTitleBytes
+		for cut > 0 && (title[cut]&0xC0) == 0x80 {
+			cut--
+		}
+		title = title[:cut]
+	}
+	if strings.IndexByte(title, 0) < 0 {
+		return title
+	}
+	// Rare path: strip NUL bytes.
+	b := make([]byte, 0, len(title))
+	for i := 0; i < len(title); i++ {
+		if title[i] != 0 {
+			b = append(b, title[i])
+		}
+	}
+	return string(b)
 }
 
 // Renderers returns the current render command slice.

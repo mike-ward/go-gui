@@ -224,6 +224,9 @@ func New(w *gui.Window) (*Backend, error) {
 		text, _ := sdl.GetClipboardText()
 		return text
 	})
+	w.SetTitleFn(func(t string) {
+		b.window.SetTitle(t)
+	})
 	w.SetNativePlatform(&nativePlatform{})
 
 	return b, nil

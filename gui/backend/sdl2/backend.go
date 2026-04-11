@@ -178,7 +178,9 @@ func New(w *gui.Window) (*Backend, error) {
 		return text
 	})
 
-	// Set native platform.
+	w.SetTitleFn(func(t string) {
+		win.SetTitle(t)
+	})
 	w.SetNativePlatform(&nativePlatform{})
 
 	return b, nil

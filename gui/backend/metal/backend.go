@@ -537,6 +537,9 @@ func injectInterfaces(w *gui.Window, ws *windowState) {
 		text, _ := sdl.GetClipboardText()
 		return text
 	})
+	w.SetTitleFn(func(t string) {
+		ws.window.SetTitle(t)
+	})
 	w.SetNativePlatform(&nativePlatform{window: ws.window})
 }
 
