@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.4] - 2026-04-11
+
+### Added
+
+- `Window.SetTitle(string)` + `Window.SetTitleFn(func(string))` — dynamic
+  OS window title updates. Wired in sdl2, metal, and gl backends via
+  `sdl.Window.SetTitle`
+- Input hardening on `SetTitle`: 4 KiB cap, UTF-8-safe truncation,
+  embedded-NUL stripping; no-alloc fast path for clean short inputs
+
+## [v0.9.3] - 2026-04-10
+
+### Added
+
+- `NativeSaveDiscardDialog` — Save / Don't Save / Cancel alert for
+  unsaved-changes flows
+- Native menubar: route macOS app-menu "About" through `OnAction`
+
+### Changed
+
+- License: PolyForm NC 1.0 → MIT
+
+### Fixed
+
+- Solitaire example: replace double-click auto-move with right-click
+- CI: brew upgrade harfbuzz/pango text stack on macOS; checkout
+  go-glyph for test job and use local replace directive
+
+## [v0.9.2] - 2026-04-09
+
+### Added
+
+- `Window.TextMeasurer()` accessor for downstream widgets that need
+  direct access to the backend measurer
+
+### Fixed
+
+- Drop `t.Parallel` on tests mutating `guiTheme.ScrollMultiplier`
+  (race-avoidance)
+
 ## [v0.9.1] - 2026-04-08
 
 ### Changed
