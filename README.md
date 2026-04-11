@@ -1,7 +1,7 @@
 # Go-Gui
 
 ![Go version](https://img.shields.io/badge/go-1.26%2B-blue)
-![License](https://img.shields.io/badge/license-PolyForm%20NC%201.0-blue)
+![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/mike-ward/go-gui/actions/workflows/ci.yml/badge.svg)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mike-ward/go-gui)
 
@@ -563,5 +563,4 @@ golangci-lint run ./gui/...
 
 ## 📄 License
 
-[PolyForm Noncommercial 1.0.0](LICENSE) — free for noncommercial use,
-personal projects, research, education, and open-source work.
+[MIT](LICENSE)
