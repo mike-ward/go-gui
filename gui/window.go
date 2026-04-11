@@ -405,6 +405,15 @@ func (w *Window) TextMeasurer() TextMeasurer {
 	return w.textMeasurer
 }
 
+// FrameCount returns the monotonic frame counter for this window.
+// Incremented once per FrameFn call. Useful for widgets that need
+// to detect whether a callback is being invoked multiple times
+// within the same render cycle. Must be called from the UI/view
+// goroutine (under w.mu); not safe for concurrent use.
+func (w *Window) FrameCount() uint64 {
+	return w.frameCount
+}
+
 // SetWakeMainFn sets the function called to wake the main event
 // loop from WaitEventTimeout. The backend sets this at init time.
 func (w *Window) SetWakeMainFn(fn func()) {
