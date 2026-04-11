@@ -334,3 +334,14 @@ func noToolAlert() gui.NativeAlertResult {
 		ErrorMessage: "neither zenity nor kdialog found in PATH",
 	}
 }
+
+// ShowSaveDiscardDialog shows a Save/Discard/Cancel dialog.
+// Not available on Linux; callers should handle DialogError.
+func ShowSaveDiscardDialog(_, _ string,
+	_ gui.NativeAlertLevel) gui.NativeAlertResult {
+	return gui.NativeAlertResult{
+		Status:       gui.DialogError,
+		ErrorCode:    "unsupported",
+		ErrorMessage: "3-button save dialog not available on Linux",
+	}
+}

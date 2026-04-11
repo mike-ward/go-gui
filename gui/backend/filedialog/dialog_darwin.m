@@ -193,6 +193,37 @@ AlertResult filedialogConfirm(const char *title, const char *body,
     }
 }
 
+// filedialogSaveDiscard shows a 3-button Save/Don't Save/Cancel alert.
+// Button order on macOS: Save (right/default), Cancel (middle), Don't Save (left).
+// NSAlertFirstButtonReturn  → Save    → DIALOG_OK
+// NSAlertSecondButtonReturn → Cancel  → DIALOG_CANCEL
+// NSAlertThirdButtonReturn  → Discard → DIALOG_DISCARD
+AlertResult filedialogSaveDiscard(const char *title, const char *body,
+    int level) {
+    @autoreleasepool {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.alertStyle = alertStyleFromLevel(level);
+        if (title != NULL && title[0] != '\0')
+            alert.messageText =
+                [NSString stringWithUTF8String:title];
+        if (body != NULL && body[0] != '\0')
+            alert.informativeText =
+                [NSString stringWithUTF8String:body];
+        [alert addButtonWithTitle:@"Save"];
+        [alert addButtonWithTitle:@"Cancel"];
+        [alert addButtonWithTitle:@"Don't Save"];
+        NSModalResponse resp = [alert runModal];
+        AlertResult r = {0};
+        if (resp == NSAlertFirstButtonReturn)
+            r.status = DIALOG_OK;
+        else if (resp == NSAlertThirdButtonReturn)
+            r.status = DIALOG_DISCARD;
+        else
+            r.status = DIALOG_CANCEL;
+        return r;
+    }
+}
+
 void filedialogFreeResult(DialogResult r) {
     for (int i = 0; i < r.pathCount; i++) {
         free(r.paths[i]);

@@ -11,9 +11,10 @@ type NativeDialogStatus uint8
 
 // NativeDialogStatus constants.
 const (
-	DialogOK     NativeDialogStatus = iota
-	DialogCancel                    // user cancelled
-	DialogError                     // platform error
+	DialogOK      NativeDialogStatus = iota
+	DialogCancel                     // user cancelled
+	DialogError                      // platform error
+	DialogDiscard                    // user chose discard/don't-save
 )
 
 // NativeDialogResult contains native file dialog completion data.
@@ -99,6 +100,15 @@ type NativeConfirmDialogCfg struct {
 	OnDone func(NativeAlertResult, *Window)
 }
 
+// NativeSaveDiscardDialogCfg configures a native Save/Discard/Cancel dialog.
+// OnDone receives DialogOK (save), DialogDiscard (don't save), or DialogCancel.
+type NativeSaveDiscardDialogCfg struct {
+	Title  string
+	Body   string
+	Level  NativeAlertLevel
+	OnDone func(NativeAlertResult, *Window)
+}
+
 // --- Window methods ---
 
 // NativeOpenDialog opens a native open-file dialog.
@@ -133,6 +143,13 @@ func (w *Window) NativeMessageDialog(cfg NativeMessageDialogCfg) {
 func (w *Window) NativeConfirmDialog(cfg NativeConfirmDialogCfg) {
 	w.QueueCommand(func(w *Window) {
 		nativeConfirmDialogImpl(w, cfg)
+	})
+}
+
+// NativeSaveDiscardDialog opens a native Save/Discard/Cancel dialog.
+func (w *Window) NativeSaveDiscardDialog(cfg NativeSaveDiscardDialogCfg) {
+	w.QueueCommand(func(w *Window) {
+		nativeSaveDiscardDialogImpl(w, cfg)
 	})
 }
 
@@ -195,6 +212,15 @@ func nativeConfirmDialogImpl(w *Window, cfg NativeConfirmDialogCfg) {
 		return
 	}
 	result := w.nativePlatform.ShowConfirmDialog(cfg.Title, cfg.Body, cfg.Level)
+	dispatchAlertDone(w, cfg.OnDone, result)
+}
+
+func nativeSaveDiscardDialogImpl(w *Window, cfg NativeSaveDiscardDialogCfg) {
+	if w.nativePlatform == nil {
+		dispatchAlertDone(w, cfg.OnDone, nativeAlertErrorResult("unsupported", "no native platform"))
+		return
+	}
+	result := w.nativePlatform.ShowSaveDiscardDialog(cfg.Title, cfg.Body, cfg.Level)
 	dispatchAlertDone(w, cfg.OnDone, result)
 }
 

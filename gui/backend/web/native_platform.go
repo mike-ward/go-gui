@@ -232,6 +232,16 @@ func (n *nativePlatform) ShowConfirmDialog(
 	return gui.NativeAlertResult{Status: gui.DialogCancel}
 }
 
+func (n *nativePlatform) ShowSaveDiscardDialog(
+	_, _ string, _ gui.NativeAlertLevel,
+) gui.NativeAlertResult {
+	return gui.NativeAlertResult{
+		Status:       gui.DialogError,
+		ErrorCode:    "unsupported",
+		ErrorMessage: "3-button save dialog not available on web",
+	}
+}
+
 // --- Notifications ---
 
 func (n *nativePlatform) SendNotification(

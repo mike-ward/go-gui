@@ -7,9 +7,10 @@
 
 // Status codes matching gui.NativeDialogStatus.
 enum {
-    DIALOG_OK     = 0,
-    DIALOG_CANCEL = 1,
-    DIALOG_ERROR  = 2,
+    DIALOG_OK      = 0,
+    DIALOG_CANCEL  = 1,
+    DIALOG_ERROR   = 2,
+    DIALOG_DISCARD = 3,
 };
 
 // DialogResult returned by all dialog bridge functions.
@@ -50,6 +51,9 @@ AlertResult filedialogMessage(const char *title, const char *body,
     int level);
 
 AlertResult filedialogConfirm(const char *title, const char *body,
+    int level);
+
+AlertResult filedialogSaveDiscard(const char *title, const char *body,
     int level);
 
 #endif

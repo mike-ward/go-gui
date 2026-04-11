@@ -216,6 +216,52 @@ func TestNativeAlertNilOnDone(_ *testing.T) {
 	// Nil OnDone must not panic.
 	nativeMessageDialogImpl(w, NativeMessageDialogCfg{})
 	nativeConfirmDialogImpl(w, NativeConfirmDialogCfg{})
+	nativeSaveDiscardDialogImpl(w, NativeSaveDiscardDialogCfg{})
+}
+
+func TestNativeSaveDiscardDialogNoPlatform(t *testing.T) {
+	w := &Window{}
+	var result NativeAlertResult
+	cfg := NativeSaveDiscardDialogCfg{
+		Title:  "Test",
+		OnDone: func(r NativeAlertResult, _ *Window) { result = r },
+	}
+	nativeSaveDiscardDialogImpl(w, cfg)
+	if result.Status != DialogError {
+		t.Errorf("expected DialogError, got %d", result.Status)
+	}
+	if result.ErrorCode != "unsupported" {
+		t.Errorf("expected 'unsupported', got %q", result.ErrorCode)
+	}
+}
+
+// saveDiscardPlatform is a minimal NativePlatform stub that returns
+// DialogDiscard from ShowSaveDiscardDialog.
+type saveDiscardPlatform struct{ NoopNativePlatform }
+
+func (saveDiscardPlatform) ShowSaveDiscardDialog(_, _ string, _ NativeAlertLevel) NativeAlertResult {
+	return NativeAlertResult{Status: DialogDiscard}
+}
+
+func TestNativeSaveDiscardDialogDiscardStatus(t *testing.T) {
+	w := &Window{}
+	w.nativePlatform = saveDiscardPlatform{}
+	var result NativeAlertResult
+	cfg := NativeSaveDiscardDialogCfg{
+		OnDone: func(r NativeAlertResult, _ *Window) { result = r },
+	}
+	nativeSaveDiscardDialogImpl(w, cfg)
+	if result.Status != DialogDiscard {
+		t.Errorf("expected DialogDiscard (%d), got %d", DialogDiscard, result.Status)
+	}
+}
+
+func TestNoopShowSaveDiscardDialogReturnsZero(t *testing.T) {
+	var p NoopNativePlatform
+	r := p.ShowSaveDiscardDialog("", "", AlertInfo)
+	if r.Status != DialogOK {
+		t.Errorf("expected DialogOK (zero), got %d", r.Status)
+	}
 }
 
 func TestNativeOpenDialogBadExtension(t *testing.T) {

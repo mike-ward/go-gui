@@ -256,6 +256,17 @@ func ShowConfirmDialog(title, body string,
 	return gui.NativeAlertResult{Status: gui.DialogOK}
 }
 
+// ShowSaveDiscardDialog shows a Save/Discard/Cancel dialog.
+// Not available on Windows via MessageBox; returns DialogError.
+func ShowSaveDiscardDialog(_, _ string,
+	_ gui.NativeAlertLevel) gui.NativeAlertResult {
+	return gui.NativeAlertResult{
+		Status:       gui.DialogError,
+		ErrorCode:    "unsupported",
+		ErrorMessage: "3-button save dialog not available on Windows",
+	}
+}
+
 // --- helpers ---
 
 func alertIcon(level gui.NativeAlertLevel) uint32 {

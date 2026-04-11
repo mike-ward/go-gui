@@ -75,6 +75,10 @@ func (n *nativePlatform) ShowConfirmDialog(title, body string, level gui.NativeA
 	return filedialog.ShowConfirmDialog(title, body, level)
 }
 
+func (n *nativePlatform) ShowSaveDiscardDialog(title, body string, level gui.NativeAlertLevel) gui.NativeAlertResult {
+	return filedialog.ShowSaveDiscardDialog(title, body, level)
+}
+
 func (n *nativePlatform) SendNotification(title, body string) gui.NativeNotificationResult {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {

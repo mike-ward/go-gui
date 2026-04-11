@@ -23,6 +23,9 @@ func (NoopNativePlatform) ShowMessageDialog(_, _ string, _ NativeAlertLevel) Nat
 func (NoopNativePlatform) ShowConfirmDialog(_, _ string, _ NativeAlertLevel) NativeAlertResult {
 	return NativeAlertResult{}
 }
+func (NoopNativePlatform) ShowSaveDiscardDialog(_, _ string, _ NativeAlertLevel) NativeAlertResult {
+	return NativeAlertResult{}
+}
 func (NoopNativePlatform) SendNotification(_, _ string) NativeNotificationResult {
 	return NativeNotificationResult{}
 }

@@ -104,11 +104,47 @@ func ShowConfirmDialog(title, body string,
 	return toAlertResult(r)
 }
 
+// ShowSaveDiscardDialog shows a native Save/Don't Save/Cancel alert.
+func ShowSaveDiscardDialog(title, body string,
+	level gui.NativeAlertLevel) gui.NativeAlertResult {
+
+	cTitle := C.CString(title)
+	defer C.free(unsafe.Pointer(cTitle))
+	cBody := C.CString(body)
+	defer C.free(unsafe.Pointer(cBody))
+
+	r := C.filedialogSaveDiscard(cTitle, cBody, C.int(level))
+	return toSaveDiscardResult(r)
+}
+
 func toAlertResult(r C.AlertResult) gui.NativeAlertResult {
 	var status gui.NativeDialogStatus
 	switch r.status {
 	case C.DIALOG_OK:
 		status = gui.DialogOK
+	case C.DIALOG_CANCEL:
+		status = gui.DialogCancel
+	default:
+		status = gui.DialogError
+	}
+	var errMsg string
+	if r.errorMessage != nil {
+		errMsg = C.GoString(r.errorMessage)
+		C.free(unsafe.Pointer(r.errorMessage))
+	}
+	return gui.NativeAlertResult{
+		Status:       status,
+		ErrorMessage: errMsg,
+	}
+}
+
+func toSaveDiscardResult(r C.AlertResult) gui.NativeAlertResult {
+	var status gui.NativeDialogStatus
+	switch r.status {
+	case C.DIALOG_OK:
+		status = gui.DialogOK
+	case C.DIALOG_DISCARD:
+		status = gui.DialogDiscard
 	case C.DIALOG_CANCEL:
 		status = gui.DialogCancel
 	default:

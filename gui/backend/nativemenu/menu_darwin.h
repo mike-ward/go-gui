@@ -24,7 +24,9 @@ typedef struct {
 void nativemenuSetMenubar(const char *appName,
     NativeMenuItemC *menus, int menuCount,
     NativeMenuItemC *allItems, int itemCount,
-    int includeEditMenu);
+    int includeEditMenu,
+    int suppressSystemEditItems,
+    const char *aboutActionID);
 
 // Remove the custom menubar (revert to default).
 void nativemenuClearMenubar(void);

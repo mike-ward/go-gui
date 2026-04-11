@@ -208,6 +208,12 @@ func SetMenubar(
 	cAppName := C.CString(cfg.AppName)
 	defer C.free(unsafe.Pointer(cAppName))
 
+	var cAboutID *C.char
+	if cfg.AboutActionID != "" {
+		cAboutID = C.CString(cfg.AboutActionID)
+		defer C.free(unsafe.Pointer(cAboutID))
+	}
+
 	var menusPtr *C.NativeMenuItemC
 	if len(menuDescs) > 0 {
 		menusPtr = &menuDescs[0]
@@ -222,10 +228,15 @@ func SetMenubar(
 		inclEdit = 1
 	}
 
+	suppSys := C.int(0)
+	if cfg.SuppressSystemEditItems {
+		suppSys = 1
+	}
+
 	C.nativemenuSetMenubar(cAppName,
 		menusPtr, C.int(len(menuDescs)),
 		itemsPtr, C.int(len(allItems)),
-		inclEdit)
+		inclEdit, suppSys, cAboutID)
 }
 
 // ClearMenubar removes the native menubar.

@@ -189,7 +189,8 @@ static NSMenuItem *standardEditMenu(void) {
 // App menu (About, Quit).
 // ---------------------------------------------------------------------------
 
-static NSMenuItem *appMenu(const char *appName) {
+static NSMenuItem *appMenu(const char *appName,
+    const char *aboutActionID) {
     NSString *name = appName
         ? [NSString stringWithUTF8String:appName]
         : @"";
@@ -198,10 +199,26 @@ static NSMenuItem *appMenu(const char *appName) {
 
     NSString *aboutTitle =
         [NSString stringWithFormat:@"About %@", name];
-    NSMenuItem *about = [[NSMenuItem alloc]
-        initWithTitle:aboutTitle
-        action:@selector(orderFrontStandardAboutPanel:)
-        keyEquivalent:@""];
+    NSMenuItem *about;
+    if (aboutActionID != NULL && aboutActionID[0] != '\0') {
+        // Route through the user action callback so the app can show
+        // its own About dialog instead of the system About panel.
+        // Deliberate deviation from the AppKit-selector pattern used
+        // by Quit: About content is app-defined, not OS-defined.
+        MenuActionHandler *handler = sharedHandler();
+        about = [[NSMenuItem alloc]
+            initWithTitle:aboutTitle
+            action:@selector(menuItemClicked:)
+            keyEquivalent:@""];
+        about.target = handler;
+        about.representedObject =
+            [NSString stringWithUTF8String:aboutActionID];
+    } else {
+        about = [[NSMenuItem alloc]
+            initWithTitle:aboutTitle
+            action:@selector(orderFrontStandardAboutPanel:)
+            keyEquivalent:@""];
+    }
     [menu addItem:about];
 
     [menu addItem:[NSMenuItem separatorItem]];
@@ -226,16 +243,56 @@ static NSMenuItem *appMenu(const char *appName) {
 // Public C API — menubar.
 // ---------------------------------------------------------------------------
 
+// removeSystemEditItems strips OS-injected items (AutoFill,
+// Writing Tools, Start Dictation) from the Edit menu.
+// macOS injects these after setMainMenu:, so dispatch async.
+static void removeSystemEditItems(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSMenu *bar = [NSApp mainMenu];
+        for (NSMenuItem *top in bar.itemArray) {
+            if (![top.title isEqualToString:@"Edit"] ||
+                top.submenu == nil) {
+                continue;
+            }
+            NSMenu *edit = top.submenu;
+            NSMutableArray<NSMenuItem *> *toRemove =
+                [NSMutableArray array];
+            for (NSMenuItem *item in edit.itemArray) {
+                NSString *t = item.title;
+                if ([t isEqualToString:@"Start Dictation…"] ||
+                    [t isEqualToString:@"Start Dictation"] ||
+                    [t hasPrefix:@"Writing Tools"] ||
+                    [t hasPrefix:@"AutoFill"]) {
+                    [toRemove addObject:item];
+                }
+            }
+            for (NSMenuItem *item in toRemove) {
+                [edit removeItem:item];
+            }
+            // Drop trailing separator if edit menu now ends
+            // with one.
+            NSInteger last = edit.numberOfItems - 1;
+            if (last >= 0 &&
+                [[edit itemAtIndex:last] isSeparatorItem]) {
+                [edit removeItemAtIndex:last];
+            }
+            break;
+        }
+    });
+}
+
 void nativemenuSetMenubar(const char *appName,
     NativeMenuItemC *menus, int menuCount,
     NativeMenuItemC *allItems, int itemCount,
-    int includeEditMenu) {
+    int includeEditMenu,
+    int suppressSystemEditItems,
+    const char *aboutActionID) {
 
     @autoreleasepool {
         NSMenu *bar = [[NSMenu alloc] init];
 
         // App menu.
-        [bar addItem:appMenu(appName)];
+        [bar addItem:appMenu(appName, aboutActionID)];
 
         // User-defined menus.
         MenuActionHandler *handler = sharedHandler();
@@ -265,6 +322,10 @@ void nativemenuSetMenubar(const char *appName,
         }
 
         [NSApp setMainMenu:bar];
+
+        if (suppressSystemEditItems) {
+            removeSystemEditItems();
+        }
     }
 }
 

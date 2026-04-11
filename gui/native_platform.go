@@ -8,6 +8,7 @@ type NativeDialogs interface {
 	ShowFolderDialog(title, startDir string) PlatformDialogResult
 	ShowMessageDialog(title, body string, level NativeAlertLevel) NativeAlertResult
 	ShowConfirmDialog(title, body string, level NativeAlertLevel) NativeAlertResult
+	ShowSaveDiscardDialog(title, body string, level NativeAlertLevel) NativeAlertResult
 }
 
 // NativeNotifier sends OS-level notifications.

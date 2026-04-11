@@ -41,6 +41,16 @@ func ShowConfirmDialog(_, _ string,
 	}
 }
 
+// ShowSaveDiscardDialog is unsupported on non-macOS platforms.
+func ShowSaveDiscardDialog(_, _ string,
+	_ gui.NativeAlertLevel) gui.NativeAlertResult {
+	return gui.NativeAlertResult{
+		Status:       gui.DialogError,
+		ErrorCode:    "unsupported",
+		ErrorMessage: "3-button save dialog not available",
+	}
+}
+
 func unsupported() gui.PlatformDialogResult {
 	return gui.PlatformDialogResult{
 		Status:       gui.DialogError,
