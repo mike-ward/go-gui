@@ -189,25 +189,6 @@ func progressBarAmendLayout(
 			layout.Shape.Height*offset
 		bar.Shape.Height = h
 		bar.Shape.Width = layout.Shape.Width
-		if textShow && !indefinite && len(layout.Children) > 1 {
-			lbl := &layout.Children[1]
-			center := layout.Shape.X +
-				layout.Shape.Width/2
-			halfW := lbl.Shape.Width / 2
-			oldX := lbl.Shape.X
-			lbl.Shape.X = center - halfW
-			if len(lbl.Children) > 0 {
-				lbl.Children[0].Shape.X -= oldX - lbl.Shape.X
-			}
-			middle := layout.Shape.Y +
-				layout.Shape.Height/2
-			halfH := lbl.Shape.Height / 2
-			oldY := lbl.Shape.Y
-			lbl.Shape.Y = middle - halfH
-			if len(lbl.Children) > 0 {
-				lbl.Children[0].Shape.Y -= oldY - lbl.Shape.Y
-			}
-		}
 	} else {
 		wd := f32Min(layout.Shape.Width*percent,
 			layout.Shape.Width)
@@ -216,24 +197,27 @@ func progressBarAmendLayout(
 		bar.Shape.Y = layout.Shape.Y
 		bar.Shape.Width = wd
 		bar.Shape.Height = layout.Shape.Height
-		if textShow && !indefinite && len(layout.Children) > 1 {
-			lbl := &layout.Children[1]
-			middle := layout.Shape.Y +
-				layout.Shape.Height/2
-			halfH := lbl.Shape.Height / 2
-			oldY := lbl.Shape.Y
-			lbl.Shape.Y = middle - halfH
-			if len(lbl.Children) > 0 {
-				lbl.Children[0].Shape.Y -= oldY - lbl.Shape.Y
-			}
-			center := layout.Shape.X +
-				layout.Shape.Width/2
-			halfW := lbl.Shape.Width / 2
-			oldX := lbl.Shape.X
-			lbl.Shape.X = center - halfW
-			if len(lbl.Children) > 0 {
-				lbl.Children[0].Shape.X -= oldX - lbl.Shape.X
-			}
-		}
+	}
+
+	if textShow && !indefinite && len(layout.Children) > 1 {
+		progressBarCenterLabel(layout.Shape, &layout.Children[1])
+	}
+}
+
+// progressBarCenterLabel centers a label layout within the
+// parent shape on both axes, shifting child shapes to match.
+func progressBarCenterLabel(parent *Shape, lbl *Layout) {
+	centerX := parent.X + parent.Width/2
+	oldX := lbl.Shape.X
+	lbl.Shape.X = centerX - lbl.Shape.Width/2
+	if len(lbl.Children) > 0 {
+		lbl.Children[0].Shape.X -= oldX - lbl.Shape.X
+	}
+
+	centerY := parent.Y + parent.Height/2
+	oldY := lbl.Shape.Y
+	lbl.Shape.Y = centerY - lbl.Shape.Height/2
+	if len(lbl.Children) > 0 {
+		lbl.Children[0].Shape.Y -= oldY - lbl.Shape.Y
 	}
 }

@@ -349,13 +349,22 @@ func inspectorLayoutToTree(
 	}}
 }
 
+func inspectorPropNode(
+	id, text string, ps, pis TextStyle,
+) TreeNodeCfg {
+	return TreeNodeCfg{
+		ID: id, Text: text,
+		TextStyle: ps, TextStyleIcon: pis,
+	}
+}
+
 func inspectorPropsNodes(p inspectorNodeProps) []TreeNodeCfg {
 	propColor := guiTheme.InspectorStyle.ColorTextProp
-	propStyle := TextStyle{
+	ps := TextStyle{
 		Size:  guiTheme.SizeTextXSmall,
 		Color: propColor,
 	}
-	propIconStyle := TextStyle{
+	pis := TextStyle{
 		Family: IconFontName,
 		Size:   guiTheme.SizeTextXSmall,
 		Color:  propColor,
@@ -363,65 +372,47 @@ func inspectorPropsNodes(p inspectorNodeProps) []TreeNodeCfg {
 
 	nodes := make([]TreeNodeCfg, 0, 16)
 	if p.TextPreview != "" {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropTextID,
-			Text:          `text: "` + p.TextPreview + `"`,
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropTextID,
+				`text: "`+p.TextPreview+`"`, ps, pis))
 	}
 	if p.ID != "" {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropIDID,
-			Text:          "id: " + p.ID,
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropIDID,
+				"id: "+p.ID, ps, pis))
 	}
 	nodes = append(nodes,
-		TreeNodeCfg{
-			ID:            inspectorPropPosID,
-			Text:          fmt.Sprintf("pos: %d, %d", int(p.X), int(p.Y)),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		},
-		TreeNodeCfg{
-			ID:            inspectorPropSizeID,
-			Text:          fmt.Sprintf("size: %d x %d", int(p.Width), int(p.Height)),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		},
+		inspectorPropNode(inspectorPropPosID,
+			"pos: "+strconv.Itoa(int(p.X))+", "+
+				strconv.Itoa(int(p.Y)), ps, pis),
+		inspectorPropNode(inspectorPropSizeID,
+			"size: "+strconv.Itoa(int(p.Width))+" x "+
+				strconv.Itoa(int(p.Height)), ps, pis),
 	)
 	if p.Sizing.Width != SizingFit || p.Sizing.Height != SizingFit {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropSizingID,
-			Text:          "sizing: " + inspectorSizingString(p.Sizing),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropSizingID,
+				"sizing: "+inspectorSizingString(p.Sizing), ps, pis))
 	}
 	if !p.Padding.IsNone() {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropPaddingID,
-			Text:          fmt.Sprintf("pad: %d %d %d %d", int(p.Padding.Top), int(p.Padding.Right), int(p.Padding.Bottom), int(p.Padding.Left)),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropPaddingID,
+				"pad: "+strconv.Itoa(int(p.Padding.Top))+" "+
+					strconv.Itoa(int(p.Padding.Right))+" "+
+					strconv.Itoa(int(p.Padding.Bottom))+" "+
+					strconv.Itoa(int(p.Padding.Left)), ps, pis))
 	}
 	if p.Spacing > 0 {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropSpacingID,
-			Text:          fmt.Sprintf("spacing: %d", int(p.Spacing)),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropSpacingID,
+				"spacing: "+strconv.Itoa(int(p.Spacing)), ps, pis))
 	}
 	if p.Color.IsSet() && p.Color.A > 0 {
 		nodes = append(nodes, TreeNodeCfg{
 			ID:        inspectorPropColorID,
 			Text:      "color: " + inspectorColorString(p.Color),
 			Icon:      "\u25A0",
-			TextStyle: propStyle,
+			TextStyle: ps,
 			TextStyleIcon: TextStyle{
 				Size:  guiTheme.SizeTextXSmall,
 				Color: p.Color,
@@ -429,76 +420,50 @@ func inspectorPropsNodes(p inspectorNodeProps) []TreeNodeCfg {
 		})
 	}
 	if p.Radius > 0 {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropRadiusID,
-			Text:          fmt.Sprintf("radius: %d", int(p.Radius)),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropRadiusID,
+				"radius: "+strconv.Itoa(int(p.Radius)), ps, pis))
 	}
 	if p.IDFocus > 0 {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropFocusID,
-			Text:          fmt.Sprintf("id_focus: %d", p.IDFocus),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropFocusID,
+				"id_focus: "+strconv.Itoa(int(p.IDFocus)), ps, pis))
 	}
 	if p.IDScroll > 0 {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropScrollID,
-			Text:          fmt.Sprintf("id_scroll: %d", p.IDScroll),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropScrollID,
+				"id_scroll: "+strconv.Itoa(int(p.IDScroll)), ps, pis))
 	}
 	if p.HAlign != HAlignStart || p.VAlign != VAlignTop {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropAlignID,
-			Text:          "align: " + inspectorAlignString(p.HAlign, p.VAlign),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropAlignID,
+				"align: "+inspectorAlignString(p.HAlign, p.VAlign),
+				ps, pis))
 	}
 	if p.IsFloat {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropFloatID,
-			Text:          "float: true",
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropFloatID,
+				"float: true", ps, pis))
 	}
 	if p.Clip {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropClipID,
-			Text:          "clip: true",
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropClipID,
+				"clip: true", ps, pis))
 	}
 	if p.Opacity < 1 {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropOpacityID,
-			Text:          fmt.Sprintf("opacity: %.2f", p.Opacity),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropOpacityID,
+				fmt.Sprintf("opacity: %.2f", p.Opacity), ps, pis))
 	}
 	if p.Events != "" {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropEventsID,
-			Text:          "events: " + p.Events,
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropEventsID,
+				"events: "+p.Events, ps, pis))
 	}
 	if p.Children > 0 {
-		nodes = append(nodes, TreeNodeCfg{
-			ID:            inspectorPropChildrenID,
-			Text:          fmt.Sprintf("children: %d", p.Children),
-			TextStyle:     propStyle,
-			TextStyleIcon: propIconStyle,
-		})
+		nodes = append(nodes,
+			inspectorPropNode(inspectorPropChildrenID,
+				"children: "+strconv.Itoa(p.Children), ps, pis))
 	}
 	return nodes
 }
@@ -545,12 +510,9 @@ func inspectorNodeLabel(shape *Shape) string {
 	if shape == nil {
 		return "(nil)"
 	}
-	label := fmt.Sprintf(
-		"%s %dx%d",
-		inspectorTypeName(shape),
-		int(shape.Width),
-		int(shape.Height),
-	)
+	label := inspectorTypeName(shape) + " " +
+		strconv.Itoa(int(shape.Width)) + "x" +
+		strconv.Itoa(int(shape.Height))
 	if shape.ID != "" {
 		label += " #" + shape.ID
 	}

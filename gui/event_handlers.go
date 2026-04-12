@@ -216,14 +216,7 @@ func focusedScrollTarget(layout *Layout, w *Window) *Layout {
 // and falls back to the scroll container under cursor.
 func mouseScrollHandler(layout *Layout, e *Event, w *Window) {
 	if ly := focusedScrollTarget(layout, w); ly != nil {
-		saved := *e
-		e.MouseX = saved.MouseX - ly.Shape.X
-		e.MouseY = saved.MouseY - ly.Shape.Y
-		ly.Shape.Events.OnMouseScroll(ly, e, w)
-		handled := e.IsHandled
-		*e = saved
-		if handled {
-			e.IsHandled = true
+		if callRelative(ly, e, w, ly.Shape.Events.OnMouseScroll) {
 			return
 		}
 	}

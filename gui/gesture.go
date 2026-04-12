@@ -239,9 +239,9 @@ func handleTouchMoved(
 				phase = GesturePhaseBegan
 				gs.scale = span / gs.initialSpan
 			}
-			evt := gestureEvent(gs, GesturePinch, phase, cx, cy)
-			evt.PinchScale = gs.scale
-			gestureHandler(layout, &evt, w)
+			w.scratch.gestureEvent = gestureEvent(gs, GesturePinch, phase, cx, cy)
+			w.scratch.gestureEvent.PinchScale = gs.scale
+			gestureHandler(layout, &w.scratch.gestureEvent, w)
 		}
 
 		angleDelta := normalizeAngle(angle - gs.initialAngle)
@@ -258,14 +258,14 @@ func handleTouchMoved(
 				phase = GesturePhaseBegan
 			} else if !gs.rotateBegan {
 				gs.rotateBegan = true
-				beganEvt := gestureEvent(
+				w.scratch.gestureEvent = gestureEvent(
 					gs, GestureRotate, GesturePhaseBegan, cx, cy)
-				beganEvt.GestureRotation = gs.rotation
-				gestureHandler(layout, &beganEvt, w)
+				w.scratch.gestureEvent.GestureRotation = gs.rotation
+				gestureHandler(layout, &w.scratch.gestureEvent, w)
 			}
-			evt := gestureEvent(gs, GestureRotate, phase, cx, cy)
-			evt.GestureRotation = gs.rotation
-			gestureHandler(layout, &evt, w)
+			w.scratch.gestureEvent = gestureEvent(gs, GestureRotate, phase, cx, cy)
+			w.scratch.gestureEvent.GestureRotation = gs.rotation
+			gestureHandler(layout, &w.scratch.gestureEvent, w)
 		}
 	}
 }
@@ -301,16 +301,16 @@ func handleTouchEnded(
 			}
 		} else if gs.recognized &&
 			gs.gestureType == GesturePinch {
-			evt := gestureEvent(gs, GesturePinch,
+			w.scratch.gestureEvent = gestureEvent(gs, GesturePinch,
 				GesturePhaseEnded, cx, cy)
-			evt.PinchScale = gs.scale
-			gestureHandler(layout, &evt, w)
+			w.scratch.gestureEvent.PinchScale = gs.scale
+			gestureHandler(layout, &w.scratch.gestureEvent, w)
 		} else if gs.recognized &&
 			gs.gestureType == GestureRotate {
-			evt := gestureEvent(gs, GestureRotate,
+			w.scratch.gestureEvent = gestureEvent(gs, GestureRotate,
 				GesturePhaseEnded, cx, cy)
-			evt.GestureRotation = gs.rotation
-			gestureHandler(layout, &evt, w)
+			w.scratch.gestureEvent.GestureRotation = gs.rotation
+			gestureHandler(layout, &w.scratch.gestureEvent, w)
 		} else if gs.recognized &&
 			gs.gestureType == GestureLongPress {
 			emitGesture(gs, GestureLongPress, GesturePhaseEnded,
@@ -356,15 +356,15 @@ func handleTouchEnded(
 		gs.gestureType == GestureRotate {
 		tcx, tcy := touchCentroid(gs)
 		if gs.gestureType == GesturePinch {
-			evt := gestureEvent(gs, GesturePinch,
+			w.scratch.gestureEvent = gestureEvent(gs, GesturePinch,
 				GesturePhaseEnded, tcx, tcy)
-			evt.PinchScale = gs.scale
-			gestureHandler(layout, &evt, w)
+			w.scratch.gestureEvent.PinchScale = gs.scale
+			gestureHandler(layout, &w.scratch.gestureEvent, w)
 		} else {
-			evt := gestureEvent(gs, GestureRotate,
+			w.scratch.gestureEvent = gestureEvent(gs, GestureRotate,
 				GesturePhaseEnded, tcx, tcy)
-			evt.GestureRotation = gs.rotation
-			gestureHandler(layout, &evt, w)
+			w.scratch.gestureEvent.GestureRotation = gs.rotation
+			gestureHandler(layout, &w.scratch.gestureEvent, w)
 		}
 		// Transition to single-touch pan.
 		t := gs.touches[0]
@@ -455,28 +455,28 @@ func emitGesture(
 	gs *gestureState, gt GestureType, phase GesturePhase,
 	cx, cy float32, layout *Layout, w *Window,
 ) {
-	evt := gestureEvent(gs, gt, phase, cx, cy)
-	gestureHandler(layout, &evt, w)
+	w.scratch.gestureEvent = gestureEvent(gs, gt, phase, cx, cy)
+	gestureHandler(layout, &w.scratch.gestureEvent, w)
 }
 
 func emitGestureWithDelta(
 	gs *gestureState, gt GestureType, phase GesturePhase,
 	cx, cy, dx, dy float32, layout *Layout, w *Window,
 ) {
-	evt := gestureEvent(gs, gt, phase, cx, cy)
-	evt.GestureDX = dx
-	evt.GestureDY = dy
-	gestureHandler(layout, &evt, w)
+	w.scratch.gestureEvent = gestureEvent(gs, gt, phase, cx, cy)
+	w.scratch.gestureEvent.GestureDX = dx
+	w.scratch.gestureEvent.GestureDY = dy
+	gestureHandler(layout, &w.scratch.gestureEvent, w)
 }
 
 func emitGestureSwipe(
 	gs *gestureState, layout *Layout, w *Window,
 ) {
-	evt := gestureEvent(gs, GestureSwipe, GesturePhaseEnded,
-		gs.prevX, gs.prevY)
-	evt.VelocityX = gs.velocityX
-	evt.VelocityY = gs.velocityY
-	gestureHandler(layout, &evt, w)
+	w.scratch.gestureEvent = gestureEvent(gs, GestureSwipe,
+		GesturePhaseEnded, gs.prevX, gs.prevY)
+	w.scratch.gestureEvent.VelocityX = gs.velocityX
+	w.scratch.gestureEvent.VelocityY = gs.velocityY
+	gestureHandler(layout, &w.scratch.gestureEvent, w)
 }
 
 // gestureHandler dispatches a gesture event to the layout tree.
@@ -555,7 +555,7 @@ func synthMouse(
 	typ EventType, x, y float32, btn MouseButton,
 	layout *Layout, w *Window,
 ) {
-	me := Event{
+	w.scratch.gestureEvent = Event{
 		Type:        typ,
 		MouseX:      x,
 		MouseY:      y,
@@ -563,11 +563,11 @@ func synthMouse(
 	}
 	switch typ {
 	case EventMouseDown:
-		mouseDownHandler(layout, false, &me, w)
+		mouseDownHandler(layout, false, &w.scratch.gestureEvent, w)
 	case EventMouseMove:
-		mouseMoveHandler(layout, &me, w)
+		mouseMoveHandler(layout, &w.scratch.gestureEvent, w)
 	case EventMouseUp:
-		mouseUpHandler(layout, &me, w)
+		mouseUpHandler(layout, &w.scratch.gestureEvent, w)
 	}
 }
 

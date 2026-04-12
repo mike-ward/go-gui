@@ -7,6 +7,13 @@ import (
 
 const selectDropdownMaxH float32 = 200
 
+// selectSubheaderPrefix marks options as section subheaders.
+const selectSubheaderPrefix = "---"
+
+func isSelectSubheader(option string) bool {
+	return strings.HasPrefix(option, selectSubheaderPrefix)
+}
+
 // SelectCfg configures a select (dropdown) view.
 type SelectCfg struct {
 	ID               string
@@ -108,7 +115,7 @@ func (sv *selectView) GenerateLayout(w *Window) Layout {
 			w, nsSelectHL, cfg.ID, 0)
 		options := make([]View, 0, len(cfg.Options))
 		for i, option := range cfg.Options {
-			if strings.HasPrefix(option, "---") {
+			if isSelectSubheader(option) {
 				options = append(options,
 					selectSubHeaderView(cfg, option))
 			} else {
@@ -269,8 +276,8 @@ func selectOptionView(cfg *SelectCfg, option string, index int, highlighted bool
 // selectSubHeaderView builds a section header row.
 func selectSubHeaderView(cfg *SelectCfg, option string) View {
 	label := option
-	if len(option) > 3 {
-		label = option[3:]
+	if len(option) > len(selectSubheaderPrefix) {
+		label = option[len(selectSubheaderPrefix):]
 	}
 	return Column(ContainerCfg{
 		Padding: SomeP(guiTheme.PaddingMedium.Top, 0, 0, 0),
@@ -364,7 +371,7 @@ func selectOnKeyDown(cfg *SelectCfg, idScroll uint32, e *Event, w *Window) {
 	if action == ListCoreSelectItem {
 		if currentIdx >= 0 && currentIdx < len(cfg.Options) {
 			option := cfg.Options[currentIdx]
-			if !strings.HasPrefix(option, "---") {
+			if !isSelectSubheader(option) {
 				var s []string
 				if cfg.SelectMultiple {
 					s = listBoxNextSelectedIDs(
@@ -417,7 +424,7 @@ func selectOnKeyDown(cfg *SelectCfg, idScroll uint32, e *Event, w *Window) {
 // at start, stepping by dir (+1 or -1). Returns -1 if none found.
 func selectNextSelectable(options []string, start, dir int) int {
 	for i := start; i >= 0 && i < len(options); i += dir {
-		if !strings.HasPrefix(options[i], "---") {
+		if !isSelectSubheader(options[i]) {
 			return i
 		}
 	}

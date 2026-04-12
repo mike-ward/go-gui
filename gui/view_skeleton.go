@@ -128,14 +128,3 @@ func skeletonAmendLayout(
 		Direction: GradientToRight,
 	}
 }
-
-// f64Clamp clamps v to [lo, hi].
-func f64Clamp(v, lo, hi float64) float64 {
-	if v < lo {
-		return lo
-	}
-	if v > hi {
-		return hi
-	}
-	return v
-}

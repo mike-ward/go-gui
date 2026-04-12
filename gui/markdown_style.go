@@ -301,30 +301,20 @@ func colorForKind(k highlight.Kind, style *MarkdownStyle) Color {
 func mdCodeTokenStyle(
 	kind markdown.CodeTokenKind, style MarkdownStyle,
 ) TextStyle {
+	s := style.Code
 	switch kind {
 	case markdown.TokenKeyword:
-		s := style.Code
 		s.Color = style.CodeKeywordColor
-		return s
 	case markdown.TokenString:
-		s := style.Code
 		s.Color = style.CodeStringColor
-		return s
 	case markdown.TokenNumber:
-		s := style.Code
 		s.Color = style.CodeNumberColor
-		return s
 	case markdown.TokenComment:
-		s := style.Code
 		s.Color = style.CodeCommentColor
-		return s
 	case markdown.TokenOperator:
-		s := style.Code
 		s.Color = style.CodeOperatorColor
-		return s
-	default:
-		return style.Code
 	}
+	return s
 }
 
 func styleMdTable(

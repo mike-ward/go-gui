@@ -26,6 +26,17 @@ func intClamp(x, lo, hi int) int {
 	return x
 }
 
+// f64Clamp returns v constrained between lo and hi.
+func f64Clamp(v, lo, hi float64) float64 {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
 // f32AreClose tests if |a - b| <= f32Tolerance.
 func f32AreClose(a, b float32) bool {
 	d := a - b
@@ -67,4 +78,13 @@ func f32Max(a, b float32) float32 {
 // f32IsFinite returns true if value is not NaN or Inf.
 func f32IsFinite(f float32) bool {
 	return math.Float32bits(f)&0x7F800000 != 0x7F800000
+}
+
+// asciiLower returns the ASCII lowercase of c. Non-ASCII
+// bytes pass through unchanged.
+func asciiLower(c byte) byte {
+	if c >= 'A' && c <= 'Z' {
+		return c | 0x20
+	}
+	return c
 }

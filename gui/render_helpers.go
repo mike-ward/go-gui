@@ -91,6 +91,26 @@ func roundedImageClipParams(imgX, imgY, imgW, imgH float32, clip DrawClip) (Roun
 	}, true
 }
 
+// shapeBounds returns the shape's bounding rectangle as a
+// DrawClip.
+func shapeBounds(shape *Shape) DrawClip {
+	return DrawClip{
+		X: shape.X, Y: shape.Y,
+		Width: shape.Width, Height: shape.Height,
+	}
+}
+
+// emitClipCmd emits a RenderClip command for the given clip rect.
+func emitClipCmd(clip DrawClip, w *Window) {
+	emitRenderer(RenderCmd{
+		Kind: RenderClip,
+		X:    clip.X,
+		Y:    clip.Y,
+		W:    clip.Width,
+		H:    clip.Height,
+	}, w)
+}
+
 // quantizedScissorClip truncates clip coordinates to integer
 // multiples of scale, matching sokol's scissor rect behavior.
 func quantizedScissorClip(clip DrawClip, scale float32) DrawClip {

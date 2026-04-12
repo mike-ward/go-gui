@@ -150,8 +150,8 @@ func listCoreFuzzyScore(candidate, query string) int {
 		if qi >= len(query) {
 			break
 		}
-		cb := toLowerByte(candidate[ci])
-		qb := toLowerByte(query[qi])
+		cb := asciiLower(candidate[ci])
+		qb := asciiLower(query[qi])
 		if cb == qb {
 			if prevMatch >= 0 {
 				gap := ci - prevMatch - 1
@@ -165,13 +165,6 @@ func listCoreFuzzyScore(candidate, query string) int {
 		return -1
 	}
 	return score
-}
-
-func toLowerByte(b byte) byte {
-	if b >= 0x41 && b <= 0x5A {
-		return b + 32
-	}
-	return b
 }
 
 // listCoreFilter filters + ranks items by query. Returns indices

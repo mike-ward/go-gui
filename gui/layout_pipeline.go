@@ -57,11 +57,9 @@ func layoutHover(layout *Layout, w *Window) bool {
 	}
 	// Apply inverse rotation for children of rotated containers.
 	savedX, savedY := w.viewState.mousePosX, w.viewState.mousePosY
-	if turns := layout.Shape.QuarterTurns; turns > 0 {
-		e := &Event{MouseX: savedX, MouseY: savedY}
-		rotateMouseInverse(layout.Shape, e)
-		w.viewState.mousePosX = e.MouseX
-		w.viewState.mousePosY = e.MouseY
+	if layout.Shape.QuarterTurns > 0 {
+		w.viewState.mousePosX, w.viewState.mousePosY =
+			rotateCoordsInverse(layout.Shape, savedX, savedY)
 	}
 	for i := len(layout.Children) - 1; i >= 0; i-- {
 		if layoutHover(&layout.Children[i], w) {
@@ -103,11 +101,9 @@ func layoutMouseLeave(layout *Layout, w *Window) {
 		return
 	}
 	savedX, savedY := w.viewState.mousePosX, w.viewState.mousePosY
-	if turns := layout.Shape.QuarterTurns; turns > 0 {
-		e := &Event{MouseX: savedX, MouseY: savedY}
-		rotateMouseInverse(layout.Shape, e)
-		w.viewState.mousePosX = e.MouseX
-		w.viewState.mousePosY = e.MouseY
+	if layout.Shape.QuarterTurns > 0 {
+		w.viewState.mousePosX, w.viewState.mousePosY =
+			rotateCoordsInverse(layout.Shape, savedX, savedY)
 	}
 	for i := range layout.Children {
 		layoutMouseLeave(&layout.Children[i], w)
@@ -123,13 +119,13 @@ func layoutMouseLeave(layout *Layout, w *Window) {
 	inside := shape.PointInShape(w.viewState.mousePosX, w.viewState.mousePosY)
 	wasInside, _ := sm.Get(shape.ID)
 	if wasInside && !inside {
-		e := Event{
+		w.scratch.hoverEvent = Event{
 			MouseX:      w.viewState.mousePosX,
 			MouseY:      w.viewState.mousePosY,
 			Type:        EventMouseMove,
 			MouseButton: MouseInvalid,
 		}
-		shape.Events.OnMouseLeave(layout, &e, w)
+		shape.Events.OnMouseLeave(layout, &w.scratch.hoverEvent, w)
 	}
 	if inside {
 		sm.Set(shape.ID, true)

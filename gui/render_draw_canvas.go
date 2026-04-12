@@ -4,11 +4,7 @@ import "math"
 
 // renderDrawCanvas renders cached draw-canvas triangle batches.
 func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
-	dr := DrawClip{
-		X: shape.X, Y: shape.Y,
-		Width: shape.Width, Height: shape.Height,
-	}
-	if !rectsOverlap(dr, clip) {
+	if !rectsOverlap(shapeBounds(shape), clip) {
 		return
 	}
 	// Background, border, effects.
@@ -63,13 +59,7 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 
 	// Clip to content area.
 	if shape.Clip {
-		emitRenderer(RenderCmd{
-			Kind: RenderClip,
-			X:    ox,
-			Y:    oy,
-			W:    cw,
-			H:    ch,
-		}, w)
+		emitClipCmd(DrawClip{X: ox, Y: oy, Width: cw, Height: ch}, w)
 	}
 
 	for _, batch := range cached.Batches {
@@ -130,12 +120,6 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 
 	// Restore parent clip.
 	if shape.Clip {
-		emitRenderer(RenderCmd{
-			Kind: RenderClip,
-			X:    clip.X,
-			Y:    clip.Y,
-			W:    clip.Width,
-			H:    clip.Height,
-		}, w)
+		emitClipCmd(clip, w)
 	}
 }

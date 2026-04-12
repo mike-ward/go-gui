@@ -166,23 +166,21 @@ func toastItemView(toast *toastNotification, style ToastStyle) View {
 	var buttons []View
 	if toast.cfg.ActionLabel != "" && toast.cfg.OnAction != nil {
 		onAction := toast.cfg.OnAction
-		capturedID := id
 		buttons = append(buttons, Button(ButtonCfg{
 			Color:   ColorTransparent,
 			Content: []View{Text(TextCfg{Text: toast.cfg.ActionLabel, TextStyle: style.TextStyle})},
 			OnClick: func(_ *Layout, _ *Event, w *Window) {
 				onAction(w)
-				toastStartExit(w, capturedID)
+				toastStartExit(w, id)
 			},
 		}))
 	}
-	capturedID := id
 	buttons = append(buttons, Button(ButtonCfg{
 		Color:      ColorTransparent,
 		SizeBorder: NoBorder,
 		Content:    []View{Text(TextCfg{Text: "\u00d7", TextStyle: style.TextStyle})},
 		OnClick: func(_ *Layout, _ *Event, w *Window) {
-			toastStartExit(w, capturedID)
+			toastStartExit(w, id)
 		},
 	}))
 

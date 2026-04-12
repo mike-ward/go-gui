@@ -1,9 +1,6 @@
 package gui
 
-import (
-	"fmt"
-	"strconv"
-)
+import "strconv"
 
 // DataGridSourceStats provides runtime stats for a
 // data-source-backed grid. Returned by Window.DataGridSourceStats.
@@ -427,24 +424,24 @@ func dataGridSourceRowsText(kind GridPaginationKind, state dataGridSourceState) 
 	}
 	totalText := "?"
 	if state.RowCount != nil {
-		totalText = fmt.Sprintf("%d", *state.RowCount)
+		totalText = strconv.Itoa(*state.RowCount)
 	}
-	return fmt.Sprintf("%s %d/%s", guiLocale.StrRows, state.ReceivedCount, totalText)
+	return guiLocale.StrRows + " " + strconv.Itoa(state.ReceivedCount) + "/" + totalText
 }
 
 func dataGridSourceFormatRows(start, count int, total *int) string {
 	totalText := "?"
 	if total != nil {
-		totalText = fmt.Sprintf("%d", *total)
+		totalText = strconv.Itoa(*total)
 	}
 	if count <= 0 {
-		return fmt.Sprintf("%s 0/%s", guiLocale.StrRows, totalText)
+		return guiLocale.StrRows + " 0/" + totalText
 	}
 	end := start + count
 	if total != nil && end > *total {
 		end = *total
 	}
-	return fmt.Sprintf("%s %d-%d/%s", guiLocale.StrRows, start+1, end, totalText)
+	return guiLocale.StrRows + " " + strconv.Itoa(start+1) + "-" + strconv.Itoa(end) + "/" + totalText
 }
 
 func dataGridSourceCanPrev(kind GridPaginationKind, state dataGridSourceState, pageLimit int) bool {
@@ -545,10 +542,10 @@ func dataGridSourceJumpToRow(gridID string, targetIdx, pageLimit int, w *Window)
 func dataGridSourceRowPositionText(cfg *DataGridCfg, state dataGridSourceState, kind GridPaginationKind) string {
 	totalText := "?"
 	if state.RowCount != nil {
-		totalText = fmt.Sprintf("%d", *state.RowCount)
+		totalText = strconv.Itoa(*state.RowCount)
 	}
 	if len(cfg.Rows) == 0 {
-		return fmt.Sprintf("Row 0 of %s", totalText)
+		return "Row 0 of " + totalText
 	}
 	localIdx := dataGridActiveRowIndexStrict(cfg.Rows, cfg.Selection)
 	if localIdx < 0 || localIdx >= len(cfg.Rows) {
@@ -563,7 +560,7 @@ func dataGridSourceRowPositionText(cfg *DataGridCfg, state dataGridSourceState, 
 	if state.RowCount != nil {
 		current = max(1, min(*state.RowCount, current))
 	}
-	return fmt.Sprintf("Row %d of %s", current, totalText)
+	return "Row " + strconv.Itoa(current) + " of " + totalText
 }
 
 func dataGridSourceJumpEnabled(onSelectionChange func(GridSelection, *Event, *Window), rowCount *int, loading bool, loadError string, kind GridPaginationKind, pageLimit int) bool {
@@ -593,7 +590,7 @@ func dataGridSourceSubmitJump(onSelectionChange func(GridSelection, *Event, *Win
 	if !ok {
 		return
 	}
-	dgJI.Set(gridID, fmt.Sprintf("%d", targetIdx+1))
+	dgJI.Set(gridID, strconv.Itoa(targetIdx+1))
 	dataGridSourceJumpToRow(gridID, targetIdx, pageLimit, w)
 	if focusID > 0 {
 		w.SetIDFocus(focusID)

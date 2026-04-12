@@ -153,6 +153,50 @@ func diagramCacheShouldApplyResult(
 		e.RequestID == requestID
 }
 
+// finishDiagramFetch decodes PNG body, stores it, and
+// queues a cache update. Shared by math and mermaid fetchers.
+func finishDiagramFetch(
+	w *Window, body []byte, hash int64,
+	requestID uint64, dpi float32, kind string,
+) {
+	img, err := png.Decode(bytes.NewReader(body))
+	if err != nil {
+		queueDiagramError(w, hash, requestID,
+			"PNG decode: "+err.Error())
+		return
+	}
+
+	bounds := img.Bounds()
+	imgW := float32(bounds.Dx())
+	imgH := float32(bounds.Dy())
+
+	ref, err := storeDiagramPNG(body, hash, kind)
+	if err != nil {
+		queueDiagramError(w, hash, requestID,
+			"store PNG: "+err.Error())
+		return
+	}
+
+	w.QueueCommand(func(w *Window) {
+		if !diagramCacheShouldApplyResult(
+			w.viewState.diagramCache,
+			hash, requestID) {
+			removeDiagramPNG(ref)
+			return
+		}
+		w.viewState.diagramCache.Set(hash,
+			DiagramCacheEntry{
+				State:     DiagramReady,
+				PNGPath:   ref,
+				Width:     imgW,
+				Height:    imgH,
+				DPI:       dpi,
+				RequestID: requestID,
+			})
+		w.UpdateWindow()
+	})
+}
+
 // fetchMermaidAsync fetches a mermaid diagram from Kroki API
 // in a background goroutine.
 //
@@ -177,43 +221,7 @@ func fetchMermaidAsync(
 			return
 		}
 
-		// Decode PNG.
-		img, err := png.Decode(bytes.NewReader(body))
-		if err != nil {
-			queueDiagramError(w, hash, requestID,
-				"PNG decode: "+err.Error())
-			return
-		}
-
-		bounds := img.Bounds()
-		finalW := float32(bounds.Dx())
-		finalH := float32(bounds.Dy())
-
-		// Store PNG (temp file on native, data URL on WASM).
-		ref, err := storeDiagramPNG(body, hash, "mermaid")
-		if err != nil {
-			queueDiagramError(w, hash, requestID,
-				"store PNG: "+err.Error())
-			return
-		}
-
-		w.QueueCommand(func(w *Window) {
-			if !diagramCacheShouldApplyResult(
-				w.viewState.diagramCache,
-				hash, requestID) {
-				removeDiagramPNG(ref)
-				return
-			}
-			w.viewState.diagramCache.Set(hash,
-				DiagramCacheEntry{
-					State:     DiagramReady,
-					PNGPath:   ref,
-					Width:     finalW,
-					Height:    finalH,
-					RequestID: requestID,
-				})
-			w.UpdateWindow()
-		})
+		finishDiagramFetch(w, body, hash, requestID, 0, "mermaid")
 	}()
 }
 

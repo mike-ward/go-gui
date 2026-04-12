@@ -9,11 +9,7 @@ import (
 // renderSvg renders an SVG shape by loading cached tessellation
 // and emitting RenderSvg commands.
 func renderSvg(shape *Shape, clip DrawClip, w *Window) {
-	dr := DrawClip{
-		X: shape.X, Y: shape.Y,
-		Width: shape.Width, Height: shape.Height,
-	}
-	if !rectsOverlap(dr, clip) {
+	if !rectsOverlap(shapeBounds(shape), clip) {
 		return
 	}
 
@@ -45,13 +41,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	if !ok {
 		return
 	}
-	emitRenderer(RenderCmd{
-		Kind: RenderClip,
-		X:    svgClip.X,
-		Y:    svgClip.Y,
-		W:    svgClip.Width,
-		H:    svgClip.Height,
-	}, w)
+	emitClipCmd(svgClip, w)
 
 	// Compute animation state for SMIL animations.
 	var animState map[string]svgAnimState
@@ -105,13 +95,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	}
 
 	// Restore parent clip.
-	emitRenderer(RenderCmd{
-		Kind: RenderClip,
-		X:    clip.X,
-		Y:    clip.Y,
-		W:    clip.Width,
-		H:    clip.Height,
-	}, w)
+	emitClipCmd(clip, w)
 }
 
 // emitSvgGroup emits paths, text draws, and text path draws.

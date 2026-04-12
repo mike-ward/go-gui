@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -512,8 +513,8 @@ func GridOrmBuildSQL(
 	limit := max(1, min(dataGridSourceMaxPageLimit, nonZero(spec.Limit, 100)))
 	offset := max(0, spec.Offset)
 	params = append(params,
-		fmt.Sprintf("%d", limit),
-		fmt.Sprintf("%d", offset))
+		strconv.Itoa(limit),
+		strconv.Itoa(offset))
 	return GridOrmSQLBuilder{
 		WhereSQL:  strings.Join(whereParts, " and "),
 		OrderSQL:  order,

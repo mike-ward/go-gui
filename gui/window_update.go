@@ -127,8 +127,8 @@ func (w *Window) RequestRenderOnly() {
 	w.markRenderOnlyRefresh()
 }
 
-// RequestRedraw marks the window for render-only refresh. Safe to call
-// from OnHover/OnMouseLeave callbacks. No-op if a layout refresh is pending.
+// RequestRedraw is an alias for RequestRenderOnly. Safe to call
+// from OnHover/OnMouseLeave callbacks.
 func (w *Window) RequestRedraw() {
 	w.markRenderOnlyRefresh()
 }
@@ -149,21 +149,17 @@ func (w *Window) UpdateView(gen func(*Window) View) {
 func (w *Window) FrameFn() bool {
 	w.frameCount++
 	w.flushCommands()
+	var rebuilt bool
 	if w.refreshLayout {
 		w.Update()
-		w.initA11y()
-		w.syncA11y()
-		return true
-	}
-	if w.refreshRenderOnly {
+		rebuilt = true
+	} else if w.refreshRenderOnly {
 		w.UpdateRenderOnly()
-		w.initA11y()
-		w.syncA11y()
-		return true
+		rebuilt = true
 	}
 	w.initA11y()
 	w.syncA11y()
-	return false
+	return rebuilt
 }
 
 // Update performs a full layout rebuild and re-renders.
@@ -178,7 +174,11 @@ func (w *Window) Update() {
 	}
 
 	if inspectorSupported && w.inspectorEnabled {
-		w.inspectorPropsCache = make(map[string]inspectorNodeProps)
+		if w.inspectorPropsCache == nil {
+			w.inspectorPropsCache = make(map[string]inspectorNodeProps)
+		} else {
+			clear(w.inspectorPropsCache)
+		}
 		selected := inspectorSelectedPath(w)
 		w.inspectorTreeCache = inspectorBuildTreeNodes(
 			w, &w.layout, selected, w.inspectorPropsCache)

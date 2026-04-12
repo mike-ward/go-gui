@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"fmt"
 	"math"
 	"slices"
 	"strconv"
@@ -179,11 +178,11 @@ func dataGridPresentationRowsWithGroupRanges(cfg *DataGridCfg, _ []GridColumnCfg
 	}
 
 	prevValues := make([]string, len(groupCols))
+	values := make([]string, len(groupCols))
 	hasPrev := false
 
 	for localIdx, rowIdx := range visibleIndices {
 		row := cfg.Rows[rowIdx]
-		values := make([]string, len(groupCols))
 		for i, colID := range groupCols {
 			values[i] = row.Cells[colID]
 		}
@@ -268,7 +267,7 @@ func dataGridGroupTitles(columns []GridColumnCfg) map[string]string {
 }
 
 func dataGridGroupRangeKey(depth, startIdx int) string {
-	return fmt.Sprintf("%d:%d", depth, startIdx)
+	return strconv.Itoa(depth) + ":" + strconv.Itoa(startIdx)
 }
 
 func dataGridGroupRanges(rows []GridRow, indices []int, groupCols []string) map[string]int {
@@ -398,7 +397,7 @@ func dataGridParseNumber(value string) (float64, bool) {
 }
 
 func dataGridFormatNumber(value float64) string {
-	text := fmt.Sprintf("%.4f", value)
+	text := strconv.FormatFloat(value, 'f', 4, 64)
 	for strings.Contains(text, ".") && strings.HasSuffix(text, "0") {
 		text = text[:len(text)-1]
 	}

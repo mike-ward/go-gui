@@ -29,11 +29,7 @@ func TestExpandPanelClosedLayout(t *testing.T) {
 	if len(layout.Children) != 2 {
 		t.Fatalf("children: got %d, want 2", len(layout.Children))
 	}
-	// Closed content uses Invisible flag
 	body := layout.Children[1]
-	// Invisible containers get replaced by invisibleContainerView
-	// which has Disabled+OverDraw; or the column itself has the flag
-	// Check that content column exists but is invisible
 	if body.Shape.ShapeType != ShapeRectangle {
 		t.Error("closed body should be a container")
 	}

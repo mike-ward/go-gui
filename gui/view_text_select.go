@@ -42,7 +42,7 @@ func textOnClick(layout *Layout, e *Event, w *Window) {
 		}
 		runePos = int(relX / charWidth)
 		runeLen := utf8RuneCount(text)
-		runePos = min(max(runePos, 0), runeLen)
+		runePos = intClamp(runePos, 0, runeLen)
 	}
 
 	idFocus := shape.IDFocus
@@ -135,7 +135,7 @@ func textOnClick(layout *Layout, e *Event, w *Window) {
 		}
 		rp := int((mx - dragShapeX) / cw)
 		rl := utf8RuneCount(text)
-		rp = min(max(rp, 0), rl)
+		rp = intClamp(rp, 0, rl)
 		return rp
 	}
 

@@ -508,17 +508,6 @@ func dataGridSourceRowMatchesQuery(
 	return true
 }
 
-// gridLowerByte returns ASCII lowercase (a-z, A-Z only).
-// Non-ASCII bytes pass through unchanged — intentional
-// trade-off to avoid strings.ToLower allocations in the
-// hot filter path.
-func gridLowerByte(c byte) byte {
-	if c >= 'A' && c <= 'Z' {
-		return c | 0x20
-	}
-	return c
-}
-
 // gridContainsLower checks haystack.toLower().contains(needle)
 // without allocating. needle must already be lowered.
 func gridContainsLower(haystack, needle string) bool {
@@ -532,7 +521,7 @@ func gridContainsLower(haystack, needle string) bool {
 	for i := 0; i <= limit; i++ {
 		found := true
 		for j := range len(needle) {
-			if gridLowerByte(haystack[i+j]) != needle[j] {
+			if asciiLower(haystack[i+j]) != needle[j] {
 				found = false
 				break
 			}
@@ -551,7 +540,7 @@ func gridEqualsLower(haystack, needle string) bool {
 		return false
 	}
 	for i := range len(haystack) {
-		if gridLowerByte(haystack[i]) != needle[i] {
+		if asciiLower(haystack[i]) != needle[i] {
 			return false
 		}
 	}
@@ -565,7 +554,7 @@ func gridStartsWithLower(haystack, needle string) bool {
 		return false
 	}
 	for i := range len(needle) {
-		if gridLowerByte(haystack[i]) != needle[i] {
+		if asciiLower(haystack[i]) != needle[i] {
 			return false
 		}
 	}
@@ -580,7 +569,7 @@ func gridEndsWithLower(haystack, needle string) bool {
 	}
 	off := len(haystack) - len(needle)
 	for i := range len(needle) {
-		if gridLowerByte(haystack[i+off]) != needle[i] {
+		if asciiLower(haystack[i+off]) != needle[i] {
 			return false
 		}
 	}

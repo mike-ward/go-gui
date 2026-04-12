@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -217,7 +217,8 @@ func a11yValueText(info *AccessInfo) string {
 	if info.ValueNum == 0 && info.ValueMin == 0 && info.ValueMax == 0 {
 		return ""
 	}
-	return fmt.Sprintf("%g", info.ValueNum)
+	return strconv.FormatFloat(
+		float64(info.ValueNum), 'g', -1, 32)
 }
 
 // shapeA11yLabel extracts an accessibility label from shape text.
