@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.6] - 2026-04-12
+
+### Changed
+
+- Deduplicate helpers across gui/ (asciiLower, f64Clamp, FNV-1a hash,
+  skipLayoutChild, shapeBounds, emitClipCmd, cpInputColumn,
+  progressBarCenterLabel, finishDiagramFetch, baseCfg)
+- Replace `fmt.Sprintf` with `strconv` in hot paths (data grid, inspector,
+  a11y, data source)
+- Eliminate per-frame heap allocations: gesture Event scratch pool, defer
+  removal in render/image opacity, rotateCoordsInverse float path,
+  stack-array cellContent, inspector cache map reuse
+- Convert copy-paste spinner tests to table-driven
+- Remove redundant state and unnecessary comments
+- 42 files changed, −278 net lines
+
 ## [v0.9.5] - 2026-04-11
 
 ### Added
