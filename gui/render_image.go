@@ -3,11 +3,7 @@ package gui
 // renderImage renders an image shape by emitting a RenderImage
 // command with the shape's resource path and clip radius.
 func renderImage(shape *Shape, clip DrawClip, w *Window) {
-	dr := DrawClip{
-		X: shape.X, Y: shape.Y,
-		Width: shape.Width, Height: shape.Height,
-	}
-	if !rectsOverlap(dr, clip) {
+	if !rectsOverlap(shapeBounds(shape), clip) {
 		return
 	}
 
@@ -15,8 +11,8 @@ func renderImage(shape *Shape, clip DrawClip, w *Window) {
 	// redundant bg rect; the backend handles the fill itself.
 	bgColor := shape.Color
 	shape.Color = ColorTransparent
-	defer func() { shape.Color = bgColor }()
 	renderContainer(shape, ColorTransparent, clip, w)
+	shape.Color = bgColor
 
 	emitRenderer(RenderCmd{
 		Kind:       RenderImage,

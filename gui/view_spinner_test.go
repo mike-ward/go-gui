@@ -84,48 +84,46 @@ func TestSpinnerFixedSizing(t *testing.T) {
 	}
 }
 
-func TestSpinnerNormalizePositive(t *testing.T) {
-	got := spinnerNormalize(2.7)
-	want := float32(0.7)
-	if math.Abs(float64(got-want)) > 0.001 {
-		t.Errorf("normalize(2.7) = %f, want ~0.7", got)
+func TestSpinnerNormalize(t *testing.T) {
+	tests := []struct {
+		name  string
+		input float32
+		want  float32
+	}{
+		{"positive", 2.7, 0.7},
+		{"negative", -0.3, 0.7},
+		{"zero", 0, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := spinnerNormalize(tt.input)
+			if math.Abs(float64(got-tt.want)) > 0.001 {
+				t.Errorf("normalize(%f) = %f, want ~%f",
+					tt.input, got, tt.want)
+			}
+		})
 	}
 }
 
-func TestSpinnerNormalizeNegative(t *testing.T) {
-	got := spinnerNormalize(-0.3)
-	want := float32(0.7)
-	if math.Abs(float64(got-want)) > 0.001 {
-		t.Errorf("normalize(-0.3) = %f, want ~0.7", got)
-	}
-}
-
-func TestSpinnerNormalizeZero(t *testing.T) {
-	got := spinnerNormalize(0)
-	if got != 0 {
-		t.Errorf("normalize(0) = %f, want 0", got)
-	}
-}
-
-func TestSpinnerClampPointNaN(t *testing.T) {
+func TestSpinnerClampPoint(t *testing.T) {
 	nan := float32(math.NaN())
-	x, y := spinnerClampPoint(nan, nan)
-	if x != 0 || y != 0 {
-		t.Errorf("clamp(NaN) = (%f, %f), want (0, 0)", x, y)
+	tests := []struct {
+		name         string
+		inX, inY     float32
+		wantX, wantY float32
+	}{
+		{"NaN", nan, nan, 0, 0},
+		{"out_of_range", 5, -5, 0, 0},
+		{"in_range", 0.5, -0.8, 0.5, -0.8},
 	}
-}
-
-func TestSpinnerClampPointOutOfRange(t *testing.T) {
-	x, y := spinnerClampPoint(5, -5)
-	if x != 0 || y != 0 {
-		t.Errorf("clamp(5, -5) = (%f, %f), want (0, 0)", x, y)
-	}
-}
-
-func TestSpinnerClampPointInRange(t *testing.T) {
-	x, y := spinnerClampPoint(0.5, -0.8)
-	if x != 0.5 || y != -0.8 {
-		t.Errorf("clamp(0.5, -0.8) = (%f, %f), want (0.5, -0.8)", x, y)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			x, y := spinnerClampPoint(tt.inX, tt.inY)
+			if x != tt.wantX || y != tt.wantY {
+				t.Errorf("clamp(%f, %f) = (%f, %f), want (%f, %f)",
+					tt.inX, tt.inY, x, y, tt.wantX, tt.wantY)
+			}
+		})
 	}
 }
 
@@ -192,51 +190,45 @@ func TestSpinnerButterflyNegativeSinNoPanic(t *testing.T) {
 	}
 }
 
-func TestSpinnerHypotrochoidZeroR(t *testing.T) {
-	x, y := spinnerHypotrochoid(0.5, 5, 0, 3)
-	if x != 0 || y != 0 {
-		t.Errorf("hypotrochoid r=0 = (%f, %f), want (0,0)", x, y)
+func TestSpinnerCurveZeroParams(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func() (float32, float32)
+	}{
+		{"hypotrochoid_r=0", func() (float32, float32) {
+			return spinnerHypotrochoid(0.5, 5, 0, 3)
+		}},
+		{"rose_a=0", func() (float32, float32) {
+			return spinnerRose(0.5, 0, 5)
+		}},
+		{"cardioid_a=0", func() (float32, float32) {
+			return spinnerCardioid(0.5, 0, 0)
+		}},
+		{"heartWave_root=-1", func() (float32, float32) {
+			return spinnerHeartWave(0.5, 6, -1, 0.9)
+		}},
+		{"fourier_x1=0_y1=0", func() (float32, float32) {
+			return spinnerFourier(0.5, 0, 0)
+		}},
 	}
-}
-
-func TestSpinnerRoseZeroAmplitude(t *testing.T) {
-	x, y := spinnerRose(0.5, 0, 5)
-	if x != 0 || y != 0 {
-		t.Errorf("rose a=0 = (%f, %f), want (0,0)", x, y)
-	}
-}
-
-func TestSpinnerCardioidZeroAmplitude(t *testing.T) {
-	x, y := spinnerCardioid(0.5, 0, 0)
-	if x != 0 || y != 0 {
-		t.Errorf("cardioid a=0 = (%f, %f), want (0,0)", x, y)
-	}
-}
-
-func TestSpinnerHeartWaveNegativeRoot(t *testing.T) {
-	x, y := spinnerHeartWave(0.5, 6, -1, 0.9)
-	if x != 0 || y != 0 {
-		t.Errorf("heartWave root=-1 = (%f, %f), want (0,0)", x, y)
-	}
-}
-
-func TestSpinnerFourierZeroAmplitude(t *testing.T) {
-	x, y := spinnerFourier(0.5, 0, 0)
-	if x != 0 || y != 0 {
-		t.Errorf("fourier x1=0,y1=0 = (%f, %f), want (0,0)", x, y)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			x, y := tt.fn()
+			if x != 0 || y != 0 {
+				t.Errorf("got (%f, %f), want (0, 0)", x, y)
+			}
+		})
 	}
 }
 
 func TestSpinnerDrawZeroSizeNoOp(t *testing.T) {
 	dc := &DrawContext{Width: 0, Height: 0}
-	// Should not panic.
 	spinnerDraw(dc, familyRose, 0.5, 0,
 		60, 0.35, 2.5, 9, 5, 0, RGB(100, 100, 255))
 }
 
 func TestSpinnerDrawMinParticles(t *testing.T) {
 	dc := &DrawContext{Width: 100, Height: 100}
-	// particles=2 is the minimum; should not panic or div-by-zero.
 	spinnerDraw(dc, familyRose, 0.5, 0,
 		2, 0.35, 2.5, 9, 5, 0, RGB(100, 100, 255))
 }
@@ -254,5 +246,4 @@ func TestSpinnerParticlesClamped(t *testing.T) {
 	if layout.Shape.Width != 48 {
 		t.Error("layout not generated")
 	}
-	// Cannot directly check particle count, but no panic = pass.
 }

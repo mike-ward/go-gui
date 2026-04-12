@@ -8,19 +8,27 @@ func rotateMouseInverse(s *Shape, e *Event) (origX, origY float32) {
 	if s == nil || s.QuarterTurns == 0 {
 		return
 	}
+	e.MouseX, e.MouseY = rotateCoordsInverse(s, origX, origY)
+	return
+}
+
+// rotateCoordsInverse transforms screen-space coordinates into the
+// unrotated internal space of a rotated container without requiring
+// an Event allocation.
+func rotateCoordsInverse(s *Shape, mx, my float32) (float32, float32) {
+	if s == nil || s.QuarterTurns == 0 {
+		return mx, my
+	}
 	cx := s.X + s.Width/2
 	cy := s.Y + s.Height/2
-	dx, dy := e.MouseX-cx, e.MouseY-cy
+	dx, dy := mx-cx, my-cy
 	switch s.QuarterTurns {
 	case 1: // inverse of 90° CW = 90° CCW
-		e.MouseX = cx + dy
-		e.MouseY = cy - dx
+		return cx + dy, cy - dx
 	case 2:
-		e.MouseX = cx - dx
-		e.MouseY = cy - dy
+		return cx - dx, cy - dy
 	case 3: // inverse of 270° CW = 270° CCW
-		e.MouseX = cx - dy
-		e.MouseY = cy + dx
+		return cx - dy, cy + dx
 	}
-	return
+	return mx, my
 }

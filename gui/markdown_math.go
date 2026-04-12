@@ -4,9 +4,7 @@ package gui
 // via the codecogs API.
 
 import (
-	"bytes"
 	"fmt"
-	"image/png"
 	"io"
 	"net/http"
 	"strings"
@@ -168,43 +166,7 @@ func fetchMathAsync(
 			return
 		}
 
-		img, err := png.Decode(bytes.NewReader(body))
-		if err != nil {
-			queueDiagramError(w, hash, requestID,
-				"decode PNG: "+err.Error())
-			return
-		}
-
-		bounds := img.Bounds()
-		imgW := float32(bounds.Dx())
-		imgH := float32(bounds.Dy())
-		imgDPI := float32(dpi)
-
-		// Store PNG (temp file on native, data URL on WASM).
-		ref, err := storeDiagramPNG(body, hash, "math")
-		if err != nil {
-			queueDiagramError(w, hash, requestID,
-				"store PNG: "+err.Error())
-			return
-		}
-
-		w.QueueCommand(func(w *Window) {
-			if !diagramCacheShouldApplyResult(
-				w.viewState.diagramCache,
-				hash, requestID) {
-				removeDiagramPNG(ref)
-				return
-			}
-			w.viewState.diagramCache.Set(hash,
-				DiagramCacheEntry{
-					State:     DiagramReady,
-					PNGPath:   ref,
-					Width:     imgW,
-					Height:    imgH,
-					DPI:       imgDPI,
-					RequestID: requestID,
-				})
-			w.UpdateWindow()
-		})
+		finishDiagramFetch(
+			w, body, hash, requestID, float32(dpi), "math")
 	}()
 }

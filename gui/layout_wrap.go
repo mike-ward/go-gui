@@ -35,7 +35,7 @@ func layoutWrapContainers(layout *Layout, w *Window) {
 
 	for idx := range layout.Children {
 		child := &layout.Children[idx]
-		if child.Shape.Float || child.Shape.ShapeType == ShapeNone || child.Shape.OverDraw {
+		if skipLayoutChild(child.Shape) {
 			continue
 		}
 		childW := child.Shape.Width

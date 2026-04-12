@@ -799,19 +799,11 @@ func ReorderIndices(
 
 // dragReorderIDsSignature computes a stable FNV-1a signature
 // of the item IDs to detect mid-drag list mutations.
-// Inlined to avoid fnv.New64a() interface alloc and per-id
-// string→[]byte conversions (called every frame during drag).
 func dragReorderIDsSignature(ids []string) uint64 {
-	const offset = uint64(14695981039346656037)
-	const prime = uint64(1099511628211)
-	h := offset
+	h := dataGridFnv64Offset
 	for _, id := range ids {
-		for i := range len(id) {
-			h ^= uint64(id[i])
-			h *= prime
-		}
-		h ^= 0x1f
-		h *= prime
+		h = dataGridFnv64Str(h, id)
+		h = dataGridFnv64Byte(h, 0x1f)
 	}
 	return h
 }

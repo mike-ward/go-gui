@@ -105,9 +105,10 @@ type scratchPools struct {
 	renderGlyphLayouts     scratchObjPool[glyph.Layout]
 	renderAffineTransforms scratchObjPool[glyph.AffineTransform]
 
-	// Reusable event for layoutHover callbacks (avoids per-shape
-	// heap allocation of Event).
-	hoverEvent Event
+	// Reusable events for layoutHover and gesture callbacks
+	// (avoids per-shape/per-gesture heap allocation of Event).
+	hoverEvent   Event
+	gestureEvent Event
 
 	floatingLayouts      []*Layout
 	floatingLayoutPool   []*Layout

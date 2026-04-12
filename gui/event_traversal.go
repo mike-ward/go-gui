@@ -32,6 +32,25 @@ func executeFocusCallback(
 	return e.IsHandled
 }
 
+// callRelative translates mouse coordinates to shape-relative,
+// calls the callback, restores coordinates, and propagates
+// IsHandled. Assumes layout.Shape and callback are non-nil.
+func callRelative(
+	layout *Layout, e *Event, w *Window,
+	callback ShapeCallback,
+) bool {
+	saved := *e
+	e.MouseX = saved.MouseX - layout.Shape.X
+	e.MouseY = saved.MouseY - layout.Shape.Y
+	callback(layout, e, w)
+	handled := e.IsHandled
+	*e = saved
+	if handled {
+		e.IsHandled = true
+	}
+	return handled
+}
+
 // executeMouseCallback executes a callback if the mouse is
 // within shape bounds. Coordinates are made relative before
 // calling. Returns true if handled.
@@ -46,17 +65,7 @@ func executeMouseCallback(
 	if callback == nil {
 		return false
 	}
-	saved := *e
-	e.MouseX = saved.MouseX - layout.Shape.X
-	e.MouseY = saved.MouseY - layout.Shape.Y
-	callback(layout, e, w)
-	handled := e.IsHandled
-	*e = saved
-	if handled {
-		e.IsHandled = true
-		return true
-	}
-	return false
+	return callRelative(layout, e, w, callback)
 }
 
 // isChildEnabled checks if a child layout should receive events.

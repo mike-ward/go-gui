@@ -346,7 +346,6 @@ func TestDatePickerClickAdjacentMonth(t *testing.T) {
 		t.Errorf("nav failed: %d/%d", s.ViewMonth, s.ViewYear)
 	}
 
-	// Verify that selected is used/checked.
 	_ = selected
 }
 

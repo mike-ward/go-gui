@@ -115,7 +115,8 @@ func dataGridRowView(dctx dataGridCtx, rowData GridRow, rowIdx int, showDeleteAc
 			textStyle, cellColor = dataGridResolveCellFormat(baseTextStyle, cellFormat)
 		}
 		isEditingCell := isEditingRow && col.Editable
-		cellContent := make([]View, 0, 2)
+		var cellBuf [2]View
+		cellContent := cellBuf[:0]
 		if colIdx == 0 && detailEnabled {
 			cellContent = append(cellContent, dataGridDetailToggleControl(cfg, rowID, detailExpanded, detailToggleEnabled, focusID))
 		}
@@ -789,7 +790,10 @@ func dataGridFrozenTopViews(dctx dataGridCtx, frozenTopIndices []int, showDelete
 }
 
 func dataGridFrozenTopIDSet(cfg *DataGridCfg) map[string]bool {
-	out := map[string]bool{}
+	if len(cfg.FrozenTopRowIDs) == 0 {
+		return nil
+	}
+	out := make(map[string]bool, len(cfg.FrozenTopRowIDs))
 	for _, rowID := range cfg.FrozenTopRowIDs {
 		trimmed := strings.TrimSpace(rowID)
 		if trimmed != "" {
@@ -803,7 +807,7 @@ func dataGridSplitFrozenTopIndices(cfg *DataGridCfg, rowIndices []int) (frozenTo
 	visibleIndices := dataGridVisibleRowIndices(len(cfg.Rows), rowIndices)
 	frozenIDs := dataGridFrozenTopIDSet(cfg)
 	if len(visibleIndices) == 0 || len(frozenIDs) == 0 {
-		return nil, append([]int(nil), visibleIndices...)
+		return nil, visibleIndices
 	}
 	frozenTop = make([]int, 0, len(visibleIndices))
 	body = make([]int, 0, len(visibleIndices))

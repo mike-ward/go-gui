@@ -32,12 +32,18 @@ func layoutPlaceholder() Layout {
 	}
 }
 
+// skipLayoutChild reports whether a child should be excluded
+// from spacing, content-size, and overflow calculations.
+func skipLayoutChild(s *Shape) bool {
+	return s.Float || s.ShapeType == ShapeNone || s.OverDraw
+}
+
 // spacing does the fence-post calculation for spacings.
 func (layout *Layout) spacing() float32 {
 	count := 0
 	for i := range layout.Children {
 		c := &layout.Children[i]
-		if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
+		if skipLayoutChild(c.Shape) {
 			continue
 		}
 		count++
@@ -52,7 +58,7 @@ func contentWidth(layout *Layout) float32 {
 		width += layout.spacing()
 		for i := range layout.Children {
 			c := &layout.Children[i]
-			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
+			if skipLayoutChild(c.Shape) {
 				continue
 			}
 			width += c.Shape.Width
@@ -60,7 +66,7 @@ func contentWidth(layout *Layout) float32 {
 	} else {
 		for i := range layout.Children {
 			c := &layout.Children[i]
-			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
+			if skipLayoutChild(c.Shape) {
 				continue
 			}
 			width = f32Max(width, c.Shape.Width)
@@ -76,7 +82,7 @@ func contentHeight(layout *Layout) float32 {
 		height += layout.spacing()
 		for i := range layout.Children {
 			c := &layout.Children[i]
-			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
+			if skipLayoutChild(c.Shape) {
 				continue
 			}
 			height += c.Shape.Height
@@ -84,7 +90,7 @@ func contentHeight(layout *Layout) float32 {
 	} else {
 		for i := range layout.Children {
 			c := &layout.Children[i]
-			if c.Shape.Float || c.Shape.ShapeType == ShapeNone || c.Shape.OverDraw {
+			if skipLayoutChild(c.Shape) {
 				continue
 			}
 			height = f32Max(height, c.Shape.Height)

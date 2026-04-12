@@ -21,21 +21,10 @@ const (
 	scrollDeltaPage  float32 = 10
 )
 
-// baseDarkCfg returns the common dark ThemeCfg.
-func baseDarkCfg() ThemeCfg {
+// baseCfg returns the shared sizing/spacing/widget-size fields
+// common to all preset themes.
+func baseCfg() ThemeCfg {
 	return ThemeCfg{
-		Name:             "dark",
-		ColorBackground:  colorBackgroundDark,
-		ColorPanel:       colorPanelDark,
-		ColorInterior:    colorInteriorDark,
-		ColorHover:       colorHoverDark,
-		ColorFocus:       colorFocusDark,
-		ColorActive:      colorActiveDark,
-		ColorBorder:      colorBorderDark,
-		ColorBorderFocus: colorSelectDark,
-		ColorSelect:      colorSelectDark,
-		TitlebarDark:     true,
-		TextStyleDef:     DefaultTextStyle,
 		MonoFontFamily:   defaultMonoFontFamily,
 		Padding:          PaddingMedium,
 		PaddingSmall:     PaddingSmall,
@@ -65,8 +54,26 @@ func baseDarkCfg() ThemeCfg {
 		SizeProgressBar:  20,
 		SizeSlider:       6,
 		SizeSliderThumb:  16,
-		ColorError:       RGBA(218, 54, 51, 255),
 	}
+}
+
+// baseDarkCfg returns the common dark ThemeCfg.
+func baseDarkCfg() ThemeCfg {
+	cfg := baseCfg()
+	cfg.Name = "dark"
+	cfg.ColorBackground = colorBackgroundDark
+	cfg.ColorPanel = colorPanelDark
+	cfg.ColorInterior = colorInteriorDark
+	cfg.ColorHover = colorHoverDark
+	cfg.ColorFocus = colorFocusDark
+	cfg.ColorActive = colorActiveDark
+	cfg.ColorBorder = colorBorderDark
+	cfg.ColorBorderFocus = colorSelectDark
+	cfg.ColorSelect = colorSelectDark
+	cfg.TitlebarDark = true
+	cfg.TextStyleDef = DefaultTextStyle
+	cfg.ColorError = RGBA(218, 54, 51, 255)
+	return cfg
 }
 
 // Preset theme configs and themes.
@@ -113,52 +120,22 @@ func init() {
 	ThemeDarkBordered = ThemeMaker(ThemeDarkBorderedCfg)
 
 	// Light.
-	ThemeLightCfg = ThemeCfg{
-		Name:             "light",
-		ColorBackground:  colorBackgroundLight,
-		ColorPanel:       colorPanelLight,
-		ColorInterior:    colorInteriorLight,
-		ColorHover:       colorHoverLight,
-		ColorFocus:       colorFocusLight,
-		ColorActive:      colorActiveLight,
-		ColorBorder:      colorBorderLight,
-		ColorBorderFocus: colorBorderFocusLight,
-		ColorSelect:      colorSelectLight,
-		ColorError:       RGBA(200, 40, 40, 255),
-		TextStyleDef: TextStyle{
-			Family: defaultFontFamily,
-			Color:  colorTextLight,
-			Size:   SizeTextMedium,
-		},
-		MonoFontFamily:   defaultMonoFontFamily,
-		Padding:          PaddingMedium,
-		PaddingSmall:     PaddingSmall,
-		PaddingMedium:    PaddingMedium,
-		PaddingLarge:     PaddingLarge,
-		Radius:           RadiusMedium,
-		RadiusSmall:      RadiusSmall,
-		RadiusMedium:     RadiusMedium,
-		RadiusLarge:      RadiusLarge,
-		SpacingSmall:     SpacingSmall,
-		SpacingMedium:    SpacingMedium,
-		SpacingLarge:     SpacingLarge,
-		SizeTextTiny:     SizeTextTiny,
-		SizeTextXSmall:   SizeTextXSmall,
-		SizeTextSmall:    SizeTextSmall,
-		SizeTextMedium:   SizeTextMedium,
-		SizeTextLarge:    SizeTextLarge,
-		SizeTextXLarge:   SizeTextXLarge,
-		ScrollMultiplier: scrollMultiplier,
-		ScrollDeltaLine:  scrollDeltaLine,
-		ScrollDeltaPage:  scrollDeltaPage,
-		SizeSwitchWidth:  36,
-		SizeSwitchHeight: 22,
-		SizeRadio:        16,
-		SizeScrollbar:    7,
-		SizeScrollbarMin: 20,
-		SizeProgressBar:  20,
-		SizeSlider:       6,
-		SizeSliderThumb:  16,
+	ThemeLightCfg = baseCfg()
+	ThemeLightCfg.Name = "light"
+	ThemeLightCfg.ColorBackground = colorBackgroundLight
+	ThemeLightCfg.ColorPanel = colorPanelLight
+	ThemeLightCfg.ColorInterior = colorInteriorLight
+	ThemeLightCfg.ColorHover = colorHoverLight
+	ThemeLightCfg.ColorFocus = colorFocusLight
+	ThemeLightCfg.ColorActive = colorActiveLight
+	ThemeLightCfg.ColorBorder = colorBorderLight
+	ThemeLightCfg.ColorBorderFocus = colorBorderFocusLight
+	ThemeLightCfg.ColorSelect = colorSelectLight
+	ThemeLightCfg.ColorError = RGBA(200, 40, 40, 255)
+	ThemeLightCfg.TextStyleDef = TextStyle{
+		Family: defaultFontFamily,
+		Color:  colorTextLight,
+		Size:   SizeTextMedium,
 	}
 	ThemeLight = ThemeMaker(ThemeLightCfg)
 
@@ -177,54 +154,25 @@ func init() {
 	ThemeLightBordered = ThemeMaker(ThemeLightBorderedCfg)
 
 	// Blue bordered.
-	ThemeBlueBorderedCfg = ThemeCfg{
-		Name:             "blue-dark-bordered",
-		ColorBackground:  ColorFromString("#151C30"),
-		ColorPanel:       ColorFromString("#1C243F"),
-		ColorInterior:    ColorFromString("#202A49"),
-		ColorHover:       ColorFromString("#243054"),
-		ColorFocus:       ColorFromString("#29365E"),
-		ColorActive:      ColorFromString("#2D3C68"),
-		ColorBorder:      ColorFromString("#364263"),
-		ColorBorderFocus: ColorFromString("#617AC3"),
-		ColorSelect:      ColorFromString("#3E65D8"),
-		ColorError:       RGBA(218, 54, 51, 255),
-		TitlebarDark:     true,
-		TextStyleDef: TextStyle{
-			Family: defaultFontFamily,
-			Color:  ColorFromString("#E1E1E1"),
-			Size:   SizeTextMedium,
-		},
-		SizeBorder:       SizeBorderDef,
-		Padding:          PaddingMedium,
-		PaddingSmall:     PaddingSmall,
-		PaddingMedium:    PaddingMedium,
-		PaddingLarge:     PaddingLarge,
-		Radius:           RadiusMedium,
-		RadiusSmall:      RadiusSmall,
-		RadiusMedium:     RadiusMedium,
-		RadiusLarge:      RadiusLarge,
-		SpacingSmall:     SpacingSmall,
-		SpacingMedium:    SpacingMedium,
-		SpacingLarge:     SpacingLarge,
-		SizeTextTiny:     SizeTextTiny,
-		SizeTextXSmall:   SizeTextXSmall,
-		SizeTextSmall:    SizeTextSmall,
-		SizeTextMedium:   SizeTextMedium,
-		SizeTextLarge:    SizeTextLarge,
-		SizeTextXLarge:   SizeTextXLarge,
-		ScrollMultiplier: scrollMultiplier,
-		ScrollDeltaLine:  scrollDeltaLine,
-		ScrollDeltaPage:  scrollDeltaPage,
-		SizeSwitchWidth:  36,
-		SizeSwitchHeight: 22,
-		SizeRadio:        16,
-		SizeScrollbar:    7,
-		SizeScrollbarMin: 20,
-		SizeProgressBar:  20,
-		SizeSlider:       6,
-		SizeSliderThumb:  16,
+	ThemeBlueBorderedCfg = baseCfg()
+	ThemeBlueBorderedCfg.Name = "blue-dark-bordered"
+	ThemeBlueBorderedCfg.ColorBackground = ColorFromString("#151C30")
+	ThemeBlueBorderedCfg.ColorPanel = ColorFromString("#1C243F")
+	ThemeBlueBorderedCfg.ColorInterior = ColorFromString("#202A49")
+	ThemeBlueBorderedCfg.ColorHover = ColorFromString("#243054")
+	ThemeBlueBorderedCfg.ColorFocus = ColorFromString("#29365E")
+	ThemeBlueBorderedCfg.ColorActive = ColorFromString("#2D3C68")
+	ThemeBlueBorderedCfg.ColorBorder = ColorFromString("#364263")
+	ThemeBlueBorderedCfg.ColorBorderFocus = ColorFromString("#617AC3")
+	ThemeBlueBorderedCfg.ColorSelect = ColorFromString("#3E65D8")
+	ThemeBlueBorderedCfg.ColorError = RGBA(218, 54, 51, 255)
+	ThemeBlueBorderedCfg.TitlebarDark = true
+	ThemeBlueBorderedCfg.TextStyleDef = TextStyle{
+		Family: defaultFontFamily,
+		Color:  ColorFromString("#E1E1E1"),
+		Size:   SizeTextMedium,
 	}
+	ThemeBlueBorderedCfg.SizeBorder = SizeBorderDef
 	ThemeBlueBordered = ThemeMaker(ThemeBlueBorderedCfg)
 
 	// Register all preset themes.

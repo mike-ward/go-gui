@@ -341,34 +341,34 @@ func (w *Window) HasFocus() bool {
 	return w.focused
 }
 
-// SetMouseCursorArrow sets the mouse cursor.
+// SetMouseCursorArrow sets the cursor to the default arrow.
 func (w *Window) SetMouseCursorArrow() { w.SetMouseCursor(CursorArrow) }
 
-// SetMouseCursorIBeam sets the mouse cursor.
+// SetMouseCursorIBeam sets the cursor to a text I-beam.
 func (w *Window) SetMouseCursorIBeam() { w.SetMouseCursor(CursorIBeam) }
 
-// SetMouseCursorCrosshair sets the mouse cursor.
+// SetMouseCursorCrosshair sets the cursor to a crosshair.
 func (w *Window) SetMouseCursorCrosshair() { w.SetMouseCursor(CursorCrosshair) }
 
-// SetMouseCursorPointingHand sets the mouse cursor.
+// SetMouseCursorPointingHand sets the cursor to a pointing hand.
 func (w *Window) SetMouseCursorPointingHand() { w.SetMouseCursor(CursorPointingHand) }
 
-// SetMouseCursorAll sets the mouse cursor.
+// SetMouseCursorAll sets the cursor to a resize-all indicator.
 func (w *Window) SetMouseCursorAll() { w.SetMouseCursor(CursorResizeAll) }
 
-// SetMouseCursorNS sets the mouse cursor.
+// SetMouseCursorNS sets the cursor to a north-south resize.
 func (w *Window) SetMouseCursorNS() { w.SetMouseCursor(CursorResizeNS) }
 
-// SetMouseCursorEW sets the mouse cursor.
+// SetMouseCursorEW sets the cursor to an east-west resize.
 func (w *Window) SetMouseCursorEW() { w.SetMouseCursor(CursorResizeEW) }
 
-// SetMouseCursorResizeNESW sets the mouse cursor.
+// SetMouseCursorResizeNESW sets the cursor to a NE-SW resize.
 func (w *Window) SetMouseCursorResizeNESW() { w.SetMouseCursor(CursorResizeNESW) }
 
-// SetMouseCursorResizeNWSE sets the mouse cursor.
+// SetMouseCursorResizeNWSE sets the cursor to a NW-SE resize.
 func (w *Window) SetMouseCursorResizeNWSE() { w.SetMouseCursor(CursorResizeNWSE) }
 
-// SetMouseCursorNotAllowed sets the mouse cursor.
+// SetMouseCursorNotAllowed sets the cursor to a not-allowed indicator.
 func (w *Window) SetMouseCursorNotAllowed() { w.SetMouseCursor(CursorNotAllowed) }
 
 // InputCursorOn returns the input cursor blink state.

@@ -1,10 +1,6 @@
 package gui
 
-import (
-	"strings"
-
-	"github.com/mike-ward/go-glyph"
-)
+import "github.com/mike-ward/go-glyph"
 
 // renderLayout walks the layout tree and emits RenderCmd entries
 // into window.renderers. Clip rectangles bracket clipped children.
@@ -35,13 +31,7 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 			shapeClip.X = clip.X
 			shapeClip.Width = clip.Width
 		}
-		emitRenderer(RenderCmd{
-			Kind: RenderClip,
-			X:    shapeClip.X,
-			Y:    shapeClip.Y,
-			W:    shapeClip.Width,
-			H:    shapeClip.Height,
-		}, w)
+		emitClipCmd(shapeClip, w)
 	} else if layout.Shape.Clip {
 		sc := layout.Shape.ShapeClip
 		isRTL := effectiveTextDir(layout.Shape) == TextDirRTL
@@ -57,13 +47,7 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 			Width:  f32Max(0, sc.Width-layout.Shape.PaddingWidth()),
 			Height: f32Max(0, sc.Height-layout.Shape.PaddingHeight()),
 		}
-		emitRenderer(RenderCmd{
-			Kind: RenderClip,
-			X:    shapeClip.X,
-			Y:    shapeClip.Y,
-			W:    shapeClip.Width,
-			H:    shapeClip.Height,
-		}, w)
+		emitClipCmd(shapeClip, w)
 	}
 
 	// Emit stencil clip bracket before children.
@@ -85,20 +69,8 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 		// Also apply scissor clip as optimization (avoids
 		// rasterizing fragments outside bounding rect).
 		if !layout.Shape.Clip && !layout.Shape.OverDraw {
-			sc := layout.Shape.ShapeClip
-			shapeClip = DrawClip{
-				X:      sc.X,
-				Y:      sc.Y,
-				Width:  sc.Width,
-				Height: sc.Height,
-			}
-			emitRenderer(RenderCmd{
-				Kind: RenderClip,
-				X:    shapeClip.X,
-				Y:    shapeClip.Y,
-				W:    shapeClip.Width,
-				H:    shapeClip.Height,
-			}, w)
+			shapeClip = layout.Shape.ShapeClip
+			emitClipCmd(shapeClip, w)
 		}
 	}
 
@@ -135,13 +107,7 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 	if layout.Shape.ClipContents {
 		// Restore scissor if we pushed one.
 		if !layout.Shape.Clip && !layout.Shape.OverDraw {
-			emitRenderer(RenderCmd{
-				Kind: RenderClip,
-				X:    clip.X,
-				Y:    clip.Y,
-				W:    clip.Width,
-				H:    clip.Height,
-			}, w)
+			emitClipCmd(clip, w)
 		}
 		emitRenderer(RenderCmd{
 			Kind:         RenderStencilEnd,
@@ -158,13 +124,7 @@ func renderLayout(layout *Layout, bgColor Color, clip DrawClip, w *Window) {
 	}
 
 	if layout.Shape.Clip || layout.Shape.OverDraw {
-		emitRenderer(RenderCmd{
-			Kind: RenderClip,
-			X:    clip.X,
-			Y:    clip.Y,
-			W:    clip.Width,
-			H:    clip.Height,
-		}, w)
+		emitClipCmd(clip, w)
 	}
 
 	if hasColorFilter {
@@ -187,11 +147,9 @@ func renderShape(shape *Shape, parentColor Color, clip DrawClip, w *Window) {
 		origBorder := shape.ColorBorder
 		shape.Color = shape.Color.WithOpacity(shape.Opacity)
 		shape.ColorBorder = shape.ColorBorder.WithOpacity(shape.Opacity)
-		defer func() {
-			shape.Color = origColor
-			shape.ColorBorder = origBorder
-		}()
 		renderShapeInner(shape, parentColor, clip, w)
+		shape.Color = origColor
+		shape.ColorBorder = origBorder
 	} else {
 		renderShapeInner(shape, parentColor, clip, w)
 	}
@@ -324,10 +282,7 @@ func renderContainer(shape *Shape, _ Color, clip DrawClip, w *Window) {
 // renderRectangle draws a shape as a filled rectangle with optional
 // stroke border.
 func renderRectangle(shape *Shape, clip DrawClip, w *Window) {
-	dr := DrawClip{
-		X: shape.X, Y: shape.Y,
-		Width: shape.Width, Height: shape.Height,
-	}
+	dr := shapeBounds(shape)
 	c := shape.Color
 	if shape.Disabled {
 		c = dimAlpha(c)
@@ -372,10 +327,7 @@ func renderRectangle(shape *Shape, clip DrawClip, w *Window) {
 // renderCircle draws a shape as a circle in the middle of the
 // shape's rectangular region.
 func renderCircle(shape *Shape, clip DrawClip, w *Window) {
-	dr := DrawClip{
-		X: shape.X, Y: shape.Y,
-		Width: shape.Width, Height: shape.Height,
-	}
+	dr := shapeBounds(shape)
 	c := shape.Color
 	if shape.Disabled {
 		c = dimAlpha(c)
@@ -450,11 +402,7 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 		}
 		return
 	}
-	dr := DrawClip{
-		X: shape.X, Y: shape.Y,
-		Width: shape.Width, Height: shape.Height,
-	}
-	if !rectsOverlap(dr, clip) {
+	if !rectsOverlap(shapeBounds(shape), clip) {
 		return
 	}
 	c := tc.TextStyle.Color
@@ -470,11 +418,7 @@ func renderText(shape *Shape, clip DrawClip, w *Window) {
 
 	text := tc.Text
 	if tc.TextIsPassword {
-		if strings.Contains(tc.Text, "\n") {
-			text = passwordMaskKeepNewlines(tc.Text)
-		} else {
-			text = passwordMask(tc.Text)
-		}
+		text = maskPassword(tc.Text)
 	}
 
 	// Insert IME preedit text at cursor position for display.
@@ -798,11 +742,7 @@ func inputGlyphLayoutResolved(text string, shape *Shape, style TextStyle, w *Win
 	}
 	displayText := text
 	if shape.TC != nil && shape.TC.TextIsPassword && !textAlreadyMasked {
-		if strings.Contains(text, "\n") {
-			displayText = passwordMaskKeepNewlines(text)
-		} else {
-			displayText = passwordMask(text)
-		}
+		displayText = maskPassword(text)
 	}
 	return plainTextLayoutResolved(displayText, shape, style, w)
 }
@@ -850,11 +790,7 @@ func renderRtf(shape *Shape, clip DrawClip, w *Window) {
 	if !shape.HasRtfLayout() {
 		return
 	}
-	dr := DrawClip{
-		X: shape.X, Y: shape.Y,
-		Width: shape.Width, Height: shape.Height,
-	}
-	if !rectsOverlap(dr, clip) {
+	if !rectsOverlap(shapeBounds(shape), clip) {
 		return
 	}
 	baseX := shape.X + shape.PaddingLeft()

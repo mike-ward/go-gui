@@ -395,38 +395,11 @@ func cpChannelInput(
 	onChange := cfg.OnColorChange
 	cfgID := cfg.ID
 	c := cfg.Color
-
+	applyFn := func(text string, w *Window) {
+		cpApplyRGB(text, idx, c, cfgID, onChange, w)
+	}
 	inputID := fmt.Sprintf("%s.rgb.%d", cfgID, idx)
-	return Column(ContainerCfg{
-		Padding: NoPadding,
-		Spacing: SomeF(2),
-		Content: []View{
-			Text(TextCfg{
-				Text: ch,
-				TextStyle: TextStyle{
-					Color: cfg.Style.TextStyle.Color,
-					Size:  cfg.Style.TextStyle.Size,
-					Align: TextAlignCenter,
-				},
-			}),
-			Input(InputCfg{
-				ID:        inputID,
-				IDFocus:   fnvSum32(inputID),
-				Text:      fmt.Sprintf("%d", val),
-				TextStyle: cfg.Style.TextStyle,
-				Width:     50,
-				OnTextChanged: func(_ *Layout, text string, w *Window) {
-					cpApplyRGB(text, idx, c, cfgID, onChange, w)
-				},
-				OnTextCommit: func(
-					_ *Layout, text string,
-					_ InputCommitReason, w *Window,
-				) {
-					cpApplyRGB(text, idx, c, cfgID, onChange, w)
-				},
-			}),
-		},
-	})
+	return cpInputColumn(cfg, ch, int(val), inputID, applyFn)
 }
 
 // cpHSVChannelInput builds a labeled HSV channel input.
@@ -436,14 +409,26 @@ func cpHSVChannelInput(
 ) View {
 	onChange := cfg.OnColorChange
 	cfgID := cfg.ID
-
+	alpha := cfg.Color.A
+	applyFn := func(text string, w *Window) {
+		cpApplyHSV(text, idx, maxVal, cfgID, alpha, onChange, w)
+	}
 	inputID := fmt.Sprintf("%s.hsv.%d", cfgID, idx)
+	return cpInputColumn(cfg, ch, val, inputID, applyFn)
+}
+
+// cpInputColumn builds a labeled channel input column shared by
+// RGB and HSV inputs.
+func cpInputColumn(
+	cfg *ColorPickerCfg, label string, val int,
+	inputID string, applyFn func(string, *Window),
+) View {
 	return Column(ContainerCfg{
 		Padding: NoPadding,
 		Spacing: SomeF(2),
 		Content: []View{
 			Text(TextCfg{
-				Text: ch,
+				Text: label,
 				TextStyle: TextStyle{
 					Color: cfg.Style.TextStyle.Color,
 					Size:  cfg.Style.TextStyle.Size,
@@ -457,15 +442,13 @@ func cpHSVChannelInput(
 				TextStyle: cfg.Style.TextStyle,
 				Width:     50,
 				OnTextChanged: func(_ *Layout, text string, w *Window) {
-					cpApplyHSV(text, idx, maxVal, cfgID,
-						cfg.Color.A, onChange, w)
+					applyFn(text, w)
 				},
 				OnTextCommit: func(
 					_ *Layout, text string,
 					_ InputCommitReason, w *Window,
 				) {
-					cpApplyHSV(text, idx, maxVal, cfgID,
-						cfg.Color.A, onChange, w)
+					applyFn(text, w)
 				},
 			}),
 		},
@@ -597,7 +580,7 @@ func cpApplyHSV(
 	if err != nil || onChange == nil {
 		return
 	}
-	n = min(max(n, 0), maxVal)
+	n = intClamp(n, 0, maxVal)
 	sm := StateMap[string, colorPickerState](
 		w, nsColorPicker, capModerate)
 	hsv, _ := sm.Get(cfgID)

@@ -78,19 +78,18 @@ func EaseOutElastic(t float32) float32 {
 func EaseOutBounce(t float32) float32 {
 	const n1 = float32(7.5625)
 	const d1 = float32(2.75)
-	tt := t
 	switch {
-	case tt < 1/d1:
-		return n1 * tt * tt
-	case tt < 2/d1:
-		tt -= 1.5 / d1
-		return n1*tt*tt + 0.75
-	case tt < 2.5/d1:
-		tt -= 2.25 / d1
-		return n1*tt*tt + 0.9375
+	case t < 1/d1:
+		return n1 * t * t
+	case t < 2/d1:
+		t -= 1.5 / d1
+		return n1*t*t + 0.75
+	case t < 2.5/d1:
+		t -= 2.25 / d1
+		return n1*t*t + 0.9375
 	default:
-		tt -= 2.625 / d1
-		return n1*tt*tt + 0.984375
+		t -= 2.625 / d1
+		return n1*t*t + 0.984375
 	}
 }
 

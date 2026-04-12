@@ -177,12 +177,7 @@ func layoutScrollContainers(layout *Layout, idScrollContainer uint32) {
 
 // layoutSetShapeClips sets shape clips used for hit testing.
 func layoutSetShapeClips(layout *Layout, clip DrawClip) {
-	shapeClip := DrawClip{
-		X:      layout.Shape.X,
-		Y:      layout.Shape.Y,
-		Width:  layout.Shape.Width,
-		Height: layout.Shape.Height,
-	}
+	shapeClip := shapeBounds(layout.Shape)
 	if r, ok := rectIntersection(shapeClip, clip); ok {
 		layout.Shape.ShapeClip = r
 	} else {

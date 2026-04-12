@@ -16,9 +16,7 @@ func layoutOverflow(layout *Layout, w *Window) {
 
 	// Find the trigger button (last non-float, non-placeholder child).
 	triggerIdx := len(layout.Children) - 1
-	for triggerIdx > 0 && (layout.Children[triggerIdx].Shape.Float ||
-		layout.Children[triggerIdx].Shape.ShapeType == ShapeNone ||
-		layout.Children[triggerIdx].Shape.OverDraw) {
+	for triggerIdx > 0 && skipLayoutChild(layout.Children[triggerIdx].Shape) {
 		triggerIdx--
 	}
 	triggerW := layout.Children[triggerIdx].Shape.Width
@@ -29,8 +27,7 @@ func layoutOverflow(layout *Layout, w *Window) {
 
 	for i := range triggerIdx {
 		child := &layout.Children[i]
-		if child.Shape.Float || child.Shape.ShapeType == ShapeNone ||
-			child.Shape.OverDraw {
+		if skipLayoutChild(child.Shape) {
 			continue
 		}
 		var gap float32
@@ -51,9 +48,7 @@ func layoutOverflow(layout *Layout, w *Window) {
 		visibleCount = triggerIdx
 	} else {
 		for i := firstHideIdx; i < triggerIdx; i++ {
-			if layout.Children[i].Shape.Float ||
-				layout.Children[i].Shape.ShapeType == ShapeNone ||
-				layout.Children[i].Shape.OverDraw {
+			if skipLayoutChild(layout.Children[i].Shape) {
 				continue
 			}
 			hideOverflowChild(&layout.Children[i])
