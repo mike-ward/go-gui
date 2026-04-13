@@ -111,6 +111,12 @@ func (b *Backend) Run(w *gui.Window) {
 		}, nil)
 	defer sdl.DelEventWatch(watchHandle)
 
+	// Register native Cocoa file drop handler. This bypasses
+	// SDL2's DropEvent which crashes in go-sdl2 on macOS (the
+	// binding calls SDL_free on a Cocoa-allocated string).
+	fileDropInitBridge(b.window, w)
+	defer fileDropDestroyBridge(b.window)
+
 	wakeType := sdl.RegisterEvents(1)
 	w.SetWakeMainFn(func() {
 		_, _ = sdl.PushEvent(&sdl.UserEvent{Type: wakeType})
@@ -198,10 +204,16 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 		states[sdlID] = ws
 		app.Register(sdlID, w)
 		injectInterfaces(w, ws)
+		fileDropInitBridge(ws.window, w)
 		if w.Config.OnInit != nil {
 			w.Config.OnInit(w)
 		}
 	}
+	defer func() {
+		for _, ws := range states {
+			fileDropDestroyBridge(ws.window)
+		}
+	}()
 
 	// Event watcher for live resize on macOS.
 	resizeEvent := &gui.Event{Type: gui.EventResized}
@@ -261,6 +273,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 				app.Register(sdlID, w)
 				injectInterfaces(w, ws)
 				setWakeFn(w)
+				fileDropInitBridge(ws.window, w)
 				if cfg.OnInit != nil {
 					cfg.OnInit(w)
 				}
@@ -294,6 +307,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 					if w := app.Window(wid); w != nil {
 						w.WindowCleanup()
 					}
+					fileDropDestroyBridge(ws.window)
 					ws.destroy()
 					delete(states, wid)
 					if app.Unregister(wid) {
@@ -331,6 +345,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 				continue
 			}
 			w.WindowCleanup()
+			fileDropDestroyBridge(ws.window)
 			ws.destroy()
 			delete(states, wid)
 			if app.Unregister(wid) {
