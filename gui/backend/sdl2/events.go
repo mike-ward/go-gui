@@ -126,6 +126,18 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 			}},
 		}, true
 
+	case *sdl.DropEvent:
+		if e.Type != sdl.DROPFILE || e.File == "" {
+			return gui.Event{}, true
+		}
+		mx, my, _ := sdl.GetMouseState()
+		return gui.Event{
+			Type:     gui.EventFileDropped,
+			FilePath: e.File,
+			MouseX:   float32(mx),
+			MouseY:   float32(my),
+		}, true
+
 	case *sdl.WindowEvent:
 		switch e.Event {
 		case sdl.WINDOWEVENT_RESIZED,

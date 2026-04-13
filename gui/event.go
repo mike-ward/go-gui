@@ -50,7 +50,7 @@ const (
 	EventResumed
 	EventQuitRequested
 	EventClipboardPasted
-	EventFilesDropped
+	EventFileDropped
 	EventIMEComposition
 	EventGesture // gesture recognized from touch input
 )
@@ -303,6 +303,7 @@ type TouchPoint struct {
 type Event struct {
 	Touches           [8]TouchPoint
 	IMEText           string
+	FilePath          string
 	FrameCount        uint64
 	WindowID          uint32
 	MouseX            float32

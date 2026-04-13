@@ -263,3 +263,27 @@ func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 		}
 	}
 }
+
+// fileDropHandler handles file-drop events. Does not change focus.
+func fileDropHandler(layout *Layout, e *Event, w *Window) {
+	ox, oy := rotateMouseInverse(layout.Shape, e)
+	for i := len(layout.Children) - 1; i >= 0; i-- {
+		if !isChildEnabled(&layout.Children[i]) {
+			continue
+		}
+		fileDropHandler(&layout.Children[i], e, w)
+		if e.IsHandled {
+			e.MouseX, e.MouseY = ox, oy
+			return
+		}
+	}
+	e.MouseX, e.MouseY = ox, oy
+	if layout.Shape == nil {
+		return
+	}
+	var onFileDrop ShapeCallback
+	if layout.Shape.HasEvents() {
+		onFileDrop = layout.Shape.Events.OnFileDrop
+	}
+	executeMouseCallback(layout, e, w, onFileDrop)
+}

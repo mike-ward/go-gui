@@ -19,6 +19,7 @@ func (w *Window) EventFn(e *Event) {
 		e.Type != EventTouchesBegan &&
 		e.Type != EventTouchesMoved &&
 		e.Type != EventTouchesEnded &&
+		e.Type != EventFileDropped &&
 		e.Type != EventTouchesCancelled {
 		return
 	}
@@ -142,6 +143,9 @@ func (w *Window) EventFn(e *Event) {
 	case EventResized:
 		w.windowWidth = e.WindowWidth
 		w.windowHeight = e.WindowHeight
+
+	case EventFileDropped:
+		fileDropHandler(layout, e, w)
 
 	case EventTouchesBegan, EventTouchesMoved,
 		EventTouchesEnded, EventTouchesCancelled:

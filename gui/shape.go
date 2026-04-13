@@ -278,6 +278,7 @@ type EventHandlers struct {
 	OnHover       func(*Layout, *Event, *Window)
 	OnMouseLeave  func(*Layout, *Event, *Window)
 	OnGesture     func(*Layout, *Event, *Window)
+	OnFileDrop    func(*Layout, *Event, *Window)
 	OnIMECommit   func(*Layout, string, *Window)
 	OnDraw        func(*DrawContext)
 }

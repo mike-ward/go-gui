@@ -511,3 +511,217 @@ func TestMouseScrollFallbackUnhandledReachesContainer(t *testing.T) {
 		t.Error("scroll container should handle unhandled event")
 	}
 }
+
+func TestFileDropHandler(t *testing.T) {
+	t.Parallel()
+
+	t.Run("delivers_to_topmost_child", func(t *testing.T) {
+		t.Parallel()
+		var hitID string
+		mkChild := func(id string) Layout {
+			return Layout{Shape: &Shape{
+				ID: id,
+				ShapeClip: DrawClip{X: 0, Y: 0,
+					Width: 100, Height: 100},
+				Events: &EventHandlers{
+					OnFileDrop: func(l *Layout, e *Event, _ *Window) {
+						hitID = l.Shape.ID
+						e.IsHandled = true
+					},
+				},
+			}}
+		}
+		root := &Layout{
+			Shape: &Shape{},
+			Children: []Layout{
+				mkChild("first"),
+				mkChild("second"),
+			},
+		}
+		w := &Window{}
+		e := &Event{MouseX: 50, MouseY: 50, FilePath: "/tmp/test.txt"}
+		fileDropHandler(root, e, w)
+		if hitID != "second" {
+			t.Errorf("hit: got %q, want second", hitID)
+		}
+		if !e.IsHandled {
+			t.Error("event not handled")
+		}
+	})
+
+	t.Run("stops_propagation", func(t *testing.T) {
+		t.Parallel()
+		parentCalled := false
+		root := &Layout{
+			Shape: &Shape{
+				ShapeClip: DrawClip{X: 0, Y: 0,
+					Width: 200, Height: 200},
+				Events: &EventHandlers{
+					OnFileDrop: func(_ *Layout, _ *Event, _ *Window) {
+						parentCalled = true
+					},
+				},
+			},
+			Children: []Layout{
+				{Shape: &Shape{
+					ShapeClip: DrawClip{X: 0, Y: 0,
+						Width: 100, Height: 100},
+					Events: &EventHandlers{
+						OnFileDrop: func(_ *Layout, e *Event, _ *Window) {
+							e.IsHandled = true
+						},
+					},
+				}},
+			},
+		}
+		w := &Window{}
+		e := &Event{MouseX: 50, MouseY: 50, FilePath: "/tmp/a.txt"}
+		fileDropHandler(root, e, w)
+		if parentCalled {
+			t.Error("parent should not be called after child handles")
+		}
+	})
+
+	t.Run("nil_shape_no_panic", func(t *testing.T) {
+		t.Parallel()
+		root := &Layout{
+			Shape: nil,
+			Children: []Layout{
+				{Shape: nil},
+			},
+		}
+		w := &Window{}
+		e := &Event{MouseX: 50, MouseY: 50, FilePath: "/tmp/a.txt"}
+		fileDropHandler(root, e, w)
+		if e.IsHandled {
+			t.Error("nil shape should not handle")
+		}
+	})
+
+	t.Run("no_callback_passes_through", func(t *testing.T) {
+		t.Parallel()
+		root := &Layout{
+			Shape: &Shape{
+				ShapeClip: DrawClip{X: 0, Y: 0,
+					Width: 100, Height: 100},
+			},
+		}
+		w := &Window{}
+		e := &Event{MouseX: 50, MouseY: 50, FilePath: "/tmp/a.txt"}
+		fileDropHandler(root, e, w)
+		if e.IsHandled {
+			t.Error("no callback should leave event unhandled")
+		}
+	})
+
+	t.Run("skips_disabled_child", func(t *testing.T) {
+		t.Parallel()
+		called := false
+		root := &Layout{
+			Shape: &Shape{},
+			Children: []Layout{
+				{Shape: &Shape{
+					Disabled: true,
+					ShapeClip: DrawClip{X: 0, Y: 0,
+						Width: 100, Height: 100},
+					Events: &EventHandlers{
+						OnFileDrop: func(_ *Layout, e *Event, _ *Window) {
+							called = true
+							e.IsHandled = true
+						},
+					},
+				}},
+			},
+		}
+		w := &Window{}
+		e := &Event{MouseX: 50, MouseY: 50, FilePath: "/tmp/a.txt"}
+		fileDropHandler(root, e, w)
+		if called {
+			t.Error("should skip disabled child")
+		}
+	})
+
+	t.Run("no_children_no_panic", func(t *testing.T) {
+		t.Parallel()
+		root := &Layout{
+			Shape: &Shape{
+				ShapeClip: DrawClip{X: 0, Y: 0,
+					Width: 100, Height: 100},
+			},
+		}
+		w := &Window{}
+		e := &Event{MouseX: 50, MouseY: 50, FilePath: "/tmp/a.txt"}
+		fileDropHandler(root, e, w)
+		// No panic is the assertion.
+	})
+
+	t.Run("restores_mouse_coords", func(t *testing.T) {
+		t.Parallel()
+		root := &Layout{
+			Shape: &Shape{},
+			Children: []Layout{
+				{Shape: &Shape{
+					ShapeClip: DrawClip{X: 10, Y: 20,
+						Width: 100, Height: 100},
+					Events: &EventHandlers{
+						OnFileDrop: func(_ *Layout, e *Event, _ *Window) {
+							e.IsHandled = true
+						},
+					},
+				}},
+			},
+		}
+		w := &Window{}
+		e := &Event{MouseX: 50, MouseY: 50, FilePath: "/tmp/a.txt"}
+		fileDropHandler(root, e, w)
+		if e.MouseX != 50 || e.MouseY != 50 {
+			t.Errorf("coords not restored: got (%g, %g), want (50, 50)",
+				e.MouseX, e.MouseY)
+		}
+	})
+}
+
+func TestMakeContainerEventsOnFileDropAlone(t *testing.T) {
+	t.Parallel()
+	called := false
+	cfg := &ContainerCfg{
+		OnFileDrop: func(_ *Layout, _ *Event, _ *Window) {
+			called = true
+		},
+	}
+	eh := makeContainerEvents(cfg)
+	if eh == nil {
+		t.Fatal("expected non-nil EventHandlers")
+	}
+	if eh.OnFileDrop == nil {
+		t.Fatal("OnFileDrop not wired")
+	}
+	eh.OnFileDrop(nil, nil, nil)
+	if !called {
+		t.Error("OnFileDrop callback not invoked")
+	}
+}
+
+func TestDrawCanvasOnFileDropWired(t *testing.T) {
+	t.Parallel()
+	called := false
+	w := &Window{}
+	v := DrawCanvas(DrawCanvasCfg{
+		ID:    "dc-drop",
+		Width: 100, Height: 100,
+		OnFileDrop: func(_ *Layout, _ *Event, _ *Window) {
+			called = true
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.Events == nil {
+		t.Fatal("expected non-nil Events")
+	}
+	if layout.Shape.Events.OnFileDrop == nil {
+		t.Fatal("OnFileDrop not wired on DrawCanvas")
+	}
+	layout.Shape.Events.OnFileDrop(nil, nil, nil)
+	if !called {
+		t.Error("OnFileDrop callback not invoked")
+	}
+}

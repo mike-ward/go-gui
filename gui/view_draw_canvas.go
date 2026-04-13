@@ -25,6 +25,7 @@ type DrawCanvasCfg struct {
 	OnMouseLeave    func(*Layout, *Event, *Window)
 	OnGesture       func(*Layout, *Event, *Window)
 	OnMouseScroll   func(*Layout, *Event, *Window)
+	OnFileDrop      func(*Layout, *Event, *Window)
 }
 
 // drawCanvasView implements View for user-drawn canvas content.
@@ -51,7 +52,7 @@ func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 	var events *EventHandlers
 	if c.OnClick != nil || c.OnHover != nil || c.OnMouseMove != nil ||
 		c.OnMouseUp != nil || c.OnMouseLeave != nil || c.OnGesture != nil ||
-		c.OnMouseScroll != nil || c.OnDraw != nil {
+		c.OnMouseScroll != nil || c.OnFileDrop != nil || c.OnDraw != nil {
 		events = &EventHandlers{
 			OnClick:       leftClickOnly(c.OnClick),
 			OnHover:       c.OnHover,
@@ -60,6 +61,7 @@ func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 			OnMouseLeave:  c.OnMouseLeave,
 			OnGesture:     c.OnGesture,
 			OnMouseScroll: c.OnMouseScroll,
+			OnFileDrop:    c.OnFileDrop,
 			OnDraw:        c.OnDraw,
 		}
 	}
