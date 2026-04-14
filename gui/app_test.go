@@ -121,6 +121,33 @@ func TestWindowClose(t *testing.T) {
 	}
 }
 
+func TestWindowOnCloseRequest(t *testing.T) {
+	// Veto path: callback set, does not call Close; window stays open.
+	vetoCalls := 0
+	wv := NewWindow(WindowCfg{
+		OnCloseRequest: func(*Window) { vetoCalls++ },
+	})
+	if wv.Config.OnCloseRequest == nil {
+		t.Fatal("OnCloseRequest should survive NewWindow")
+	}
+	wv.Config.OnCloseRequest(wv)
+	if vetoCalls != 1 {
+		t.Fatalf("vetoCalls = %d, want 1", vetoCalls)
+	}
+	if wv.CloseRequested() {
+		t.Fatal("veto path must not mark close-requested")
+	}
+
+	// Proceed path: callback calls Close; window marked for teardown.
+	wp := NewWindow(WindowCfg{
+		OnCloseRequest: func(w *Window) { w.Close() },
+	})
+	wp.Config.OnCloseRequest(wp)
+	if !wp.CloseRequested() {
+		t.Fatal("proceed path must mark close-requested")
+	}
+}
+
 func TestWindowCloseConcurrent(t *testing.T) {
 	w := NewWindow(WindowCfg{})
 	var wg sync.WaitGroup

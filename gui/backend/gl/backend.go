@@ -462,27 +462,19 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 			*evt = mapped
 			evt.WindowID = wid
 			if !cont {
-				// QuitEvent — close all.
-				running = false
+				// QuitEvent — dispatch to per-window hooks.
+				if !gui.DispatchQuitRequest(app) {
+					running = false
+				}
 				break
 			}
 			if evt.Type == gui.EventInvalid {
 				continue
 			}
 
-			// Window close event.
+			// Window close event — dispatch to hook or closeReq.
 			if isWindowClose(ev) {
-				if b := backends[wid]; b != nil {
-					if w := app.Window(wid); w != nil {
-						w.WindowCleanup()
-					}
-					b.Destroy()
-					delete(backends, wid)
-					if app.Unregister(wid) {
-						running = false
-						break
-					}
-				}
+				gui.DispatchCloseRequest(app.Window(wid))
 				continue
 			}
 

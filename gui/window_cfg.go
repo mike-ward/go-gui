@@ -28,7 +28,15 @@ type WindowCfg struct {
 	IconPNG []byte
 	OnInit  func(*Window)
 	OnEvent func(*Event, *Window)
-	BgColor Color
+	// OnCloseRequest runs when the OS reports a window-close (title
+	// bar button, Cmd-W, etc.) before the window is destroyed. If
+	// nil, the backend proceeds with destroy as before. If set, the
+	// callback owns the decision: call Window.Close() to proceed, or
+	// do nothing to cancel. Use for save/discard/cancel prompts.
+	// Re-clicking the close control is required to retry after a veto
+	// since the original SDL event is already drained.
+	OnCloseRequest func(*Window)
+	BgColor        Color
 	// Timings enables per-frame pipeline timing instrumentation.
 	Timings bool
 }
