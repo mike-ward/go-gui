@@ -1,9 +1,10 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -369,13 +370,14 @@ func showcaseDataGridApplyQuery(rows []gui.GridRow, query gui.GridQueryState) []
 	}
 	for i := len(query.Sorts) - 1; i >= 0; i-- {
 		gridSort := query.Sorts[i]
-		sort.SliceStable(filtered, func(i, j int) bool {
-			a := filtered[i].Cells[gridSort.ColID]
-			b := filtered[j].Cells[gridSort.ColID]
-			if gridSort.Dir == gui.GridSortAsc {
-				return a < b
+		slices.SortStableFunc(filtered, func(a, b gui.GridRow) int {
+			va := a.Cells[gridSort.ColID]
+			vb := b.Cells[gridSort.ColID]
+			c := cmp.Compare(va, vb)
+			if gridSort.Dir == gui.GridSortDesc {
+				c = -c
 			}
-			return a > b
+			return c
 		})
 	}
 	return filtered

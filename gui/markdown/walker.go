@@ -19,32 +19,24 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-var (
-	mdInstance     goldmark.Markdown
-	mdInstanceOnce sync.Once
-)
-
-func getMarkdownParser() goldmark.Markdown {
-	mdInstanceOnce.Do(func() {
-		mdInstance = goldmark.New(
-			goldmark.WithExtensions(
-				extension.GFM,
-				extension.DefinitionList,
-				emoji.Emoji,
+var getMarkdownParser = sync.OnceValue(func() goldmark.Markdown {
+	return goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.DefinitionList,
+			emoji.Emoji,
+		),
+		goldmark.WithParserOptions(
+			parser.WithInlineParsers(
+				util.Prioritized(&mathInlineParser{}, 100),
+				util.Prioritized(&highlightParser{}, 100),
+				util.Prioritized(&underlineParser{}, 100),
+				util.Prioritized(&superscriptParser{}, 100),
+				util.Prioritized(&subscriptParser{}, 100),
 			),
-			goldmark.WithParserOptions(
-				parser.WithInlineParsers(
-					util.Prioritized(&mathInlineParser{}, 100),
-					util.Prioritized(&highlightParser{}, 100),
-					util.Prioritized(&underlineParser{}, 100),
-					util.Prioritized(&superscriptParser{}, 100),
-					util.Prioritized(&subscriptParser{}, 100),
-				),
-			),
-		)
-	})
-	return mdInstance
-}
+		),
+	)
+})
 
 // Parse converts markdown source to []Block.
 func Parse(source string, hardLineBreaks bool) []Block {

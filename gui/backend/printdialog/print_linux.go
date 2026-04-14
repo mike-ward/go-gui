@@ -19,20 +19,15 @@ const (
 	printToolXdgOpen
 )
 
-var (
-	detectedPrintTool printTool
-	detectPrintOnce   sync.Once
-)
+var detectedPrintTool printTool
 
-func detectPrint() {
-	detectPrintOnce.Do(func() {
-		if _, err := exec.LookPath("lpr"); err == nil {
-			detectedPrintTool = printToolLpr
-		} else if _, err := exec.LookPath("xdg-open"); err == nil {
-			detectedPrintTool = printToolXdgOpen
-		}
-	})
-}
+var detectPrint = sync.OnceFunc(func() {
+	if _, err := exec.LookPath("lpr"); err == nil {
+		detectedPrintTool = printToolLpr
+	} else if _, err := exec.LookPath("xdg-open"); err == nil {
+		detectedPrintTool = printToolXdgOpen
+	}
+})
 
 // ShowPrintDialog prints a PDF via lpr or opens it with xdg-open.
 func ShowPrintDialog(cfg gui.NativePrintParams) gui.PrintRunResult {

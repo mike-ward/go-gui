@@ -1,7 +1,7 @@
 package main
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/mike-ward/go-gui/gui"
 )
@@ -159,9 +159,7 @@ func catalogRows(entries []DemoEntry, app *ShowcaseApp) []gui.View {
 		if len(groupEntries) == 0 {
 			continue
 		}
-		sort.SliceStable(groupEntries, func(i, j int) bool {
-			return entrySortBefore(groupEntries[i], groupEntries[j])
-		})
+		slices.SortStableFunc(groupEntries, entryCompare)
 		if len(rows) > 0 {
 			rows = append(rows, gui.Row(gui.ContainerCfg{
 				Height:  6,

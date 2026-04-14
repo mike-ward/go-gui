@@ -25,35 +25,30 @@ import (
 	"github.com/mike-ward/go-gui/gui"
 )
 
-var (
-	once   sync.Once
-	handle *C.Hunhandle
-)
+var handle *C.Hunhandle
 
-func ensureInit() {
-	once.Do(func() {
-		lang := detectLang()
-		aff, dic, ok := findDict(lang)
-		if !ok {
-			// Try language prefix (e.g. "en" from "en_US").
-			if i := strings.IndexAny(lang, "_-"); i > 0 {
-				aff, dic, ok = findDict(lang[:i])
-			}
+var ensureInit = sync.OnceFunc(func() {
+	lang := detectLang()
+	aff, dic, ok := findDict(lang)
+	if !ok {
+		// Try language prefix (e.g. "en" from "en_US").
+		if i := strings.IndexAny(lang, "_-"); i > 0 {
+			aff, dic, ok = findDict(lang[:i])
 		}
-		if !ok {
-			return
-		}
-		cAff := C.CString(aff)
-		defer C.free(unsafe.Pointer(cAff))
-		cDic := C.CString(dic)
-		defer C.free(unsafe.Pointer(cDic))
+	}
+	if !ok {
+		return
+	}
+	cAff := C.CString(aff)
+	defer C.free(unsafe.Pointer(cAff))
+	cDic := C.CString(dic)
+	defer C.free(unsafe.Pointer(cDic))
 
-		handle = C.Hunspell_create(cAff, cDic)
-		if handle != nil {
-			loadPersonalDict()
-		}
-	})
-}
+	handle = C.Hunspell_create(cAff, cDic)
+	if handle != nil {
+		loadPersonalDict()
+	}
+})
 
 // detectLang returns the locale string from environment variables,
 // stripped of encoding and modifier suffixes.

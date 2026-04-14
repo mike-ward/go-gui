@@ -19,10 +19,14 @@ import (
 
 // fileDropCallbacks maps SDL_Window pointer → drop handler.
 // All access is main-thread only (SDL event loop + ObjC drag).
-var (
-	fileDropCallbacks = map[uintptr]func(path string){}
-	disableSDLDrop    sync.Once
-)
+var fileDropCallbacks = map[uintptr]func(path string){}
+
+var disableSDLDrop = sync.OnceFunc(func() {
+	sdl.EventState(sdl.DROPFILE, sdl.DISABLE)
+	sdl.EventState(sdl.DROPBEGIN, sdl.DISABLE)
+	sdl.EventState(sdl.DROPCOMPLETE, sdl.DISABLE)
+	sdl.EventState(sdl.DROPTEXT, sdl.DISABLE)
+})
 
 //export goFileDrop
 func goFileDrop(cwin *C.SDL_Window, cpath *C.char) {
@@ -57,12 +61,7 @@ func fileDropInitBridge(win *sdl.Window, w *gui.Window) {
 
 	// Disable SDL2 drop events to prevent go-sdl2's buggy
 	// SDL_free on macOS Cocoa file paths.
-	disableSDLDrop.Do(func() {
-		sdl.EventState(sdl.DROPFILE, sdl.DISABLE)
-		sdl.EventState(sdl.DROPBEGIN, sdl.DISABLE)
-		sdl.EventState(sdl.DROPCOMPLETE, sdl.DISABLE)
-		sdl.EventState(sdl.DROPTEXT, sdl.DISABLE)
-	})
+	disableSDLDrop()
 
 	C.fileDropInit(cWin)
 }

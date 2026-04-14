@@ -20,20 +20,15 @@ const (
 	toolKdialog
 )
 
-var (
-	detectedTool dialogTool
-	detectOnce   sync.Once
-)
+var detectedTool dialogTool
 
-func detectDialogTool() {
-	detectOnce.Do(func() {
-		if _, err := exec.LookPath("zenity"); err == nil {
-			detectedTool = toolZenity
-		} else if _, err := exec.LookPath("kdialog"); err == nil {
-			detectedTool = toolKdialog
-		}
-	})
-}
+var detectDialogTool = sync.OnceFunc(func() {
+	if _, err := exec.LookPath("zenity"); err == nil {
+		detectedTool = toolZenity
+	} else if _, err := exec.LookPath("kdialog"); err == nil {
+		detectedTool = toolKdialog
+	}
+})
 
 // ShowOpenDialog shows a file-open dialog via zenity or kdialog.
 func ShowOpenDialog(title, startDir string, extensions []string,

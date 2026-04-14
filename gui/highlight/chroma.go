@@ -13,17 +13,11 @@ type chromaHighlighter struct{}
 // stateless and safe for concurrent use across windows.
 func New() Highlighter { return chromaHighlighter{} }
 
-var (
-	defaultOnce sync.Once
-	defaultHL   Highlighter
-)
+var defaultHL = sync.OnceValue(func() Highlighter { return New() })
 
 // Default returns a process-wide singleton Highlighter. Use this
 // unless a custom Highlighter is needed.
-func Default() Highlighter {
-	defaultOnce.Do(func() { defaultHL = New() })
-	return defaultHL
-}
+func Default() Highlighter { return defaultHL() }
 
 // Caps guard against pathological input: chroma uses backtracking
 // regex (regexp2), so adversarial source could trigger quadratic

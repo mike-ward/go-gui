@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"strings"
 	"time"
 
@@ -410,23 +411,21 @@ func preferredComponentForGroup(_ string, entries []DemoEntry) string {
 	}
 	best := entries[0]
 	for _, entry := range entries[1:] {
-		if entrySortBefore(entry, best) {
+		if entryCompare(entry, best) < 0 {
 			best = entry
 		}
 	}
 	return best.ID
 }
 
-func entrySortBefore(a, b DemoEntry) bool {
-	aPin := entryPin(a.ID)
-	bPin := entryPin(b.ID)
-	if aPin != bPin {
-		return aPin < bPin
+func entryCompare(a, b DemoEntry) int {
+	if c := cmp.Compare(entryPin(a.ID), entryPin(b.ID)); c != 0 {
+		return c
 	}
-	if a.labelLower != b.labelLower {
-		return a.labelLower < b.labelLower
+	if c := cmp.Compare(a.labelLower, b.labelLower); c != 0 {
+		return c
 	}
-	return a.idLower < b.idLower
+	return cmp.Compare(a.idLower, b.idLower)
 }
 
 func entryPin(id string) int {

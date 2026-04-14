@@ -615,14 +615,10 @@ func tableColumnWidthHash(cfg *TableCfg) uint64 {
 	return h.Sum64()
 }
 
-var tableWarnOnce sync.Once
-
-func tableWarnNoID() {
-	tableWarnOnce.Do(func() {
-		log.Printf("gui.Table: table with >20 rows has no ID; " +
-			"column width caching disabled")
-	})
-}
+var tableWarnNoID = sync.OnceFunc(func() {
+	log.Printf("gui.Table: table with >20 rows has no ID; " +
+		"column width caching disabled")
+})
 
 // tableEstimateRowHeight estimates row height from TextStyle,
 // cell padding, and border.
