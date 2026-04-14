@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.11.0] - 2026-04-14
+
+### Added
+
+- WindowCfg.OnCloseRequest hook: intercept OS window-close and app-quit
+  events for save/discard/cancel prompts. Callback owns calling
+  Window.Close() to proceed or doing nothing to cancel. Dispatch
+  extracted into DispatchCloseRequest / DispatchQuitRequest helpers
+  shared by sdl2/gl/metal backends.
+
 ## [v0.10.0] - 2026-04-14
 
 ### Added
