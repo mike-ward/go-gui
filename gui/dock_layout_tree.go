@@ -1,6 +1,9 @@
 package gui
 
-import "slices"
+import (
+	"fmt"
+	"slices"
+)
 
 // dock_layout_tree.go — user-owned, serializable layout tree for
 // IDE-style docking panels. Binary tree of splits; leaves are
@@ -15,6 +18,32 @@ const (
 	DockSplitVertical                       // top | bottom
 )
 
+var dockSplitDirText = [2][]byte{
+	DockSplitHorizontal: []byte("horizontal"),
+	DockSplitVertical:   []byte("vertical"),
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (d DockSplitDir) MarshalText() ([]byte, error) {
+	if int(d) < len(dockSplitDirText) {
+		return dockSplitDirText[d], nil
+	}
+	return nil, fmt.Errorf("unknown DockSplitDir %d", d)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (d *DockSplitDir) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "horizontal":
+		*d = DockSplitHorizontal
+	case "vertical":
+		*d = DockSplitVertical
+	default:
+		return fmt.Errorf("unknown DockSplitDir %q", text)
+	}
+	return nil
+}
+
 // DockNodeKind distinguishes split nodes from leaf panel groups.
 type DockNodeKind uint8
 
@@ -24,19 +53,45 @@ const (
 	DockNodePanelGroup
 )
 
+var dockNodeKindText = [2][]byte{
+	DockNodeSplit:      []byte("split"),
+	DockNodePanelGroup: []byte("panelGroup"),
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (k DockNodeKind) MarshalText() ([]byte, error) {
+	if int(k) < len(dockNodeKindText) {
+		return dockNodeKindText[k], nil
+	}
+	return nil, fmt.Errorf("unknown DockNodeKind %d", k)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (k *DockNodeKind) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "split":
+		*k = DockNodeSplit
+	case "panelGroup":
+		*k = DockNodePanelGroup
+	default:
+		return fmt.Errorf("unknown DockNodeKind %q", text)
+	}
+	return nil
+}
+
 // DockNode is a single node in the dock layout tree: either a
 // split (with two children) or a leaf panel group.
 type DockNode struct {
-	Kind DockNodeKind
-	ID   string
+	Kind DockNodeKind `json:"kind"`
+	ID   string       `json:"id"`
 	// Split fields (used when Kind == DockNodeSplit).
-	Dir    DockSplitDir
-	Ratio  float32
-	First  *DockNode
-	Second *DockNode
+	Dir    DockSplitDir `json:"dir"`
+	Ratio  float32      `json:"ratio"`
+	First  *DockNode    `json:"first,omitempty"`
+	Second *DockNode    `json:"second,omitempty"`
 	// Panel group fields (used when Kind == DockNodePanelGroup).
-	PanelIDs   []string
-	SelectedID string
+	PanelIDs   []string `json:"panelIDs,omitempty"`
+	SelectedID string   `json:"selectedID,omitempty"`
 }
 
 // DockSplit creates a split node.
@@ -58,6 +113,35 @@ func DockPanelGroup(id string, panelIDs []string, selectedID string) *DockNode {
 		ID:         id,
 		PanelIDs:   panelIDs,
 		SelectedID: selectedID,
+	}
+}
+
+// dockNodeMaxDepth caps recursion when sanitizing deserialized trees.
+const dockNodeMaxDepth = 32
+
+// DockNodeSanitize clamps ratio to [0,1], replaces NaN/Inf with
+// 0.5, and truncates trees deeper than dockNodeMaxDepth. Call
+// after json.Unmarshal to harden against malformed input.
+func DockNodeSanitize(node *DockNode) {
+	dockNodeSanitizeRec(node, 0)
+}
+
+func dockNodeSanitizeRec(node *DockNode, depth int) {
+	if node == nil {
+		return
+	}
+	if node.Kind == DockNodeSplit {
+		if !f32IsFinite(node.Ratio) {
+			node.Ratio = 0.5
+		}
+		node.Ratio = max(0, min(1, node.Ratio))
+		if depth >= dockNodeMaxDepth {
+			node.First = nil
+			node.Second = nil
+			return
+		}
+		dockNodeSanitizeRec(node.First, depth+1)
+		dockNodeSanitizeRec(node.Second, depth+1)
 	}
 }
 

@@ -1,7 +1,10 @@
 package gui
 
 import (
+	"encoding/json"
+	"math"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -478,5 +481,225 @@ func TestMovePanelPreservesOtherPanels(t *testing.T) {
 	}
 	if !slices.Contains(g3.PanelIDs, "B") {
 		t.Fatal("B not in g3")
+	}
+}
+
+// --- MarshalText / UnmarshalText ---
+
+func TestDockSplitDirMarshalText(t *testing.T) {
+	tests := []struct {
+		dir  DockSplitDir
+		want string
+	}{
+		{DockSplitHorizontal, "horizontal"},
+		{DockSplitVertical, "vertical"},
+	}
+	for _, tt := range tests {
+		b, err := tt.dir.MarshalText()
+		if err != nil {
+			t.Fatalf("MarshalText(%d): %v", tt.dir, err)
+		}
+		if string(b) != tt.want {
+			t.Errorf("MarshalText(%d) = %q, want %q", tt.dir, b, tt.want)
+		}
+		var got DockSplitDir
+		if err := got.UnmarshalText(b); err != nil {
+			t.Fatalf("UnmarshalText(%q): %v", b, err)
+		}
+		if got != tt.dir {
+			t.Errorf("round-trip: got %d, want %d", got, tt.dir)
+		}
+	}
+}
+
+func TestDockSplitDirUnmarshalTextUnknown(t *testing.T) {
+	var d DockSplitDir
+	if err := d.UnmarshalText([]byte("diagonal")); err == nil {
+		t.Error("expected error for unknown value")
+	}
+}
+
+func TestDockSplitDirMarshalTextUnknown(t *testing.T) {
+	_, err := DockSplitDir(99).MarshalText()
+	if err == nil {
+		t.Error("expected error for unknown value")
+	}
+}
+
+func TestDockNodeKindMarshalText(t *testing.T) {
+	tests := []struct {
+		kind DockNodeKind
+		want string
+	}{
+		{DockNodeSplit, "split"},
+		{DockNodePanelGroup, "panelGroup"},
+	}
+	for _, tt := range tests {
+		b, err := tt.kind.MarshalText()
+		if err != nil {
+			t.Fatalf("MarshalText(%d): %v", tt.kind, err)
+		}
+		if string(b) != tt.want {
+			t.Errorf("MarshalText(%d) = %q, want %q", tt.kind, b, tt.want)
+		}
+		var got DockNodeKind
+		if err := got.UnmarshalText(b); err != nil {
+			t.Fatalf("UnmarshalText(%q): %v", b, err)
+		}
+		if got != tt.kind {
+			t.Errorf("round-trip: got %d, want %d", got, tt.kind)
+		}
+	}
+}
+
+func TestDockNodeKindUnmarshalTextUnknown(t *testing.T) {
+	var k DockNodeKind
+	if err := k.UnmarshalText([]byte("leaf")); err == nil {
+		t.Error("expected error for unknown value")
+	}
+}
+
+func TestDockNodeKindMarshalTextUnknown(t *testing.T) {
+	_, err := DockNodeKind(99).MarshalText()
+	if err == nil {
+		t.Error("expected error for unknown value")
+	}
+}
+
+// --- JSON round-trip ---
+
+func TestDockNodeJSONRoundTrip(t *testing.T) {
+	orig := makeTestTree()
+	data, err := json.Marshal(orig)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	var got DockNode
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if got.Kind != DockNodeSplit || got.ID != "s1" {
+		t.Fatalf("root: kind=%v id=%q", got.Kind, got.ID)
+	}
+	if got.Dir != DockSplitHorizontal {
+		t.Errorf("root dir = %v, want horizontal", got.Dir)
+	}
+	if got.Ratio != 0.3 {
+		t.Errorf("root ratio = %f, want 0.3", got.Ratio)
+	}
+	if got.First == nil || got.First.Kind != DockNodePanelGroup {
+		t.Fatal("first child should be panel group")
+	}
+	if !slices.Equal(got.First.PanelIDs, []string{"A", "B"}) {
+		t.Errorf("first panelIDs = %v", got.First.PanelIDs)
+	}
+	if got.Second == nil || got.Second.Kind != DockNodeSplit {
+		t.Fatal("second child should be split")
+	}
+}
+
+func TestDockNodeJSONHumanReadableEnums(t *testing.T) {
+	node := DockSplit("s", DockSplitVertical, 0.5,
+		DockPanelGroup("g", []string{"p"}, "p"), nil)
+	data, err := json.Marshal(node)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(data)
+	for _, want := range []string{`"kind":"split"`, `"dir":"vertical"`} {
+		if !strings.Contains(s, want) {
+			t.Errorf("JSON missing %s: %s", want, s)
+		}
+	}
+}
+
+func TestDockNodeJSONPanelGroupOmitsEmptySplitFields(t *testing.T) {
+	node := DockPanelGroup("g", []string{"p1"}, "p1")
+	data, err := json.Marshal(node)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(data)
+	if strings.Contains(s, `"first"`) || strings.Contains(s, `"second"`) {
+		t.Errorf("panel group JSON should omit first/second: %s", s)
+	}
+}
+
+// --- DockNodeSanitize ---
+
+func TestDockNodeSanitizeNil(t *testing.T) {
+	DockNodeSanitize(nil) // must not panic
+}
+
+func TestDockNodeSanitizeClampsRatio(t *testing.T) {
+	node := DockSplit("s", DockSplitHorizontal, 1.5,
+		DockPanelGroup("a", nil, ""), DockPanelGroup("b", nil, ""))
+	DockNodeSanitize(node)
+	if node.Ratio != 1 {
+		t.Errorf("ratio = %f, want 1", node.Ratio)
+	}
+
+	node.Ratio = -0.5
+	DockNodeSanitize(node)
+	if node.Ratio != 0 {
+		t.Errorf("ratio = %f, want 0", node.Ratio)
+	}
+}
+
+func TestDockNodeSanitizeNaN(t *testing.T) {
+	node := DockSplit("s", DockSplitHorizontal,
+		float32(math.NaN()),
+		DockPanelGroup("a", nil, ""), DockPanelGroup("b", nil, ""))
+	DockNodeSanitize(node)
+	if node.Ratio != 0.5 {
+		t.Errorf("NaN ratio = %f, want 0.5", node.Ratio)
+	}
+}
+
+func TestDockNodeSanitizeInf(t *testing.T) {
+	node := DockSplit("s", DockSplitHorizontal,
+		float32(math.Inf(1)),
+		DockPanelGroup("a", nil, ""), DockPanelGroup("b", nil, ""))
+	DockNodeSanitize(node)
+	if node.Ratio != 0.5 {
+		t.Errorf("+Inf ratio = %f, want 0.5", node.Ratio)
+	}
+
+	node.Ratio = float32(math.Inf(-1))
+	DockNodeSanitize(node)
+	if node.Ratio != 0.5 {
+		t.Errorf("-Inf ratio = %f, want 0.5", node.Ratio)
+	}
+}
+
+func TestDockNodeSanitizeDeepTree(t *testing.T) {
+	// Build a chain deeper than dockNodeMaxDepth.
+	leaf := DockPanelGroup("leaf", []string{"p"}, "p")
+	node := leaf
+	for i := range dockNodeMaxDepth + 5 {
+		node = DockSplit("s"+string(rune('0'+i)),
+			DockSplitHorizontal, 0.5, node, leaf)
+	}
+	DockNodeSanitize(node)
+	// Walk down First pointers. Sanitizer nils children at
+	// depth == dockNodeMaxDepth, so splits exist at depths
+	// 0..maxDepth (maxDepth+1 nodes).
+	cur := node
+	depth := 0
+	for cur != nil && cur.Kind == DockNodeSplit {
+		depth++
+		cur = cur.First
+	}
+	if depth > dockNodeMaxDepth+1 {
+		t.Errorf("tree depth = %d, want <= %d",
+			depth, dockNodeMaxDepth+1)
+	}
+}
+
+func TestDockNodeSanitizePanelGroupUntouched(t *testing.T) {
+	node := DockPanelGroup("g", []string{"a", "b"}, "a")
+	DockNodeSanitize(node)
+	if !slices.Equal(node.PanelIDs, []string{"a", "b"}) {
+		t.Errorf("panelIDs modified: %v", node.PanelIDs)
 	}
 }

@@ -1,5 +1,7 @@
 package gui
 
+import "fmt"
+
 // splitterButtonSuffix maps SplitterCollapsed → button ID suffix.
 var splitterButtonSuffix = [3]string{
 	":button:0",
@@ -18,6 +20,32 @@ const (
 	SplitterVertical
 )
 
+var splitterOrientationText = [2][]byte{
+	SplitterHorizontal: []byte("horizontal"),
+	SplitterVertical:   []byte("vertical"),
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (o SplitterOrientation) MarshalText() ([]byte, error) {
+	if int(o) < len(splitterOrientationText) {
+		return splitterOrientationText[o], nil
+	}
+	return nil, fmt.Errorf("unknown SplitterOrientation %d", o)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (o *SplitterOrientation) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "horizontal":
+		*o = SplitterHorizontal
+	case "vertical":
+		*o = SplitterVertical
+	default:
+		return fmt.Errorf("unknown SplitterOrientation %q", text)
+	}
+	return nil
+}
+
 // SplitterCollapsed tracks which pane is collapsed, if any.
 type SplitterCollapsed uint8
 
@@ -28,17 +56,56 @@ const (
 	SplitterCollapseSecond
 )
 
+var splitterCollapsedText = [3][]byte{
+	SplitterCollapseNone:   []byte("none"),
+	SplitterCollapseFirst:  []byte("first"),
+	SplitterCollapseSecond: []byte("second"),
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (c SplitterCollapsed) MarshalText() ([]byte, error) {
+	if int(c) < len(splitterCollapsedText) {
+		return splitterCollapsedText[c], nil
+	}
+	return nil, fmt.Errorf("unknown SplitterCollapsed %d", c)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (c *SplitterCollapsed) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "none":
+		*c = SplitterCollapseNone
+	case "first":
+		*c = SplitterCollapseFirst
+	case "second":
+		*c = SplitterCollapseSecond
+	default:
+		return fmt.Errorf("unknown SplitterCollapsed %q", text)
+	}
+	return nil
+}
+
 // SplitterState is an app-owned persistence model.
 type SplitterState struct {
-	Ratio     float32
-	Collapsed SplitterCollapsed
+	Ratio     float32           `json:"ratio"`
+	Collapsed SplitterCollapsed `json:"collapsed"`
 }
 
 // SplitterStateNormalize normalizes state before persisting.
+// Replaces NaN/Inf with the default ratio, clamps to [0,1],
+// and resets invalid Collapsed values.
 func SplitterStateNormalize(state SplitterState) SplitterState {
+	r := state.Ratio
+	if !f32IsFinite(r) {
+		r = splitterDefaultRatio
+	}
+	c := state.Collapsed
+	if c > SplitterCollapseSecond {
+		c = SplitterCollapseNone
+	}
 	return SplitterState{
-		Ratio:     splitterNormalizeRatio(state.Ratio),
-		Collapsed: state.Collapsed,
+		Ratio:     splitterNormalizeRatio(r),
+		Collapsed: c,
 	}
 }
 

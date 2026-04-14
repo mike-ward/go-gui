@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"encoding/json"
 	"math"
 	"testing"
 )
@@ -239,5 +240,145 @@ func TestSplitterArrowStep(t *testing.T) {
 		ModCtrl, 200, 0.5)
 	if ok {
 		t.Error("expected handled=false for ctrl modifier")
+	}
+}
+
+// --- MarshalText / UnmarshalText ---
+
+func TestSplitterOrientationMarshalText(t *testing.T) {
+	tests := []struct {
+		o    SplitterOrientation
+		want string
+	}{
+		{SplitterHorizontal, "horizontal"},
+		{SplitterVertical, "vertical"},
+	}
+	for _, tt := range tests {
+		b, err := tt.o.MarshalText()
+		if err != nil {
+			t.Fatalf("MarshalText(%d): %v", tt.o, err)
+		}
+		if string(b) != tt.want {
+			t.Errorf("got %q, want %q", b, tt.want)
+		}
+		var got SplitterOrientation
+		if err := got.UnmarshalText(b); err != nil {
+			t.Fatalf("UnmarshalText(%q): %v", b, err)
+		}
+		if got != tt.o {
+			t.Errorf("round-trip: got %d, want %d", got, tt.o)
+		}
+	}
+}
+
+func TestSplitterOrientationUnmarshalTextUnknown(t *testing.T) {
+	var o SplitterOrientation
+	if err := o.UnmarshalText([]byte("diagonal")); err == nil {
+		t.Error("expected error for unknown value")
+	}
+}
+
+func TestSplitterCollapsedMarshalText(t *testing.T) {
+	tests := []struct {
+		c    SplitterCollapsed
+		want string
+	}{
+		{SplitterCollapseNone, "none"},
+		{SplitterCollapseFirst, "first"},
+		{SplitterCollapseSecond, "second"},
+	}
+	for _, tt := range tests {
+		b, err := tt.c.MarshalText()
+		if err != nil {
+			t.Fatalf("MarshalText(%d): %v", tt.c, err)
+		}
+		if string(b) != tt.want {
+			t.Errorf("got %q, want %q", b, tt.want)
+		}
+		var got SplitterCollapsed
+		if err := got.UnmarshalText(b); err != nil {
+			t.Fatalf("UnmarshalText(%q): %v", b, err)
+		}
+		if got != tt.c {
+			t.Errorf("round-trip: got %d, want %d", got, tt.c)
+		}
+	}
+}
+
+func TestSplitterCollapsedUnmarshalTextUnknown(t *testing.T) {
+	var c SplitterCollapsed
+	if err := c.UnmarshalText([]byte("both")); err == nil {
+		t.Error("expected error for unknown value")
+	}
+}
+
+func TestSplitterCollapsedMarshalTextUnknown(t *testing.T) {
+	_, err := SplitterCollapsed(99).MarshalText()
+	if err == nil {
+		t.Error("expected error for unknown value")
+	}
+}
+
+// --- SplitterStateNormalize edge cases ---
+
+func TestSplitterStateNormalizeNaN(t *testing.T) {
+	s := SplitterStateNormalize(SplitterState{
+		Ratio: float32(math.NaN()),
+	})
+	if s.Ratio != splitterDefaultRatio {
+		t.Errorf("NaN ratio = %f, want %f", s.Ratio, splitterDefaultRatio)
+	}
+}
+
+func TestSplitterStateNormalizeInf(t *testing.T) {
+	s := SplitterStateNormalize(SplitterState{
+		Ratio: float32(math.Inf(1)),
+	})
+	if s.Ratio != splitterDefaultRatio {
+		t.Errorf("+Inf ratio = %f, want %f", s.Ratio, splitterDefaultRatio)
+	}
+	s = SplitterStateNormalize(SplitterState{
+		Ratio: float32(math.Inf(-1)),
+	})
+	if s.Ratio != splitterDefaultRatio {
+		t.Errorf("-Inf ratio = %f, want %f", s.Ratio, splitterDefaultRatio)
+	}
+}
+
+func TestSplitterStateNormalizeInvalidCollapsed(t *testing.T) {
+	s := SplitterStateNormalize(SplitterState{
+		Ratio:     0.5,
+		Collapsed: SplitterCollapsed(99),
+	})
+	if s.Collapsed != SplitterCollapseNone {
+		t.Errorf("collapsed = %d, want SplitterCollapseNone", s.Collapsed)
+	}
+}
+
+func TestSplitterStateNormalizeNegativeRatio(t *testing.T) {
+	s := SplitterStateNormalize(SplitterState{Ratio: -0.5})
+	if s.Ratio != 0 {
+		t.Errorf("negative ratio = %f, want 0", s.Ratio)
+	}
+}
+
+// --- SplitterState JSON round-trip ---
+
+func TestSplitterStateJSONRoundTrip(t *testing.T) {
+	orig := SplitterState{Ratio: 0.3, Collapsed: SplitterCollapseFirst}
+	data, err := json.Marshal(orig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(data)
+	if s != `{"ratio":0.3,"collapsed":"first"}` {
+		t.Errorf("JSON = %s", s)
+	}
+	var got SplitterState
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got != orig {
+		t.Errorf("round-trip: got %+v, want %+v", got, orig)
 	}
 }
