@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.10.0] - 2026-04-14
+
+### Added
+
+- DockNode/SplitterState JSON serialization: struct tags, text-marshaled
+  enums (DockNodeKind, DockSplitDir, SplitterOrientation, SplitterCollapsed),
+  DockNodeSanitize for post-unmarshal hardening
+- Showcase docs: new dock_layout component entry, splitter serialization section
+
+### Changed
+
+- SplitterStateNormalize handles NaN/Inf ratios and invalid Collapsed values
+- Modernize: sync.OnceFunc/OnceValue, slices.SortStableFunc, cmp.Compare
+
 ## [v0.9.9] - 2026-04-13
 
 ### Fixed
