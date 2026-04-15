@@ -99,6 +99,9 @@ jobs:
       - name: Lint
         uses: golangci/golangci-lint-action@v7
 
+      - name: Required-ID check
+        run: go run ./tools/requiredid/cmd/requiredid ./...
+
   ios:
     name: iOS
     runs-on: macos-latest
