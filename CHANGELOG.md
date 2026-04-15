@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.0] - 2026-04-15
+
+### Added
+
+- Time-travel debugging: opt-in via WindowCfg.DebugTimeTravel. User state
+  implements Snapshotter (Snapshot/Restore; optional Size). Framework
+  captures a snapshot after every dispatched event; scrubber window
+  auto-spawns alongside the app window with a slider, step buttons
+  (first/prev/next/last), cause label, counter, freeze toggle, and
+  keyboard shortcuts (arrows, home/end, space, esc)
+- Window.Now() virtual clock: returns pinned snapshot timestamp during
+  scrub, live time otherwise; use in view fns that render clock-driven
+  data so scrubbed frames match their snapshot
+- Window.EnableHistory(maxBytes), HistoryLen(), OpenDebugWindow(),
+  Freeze/Resume/IsFrozen, PostRestore(idx) public API
+- RegisterNamespaceSnapshot(ns): widget authors opt additional StateMap
+  namespaces into scrub restore; scroll (nsScrollX/nsScrollY) and
+  widget-local focus (nsInputFocus, nsListBoxFocus, nsTreeFocus) are
+  pre-registered
+- BoundedMap.cloneAny/restoreAny: type-preserving snapshot through an
+  interface so whitelisted namespaces rewind without reflection
+- examples/time_travel: counter demo wiring Snapshotter + DebugTimeTravel
+
+### Hardening
+
+- Snapshotter.Size() capped at 1 GiB to prevent totalBytes overflow
+- Slider NaN/Inf rejected before int conversion in the scrubber
+- BoundedMap restore recovers from type-assertion panics so a single
+  out-of-sync namespace doesn't break the rest of the scrub
+- Parent-window title truncated before composing the scrubber title
+
+### Notes
+
+- Read-only scrub only: rewinding state does not un-do past side effects
+  (HTTP requests, file writes, sounds)
+- Requires multi-window mode (App + App.OpenWindow). Single-window apps
+  log a notice and no-op
+- Zero-cost when disabled: nil-history check short-circuits the hot
+  path with no allocation
+
 ## [v0.11.0] - 2026-04-14
 
 ### Added

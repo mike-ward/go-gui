@@ -377,12 +377,13 @@ func TestAppRegisterNoSpawnWhenDisabled(t *testing.T) {
 // populated rings.
 func TestControllerView(t *testing.T) {
 	c := &TimeTravelController{}
-	if c.View() == nil {
+	host := &Window{}
+	if c.View(host) == nil {
 		t.Fatal("empty View nil")
 	}
 	w, _ := newFixtureApp(t, 2)
 	c.App = w
-	if c.View() == nil {
+	if c.View(host) == nil {
 		t.Fatal("populated View nil")
 	}
 }

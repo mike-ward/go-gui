@@ -421,10 +421,19 @@ func (w *Window) OpenDebugWindow() {
 	app.OpenWindow(WindowCfg{
 		State:  ctrl,
 		Title:  title,
-		Width:  480,
-		Height: 180,
+		Width:  300,
+		Height: 150,
 		OnInit: func(dw *Window) {
 			dw.UpdateView(debugWindowView)
+		},
+		// Closing the debug window must unfreeze the app,
+		// otherwise the user is stranded with input blocked
+		// and no scrubber to resume from.
+		OnCloseRequest: func(dw *Window) {
+			if ctrl.App != nil {
+				ctrl.App.Resume()
+			}
+			dw.Close()
 		},
 	})
 }
@@ -433,7 +442,7 @@ func (w *Window) OpenDebugWindow() {
 // debug window. Reads the TimeTravelController from its state
 // slot and delegates to ctrl.View.
 func debugWindowView(dw *Window) View {
-	return State[TimeTravelController](dw).View()
+	return State[TimeTravelController](dw).View(dw)
 }
 
 // Freeze enters time-travel scrub mode. Subsequent user input

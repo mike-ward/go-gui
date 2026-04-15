@@ -91,6 +91,8 @@ View fn → Layout tree → layoutArrange() → renderLayout() → []RenderCmd �
 - Stateless view model — views are pure functions, easy to test
 - Headless test backend runs all layout and widget logic without a display
 - Embedded Feather icon font with themed styles
+- Time-travel debugging — opt-in `WindowCfg.DebugTimeTravel` auto-spawns a
+  scrubber window that rewinds/replays app state frame-by-frame
 
 ![gallery](assets/gallery.png)
 
@@ -278,6 +280,35 @@ backend.RunApp(app, w1, w2)
 Open windows at runtime with `app.OpenWindow(cfg)`. Communicate across
 windows with `app.Broadcast(fn)` or `other.QueueCommand(fn)`.
 
+### Time-Travel Debugging
+
+Opt-in with one flag. Implement `Snapshotter` on your state, set
+`DebugTimeTravel: true`, and a scrubber window spawns alongside the app.
+
+```go
+type App struct { Count int }
+
+func (s *App) Snapshot() any  { c := *s; return &c }
+func (s *App) Restore(v any)  { *s = *v.(*App) }
+
+app := gui.NewApp()
+main := gui.NewWindow(gui.WindowCfg{
+    State:           &App{},
+    DebugTimeTravel: true,
+})
+backend.RunApp(app, main)
+```
+
+The scrubber captures state after every event. Drag the slider or
+use the step buttons (or `←/→/Home/End`) to rewind; `Space` toggles
+freeze, `Esc` resumes live. Use `w.Now()` instead of `time.Now()` in
+views whose output depends on the clock so rewound frames match their
+snapshot. See `examples/time_travel` for a runnable demo.
+
+Requirements: multi-window mode (App + `App.OpenWindow`); user state
+implements `Snapshotter`. Zero-cost when the flag is off. Scrub is
+read-only — rewinding does not undo past side effects (HTTP, file I/O).
+
 ---
 
 ## 💻 Usage Examples
@@ -354,6 +385,7 @@ gui.Input(gui.InputCfg{
 | [`snake`](examples/snake/)                                 | Snake game                                  |
 | [`svg`](examples/svg/)                                     | SVG loading and display                     |
 | [`system_tray`](examples/system_tray/)                     | System tray icon and menu                   |
+| [`time_travel`](examples/time_travel/)                     | Counter with time-travel scrubber window    |
 | [`todo`](examples/todo/)                                   | Classic todo app                            |
 | [`web_demo`](examples/web_demo/)                           | Browser demo via WASM                       |
 

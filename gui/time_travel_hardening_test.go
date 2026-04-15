@@ -64,41 +64,167 @@ func (s *oversizedState) Snapshot() any { return &oversizedState{n: s.n} }
 func (s *oversizedState) Restore(v any) { *s = *v.(*oversizedState) }
 func (s *oversizedState) Size() int     { return s.n }
 
-// TestControllerJumpFromSliderNaN rejects NaN and Inf before
-// the int conversion, leaving the cursor unchanged.
-func TestControllerJumpFromSliderNaN(t *testing.T) {
+// TestOnSliderChangeRejectsNaN leaves the cursor unchanged when
+// the slider emits NaN or ±Inf (implementation-defined int()).
+func TestOnSliderChangeRejectsNaN(t *testing.T) {
 	w, _ := newFixtureApp(t, 3)
 	c := &TimeTravelController{App: w, Cursor: 1}
 
-	c.jumpFromSlider(float32(math.NaN()))
+	c.onSliderChange(float32(math.NaN()), nil, nil)
 	w.flushCommands()
 	if c.Cursor != 1 {
 		t.Fatalf("NaN cursor = %d, want 1", c.Cursor)
 	}
-
-	c.jumpFromSlider(float32(math.Inf(1)))
+	c.onSliderChange(float32(math.Inf(1)), nil, nil)
 	w.flushCommands()
 	if c.Cursor != 1 {
 		t.Fatalf("+Inf cursor = %d, want 1", c.Cursor)
 	}
-
-	c.jumpFromSlider(float32(math.Inf(-1)))
+	c.onSliderChange(float32(math.Inf(-1)), nil, nil)
 	w.flushCommands()
 	if c.Cursor != 1 {
 		t.Fatalf("-Inf cursor = %d, want 1", c.Cursor)
 	}
-
-	c.jumpFromSlider(2.0)
+	c.onSliderChange(2.0, nil, nil)
 	w.flushCommands()
 	if c.Cursor != 2 {
 		t.Fatalf("normal cursor = %d, want 2", c.Cursor)
 	}
 }
 
-// TestControllerJumpFromSliderNil tolerates a nil receiver.
-func TestControllerJumpFromSliderNil(t *testing.T) {
+// TestOnSliderChangeNil tolerates a nil receiver.
+func TestOnSliderChangeNil(t *testing.T) {
 	var c *TimeTravelController
-	c.jumpFromSlider(1.0)
+	c.onSliderChange(1.0, nil, nil)
+}
+
+// TestOnSliderChangeClampsOutOfRange clamps v < 0 to 0 and
+// v > len-1 to len-1 so a misbehaving slider backend cannot
+// leave sliderValue outside the track's [Min, Max].
+func TestOnSliderChangeClampsOutOfRange(t *testing.T) {
+	w, _ := newFixtureApp(t, 4)
+	c := &TimeTravelController{App: w, Cursor: 2}
+
+	c.onSliderChange(-5, nil, nil)
+	w.flushCommands()
+	if c.sliderValue != 0 {
+		t.Fatalf("negative sliderValue = %v, want 0", c.sliderValue)
+	}
+	if c.Cursor != 0 {
+		t.Fatalf("negative Cursor = %d, want 0", c.Cursor)
+	}
+
+	c.onSliderChange(99, nil, nil)
+	w.flushCommands()
+	maxV := float32(3)
+	if c.sliderValue != maxV {
+		t.Fatalf("overflow sliderValue = %v, want %v", c.sliderValue, maxV)
+	}
+	if c.Cursor != 3 {
+		t.Fatalf("overflow Cursor = %d, want 3", c.Cursor)
+	}
+}
+
+// TestOnSliderChangeEmptyRingNoOp early-returns when history is
+// empty so a stray OnChange cannot assign a non-zero sliderValue
+// to a zero-max slider.
+func TestOnSliderChangeEmptyRingNoOp(t *testing.T) {
+	w := &Window{state: &testState{}}
+	w.EnableHistory(0)
+	c := &TimeTravelController{App: w}
+	c.onSliderChange(5, nil, nil)
+	if c.sliderValue != 0 {
+		t.Fatalf("sliderValue = %v, want 0", c.sliderValue)
+	}
+	if c.Cursor != 0 {
+		t.Fatalf("Cursor = %d, want 0", c.Cursor)
+	}
+}
+
+// TestOnSliderChangeKeepsFractional confirms the rounded int
+// commits Cursor while the fractional float survives in
+// sliderValue so mid-drag frames display the live mouse
+// position instead of snapping to the cursor.
+func TestOnSliderChangeKeepsFractional(t *testing.T) {
+	w, _ := newFixtureApp(t, 5)
+	c := &TimeTravelController{App: w, Cursor: 0}
+	c.onSliderChange(2.7, nil, nil)
+	w.flushCommands()
+	if c.Cursor != 2 {
+		t.Fatalf("Cursor = %d, want 2 (int of 2.7)", c.Cursor)
+	}
+	if c.sliderValue != 2.7 {
+		t.Fatalf("sliderValue = %v, want 2.7 (fractional preserved)",
+			c.sliderValue)
+	}
+}
+
+// TestJumpSyncsSliderValue asserts that non-slider motion paths
+// (keyboard, buttons) re-align the thumb with the integer
+// cursor via Jump.
+func TestJumpSyncsSliderValue(t *testing.T) {
+	w, _ := newFixtureApp(t, 5)
+	c := &TimeTravelController{App: w, Cursor: 0, sliderValue: 3.7}
+	c.Jump(1)
+	if c.sliderValue != 1 {
+		t.Fatalf("sliderValue = %v, want 1 after Jump", c.sliderValue)
+	}
+}
+
+// TestOpenDebugWindowCloseResumes confirms the queued cfg
+// installs an OnCloseRequest that unfreezes the app, so
+// closing the scrubber cannot strand the user with input
+// permanently blocked.
+func TestOpenDebugWindowCloseResumes(t *testing.T) {
+	app := NewApp()
+	w := &Window{state: &testState{}}
+	w.app = app
+	w.platformID = 1
+	w.EnableHistory(0)
+	w.Freeze()
+	if !w.IsFrozen() {
+		t.Fatal("precondition: app should be frozen")
+	}
+	w.OpenDebugWindow()
+
+	cfg := <-app.PendingOpen()
+	if cfg.OnCloseRequest == nil {
+		t.Fatal("OnCloseRequest not wired")
+	}
+	dw := NewWindow(cfg)
+	cfg.OnCloseRequest(dw)
+
+	if w.IsFrozen() {
+		t.Fatal("app still frozen after debug close")
+	}
+	if !dw.CloseRequested() {
+		t.Fatal("debug window close was not requested")
+	}
+}
+
+// TestOpenDebugWindowDimensions guards the compact 300x150
+// sizing so a future edit doesn't silently regress it.
+func TestOpenDebugWindowDimensions(t *testing.T) {
+	app := NewApp()
+	w := &Window{state: &testState{}}
+	w.app = app
+	w.platformID = 1
+	w.EnableHistory(0)
+	w.OpenDebugWindow()
+
+	cfg := <-app.PendingOpen()
+	if cfg.Width != 300 || cfg.Height != 150 {
+		t.Fatalf("size = %dx%d, want 300x150", cfg.Width, cfg.Height)
+	}
+}
+
+// TestControllerViewNilHost returns an empty view rather than
+// panicking when the host window is nil.
+func TestControllerViewNilHost(t *testing.T) {
+	c := &TimeTravelController{}
+	if c.View(nil) == nil {
+		t.Fatal("View(nil) returned nil")
+	}
 }
 
 // TestBoundedMapCloneRestoreRoundTrip round-trips entries
@@ -224,17 +350,17 @@ func TestEventCauseLabels(t *testing.T) {
 
 // TestFreezeLabel returns distinct strings for frozen / live.
 func TestFreezeLabel(t *testing.T) {
-	if got := freezeLabel(nil); got != "Freeze" {
-		t.Errorf("nil = %q, want Freeze", got)
+	if got := freezeLabel(nil); got != "Pause" {
+		t.Errorf("nil = %q, want Pause", got)
 	}
 	w := &Window{}
 	w.history = newSnapshotRing(0)
-	if got := freezeLabel(w); got != "Freeze" {
-		t.Errorf("live = %q, want Freeze", got)
+	if got := freezeLabel(w); got != "Pause" {
+		t.Errorf("live = %q, want Pause", got)
 	}
 	w.Freeze()
-	if got := freezeLabel(w); got != "Frozen" {
-		t.Errorf("frozen = %q, want Frozen", got)
+	if got := freezeLabel(w); got != "Resume" {
+		t.Errorf("frozen = %q, want Resume", got)
 	}
 }
 

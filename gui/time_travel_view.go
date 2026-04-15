@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-	"math"
 )
 
 // TimeTravelController drives the time-travel scrubber UI. Holds
@@ -20,6 +19,12 @@ type TimeTravelController struct {
 	// Cursor indexes into App.history (0-based, 0 = oldest).
 	// Out-of-range values are clamped by Jump.
 	Cursor int
+	// sliderValue holds the fractional thumb position so mid-
+	// drag frames display the live mouse position instead of
+	// snapping to the integer Cursor. Synced to Cursor by
+	// keyboard/button moves and by the commit path inside the
+	// slider's OnChange.
+	sliderValue float32
 }
 
 // hist returns the app window's history ring, or nil if the
@@ -81,6 +86,7 @@ func (c *TimeTravelController) Jump(idx int) {
 		idx = n - 1
 	}
 	c.Cursor = idx
+	c.sliderValue = float32(idx)
 	c.App.Freeze()
 	c.App.PostRestore(idx)
 }
@@ -144,17 +150,21 @@ func (c *TimeTravelController) ToggleFreeze() {
 }
 
 // View returns the debug scrubber UI composed from the
-// controller's current state. Intended to be returned from a
-// Window's view generator. The view is standalone — it can be
-// dropped into any layout, not only a dedicated debug window.
-func (c *TimeTravelController) View() View {
+// controller's current state. Requires a non-nil host Window
+// (the window the view renders into) for sizing. Typically
+// called from a view generator installed on a dedicated debug
+// window; host must not be nil.
+func (c *TimeTravelController) View(w *Window) View {
+	if w == nil {
+		return Column(ContainerCfg{})
+	}
 	n := c.Len()
 	bytes := c.Bytes()
 	displayIdx := c.Cursor + 1
 	if n == 0 {
 		displayIdx = 0
 	}
-	counter := fmt.Sprintf("%d / %d (%d KiB)", displayIdx, n, bytes>>10)
+	counter := fmt.Sprintf("%d / %d  (%d KiB)", displayIdx, n, bytes>>10)
 	cause := c.Cause()
 	if cause == "" {
 		cause = "(empty)"
@@ -165,53 +175,70 @@ func (c *TimeTravelController) View() View {
 		sliderMax = float32(n - 1)
 	}
 
+	ww, wh := w.WindowSize()
 	return Column(ContainerCfg{
 		IDFocus:   ttDebugFocusID,
+		Width:     float32(ww),
+		Height:    float32(wh),
 		OnKeyDown: c.handleKey,
+		Sizing:    FixedFixed,
+		HAlign:    HAlignCenter,
+		VAlign:    VAlignMiddle,
+		Spacing:   SomeF(10),
+		Padding:   Some(PadAll(12)),
 		Content: []View{
 			Text(TextCfg{Text: counter}),
 			Text(TextCfg{Text: cause}),
 			Slider(SliderCfg{
-				Min:   0,
-				Max:   sliderMax,
-				Value: float32(c.Cursor),
-				OnChange: func(v float32, _ *Event, _ *Window) {
-					c.jumpFromSlider(v)
-				},
+				ID:       ttSliderID,
+				Min:      0,
+				Max:      sliderMax,
+				Value:    c.sliderValue,
+				Height:   ttSliderHeight,
+				Sizing:   FillFixed,
+				OnChange: c.onSliderChange,
 			}),
-			Row(ContainerCfg{
-				Content: []View{
-					ttButton("<<", c.First),
-					ttButton("<", c.StepBack),
-					ttButton(">", c.StepForward),
-					ttButton(">>", c.Last),
-					ttButton(freezeLabel(c.App), c.ToggleFreeze),
-					ttButton("Resume", c.ResumeLive),
-				},
-			}),
+			ttButton(freezeLabel(c.App), c.ToggleFreeze),
 		},
 	})
 }
 
-// ttDebugFocusID is the IDFocus for the debug window's root
-// container. Fixed because there's only one focusable widget
-// in the scrubber UI.
-const ttDebugFocusID uint32 = 1
-
-// jumpFromSlider converts a slider value to an index and
-// jumps. Rejects NaN and ±Inf to avoid the implementation-
-// defined int conversion that would otherwise feed garbage
-// to Jump.
-func (c *TimeTravelController) jumpFromSlider(v float32) {
-	if c == nil {
+// onSliderChange commits the slider's new value as an integer
+// cursor jump and pins the fractional v as sliderValue so the
+// thumb tracks the mouse between renders. Rejects NaN and ±Inf
+// before the int conversion (implementation-defined garbage);
+// clamps v against the valid cursor range so an out-of-bounds
+// value from a misbehaving slider backend can't render the
+// thumb past the track ends on the next frame.
+func (c *TimeTravelController) onSliderChange(v float32, _ *Event, _ *Window) {
+	if c == nil || !f32IsFinite(v) {
 		return
 	}
-	f := float64(v)
-	if math.IsNaN(f) || math.IsInf(f, 0) {
+	n := c.Len()
+	if n <= 0 {
 		return
 	}
-	c.Jump(int(v))
+	v = f32Clamp(v, 0, float32(n-1))
+	// Only re-commit when the integer bucket actually changes;
+	// sub-pixel drag still updates sliderValue so the thumb
+	// tracks the mouse.
+	if idx := int(v); idx != c.Cursor {
+		c.Jump(idx)
+	}
+	c.sliderValue = v
 }
+
+// ttSliderHeight pins the track thickness so the Column's
+// Fill sizing doesn't stretch it vertically; ttSliderID keys
+// the slider's per-window press-state entry.
+const (
+	ttSliderHeight = 20
+	ttSliderID     = "gui.time_travel.slider"
+)
+
+// ttDebugFocusID is the IDFocus for the debug window's root
+// container.
+const ttDebugFocusID uint32 = 1
 
 // handleKey maps scrubber keyboard shortcuts to controller
 // actions. Called from the root container's OnKeyDown.
@@ -248,9 +275,11 @@ func ttButton(label string, fn func()) View {
 }
 
 // freezeLabel returns the text for the freeze-toggle button.
+// "Resume" when frozen (click → unfreeze + snap to newest),
+// "Pause" when live (click → freeze at current moment).
 func freezeLabel(w *Window) string {
 	if w != nil && w.IsFrozen() {
-		return "Frozen"
+		return "Resume"
 	}
-	return "Freeze"
+	return "Pause"
 }
