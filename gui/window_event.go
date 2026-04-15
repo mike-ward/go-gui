@@ -8,6 +8,13 @@ func (w *Window) EventFn(e *Event) {
 	if e == nil {
 		return
 	}
+	// Time-travel read-only scrub: while frozen, the app window
+	// ignores all user input. The debug window posts a dedicated
+	// resume/restore event type (added in a later step) that
+	// bypasses this gate.
+	if w.frozen.Load() {
+		return
+	}
 	e.FrameCount = w.frameCount
 
 	// Focus gate: block events when unfocused except right-click,
@@ -158,6 +165,7 @@ func (w *Window) EventFn(e *Event) {
 	if !e.IsHandled && w.OnEvent != nil {
 		w.OnEvent(e, w)
 	}
+	w.captureSnapshot(e)
 	w.UpdateWindow()
 }
 

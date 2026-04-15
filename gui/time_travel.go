@@ -148,6 +148,144 @@ func (r *snapshotRing) last() (snapshotEntry, bool) {
 	return r.entries[n-1], true
 }
 
+// shouldSnapshot reports whether an event of this type should
+// trigger a post-dispatch snapshot. Plain mouse motion, IME
+// composition churn, and focus bookkeeping are skipped —
+// they either don't mutate observable state or fire far too
+// often to be useful in a scrub timeline.
+func shouldSnapshot(t EventType) bool {
+	switch t {
+	case EventMouseMove,
+		EventIMEComposition,
+		EventFocused,
+		EventUnfocused,
+		EventResized:
+		return false
+	}
+	return true
+}
+
+// captureSnapshot pushes a post-dispatch snapshot onto the
+// window's history if enabled and the user state opts in.
+// Safe to call on a nil Window or when history is unset.
+func (w *Window) captureSnapshot(e *Event) {
+	if w == nil || w.history == nil || e == nil {
+		return
+	}
+	if !shouldSnapshot(e.Type) {
+		return
+	}
+	s, ok := w.state.(Snapshotter)
+	if !ok {
+		return
+	}
+	w.history.push(s.Snapshot(), time.Now(), eventCause(e))
+}
+
+// eventCause builds a short label describing the event that
+// produced a snapshot. Intended for the debug-window timeline;
+// the format is informational and may change.
+func eventCause(e *Event) string {
+	if e == nil {
+		return ""
+	}
+	switch e.Type {
+	case EventChar:
+		return "char"
+	case EventKeyDown:
+		return "key"
+	case EventMouseDown:
+		return "mouse-down"
+	case EventMouseUp:
+		return "mouse-up"
+	case EventMouseScroll:
+		return "scroll"
+	case EventFileDropped:
+		return "file-drop"
+	case EventTouchesBegan:
+		return "touch-begin"
+	case EventTouchesMoved:
+		return "touch-move"
+	case EventTouchesEnded:
+		return "touch-end"
+	case EventTouchesCancelled:
+		return "touch-cancel"
+	}
+	return "event"
+}
+
+// Freeze enters time-travel scrub mode. Subsequent user input
+// events are dropped by EventFn; the frame loop keeps running
+// so the debug window's restore requests take effect and the
+// app window continues to repaint. Idempotent. No-op when
+// history is disabled. Safe to call from any goroutine.
+func (w *Window) Freeze() {
+	if w == nil || w.history == nil {
+		return
+	}
+	w.frozen.Store(true)
+}
+
+// Resume exits time-travel scrub mode. Clears the virtual
+// clock pin so w.Now() returns live time again. Idempotent.
+// Safe to call from any goroutine.
+func (w *Window) Resume() {
+	if w == nil {
+		return
+	}
+	w.frozen.Store(false)
+	w.virtualNow.Store(nil)
+	w.UpdateWindow()
+}
+
+// IsFrozen reports whether the window is currently in a
+// read-only time-travel scrub.
+func (w *Window) IsFrozen() bool {
+	if w == nil {
+		return false
+	}
+	return w.frozen.Load()
+}
+
+// PostRestore posts a restore request for history entry idx.
+// Intended for cross-goroutine calls from the debug window.
+// The request is serialized through the app window's command
+// queue so it runs on the main thread under w.mu, avoiding
+// torn reads against a concurrent view fn. No-op when history
+// is disabled. Safe to call from any goroutine.
+func (w *Window) PostRestore(idx int) {
+	if w == nil || w.history == nil {
+		return
+	}
+	w.QueueCommand(func(w *Window) {
+		w.restoreLocked(idx)
+	})
+}
+
+// restoreLocked performs the actual Snapshotter.Restore under
+// w.mu. Intended to run inside a queued command on the main
+// thread. Also pins the virtual clock to the entry's timestamp
+// so clock-driven views render consistently with the snapshot.
+func (w *Window) restoreLocked(idx int) {
+	if w.history == nil {
+		return
+	}
+	entry, ok := w.history.at(idx)
+	if !ok {
+		return
+	}
+	s, ok := w.state.(Snapshotter)
+	if !ok {
+		return
+	}
+	w.mu.Lock()
+	s.Restore(entry.snap)
+	w.mu.Unlock()
+	when := entry.when
+	w.virtualNow.Store(&when)
+	w.UpdateWindow()
+}
+
 // clear drops all entries.
 func (r *snapshotRing) clear() {
 	r.mu.Lock()

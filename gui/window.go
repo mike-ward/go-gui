@@ -161,6 +161,12 @@ type Window struct {
 	// Now() returns the stored instant. Set by time-travel scrub
 	// so views that read w.Now() render with a past timestamp.
 	virtualNow atomic.Pointer[time.Time]
+
+	// Time-travel history. nil when disabled; hot-path checks
+	// against nil to short-circuit with zero overhead. When
+	// frozen is true, EventFn drops events (scrub read-only).
+	history *snapshotRing
+	frozen  atomic.Bool
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a
