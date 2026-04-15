@@ -9,9 +9,9 @@ func (w *Window) EventFn(e *Event) {
 		return
 	}
 	// Time-travel read-only scrub: while frozen, the app window
-	// ignores all user input. The debug window posts a dedicated
-	// resume/restore event type (added in a later step) that
-	// bypasses this gate.
+	// ignores all user input. The debug window drives restore
+	// through QueueCommand, which bypasses this gate because
+	// commands flush in FrameFn, not EventFn.
 	if w.frozen.Load() {
 		return
 	}

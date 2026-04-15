@@ -108,16 +108,6 @@ func TestSnapshotRingEvictsOldest(t *testing.T) {
 	}
 }
 
-// TestSnapshotRingClear drops all entries and zeros totals.
-func TestSnapshotRingClear(t *testing.T) {
-	r := newSnapshotRing(1 << 20)
-	r.push((&testState{}).Snapshot(), time.Now(), "x")
-	r.clear()
-	if r.len() != 0 || r.bytes() != 0 {
-		t.Fatalf("after clear: len=%d bytes=%d", r.len(), r.bytes())
-	}
-}
-
 // TestSnapshotRingNilSnap ignores nil pushes.
 func TestSnapshotRingNilSnap(t *testing.T) {
 	r := newSnapshotRing(1 << 20)

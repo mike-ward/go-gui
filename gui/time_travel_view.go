@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"math"
 )
 
 // TimeTravelController drives the time-travel scrubber UI. Holds
@@ -21,31 +22,41 @@ type TimeTravelController struct {
 	Cursor int
 }
 
-// Len returns the current history length, or 0 when history is
-// unset.
+// hist returns the app window's history ring, or nil if the
+// controller, app, or history is unset. Single nil-guard used
+// by every motion method.
+func (c *TimeTravelController) hist() *snapshotRing {
+	if c == nil || c.App == nil {
+		return nil
+	}
+	return c.App.history
+}
+
+// Len returns the current history length.
 func (c *TimeTravelController) Len() int {
-	if c == nil || c.App == nil || c.App.history == nil {
+	r := c.hist()
+	if r == nil {
 		return 0
 	}
-	return c.App.history.len()
+	return r.len()
 }
 
-// Bytes returns the current history byte usage, or 0 when
-// history is unset.
+// Bytes returns the current history byte usage.
 func (c *TimeTravelController) Bytes() int {
-	if c == nil || c.App == nil || c.App.history == nil {
+	r := c.hist()
+	if r == nil {
 		return 0
 	}
-	return c.App.history.bytes()
+	return r.bytes()
 }
 
-// Cause returns the cause label of the entry at the cursor, or
-// "" when out of range.
+// Cause returns the cause label of the entry at the cursor.
 func (c *TimeTravelController) Cause() string {
-	if c == nil || c.App == nil || c.App.history == nil {
+	r := c.hist()
+	if r == nil {
 		return ""
 	}
-	e, ok := c.App.history.at(c.Cursor)
+	e, ok := r.at(c.Cursor)
 	if !ok {
 		return ""
 	}
@@ -53,13 +64,13 @@ func (c *TimeTravelController) Cause() string {
 }
 
 // Jump moves the cursor to idx, clamped to [0, len-1]. Auto-
-// freezes the app window and posts a restore request. No-op
-// when history is empty.
+// freezes the app window and posts a restore request.
 func (c *TimeTravelController) Jump(idx int) {
-	if c == nil || c.App == nil || c.App.history == nil {
+	r := c.hist()
+	if r == nil {
 		return
 	}
-	n := c.App.history.len()
+	n := r.len()
 	if n == 0 {
 		return
 	}
@@ -97,10 +108,11 @@ func (c *TimeTravelController) First() {
 
 // Last jumps to the newest entry.
 func (c *TimeTravelController) Last() {
-	if c == nil || c.App == nil || c.App.history == nil {
+	r := c.hist()
+	if r == nil {
 		return
 	}
-	c.Jump(c.App.history.len() - 1)
+	c.Jump(r.len() - 1)
 }
 
 // ResumeLive releases the app window's freeze and snaps the
@@ -111,8 +123,8 @@ func (c *TimeTravelController) ResumeLive() {
 		return
 	}
 	c.App.Resume()
-	if c.App.history != nil {
-		if n := c.App.history.len(); n > 0 {
+	if r := c.hist(); r != nil {
+		if n := r.len(); n > 0 {
 			c.Cursor = n - 1
 		}
 	}
@@ -164,7 +176,7 @@ func (c *TimeTravelController) View() View {
 				Max:   sliderMax,
 				Value: float32(c.Cursor),
 				OnChange: func(v float32, _ *Event, _ *Window) {
-					c.Jump(int(v))
+					c.jumpFromSlider(v)
 				},
 			}),
 			Row(ContainerCfg{
@@ -185,6 +197,21 @@ func (c *TimeTravelController) View() View {
 // container. Fixed because there's only one focusable widget
 // in the scrubber UI.
 const ttDebugFocusID uint32 = 1
+
+// jumpFromSlider converts a slider value to an index and
+// jumps. Rejects NaN and ±Inf to avoid the implementation-
+// defined int conversion that would otherwise feed garbage
+// to Jump.
+func (c *TimeTravelController) jumpFromSlider(v float32) {
+	if c == nil {
+		return
+	}
+	f := float64(v)
+	if math.IsNaN(f) || math.IsInf(f, 0) {
+		return
+	}
+	c.Jump(int(v))
+}
 
 // handleKey maps scrubber keyboard shortcuts to controller
 // actions. Called from the root container's OnKeyDown.

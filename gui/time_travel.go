@@ -29,6 +29,13 @@ type snapshotSizer interface {
 // guess; users with fat state should implement Size().
 const snapshotDefaultSize = 1024
 
+// snapshotMaxEntryBytes caps a single entry's reported size so a
+// misbehaving (or adversarial) Snapshotter.Size() cannot overflow
+// the ring's totalBytes counter. 1 GiB is far above any realistic
+// single snapshot and well clear of int32 overflow on 32-bit
+// platforms.
+const snapshotMaxEntryBytes = 1 << 30
+
 // snapshotEntry records a single point in history.
 type snapshotEntry struct {
 	snap       any
@@ -92,14 +99,17 @@ type cloneableMap interface {
 // of {namespace -> cloned BoundedMap} for every whitelisted
 // namespace currently present in the registry. Returns nil
 // when nothing was captured so the hot path avoids allocation
-// in the common case.
+// in the common case. Holds the whitelist RLock once across
+// the registry walk rather than re-acquiring per iteration.
 func snapshotWhitelistedNamespaces(w *Window) map[string]any {
 	if w == nil || len(w.viewState.registry.maps) == 0 {
 		return nil
 	}
 	var out map[string]any
+	snapshotableNamespaces.mu.RLock()
+	defer snapshotableNamespaces.mu.RUnlock()
 	for ns, m := range w.viewState.registry.maps {
-		if !isNamespaceSnapshotable(ns) {
+		if _, ok := snapshotableNamespaces.set[ns]; !ok {
 			continue
 		}
 		cm, ok := m.(cloneableMap)
@@ -117,7 +127,10 @@ func snapshotWhitelistedNamespaces(w *Window) map[string]any {
 // restoreWhitelistedNamespaces overwrites each whitelisted
 // namespace's BoundedMap with the clone captured in entry.
 // Namespaces absent from entry (e.g. registered after the
-// snapshot) are left untouched.
+// snapshot) are left untouched. Type-mismatched entries
+// (generic param changed between capture and restore, e.g.
+// during hot reload) are skipped via recover rather than
+// aborting the entire restore.
 func restoreWhitelistedNamespaces(w *Window, entry map[string]any) {
 	if w == nil || len(entry) == 0 {
 		return
@@ -127,8 +140,21 @@ func restoreWhitelistedNamespaces(w *Window, entry map[string]any) {
 		if !ok {
 			continue
 		}
-		dst.restoreAny(src)
+		safeRestoreAny(dst, src, ns)
 	}
+}
+
+// safeRestoreAny invokes dst.restoreAny(src) and recovers from
+// a type-assertion panic so a single out-of-sync namespace does
+// not break scrub for the rest. Logs the skip for visibility.
+func safeRestoreAny(dst cloneableMap, src any, ns string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("gui: time-travel: namespace %q restore "+
+				"skipped: %v", ns, r)
+		}
+	}()
+	dst.restoreAny(src)
 }
 
 // snapshotRing is a byte-capped FIFO ring of Snapshot values.
@@ -180,6 +206,9 @@ func (r *snapshotRing) pushEntry(e snapshotEntry) {
 		if n := s.Size(); n > 0 {
 			e.bytes = n
 		}
+	}
+	if e.bytes > snapshotMaxEntryBytes {
+		e.bytes = snapshotMaxEntryBytes
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -325,11 +354,11 @@ func eventCause(e *Event) string {
 // EnableHistory turns on time-travel snapshot capture with a
 // byte cap. A non-positive cap selects defaultHistoryBytes.
 // Idempotent — a second call with a different cap updates the
-// cap but keeps existing entries. Requires the window's user
-// state to implement Snapshotter; otherwise no snapshots are
-// ever pushed (but calling the method is still safe).
-// Must be called on the main thread (no locking needed because
-// history is read/written only from the frame/event path).
+// cap and evicts any now-oversized entries under the ring's
+// own mutex; existing entries are preserved otherwise.
+// Requires the window's user state to implement Snapshotter;
+// otherwise no snapshots are ever pushed (but calling the
+// method is still safe).
 func (w *Window) EnableHistory(maxBytes int) {
 	if w == nil {
 		return
@@ -380,7 +409,14 @@ func (w *Window) OpenDebugWindow() {
 	}
 	title := "Time Travel"
 	if w.Config.Title != "" {
-		title = "Time Travel — " + w.Config.Title
+		// Keep the composed title compact for the scrubber's
+		// title bar. sanitizeTitle also enforces an outer cap.
+		const maxParentTitle = 256
+		parent := w.Config.Title
+		if len(parent) > maxParentTitle {
+			parent = parent[:maxParentTitle]
+		}
+		title = "Time Travel — " + parent
 	}
 	app.OpenWindow(WindowCfg{
 		State:  ctrl,
@@ -469,17 +505,6 @@ func (w *Window) restoreLocked(idx int) {
 	restoreWhitelistedNamespaces(w, entry.namespaces)
 	w.mu.Unlock()
 	when := entry.when
-	w.virtualNow.Store(&when)
+	w.setVirtualNow(&when)
 	w.UpdateWindow()
-}
-
-// clear drops all entries.
-func (r *snapshotRing) clear() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for i := range r.entries {
-		r.entries[i] = snapshotEntry{}
-	}
-	r.entries = r.entries[:0]
-	r.totalBytes = 0
 }
