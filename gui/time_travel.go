@@ -31,10 +31,104 @@ const snapshotDefaultSize = 1024
 
 // snapshotEntry records a single point in history.
 type snapshotEntry struct {
-	snap  any
-	when  time.Time
-	cause string
-	bytes int
+	snap       any
+	namespaces map[string]any
+	when       time.Time
+	cause      string
+	bytes      int
+}
+
+// snapshotableNamespaces is the set of StateMap namespaces
+// whose BoundedMap contents are captured alongside user state
+// during time-travel scrub. Default: scroll positions and
+// widget-local focus rings. Users / widget authors can extend
+// via RegisterNamespaceSnapshot.
+var snapshotableNamespaces = struct {
+	mu  sync.RWMutex
+	set map[string]struct{}
+}{
+	set: map[string]struct{}{
+		nsScrollX:      {},
+		nsScrollY:      {},
+		nsInputFocus:   {},
+		nsListBoxFocus: {},
+		nsTreeFocus:    {},
+	},
+}
+
+// RegisterNamespaceSnapshot marks a StateMap namespace as
+// snapshotable. During time-travel scrub, its BoundedMap
+// contents are captured with each snapshot and restored on
+// rewind. Intended for widget authors whose internal state
+// should rewind with the scrubber (e.g. cursor position, tab
+// index). Caches (SVG, tessellation) should stay live — do
+// not register them. Safe to call from any goroutine; typical
+// use is once at package init.
+func RegisterNamespaceSnapshot(ns string) {
+	if ns == "" {
+		return
+	}
+	snapshotableNamespaces.mu.Lock()
+	snapshotableNamespaces.set[ns] = struct{}{}
+	snapshotableNamespaces.mu.Unlock()
+}
+
+// isNamespaceSnapshotable reports whether ns is whitelisted.
+func isNamespaceSnapshotable(ns string) bool {
+	snapshotableNamespaces.mu.RLock()
+	_, ok := snapshotableNamespaces.set[ns]
+	snapshotableNamespaces.mu.RUnlock()
+	return ok
+}
+
+// cloneableMap is implemented by BoundedMap; used to snapshot
+// whitelisted namespaces without knowing element types.
+type cloneableMap interface {
+	cloneAny() any
+	restoreAny(src any)
+}
+
+// snapshotWhitelistedNamespaces returns a freshly-allocated map
+// of {namespace -> cloned BoundedMap} for every whitelisted
+// namespace currently present in the registry. Returns nil
+// when nothing was captured so the hot path avoids allocation
+// in the common case.
+func snapshotWhitelistedNamespaces(w *Window) map[string]any {
+	if w == nil || len(w.viewState.registry.maps) == 0 {
+		return nil
+	}
+	var out map[string]any
+	for ns, m := range w.viewState.registry.maps {
+		if !isNamespaceSnapshotable(ns) {
+			continue
+		}
+		cm, ok := m.(cloneableMap)
+		if !ok {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]any)
+		}
+		out[ns] = cm.cloneAny()
+	}
+	return out
+}
+
+// restoreWhitelistedNamespaces overwrites each whitelisted
+// namespace's BoundedMap with the clone captured in entry.
+// Namespaces absent from entry (e.g. registered after the
+// snapshot) are left untouched.
+func restoreWhitelistedNamespaces(w *Window, entry map[string]any) {
+	if w == nil || len(entry) == 0 {
+		return
+	}
+	for ns, src := range entry {
+		dst, ok := w.viewState.registry.maps[ns].(cloneableMap)
+		if !ok {
+			continue
+		}
+		dst.restoreAny(src)
+	}
 }
 
 // snapshotRing is a byte-capped FIFO ring of Snapshot values.
@@ -68,22 +162,29 @@ func (r *snapshotRing) push(snap any, when time.Time, cause string) {
 	if snap == nil {
 		return
 	}
-	size := snapshotDefaultSize
-	if s, ok := snap.(snapshotSizer); ok {
-		size = s.Size()
-		if size <= 0 {
-			size = snapshotDefaultSize
+	r.pushEntry(snapshotEntry{
+		snap:  snap,
+		when:  when,
+		cause: cause,
+	})
+}
+
+// pushEntry appends a pre-built entry. Computes bytes from the
+// entry's snap field and evicts oldest to fit maxBytes.
+func (r *snapshotRing) pushEntry(e snapshotEntry) {
+	if e.snap == nil {
+		return
+	}
+	e.bytes = snapshotDefaultSize
+	if s, ok := e.snap.(snapshotSizer); ok {
+		if n := s.Size(); n > 0 {
+			e.bytes = n
 		}
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.entries = append(r.entries, snapshotEntry{
-		snap:  snap,
-		when:  when,
-		cause: cause,
-		bytes: size,
-	})
-	r.totalBytes += size
+	r.entries = append(r.entries, e)
+	r.totalBytes += e.bytes
 	r.evictLocked()
 }
 
@@ -180,7 +281,13 @@ func (w *Window) captureSnapshot(e *Event) {
 	if !ok {
 		return
 	}
-	w.history.push(s.Snapshot(), time.Now(), eventCause(e))
+	ns := snapshotWhitelistedNamespaces(w)
+	w.history.pushEntry(snapshotEntry{
+		snap:       s.Snapshot(),
+		namespaces: ns,
+		when:       time.Now(),
+		cause:      eventCause(e),
+	})
 }
 
 // eventCause builds a short label describing the event that
@@ -359,6 +466,7 @@ func (w *Window) restoreLocked(idx int) {
 	}
 	w.mu.Lock()
 	s.Restore(entry.snap)
+	restoreWhitelistedNamespaces(w, entry.namespaces)
 	w.mu.Unlock()
 	when := entry.when
 	w.virtualNow.Store(&when)

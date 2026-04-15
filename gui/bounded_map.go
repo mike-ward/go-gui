@@ -26,6 +26,30 @@ func NewBoundedMap[K comparable, V any](maxSize int) *BoundedMap[K, V] {
 	}
 }
 
+// cloneAny returns a deep copy of the map as an *BoundedMap[K, V]
+// boxed in any. Used by time-travel snapshot to capture
+// whitelisted StateMap namespaces without erasing the element
+// types.
+func (m *BoundedMap[K, V]) cloneAny() any {
+	c := NewBoundedMap[K, V](m.maxSize)
+	m.Range(func(k K, v V) bool {
+		c.Set(k, v)
+		return true
+	})
+	return c
+}
+
+// restoreAny overwrites the receiver with entries from src, which
+// must be the *BoundedMap[K, V] previously returned by cloneAny.
+// Existing entries are cleared first.
+func (m *BoundedMap[K, V]) restoreAny(src any) {
+	m.Clear()
+	src.(*BoundedMap[K, V]).Range(func(k K, v V) bool {
+		m.Set(k, v)
+		return true
+	})
+}
+
 // Set adds or updates a key-value pair. Evicts oldest if at capacity.
 func (m *BoundedMap[K, V]) Set(key K, value V) {
 	if m.maxSize < 1 {

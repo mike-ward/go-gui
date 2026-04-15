@@ -295,6 +295,78 @@ func TestPostRestoreDisabledNoOp(t *testing.T) {
 	}
 }
 
+// TestNamespaceSnapshotRoundTrip captures a whitelisted
+// namespace's BoundedMap and restores it after mutation.
+func TestNamespaceSnapshotRoundTrip(t *testing.T) {
+	const ns = "test.snap.ns"
+	t.Cleanup(func() {
+		snapshotableNamespaces.mu.Lock()
+		delete(snapshotableNamespaces.set, ns)
+		snapshotableNamespaces.mu.Unlock()
+	})
+	RegisterNamespaceSnapshot(ns)
+
+	w := &Window{state: &testState{}, focused: true}
+	w.history = newSnapshotRing(1 << 20)
+	sm := StateMap[string, int](w, ns, capFew)
+	sm.Set("scroll", 42)
+
+	w.EventFn(&Event{Type: EventMouseDown, MouseButton: MouseLeft})
+
+	sm.Set("scroll", 999)
+	if got, _ := sm.Get("scroll"); got != 999 {
+		t.Fatalf("pre-restore Get = %d, want 999", got)
+	}
+
+	w.PostRestore(0)
+	w.flushCommands()
+
+	if got, _ := sm.Get("scroll"); got != 42 {
+		t.Fatalf("post-restore Get = %d, want 42", got)
+	}
+}
+
+// TestNamespaceNotWhitelisted leaves unregistered namespaces
+// alone — they stay at their live value after restore.
+func TestNamespaceNotWhitelisted(t *testing.T) {
+	const ns = "test.not.whitelisted"
+	w := &Window{state: &testState{}, focused: true}
+	w.history = newSnapshotRing(1 << 20)
+	sm := StateMap[string, int](w, ns, capFew)
+	sm.Set("k", 1)
+
+	w.EventFn(&Event{Type: EventMouseDown, MouseButton: MouseLeft})
+
+	sm.Set("k", 2)
+	w.PostRestore(0)
+	w.flushCommands()
+
+	if got, _ := sm.Get("k"); got != 2 {
+		t.Fatalf("non-whitelisted ns should not rewind: got %d, want 2", got)
+	}
+}
+
+// TestRegisterNamespaceSnapshotEmpty silently ignores empty.
+func TestRegisterNamespaceSnapshotEmpty(t *testing.T) {
+	RegisterNamespaceSnapshot("")
+	if isNamespaceSnapshotable("") {
+		t.Fatal("empty namespace should not be whitelisted")
+	}
+}
+
+// TestScrollNamespacesPreregistered confirms the default
+// whitelist includes scroll and focus namespaces.
+func TestScrollNamespacesPreregistered(t *testing.T) {
+	for _, ns := range []string{
+		nsScrollX, nsScrollY, nsInputFocus,
+		nsListBoxFocus, nsTreeFocus,
+	} {
+		if !isNamespaceSnapshotable(ns) {
+			t.Fatalf("%s should be in default whitelist", ns)
+		}
+	}
+}
+
 // TestSnapshotRingConcurrent exercises the RWMutex under -race.
 func TestSnapshotRingConcurrent(t *testing.T) {
 	r := newSnapshotRing(1 << 20)
