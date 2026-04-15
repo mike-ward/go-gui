@@ -7,7 +7,7 @@ import (
 
 // SliderCfg configures a slider view.
 type SliderCfg struct {
-	ID           string
+	ID           string `gui:"required"`
 	Sizing       Sizing
 	Color        Color
 	ColorBorder  Color
@@ -42,6 +42,7 @@ type SliderCfg struct {
 
 // Slider creates a slider view.
 func Slider(cfg SliderCfg) View {
+	requireID("Slider", cfg.ID)
 	if !cfg.Color.IsSet() {
 		cfg.Color = guiTheme.SliderStyle.Color
 	}

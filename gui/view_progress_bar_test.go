@@ -4,6 +4,7 @@ import "testing"
 
 func TestProgressBarDefaultLayout(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:      "pb-test",
 		Percent: 0.5,
 	})
 	layout := GenerateViewLayout(v, &Window{})
@@ -18,6 +19,7 @@ func TestProgressBarDefaultLayout(t *testing.T) {
 
 func TestProgressBarVertical(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  0.5,
 		Vertical: true,
 	})
@@ -29,6 +31,7 @@ func TestProgressBarVertical(t *testing.T) {
 
 func TestProgressBarTextShow(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  0.5,
 		TextShow: true,
 	})
@@ -41,6 +44,7 @@ func TestProgressBarTextShow(t *testing.T) {
 
 func TestProgressBarNoText(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  0.5,
 		TextShow: false,
 	})
@@ -53,6 +57,7 @@ func TestProgressBarNoText(t *testing.T) {
 
 func TestProgressBarA11YRole(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:      "pb-test",
 		Percent: 0.3,
 	})
 	layout := GenerateViewLayout(v, &Window{})
@@ -69,6 +74,7 @@ func TestProgressBarA11YRole(t *testing.T) {
 
 func TestProgressBarIndefiniteA11Y(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:         "pb-test",
 		Indefinite: true,
 	})
 	layout := GenerateViewLayout(v, &Window{})
@@ -81,6 +87,7 @@ func TestProgressBarIndefiniteA11Y(t *testing.T) {
 
 func TestProgressBarA11YLabel(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:        "pb-test",
 		Percent:   0.5,
 		A11YLabel: "upload",
 	})
@@ -96,6 +103,7 @@ func TestProgressBarA11YLabel(t *testing.T) {
 
 func TestProgressBarA11YDescription(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:              "pb-test",
 		Percent:         0.5,
 		A11YDescription: "uploading file",
 	})
@@ -111,6 +119,7 @@ func TestProgressBarA11YDescription(t *testing.T) {
 
 func TestProgressBarPercentClampHigh(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  1.5,
 		TextShow: true,
 	})
@@ -130,6 +139,7 @@ func TestProgressBarPercentClampHigh(t *testing.T) {
 
 func TestProgressBarPercentClampLow(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  -0.5,
 		TextShow: true,
 	})
@@ -149,6 +159,7 @@ func TestProgressBarPercentClampLow(t *testing.T) {
 
 func TestProgressBarVerticalTextShow(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  0.5,
 		Vertical: true,
 		TextShow: true,
@@ -162,6 +173,7 @@ func TestProgressBarVerticalTextShow(t *testing.T) {
 
 func TestProgressBarThemeTextStyle(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  0.5,
 		TextShow: true,
 	})
@@ -182,6 +194,7 @@ func TestProgressBarThemeTextStyle(t *testing.T) {
 
 func TestProgressBarRadiusZeroOverride(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:      "pb-test",
 		Percent: 0.5,
 		Radius:  NoRadius,
 	})
@@ -194,6 +207,7 @@ func TestProgressBarRadiusZeroOverride(t *testing.T) {
 func TestProgressBarTextBackgroundColor(t *testing.T) {
 	bg := Color{255, 0, 0, 255, true}
 	v := ProgressBar(ProgressBarCfg{
+		ID:             "pb-test",
 		Percent:        0.5,
 		TextShow:       true,
 		TextBackground: bg,
@@ -214,6 +228,7 @@ func TestProgressBarTextBackgroundColor(t *testing.T) {
 
 func TestProgressBarSizeBorderNone(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
+		ID:       "pb-test",
 		Percent:  0.5,
 		TextShow: true,
 	})

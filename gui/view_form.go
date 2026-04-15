@@ -141,7 +141,7 @@ const formLayoutIDPrefix = "form:"
 // and submit/reset semantics.
 type FormCfg struct {
 	// Identity — required for validation runtime.
-	ID string
+	ID string `gui:"required"`
 
 	// Validation behaviour.
 	ValidateOn         FormValidateOn // 0 → BlurSubmit
@@ -181,9 +181,7 @@ type formView struct {
 // Form creates a form container with runtime validation and
 // submit/reset semantics.
 func Form(cfg FormCfg) View {
-	if cfg.ID == "" {
-		panic("gui: Form requires a non-empty ID")
-	}
+	requireID("Form", cfg.ID)
 	content := make([]View, len(cfg.Content))
 	copy(content, cfg.Content)
 	return &formView{cfg: cfg, content: content}

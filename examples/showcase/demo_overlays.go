@@ -99,6 +99,7 @@ func demoDialog(w *gui.Window) gui.View {
 												TextStyle: t.N3,
 											}),
 											gui.ProgressBar(gui.ProgressBarCfg{
+												ID:       "showcase-dialog-pb",
 												Percent:  0.65,
 												TextShow: true,
 												Sizing:   gui.FillFit,

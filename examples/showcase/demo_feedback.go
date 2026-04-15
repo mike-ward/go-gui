@@ -77,6 +77,7 @@ func buttonFeatureRows(w *gui.Window) []gui.View {
 			Content: []gui.View{
 				gui.Text(gui.TextCfg{Text: fmt.Sprintf("%d", app.ButtonClicks), MinWidth: 25}),
 				gui.ProgressBar(gui.ProgressBarCfg{
+					ID:      "showcase-button-progress",
 					Percent: progress,
 					Width:   75,
 					Height:  gui.CurrentTheme().TextStyleDef.Size,
@@ -123,10 +124,10 @@ func demoProgressBar(_ *gui.Window) gui.View {
 		Spacing: gui.SomeF(12),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
-			gui.ProgressBar(gui.ProgressBarCfg{Percent: 0.25, TextShow: true, Sizing: gui.FillFit}),
-			gui.ProgressBar(gui.ProgressBarCfg{Percent: 0.50, TextShow: true, Sizing: gui.FillFit}),
-			gui.ProgressBar(gui.ProgressBarCfg{Percent: 0.75, TextShow: true, Sizing: gui.FillFit}),
-			gui.ProgressBar(gui.ProgressBarCfg{Indefinite: true, Sizing: gui.FillFit}),
+			gui.ProgressBar(gui.ProgressBarCfg{ID: "showcase-pb-25", Percent: 0.25, TextShow: true, Sizing: gui.FillFit}),
+			gui.ProgressBar(gui.ProgressBarCfg{ID: "showcase-pb-50", Percent: 0.50, TextShow: true, Sizing: gui.FillFit}),
+			gui.ProgressBar(gui.ProgressBarCfg{ID: "showcase-pb-75", Percent: 0.75, TextShow: true, Sizing: gui.FillFit}),
+			gui.ProgressBar(gui.ProgressBarCfg{ID: "showcase-pb-indef", Indefinite: true, Sizing: gui.FillFit}),
 		},
 	})
 }

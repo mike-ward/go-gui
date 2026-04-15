@@ -43,7 +43,7 @@ type TableCellCfg struct {
 
 // TableCfg configures a table layout.
 type TableCfg struct {
-	ID                 string
+	ID                 string `gui:"required"`
 	A11YLabel          string
 	A11YDescription    string
 	ColorBorder        Color
@@ -122,6 +122,7 @@ type tableColWidthCache struct {
 // Table generates a table from the given TableCfg. Column widths
 // are auto-sized when a Window is available during layout.
 func Table(cfg TableCfg) View {
+	requireID("Table", cfg.ID)
 	return &deferredTableView{cfg: cfg}
 }
 

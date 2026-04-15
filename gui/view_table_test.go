@@ -8,6 +8,7 @@ import (
 
 func TestTableBasic(t *testing.T) {
 	v := Table(TableCfg{
+		ID: "tbl-test",
 		Data: []TableRowCfg{
 			TR([]TableCellCfg{TH("Name"), TH("Age")}),
 			TR([]TableCellCfg{TD("Alice"), TD("30")}),
@@ -22,7 +23,7 @@ func TestTableBasic(t *testing.T) {
 }
 
 func TestTableEmpty(t *testing.T) {
-	v := Table(TableCfg{})
+	v := Table(TableCfg{ID: "tbl-test"})
 	w := &Window{}
 	layout := GenerateViewLayout(v, w)
 	if len(layout.Children) != 0 {
@@ -32,6 +33,7 @@ func TestTableEmpty(t *testing.T) {
 
 func TestTableBorderAll(t *testing.T) {
 	v := Table(TableCfg{
+		ID:          "tbl-test",
 		BorderStyle: TableBorderAll,
 		SizeBorder:  1,
 		Data: []TableRowCfg{
@@ -55,6 +57,7 @@ func TestTableBorderAll(t *testing.T) {
 
 func TestTableBorderHorizontal(t *testing.T) {
 	v := Table(TableCfg{
+		ID:          "tbl-test",
 		BorderStyle: TableBorderHorizontal,
 		SizeBorder:  1,
 		Data: []TableRowCfg{
@@ -73,6 +76,7 @@ func TestTableBorderHorizontal(t *testing.T) {
 
 func TestTableBorderHeaderOnly(t *testing.T) {
 	v := Table(TableCfg{
+		ID:          "tbl-test",
 		BorderStyle: TableBorderHeaderOnly,
 		SizeBorder:  2,
 		Data: []TableRowCfg{
@@ -133,6 +137,7 @@ func TestTableSelection(t *testing.T) {
 	var selectedRows map[int]bool
 	var clickedRow int
 	v := Table(TableCfg{
+		ID: "tbl-test",
 		Data: []TableRowCfg{
 			TR([]TableCellCfg{TD("a")}),
 			TR([]TableCellCfg{TD("b")}),
@@ -197,6 +202,7 @@ func TestTableColumnAutoWidth(t *testing.T) {
 func TestTableRowAltColor(t *testing.T) {
 	alt := RGB(50, 50, 50)
 	v := Table(TableCfg{
+		ID:          "tbl-test",
 		ColorRowAlt: &alt,
 		Data: []TableRowCfg{
 			TR([]TableCellCfg{TD("a")}),
@@ -403,6 +409,7 @@ func TestTableFreezeHeaderWithSeparator(t *testing.T) {
 func TestTableFreezeHeaderNoScroll(t *testing.T) {
 	// FreezeHeader=true but IDScroll=0 → falls back to single Column.
 	v := Table(TableCfg{
+		ID:           "tbl-test",
 		FreezeHeader: true,
 		Data: []TableRowCfg{
 			TR([]TableCellCfg{TH("H")}),
@@ -449,6 +456,7 @@ func TestTableFreezeHeaderVirtualization(t *testing.T) {
 
 func TestTableRichTextCell(t *testing.T) {
 	v := Table(TableCfg{
+		ID: "tbl-test",
 		Data: []TableRowCfg{
 			TR([]TableCellCfg{{
 				RichText: &RichText{

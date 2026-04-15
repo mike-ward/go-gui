@@ -4,7 +4,7 @@ const treeLoadingSuffix = ".__loading__"
 
 // TreeCfg configures a tree view.
 type TreeCfg struct {
-	ID string
+	ID string `gui:"required"`
 
 	Nodes      []TreeNodeCfg
 	OnSelect   func(string, *Event, *Window)
@@ -73,6 +73,7 @@ type treeFlatRow struct {
 
 // Tree creates a tree view with optional virtualization and lazy loading.
 func Tree(cfg TreeCfg) View {
+	requireID("Tree", cfg.ID)
 	applyTreeDefaults(&cfg)
 	return &treeView{cfg: cfg}
 }

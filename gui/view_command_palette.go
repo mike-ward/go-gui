@@ -33,7 +33,7 @@ type CommandPaletteItem struct {
 
 // CommandPaletteCfg configures a command palette view.
 type CommandPaletteCfg struct {
-	ID             string
+	ID             string `gui:"required"`
 	Items          []CommandPaletteItem
 	OnAction       func(string, *Event, *Window)
 	OnDismiss      func(*Window)
@@ -61,6 +61,7 @@ type commandPaletteView struct {
 // CommandPalette creates the palette view. Include in view tree;
 // hidden unless CommandPaletteShow was called.
 func CommandPalette(cfg CommandPaletteCfg) View {
+	requireID("CommandPalette", cfg.ID)
 	applyCommandPaletteDefaults(&cfg)
 	return &commandPaletteView{cfg: cfg}
 }

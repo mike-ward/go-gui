@@ -5,6 +5,7 @@ import "testing"
 func TestCommandPaletteHidden(t *testing.T) {
 	w := &Window{}
 	v := CommandPalette(CommandPaletteCfg{
+		ID: "cp-hidden",
 		Items: []CommandPaletteItem{
 			{ID: "save", Label: "Save"},
 		},
@@ -22,6 +23,7 @@ func TestCommandPaletteVisible(t *testing.T) {
 	CommandPaletteShow("__cmd_palette__", 1, 0, w)
 
 	v := CommandPalette(CommandPaletteCfg{
+		ID: "__cmd_palette__",
 		Items: []CommandPaletteItem{
 			{ID: "save", Label: "Save", Detail: "Ctrl+S"},
 			{ID: "open", Label: "Open", Detail: "Ctrl+O"},

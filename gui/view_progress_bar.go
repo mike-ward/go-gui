@@ -8,7 +8,7 @@ import (
 
 // ProgressBarCfg configures a progress bar view.
 type ProgressBarCfg struct {
-	ID             string
+	ID             string `gui:"required"`
 	Text           string
 	TextStyle      TextStyle
 	Color          Color
@@ -37,6 +37,7 @@ type ProgressBarCfg struct {
 
 // ProgressBar creates a progress bar view.
 func ProgressBar(cfg ProgressBarCfg) View {
+	requireID("ProgressBar", cfg.ID)
 	if cfg.TextStyle == (TextStyle{}) {
 		cfg.TextStyle = guiTheme.ProgressBarStyle.TextStyle
 	}

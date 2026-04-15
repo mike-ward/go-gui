@@ -12,7 +12,7 @@ func TestFormEmptyIDPanics(t *testing.T) {
 			t.Fatal("expected panic for empty Form.ID")
 		}
 	}()
-	Form(FormCfg{
+	Form(FormCfg{ //requiredid:ignore
 		Content: []View{
 			Text(TextCfg{Text: "hello"}),
 		},

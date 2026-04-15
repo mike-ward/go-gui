@@ -22,7 +22,7 @@ type ListBoxOption struct {
 
 // ListBoxCfg configures a list box view.
 type ListBoxCfg struct {
-	ID              string
+	ID              string `gui:"required"`
 	Sizing          Sizing
 	TextStyle       TextStyle
 	SubheadingStyle TextStyle
@@ -67,6 +67,7 @@ func NewListBoxSubheading(id, title string) ListBoxOption {
 
 // ListBox creates a list box view.
 func ListBox(cfg ListBoxCfg) View {
+	requireID("ListBox", cfg.ID)
 	applyListBoxDefaults(&cfg)
 	if listBoxCanVirtualize(&cfg) ||
 		(cfg.Reorderable && cfg.OnReorder != nil) ||

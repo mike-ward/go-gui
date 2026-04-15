@@ -279,6 +279,7 @@ func makeWidget(typ string, i int) gui.View {
 			})
 		default:
 			return gui.ProgressBar(gui.ProgressBarCfg{
+				ID:       fmt.Sprintf("bench-pb-%d", i),
 				Percent:  float32(i%100) / 100.0,
 				Width:    80,
 				Height:   20,

@@ -547,7 +547,7 @@ func markdownBuildContent(
 		case block.IsCode:
 			content = append(content, mdRenderCodeBlock(block, cfg, w, i))
 		case block.IsTable:
-			if v := mdRenderTable(block, cfg, w); v != nil {
+			if v := mdRenderTable(block, cfg, w, i); v != nil {
 				content = append(content, v)
 			}
 		case block.IsHR:
@@ -619,7 +619,7 @@ func mdRenderCodeBlock(
 }
 
 func mdRenderTable(
-	block MarkdownBlock, cfg MarkdownCfg, w *Window,
+	block MarkdownBlock, cfg MarkdownCfg, w *Window, idx int,
 ) View {
 	if block.TableData == nil {
 		return nil
@@ -630,6 +630,7 @@ func mdRenderTable(
 		Clip:    true,
 		Content: []View{
 			w.Table(TableCfg{
+				ID:               cfg.ID + ".table." + strconv.Itoa(idx),
 				BorderStyle:      cfg.Style.TableBorderStyle,
 				ColorBorder:      cfg.Style.TableBorderColor,
 				SizeBorder:       cfg.Style.TableBorderSize,

@@ -15,7 +15,7 @@ type colorPickerState struct {
 
 // ColorPickerCfg configures a color picker view.
 type ColorPickerCfg struct {
-	ID            string
+	ID            string `gui:"required"`
 	Color         Color
 	OnColorChange func(Color, *Event, *Window)
 	Style         ColorPickerStyle
@@ -36,6 +36,7 @@ type colorPickerView struct {
 // ColorPicker creates a color picker view with SV area, hue slider,
 // alpha slider, hex input, and RGBA/HSV channel inputs.
 func ColorPicker(cfg ColorPickerCfg) View {
+	requireID("ColorPicker", cfg.ID)
 	applyColorPickerDefaults(&cfg)
 	return &colorPickerView{cfg: cfg}
 }

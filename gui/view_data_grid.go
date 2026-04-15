@@ -176,7 +176,7 @@ type dataGridPresentation struct {
 
 // DataGridCfg configures a data grid widget.
 type DataGridCfg struct {
-	ID                     string
+	ID                     string `gui:"required"`
 	IDFocus                uint32
 	IDScroll               uint32
 	Columns                []GridColumnCfg
@@ -443,6 +443,7 @@ type dataGridCtx struct {
 
 // DataGrid renders a controlled, virtualized data grid view.
 func (w *Window) DataGrid(cfg DataGridCfg) View {
+	requireID("DataGrid", cfg.ID)
 	applyDataGridDefaults(&cfg)
 
 	// Resolve data source and apply pending jump/selection.

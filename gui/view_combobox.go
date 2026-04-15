@@ -25,7 +25,7 @@ type comboboxViewKey struct {
 
 // ComboboxCfg configures a combobox view with typeahead filtering.
 type ComboboxCfg struct {
-	ID                string
+	ID                string `gui:"required"`
 	Value             string
 	Placeholder       string
 	Options           []string
@@ -61,6 +61,7 @@ type comboboxView struct {
 
 // Combobox creates a combobox view.
 func Combobox(cfg ComboboxCfg) View {
+	requireID("Combobox", cfg.ID)
 	applyComboboxDefaults(&cfg)
 	return &comboboxView{cfg: cfg}
 }

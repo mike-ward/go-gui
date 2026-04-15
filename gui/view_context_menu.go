@@ -9,7 +9,7 @@ type contextMenuState struct {
 
 // ContextMenuCfg configures a ContextMenu widget.
 type ContextMenuCfg struct {
-	ID      string
+	ID      string `gui:"required"`
 	Items   []MenuItemCfg
 	Action  func(string, *Event, *Window)
 	IDFocus uint32
@@ -48,6 +48,7 @@ type ContextMenuCfg struct {
 // ContextMenu creates a container that opens a floating menu
 // on right-click at the cursor position.
 func ContextMenu(w *Window, cfg ContextMenuCfg) View {
+	requireID("ContextMenu", cfg.ID)
 	if cfg.IDFocus == 0 {
 		cfg.IDFocus = fnvSum32("context_menu_" + cfg.ID)
 	}

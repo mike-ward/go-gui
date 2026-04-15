@@ -60,7 +60,7 @@ type datePickerState struct {
 
 // DatePickerCfg configures a date picker calendar view.
 type DatePickerCfg struct {
-	ID                   string
+	ID                   string `gui:"required"`
 	A11YLabel            string
 	A11YDescription      string
 	Dates                []time.Time
@@ -98,6 +98,7 @@ type datePickerView struct {
 
 // DatePicker creates a calendar date picker view.
 func DatePicker(cfg DatePickerCfg) View {
+	requireID("DatePicker", cfg.ID)
 	applyDatePickerDefaults(&cfg)
 	return &datePickerView{cfg: cfg}
 }
