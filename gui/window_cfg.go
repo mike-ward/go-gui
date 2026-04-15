@@ -39,6 +39,18 @@ type WindowCfg struct {
 	BgColor        Color
 	// Timings enables per-frame pipeline timing instrumentation.
 	Timings bool
+	// DebugTimeTravel enables time-travel snapshot capture and
+	// auto-spawns a scrubber window alongside the app window.
+	// Requires multi-window mode (App + App.OpenWindow) and a
+	// user state that implements the Snapshotter interface.
+	// Leave off in release builds — the nil-history hot path
+	// short-circuits with zero cost when disabled.
+	DebugTimeTravel bool
+	// HistoryBytes caps time-travel snapshot memory. Evicts
+	// oldest entries when exceeded. Zero or negative selects
+	// a default (64 MiB). Only consulted when DebugTimeTravel
+	// is true.
+	HistoryBytes int
 }
 
 // NewWindow creates a Window from the given configuration.
@@ -60,6 +72,9 @@ func NewWindow(cfg WindowCfg) *Window {
 			animationDone:     make(chan struct{}),
 			animationResumeCh: make(chan struct{}, 1),
 		},
+	}
+	if cfg.DebugTimeTravel {
+		w.EnableHistory(cfg.HistoryBytes)
 	}
 	return w
 }

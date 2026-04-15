@@ -54,6 +54,13 @@ func (a *App) Register(id uint32, w *Window) {
 	if len(a.order) == 1 {
 		a.mainID = id
 	}
+	if w.Config.DebugTimeTravel {
+		// Auto-spawn the scrubber for the newly registered
+		// window. OpenDebugWindow→App.OpenWindow is a
+		// non-blocking channel send on a.pending, which is
+		// independent of a.mu, so it's safe to call here.
+		w.OpenDebugWindow()
+	}
 }
 
 // Unregister removes a window. Returns true if the app should

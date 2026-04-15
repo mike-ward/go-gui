@@ -301,6 +301,78 @@ func TestOpenDebugWindowQueuesCfg(t *testing.T) {
 	}
 }
 
+// TestDebugTimeTravelCfgEnablesHistory auto-enables history
+// when NewWindow sees DebugTimeTravel in the cfg.
+func TestDebugTimeTravelCfgEnablesHistory(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State:           &testState{},
+		DebugTimeTravel: true,
+		HistoryBytes:    4096,
+	})
+	if w.history == nil {
+		t.Fatal("history not enabled")
+	}
+	if w.history.maxBytes != 4096 {
+		t.Fatalf("maxBytes = %d, want 4096", w.history.maxBytes)
+	}
+}
+
+// TestDebugTimeTravelCfgDefaultCap applies the default cap
+// when HistoryBytes is zero.
+func TestDebugTimeTravelCfgDefaultCap(t *testing.T) {
+	w := NewWindow(WindowCfg{
+		State:           &testState{},
+		DebugTimeTravel: true,
+	})
+	if w.history == nil || w.history.maxBytes != defaultHistoryBytes {
+		t.Fatalf("default cap not applied: %+v", w.history)
+	}
+}
+
+// TestDebugTimeTravelCfgDisabled leaves history nil when the
+// flag is false.
+func TestDebugTimeTravelCfgDisabled(t *testing.T) {
+	w := NewWindow(WindowCfg{State: &testState{}})
+	if w.history != nil {
+		t.Fatal("history should stay nil without DebugTimeTravel")
+	}
+}
+
+// TestAppRegisterSpawnsDebugWindow confirms Register enqueues a
+// scrubber cfg for windows that opted into DebugTimeTravel.
+func TestAppRegisterSpawnsDebugWindow(t *testing.T) {
+	app := NewApp()
+	w := NewWindow(WindowCfg{
+		State:           &testState{},
+		DebugTimeTravel: true,
+	})
+	app.Register(1, w)
+
+	select {
+	case cfg := <-app.PendingOpen():
+		if _, ok := cfg.State.(*TimeTravelController); !ok {
+			t.Fatalf("queued cfg State = %T, want *TimeTravelController",
+				cfg.State)
+		}
+	default:
+		t.Fatal("no scrubber cfg queued after Register")
+	}
+}
+
+// TestAppRegisterNoSpawnWhenDisabled confirms Register does not
+// queue anything when DebugTimeTravel is false.
+func TestAppRegisterNoSpawnWhenDisabled(t *testing.T) {
+	app := NewApp()
+	w := NewWindow(WindowCfg{State: &testState{}})
+	app.Register(1, w)
+
+	select {
+	case cfg := <-app.PendingOpen():
+		t.Fatalf("unexpected cfg queued: %+v", cfg.Title)
+	default:
+	}
+}
+
 // TestControllerView returns a non-nil view for empty and
 // populated rings.
 func TestControllerView(t *testing.T) {
