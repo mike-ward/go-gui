@@ -156,6 +156,11 @@ type Window struct {
 	// Frame counter — incremented each FrameFn call, stamped
 	// on events for frame-based timing (double-click detection).
 	frameCount uint64
+
+	// Virtual clock — nil means live (time.Now). Non-nil means
+	// Now() returns the stored instant. Set by time-travel scrub
+	// so views that read w.Now() render with a past timestamp.
+	virtualNow atomic.Pointer[time.Time]
 }
 
 // MouseLockCfg stores callbacks for mouse event handling in a
@@ -546,6 +551,31 @@ func (w *Window) PlatformID() uint32 { return w.platformID }
 // Close requests the window be closed on the next frame.
 // Safe to call from any goroutine.
 func (w *Window) Close() { w.closeReq.Store(true) }
+
+// Now returns the window's current time. When live, this is
+// time.Now(). When time-travel scrub has pinned a virtual
+// instant, Now returns that instant so views relying on
+// clock-driven rendering (elapsed counters, "N seconds ago"
+// labels) match the scrubbed snapshot. Views that need the
+// scrubbed clock should call w.Now() instead of time.Now().
+// Safe to call from any goroutine.
+func (w *Window) Now() time.Time {
+	if w == nil {
+		return time.Now()
+	}
+	if t := w.virtualNow.Load(); t != nil {
+		return *t
+	}
+	return time.Now()
+}
+
+// setVirtualNow pins the window's virtual clock to t. Passing
+// nil clears the pin and restores live time.Now(). Intended
+// for time-travel scrub internals; not part of the public API.
+// Safe to call from any goroutine.
+func (w *Window) setVirtualNow(t *time.Time) {
+	w.virtualNow.Store(t)
+}
 
 // CloseRequested returns true if Close() was called.
 func (w *Window) CloseRequested() bool { return w.closeReq.Load() }
