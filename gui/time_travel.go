@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"log"
 	"sync"
 	"time"
 )
@@ -212,6 +213,84 @@ func eventCause(e *Event) string {
 		return "touch-cancel"
 	}
 	return "event"
+}
+
+// EnableHistory turns on time-travel snapshot capture with a
+// byte cap. A non-positive cap selects defaultHistoryBytes.
+// Idempotent — a second call with a different cap updates the
+// cap but keeps existing entries. Requires the window's user
+// state to implement Snapshotter; otherwise no snapshots are
+// ever pushed (but calling the method is still safe).
+// Must be called on the main thread (no locking needed because
+// history is read/written only from the frame/event path).
+func (w *Window) EnableHistory(maxBytes int) {
+	if w == nil {
+		return
+	}
+	if maxBytes <= 0 {
+		maxBytes = defaultHistoryBytes
+	}
+	if w.history == nil {
+		w.history = newSnapshotRing(maxBytes)
+		return
+	}
+	w.history.mu.Lock()
+	w.history.maxBytes = maxBytes
+	w.history.evictLocked()
+	w.history.mu.Unlock()
+}
+
+// HistoryLen returns the number of snapshots currently held.
+// Zero when history is disabled. Safe to call from any goroutine.
+func (w *Window) HistoryLen() int {
+	if w == nil || w.history == nil {
+		return 0
+	}
+	return w.history.len()
+}
+
+// OpenDebugWindow queues a secondary Window that hosts the
+// time-travel scrubber for this window. Requires the window
+// to be part of an App (multi-window mode) and to have
+// history enabled; otherwise it logs and returns. Non-blocking:
+// the actual window is created on the next App event loop tick.
+// Safe to call from any goroutine.
+func (w *Window) OpenDebugWindow() {
+	if w == nil {
+		return
+	}
+	app := w.App()
+	if app == nil {
+		log.Println("gui: OpenDebugWindow: no App (single-window mode)")
+		return
+	}
+	if w.history == nil {
+		w.EnableHistory(0)
+	}
+	ctrl := &TimeTravelController{App: w}
+	if n := w.history.len(); n > 0 {
+		ctrl.Cursor = n - 1
+	}
+	title := "Time Travel"
+	if w.Config.Title != "" {
+		title = "Time Travel — " + w.Config.Title
+	}
+	app.OpenWindow(WindowCfg{
+		State:  ctrl,
+		Title:  title,
+		Width:  480,
+		Height: 180,
+		OnInit: func(dw *Window) {
+			dw.UpdateView(debugWindowView)
+		},
+	})
+}
+
+// debugWindowView is the view generator installed on the
+// debug window. Reads the TimeTravelController from its state
+// slot and delegates to ctrl.View.
+func debugWindowView(dw *Window) View {
+	return State[TimeTravelController](dw).View()
 }
 
 // Freeze enters time-travel scrub mode. Subsequent user input

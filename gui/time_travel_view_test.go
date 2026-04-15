@@ -174,6 +174,133 @@ func TestControllerCauseLabel(t *testing.T) {
 	}
 }
 
+// TestControllerHandleKey maps arrow/home/end/space/esc to
+// the expected controller actions.
+func TestControllerHandleKey(t *testing.T) {
+	w, s := newFixtureApp(t, 4)
+	c := &TimeTravelController{App: w, Cursor: 2}
+
+	fire := func(k KeyCode) *Event {
+		e := &Event{Type: EventKeyDown, KeyCode: k}
+		c.handleKey(nil, e, nil)
+		w.flushCommands()
+		return e
+	}
+
+	e := fire(KeyLeft)
+	if c.Cursor != 1 || s.counter != 2 || !e.IsHandled {
+		t.Fatalf("KeyLeft: cursor=%d counter=%d handled=%v",
+			c.Cursor, s.counter, e.IsHandled)
+	}
+	fire(KeyRight)
+	if c.Cursor != 2 {
+		t.Fatalf("KeyRight: cursor=%d, want 2", c.Cursor)
+	}
+	fire(KeyHome)
+	if c.Cursor != 0 {
+		t.Fatalf("KeyHome: cursor=%d, want 0", c.Cursor)
+	}
+	fire(KeyEnd)
+	if c.Cursor != 3 {
+		t.Fatalf("KeyEnd: cursor=%d, want 3", c.Cursor)
+	}
+	// Prior jumps auto-froze; KeyEscape resumes.
+	fire(KeyEscape)
+	if w.IsFrozen() {
+		t.Fatal("KeyEscape should resume")
+	}
+	fire(KeySpace)
+	if !w.IsFrozen() {
+		t.Fatal("KeySpace from live should freeze")
+	}
+	fire(KeySpace)
+	if w.IsFrozen() {
+		t.Fatal("second KeySpace should resume")
+	}
+
+	// Unmapped keys pass through unhandled.
+	e = &Event{Type: EventKeyDown, KeyCode: KeyF12}
+	c.handleKey(nil, e, nil)
+	if e.IsHandled {
+		t.Fatal("unmapped key should not be marked handled")
+	}
+}
+
+// TestEnableHistory initializes the ring with the given cap
+// and is idempotent for subsequent calls.
+func TestEnableHistory(t *testing.T) {
+	w := &Window{state: &testState{}}
+	w.EnableHistory(0)
+	if w.history == nil || w.history.maxBytes != defaultHistoryBytes {
+		t.Fatalf("default cap not applied: %+v", w.history)
+	}
+	w.EnableHistory(2048)
+	if w.history.maxBytes != 2048 {
+		t.Fatalf("cap update: %d, want 2048", w.history.maxBytes)
+	}
+}
+
+// TestHistoryLen reports ring length safely when disabled.
+func TestHistoryLen(t *testing.T) {
+	var w *Window
+	if got := w.HistoryLen(); got != 0 {
+		t.Fatalf("nil HistoryLen = %d", got)
+	}
+	w = &Window{}
+	if got := w.HistoryLen(); got != 0 {
+		t.Fatalf("disabled HistoryLen = %d", got)
+	}
+	w.EnableHistory(0)
+	w.history.push((&testState{}).Snapshot(), time.Now(), "e")
+	if got := w.HistoryLen(); got != 1 {
+		t.Fatalf("HistoryLen = %d, want 1", got)
+	}
+}
+
+// TestOpenDebugWindowNoApp is a no-op without an App.
+func TestOpenDebugWindowNoApp(t *testing.T) {
+	w := &Window{state: &testState{}}
+	w.EnableHistory(0)
+	w.OpenDebugWindow() // must not panic
+}
+
+// TestOpenDebugWindowQueuesCfg verifies a WindowCfg is queued
+// on the App with the controller as its State.
+func TestOpenDebugWindowQueuesCfg(t *testing.T) {
+	app := NewApp()
+	s := &testState{counter: 1}
+	w := &Window{state: s}
+	w.app = app
+	w.platformID = 1
+	w.Config.Title = "MyApp"
+	w.EnableHistory(0)
+	w.history.push(s.Snapshot(), time.Now(), "init")
+
+	w.OpenDebugWindow()
+
+	select {
+	case cfg := <-app.PendingOpen():
+		if cfg.Title != "Time Travel — MyApp" {
+			t.Fatalf("title = %q", cfg.Title)
+		}
+		ctrl, ok := cfg.State.(*TimeTravelController)
+		if !ok {
+			t.Fatalf("State type = %T", cfg.State)
+		}
+		if ctrl.App != w {
+			t.Fatal("controller.App not wired to parent")
+		}
+		if ctrl.Cursor != 0 {
+			t.Fatalf("Cursor = %d, want 0 (len-1 of 1 entry)", ctrl.Cursor)
+		}
+		if cfg.OnInit == nil {
+			t.Fatal("OnInit unset")
+		}
+	default:
+		t.Fatal("no WindowCfg queued")
+	}
+}
+
 // TestControllerView returns a non-nil view for empty and
 // populated rings.
 func TestControllerView(t *testing.T) {

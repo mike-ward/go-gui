@@ -154,6 +154,8 @@ func (c *TimeTravelController) View() View {
 	}
 
 	return Column(ContainerCfg{
+		IDFocus:   ttDebugFocusID,
+		OnKeyDown: c.handleKey,
 		Content: []View{
 			Text(TextCfg{Text: counter}),
 			Text(TextCfg{Text: cause}),
@@ -177,6 +179,36 @@ func (c *TimeTravelController) View() View {
 			}),
 		},
 	})
+}
+
+// ttDebugFocusID is the IDFocus for the debug window's root
+// container. Fixed because there's only one focusable widget
+// in the scrubber UI.
+const ttDebugFocusID uint32 = 1
+
+// handleKey maps scrubber keyboard shortcuts to controller
+// actions. Called from the root container's OnKeyDown.
+func (c *TimeTravelController) handleKey(_ *Layout, e *Event, _ *Window) {
+	if c == nil || e == nil {
+		return
+	}
+	switch e.KeyCode {
+	case KeyLeft:
+		c.StepBack()
+	case KeyRight:
+		c.StepForward()
+	case KeyHome:
+		c.First()
+	case KeyEnd:
+		c.Last()
+	case KeySpace:
+		c.ToggleFreeze()
+	case KeyEscape:
+		c.ResumeLive()
+	default:
+		return
+	}
+	e.IsHandled = true
 }
 
 // ttButton builds a labelled scrubber button whose click
