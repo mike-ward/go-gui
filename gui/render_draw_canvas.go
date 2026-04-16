@@ -43,13 +43,15 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			TessHeight: ch,
 			Batches:    dc.batches,
 			Texts:      dc.texts,
+			Images:     dc.images,
 		}
 		if shape.ID != "" {
 			sm.Set(shape.ID, cached)
 		}
 	}
 
-	if len(cached.Batches) == 0 && len(cached.Texts) == 0 {
+	if len(cached.Batches) == 0 && len(cached.Texts) == 0 &&
+		len(cached.Images) == 0 {
 		return
 	}
 
@@ -118,8 +120,47 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 		}
 	}
 
+	emitDrawCanvasImages(cached.Images, ox, oy, w)
+
 	// Restore parent clip.
 	if shape.Clip {
 		emitClipCmd(clip, w)
+	}
+}
+
+// emitDrawCanvasImages emits RenderImage cmds for cached entries.
+// Skips any entry with non-finite coords/size or empty src; clamps
+// opacity into [0, 1]. Defense in depth: callers via DrawContext.Image
+// already reject bad inputs, but the cache field is public.
+func emitDrawCanvasImages(
+	images []DrawCanvasImageEntry, ox, oy float32, w *Window,
+) {
+	for i := range images {
+		im := &images[i]
+		if !isFiniteF(im.X) || !isFiniteF(im.Y) ||
+			!isFiniteF(im.W) || !isFiniteF(im.H) ||
+			im.W <= 0 || im.H <= 0 || im.Src == "" {
+			continue
+		}
+		bg := ColorTransparent
+		if im.BgColor.IsSet() {
+			bg = im.BgColor
+			op := im.BgOpacity.Get(1.0)
+			if !isFiniteF(op) {
+				op = 1.0
+			}
+			if op = clampUnit(op); op < 1.0 {
+				bg = bg.WithOpacity(op)
+			}
+		}
+		emitRenderer(RenderCmd{
+			Kind:     RenderImage,
+			X:        ox + im.X,
+			Y:        oy + im.Y,
+			W:        im.W,
+			H:        im.H,
+			Color:    bg,
+			Resource: im.Src,
+		}, w)
 	}
 }

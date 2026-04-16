@@ -17,6 +17,7 @@ type DrawCanvasCfg struct {
 	Clip            bool
 	Color           Color
 	Radius          float32
+	IDFocus         uint32
 	OnDraw          func(*DrawContext)
 	OnClick         func(*Layout, *Event, *Window)
 	OnHover         func(*Layout, *Event, *Window)
@@ -26,6 +27,7 @@ type DrawCanvasCfg struct {
 	OnGesture       func(*Layout, *Event, *Window)
 	OnMouseScroll   func(*Layout, *Event, *Window)
 	OnFileDrop      func(*Layout, *Event, *Window)
+	OnKeyDown       func(*Layout, *Event, *Window)
 }
 
 // drawCanvasView implements View for user-drawn canvas content.
@@ -52,7 +54,8 @@ func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 	var events *EventHandlers
 	if c.OnClick != nil || c.OnHover != nil || c.OnMouseMove != nil ||
 		c.OnMouseUp != nil || c.OnMouseLeave != nil || c.OnGesture != nil ||
-		c.OnMouseScroll != nil || c.OnFileDrop != nil || c.OnDraw != nil {
+		c.OnMouseScroll != nil || c.OnFileDrop != nil ||
+		c.OnKeyDown != nil || c.OnDraw != nil {
 		events = &EventHandlers{
 			OnClick:       leftClickOnly(c.OnClick),
 			OnHover:       c.OnHover,
@@ -62,8 +65,16 @@ func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 			OnGesture:     c.OnGesture,
 			OnMouseScroll: c.OnMouseScroll,
 			OnFileDrop:    c.OnFileDrop,
+			OnKeyDown:     c.OnKeyDown,
 			OnDraw:        c.OnDraw,
 		}
+	}
+
+	// Focusable canvas advertises as a button to assistive tech
+	// so screen readers announce it as interactive.
+	a11yRole := AccessRoleImage
+	if c.IDFocus > 0 {
+		a11yRole = AccessRoleButton
 	}
 
 	layout := Layout{
@@ -71,7 +82,7 @@ func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 			ShapeType: ShapeDrawCanvas,
 			ID:        c.ID,
 			Version:   c.Version,
-			A11YRole:  AccessRoleImage,
+			A11YRole:  a11yRole,
 			A11Y:      makeA11YInfo(c.A11YLabel, c.A11YDescription),
 			Width:     c.Width,
 			Height:    c.Height,
@@ -84,6 +95,7 @@ func (dv *drawCanvasView) GenerateLayout(_ *Window) Layout {
 			Clip:      c.Clip,
 			Color:     c.Color,
 			Radius:    c.Radius,
+			IDFocus:   c.IDFocus,
 			Events:    events,
 		},
 	}

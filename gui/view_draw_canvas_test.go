@@ -196,6 +196,79 @@ func TestDrawCanvasOffScreenSkip(t *testing.T) {
 	}
 }
 
+func TestDrawCanvasFocusWiring(t *testing.T) {
+	w := &Window{}
+	called := false
+	v := DrawCanvas(DrawCanvasCfg{
+		ID:      "dc-focus",
+		Width:   50,
+		Height:  50,
+		IDFocus: 42,
+		OnKeyDown: func(_ *Layout, _ *Event, _ *Window) {
+			called = true
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+
+	if layout.Shape.IDFocus != 42 {
+		t.Errorf("Shape.IDFocus = %d, want 42", layout.Shape.IDFocus)
+	}
+	if layout.Shape.A11YRole != AccessRoleButton {
+		t.Errorf("A11YRole = %v, want AccessRoleButton when focusable",
+			layout.Shape.A11YRole)
+	}
+	if layout.Shape.Events == nil || layout.Shape.Events.OnKeyDown == nil {
+		t.Fatal("OnKeyDown not wired")
+	}
+	layout.Shape.Events.OnKeyDown(&layout, &Event{}, w)
+	if !called {
+		t.Error("OnKeyDown did not fire")
+	}
+}
+
+func TestDrawCanvasNonFocusableA11Role(t *testing.T) {
+	w := &Window{}
+	v := DrawCanvas(DrawCanvasCfg{
+		ID: "dc-nofocus", Width: 10, Height: 10,
+	})
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.A11YRole != AccessRoleImage {
+		t.Errorf("A11YRole = %v, want AccessRoleImage when IDFocus=0",
+			layout.Shape.A11YRole)
+	}
+	if layout.Shape.IDFocus != 0 {
+		t.Errorf("Shape.IDFocus = %d, want 0", layout.Shape.IDFocus)
+	}
+}
+
+func TestDrawCanvasFocusedReceivesKeydown(t *testing.T) {
+	w := &Window{}
+	var gotKey KeyCode
+	v := DrawCanvas(DrawCanvasCfg{
+		ID:      "dc-key",
+		Width:   50,
+		Height:  50,
+		IDFocus: 7,
+		OnKeyDown: func(_ *Layout, e *Event, _ *Window) {
+			gotKey = e.KeyCode
+			e.IsHandled = true
+		},
+	})
+	layout := GenerateViewLayout(v, w)
+	root := Layout{Shape: &Shape{}, Children: []Layout{layout}}
+
+	w.SetIDFocus(7)
+	e := &Event{KeyCode: KeyRight}
+	keydownHandler(&root, e, w)
+
+	if gotKey != KeyRight {
+		t.Errorf("KeyCode = %v, want KeyRight", gotKey)
+	}
+	if !e.IsHandled {
+		t.Error("event not marked handled")
+	}
+}
+
 func TestDrawCanvasEmptyIDNoCollision(t *testing.T) {
 	w := &Window{}
 	clip := DrawClip{Width: 200, Height: 200}

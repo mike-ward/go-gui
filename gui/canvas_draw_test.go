@@ -528,3 +528,155 @@ func TestDrawContextFontHeightNoMeasurer(t *testing.T) {
 		t.Errorf("FontHeight fallback = %v, want 14", h)
 	}
 }
+
+// --- Image ---
+
+func TestDrawContextImage(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.Image(5, 10, 32, 32, "assets/tile.png", Opt[float32]{}, Blue)
+	if len(dc.images) != 1 {
+		t.Fatalf("images = %d, want 1", len(dc.images))
+	}
+	im := dc.images[0]
+	if im.X != 5 || im.Y != 10 || im.W != 32 || im.H != 32 {
+		t.Errorf("rect = (%v,%v,%v,%v), want (5,10,32,32)",
+			im.X, im.Y, im.W, im.H)
+	}
+	if im.Src != "assets/tile.png" {
+		t.Errorf("src = %q, want %q", im.Src, "assets/tile.png")
+	}
+	if im.BgColor != Blue {
+		t.Errorf("bg = %v, want Blue", im.BgColor)
+	}
+}
+
+func TestDrawContextImageDegenerate(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.Image(0, 0, 0, 10, "a.png", Opt[float32]{}, Color{})
+	dc.Image(0, 0, 10, 0, "a.png", Opt[float32]{}, Color{})
+	dc.Image(0, 0, 10, 10, "", Opt[float32]{}, Color{})
+	if len(dc.images) != 0 {
+		t.Errorf("degenerate inputs: images = %d, want 0", len(dc.images))
+	}
+}
+
+func TestDrawContextImagesAccessor(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	dc.Image(0, 0, 10, 10, "a.png", SomeF(0.5), Color{})
+	dc.Image(20, 0, 10, 10, "b.png", Opt[float32]{}, Color{})
+	got := dc.Images()
+	if len(got) != 2 {
+		t.Fatalf("Images() = %d, want 2", len(got))
+	}
+	if op := got[0].BgOpacity.Get(1.0); op != 0.5 {
+		t.Errorf("first BgOpacity = %v, want 0.5", op)
+	}
+}
+
+func TestDrawContextImageRejectsNonFinite(t *testing.T) {
+	nan := float32(math.NaN())
+	inf := float32(math.Inf(1))
+	ninf := float32(math.Inf(-1))
+	cases := []struct {
+		name       string
+		x, y, w, h float32
+	}{
+		{"nan x", nan, 0, 10, 10},
+		{"nan y", 0, nan, 10, 10},
+		{"nan w", 0, 0, nan, 10},
+		{"nan h", 0, 0, 10, nan},
+		{"+inf x", inf, 0, 10, 10},
+		{"+inf y", 0, inf, 10, 10},
+		{"-inf x", ninf, 0, 10, 10},
+		{"+inf w", 0, 0, inf, 10},
+		{"+inf h", 0, 0, 10, inf},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dc := DrawContext{Width: 100, Height: 100}
+			dc.Image(tc.x, tc.y, tc.w, tc.h, "a.png",
+				Opt[float32]{}, Color{})
+			if len(dc.images) != 0 {
+				t.Errorf("%s: images = %d, want 0 (rejected)",
+					tc.name, len(dc.images))
+			}
+		})
+	}
+}
+
+// nopRecorder satisfies DrawRecorder with empty methods; compose
+// into test recorders that only care about specific primitives.
+type nopRecorder struct{}
+
+func (nopRecorder) Line(_, _, _, _ float32, _ Color, _ float32)      {}
+func (nopRecorder) Polyline(_ []float32, _ Color, _ float32)         {}
+func (nopRecorder) FilledRect(_, _, _, _ float32, _ Color)           {}
+func (nopRecorder) Rect(_, _, _, _ float32, _ Color, _ float32)      {}
+func (nopRecorder) FilledCircle(_, _, _ float32, _ Color)            {}
+func (nopRecorder) Circle(_, _, _ float32, _ Color, _ float32)       {}
+func (nopRecorder) FilledArc(_, _, _, _, _, _ float32, _ Color)      {}
+func (nopRecorder) Arc(_, _, _, _, _, _ float32, _ Color, _ float32) {}
+func (nopRecorder) FilledPolygon(_ []float32, _ Color)               {}
+func (nopRecorder) FilledRoundedRect(_, _, _, _, _ float32, _ Color) {}
+func (nopRecorder) RoundedRect(_, _, _, _, _ float32, _ Color, _ float32) {
+}
+func (nopRecorder) DashedLine(_, _, _, _ float32, _ Color, _, _, _ float32) {
+}
+func (nopRecorder) DashedPolyline(_ []float32, _ Color, _, _, _ float32) {}
+func (nopRecorder) PolylineJoined(_ []float32, _ Color, _ float32)       {}
+func (nopRecorder) QuadBezier(_, _, _, _, _, _ float32, _ Color, _ float32) {
+}
+func (nopRecorder) CubicBezier(
+	_, _, _, _, _, _, _, _ float32, _ Color, _ float32,
+) {
+}
+func (nopRecorder) Text(_, _ float32, _ string, _ TextStyle) {}
+
+// imageRecorderStub captures the last Image call for assertion.
+type imageRecorderStub struct {
+	nopRecorder
+	called    bool
+	x, y      float32
+	w, h      float32
+	src       string
+	bgOpacity Opt[float32]
+	bg        Color
+}
+
+func (r *imageRecorderStub) Image(
+	x, y, w, h float32, src string,
+	bgOpacity Opt[float32], bgColor Color,
+) {
+	r.called = true
+	r.x, r.y, r.w, r.h = x, y, w, h
+	r.src = src
+	r.bgOpacity = bgOpacity
+	r.bg = bgColor
+}
+
+func TestDrawContextImageForwardsToRecorder(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	rec := &imageRecorderStub{}
+	dc.SetRecorder(rec)
+
+	dc.Image(3, 4, 16, 32, "tile.png", SomeF(0.75), Blue)
+
+	if !rec.called {
+		t.Fatal("recorder.Image not invoked")
+	}
+	if rec.x != 3 || rec.y != 4 || rec.w != 16 || rec.h != 32 {
+		t.Errorf("rect = (%v,%v,%v,%v), want (3,4,16,32)",
+			rec.x, rec.y, rec.w, rec.h)
+	}
+	if rec.src != "tile.png" || rec.bg != Blue {
+		t.Errorf("src=%q bg=%v", rec.src, rec.bg)
+	}
+	if op := rec.bgOpacity.Get(-1); op != 0.75 {
+		t.Errorf("bgOpacity = %v, want 0.75", op)
+	}
+	// Must NOT also append to the batch cache when recorder present.
+	if len(dc.images) != 0 {
+		t.Errorf("images = %d, want 0 (recorder owns it)",
+			len(dc.images))
+	}
+}

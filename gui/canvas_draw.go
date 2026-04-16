@@ -10,6 +10,7 @@ type DrawCanvasCache struct {
 	TessHeight float32
 	Batches    []DrawCanvasTriBatch
 	Texts      []DrawCanvasTextEntry
+	Images     []DrawCanvasImageEntry
 }
 
 // DrawCanvasTextEntry stores a deferred text drawing command.
@@ -23,6 +24,19 @@ type DrawCanvasTextEntry struct {
 type DrawCanvasTriBatch struct {
 	Triangles []float32
 	Color     Color
+}
+
+// DrawCanvasImageEntry stores a deferred image drawing command.
+// Src matches the forms accepted by ImageCfg.Src: local path,
+// http/https URL, or data URL.
+//
+// BgOpacity modulates BgColor's alpha; it has no effect when
+// BgColor is unset.
+type DrawCanvasImageEntry struct {
+	X, Y, W, H float32
+	Src        string
+	BgOpacity  Opt[float32]
+	BgColor    Color
 }
 
 // DrawRecorder receives high-level draw commands before
@@ -60,6 +74,7 @@ type DrawContext struct {
 	currentBatchIdx int
 	batches         []DrawCanvasTriBatch
 	texts           []DrawCanvasTextEntry
+	images          []DrawCanvasImageEntry
 	arcBuf          []float32
 	bezierBuf       []float32
 	textMeasure     TextMeasurer
@@ -760,10 +775,53 @@ func (dc *DrawContext) FontHeight(style TextStyle) float32 {
 	return dc.textMeasure.FontHeight(style)
 }
 
+// Image draws an image at the given rectangle. Src accepts the
+// same forms as ImageCfg.Src (local path, http/https URL, data URL).
+// BgOpacity modulates the BgColor alpha; it does not fade the image
+// texture itself. BgColor paints behind the image (useful for PNGs
+// with transparency); zero value is transparent.
+func (dc *DrawContext) Image(
+	x, y, w, h float32, src string,
+	bgOpacity Opt[float32], bgColor Color,
+) {
+	if w <= 0 || h <= 0 || src == "" {
+		return
+	}
+	if !isFiniteF(x) || !isFiniteF(y) ||
+		!isFiniteF(w) || !isFiniteF(h) {
+		return
+	}
+	if dc.recorder != nil {
+		if ir, ok := dc.recorder.(interface {
+			Image(x, y, w, h float32, src string,
+				bgOpacity Opt[float32], bgColor Color)
+		}); ok {
+			ir.Image(x, y, w, h, src, bgOpacity, bgColor)
+			return
+		}
+	}
+	dc.images = append(dc.images, DrawCanvasImageEntry{
+		X: x, Y: y, W: w, H: h,
+		Src: src, BgOpacity: bgOpacity, BgColor: bgColor,
+	})
+}
+
+// isFiniteF reports whether v is a finite float32 (not NaN or Inf).
+func isFiniteF(v float32) bool {
+	f := float64(v)
+	return !math.IsNaN(f) && !math.IsInf(f, 0)
+}
+
 // Texts returns accumulated text entries. Useful for testing
 // DrawCanvas output.
 func (dc *DrawContext) Texts() []DrawCanvasTextEntry {
 	return dc.texts
+}
+
+// Images returns accumulated image entries. Useful for testing
+// DrawCanvas output.
+func (dc *DrawContext) Images() []DrawCanvasImageEntry {
+	return dc.images
 }
 
 // Batches returns accumulated triangle batches. Useful for

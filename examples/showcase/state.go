@@ -151,6 +151,10 @@ type ShowcaseApp struct {
 	GesturePadRotation float32
 	GesturePadLabel    string
 	GesturePadVersion  uint64
+
+	DrawCanvasMarkerX float32
+	DrawCanvasMarkerY float32
+	DrawCanvasVersion uint64
 }
 
 // GestureMarker records a tap or long-press position.
@@ -199,8 +203,11 @@ func newShowcaseApp() *ShowcaseApp {
 		DataSourceSelection: gui.GridSelection{
 			SelectedRowIDs: map[string]bool{},
 		},
-		GesturePadScale: 1,
-		TreeLazyNodes:   make(map[string][]gui.TreeNodeCfg),
+		GesturePadScale:   1,
+		DrawCanvasMarkerX: 240,
+		DrawCanvasMarkerY: 140,
+		DrawCanvasVersion: 1,
+		TreeLazyNodes:     make(map[string][]gui.TreeNodeCfg),
 		DragListItems: []gui.ListBoxOption{
 			gui.NewListBoxOption("apple", "Apple", ""),
 			gui.NewListBoxOption("banana", "Banana", ""),

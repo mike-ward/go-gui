@@ -5,7 +5,6 @@ Stuff I'm considering. No promises.
 | Feature                               | Notes                                                               |
 | ------------------------------------- | ------------------------------------------------------------------- |
 | ~~Multi-window~~                      | ✅ Implemented — App manages N windows with cross-window messaging  |
-| Charts                                | No bar/line/pie/scatter/area. DrawCanvas exists but no chart API    |
 | ~~System tray / menubar~~             | ✅ Implemented — native macOS menubar (NSMenu) + system tray        |
 | ~~Touch / gesture input~~             | ✅ Implemented — tap, double-tap, long-press, pan, swipe, pinch, rotate |
 | Embedded video/audio                  | No media playback widget                                            |
@@ -35,54 +34,5 @@ Separate package built on top of `gui`
 - [x] Gradient fills on shapes
 - [x] Animation stack (tween, spring, keyframe)
 - [x] Custom fragment shaders
-
-### Chart Types (P0)
-
-- [ ] Line chart (polyline, markers, multiple series)
-- [ ] Bar chart (vertical/horizontal, grouped, stacked)
-- [ ] Area chart (filled polyline, stacked)
-- [ ] Pie / donut chart (arc segments, labels, explode)
-- [ ] Scatter plot (point clouds, bubble variant)
-
-### Chart Types (P1)
-
-- [ ] Candlestick / OHLC (financial)
-- [ ] Gauge / radial progress
-- [ ] Heatmap (grid cells, color scale)
-- [ ] Radar / spider chart
-- [ ] Histogram (bin computation, density overlay)
-
-### Axes + Scales
-
-- [ ] Linear, logarithmic, time, and category scales
-- [ ] Auto tick generation with label collision avoidance
-- [ ] Axis title, grid lines, minor grid lines
-- [ ] Multi-axis support (dual Y)
-- [ ] Locale-aware number/date formatting on tick labels
-
-### Chart Interaction
-
-- [ ] Hover tooltip with nearest-point snapping
-- [ ] Crosshair / guideline on hover
-- [ ] Click-to-select data point / series
-- [ ] Zoom (scroll wheel + drag-to-zoom box)
-- [ ] Pan (mouse_lock drag)
-- [ ] Legend toggle (show/hide series)
-
-### Animation + Transitions
-
-- [ ] Animated data entry (bars grow, lines draw-on)
-- [ ] Smooth data update transitions (morph old → new)
-- [ ] Series add/remove animation
-
-### Data Model
-
-- [ ] Typed series: `[]f64`, `[]TimeValue`, `[]XY`
-- [ ] Lazy / streaming data provider interface
-- [ ] Auto domain/range from data with optional overrides
-
-### Theming + Style
-
-- [ ] Inherit `gui` theme colors (foreground, background, accent)
-- [ ] Configurable color palettes per chart
-- [ ] Consistent text styles with framework `TextStyle`
+- [x] Canvas image primitive (`DrawContext.Image` for tiles/sprites)
+- [x] Canvas keyboard focus (`DrawCanvasCfg.IDFocus` + `OnKeyDown`)

@@ -2646,9 +2646,11 @@ Use Chrome DevTools touch emulation or a touchscreen to test.
 `,
 
 	"draw_canvas": `Procedural 2D drawing canvas with cached tessellation.
-Draw shapes, lines, text, and arcs via the ` + "`OnDraw`" + ` callback.
-Output is tessellated into triangles and cached by ` + "`Version`" + ` —
-only re-drawn when the version changes.
+Draw shapes, lines, text, images, and arcs via the
+` + "`OnDraw`" + ` callback. Output is tessellated into triangles
+and cached by ` + "`Version`" + ` — only re-drawn when the version
+changes. Optional ` + "`IDFocus`" + ` + ` + "`OnKeyDown`" + ` make the
+canvas keyboard-focusable.
 
 ## Usage
 
@@ -2705,33 +2707,91 @@ gui.DrawCanvas(gui.DrawCanvasCfg{
 | TextWidth  | (text string, style TextStyle) float32           | Measure text width in given style           |
 | FontHeight | (style TextStyle) float32                        | Line height for given style                 |
 
+### Images
+
+| Method | Signature                                                                           | Description                                         |
+|--------|-------------------------------------------------------------------------------------|-----------------------------------------------------|
+| Image  | (x, y, w, h float32, src string, bgOpacity Opt[float32], bgColor Color)             | Draw image inside the canvas; ` + "`src`" + ` matches ` + "`ImageCfg.Src`" + ` |
+
+` + "`src`" + ` accepts the same forms as ` + "`ImageCfg.Src`" + `:
+
+- Local filesystem path
+- ` + "`http://`" + ` / ` + "`https://`" + ` URL (cached on disk)
+- ` + "`data:`" + ` URL (base64 payload)
+
+` + "`bgOpacity`" + ` is an ` + "`Opt[float32]`" + ` in [0, 1]; zero value = 1.0.
+It modulates the background-color alpha only; it does not fade the
+image texture itself. ` + "`bgColor`" + ` paints behind the image
+(useful for PNGs with transparency); zero value = transparent.
+
+Example:
+
+` + "```go" + `
+dc.Image(0, 0, 64, 64,
+    "assets/tile.png",
+    gui.SomeF(0.85), gui.Black)
+` + "```" + `
+
+## Keyboard Focus
+
+Setting ` + "`IDFocus > 0`" + ` opts the canvas into tab order. The
+paired ` + "`OnKeyDown`" + ` callback fires when the canvas is focused
+and a key is pressed. Set ` + "`e.IsHandled = true`" + ` to stop
+propagation. Bump ` + "`Version`" + ` to redraw after state changes.
+
+` + "```go" + `
+gui.DrawCanvas(gui.DrawCanvasCfg{
+    ID:      "my-canvas",
+    IDFocus: focusMyCanvas,
+    Version: app.MyCanvasVersion,
+    Width:   480, Height: 280,
+    OnDraw: drawScene,
+    OnKeyDown: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+        a := gui.State[App](w)
+        switch e.KeyCode {
+        case gui.KeyLeft:
+            a.MarkerX -= 10
+        case gui.KeyRight:
+            a.MarkerX += 10
+        default:
+            return
+        }
+        a.MyCanvasVersion++
+        e.IsHandled = true
+    },
+})
+` + "```" + `
+
 ## Key Properties
 
-| Property  | Type              | Description                         |
-|-----------|-------------------|-------------------------------------|
-| ID        | string            | Cache key (required)                |
-| Version   | uint64            | Bump to invalidate cache            |
-| Width     | float32           | Canvas width                        |
-| Height    | float32           | Canvas height                       |
-| Color     | Color             | Background fill                     |
-| Radius    | float32           | Corner radius                       |
-| Padding   | Opt[Padding]      | Inner padding (shrinks draw area)   |
-| Clip      | bool              | Clip drawing to bounds              |
-| OnDraw    | func(*DrawContext) | Drawing callback                   |
+| Property  | Type                           | Description                            |
+|-----------|--------------------------------|----------------------------------------|
+| ID        | string                         | Cache key (required)                   |
+| Version   | uint64                         | Bump to invalidate cache               |
+| Width     | float32                        | Canvas width                           |
+| Height    | float32                        | Canvas height                          |
+| Color     | Color                          | Background fill                        |
+| Radius    | float32                        | Corner radius                          |
+| Padding   | Opt[Padding]                   | Inner padding (shrinks draw area)      |
+| Clip      | bool                           | Clip drawing to bounds                 |
+| IDFocus   | uint32                         | Focus / tab order (0 = not focusable)  |
+| OnDraw    | func(*DrawContext)             | Drawing callback                       |
 
 ## Events
 
-| Callback      | Signature                          | Fired when            |
-|---------------|------------------------------------|-----------------------|
-| OnClick       | func(*Layout, *Event, *Window)     | Canvas clicked        |
-| OnHover       | func(*Layout, *Event, *Window)     | Mouse enters canvas   |
-| OnMouseScroll | func(*Layout, *Event, *Window)     | Scroll wheel on canvas |
+| Callback      | Signature                          | Fired when                                 |
+|---------------|------------------------------------|--------------------------------------------|
+| OnClick       | func(*Layout, *Event, *Window)     | Canvas clicked                             |
+| OnHover       | func(*Layout, *Event, *Window)     | Mouse enters canvas                        |
+| OnMouseScroll | func(*Layout, *Event, *Window)     | Scroll wheel on canvas                     |
+| OnKeyDown     | func(*Layout, *Event, *Window)     | Key pressed while canvas is focused        |
 
 ## Caching
 
 Tessellation is cached per ` + "`ID`" + `. Bump ` + "`Version`" + ` when data
 changes to trigger a re-draw. Same version = same triangles,
-zero cost per frame.
+zero cost per frame. Images are cached alongside triangles, so
+bump ` + "`Version`" + ` to pick up a new ` + "`src`" + ` within the same widget ID.
 
 ## Accessibility
 
@@ -2739,6 +2799,11 @@ zero cost per frame.
 |-----------------|--------|--------------------------------------|
 | A11YLabel       | string | Accessible label                     |
 | A11YDescription | string | Accessible description               |
+
+Setting ` + "`IDFocus > 0`" + ` advertises the canvas as an interactive
+element (button role) to assistive tech; non-focusable canvases
+advertise as images. Provide a meaningful ` + "`A11YLabel`" + ` on
+interactive canvases.
 `,
 
 	"gradient": `Linear and radial gradients with configurable direction

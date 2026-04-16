@@ -1,6 +1,21 @@
 package main
 
-import "github.com/mike-ward/go-gui/gui"
+import (
+	"math"
+
+	"github.com/mike-ward/go-gui/gui"
+)
+
+// safeFloat returns v when finite; otherwise returns fallback.
+// Guards against NaN/Inf seeping into view state from corrupt
+// restores or arithmetic that produced invalid values.
+func safeFloat(v, fallback float32) float32 {
+	f := float64(v)
+	if math.IsNaN(f) || math.IsInf(f, 0) {
+		return fallback
+	}
+	return v
+}
 
 func line() gui.View {
 	t := gui.CurrentTheme()

@@ -1,6 +1,9 @@
 package gui
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestRenderDrawCanvasOutsideClipSkips(t *testing.T) {
 	w := makeWindowWithScratch()
@@ -141,6 +144,128 @@ func TestRenderDrawCanvasCachedSkipsOnDraw(t *testing.T) {
 	renderDrawCanvas(shape, clip, w)
 	if callCount != 1 {
 		t.Errorf("cached render: callCount = %d, want 1", callCount)
+	}
+}
+
+func TestRenderDrawCanvasEmitsImage(t *testing.T) {
+	w := makeWindowWithScratch()
+	shape := &Shape{
+		ShapeType: ShapeDrawCanvas,
+		X:         10, Y: 20,
+		Width: 100, Height: 100,
+		Color: ColorTransparent,
+		Padding: Padding{
+			Top: 5, Left: 5, Right: 5, Bottom: 5,
+		},
+		Events: &EventHandlers{
+			OnDraw: func(dc *DrawContext) {
+				dc.Image(3, 4, 16, 16, "tile.png",
+					SomeF(0.5), Blue)
+			},
+		},
+	}
+	clip := makeClip(0, 0, 200, 200)
+
+	renderDrawCanvas(shape, clip, w)
+
+	var img *RenderCmd
+	for i := range w.renderers {
+		if w.renderers[i].Kind == RenderImage {
+			img = &w.renderers[i]
+			break
+		}
+	}
+	if img == nil {
+		t.Fatal("no RenderImage emitted")
+	}
+	// Origin = shape pos + padding + entry pos = 10+5+3, 20+5+4.
+	if img.X != 18 || img.Y != 29 {
+		t.Errorf("pos = (%v,%v), want (18,29)", img.X, img.Y)
+	}
+	if img.W != 16 || img.H != 16 {
+		t.Errorf("size = (%v,%v), want (16,16)", img.W, img.H)
+	}
+	if img.Resource != "tile.png" {
+		t.Errorf("resource = %q, want %q", img.Resource, "tile.png")
+	}
+	// Blue bg with 0.5 opacity -> alpha halved.
+	if img.Color.A == 255 || img.Color.A == 0 {
+		t.Errorf("color alpha = %d, want opacity-folded", img.Color.A)
+	}
+}
+
+func TestRenderDrawCanvasImageOpacityClamped(t *testing.T) {
+	nan := float32(math.NaN())
+	cases := []struct {
+		name     string
+		opacity  Opt[float32]
+		wantA    uint8 // expected Color.A on emitted cmd
+		wantNote string
+	}{
+		{"above-1 clamps to 1", SomeF(1.5), 255, "full alpha"},
+		{"below-0 clamps to 0", SomeF(-0.25), 0, "zero alpha"},
+		{"NaN falls back to 1", SomeF(nan), 255, "full alpha"},
+		{"unset defaults to 1", Opt[float32]{}, 255, "full alpha"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := makeWindowWithScratch()
+			op := tc.opacity
+			shape := &Shape{
+				ShapeType: ShapeDrawCanvas,
+				Width:     50, Height: 50,
+				Color: ColorTransparent,
+				Events: &EventHandlers{
+					OnDraw: func(dc *DrawContext) {
+						dc.Image(0, 0, 10, 10, "x.png", op, Blue)
+					},
+				},
+			}
+			renderDrawCanvas(shape, makeClip(0, 0, 200, 200), w)
+
+			var img *RenderCmd
+			for i := range w.renderers {
+				if w.renderers[i].Kind == RenderImage {
+					img = &w.renderers[i]
+					break
+				}
+			}
+			if img == nil {
+				t.Fatal("no RenderImage emitted")
+			}
+			if img.Color.A != tc.wantA {
+				t.Errorf("%s: Color.A = %d, want %d (%s)",
+					tc.name, img.Color.A, tc.wantA, tc.wantNote)
+			}
+		})
+	}
+}
+
+func TestRenderDrawCanvasImageOnlyNotSkipped(t *testing.T) {
+	w := makeWindowWithScratch()
+	shape := &Shape{
+		ShapeType: ShapeDrawCanvas,
+		Width:     50, Height: 50,
+		Color: ColorTransparent,
+		Events: &EventHandlers{
+			OnDraw: func(dc *DrawContext) {
+				dc.Image(0, 0, 10, 10, "x.png",
+					Opt[float32]{}, Color{})
+			},
+		},
+	}
+	clip := makeClip(0, 0, 200, 200)
+
+	renderDrawCanvas(shape, clip, w)
+
+	var n int
+	for _, r := range w.renderers {
+		if r.Kind == RenderImage {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("RenderImage count = %d, want 1", n)
 	}
 }
 

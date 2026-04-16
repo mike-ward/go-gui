@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- DrawCanvas: `DrawContext.Image(x, y, w, h, src, bgOpacity, bgColor)`
+  draws images inside the canvas via the same deferred-emit pipeline
+  as text. `src` accepts the same forms as `ImageCfg.Src` (local path,
+  http/https URL, data URL)
+- DrawCanvas: `DrawCanvasCfg.IDFocus` and `OnKeyDown` enable keyboard
+  focus and key event handling. A11Y role flips to button when the
+  canvas is focusable
+
 ## [v0.12.0] - 2026-04-15
 
 ### Added

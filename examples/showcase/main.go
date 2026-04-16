@@ -16,6 +16,7 @@ const (
 	focusMenuSearch
 	focusDocToggle
 	focusTabDemo
+	focusDrawCanvas
 )
 
 const catalogWidth float32 = 300

@@ -544,10 +544,11 @@ func demoImage(_ *gui.Window) gui.View {
 	})
 }
 
-func demoDrawCanvas(_ *gui.Window) gui.View {
+func demoDrawCanvas(w *gui.Window) gui.View {
 	chartData := []float32{2, 5, 3, 8, 6, 4, 7, 9, 5, 10, 8, 6, 11, 7}
 	barData := []float32{40, 65, 50, 80, 55, 70}
 	t := gui.CurrentTheme()
+	app := gui.State[ShowcaseApp](w)
 
 	return gui.Column(gui.ContainerCfg{
 		Sizing:     gui.FillFit,
@@ -569,6 +570,101 @@ func demoDrawCanvas(_ *gui.Window) gui.View {
 				Mode:      gui.TextModeWrap,
 			}),
 			demoDrawCanvasBarChart(barData),
+			gui.Text(gui.TextCfg{
+				Text: "Image tiles drawn via DrawContext.Image." +
+					" Tab to focus, then arrow keys move the marker.",
+				TextStyle: t.N3,
+				Mode:      gui.TextModeWrap,
+			}),
+			demoDrawCanvasInteractive(app),
+		},
+	})
+}
+
+func demoDrawCanvasInteractive(app *ShowcaseApp) gui.View {
+	tileSrc := embeddedAssetPath("assets/arch.png")
+	const (
+		canvasW float32 = 480
+		canvasH float32 = 280
+		tileH   float32 = 80
+		tileGap float32 = 12
+		markerR float32 = 10
+		step    float32 = 12
+	)
+
+	return gui.DrawCanvas(gui.DrawCanvasCfg{
+		ID:      "showcase-draw-canvas-interactive",
+		Version: app.DrawCanvasVersion,
+		Width:   canvasW,
+		Height:  canvasH,
+		Color:   gui.RGBA(30, 30, 40, 255),
+		Radius:  8,
+		Clip:    true,
+		Padding: gui.Some(gui.Padding{
+			Top: 20, Right: 20, Bottom: 20, Left: 20,
+		}),
+		IDFocus:         focusDrawCanvas,
+		A11YLabel:       "Interactive draw canvas",
+		A11YDescription: "Arrow keys move the marker",
+		OnDraw: func(dc *gui.DrawContext) {
+			// Row of image tiles across the top.
+			const tiles = 4
+			tileW := (dc.Width - tileGap*float32(tiles-1)) /
+				float32(tiles)
+			for i := range tiles {
+				x := float32(i) * (tileW + tileGap)
+				dc.Image(x, 0, tileW, tileH, tileSrc,
+					gui.Opt[float32]{}, gui.Color{})
+			}
+
+			// Crosshair guides for the marker.
+			mx := app.DrawCanvasMarkerX
+			my := app.DrawCanvasMarkerY
+			guide := gui.RGBA(80, 80, 100, 255)
+			dc.DashedLine(0, my, dc.Width, my, guide, 1, 6, 4)
+			dc.DashedLine(mx, tileH+tileGap, mx, dc.Height,
+				guide, 1, 6, 4)
+
+			// Marker.
+			dc.FilledCircle(mx, my, markerR,
+				gui.RGBA(255, 200, 80, 255))
+			dc.Circle(mx, my, markerR, gui.White, 1.5)
+
+			// Hint.
+			hint := gui.TextStyle{
+				Size:  11,
+				Color: gui.RGBA(220, 220, 255, 255),
+			}
+			dc.Text(6, dc.Height-14,
+				"arrow keys move marker", hint)
+		},
+		OnKeyDown: func(_ *gui.Layout, e *gui.Event, w *gui.Window) {
+			app := gui.State[ShowcaseApp](w)
+			dx, dy := float32(0), float32(0)
+			switch e.KeyCode {
+			case gui.KeyLeft:
+				dx = -step
+			case gui.KeyRight:
+				dx = step
+			case gui.KeyUp:
+				dy = -step
+			case gui.KeyDown:
+				dy = step
+			default:
+				return
+			}
+			// Content area = canvas size - padding (20 each side).
+			// Seed with finite defaults so a corrupt restore
+			// (NaN/Inf) cannot lock the marker off-canvas.
+			cx := safeFloat(app.DrawCanvasMarkerX, canvasW/2)
+			cy := safeFloat(app.DrawCanvasMarkerY, canvasH/2)
+			minY := tileH + tileGap + markerR
+			app.DrawCanvasMarkerX = min(canvasW-40-markerR,
+				max(markerR, cx+dx))
+			app.DrawCanvasMarkerY = min(canvasH-40-markerR,
+				max(minY, cy+dy))
+			app.DrawCanvasVersion++
+			e.IsHandled = true
 		},
 	})
 }

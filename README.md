@@ -447,7 +447,7 @@ go run ./examples/calculator/
 | Badge       | `Badge(BadgeCfg)`             | Notification badge            |
 | ProgressBar | `ProgressBar(ProgressBarCfg)` | Determinate/indeterminate bar |
 | Pulsar      | `Pulsar(PulsarCfg)`           | Blinking cursor indicator     |
-| DrawCanvas  | `DrawCanvas(DrawCanvasCfg)`   | Custom-draw surface           |
+| DrawCanvas  | `DrawCanvas(DrawCanvasCfg)`   | Custom-draw surface (shapes, text, images, keyboard focus) |
 | Image       | `Image(ImageCfg)`             | Raster image view             |
 | Svg         | `Svg(SvgCfg)`                 | SVG vector image view         |
 | Markdown    | `w.Markdown(MarkdownCfg)`     | Rendered Markdown             |
