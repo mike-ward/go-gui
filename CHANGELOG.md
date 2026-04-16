@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.2] - 2026-04-16
+
+### Added
+
+- Image download pipeline now handles remote URLs for
+  `DrawContext.Image`. Shared `ResolveImageSrc(w, src)` resolves
+  http/https URLs to local cache paths, schedules background
+  downloads when uncached, and returns "" while in flight.
+  `gui.Image` and `emitDrawCanvasImages` both route through it so
+  DrawCanvas tiles render after the first fetch
+- `WindowCfg.ImageFetcher` hook: apps can supply a custom HTTP
+  client to set User-Agent, auth headers, or route through a
+  shared pool. Default fetcher sends `User-Agent: go-gui/vX.Y.Z`
+  so providers (e.g. OSM) can identify traffic
+- `WindowCfg.MaxImageDownloads`: process-wide cap on concurrent
+  image downloads. Defaults to 6; first-window-wins for sizing
+- Exported `Version` const tracks the module tag
+
+### Fixed
+
+- HTTP status codes are now checked before the body is written to
+  disk. Non-200 responses (4xx/5xx) no longer poison the cache
+  with error-page payloads
+
+### Changed
+
+- `downloadImage` dropped the HEAD pre-flight and validates
+  size/content-type on the GET response. Single round trip per
+  fetch
+
+### Performance
+
+- `ResolveImageSrc` caches the URL→path mapping per window so
+  already-resolved tiles skip the `MkdirAll` + `Stat` syscalls
+  each frame. Critical for DrawCanvas-based tile maps that render
+  dozens of images per frame at 60fps
+
 ## [v0.12.1] - 2026-04-16
 
 ### Added

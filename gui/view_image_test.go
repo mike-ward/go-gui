@@ -105,59 +105,6 @@ func TestImageBgColor(t *testing.T) {
 	}
 }
 
-func TestImageGenerateLayoutSVGFallback(t *testing.T) {
-	// Create a temp .svg file + cached.
-	dir := t.TempDir()
-	cacheDir := filepath.Join(dir, "gui_cache", "images")
-	os.MkdirAll(cacheDir, 0o755)
-
-	// Test SVG extension detection.
-	hash := hashString("http://example.com/icon.svg")
-	base := filepath.Join(cacheDir, "test")
-	_ = base
-	_ = hash
-	// SVG fallback tested indirectly via content type mapping.
-}
-
-func TestContentTypeToExt(t *testing.T) {
-	tests := []struct {
-		ct  string
-		ext string
-	}{
-		{"image/png", ".png"},
-		{"image/jpeg", ".jpg"},
-		{"image/svg+xml", ".svg"},
-		{"image/unknown", ".png"},
-	}
-	for _, tt := range tests {
-		got := contentTypeToExt(tt.ct)
-		if got != tt.ext {
-			t.Errorf("contentTypeToExt(%q) = %q, want %q",
-				tt.ct, got, tt.ext)
-		}
-	}
-}
-
-func TestFindCachedImageFound(t *testing.T) {
-	dir := t.TempDir()
-	base := filepath.Join(dir, "abc123")
-	path := base + ".jpg"
-	os.WriteFile(path, []byte("fake"), 0o644)
-	result := findCachedImage(base)
-	if result != path {
-		t.Fatalf("expected %s, got %s", path, result)
-	}
-}
-
-func TestFindCachedImageNotFound(t *testing.T) {
-	dir := t.TempDir()
-	base := filepath.Join(dir, "missing")
-	result := findCachedImage(base)
-	if result != "" {
-		t.Fatalf("expected empty, got %s", result)
-	}
-}
-
 func TestImageDefaultDimensions(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.png")

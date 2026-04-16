@@ -132,6 +132,11 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 // Skips any entry with non-finite coords/size or empty src; clamps
 // opacity into [0, 1]. Defense in depth: callers via DrawContext.Image
 // already reject bad inputs, but the cache field is public.
+//
+// For http/https srcs the entry is resolved to a local cache path
+// via ResolveImageSrc; an in-flight download returns "" and the
+// emit is skipped this frame. The window redraws when the
+// download completes.
 func emitDrawCanvasImages(
 	images []DrawCanvasImageEntry, ox, oy float32, w *Window,
 ) {
@@ -140,6 +145,10 @@ func emitDrawCanvasImages(
 		if !isFiniteF(im.X) || !isFiniteF(im.Y) ||
 			!isFiniteF(im.W) || !isFiniteF(im.H) ||
 			im.W <= 0 || im.H <= 0 || im.Src == "" {
+			continue
+		}
+		resource := ResolveImageSrc(w, im.Src)
+		if resource == "" {
 			continue
 		}
 		bg := ColorTransparent
@@ -160,7 +169,7 @@ func emitDrawCanvasImages(
 			W:        im.W,
 			H:        im.H,
 			Color:    bg,
-			Resource: im.Src,
+			Resource: resource,
 		}, w)
 	}
 }

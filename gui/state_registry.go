@@ -116,6 +116,7 @@ const (
 	nsDgPendingJump       = "gui.dg.pending_jump"
 	nsDgSource            = "gui.dg.source"
 	nsActiveDownloads     = "gui.active_downloads"
+	nsImageResolved       = "gui.image.resolved"
 	nsSvgCache            = "gui.svg_cache"
 	nsSvgDimCache         = "gui.svg_dim_cache"
 	nsSvgAnimSeen         = "gui.svg_anim_seen"
@@ -134,8 +135,9 @@ const (
 
 // Capacity tiers.
 const (
-	capFew      = 20
-	capModerate = 50
-	capMany     = 100
-	capScroll   = 200
+	capFew        = 20
+	capModerate   = 50
+	capMany       = 100
+	capScroll     = 200
+	capImageCache = 500
 )

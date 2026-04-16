@@ -1,6 +1,9 @@
 package gui
 
-import "context"
+import (
+	"context"
+	"net/http"
+)
 
 // WindowCfg configures a new Window.
 type WindowCfg struct {
@@ -15,7 +18,10 @@ type WindowCfg struct {
 	// Empty means allow any local SVG path.
 	AllowedSvgRoots []string
 	// AllowedImageRoots restricts file-based image loads to these
-	// paths. Empty means allow any local image path.
+	// paths. Empty means allow any local image path. To render
+	// remote http/https images (fetched via ResolveImageSrc), the
+	// allowlist must include the download cache directory:
+	// filepath.Join(os.TempDir(), "gui_cache", "images").
 	AllowedImageRoots []string
 	// MaxImageBytes caps source image file size for decoded image
 	// loads. Zero or negative selects backend defaults.
@@ -23,6 +29,21 @@ type WindowCfg struct {
 	// MaxImagePixels caps decoded image dimensions (width*height).
 	// Zero or negative selects backend defaults.
 	MaxImagePixels int64
+	// ImageFetcher, if non-nil, is used to fetch remote images
+	// instead of the default http.DefaultClient. Callers typically
+	// supply this to set a descriptive User-Agent, add auth
+	// headers, or route through a shared client. Must be safe for
+	// concurrent use. Return a non-nil *http.Response whose
+	// Body the caller will close.
+	ImageFetcher func(
+		ctx context.Context, url string,
+	) (*http.Response, error)
+	// MaxImageDownloads caps concurrent in-flight image downloads
+	// across the process. Zero or negative selects a default of 6,
+	// matching OSM's guidance for well-behaved map clients. The
+	// first Window whose config is consulted fixes the limit for
+	// the process lifetime — later Windows cannot resize it.
+	MaxImageDownloads int
 	// IconPNG is optional PNG-encoded icon data for the window.
 	// The backend sets this as the window icon when supported.
 	IconPNG []byte
