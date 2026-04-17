@@ -16,7 +16,7 @@ import (
 // Version is the go-gui release tag. Used in the default image
 // fetcher's User-Agent so remote tile/image providers can identify
 // traffic from this framework.
-const Version = "v0.12.2"
+const Version = "v0.12.3"
 
 // defaultMaxImageDownloads caps concurrent HTTP image downloads
 // when WindowCfg.MaxImageDownloads is zero. Six matches OSM's

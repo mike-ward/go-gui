@@ -48,10 +48,21 @@ func mapEvent(ev sdl.Event, b *Backend) (gui.Event, bool) {
 
 	case *sdl.MouseWheelEvent:
 		mx, my, _ := sdl.GetMouseState()
+		// PreciseX/Y (SDL >= 2.0.18) carry sub-unit resolution from
+		// trackpad pixel-scroll and high-resolution wheels; prefer them
+		// when non-zero, fall back to integer X/Y for older SDL runtimes
+		// or for devices that only populate the integer field.
+		sx, sy := float32(e.X), float32(e.Y)
+		if e.PreciseX != 0 {
+			sx = e.PreciseX
+		}
+		if e.PreciseY != 0 {
+			sy = e.PreciseY
+		}
 		return gui.Event{
 			Type:      gui.EventMouseScroll,
-			ScrollX:   float32(e.X),
-			ScrollY:   float32(e.Y),
+			ScrollX:   sx,
+			ScrollY:   sy,
 			MouseX:    float32(mx),
 			MouseY:    float32(my),
 			Modifiers: sdlkey.MapKeyMod(sdl.GetModState()),

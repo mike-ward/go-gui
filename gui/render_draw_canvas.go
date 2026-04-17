@@ -64,6 +64,15 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 		emitClipCmd(DrawClip{X: ox, Y: oy, Width: cw, Height: ch}, w)
 	}
 
+	// Images emit first so they act as the back layer. DrawContext
+	// records images in a separate slice from triangle batches and
+	// text, so emission order is the only thing that decides z-stacking
+	// between them. Putting images first lets tile-map consumers draw
+	// markers / HUD chips / labels *over* tile images in the same
+	// DrawCanvas. Reverse ordering would be correct only if triangles/
+	// text were meant as backgrounds — which no in-tree consumer wants.
+	emitDrawCanvasImages(cached.Images, ox, oy, w)
+
 	for _, batch := range cached.Batches {
 		emitRenderer(RenderCmd{
 			Kind:      RenderSvg,
@@ -119,8 +128,6 @@ func renderDrawCanvas(shape *Shape, clip DrawClip, w *Window) {
 			}, w)
 		}
 	}
-
-	emitDrawCanvasImages(cached.Images, ox, oy, w)
 
 	// Restore parent clip.
 	if shape.Clip {

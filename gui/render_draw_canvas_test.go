@@ -147,6 +147,53 @@ func TestRenderDrawCanvasCachedSkipsOnDraw(t *testing.T) {
 	}
 }
 
+// TestRenderDrawCanvas_ImagesEmitBeforeBatchesAndText: images are
+// the back layer so triangles and text drawn in the same OnDraw paint
+// over them. Tile-map consumers depend on this to place marker discs
+// and HUD chips over OSM tile images rendered by the same DrawCanvas.
+func TestRenderDrawCanvas_ImagesEmitBeforeBatchesAndText(t *testing.T) {
+	w := makeWindowWithScratch()
+	shape := &Shape{
+		ShapeType: ShapeDrawCanvas,
+		Width:     100, Height: 100,
+		Color: ColorTransparent,
+		Events: &EventHandlers{
+			OnDraw: func(dc *DrawContext) {
+				dc.Image(0, 0, 10, 10, "bg.png", Opt[float32]{}, ColorTransparent)
+				dc.FilledRect(0, 0, 5, 5, Blue)
+				dc.Text(2, 2, "hi", TextStyle{Size: 10, Color: Blue})
+			},
+		},
+	}
+	renderDrawCanvas(shape, makeClip(0, 0, 200, 200), w)
+
+	var imageIdx, svgIdx, textIdx = -1, -1, -1
+	for i := range w.renderers {
+		switch w.renderers[i].Kind {
+		case RenderImage:
+			if imageIdx < 0 {
+				imageIdx = i
+			}
+		case RenderSvg:
+			if svgIdx < 0 {
+				svgIdx = i
+			}
+		case RenderText:
+			if textIdx < 0 {
+				textIdx = i
+			}
+		}
+	}
+	if imageIdx < 0 || svgIdx < 0 || textIdx < 0 {
+		t.Fatalf("missing emission: image=%d svg=%d text=%d",
+			imageIdx, svgIdx, textIdx)
+	}
+	if imageIdx >= svgIdx || svgIdx >= textIdx {
+		t.Errorf("order image=%d svg=%d text=%d; want image<svg<text",
+			imageIdx, svgIdx, textIdx)
+	}
+}
+
 func TestRenderDrawCanvasEmitsImage(t *testing.T) {
 	w := makeWindowWithScratch()
 	shape := &Shape{
