@@ -1,7 +1,9 @@
 package gui
 
 import (
+	"context"
 	"math"
+	"net/http"
 	"testing"
 )
 
@@ -547,6 +549,30 @@ func TestDrawContextImage(t *testing.T) {
 	}
 	if im.BgColor != Blue {
 		t.Errorf("bg = %v, want Blue", im.BgColor)
+	}
+}
+
+// ImageWithFetcher must store the per-call fetcher on the entry.
+// Existing Image must leave Fetcher nil so the render path falls
+// back to WindowCfg.ImageFetcher.
+func TestDrawContextImageWithFetcher(t *testing.T) {
+	dc := DrawContext{Width: 100, Height: 100}
+	sentinel := func(
+		_ context.Context, _ string,
+	) (*http.Response, error) {
+		return nil, nil
+	}
+	dc.ImageWithFetcher(0, 0, 16, 16, "u",
+		Opt[float32]{}, Color{}, sentinel)
+	dc.Image(0, 0, 16, 16, "v", Opt[float32]{}, Color{})
+	if len(dc.images) != 2 {
+		t.Fatalf("images = %d, want 2", len(dc.images))
+	}
+	if dc.images[0].Fetcher == nil {
+		t.Error("ImageWithFetcher: Fetcher = nil, want set")
+	}
+	if dc.images[1].Fetcher != nil {
+		t.Error("Image: Fetcher != nil, want nil (fallback path)")
 	}
 }
 

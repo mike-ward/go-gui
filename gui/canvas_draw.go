@@ -32,11 +32,20 @@ type DrawCanvasTriBatch struct {
 //
 // BgOpacity modulates BgColor's alpha; it has no effect when
 // BgColor is unset.
+//
+// Fetcher, when non-nil, overrides WindowCfg.ImageFetcher for this
+// entry's http/https download. Typical use is map-tile rendering
+// where each tile source wants its own User-Agent. Known limit:
+// downloads are URL-keyed and deduped process-wide, so the first
+// entry observed for a given URL binds the fetcher for that URL's
+// in-flight download. Consumers wiring two fetchers to overlapping
+// URL namespaces must route via URL prefix themselves.
 type DrawCanvasImageEntry struct {
 	X, Y, W, H float32
 	Src        string
 	BgOpacity  Opt[float32]
 	BgColor    Color
+	Fetcher    ImageFetcher
 }
 
 // DrawRecorder receives high-level draw commands before
@@ -779,10 +788,24 @@ func (dc *DrawContext) FontHeight(style TextStyle) float32 {
 // same forms as ImageCfg.Src (local path, http/https URL, data URL).
 // BgOpacity modulates the BgColor alpha; it does not fade the image
 // texture itself. BgColor paints behind the image (useful for PNGs
-// with transparency); zero value is transparent.
+// with transparency); zero value is transparent. Remote fetches use
+// WindowCfg.ImageFetcher; use ImageWithFetcher to override per call.
 func (dc *DrawContext) Image(
 	x, y, w, h float32, src string,
 	bgOpacity Opt[float32], bgColor Color,
+) {
+	dc.ImageWithFetcher(x, y, w, h, src, bgOpacity, bgColor, nil)
+}
+
+// ImageWithFetcher is Image plus a per-call override of the remote
+// fetcher. nil fetcher falls back to WindowCfg.ImageFetcher, matching
+// Image's behavior exactly. Typical use is map rendering where each
+// tile layer's Source supplies its own policy-compliant User-Agent.
+// See DrawCanvasImageEntry.Fetcher on the URL-keyed dedup limit.
+func (dc *DrawContext) ImageWithFetcher(
+	x, y, w, h float32, src string,
+	bgOpacity Opt[float32], bgColor Color,
+	fetcher ImageFetcher,
 ) {
 	if w <= 0 || h <= 0 || src == "" {
 		return
@@ -803,6 +826,7 @@ func (dc *DrawContext) Image(
 	dc.images = append(dc.images, DrawCanvasImageEntry{
 		X: x, Y: y, W: w, H: h,
 		Src: src, BgOpacity: bgOpacity, BgColor: bgColor,
+		Fetcher: fetcher,
 	})
 }
 

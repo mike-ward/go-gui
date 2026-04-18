@@ -154,7 +154,7 @@ func emitDrawCanvasImages(
 			im.W <= 0 || im.H <= 0 || im.Src == "" {
 			continue
 		}
-		resource := ResolveImageSrc(w, im.Src)
+		resource := ResolveImageSrcWithFetcher(w, im.Src, im.Fetcher)
 		if resource == "" {
 			continue
 		}

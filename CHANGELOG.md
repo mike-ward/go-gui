@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.4] - 2026-04-18
+
+### Added
+
+- Per-call image fetcher on `DrawContext`. New
+  `DrawContext.ImageWithFetcher(..., fetcher ImageFetcher)` and
+  matching `DrawCanvasImageEntry.Fetcher` field let each image draw
+  override `WindowCfg.ImageFetcher` for its own download. Typical
+  use: a map widget pairs each tile layer with its source-specific
+  User-Agent (OSM-policy UA for one layer, a WMS-provider UA for
+  another) without a shared composite fetcher. Existing
+  `DrawContext.Image` is unchanged and still routes through the
+  window-level fetcher.
+- New exported `ImageFetcher` function type and
+  `ResolveImageSrcWithFetcher(w, src, fetcher)` helper. Existing
+  `ResolveImageSrc(w, src)` is a thin wrapper that passes `nil`, so
+  no caller needs to migrate.
+
+### Notes
+
+- Scope cut: `ImageCfg` (the Image widget) keeps the single-fetcher
+  path. Per-widget fetcher override will land when a consumer
+  demands it; no speculative API.
+- Known limit: downloads are URL-keyed process-wide, so the first
+  entry observed for a URL binds the fetcher for that URL's in-
+  flight download. Consumers wiring two fetchers to overlapping URL
+  namespaces must route by URL prefix themselves.
+
 ## [v0.12.3] - 2026-04-17
 
 ### Fixed

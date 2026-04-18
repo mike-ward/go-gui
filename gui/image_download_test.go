@@ -229,7 +229,7 @@ func TestDownloadImageStatusOK(t *testing.T) {
 	w := &Window{}
 	w.ctx = t.Context()
 
-	downloadImage(t.Context(), srv.URL, base, 0, w)
+	downloadImage(t.Context(), srv.URL, base, 0, w, nil)
 	drainQueuedCommands(w)
 
 	if _, err := os.Stat(base + ".png"); err != nil {
@@ -260,7 +260,7 @@ func TestDownloadImageStatus429(t *testing.T) {
 	w := &Window{}
 	w.ctx = t.Context()
 
-	downloadImage(t.Context(), srv.URL, base, 0, w)
+	downloadImage(t.Context(), srv.URL, base, 0, w, nil)
 	drainQueuedCommands(w)
 
 	for _, ext := range []string{".png", ".jpg", ".svg"} {
@@ -285,7 +285,7 @@ func TestDownloadImageRejectsNonImageContentType(t *testing.T) {
 	w := &Window{}
 	w.ctx = t.Context()
 
-	downloadImage(t.Context(), srv.URL, base, 0, w)
+	downloadImage(t.Context(), srv.URL, base, 0, w, nil)
 	drainQueuedCommands(w)
 
 	for _, ext := range []string{".png", ".jpg", ".svg"} {
@@ -311,7 +311,7 @@ func TestDownloadImageContentLengthTooLarge(t *testing.T) {
 	w := &Window{}
 	w.ctx = t.Context()
 
-	downloadImage(t.Context(), srv.URL, base, 10, w)
+	downloadImage(t.Context(), srv.URL, base, 10, w, nil)
 	drainQueuedCommands(w)
 
 	for _, ext := range []string{".png", ".jpg", ".svg"} {
@@ -335,7 +335,7 @@ func TestDownloadImageFetcherError(t *testing.T) {
 	w.ctx = t.Context()
 
 	downloadImage(
-		t.Context(), "http://example.invalid/x.png", base, 0, w)
+		t.Context(), "http://example.invalid/x.png", base, 0, w, nil)
 	drainQueuedCommands(w)
 
 	for _, ext := range []string{".png", ".jpg", ".svg"} {
@@ -364,7 +364,7 @@ func TestDownloadImageSVGExtension(t *testing.T) {
 	w := &Window{}
 	w.ctx = t.Context()
 
-	downloadImage(t.Context(), srv.URL, base, 0, w)
+	downloadImage(t.Context(), srv.URL, base, 0, w, nil)
 	drainQueuedCommands(w)
 
 	if _, err := os.Stat(base + ".svg"); err != nil {
@@ -422,7 +422,7 @@ func TestDownloadImageUsesConfigFetcher(t *testing.T) {
 	w := &Window{Config: WindowCfg{ImageFetcher: fetcher}}
 	w.ctx = t.Context()
 
-	downloadImage(t.Context(), srv.URL, base, 0, w)
+	downloadImage(t.Context(), srv.URL, base, 0, w, nil)
 	drainQueuedCommands(w)
 
 	if calls.Load() != 1 {
@@ -471,7 +471,7 @@ func TestDownloadImageSemaphoreCap(t *testing.T) {
 		wg.Go(func() {
 			base := filepath.Join(
 				dir, fmt.Sprintf("img%d", i))
-			downloadImage(t.Context(), srv.URL, base, 0, w)
+			downloadImage(t.Context(), srv.URL, base, 0, w, nil)
 		})
 	}
 
@@ -487,6 +487,81 @@ func TestDownloadImageSemaphoreCap(t *testing.T) {
 
 	if got := peak.Load(); got > maxCap {
 		t.Fatalf("peak concurrency %d exceeds cap %d", got, maxCap)
+	}
+}
+
+// A non-nil per-call override fetcher must preempt
+// WindowCfg.ImageFetcher for that download only. Routes the two
+// fetchers with counters and verifies the override receives the
+// request while the config fetcher stays idle.
+func TestDownloadImage_OverrideFetcherPreemptsConfig(t *testing.T) {
+	resetDownloadSem()
+	var cfgHits, overrideHits atomic.Int32
+	cfgFetcher := func(
+		ctx context.Context, url string,
+	) (*http.Response, error) {
+		cfgHits.Add(1)
+		return defaultImageFetcher(ctx, url)
+	}
+	overrideFetcher := func(
+		ctx context.Context, url string,
+	) (*http.Response, error) {
+		overrideHits.Add(1)
+		return defaultImageFetcher(ctx, url)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(
+		func(rw http.ResponseWriter, _ *http.Request) {
+			rw.Header().Set("Content-Type", "image/png")
+			_, _ = rw.Write([]byte{
+				0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'})
+		}))
+	t.Cleanup(srv.Close)
+
+	dir := t.TempDir()
+	base := filepath.Join(dir, "img")
+	w := &Window{Config: WindowCfg{ImageFetcher: cfgFetcher}}
+	w.ctx = t.Context()
+
+	downloadImage(t.Context(), srv.URL, base, 0, w, overrideFetcher)
+	drainQueuedCommands(w)
+
+	if got := overrideHits.Load(); got != 1 {
+		t.Errorf("override hits = %d, want 1", got)
+	}
+	if got := cfgHits.Load(); got != 0 {
+		t.Errorf("config fetcher hits = %d, want 0 (override wins)", got)
+	}
+}
+
+// A nil override falls back to WindowCfg.ImageFetcher, preserving
+// backward compatibility for ResolveImageSrc callers.
+func TestDownloadImage_NilOverrideFallsBackToConfig(t *testing.T) {
+	resetDownloadSem()
+	var cfgHits atomic.Int32
+	cfgFetcher := func(
+		ctx context.Context, url string,
+	) (*http.Response, error) {
+		cfgHits.Add(1)
+		return defaultImageFetcher(ctx, url)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(
+		func(rw http.ResponseWriter, _ *http.Request) {
+			rw.Header().Set("Content-Type", "image/png")
+			_, _ = rw.Write([]byte{
+				0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'})
+		}))
+	t.Cleanup(srv.Close)
+
+	dir := t.TempDir()
+	base := filepath.Join(dir, "img")
+	w := &Window{Config: WindowCfg{ImageFetcher: cfgFetcher}}
+	w.ctx = t.Context()
+
+	downloadImage(t.Context(), srv.URL, base, 0, w, nil)
+	drainQueuedCommands(w)
+
+	if got := cfgHits.Load(); got != 1 {
+		t.Errorf("config fetcher hits = %d, want 1 on nil override", got)
 	}
 }
 

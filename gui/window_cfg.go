@@ -1,9 +1,6 @@
 package gui
 
-import (
-	"context"
-	"net/http"
-)
+import "context"
 
 // WindowCfg configures a new Window.
 type WindowCfg struct {
@@ -29,15 +26,11 @@ type WindowCfg struct {
 	// MaxImagePixels caps decoded image dimensions (width*height).
 	// Zero or negative selects backend defaults.
 	MaxImagePixels int64
-	// ImageFetcher, if non-nil, is used to fetch remote images
-	// instead of the default http.DefaultClient. Callers typically
-	// supply this to set a descriptive User-Agent, add auth
-	// headers, or route through a shared client. Must be safe for
-	// concurrent use. Return a non-nil *http.Response whose
-	// Body the caller will close.
-	ImageFetcher func(
-		ctx context.Context, url string,
-	) (*http.Response, error)
+	// ImageFetcher, if non-nil, is the default fetcher for remote
+	// images in this window. DrawContext.ImageWithFetcher can
+	// override this per call (e.g. to pair each map tile layer with
+	// its own source-specific User-Agent).
+	ImageFetcher ImageFetcher
 	// MaxImageDownloads caps concurrent in-flight image downloads
 	// across the process. Zero or negative selects a default of 6,
 	// matching OSM's guidance for well-behaved map clients. The

@@ -16,7 +16,16 @@ import (
 // Version is the go-gui release tag. Used in the default image
 // fetcher's User-Agent so remote tile/image providers can identify
 // traffic from this framework.
-const Version = "v0.12.3"
+const Version = "v0.12.4"
+
+// ImageFetcher is the signature of a function that fetches a remote
+// image. Implementations typically set a descriptive User-Agent, add
+// auth headers, or route through a shared http.Client. Must be safe
+// for concurrent use. Return a non-nil *http.Response whose Body the
+// caller will close.
+type ImageFetcher func(
+	ctx context.Context, url string,
+) (*http.Response, error)
 
 // defaultMaxImageDownloads caps concurrent HTTP image downloads
 // when WindowCfg.MaxImageDownloads is zero. Six matches OSM's
@@ -141,7 +150,21 @@ func defaultImageFetcher(
 // "gui_cache", "images"). If WindowCfg.AllowedImageRoots is set,
 // that path must be included or the backend will reject the
 // resolved cache file.
+//
+// Remote fetches use WindowCfg.ImageFetcher; use
+// ResolveImageSrcWithFetcher to override per call.
 func ResolveImageSrc(w *Window, src string) string {
+	return ResolveImageSrcWithFetcher(w, src, nil)
+}
+
+// ResolveImageSrcWithFetcher is ResolveImageSrc with a per-call
+// fetcher override. nil fetcher falls back to WindowCfg.ImageFetcher,
+// matching ResolveImageSrc exactly. The fetcher is consulted only on
+// a cold download; cache hits and already-in-flight URLs ignore it
+// (see DrawCanvasImageEntry.Fetcher on the URL-keyed dedup limit).
+func ResolveImageSrcWithFetcher(
+	w *Window, src string, fetcher ImageFetcher,
+) string {
 	if src == "" {
 		return ""
 	}
@@ -181,18 +204,20 @@ func ResolveImageSrc(w *Window, src string) string {
 	if !downloads.Contains(src) {
 		downloads.Set(src, time.Now().Unix())
 		go downloadImage(
-			w.Ctx(), src, basePath, w.Config.MaxImageBytes, w)
+			w.Ctx(), src, basePath,
+			w.Config.MaxImageBytes, w, fetcher)
 	}
 	return ""
 }
 
 // downloadImage fetches a remote image to a local cache path.
 // wCtx cancellation stops the download. maxBytes caps the body
-// size (0 selects defaultMaxDownloadBytes). The fetcher comes
-// from WindowCfg.ImageFetcher or defaultImageFetcher.
+// size (0 selects defaultMaxDownloadBytes). override, when non-nil,
+// preempts WindowCfg.ImageFetcher for this download only; nil
+// selects the window default, then defaultImageFetcher.
 func downloadImage(
 	wCtx context.Context, url, basePath string,
-	maxBytes int64, w *Window,
+	maxBytes int64, w *Window, override ImageFetcher,
 ) {
 	maxSize := maxBytes
 	if maxSize <= 0 {
@@ -211,7 +236,10 @@ func downloadImage(
 	ctx, cancel := context.WithTimeout(wCtx, 30*time.Second)
 	defer cancel()
 
-	fetcher := w.Config.ImageFetcher
+	fetcher := override
+	if fetcher == nil {
+		fetcher = w.Config.ImageFetcher
+	}
 	if fetcher == nil {
 		fetcher = defaultImageFetcher
 	}
