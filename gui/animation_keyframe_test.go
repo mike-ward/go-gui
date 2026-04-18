@@ -41,7 +41,8 @@ func TestKeyframeCompletes(t *testing.T) {
 	)
 	kf.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateKeyframe(kf, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateKeyframe(kf, &ac)
 	runQueuedCommands(deferred)
 	if got != 100 {
 		t.Errorf("got %f, want 100", got)
@@ -62,7 +63,8 @@ func TestKeyframeRepeat(t *testing.T) {
 	kf.Repeat = true
 	kf.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateKeyframe(kf, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateKeyframe(kf, &ac)
 	if kf.stopped {
 		t.Error("should not stop when repeating")
 	}
@@ -81,7 +83,8 @@ func TestKeyframeStopped(t *testing.T) {
 	kf := NewKeyframeAnimation("k", nil, func(float32, *Window) {})
 	kf.stopped = true
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateKeyframe(kf, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateKeyframe(kf, &ac)
 	if ok {
 		t.Error("stopped keyframe should return false")
 	}
@@ -116,7 +119,8 @@ func TestKeyframeUpdateInterface(t *testing.T) {
 	)
 	kf.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := kf.Update(nil, 0, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := kf.Update(nil, 0, &ac)
 	if !ok {
 		t.Error("Update should return true")
 	}
@@ -138,7 +142,8 @@ func TestKeyframeRepeatNoDrift(t *testing.T) {
 	kf.Duration = 100 * time.Millisecond
 	kf.start = time.Now().Add(-150 * time.Millisecond)
 	deferred := make([]queuedCommand, 0, 4)
-	updateKeyframe(kf, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateKeyframe(kf, &ac)
 	// start should advance by exactly Duration, not reset to Now().
 	expected := kf.start.Add(0) // start was already updated
 	// The key invariant: start moved forward by Duration from its

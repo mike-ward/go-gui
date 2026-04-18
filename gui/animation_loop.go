@@ -105,8 +105,9 @@ func (w *Window) animationLoop() {
 		stoppedIDs = stoppedIDs[:0]
 
 		w.mu.Lock()
+		ac := newAnimationCommands(&deferred)
 		for _, a := range w.animations {
-			updated := a.Update(w, dt, &deferred)
+			updated := a.Update(w, dt, &ac)
 			if updated {
 				refreshKind = maxAnimationRefreshKind(
 					refreshKind, a.RefreshKind())
@@ -166,7 +167,7 @@ func (w *Window) stopAnimationLoop() {
 	})
 }
 
-func updateAnimate(a *Animate, deferred *[]queuedCommand) bool {
+func updateAnimate(a *Animate, ac *AnimationCommands) bool {
 	if a.stopped {
 		return false
 	}
@@ -175,11 +176,7 @@ func updateAnimate(a *Animate, deferred *[]queuedCommand) bool {
 		return false
 	}
 	if time.Since(a.start) > a.Delay {
-		*deferred = append(*deferred, queuedCommand{
-			kind:      queuedCommandAnimateFn,
-			animateFn: a.Callback,
-			animate:   a,
-		})
+		ac.appendAnimate(a.Callback, a)
 		if a.Repeat {
 			// Zero delay with repeat fires every tick (~16ms).
 			a.start = a.start.Add(a.Delay)

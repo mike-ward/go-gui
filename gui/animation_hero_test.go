@@ -27,7 +27,8 @@ func TestHeroTransitionUpdate(t *testing.T) {
 	ht := NewHeroTransition(HeroTransitionCfg{})
 	ht.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTransition(&ht.transitionBase, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateTransition(&ht.transitionBase, &ac)
 	if !ok {
 		t.Error("should update")
 	}
@@ -74,7 +75,8 @@ func TestHeroTransitionUpdateInterface(t *testing.T) {
 	ht := NewHeroTransition(HeroTransitionCfg{})
 	ht.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := ht.Update(nil, 0, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := ht.Update(nil, 0, &ac)
 	if !ok {
 		t.Error("Update should return true on completion")
 	}
@@ -106,7 +108,8 @@ func TestHeroTransitionOnDone(t *testing.T) {
 	})
 	ht.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateTransition(&ht.transitionBase, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateTransition(&ht.transitionBase, &ac)
 	runQueuedCommands(deferred)
 	if !done {
 		t.Error("OnDone not called")

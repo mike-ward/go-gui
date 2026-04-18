@@ -19,7 +19,8 @@ func TestTransitionBaseIsStopped(t *testing.T) {
 func TestUpdateTransitionAlreadyStopped(t *testing.T) {
 	tb := &transitionBase{stopped: true}
 	deferred := make([]queuedCommand, 0, 4)
-	if updateTransition(tb, &deferred) {
+	ac := newAnimationCommands(&deferred)
+	if updateTransition(tb, &ac) {
 		t.Error("should return false when already stopped")
 	}
 }
@@ -33,7 +34,8 @@ func TestUpdateTransitionCompletes(t *testing.T) {
 		start:    time.Now().Add(-time.Second),
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTransition(tb, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateTransition(tb, &ac)
 	if !ok {
 		t.Error("should return true on completion")
 	}
@@ -56,7 +58,8 @@ func TestUpdateTransitionNilEasingDefaultsToEaseOutCubic(t *testing.T) {
 		start:    time.Now().Add(-50 * time.Millisecond),
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTransition(tb, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateTransition(tb, &ac)
 	if !ok {
 		t.Error("should return true while in progress")
 	}
@@ -72,7 +75,8 @@ func TestUpdateTransitionWithEasing(t *testing.T) {
 		start:    time.Now().Add(-50 * time.Millisecond),
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTransition(tb, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateTransition(tb, &ac)
 	if !ok {
 		t.Error("should return true while in progress")
 	}
@@ -88,7 +92,8 @@ func TestUpdateTransitionNilOnDone(t *testing.T) {
 		OnDone:   nil,
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTransition(tb, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateTransition(tb, &ac)
 	if !ok {
 		t.Error("should return true on completion")
 	}
@@ -154,7 +159,8 @@ func TestAnimateUpdateCallsCallback(t *testing.T) {
 		start:    time.Now().Add(-time.Second),
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := a.Update(nil, 0, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := a.Update(nil, 0, &ac)
 	if !ok {
 		t.Error("should return true")
 	}
@@ -170,7 +176,8 @@ func TestAnimateUpdateAlreadyStopped(t *testing.T) {
 		stopped: true,
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := a.Update(nil, 0, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := a.Update(nil, 0, &ac)
 	if ok {
 		t.Error("should return false when stopped")
 	}
@@ -183,7 +190,8 @@ func TestAnimateUpdateNilCallback(t *testing.T) {
 		start:    time.Now().Add(-time.Second),
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := a.Update(nil, 0, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := a.Update(nil, 0, &ac)
 	if ok {
 		t.Error("nil callback should return false")
 	}
@@ -257,18 +265,20 @@ func TestCommandMarkRenderOnlyRefresh(t *testing.T) {
 	}
 }
 
-func TestQueueOnDoneNilFn(t *testing.T) {
+func TestAnimationCommandsAppendOnDoneNilFn(t *testing.T) {
 	deferred := make([]queuedCommand, 0, 4)
-	queueOnDone(&deferred, nil)
+	ac := newAnimationCommands(&deferred)
+	ac.AppendOnDone(nil)
 	if len(deferred) != 0 {
 		t.Error("nil fn should not queue")
 	}
 }
 
-func TestQueueOnDoneWithFn(t *testing.T) {
+func TestAnimationCommandsAppendOnDoneWithFn(t *testing.T) {
 	called := false
 	deferred := make([]queuedCommand, 0, 4)
-	queueOnDone(&deferred, func(*Window) { called = true })
+	ac := newAnimationCommands(&deferred)
+	ac.AppendOnDone(func(*Window) { called = true })
 	if len(deferred) != 1 {
 		t.Fatal("should queue one command")
 	}
@@ -278,10 +288,11 @@ func TestQueueOnDoneWithFn(t *testing.T) {
 	}
 }
 
-func TestQueueOnValue(t *testing.T) {
+func TestAnimationCommandsAppendOnValue(t *testing.T) {
 	var got float32
 	deferred := make([]queuedCommand, 0, 4)
-	queueOnValue(&deferred, func(v float32, _ *Window) { got = v }, 42)
+	ac := newAnimationCommands(&deferred)
+	ac.AppendOnValue(func(v float32, _ *Window) { got = v }, 42)
 	if len(deferred) != 1 {
 		t.Fatal("should queue one command")
 	}

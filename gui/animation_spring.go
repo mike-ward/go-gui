@@ -52,8 +52,8 @@ func (s *SpringAnimation) IsStopped() bool { return s.stopped }
 func (s *SpringAnimation) SetStart(now time.Time) { s.start = now }
 
 // Update implements Animation.
-func (s *SpringAnimation) Update(_ *Window, dt float32, deferred *[]queuedCommand) bool {
-	return updateSpring(s, dt, deferred)
+func (s *SpringAnimation) Update(_ *Window, dt float32, ac *AnimationCommands) bool {
+	return updateSpring(s, dt, ac)
 }
 
 // NewSpringAnimation creates a SpringAnimation with defaults.
@@ -81,7 +81,7 @@ func (s *SpringAnimation) Retarget(to float32) {
 	s.stopped = false
 }
 
-func updateSpring(sp *SpringAnimation, dt float32, deferred *[]queuedCommand) bool {
+func updateSpring(sp *SpringAnimation, dt float32, ac *AnimationCommands) bool {
 	if sp.stopped || sp.state.atRest {
 		return false
 	}
@@ -109,12 +109,12 @@ func updateSpring(sp *SpringAnimation, dt float32, deferred *[]queuedCommand) bo
 		sp.state.position = sp.state.target
 		sp.state.velocity = 0
 		sp.state.atRest = true
-		queueOnValue(deferred, sp.OnValue, sp.state.target)
-		queueOnDone(deferred, sp.OnDone)
+		ac.AppendOnValue(sp.OnValue, sp.state.target)
+		ac.AppendOnDone(sp.OnDone)
 		sp.stopped = true
 		return true
 	}
 
-	queueOnValue(deferred, sp.OnValue, sp.state.position)
+	ac.AppendOnValue(sp.OnValue, sp.state.position)
 	return true
 }

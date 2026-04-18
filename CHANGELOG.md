@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.5] - 2026-04-18
+
+### Changed
+
+- `Animation.Update` now takes `*AnimationCommands` instead of
+  `*[]queuedCommand`. `queuedCommand` was always unexported, which
+  made the `Animation` interface effectively impossible for third-
+  party packages to implement — they could not name the parameter
+  type. `AnimationCommands` wraps the deferred command queue behind
+  two public methods:
+  - `AppendOnDone(fn func(*Window))` — queues a terminal callback.
+  - `AppendOnValue(fn func(float32, *Window), v float32)` — queues
+    a per-frame interpolated-value callback.
+  All existing first-party animations (`Animate`, `SpringAnimation`,
+  `TweenAnimation`, `KeyframeAnimation`, `LayoutTransition`,
+  `HeroTransition`, `BlinkCursorAnimation`) updated; callers of the
+  stable concrete factories (`NewSpringAnimation`, etc.) see no
+  change. Breaking only for downstream code that implemented
+  `Animation` directly — impossible to do before this release, so
+  no real-world migration.
+
 ## [v0.12.4] - 2026-04-18
 
 ### Added

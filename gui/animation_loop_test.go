@@ -47,7 +47,8 @@ func TestUpdateAnimate(t *testing.T) {
 		start: time.Now().Add(-time.Second),
 	}
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateAnimate(a, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateAnimate(a, &ac)
 	if !ok {
 		t.Error("should return true")
 	}
@@ -131,7 +132,8 @@ func TestAnimateRepeatNoDrift(t *testing.T) {
 	}
 	a.start = time.Now().Add(-150 * time.Millisecond)
 	deferred := make([]queuedCommand, 0, 4)
-	updateAnimate(a, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateAnimate(a, &ac)
 	// start should advance by Delay, not reset to Now().
 	if a.start.After(time.Now().Add(-10 * time.Millisecond)) {
 		t.Error("start should not reset to Now(); should advance by Delay")

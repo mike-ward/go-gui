@@ -23,7 +23,7 @@ func (tb *transitionBase) SetStart(now time.Time) { tb.start = now }
 
 // updateTransition advances a duration-based transition, returning
 // false when already stopped.
-func updateTransition(tb *transitionBase, deferred *[]queuedCommand) bool {
+func updateTransition(tb *transitionBase, ac *AnimationCommands) bool {
 	if tb.stopped {
 		return false
 	}
@@ -31,7 +31,7 @@ func updateTransition(tb *transitionBase, deferred *[]queuedCommand) bool {
 	if done {
 		tb.progress = 1.0
 		tb.stopped = true
-		queueOnDone(deferred, tb.OnDone)
+		ac.AppendOnDone(tb.OnDone)
 		return true
 	}
 	easing := tb.easing
@@ -71,13 +71,18 @@ func maxAnimationRefreshKind(current, incoming AnimationRefreshKind) AnimationRe
 	return current
 }
 
-// Animation is the interface for all animation types.
+// Animation is the interface for all animation types. Update is
+// called each tick with the elapsed seconds since the previous tick
+// and an AnimationCommands batch into which the animation may enqueue
+// deferred callbacks (OnDone / OnValue) — those run after Update
+// returns so callback bodies cannot reenter the animation loop mutex.
+// Return false once the animation has stopped so the loop retires it.
 type Animation interface {
 	ID() string
 	RefreshKind() AnimationRefreshKind
 	IsStopped() bool
 	SetStart(t time.Time)
-	Update(*Window, float32, *[]queuedCommand) bool
+	Update(w *Window, dt float32, ac *AnimationCommands) bool
 }
 
 // BlinkCursorAnimation toggles cursor visibility on a timer.
@@ -107,7 +112,7 @@ func (a *BlinkCursorAnimation) IsStopped() bool { return a.stopped }
 func (a *BlinkCursorAnimation) SetStart(t time.Time) { a.start = t }
 
 // Update implements Animation.
-func (a *BlinkCursorAnimation) Update(w *Window, _ float32, _ *[]queuedCommand) bool {
+func (a *BlinkCursorAnimation) Update(w *Window, _ float32, _ *AnimationCommands) bool {
 	return updateBlinkCursor(a, w)
 }
 
@@ -142,6 +147,6 @@ func (a *Animate) IsStopped() bool { return a.stopped }
 func (a *Animate) SetStart(t time.Time) { a.start = t }
 
 // Update implements Animation.
-func (a *Animate) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
-	return updateAnimate(a, deferred)
+func (a *Animate) Update(_ *Window, _ float32, ac *AnimationCommands) bool {
+	return updateAnimate(a, ac)
 }

@@ -37,8 +37,8 @@ func (k *KeyframeAnimation) IsStopped() bool { return k.stopped }
 func (k *KeyframeAnimation) SetStart(now time.Time) { k.start = now }
 
 // Update implements Animation.
-func (k *KeyframeAnimation) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
-	return updateKeyframe(k, deferred)
+func (k *KeyframeAnimation) Update(_ *Window, _ float32, ac *AnimationCommands) bool {
+	return updateKeyframe(k, ac)
 }
 
 // NewKeyframeAnimation creates a KeyframeAnimation with defaults.
@@ -51,7 +51,7 @@ func NewKeyframeAnimation(id string, keyframes []Keyframe, onValue func(float32,
 	}
 }
 
-func updateKeyframe(kf *KeyframeAnimation, deferred *[]queuedCommand) bool {
+func updateKeyframe(kf *KeyframeAnimation, ac *AnimationCommands) bool {
 	if kf.stopped {
 		return false
 	}
@@ -62,17 +62,17 @@ func updateKeyframe(kf *KeyframeAnimation, deferred *[]queuedCommand) bool {
 	progress, done := durationProgress(kf.start, kf.Duration)
 	if done {
 		if len(kf.Keyframes) > 0 {
-			queueOnValue(deferred, kf.OnValue, kf.Keyframes[len(kf.Keyframes)-1].Value)
+			ac.AppendOnValue(kf.OnValue, kf.Keyframes[len(kf.Keyframes)-1].Value)
 		}
 		if kf.Repeat {
 			kf.start = kf.start.Add(kf.Duration)
 			return true
 		}
-		queueOnDone(deferred, kf.OnDone)
+		ac.AppendOnDone(kf.OnDone)
 		kf.stopped = true
 		return true
 	}
-	queueOnValue(deferred, kf.OnValue, interpolateKeyframes(kf.Keyframes, progress))
+	ac.AppendOnValue(kf.OnValue, interpolateKeyframes(kf.Keyframes, progress))
 	return true
 }
 

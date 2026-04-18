@@ -36,7 +36,8 @@ func TestSpringSettles(t *testing.T) {
 	sp.SpringTo(100, 100) // already at target
 	sp.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateSpring(sp, 0.016, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateSpring(sp, 0.016, &ac)
 	runQueuedCommands(deferred)
 	if got != 100 {
 		t.Errorf("expected 100, got %f", got)
@@ -50,7 +51,8 @@ func TestSpringStoppedSkips(t *testing.T) {
 	sp := NewSpringAnimation("s", func(float32, *Window) {})
 	sp.stopped = true
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateSpring(sp, 0.016, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateSpring(sp, 0.016, &ac)
 	if ok {
 		t.Error("stopped spring should return false")
 	}
@@ -96,7 +98,8 @@ func TestSpringUpdateInterface(t *testing.T) {
 	sp.Config = SpringStiff
 	sp.SpringTo(100, 100) // already at target
 	deferred := make([]queuedCommand, 0, 4)
-	ok := sp.Update(nil, 0.016, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := sp.Update(nil, 0.016, &ac)
 	if !ok {
 		t.Error("Update should return true")
 	}
@@ -117,7 +120,8 @@ func TestSpringThresholdUsesUpdatedPosition(t *testing.T) {
 	sp.state.target = 100
 	sp.state.atRest = false
 	deferred := make([]queuedCommand, 0, 4)
-	updateSpring(sp, 0.016, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateSpring(sp, 0.016, &ac)
 	// The spring should NOT be at rest because displacement is recomputed
 	// after the position update.
 	if sp.stopped && got == sp.state.target {

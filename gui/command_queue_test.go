@@ -2,10 +2,11 @@ package gui
 
 import "testing"
 
-func TestQueueOnDoneAppendsCommand(t *testing.T) {
+func TestAnimationCommands_AppendOnDone(t *testing.T) {
 	var cmds []queuedCommand
+	ac := newAnimationCommands(&cmds)
 	called := false
-	queueOnDone(&cmds, func(_ *Window) { called = true })
+	ac.AppendOnDone(func(_ *Window) { called = true })
 
 	if len(cmds) != 1 {
 		t.Fatalf("len = %d, want 1", len(cmds))
@@ -19,21 +20,21 @@ func TestQueueOnDoneAppendsCommand(t *testing.T) {
 	}
 }
 
-func TestQueueOnDoneNilSkips(t *testing.T) {
+func TestAnimationCommands_AppendOnDoneNilSkips(t *testing.T) {
 	var cmds []queuedCommand
-	queueOnDone(&cmds, nil)
+	ac := newAnimationCommands(&cmds)
+	ac.AppendOnDone(nil)
 
 	if len(cmds) != 0 {
 		t.Errorf("len = %d, want 0 for nil fn", len(cmds))
 	}
 }
 
-func TestQueueOnValueAppendsCommand(t *testing.T) {
+func TestAnimationCommands_AppendOnValue(t *testing.T) {
 	var cmds []queuedCommand
+	ac := newAnimationCommands(&cmds)
 	var gotVal float32
-	queueOnValue(&cmds, func(v float32, _ *Window) {
-		gotVal = v
-	}, 42.5)
+	ac.AppendOnValue(func(v float32, _ *Window) { gotVal = v }, 42.5)
 
 	if len(cmds) != 1 {
 		t.Fatalf("len = %d, want 1", len(cmds))
@@ -48,6 +49,19 @@ func TestQueueOnValueAppendsCommand(t *testing.T) {
 	if gotVal != 42.5 {
 		t.Errorf("callback got %f, want 42.5", gotVal)
 	}
+}
+
+// Nil receiver / nil inner must be safe — an Animation constructed
+// without a wrapping AnimationCommands (e.g. unit test calling Update
+// directly) should not panic when enqueuing.
+func TestAnimationCommands_NilSafe(t *testing.T) {
+	var nilAC *AnimationCommands
+	nilAC.AppendOnDone(func(*Window) {})
+	nilAC.AppendOnValue(func(float32, *Window) {}, 1)
+
+	emptyAC := AnimationCommands{}
+	emptyAC.AppendOnDone(func(*Window) {})
+	emptyAC.AppendOnValue(func(float32, *Window) {}, 1)
 }
 
 func TestCommandMarkLayoutRefreshSetsFlag(t *testing.T) {

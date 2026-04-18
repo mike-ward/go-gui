@@ -25,11 +25,12 @@ func BenchmarkUpdateAnimate(b *testing.B) {
 	}
 	w := &Window{}
 	deferred := make([]queuedCommand, 0, 8)
+	ac := newAnimationCommands(&deferred)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
 		deferred = deferred[:0]
-		_ = updateAnimate(a, &deferred)
+		_ = updateAnimate(a, &ac)
 		w.queueCommandsBatch(deferred)
 		w.flushCommands()
 	}
@@ -42,11 +43,12 @@ func BenchmarkUpdateTween(b *testing.B) {
 	tw.start = time.Now().Add(-time.Second)
 	w := &Window{}
 	deferred := make([]queuedCommand, 0, 8)
+	ac := newAnimationCommands(&deferred)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
 		deferred = deferred[:0]
-		_ = updateTween(tw, &deferred)
+		_ = updateTween(tw, &ac)
 		w.queueCommandsBatch(deferred)
 		w.flushCommands()
 	}
@@ -66,11 +68,12 @@ func BenchmarkUpdateKeyframe(b *testing.B) {
 	kf.start = time.Now().Add(-time.Second)
 	w := &Window{}
 	deferred := make([]queuedCommand, 0, 8)
+	ac := newAnimationCommands(&deferred)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
 		deferred = deferred[:0]
-		_ = updateKeyframe(kf, &deferred)
+		_ = updateKeyframe(kf, &ac)
 		w.queueCommandsBatch(deferred)
 		w.flushCommands()
 	}
@@ -84,6 +87,7 @@ func BenchmarkUpdateSpring(b *testing.B) {
 	sp.start = time.Now().Add(-time.Second)
 	w := &Window{}
 	deferred := make([]queuedCommand, 0, 8)
+	ac := newAnimationCommands(&deferred)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
@@ -92,7 +96,7 @@ func BenchmarkUpdateSpring(b *testing.B) {
 			sp.start = time.Now().Add(-time.Second)
 		}
 		deferred = deferred[:0]
-		_ = updateSpring(sp, 0.016, &deferred)
+		_ = updateSpring(sp, 0.016, &ac)
 		w.queueCommandsBatch(deferred)
 		w.flushCommands()
 	}

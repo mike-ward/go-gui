@@ -26,8 +26,8 @@ func (h *HeroTransition) ID() string { return heroTransitionID }
 func (h *HeroTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
 
 // Update implements Animation.
-func (h *HeroTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
-	return updateTransition(&h.transitionBase, deferred)
+func (h *HeroTransition) Update(_ *Window, _ float32, ac *AnimationCommands) bool {
+	return updateTransition(&h.transitionBase, ac)
 }
 
 // NewHeroTransition creates a HeroTransition with defaults.

@@ -31,8 +31,8 @@ func (t *TweenAnimation) IsStopped() bool { return t.stopped }
 func (t *TweenAnimation) SetStart(now time.Time) { t.start = now }
 
 // Update implements Animation.
-func (t *TweenAnimation) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
-	return updateTween(t, deferred)
+func (t *TweenAnimation) Update(_ *Window, _ float32, ac *AnimationCommands) bool {
+	return updateTween(t, ac)
 }
 
 // NewTweenAnimation creates a TweenAnimation with defaults.
@@ -47,7 +47,7 @@ func NewTweenAnimation(id string, from, to float32, onValue func(float32, *Windo
 	}
 }
 
-func updateTween(tw *TweenAnimation, deferred *[]queuedCommand) bool {
+func updateTween(tw *TweenAnimation, ac *AnimationCommands) bool {
 	if tw.stopped {
 		return false
 	}
@@ -57,8 +57,8 @@ func updateTween(tw *TweenAnimation, deferred *[]queuedCommand) bool {
 	}
 	progress, done := durationProgress(tw.start, tw.Duration)
 	if done {
-		queueOnValue(deferred, tw.OnValue, tw.To)
-		queueOnDone(deferred, tw.OnDone)
+		ac.AppendOnValue(tw.OnValue, tw.To)
+		ac.AppendOnDone(tw.OnDone)
 		tw.stopped = true
 		return true
 	}
@@ -67,6 +67,6 @@ func updateTween(tw *TweenAnimation, deferred *[]queuedCommand) bool {
 		easing = EaseLinear
 	}
 	eased := easing(progress)
-	queueOnValue(deferred, tw.OnValue, Lerp(tw.From, tw.To, eased))
+	ac.AppendOnValue(tw.OnValue, Lerp(tw.From, tw.To, eased))
 	return true
 }

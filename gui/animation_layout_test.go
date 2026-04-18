@@ -32,7 +32,8 @@ func TestLayoutTransitionUpdate(t *testing.T) {
 	}
 	lt.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTransition(&lt.transitionBase, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateTransition(&lt.transitionBase, &ac)
 	if !ok {
 		t.Error("should update")
 	}
@@ -82,7 +83,8 @@ func TestLayoutTransitionUpdateInterface(t *testing.T) {
 	}
 	lt.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := lt.Update(nil, 0, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := lt.Update(nil, 0, &ac)
 	if !ok {
 		t.Error("Update should return true")
 	}
@@ -103,7 +105,8 @@ func TestLayoutTransitionOnDone(t *testing.T) {
 	}
 	lt.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateTransition(&lt.transitionBase, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateTransition(&lt.transitionBase, &ac)
 	runQueuedCommands(deferred)
 	if !done {
 		t.Error("OnDone not called")

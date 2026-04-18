@@ -20,7 +20,8 @@ func TestTweenCompletesAtTo(t *testing.T) {
 	tw := NewTweenAnimation("t", 10, 50, func(v float32, _ *Window) { got = v })
 	tw.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateTween(tw, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateTween(tw, &ac)
 	runQueuedCommands(deferred)
 	if got != 50 {
 		t.Errorf("final value = %f, want 50", got)
@@ -36,7 +37,8 @@ func TestTweenOnDoneCalled(t *testing.T) {
 	tw.OnDone = func(*Window) { done = true }
 	tw.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	updateTween(tw, &deferred)
+	ac := newAnimationCommands(&deferred)
+	updateTween(tw, &ac)
 	runQueuedCommands(deferred)
 	if !done {
 		t.Error("OnDone not called")
@@ -66,7 +68,8 @@ func TestTweenUpdateInterface(t *testing.T) {
 	tw := NewTweenAnimation("t", 10, 50, func(v float32, _ *Window) { got = v })
 	tw.start = time.Now().Add(-time.Second)
 	deferred := make([]queuedCommand, 0, 4)
-	ok := tw.Update(nil, 0, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := tw.Update(nil, 0, &ac)
 	if !ok {
 		t.Error("Update should return true")
 	}
@@ -80,7 +83,8 @@ func TestTweenStopped(t *testing.T) {
 	tw := NewTweenAnimation("t", 0, 1, func(float32, *Window) {})
 	tw.stopped = true
 	deferred := make([]queuedCommand, 0, 4)
-	ok := updateTween(tw, &deferred)
+	ac := newAnimationCommands(&deferred)
+	ok := updateTween(tw, &ac)
 	if ok {
 		t.Error("stopped tween should return false")
 	}

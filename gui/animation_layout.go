@@ -25,8 +25,8 @@ func (l *LayoutTransition) ID() string { return layoutTransitionID }
 func (l *LayoutTransition) RefreshKind() AnimationRefreshKind { return AnimationRefreshLayout }
 
 // Update implements Animation.
-func (l *LayoutTransition) Update(_ *Window, _ float32, deferred *[]queuedCommand) bool {
-	return updateTransition(&l.transitionBase, deferred)
+func (l *LayoutTransition) Update(_ *Window, _ float32, ac *AnimationCommands) bool {
+	return updateTransition(&l.transitionBase, ac)
 }
 
 // AnimateLayout triggers layout transition animation. Call BEFORE
