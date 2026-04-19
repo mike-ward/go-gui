@@ -31,36 +31,36 @@ rigid architectures.
 
 **go-gui bridges that gap.**
 
-* **Simple, deterministic API**\
+- **Simple, deterministic API**\
   Build UI like immediate mode—plain Go functions, minimal boilerplate, no surprises.
 
-* **Stable identity + reactive state**\
-  Component IDs and a typed per-window state slot give you persistence and 
+- **Stable identity + reactive state**\
+  Component IDs and a typed per-window state slot give you persistence and
   control—without framework magic.
 
-* **Time-travel debugging**\
+- **Time-travel debugging**\
   Built-in snapshot/restore ring buffer lets you scrub back through app state—deep
   visibility typically reserved for retained systems.
 
-* **Production-grade accessibility**\
+- **Production-grade accessibility**\
   Built-in ARIA roles, semantic structure, and IME support make real-world apps
   possible—not just demos.
 
-* **High performance at scale**\
+- **High performance at scale**\
   No virtual DOM, no diffing. Layout, sizing, and rendering happen in a single
   pass each frame. Virtualization is built in where it matters—DataGrid handles
   large datasets with no manual tuning.
 
-* **Animation built in**\
+- **Animation built in**\
   A first-class animation subsystem ships with the framework—smooth transitions
   and motion are not bolted on after the fact.
 
-* **Rich, extensible widget ecosystem**\
+- **Rich, extensible widget ecosystem**\
   50+ built-in widgets from data grids to code editors. Charts and maps are
   available as first-class companion libraries. Custom shaders let you extend
   rendering beyond the built-in widget set.
 
-* **Cross-platform, single binary**\
+- **Cross-platform, single binary**\
   Desktop, web, and mobile targets with native dialogs, menus, and OS features.
   Compiles to a native binary—no runtime to install, no VM overhead.
 
@@ -79,6 +79,7 @@ https://github.com/user-attachments/assets/a94ef905-b814-4712-b8d5-eed13b0bae8e
 ## ✨ Features
 
 **Widgets & Layout**
+
 - 50+ built-in widgets — buttons, inputs, sliders, tables, trees, tabs,
   menus, dialogs, toasts, breadcrumbs, and more
 - Flexible layout system — Row, Column, Wrap, Canvas, Splitter, DockLayout,
@@ -88,6 +89,7 @@ https://github.com/user-attachments/assets/a94ef905-b814-4712-b8d5-eed13b0bae8e
 - Dock layout with drag-and-drop panel rearrangement and tab groups
 
 **Rendering & Backends**
+
 - GPU-accelerated rendering via SDL2 + Metal (macOS) / OpenGL (Linux/Windows)
 - Web/WASM backend — Canvas2D with custom WebGL shaders, runs in any browser
 - iOS backend — Metal rendering, UIKit windowing, touch events
@@ -95,6 +97,7 @@ https://github.com/user-attachments/assets/a94ef905-b814-4712-b8d5-eed13b0bae8e
 - Custom GPU shader support
 
 **Text & Rich Content**
+
 - Rich text input — multiline, click-to-cursor, drag-to-select, word select,
   autoscroll, Home/End cycling
 - Markdown and RTF views with syntax highlighting and code-block
@@ -105,6 +108,7 @@ https://github.com/user-attachments/assets/a94ef905-b814-4712-b8d5-eed13b0bae8e
   professional-grade text shaping, rendering, and bidirectional layout
 
 **Animation & Effects**
+
 - Full animation subsystem — keyframe, spring, tween, hero transitions
 - ColorFilter post-processing — grayscale, sepia, brightness, contrast,
   hue rotate, invert, saturation, and composable filter chains
@@ -112,17 +116,20 @@ https://github.com/user-attachments/assets/a94ef905-b814-4712-b8d5-eed13b0bae8e
 - Box shadows and blur effects
 
 **Input & Interaction**
+
 - Touch gesture recognition — tap, double-tap, long-press, pan, swipe,
   pinch, rotate with automatic mouse-event synthesis for compatibility
 - Pan gestures auto-scroll containers; pinch/rotate available on
   ContainerCfg and DrawCanvasCfg
 
 **Audio**
+
 - Opt-in audio via SDL_mixer — sound effects and music playback
 - Multiple mixing channels, volume control, fade in/out
 - Load from file or embedded bytes (WAV, OGG, MP3, FLAC, MOD)
 
 **Platform Integration**
+
 - Windows backend — native file dialogs, print, and notifications
 - OS-level spell check (macOS NSSpellChecker, Linux Hunspell)
 - IME support and accessibility tree (macOS, Linux AT-SPI2)
@@ -133,6 +140,7 @@ https://github.com/user-attachments/assets/a94ef905-b814-4712-b8d5-eed13b0bae8e
 - Command registry with global hotkeys and fuzzy-search command palette
 
 **Developer Experience**
+
 - Theme system with built-in dark/light variants and custom themes
 - Stateless view model — views are pure functions, easy to test
 - Headless test backend runs all layout and widget logic without a display
@@ -487,17 +495,17 @@ go run ./examples/calculator/
 
 ### Display
 
-| Widget      | Factory                       | Description                   |
-| ----------- | ----------------------------- | ----------------------------- |
-| Text        | `Text(TextCfg)`               | Styled text label             |
-| Badge       | `Badge(BadgeCfg)`             | Notification badge            |
-| ProgressBar | `ProgressBar(ProgressBarCfg)` | Determinate/indeterminate bar |
-| Pulsar      | `Pulsar(PulsarCfg)`           | Blinking cursor indicator     |
+| Widget      | Factory                       | Description                                                |
+| ----------- | ----------------------------- | ---------------------------------------------------------- |
+| Text        | `Text(TextCfg)`               | Styled text label                                          |
+| Badge       | `Badge(BadgeCfg)`             | Notification badge                                         |
+| ProgressBar | `ProgressBar(ProgressBarCfg)` | Determinate/indeterminate bar                              |
+| Pulsar      | `Pulsar(PulsarCfg)`           | Blinking cursor indicator                                  |
 | DrawCanvas  | `DrawCanvas(DrawCanvasCfg)`   | Custom-draw surface (shapes, text, images, keyboard focus) |
-| Image       | `Image(ImageCfg)`             | Raster image view             |
-| Svg         | `Svg(SvgCfg)`                 | SVG vector image view         |
-| Markdown    | `w.Markdown(MarkdownCfg)`     | Rendered Markdown             |
-| RTF         | `RTF(RtfCfg)`                 | Rendered RTF                  |
+| Image       | `Image(ImageCfg)`             | Raster image view                                          |
+| Svg         | `Svg(SvgCfg)`                 | SVG vector image view                                      |
+| Markdown    | `w.Markdown(MarkdownCfg)`     | Rendered Markdown                                          |
+| RTF         | `RTF(RtfCfg)`                 | Rendered RTF                                               |
 
 ### Data
 
