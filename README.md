@@ -24,46 +24,53 @@ Most GUI frameworks force a tradeoff:
 you either get the simplicity of immediate mode or the power of retained systems.
 **go-gui gives you both—without the usual compromises.**
 
-Traditional immediate-mode systems like Dear ImGui are fast and simple, but struggle 
-with state, structure, accessibility, and large-scale apps. Retained frameworks like 
-Qt or Flutter solve those problems—but at the cost of complexity, hidden state, and 
+Traditional immediate-mode systems like Dear ImGui are fast and simple, but struggle
+with state, structure, accessibility, and large-scale apps. Retained frameworks like
+Qt or Flutter solve those problems—but at the cost of complexity, hidden state, and
 rigid architectures.
 
 **go-gui bridges that gap.**
 
 * **Simple, deterministic API**\
-  Build UI like immediate mode—no lifecycles, no boilerplate, no surprises.
+  Build UI like immediate mode—plain Go functions, minimal boilerplate, no surprises.
 
 * **Stable identity + reactive state**\
-  Component IDs and a flexible state registry give you persistence, reactivity, and
+  Component IDs and a typed per-window state slot give you persistence and 
   control—without framework magic.
 
-* **Full system awareness**\
-  Layout tree inspection, time-travel debugging, and rich tooling provide deep 
+* **Time-travel debugging**\
+  Built-in snapshot/restore ring buffer lets you scrub back through app state—deep
   visibility typically reserved for retained systems.
 
 * **Production-grade accessibility**\
-  Built-in ARIA roles, semantic structure, and IME support make real-world apps 
+  Built-in ARIA roles, semantic structure, and IME support make real-world apps
   possible—not just demos.
 
 * **High performance at scale**\
-  Thousands of widgets rendered in milliseconds. No virtualization required for 
-  many workloads.
+  No virtual DOM, no diffing. Layout, sizing, and rendering happen in a single
+  pass each frame. Virtualization is built in where it matters—DataGrid handles
+  large datasets with no manual tuning.
+
+* **Animation built in**\
+  A first-class animation subsystem ships with the framework—smooth transitions
+  and motion are not bolted on after the fact.
 
 * **Rich, extensible widget ecosystem**\
-  From data grids to code editors, charts, and maps—complex applications are 
-  first-class, not an afterthought.
+  50+ built-in widgets from data grids to code editors. Charts and maps are
+  available as first-class companion libraries. Custom shaders let you extend
+  rendering beyond the built-in widget set.
 
-* **Cross-platform with native integration**\
-  Desktop, mobile, and web targets with native dialogs, menus, and OS features.
+* **Cross-platform, single binary**\
+  Desktop, web, and mobile targets with native dialogs, menus, and OS features.
+  Compiles to a native binary—no runtime to install, no VM overhead.
 
 ---
 
 **The result:**\
-A framework that keeps the clarity and speed of immediate mode, while delivering the 
+A framework that keeps the clarity and speed of immediate mode, while delivering the
 power, scalability, and tooling of modern UI systems.
 
-No compromises. No hidden machinery. Just control, performance, and capability.
+No hidden machinery. Just control, performance, and capability.
 
 ---
 
