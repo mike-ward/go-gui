@@ -16,17 +16,54 @@ no diffing, just fast, composable UI.**
 
 Go-Gui is an immediate-mode GUI framework where every frame, a plain Go
 function returns a layout tree that gets sized, positioned, and rendered
-directly to the screen. State lives in a single typed slot per window —
-no globals, no closures, no hidden magic.
+directly to the screen. State lives in a single typed slot per window.
 
-Originally ported from the
-[V-language gui library](https://github.com/mike-ward/gui), Go-Gui keeps
-the same philosophy: minimal ceremony, composable widgets, and a clean
-separation between layout logic and rendering.
+## 🤔 Why go-gui is better
 
-```
-View fn → Layout tree → layoutArrange() → renderLayout() → []RenderCmd → GPU
-```
+Most GUI frameworks force a tradeoff:
+you either get the simplicity of immediate mode or the power of retained systems.
+**go-gui gives you both—without the usual compromises.**
+
+Traditional immediate-mode systems like Dear ImGui are fast and simple, but struggle 
+with state, structure, accessibility, and large-scale apps. Retained frameworks like 
+Qt or Flutter solve those problems—but at the cost of complexity, hidden state, and 
+rigid architectures.
+
+**go-gui bridges that gap.**
+
+* **Simple, deterministic API**\
+  Build UI like immediate mode—no lifecycles, no boilerplate, no surprises.
+
+* **Stable identity + reactive state**\
+  Component IDs and a flexible state registry give you persistence, reactivity, and
+  control—without framework magic.
+
+* **Full system awareness**\
+  Layout tree inspection, time-travel debugging, and rich tooling provide deep 
+  visibility typically reserved for retained systems.
+
+* **Production-grade accessibility**\
+  Built-in ARIA roles, semantic structure, and IME support make real-world apps 
+  possible—not just demos.
+
+* **High performance at scale**\
+  Thousands of widgets rendered in milliseconds. No virtualization required for 
+  many workloads.
+
+* **Rich, extensible widget ecosystem**\
+  From data grids to code editors, charts, and maps—complex applications are 
+  first-class, not an afterthought.
+
+* **Cross-platform with native integration**\
+  Desktop, mobile, and web targets with native dialogs, menus, and OS features.
+
+---
+
+**The result:**\
+A framework that keeps the clarity and speed of immediate mode, while delivering the 
+power, scalability, and tooling of modern UI systems.
+
+No compromises. No hidden machinery. Just control, performance, and capability.
 
 ---
 
