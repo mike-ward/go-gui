@@ -72,7 +72,7 @@ power, scalability, and tooling of modern UI systems.
 
 No hidden machinery. Just control, performance, and capability.
 
-<video src="assets/spinners.mp4" autoplay loop muted playsinline></video>
+https://github.com/user-attachments/assets/a94ef905-b814-4712-b8d5-eed13b0bae8e
 
 ---
 
