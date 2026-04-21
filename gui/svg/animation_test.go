@@ -135,11 +135,11 @@ func TestAnimationParseAnimateTransformValid(t *testing.T) {
 	}
 }
 
-func TestAnimationParseAnimateTransformNonRotate(t *testing.T) {
-	elem := `<animateTransform type="scale" from="1" to="2" dur="1s">`
+func TestAnimationParseAnimateTransformUnknownType(t *testing.T) {
+	elem := `<animateTransform type="skewX" from="0" to="30" dur="1s">`
 	_, ok := parseAnimateTransformElement(elem, groupStyle{})
 	if ok {
-		t.Fatalf("expected ok=false for non-rotate")
+		t.Fatalf("expected ok=false for unsupported transform type")
 	}
 }
 
@@ -242,6 +242,40 @@ const rotateNoIDAsset = `<svg viewBox="0 0 24 24" ` +
 	`<animateTransform attributeName="transform" type="rotate" ` +
 	`dur="0.75s" values="0 12 12;360 12 12" repeatCount="indefinite"/>` +
 	`</path></svg>`
+
+// TestAnimationGroupSynthIDBindsSiblings — when a bare <g> wraps
+// multiple shapes plus a shared <animateTransform>, the group
+// must get a synthesized GroupID so every descendant shape and
+// the animation all share it. Previously the animation and
+// paths all had GroupID="" and the renderer's non-empty guard
+// silently dropped the animation (e.g. 8-dots-rotate asset).
+func TestAnimationGroupSynthIDBindsSiblings(t *testing.T) {
+	asset := `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
+		`<g>` +
+		`<circle cx="3" cy="12" r="2"/>` +
+		`<circle cx="21" cy="12" r="2"/>` +
+		`<animateTransform attributeName="transform" type="rotate" ` +
+		`dur="1.5s" values="0 12 12;360 12 12" repeatCount="indefinite"/>` +
+		`</g></svg>`
+	parsed, err := New().ParseSvg(asset)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(parsed.Paths) != 2 || len(parsed.Animations) != 1 {
+		t.Fatalf("want 2 paths + 1 anim, got %d paths + %d anims",
+			len(parsed.Paths), len(parsed.Animations))
+	}
+	gid := parsed.Animations[0].GroupID
+	if gid == "" {
+		t.Fatal("animation GroupID must be non-empty")
+	}
+	for i, p := range parsed.Paths {
+		if p.GroupID != gid {
+			t.Fatalf("path[%d] GroupID %q != anim GroupID %q",
+				i, p.GroupID, gid)
+		}
+	}
+}
 
 func TestAnimationSynthIDCouplesShapeAndAnim(t *testing.T) {
 	parsed, err := New().ParseSvg(rotateNoIDAsset)

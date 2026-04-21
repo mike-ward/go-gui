@@ -233,7 +233,21 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 			groupEnd := findClosingTag(content, tagName, groupStart)
 			if groupEnd > groupStart {
 				groupContent := content[groupStart:groupEnd]
-				paths = append(paths, parseSvgContent(groupContent, gs, depth+1, state)...)
+				// When a group lacks an explicit id but contains
+				// inline <animate>/<animateTransform> children,
+				// synthesize a GroupID so descendants can bind to
+				// the animation. Mirrors parseShapeElement's
+				// synth-id logic. Substring check also matches
+				// nested animations; inner groups with their own
+				// id or synth assignment override.
+				if gs.GroupID == "" &&
+					shapeHasInlineAnimation(groupContent) {
+					state.synthID++
+					gs.GroupID = fmt.Sprintf("__anim_%d",
+						state.synthID)
+				}
+				paths = append(paths,
+					parseSvgContent(groupContent, gs, depth+1, state)...)
 			}
 			closeEnd := strings.IndexByte(content[groupEnd:], '>')
 			if closeEnd < 0 {
@@ -395,11 +409,29 @@ func parseShapeElement(
 	parseShapeInlineChildren(body, shapeGS, state)
 	// Phase-2 scope: clip-pathed shapes skip re-tessellation.
 	if pathIdx >= 0 && (*paths)[pathIdx].ClipPathID == "" {
+		hasAttrAnim := false
+		hasXformAnim := false
 		for i := animStart; i < len(state.animations); i++ {
-			if state.animations[i].Kind == gui.SvgAnimAttr {
-				(*paths)[pathIdx].Animated = true
-				break
+			switch state.animations[i].Kind {
+			case gui.SvgAnimAttr:
+				hasAttrAnim = true
+			case gui.SvgAnimTranslate, gui.SvgAnimScale:
+				hasXformAnim = true
 			}
+		}
+		if hasAttrAnim {
+			(*paths)[pathIdx].Animated = true
+		}
+		if hasXformAnim {
+			// Phase 5a treats animateTransform as additive=
+			// "replace" (sum not honored). The element's local
+			// transform is typically a placeholder — pulse-ring's
+			// `translate(12,12) scale(0)` would otherwise bake
+			// every vertex onto a single point. Reset to the
+			// parent's inherited transform so local vertices
+			// tessellate at their natural coords; the animation
+			// supplies the per-frame transform at render time.
+			(*paths)[pathIdx].Transform = inherited.Transform
 		}
 	}
 

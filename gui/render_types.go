@@ -82,6 +82,15 @@ type RenderCmd struct {
 	RotCX    float32
 	RotCY    float32
 
+	// SVG animateTransform translate + scale. Applied to each
+	// vertex as v' = (vx*ScaleX + TransX, vy*ScaleY + TransY)
+	// before rotation. Only honored when HasXform is true.
+	TransX   float32
+	TransY   float32
+	ScaleX   float32
+	ScaleY   float32
+	HasXform bool
+
 	// Slice data (Svg).
 	Triangles    []float32
 	VertexColors []Color

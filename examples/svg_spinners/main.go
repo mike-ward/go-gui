@@ -19,21 +19,24 @@ const (
 	spinnerSize = 72
 )
 
-// Curated showcase — one from each major family. Rotate-based
-// kinds animate under the Phase 0 SMIL subset; others render
-// as their static first frame until later phases land.
+// Curated showcase — one from each major family. Kinds animate
+// under the phase 0-5 SMIL subset: rotate (0), opacity / attr
+// keyframes (1-2), spline easing (3), syncbase begins (4),
+// animateTransform translate/scale (5). Stroke-only assets
+// (e.g. ring-resize, uses stroke-dasharray animation) and
+// CSS-stylesheet-driven assets (90-ring-with-gradient) remain
+// out of scope.
 var showcase = []gui.SvgSpinnerKind{
 	gui.SvgSpinner90Ring,
 	gui.SvgSpinner180Ring,
 	gui.SvgSpinner270Ring,
-	gui.SvgSpinner90RingWithGradient,
+	gui.SvgSpinner90RingWithBg,
 	gui.SvgSpinner6DotsRotate,
 	gui.SvgSpinner8DotsRotate,
 	gui.SvgSpinner3DotsBounce,
 	gui.SvgSpinner3DotsFade,
 	gui.SvgSpinnerBars,
 	gui.SvgSpinnerPulseRing,
-	gui.SvgSpinnerRingResize,
 }
 
 func main() {

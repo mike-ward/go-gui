@@ -108,14 +108,27 @@ func attrNameFromString(s string) gui.SvgAttrName {
 }
 
 // parseAnimateTransformElement parses an <animateTransform>
-// element targeting type="rotate". Accepts either from/to form
-// or values="a cx cy;b cx cy;..." form. Returns animation and
-// true if valid.
+// element. Supports type="rotate" (from/to or values), plus
+// type="translate" and type="scale" (values form). The
+// additive="sum" attribute is not honored in phase 5a —
+// animated values replace the base transform. The only corpus
+// asset affected is pulse-ring.svg, where the base transform
+// is a scale(0) placeholder that the animation fully overrides.
 func parseAnimateTransformElement(
 	elem string, inherited groupStyle,
 ) (gui.SvgAnimation, bool) {
 	typ, ok := findAttr(elem, "type")
-	if !ok || typ != "rotate" {
+	if !ok {
+		return gui.SvgAnimation{}, false
+	}
+	switch typ {
+	case "rotate":
+		// fallthrough to original rotate logic below.
+	case "translate":
+		return parseAnimateTranslateElement(elem, inherited)
+	case "scale":
+		return parseAnimateScaleElement(elem, inherited)
+	default:
 		return gui.SvgAnimation{}, false
 	}
 	dur := parseDuration(elem)
@@ -160,6 +173,125 @@ func parseAnimateTransformElement(
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
 	}, true
+}
+
+// parseAnimateTranslateElement parses <animateTransform
+// type="translate"> with values="tx ty;tx ty;..." or from/to.
+// Emits Values as interleaved [tx,ty, ...] with 2 floats per
+// keyframe.
+func parseAnimateTranslateElement(
+	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	dur := parseDuration(elem)
+	if dur <= 0 {
+		return gui.SvgAnimation{}, false
+	}
+	var pairs []float32
+	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
+		pairs = parsePairedValues(valStr)
+	} else if fromStr, ok := findAttr(elem, "from"); ok {
+		toStr, okTo := findAttr(elem, "to")
+		if !okTo {
+			return gui.SvgAnimation{}, false
+		}
+		from := parseSpaceFloats(fromStr)
+		to := parseSpaceFloats(toStr)
+		if len(from) < 1 || len(to) < 1 {
+			return gui.SvgAnimation{}, false
+		}
+		pairs = []float32{
+			from[0], pairY(from),
+			to[0], pairY(to),
+		}
+	}
+	if len(pairs) < 4 {
+		return gui.SvgAnimation{}, false
+	}
+	return gui.SvgAnimation{
+		Kind:       gui.SvgAnimTranslate,
+		GroupID:    inherited.GroupID,
+		Values:     pairs,
+		KeySplines: parseKeySplinesIfSpline(elem, len(pairs)/2),
+		DurSec:     dur,
+		BeginSec:   parseBeginLiteral(elem),
+	}, true
+}
+
+// parseAnimateScaleElement parses <animateTransform type="scale">
+// with values="s;s;..." (uniform) or "sx sy;sx sy;..." (non-
+// uniform). Normalizes to interleaved [sx,sy, ...] regardless.
+func parseAnimateScaleElement(
+	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	dur := parseDuration(elem)
+	if dur <= 0 {
+		return gui.SvgAnimation{}, false
+	}
+	var pairs []float32
+	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
+		pairs = parsePairedValues(valStr)
+	} else if fromStr, ok := findAttr(elem, "from"); ok {
+		toStr, okTo := findAttr(elem, "to")
+		if !okTo {
+			return gui.SvgAnimation{}, false
+		}
+		from := parseSpaceFloats(fromStr)
+		to := parseSpaceFloats(toStr)
+		if len(from) < 1 || len(to) < 1 {
+			return gui.SvgAnimation{}, false
+		}
+		pairs = []float32{
+			from[0], pairY(from),
+			to[0], pairY(to),
+		}
+	}
+	if len(pairs) < 4 {
+		return gui.SvgAnimation{}, false
+	}
+	return gui.SvgAnimation{
+		Kind:       gui.SvgAnimScale,
+		GroupID:    inherited.GroupID,
+		Values:     pairs,
+		KeySplines: parseKeySplinesIfSpline(elem, len(pairs)/2),
+		DurSec:     dur,
+		BeginSec:   parseBeginLiteral(elem),
+	}, true
+}
+
+// pairY returns the second component from a parsed space-float
+// list. Falls back to the first component (uniform) when only
+// one value is present — matches SVG "scale(s)" shorthand.
+func pairY(parts []float32) float32 {
+	if len(parts) >= 2 {
+		return parts[1]
+	}
+	return parts[0]
+}
+
+// parsePairedValues parses a semicolon-separated values= list
+// where each entry is "a [b]" (space-separated). Missing second
+// component is duplicated (uniform-scale / same-for-y shorthand).
+// Returns an interleaved flat slice of 2 floats per entry.
+func parsePairedValues(s string) []float32 {
+	parts := strings.Split(s, ";")
+	out := make([]float32, 0, 2*len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		nums := parseSpaceFloats(p)
+		if len(nums) == 0 {
+			return nil
+		}
+		x := nums[0]
+		y := nums[0]
+		if len(nums) >= 2 {
+			y = nums[1]
+		}
+		out = append(out, x, y)
+	}
+	return out
 }
 
 // parseRotateValues parses a semicolon-separated list of rotate

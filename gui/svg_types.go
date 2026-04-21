@@ -110,6 +110,13 @@ const (
 	// x, y, width, height, rx, ry). Phase-1 records the animation;
 	// phase-2 evaluates overrides and re-tessellates.
 	SvgAnimAttr
+	// SvgAnimTranslate animates <animateTransform type="translate">.
+	// Values is interleaved [tx,ty, tx,ty, ...] (2 per keyframe).
+	SvgAnimTranslate
+	// SvgAnimScale animates <animateTransform type="scale">. Values
+	// is interleaved [sx,sy, sx,sy, ...] (2 per keyframe; uniform
+	// scale values are normalized to equal sx,sy at parse time).
+	SvgAnimScale
 )
 
 // SvgAttrName identifies an animatable primitive attribute.

@@ -474,6 +474,7 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 		vAlpha = max(0, min(r.VertexAlphaScale, 1))
 	}
 
+	hasXform := r.HasXform
 	hasRot := r.RotAngle != 0
 	var sinA, cosA float32
 	if hasRot {
@@ -487,6 +488,10 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 			vi := i + j
 			vx := r.Triangles[vi*2]
 			vy := r.Triangles[vi*2+1]
+			if hasXform {
+				vx = vx*r.ScaleX + r.TransX
+				vy = vy*r.ScaleY + r.TransY
+			}
 			if hasRot {
 				dx := vx - r.RotCX
 				dy := vy - r.RotCY

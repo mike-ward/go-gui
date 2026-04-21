@@ -156,6 +156,8 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	}
 
 	var rotAngle, rotCX, rotCY float32
+	var transX, transY, scaleX, scaleY float32
+	hasXform := false
 	var vAlphaScale float32
 	hasVAlpha := false
 	if animState != nil && path.GroupID != "" {
@@ -163,6 +165,13 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 			rotAngle = st.RotAngle
 			rotCX = st.RotCX
 			rotCY = st.RotCY
+			if st.HasXform {
+				transX = st.TransX
+				transY = st.TransY
+				scaleX = st.ScaleX
+				scaleY = st.ScaleY
+				hasXform = true
+			}
 			if st.Opacity < 1 {
 				c.A = uint8(float32(c.A) * st.Opacity)
 				if len(vcols) > 0 {
@@ -188,6 +197,11 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 		RotAngle:         rotAngle,
 		RotCX:            rotCX,
 		RotCY:            rotCY,
+		TransX:           transX,
+		TransY:           transY,
+		ScaleX:           scaleX,
+		ScaleY:           scaleY,
+		HasXform:         hasXform,
 	}, w)
 }
 
@@ -224,12 +238,17 @@ func emitCachedSvgTextPathDraw(draw *CachedSvgTextPathDraw,
 
 // svgAnimState holds computed per-group animation state.
 type svgAnimState struct {
-	RotAngle     float32 // rotation degrees
-	RotCX        float32 // rotation center X (SVG space)
-	RotCY        float32 // rotation center Y (SVG space)
-	Opacity      float32 // 0..1
-	Inited       bool
-	AttrOverride SvgAnimAttrOverride // attribute overrides for re-tessellation
+	RotAngle float32 // rotation degrees
+	RotCX    float32 // rotation center X (SVG space)
+	RotCY    float32 // rotation center Y (SVG space)
+	Opacity  float32 // 0..1
+	// TransX/TransY is the animated translate; ScaleX/ScaleY the
+	// animated scale. Identity when HasXform is false.
+	TransX, TransY float32
+	ScaleX, ScaleY float32
+	HasXform       bool
+	Inited         bool
+	AttrOverride   SvgAnimAttrOverride // attribute overrides for re-tessellation
 }
 
 // computeSvgAnimations builds a map of per-group animation
@@ -250,6 +269,8 @@ func computeSvgAnimations(
 		st := states[a.GroupID]
 		if !st.Inited {
 			st.Opacity = 1
+			st.ScaleX = 1
+			st.ScaleY = 1
 			st.Inited = true
 		}
 		adj := elapsedSec - a.BeginSec
@@ -271,6 +292,20 @@ func computeSvgAnimations(
 			if len(a.Values) >= 2 {
 				applyAttrOverride(&st.AttrOverride, a.AttrName,
 					lerpKeyframes(a.Values, a.KeySplines, frac))
+			}
+		case SvgAnimTranslate:
+			if len(a.Values) >= 4 {
+				x, y := lerpKeyframes2D(a.Values, a.KeySplines, frac)
+				st.TransX = x
+				st.TransY = y
+				st.HasXform = true
+			}
+		case SvgAnimScale:
+			if len(a.Values) >= 4 {
+				x, y := lerpKeyframes2D(a.Values, a.KeySplines, frac)
+				st.ScaleX = x
+				st.ScaleY = y
+				st.HasXform = true
 			}
 		}
 		states[a.GroupID] = st
@@ -383,6 +418,33 @@ func lerpKeyframes(vals, splines []float32, frac float32) float32 {
 			splines[off+2], splines[off+3])
 	}
 	return vals[idx] + (vals[idx+1]-vals[idx])*t
+}
+
+// lerpKeyframes2D interpolates a paired [x0,y0, x1,y1, ...]
+// keyframe stream. Segment-fraction bending via splines matches
+// lerpKeyframes' semantics (nil splines = linear fast path).
+func lerpKeyframes2D(vals, splines []float32, frac float32) (float32, float32) {
+	n := len(vals) / 2
+	if n == 0 {
+		return 0, 0
+	}
+	if n == 1 {
+		return vals[0], vals[1]
+	}
+	seg := frac * float32(n-1)
+	idx := int(seg)
+	if idx >= n-1 {
+		return vals[(n-1)*2], vals[(n-1)*2+1]
+	}
+	t := seg - float32(idx)
+	if len(splines) == 4*(n-1) {
+		off := idx * 4
+		t = bezierEase(t, splines[off], splines[off+1],
+			splines[off+2], splines[off+3])
+	}
+	x0, y0 := vals[idx*2], vals[idx*2+1]
+	x1, y1 := vals[(idx+1)*2], vals[(idx+1)*2+1]
+	return x0 + (x1-x0)*t, y0 + (y1-y0)*t
 }
 
 // bezierEase evaluates a cubic-bezier timing function at x,
