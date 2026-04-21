@@ -131,14 +131,19 @@ const (
 
 // SvgAnimation holds parsed SMIL animation data.
 type SvgAnimation struct {
-	Kind     SvgAnimKind
-	GroupID  string
-	Values   []float32 // opacity: keyframes; rotate: [from, to]
-	CenterX  float32   // rotation center (SVG coords)
-	CenterY  float32
-	DurSec   float32
-	BeginSec float32
-	AttrName SvgAttrName // valid when Kind == SvgAnimAttr
+	Kind    SvgAnimKind
+	GroupID string
+	Values  []float32 // opacity: keyframes; rotate: [from, to]
+	// KeySplines stores cubic-bezier control points for spline
+	// easing: flat [x1,y1,x2,y2, x1,y1,x2,y2, ...] with one
+	// 4-tuple per inter-keyframe segment (len(Values)-1).
+	// Nil when calcMode != "spline" or keySplines mismatched.
+	KeySplines []float32
+	CenterX    float32 // rotation center (SVG coords)
+	CenterY    float32
+	DurSec     float32
+	BeginSec   float32
+	AttrName   SvgAttrName // valid when Kind == SvgAnimAttr
 }
 
 // SvgPrimitiveKind identifies the source primitive of a VectorPath.

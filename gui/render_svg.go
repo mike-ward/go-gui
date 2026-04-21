@@ -259,18 +259,18 @@ func computeSvgAnimations(
 		switch a.Kind {
 		case SvgAnimRotate:
 			if len(a.Values) >= 2 {
-				st.RotAngle = lerpKeyframes(a.Values, frac)
+				st.RotAngle = lerpKeyframes(a.Values, a.KeySplines, frac)
 				st.RotCX = a.CenterX
 				st.RotCY = a.CenterY
 			}
 		case SvgAnimOpacity:
 			if len(a.Values) >= 2 {
-				st.Opacity *= lerpKeyframes(a.Values, frac)
+				st.Opacity *= lerpKeyframes(a.Values, a.KeySplines, frac)
 			}
 		case SvgAnimAttr:
 			if len(a.Values) >= 2 {
 				applyAttrOverride(&st.AttrOverride, a.AttrName,
-					lerpKeyframes(a.Values, frac))
+					lerpKeyframes(a.Values, a.KeySplines, frac))
 			}
 		}
 		states[a.GroupID] = st
@@ -357,9 +357,13 @@ func applyAttrOverride(o *SvgAnimAttrOverride,
 	}
 }
 
-// lerpKeyframes interpolates evenly-spaced keyframe values at
-// the given fraction (0..1).
-func lerpKeyframes(vals []float32, frac float32) float32 {
+// lerpKeyframes interpolates evenly-spaced keyframe values at the
+// given fraction (0..1). When splines is non-nil, the per-segment
+// fraction is bent through a cubic-bezier ease (SMIL calcMode=
+// "spline"). splines layout: flat [x1,y1,x2,y2, ...], 4 floats per
+// segment. When len(splines) != 4*(len(vals)-1), splines is
+// ignored (linear fallback).
+func lerpKeyframes(vals, splines []float32, frac float32) float32 {
 	n := len(vals)
 	if n == 0 {
 		return 1
@@ -367,14 +371,61 @@ func lerpKeyframes(vals []float32, frac float32) float32 {
 	if n == 1 {
 		return vals[0]
 	}
-	// Scale fraction to segment index.
 	seg := frac * float32(n-1)
 	idx := int(seg)
 	if idx >= n-1 {
 		return vals[n-1]
 	}
 	t := seg - float32(idx)
+	if len(splines) == 4*(n-1) {
+		off := idx * 4
+		t = bezierEase(t, splines[off], splines[off+1],
+			splines[off+2], splines[off+3])
+	}
 	return vals[idx] + (vals[idx+1]-vals[idx])*t
+}
+
+// bezierEase evaluates a cubic-bezier timing function at x,
+// returning y. Control points are P0=(0,0), P1=(x1,y1),
+// P2=(x2,y2), P3=(1,1). Solves bezX(u)=x for u via Newton-Raphson
+// then returns bezY(u). Real-world keySplines have all control
+// points in [0,1], so Newton converges in 3-4 iterations.
+func bezierEase(x, x1, y1, x2, y2 float32) float32 {
+	if x <= 0 {
+		return 0
+	}
+	if x >= 1 {
+		return 1
+	}
+	u := x
+	for range 8 {
+		cx := bezCoord(u, x1, x2) - x
+		if cx < 0 {
+			cx = -cx
+		}
+		if cx < 1e-5 {
+			break
+		}
+		dx := bezCoordDeriv(u, x1, x2)
+		if dx == 0 {
+			break
+		}
+		u -= (bezCoord(u, x1, x2) - x) / dx
+	}
+	return bezCoord(u, y1, y2)
+}
+
+// bezCoord evaluates one axis of a cubic-bezier with P0=0, P3=1
+// and mid control points a, b at parameter u.
+func bezCoord(u, a, b float32) float32 {
+	one := 1 - u
+	return 3*one*one*u*a + 3*one*u*u*b + u*u*u
+}
+
+// bezCoordDeriv evaluates the derivative of bezCoord wrt u.
+func bezCoordDeriv(u, a, b float32) float32 {
+	one := 1 - u
+	return 3*one*one*a + 6*one*u*(b-a) + 3*u*u*(1-b)
 }
 
 // fmod returns x mod y, always positive.

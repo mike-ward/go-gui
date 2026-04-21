@@ -96,6 +96,7 @@ func parseSvg(content string) (*VectorGraphic, error) {
 	}
 
 	vg.Animations = state.animations
+	resolveBegins(vg.Animations, state.animBeginSpecs, state.animIDIndex)
 	return vg, nil
 }
 
@@ -314,6 +315,8 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 			if len(state.animations) < maxAnimations {
 				if a, ok := parseAnimateElement(elem, inherited); ok {
 					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
 				}
 			}
 			pos = elemEnd + 1
@@ -323,6 +326,8 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 			if len(state.animations) < maxAnimations {
 				if a, ok := parseAnimateTransformElement(elem, inherited); ok {
 					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
 				}
 			}
 			pos = elemEnd + 1
@@ -446,15 +451,21 @@ func parseShapeInlineChildren(
 			if len(state.animations) < maxAnimations {
 				if a, ok := parseAnimateElement(elem, shapeGS); ok {
 					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
 				} else if a, ok := parseAnimateAttributeElement(
 					elem, shapeGS); ok {
 					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
 				}
 			}
 		case "animateTransform":
 			if len(state.animations) < maxAnimations {
 				if a, ok := parseAnimateTransformElement(elem, shapeGS); ok {
 					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
 				}
 			}
 		}

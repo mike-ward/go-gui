@@ -2,6 +2,7 @@
 package svg
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -29,11 +30,12 @@ func parseAnimateElement(
 		return gui.SvgAnimation{}, false
 	}
 	return gui.SvgAnimation{
-		Kind:     gui.SvgAnimOpacity,
-		GroupID:  inherited.GroupID,
-		Values:   vals,
-		DurSec:   dur,
-		BeginSec: parseBeginOffset(elem),
+		Kind:       gui.SvgAnimOpacity,
+		GroupID:    inherited.GroupID,
+		Values:     vals,
+		KeySplines: parseKeySplinesIfSpline(elem, len(vals)),
+		DurSec:     dur,
+		BeginSec:   parseBeginLiteral(elem),
 	}, true
 }
 
@@ -71,12 +73,13 @@ func parseAnimateAttributeElement(
 		return gui.SvgAnimation{}, false
 	}
 	return gui.SvgAnimation{
-		Kind:     gui.SvgAnimAttr,
-		GroupID:  inherited.GroupID,
-		Values:   vals,
-		DurSec:   dur,
-		BeginSec: parseBeginOffset(elem),
-		AttrName: name,
+		Kind:       gui.SvgAnimAttr,
+		GroupID:    inherited.GroupID,
+		Values:     vals,
+		KeySplines: parseKeySplinesIfSpline(elem, len(vals)),
+		DurSec:     dur,
+		BeginSec:   parseBeginLiteral(elem),
+		AttrName:   name,
 	}, true
 }
 
@@ -126,13 +129,14 @@ func parseAnimateTransformElement(
 			return gui.SvgAnimation{}, false
 		}
 		return gui.SvgAnimation{
-			Kind:     gui.SvgAnimRotate,
-			GroupID:  inherited.GroupID,
-			Values:   angles,
-			CenterX:  cx,
-			CenterY:  cy,
-			DurSec:   dur,
-			BeginSec: parseBeginOffset(elem),
+			Kind:       gui.SvgAnimRotate,
+			GroupID:    inherited.GroupID,
+			Values:     angles,
+			KeySplines: parseKeySplinesIfSpline(elem, len(angles)),
+			CenterX:    cx,
+			CenterY:    cy,
+			DurSec:     dur,
+			BeginSec:   parseBeginLiteral(elem),
 		}, true
 	}
 
@@ -147,13 +151,14 @@ func parseAnimateTransformElement(
 		return gui.SvgAnimation{}, false
 	}
 	return gui.SvgAnimation{
-		Kind:     gui.SvgAnimRotate,
-		GroupID:  inherited.GroupID,
-		Values:   []float32{fromParts[0], toParts[0]},
-		CenterX:  fromParts[1],
-		CenterY:  fromParts[2],
-		DurSec:   dur,
-		BeginSec: parseBeginOffset(elem),
+		Kind:       gui.SvgAnimRotate,
+		GroupID:    inherited.GroupID,
+		Values:     []float32{fromParts[0], toParts[0]},
+		KeySplines: parseKeySplinesIfSpline(elem, 2),
+		CenterX:    fromParts[1],
+		CenterY:    fromParts[2],
+		DurSec:     dur,
+		BeginSec:   parseBeginLiteral(elem),
 	}, true
 }
 
@@ -198,13 +203,197 @@ func parseDuration(elem string) float32 {
 	return parseTimeValue(s)
 }
 
-// parseBeginOffset extracts the "begin" attribute as seconds.
-func parseBeginOffset(elem string) float32 {
+// parseBeginLiteral returns the first absolute-time entry in a
+// semicolon-separated begin list. Syncbase references (entries
+// containing ".begin" or ".end") are skipped here and resolved
+// in resolveBegins post-pass. Returns 0 when no literal present.
+func parseBeginLiteral(elem string) float32 {
 	s, ok := findAttr(elem, "begin")
 	if !ok || s == "" {
 		return 0
 	}
-	return parseTimeValue(s)
+	for part := range strings.SplitSeq(s, ";") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if strings.Contains(part, ".begin") ||
+			strings.Contains(part, ".end") {
+			continue
+		}
+		return parseTimeValue(part)
+	}
+	return 0
+}
+
+// beginSpec is one activation time for an animation: either an
+// absolute offset (targetID=="") or a reference to another
+// animation's begin/end plus an offset.
+type beginSpec struct {
+	targetID string
+	isEnd    bool
+	offset   float32
+}
+
+// parseBeginSpecs parses the "begin" attribute of an <animate>
+// element into an ordered spec list. Returns nil when the
+// attribute is absent, empty, or contains no syncbase references
+// (no post-pass resolution needed). Malformed entries are
+// skipped; the caller falls back to parseBeginLiteral.
+func parseBeginSpecs(elem string) []beginSpec {
+	s, ok := findAttr(elem, "begin")
+	if !ok || s == "" {
+		return nil
+	}
+	if !strings.Contains(s, ".begin") && !strings.Contains(s, ".end") {
+		return nil
+	}
+	parts := strings.Split(s, ";")
+	out := make([]beginSpec, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		sp, ok := parseOneBeginSpec(p)
+		if ok {
+			out = append(out, sp)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// parseOneBeginSpec parses a single begin-list entry. An entry
+// is either a time value (literal) or "id.begin[+-]offset" /
+// "id.end[+-]offset". Uses LastIndex so ids containing dots
+// are preserved intact.
+func parseOneBeginSpec(p string) (beginSpec, bool) {
+	idxBegin := strings.LastIndex(p, ".begin")
+	idxEnd := strings.LastIndex(p, ".end")
+	if idxBegin < 0 && idxEnd < 0 {
+		return beginSpec{offset: parseTimeValue(p)}, true
+	}
+	dot := idxBegin
+	tokLen := len(".begin")
+	isEnd := false
+	if idxEnd >= 0 && idxEnd > idxBegin {
+		dot = idxEnd
+		tokLen = len(".end")
+		isEnd = true
+	}
+	if dot == 0 {
+		return beginSpec{}, false
+	}
+	targetID := strings.TrimSpace(p[:dot])
+	if targetID == "" {
+		return beginSpec{}, false
+	}
+	rest := strings.TrimSpace(p[dot+tokLen:])
+	var offset float32
+	if rest != "" {
+		sign := float32(1)
+		switch rest[0] {
+		case '+':
+			rest = rest[1:]
+		case '-':
+			sign = -1
+			rest = rest[1:]
+		}
+		offset = sign * parseTimeValue(strings.TrimSpace(rest))
+	}
+	return beginSpec{
+		targetID: targetID,
+		isEnd:    isEnd,
+		offset:   offset,
+	}, true
+}
+
+// registerAnimation records post-parse bookkeeping for an
+// animation just appended to state.animations at position idx:
+// self-id → index, plus begin-spec list when syncbase refs are
+// present.
+func registerAnimation(state *parseState, elem string, idx int) {
+	if id, ok := findAttr(elem, "id"); ok && id != "" {
+		if state.animIDIndex == nil {
+			state.animIDIndex = make(map[string]int)
+		}
+		state.animIDIndex[id] = idx
+	}
+	specs := parseBeginSpecs(elem)
+	if len(specs) == 0 {
+		return
+	}
+	if state.animBeginSpecs == nil {
+		state.animBeginSpecs = make(map[int][]beginSpec)
+	}
+	state.animBeginSpecs[idx] = specs
+}
+
+// resolveBegins walks recorded syncbase specs and writes each
+// animation's final BeginSec. Resolution is first-match: the
+// earliest spec in each list that successfully resolves wins.
+// Literal entries resolve trivially; syncbase entries resolve
+// only when the target id maps to a known animation and that
+// target's BeginSec itself resolves (DFS with cycle guard).
+// Animations with no specs keep the parse-time literal value.
+func resolveBegins(
+	anims []gui.SvgAnimation,
+	specs map[int][]beginSpec,
+	ids map[string]int,
+) {
+	if len(specs) == 0 {
+		return
+	}
+	resolved := make([]bool, len(anims))
+	for i := range anims {
+		if _, has := specs[i]; !has {
+			resolved[i] = true
+		}
+	}
+	var resolve func(i int, stack []int) bool
+	resolve = func(i int, stack []int) bool {
+		if resolved[i] {
+			return true
+		}
+		if slices.Contains(stack, i) {
+			return false
+		}
+		stack = append(stack, i)
+		for _, sp := range specs[i] {
+			if sp.targetID == "" {
+				anims[i].BeginSec = sp.offset
+				resolved[i] = true
+				return true
+			}
+			tgt, ok := ids[sp.targetID]
+			if !ok {
+				continue
+			}
+			if !resolve(tgt, stack) {
+				continue
+			}
+			base := anims[tgt].BeginSec
+			if sp.isEnd {
+				base += anims[tgt].DurSec
+			}
+			anims[i].BeginSec = base + sp.offset
+			resolved[i] = true
+			return true
+		}
+		// No spec resolved — leave BeginSec at its parse-time value
+		// and report non-authoritative so callers don't derive a
+		// cascaded offset from a stale default (e.g. cycle branches).
+		resolved[i] = true
+		return false
+	}
+	for i := range anims {
+		if !resolved[i] {
+			resolve(i, nil)
+		}
+	}
 }
 
 // parseTimeValue converts a time string like "1.5s" or "200ms"
@@ -245,4 +434,51 @@ func parseSpaceFloats(s string) []float32 {
 		out = append(out, parseF32(f))
 	}
 	return out
+}
+
+// parseKeySplinesIfSpline returns flat 4*(nVals-1) spline control
+// points when the element has calcMode="spline" and a matching
+// keySplines list. Returns nil otherwise (fast-path linear lerp).
+// A segment count mismatch drops splines rather than erroring —
+// real-world SVGs sometimes omit the final segment.
+func parseKeySplinesIfSpline(elem string, nVals int) []float32 {
+	mode, ok := findAttr(elem, "calcMode")
+	if !ok || mode != "spline" {
+		return nil
+	}
+	raw, ok := findAttr(elem, "keySplines")
+	if !ok || raw == "" {
+		return nil
+	}
+	segs := nVals - 1
+	if segs <= 0 {
+		return nil
+	}
+	parts := strings.Split(raw, ";")
+	out := make([]float32, 0, 4*segs)
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		// Fields split on comma or whitespace — SVG allows either.
+		quads := splitCommaOrSpace(p)
+		if len(quads) != 4 {
+			return nil
+		}
+		for _, q := range quads {
+			out = append(out, parseF32(q))
+		}
+	}
+	if len(out) != 4*segs {
+		return nil
+	}
+	return out
+}
+
+// splitCommaOrSpace splits on runs of commas and/or whitespace.
+func splitCommaOrSpace(s string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool {
+		return r == ',' || r == ' ' || r == '\t' || r == '\n' || r == '\r'
+	})
 }

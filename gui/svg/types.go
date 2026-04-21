@@ -136,6 +136,13 @@ type parseState struct {
 	texts      []gui.SvgText
 	textPaths  []gui.SvgTextPath
 	animations []gui.SvgAnimation
+	// animIDIndex maps an <animate id="..."> to its index in
+	// animations. Populated only when an animation carries an id.
+	animIDIndex map[string]int
+	// animBeginSpecs holds unresolved begin specs per animation
+	// index. Populated only when begin= references another
+	// animation via syncbase (.begin/.end).
+	animBeginSpecs map[int][]beginSpec
 }
 
 // elementStyle holds common style properties extracted from an SVG element.
