@@ -130,6 +130,7 @@ func defaultGroupStyle(transform [6]float32) groupStyle {
 // parseState tracks mutable state during SVG parsing.
 type parseState struct {
 	elemCount  int
+	synthID    int
 	texts      []gui.SvgText
 	textPaths  []gui.SvgTextPath
 	animations []gui.SvgAnimation

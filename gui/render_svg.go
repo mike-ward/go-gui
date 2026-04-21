@@ -52,7 +52,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		// Keep animation alive while SVG is being rendered.
 		if cached.AnimHash != "" {
 			animSeen := StateMap[string, int64](
-				w, nsSvgAnimSeen, capModerate)
+				w, nsSvgAnimSeen, capImageCache)
 			animSeen.Set(cached.AnimHash, nowNs)
 		}
 		elapsed := float32(nowNs-cached.AnimStartNs) /
@@ -236,8 +236,7 @@ func computeSvgAnimations(
 		switch a.Kind {
 		case SvgAnimRotate:
 			if len(a.Values) >= 2 {
-				from, to := a.Values[0], a.Values[1]
-				st.RotAngle = from + (to-from)*frac
+				st.RotAngle = lerpKeyframes(a.Values, frac)
 				st.RotCX = a.CenterX
 				st.RotCY = a.CenterY
 			}

@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+// svgAnimStaleNs is the heartbeat threshold for detecting an
+// animated SVG whose shape has been removed from the layout
+// tree. Generous enough to survive a few slow frames (e.g.
+// expensive relayout of a large list).
+const svgAnimStaleNs = 2 * int64(time.Second)
+
 // SvgCfg configures an SVG view component.
 type SvgCfg struct {
 	ID        string
@@ -72,7 +78,7 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 	if cached.HasAnimations && !c.NoAnimate {
 		animHash := cached.AnimHash
 		animSeen := StateMap[string, int64](
-			w, nsSvgAnimSeen, capModerate)
+			w, nsSvgAnimSeen, capImageCache)
 		animSeen.Set(animHash, time.Now().UnixNano())
 		animID := "svg_anim:" + animHash
 		if !w.hasAnimationLocked(animID) {
@@ -83,14 +89,13 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 				Refresh: AnimationRefreshRenderOnly,
 				Callback: func(an *Animate, w *Window) {
 					seenMap := StateMap[string, int64](
-						w, nsSvgAnimSeen, capModerate)
+						w, nsSvgAnimSeen, capImageCache)
 					seen, ok := seenMap.Get(animHash)
 					if !ok {
 						an.stopped = true
 						return
 					}
-					elapsed := time.Now().UnixNano() - seen
-					if elapsed > 200_000_000 {
+					if time.Now().UnixNano()-seen > svgAnimStaleNs {
 						an.stopped = true
 						return
 					}
@@ -120,6 +125,7 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 			Width:    width,
 			Height:   height,
 			Color:    c.Color,
+			Opacity:  1,
 			Sizing:   c.Sizing,
 			Padding:  c.Padding.Get(Padding{}),
 			Events:   events,

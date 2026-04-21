@@ -242,53 +242,53 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 			pos = groupEnd + closeEnd + 1
 
 		case "path":
-			state.elemCount++
-			if p, ok := parsePathWithStyle(elem, inherited); ok {
-				paths = append(paths, p)
-			}
-			pos = elemEnd + 1
+			pos = parseShapeElement(content, elem, tagName, elemEnd,
+				isSelfClosing, inherited, state, &paths,
+				func(gs groupStyle) (VectorPath, bool) {
+					return parsePathWithStyle(elem, gs)
+				})
 
 		case "rect":
-			state.elemCount++
-			if p, ok := parseRectWithStyle(elem, inherited); ok {
-				paths = append(paths, p)
-			}
-			pos = elemEnd + 1
+			pos = parseShapeElement(content, elem, tagName, elemEnd,
+				isSelfClosing, inherited, state, &paths,
+				func(gs groupStyle) (VectorPath, bool) {
+					return parseRectWithStyle(elem, gs)
+				})
 
 		case "circle":
-			state.elemCount++
-			if p, ok := parseCircleWithStyle(elem, inherited); ok {
-				paths = append(paths, p)
-			}
-			pos = elemEnd + 1
+			pos = parseShapeElement(content, elem, tagName, elemEnd,
+				isSelfClosing, inherited, state, &paths,
+				func(gs groupStyle) (VectorPath, bool) {
+					return parseCircleWithStyle(elem, gs)
+				})
 
 		case "ellipse":
-			state.elemCount++
-			if p, ok := parseEllipseWithStyle(elem, inherited); ok {
-				paths = append(paths, p)
-			}
-			pos = elemEnd + 1
+			pos = parseShapeElement(content, elem, tagName, elemEnd,
+				isSelfClosing, inherited, state, &paths,
+				func(gs groupStyle) (VectorPath, bool) {
+					return parseEllipseWithStyle(elem, gs)
+				})
 
 		case "polygon":
-			state.elemCount++
-			if p, ok := parsePolygonWithStyle(elem, inherited, true); ok {
-				paths = append(paths, p)
-			}
-			pos = elemEnd + 1
+			pos = parseShapeElement(content, elem, tagName, elemEnd,
+				isSelfClosing, inherited, state, &paths,
+				func(gs groupStyle) (VectorPath, bool) {
+					return parsePolygonWithStyle(elem, gs, true)
+				})
 
 		case "polyline":
-			state.elemCount++
-			if p, ok := parsePolygonWithStyle(elem, inherited, false); ok {
-				paths = append(paths, p)
-			}
-			pos = elemEnd + 1
+			pos = parseShapeElement(content, elem, tagName, elemEnd,
+				isSelfClosing, inherited, state, &paths,
+				func(gs groupStyle) (VectorPath, bool) {
+					return parsePolygonWithStyle(elem, gs, false)
+				})
 
 		case "line":
-			state.elemCount++
-			if p, ok := parseLineWithStyle(elem, inherited); ok {
-				paths = append(paths, p)
-			}
-			pos = elemEnd + 1
+			pos = parseShapeElement(content, elem, tagName, elemEnd,
+				isSelfClosing, inherited, state, &paths,
+				func(gs groupStyle) (VectorPath, bool) {
+					return parseLineWithStyle(elem, gs)
+				})
 
 		case "text":
 			state.elemCount++
@@ -332,6 +332,119 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 		}
 	}
 	return paths
+}
+
+// parseShapeElement parses a shape (path/rect/circle/…) via the
+// supplied parser, handling nested <animate>/<animateTransform>
+// children when the element is not self-closing. When inline
+// animations are present the shape's id (or a synthesized one)
+// is propagated to the path's GroupID so animations key onto
+// the owning shape. Returns the new pos after parsing.
+func parseShapeElement(
+	content, elem, tagName string, elemEnd int,
+	isSelfClosing bool,
+	inherited groupStyle,
+	state *parseState,
+	paths *[]VectorPath,
+	parser func(gs groupStyle) (VectorPath, bool),
+) int {
+	state.elemCount++
+
+	if isSelfClosing {
+		if p, ok := parser(inherited); ok {
+			*paths = append(*paths, p)
+		}
+		return elemEnd + 1
+	}
+
+	bodyStart := elemEnd + 1
+	bodyEnd := findClosingTag(content, tagName, bodyStart)
+	if bodyEnd <= bodyStart {
+		if p, ok := parser(inherited); ok {
+			*paths = append(*paths, p)
+		}
+		return elemEnd + 1
+	}
+	body := content[bodyStart:bodyEnd]
+
+	shapeGS := inherited
+	if shapeHasInlineAnimation(body) {
+		gid, ok := findAttr(elem, "id")
+		if !ok || gid == "" {
+			state.synthID++
+			gid = fmt.Sprintf("__anim_%d", state.synthID)
+		}
+		shapeGS.GroupID = gid
+	}
+
+	if p, ok := parser(shapeGS); ok {
+		if shapeGS.GroupID != inherited.GroupID {
+			p.GroupID = shapeGS.GroupID
+		}
+		*paths = append(*paths, p)
+	}
+
+	parseShapeInlineChildren(body, shapeGS, state)
+
+	closeEnd := strings.IndexByte(content[bodyEnd:], '>')
+	if closeEnd < 0 {
+		return len(content)
+	}
+	return bodyEnd + closeEnd + 1
+}
+
+// shapeHasInlineAnimation cheaply detects whether a shape body
+// contains animation children worth parsing.
+func shapeHasInlineAnimation(body string) bool {
+	return strings.Contains(body, "<animate") ||
+		strings.Contains(body, "<animateTransform")
+}
+
+// parseShapeInlineChildren scans a shape body for
+// <animate>/<animateTransform> elements and appends them to
+// state.animations keyed by shapeGS.GroupID.
+func parseShapeInlineChildren(
+	body string, shapeGS groupStyle, state *parseState,
+) {
+	pos := 0
+	for pos < len(body) {
+		lt := strings.IndexByte(body[pos:], '<')
+		if lt < 0 {
+			return
+		}
+		start := pos + lt + 1
+		if start >= len(body) {
+			return
+		}
+		tagEnd := findTagNameEnd(body, start)
+		if tagEnd <= start {
+			pos = start
+			continue
+		}
+		tag := body[start:tagEnd]
+		elemEndRel := strings.IndexByte(body[start:], '>')
+		if elemEndRel < 0 {
+			return
+		}
+		elemEnd := start + elemEndRel
+		elem := body[start-1 : elemEnd+1]
+
+		switch tag {
+		case "animate":
+			if len(state.animations) < maxAnimations {
+				if a, ok := parseAnimateElement(elem, shapeGS); ok {
+					state.animations = append(state.animations, a)
+				}
+			}
+		case "animateTransform":
+			if len(state.animations) < maxAnimations {
+				if a, ok := parseAnimateTransformElement(elem, shapeGS); ok {
+					state.animations = append(state.animations, a)
+				}
+			}
+		}
+		pos = elemEnd + 1
+	}
 }
 
 func findTagNameEnd(s string, start int) int {
