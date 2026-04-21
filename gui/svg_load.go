@@ -26,6 +26,8 @@ type CachedSvgPath struct {
 	IsClipMask   bool
 	ClipGroup    int
 	GroupID      string
+	Animated     bool
+	Primitive    SvgPrimitive
 }
 
 // CachedSvgTextDraw holds cached text rendering data.
@@ -54,6 +56,15 @@ type CachedFilteredGroup struct {
 	BBox          [4]float32 // x, y, width, height
 }
 
+// AnimatedSpan describes a contiguous run of CachedSvgPath entries
+// originating from a single animated VectorPath. Start+Count locate
+// the cached range so TessellateAnimated's i-th returned batch can
+// substitute for the i-th span when overrides are live.
+type AnimatedSpan struct {
+	Start int
+	Count int
+}
+
 // CachedSvg holds pre-tessellated SVG data for efficient rendering.
 type CachedSvg struct {
 	RenderPaths    []CachedSvgPath
@@ -63,6 +74,9 @@ type CachedSvg struct {
 	Gradients      map[string]SvgGradientDef
 	Animations     []SvgAnimation
 	HasAnimations  bool
+	HasAttrAnim    bool // any SvgAnimAttr present → try re-tessellation
+	AnimatedSpans  []AnimatedSpan
+	Parsed         *SvgParsed // retained for TessellateAnimated
 	AnimStartNs    int64
 	AnimHash       string
 	Width          float32
@@ -96,6 +110,8 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 			IsClipMask:   p.IsClipMask,
 			ClipGroup:    p.ClipGroup,
 			GroupID:      p.GroupID,
+			Animated:     p.Animated,
+			Primitive:    p.Primitive,
 		}
 	}
 	return out
@@ -553,6 +569,15 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		})
 	}
 
+	hasAttrAnim := false
+	for i := range parsed.Animations {
+		if parsed.Animations[i].Kind == SvgAnimAttr {
+			hasAttrAnim = true
+			break
+		}
+	}
+	animatedSpans := buildAnimatedSpans(renderPaths)
+
 	cached := &CachedSvg{
 		RenderPaths:    renderPaths,
 		TextDraws:      textDraws,
@@ -561,6 +586,9 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		Gradients:      parsed.Gradients,
 		Animations:     parsed.Animations,
 		HasAnimations:  len(parsed.Animations) > 0,
+		HasAttrAnim:    hasAttrAnim,
+		AnimatedSpans:  animatedSpans,
+		Parsed:         parsed,
 		AnimStartNs:    time.Now().UnixNano(),
 		AnimHash:       strconv.FormatUint(srcHash, 16),
 		Width:          parsed.Width,
@@ -662,6 +690,29 @@ func (w *Window) ClearSvgCache() {
 	if inv, ok := w.svgParser.(svgParserCacheInvalidator); ok {
 		inv.ClearSvgParserCache()
 	}
+}
+
+// buildAnimatedSpans scans cached render paths and records contiguous
+// runs that originated from a single animated VectorPath (same
+// GroupID, adjacent indices). One span per animated source path, in
+// document order — matches TessellateAnimated's return order.
+func buildAnimatedSpans(paths []CachedSvgPath) []AnimatedSpan {
+	var spans []AnimatedSpan
+	i := 0
+	for i < len(paths) {
+		if !paths[i].Animated {
+			i++
+			continue
+		}
+		j := i + 1
+		for j < len(paths) && paths[j].Animated &&
+			paths[j].GroupID == paths[i].GroupID {
+			j++
+		}
+		spans = append(spans, AnimatedSpan{Start: i, Count: j - i})
+		i = j
+	}
+	return spans
 }
 
 // computeTriangleBBox computes bounding box from tessellated paths.

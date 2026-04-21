@@ -61,6 +61,8 @@ type VectorPath struct {
 	FillOpacity      float32
 	StrokeOpacity    float32
 	GroupID          string
+	Animated         bool
+	Primitive        gui.SvgPrimitive
 }
 
 // svgFilteredGroup holds paths/texts belonging to a filtered <g>.

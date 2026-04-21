@@ -377,14 +377,26 @@ func parseShapeElement(
 		shapeGS.GroupID = gid
 	}
 
+	pathIdx := -1
 	if p, ok := parser(shapeGS); ok {
 		if shapeGS.GroupID != inherited.GroupID {
 			p.GroupID = shapeGS.GroupID
 		}
 		*paths = append(*paths, p)
+		pathIdx = len(*paths) - 1
 	}
 
+	animStart := len(state.animations)
 	parseShapeInlineChildren(body, shapeGS, state)
+	// Phase-2 scope: clip-pathed shapes skip re-tessellation.
+	if pathIdx >= 0 && (*paths)[pathIdx].ClipPathID == "" {
+		for i := animStart; i < len(state.animations); i++ {
+			if state.animations[i].Kind == gui.SvgAnimAttr {
+				(*paths)[pathIdx].Animated = true
+				break
+			}
+		}
+	}
 
 	closeEnd := strings.IndexByte(content[bodyEnd:], '>')
 	if closeEnd < 0 {
@@ -433,6 +445,9 @@ func parseShapeInlineChildren(
 		case "animate":
 			if len(state.animations) < maxAnimations {
 				if a, ok := parseAnimateElement(elem, shapeGS); ok {
+					state.animations = append(state.animations, a)
+				} else if a, ok := parseAnimateAttributeElement(
+					elem, shapeGS); ok {
 					state.animations = append(state.animations, a)
 				}
 			}

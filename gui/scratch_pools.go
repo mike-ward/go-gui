@@ -91,8 +91,12 @@ type scratchPools struct {
 	wrapRows            scratchSlice[wrapRowRange]
 	layerLayouts        scratchSlice[Layout]
 
-	focusSeen     scratchMap[uint32, struct{}]
-	svgAnimStates scratchMap[string, svgAnimState]
+	focusSeen        scratchMap[uint32, struct{}]
+	svgAnimStates    scratchMap[string, svgAnimState]
+	svgAnimOverrides scratchMap[string, SvgAnimAttrOverride]
+
+	svgAnimTriangles  scratchSlice[TessellatedPath]
+	effectiveSvgPaths scratchSlice[CachedSvgPath]
 
 	// View-phase pool: reuse Shape allocations across frames.
 	// Reset before GenerateViewLayout; valid through buildRenderers.
@@ -137,6 +141,9 @@ func newScratchPools() scratchPools {
 		layerLayouts:           scratchSlice[Layout]{retainMax: 4096, shrinkTo: 256},
 		focusSeen:              scratchMap[uint32, struct{}]{retainMax: 4096},
 		svgAnimStates:          scratchMap[string, svgAnimState]{retainMax: 4096},
+		svgAnimOverrides:       scratchMap[string, SvgAnimAttrOverride]{retainMax: 4096},
+		svgAnimTriangles:       scratchSlice[TessellatedPath]{retainMax: 1024, shrinkTo: 64},
+		effectiveSvgPaths:      scratchSlice[CachedSvgPath]{retainMax: 4096, shrinkTo: 256},
 		viewShapes:             scratchObjPool[Shape]{retainMax: 16384, shrinkTo: 1024},
 		buttonColors:           scratchObjPool[ShapeButtonColors]{retainMax: 512, shrinkTo: 32},
 		renderTextStyles:       scratchObjPool[TextStyle]{retainMax: 4096, shrinkTo: 256},

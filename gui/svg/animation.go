@@ -37,6 +37,73 @@ func parseAnimateElement(
 	}, true
 }
 
+// parseAnimateAttributeElement parses an <animate> element
+// targeting an animatable primitive attribute (cx, cy, r, x, y,
+// width, height, rx, ry). Phase-1 records the animation so shapes
+// can be flagged Animated; phase-2 evaluates overrides and
+// re-tessellates.
+func parseAnimateAttributeElement(
+	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	attr, ok := findAttr(elem, "attributeName")
+	if !ok {
+		return gui.SvgAnimation{}, false
+	}
+	name := attrNameFromString(attr)
+	if name == gui.SvgAttrNone {
+		return gui.SvgAnimation{}, false
+	}
+	dur := parseDuration(elem)
+	if dur <= 0 {
+		return gui.SvgAnimation{}, false
+	}
+	var vals []float32
+	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
+		vals = parseSemicolonFloats(valStr)
+	} else {
+		fromStr, fromOK := findAttr(elem, "from")
+		toStr, toOK := findAttr(elem, "to")
+		if fromOK && toOK {
+			vals = []float32{parseF32(fromStr), parseF32(toStr)}
+		}
+	}
+	if len(vals) < 2 {
+		return gui.SvgAnimation{}, false
+	}
+	return gui.SvgAnimation{
+		Kind:     gui.SvgAnimAttr,
+		GroupID:  inherited.GroupID,
+		Values:   vals,
+		DurSec:   dur,
+		BeginSec: parseBeginOffset(elem),
+		AttrName: name,
+	}, true
+}
+
+func attrNameFromString(s string) gui.SvgAttrName {
+	switch s {
+	case "cx":
+		return gui.SvgAttrCX
+	case "cy":
+		return gui.SvgAttrCY
+	case "r":
+		return gui.SvgAttrR
+	case "x":
+		return gui.SvgAttrX
+	case "y":
+		return gui.SvgAttrY
+	case "width":
+		return gui.SvgAttrWidth
+	case "height":
+		return gui.SvgAttrHeight
+	case "rx":
+		return gui.SvgAttrRX
+	case "ry":
+		return gui.SvgAttrRY
+	}
+	return gui.SvgAttrNone
+}
+
 // parseAnimateTransformElement parses an <animateTransform>
 // element targeting type="rotate". Accepts either from/to form
 // or values="a cx cy;b cx cy;..." form. Returns animation and

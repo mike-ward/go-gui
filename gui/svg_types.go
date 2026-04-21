@@ -13,6 +13,13 @@ type TessellatedPath struct {
 	IsClipMask   bool
 	ClipGroup    int
 	GroupID      string
+	// Animated marks the path as a re-tessellation target. Set when
+	// an inline <animate> with an animatable attribute (cx, cy, r,
+	// x, y, width, height, rx, ry) targets this shape.
+	Animated bool
+	// Primitive carries raw attributes for re-tessellation; zero
+	// value when the source is not a primitive.
+	Primitive SvgPrimitive
 }
 
 // SvgText holds a parsed SVG text element.
@@ -99,6 +106,27 @@ type SvgAnimKind uint8
 const (
 	SvgAnimOpacity SvgAnimKind = iota
 	SvgAnimRotate
+	// SvgAnimAttr is a generic per-attribute animation (cx, cy, r,
+	// x, y, width, height, rx, ry). Phase-1 records the animation;
+	// phase-2 evaluates overrides and re-tessellates.
+	SvgAnimAttr
+)
+
+// SvgAttrName identifies an animatable primitive attribute.
+type SvgAttrName uint8
+
+// SvgAttrName constants.
+const (
+	SvgAttrNone SvgAttrName = iota
+	SvgAttrCX
+	SvgAttrCY
+	SvgAttrR
+	SvgAttrX
+	SvgAttrY
+	SvgAttrWidth
+	SvgAttrHeight
+	SvgAttrRX
+	SvgAttrRY
 )
 
 // SvgAnimation holds parsed SMIL animation data.
@@ -110,6 +138,34 @@ type SvgAnimation struct {
 	CenterY  float32
 	DurSec   float32
 	BeginSec float32
+	AttrName SvgAttrName // valid when Kind == SvgAnimAttr
+}
+
+// SvgPrimitiveKind identifies the source primitive of a VectorPath.
+type SvgPrimitiveKind uint8
+
+// SvgPrimitiveKind constants.
+const (
+	SvgPrimNone SvgPrimitiveKind = iota
+	SvgPrimCircle
+	SvgPrimEllipse
+	SvgPrimRect
+	SvgPrimLine
+)
+
+// SvgPrimitive carries raw primitive attributes so animated paths can
+// be re-tessellated each frame with current attribute values. Kind is
+// SvgPrimNone for non-primitive paths (<path>, polygons, etc.). The
+// composed transform lives on the owning VectorPath / GroupID; only
+// the primitive-local attributes are captured here.
+type SvgPrimitive struct {
+	Kind   SvgPrimitiveKind
+	CX, CY float32 // circle / ellipse center
+	R      float32 // circle radius
+	RX, RY float32 // ellipse / rect corner radii
+	X, Y   float32 // rect upper-left, line endpoint
+	W, H   float32 // rect size
+	X2, Y2 float32 // line far endpoint
 }
 
 // StrokeCap defines SVG stroke line cap styles.

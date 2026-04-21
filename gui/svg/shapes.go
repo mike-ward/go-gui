@@ -1,5 +1,7 @@
 package svg
 
+import "github.com/mike-ward/go-gui/gui"
+
 // parsePathWithStyle parses a <path> element with inherited style.
 func parsePathWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
 	path, ok := parsePathElement(elem)
@@ -105,6 +107,69 @@ func parsePathElement(elem string) (VectorPath, bool) {
 	return path, true
 }
 
+// segmentsForRect returns path segments for a <rect> primitive with
+// the given attributes. Shared between parse time and animated
+// re-tessellation.
+func segmentsForRect(x, y, rw, rh, rx, ry float32) []PathSegment {
+	if rx == 0 && ry > 0 {
+		rx = ry
+	}
+	if ry == 0 && rx > 0 {
+		ry = rx
+	}
+	if rx == 0 && ry == 0 {
+		return []PathSegment{
+			{CmdMoveTo, []float32{x, y}},
+			{CmdLineTo, []float32{x + rw, y}},
+			{CmdLineTo, []float32{x + rw, y + rh}},
+			{CmdLineTo, []float32{x, y + rh}},
+			{CmdClose, nil},
+		}
+	}
+	if rx > rw/2 {
+		rx = rw / 2
+	}
+	if ry > rh/2 {
+		ry = rh / 2
+	}
+	segments := make([]PathSegment, 0, 16)
+	segments = append(segments, PathSegment{CmdMoveTo, []float32{x + rx, y}})
+	segments = append(segments, PathSegment{CmdLineTo, []float32{x + rw - rx, y}})
+	segments = append(segments, arcToCubic(x+rw-rx, y, rx, ry, 0, false, true, x+rw, y+ry)...)
+	segments = append(segments, PathSegment{CmdLineTo, []float32{x + rw, y + rh - ry}})
+	segments = append(segments, arcToCubic(x+rw, y+rh-ry, rx, ry, 0, false, true, x+rw-rx, y+rh)...)
+	segments = append(segments, PathSegment{CmdLineTo, []float32{x + rx, y + rh}})
+	segments = append(segments, arcToCubic(x+rx, y+rh, rx, ry, 0, false, true, x, y+rh-ry)...)
+	segments = append(segments, PathSegment{CmdLineTo, []float32{x, y + ry}})
+	segments = append(segments, arcToCubic(x, y+ry, rx, ry, 0, false, true, x+rx, y)...)
+	segments = append(segments, PathSegment{CmdClose, nil})
+	return segments
+}
+
+// segmentsForEllipse returns path segments for a <circle> or
+// <ellipse> primitive. A circle passes r for both rx and ry.
+func segmentsForEllipse(cx, cy, rx, ry float32) []PathSegment {
+	const k = float32(0.5522847498)
+	kx := rx * k
+	ky := ry * k
+	return []PathSegment{
+		{CmdMoveTo, []float32{cx, cy - ry}},
+		{CmdCubicTo, []float32{cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy}},
+		{CmdCubicTo, []float32{cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry}},
+		{CmdCubicTo, []float32{cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy}},
+		{CmdCubicTo, []float32{cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry}},
+		{CmdClose, nil},
+	}
+}
+
+// segmentsForLine returns path segments for a <line> primitive.
+func segmentsForLine(x1, y1, x2, y2 float32) []PathSegment {
+	return []PathSegment{
+		{CmdMoveTo, []float32{x1, y1}},
+		{CmdLineTo, []float32{x2, y2}},
+	}
+}
+
 // parseRectElement converts <rect> to path.
 func parseRectElement(elem string) (VectorPath, bool) {
 	x := attrFloat(elem, "x", 0)
@@ -122,42 +187,7 @@ func parseRectElement(elem string) (VectorPath, bool) {
 	fill, _ := findAttrOrStyle(elem, "fill")
 	s := parseElementStyle(elem)
 
-	if rx == 0 && ry > 0 {
-		rx = ry
-	}
-	if ry == 0 && rx > 0 {
-		ry = rx
-	}
-
-	var segments []PathSegment
-
-	if rx == 0 && ry == 0 {
-		segments = []PathSegment{
-			{CmdMoveTo, []float32{x, y}},
-			{CmdLineTo, []float32{x + rw, y}},
-			{CmdLineTo, []float32{x + rw, y + rh}},
-			{CmdLineTo, []float32{x, y + rh}},
-			{CmdClose, nil},
-		}
-	} else {
-		if rx > rw/2 {
-			rx = rw / 2
-		}
-		if ry > rh/2 {
-			ry = rh / 2
-		}
-		segments = make([]PathSegment, 0, 16)
-		segments = append(segments, PathSegment{CmdMoveTo, []float32{x + rx, y}})
-		segments = append(segments, PathSegment{CmdLineTo, []float32{x + rw - rx, y}})
-		segments = append(segments, arcToCubic(x+rw-rx, y, rx, ry, 0, false, true, x+rw, y+ry)...)
-		segments = append(segments, PathSegment{CmdLineTo, []float32{x + rw, y + rh - ry}})
-		segments = append(segments, arcToCubic(x+rw, y+rh-ry, rx, ry, 0, false, true, x+rw-rx, y+rh)...)
-		segments = append(segments, PathSegment{CmdLineTo, []float32{x + rx, y + rh}})
-		segments = append(segments, arcToCubic(x+rx, y+rh, rx, ry, 0, false, true, x, y+rh-ry)...)
-		segments = append(segments, PathSegment{CmdLineTo, []float32{x, y + ry}})
-		segments = append(segments, arcToCubic(x, y+ry, rx, ry, 0, false, true, x+rx, y)...)
-		segments = append(segments, PathSegment{CmdClose, nil})
-	}
+	segments := segmentsForRect(x, y, rw, rh, rx, ry)
 
 	vp := VectorPath{
 		Segments:         segments,
@@ -172,6 +202,15 @@ func parseRectElement(elem string) (VectorPath, bool) {
 		StrokeOpacity:    s.StrokeOpacity,
 		StrokeGradientID: s.StrokeGradientID,
 		StrokeDasharray:  s.StrokeDasharray,
+		Primitive: gui.SvgPrimitive{
+			Kind: gui.SvgPrimRect,
+			X:    x,
+			Y:    y,
+			W:    rw,
+			H:    rh,
+			RX:   rx,
+			RY:   ry,
+		},
 	}
 	if gid, found := parseFillURL(fill); found {
 		vp.FillGradientID = gid
@@ -189,7 +228,15 @@ func parseCircleElement(elem string) (VectorPath, bool) {
 	}
 	r := attrFloat(elem, "r", 0)
 	fill, _ := findAttrOrStyle(elem, "fill")
-	return ellipseToPath(cx, cy, r, r, elem, fill, parseElementStyle(elem)), true
+	s := parseElementStyle(elem)
+	vp := ellipseToPath(cx, cy, r, r, elem, fill, s)
+	vp.Primitive = gui.SvgPrimitive{
+		Kind: gui.SvgPrimCircle,
+		CX:   cx,
+		CY:   cy,
+		R:    r,
+	}
+	return vp, true
 }
 
 // parseEllipseElement converts <ellipse> to path.
@@ -204,25 +251,21 @@ func parseEllipseElement(elem string) (VectorPath, bool) {
 	rx := attrFloat(elem, "rx", 0)
 	ry := attrFloat(elem, "ry", 0)
 	fill, _ := findAttrOrStyle(elem, "fill")
-	return ellipseToPath(cx, cy, rx, ry, elem, fill, parseElementStyle(elem)), true
+	s := parseElementStyle(elem)
+	vp := ellipseToPath(cx, cy, rx, ry, elem, fill, s)
+	vp.Primitive = gui.SvgPrimitive{
+		Kind: gui.SvgPrimEllipse,
+		CX:   cx,
+		CY:   cy,
+		RX:   rx,
+		RY:   ry,
+	}
+	return vp, true
 }
 
 func ellipseToPath(cx, cy, rx, ry float32, _, fill string, s elementStyle) VectorPath {
-	const k = float32(0.5522847498)
-	kx := rx * k
-	ky := ry * k
-
-	segments := []PathSegment{
-		{CmdMoveTo, []float32{cx, cy - ry}},
-		{CmdCubicTo, []float32{cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy}},
-		{CmdCubicTo, []float32{cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry}},
-		{CmdCubicTo, []float32{cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy}},
-		{CmdCubicTo, []float32{cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry}},
-		{CmdClose, nil},
-	}
-
 	vp := VectorPath{
-		Segments:         segments,
+		Segments:         segmentsForEllipse(cx, cy, rx, ry),
 		FillColor:        parseSvgColor(fill),
 		Transform:        s.Transform,
 		StrokeColor:      s.StrokeColor,
@@ -297,10 +340,7 @@ func parseLineElement(elem string) (VectorPath, bool) {
 
 	s := parseElementStyle(elem)
 	return VectorPath{
-		Segments: []PathSegment{
-			{CmdMoveTo, []float32{x1, y1}},
-			{CmdLineTo, []float32{x2, y2}},
-		},
+		Segments:         segmentsForLine(x1, y1, x2, y2),
 		FillColor:        colorTransparent,
 		Transform:        s.Transform,
 		StrokeColor:      s.StrokeColor,
@@ -312,6 +352,13 @@ func parseLineElement(elem string) (VectorPath, bool) {
 		StrokeOpacity:    s.StrokeOpacity,
 		StrokeGradientID: s.StrokeGradientID,
 		StrokeDasharray:  s.StrokeDasharray,
+		Primitive: gui.SvgPrimitive{
+			Kind: gui.SvgPrimLine,
+			X:    x1,
+			Y:    y1,
+			X2:   x2,
+			Y2:   y2,
+		},
 	}, true
 }
 

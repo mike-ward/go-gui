@@ -86,6 +86,8 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 							VertexColors: vcols,
 							ClipGroup:    clipGroup,
 							GroupID:      path.GroupID,
+							Animated:     path.Animated,
+							Primitive:    path.Primitive,
 						})
 					}
 				} else {
@@ -94,6 +96,8 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 						Color:     path.FillColor,
 						ClipGroup: clipGroup,
 						GroupID:   path.GroupID,
+						Animated:  path.Animated,
+						Primitive: path.Primitive,
 					})
 				}
 			}
@@ -136,6 +140,8 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 							VertexColors: vcols,
 							ClipGroup:    clipGroup,
 							GroupID:      path.GroupID,
+							Animated:     path.Animated,
+							Primitive:    path.Primitive,
 						})
 					}
 				} else {
@@ -144,6 +150,8 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 						Color:     path.StrokeColor,
 						ClipGroup: clipGroup,
 						GroupID:   path.GroupID,
+						Animated:  path.Animated,
+						Primitive: path.Primitive,
 					})
 				}
 			}

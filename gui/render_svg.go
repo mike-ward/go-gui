@@ -61,8 +61,30 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			cached.Animations, elapsed, animState)
 	}
 
+	// Substitute fresh triangles for animated primitive shapes when
+	// attribute overrides are live (phase-2). Falls back to cached
+	// triangles when no parser support, no spans, or empty overrides.
+	renderPaths := cached.RenderPaths
+	var animTris []TessellatedPath
+	if cached.HasAttrAnim && len(cached.AnimatedSpans) > 0 {
+		overrides := extractAttrOverrides(w, animState)
+		if len(overrides) > 0 {
+			if ap, ok := w.svgParser.(AnimatedSvgParser); ok {
+				reuse := w.scratch.svgAnimTriangles.take(0)
+				animTris = ap.TessellateAnimated(
+					cached.Parsed, cached.Scale, overrides, reuse)
+				defer w.scratch.svgAnimTriangles.put(animTris)
+			}
+			w.scratch.svgAnimOverrides.put(overrides)
+		}
+		if len(animTris) > 0 {
+			renderPaths = buildEffectiveRenderPaths(w, cached, animTris)
+			defer w.scratch.effectiveSvgPaths.put(renderPaths)
+		}
+	}
+
 	// Emit main paths, text, and textPath elements.
-	emitSvgGroup(cached.RenderPaths, cached.TextDraws,
+	emitSvgGroup(renderPaths, cached.TextDraws,
 		cached.TextPathDraws, color, sx, sy,
 		cached.Scale, animState, w)
 
@@ -202,11 +224,12 @@ func emitCachedSvgTextPathDraw(draw *CachedSvgTextPathDraw,
 
 // svgAnimState holds computed per-group animation state.
 type svgAnimState struct {
-	RotAngle float32 // rotation degrees
-	RotCX    float32 // rotation center X (SVG space)
-	RotCY    float32 // rotation center Y (SVG space)
-	Opacity  float32 // 0..1
-	Inited   bool
+	RotAngle     float32 // rotation degrees
+	RotCX        float32 // rotation center X (SVG space)
+	RotCY        float32 // rotation center Y (SVG space)
+	Opacity      float32 // 0..1
+	Inited       bool
+	AttrOverride SvgAnimAttrOverride // attribute overrides for re-tessellation
 }
 
 // computeSvgAnimations builds a map of per-group animation
@@ -244,10 +267,94 @@ func computeSvgAnimations(
 			if len(a.Values) >= 2 {
 				st.Opacity *= lerpKeyframes(a.Values, frac)
 			}
+		case SvgAnimAttr:
+			if len(a.Values) >= 2 {
+				applyAttrOverride(&st.AttrOverride, a.AttrName,
+					lerpKeyframes(a.Values, frac))
+			}
 		}
 		states[a.GroupID] = st
 	}
 	return states
+}
+
+// extractAttrOverrides pulls the AttrOverride from each svgAnimState
+// with a non-zero mask into a scratch-backed map keyed by GroupID.
+// Returns an empty map when no overrides are live.
+func extractAttrOverrides(w *Window,
+	states map[string]svgAnimState,
+) map[string]SvgAnimAttrOverride {
+	overrides := w.scratch.svgAnimOverrides.take(len(states))
+	for gid, st := range states {
+		if st.AttrOverride.Mask != 0 {
+			overrides[gid] = st.AttrOverride
+		}
+	}
+	return overrides
+}
+
+// buildEffectiveRenderPaths returns a scratch-backed copy of
+// cached.RenderPaths with animated spans overlaid by fresh triangles
+// from animTris. animTris is indexed by span in document order:
+// spans[i] maps to animTris[offset ..+spans[i].Count].
+func buildEffectiveRenderPaths(w *Window, cached *CachedSvg,
+	animTris []TessellatedPath,
+) []CachedSvgPath {
+	eff := w.scratch.effectiveSvgPaths.take(len(cached.RenderPaths))
+	eff = append(eff, cached.RenderPaths...)
+	off := 0
+	for _, span := range cached.AnimatedSpans {
+		if off+span.Count > len(animTris) {
+			// Defensive: parser returned fewer than expected — keep
+			// cached for the unfulfilled tail.
+			break
+		}
+		for k := range span.Count {
+			t := &animTris[off+k]
+			base := &eff[span.Start+k]
+			base.Triangles = t.Triangles
+			// Keep cached color / group / clip metadata; triangles
+			// are the only dynamic field. Vertex colors are not
+			// re-evaluated in phase-2 (gradient overrides TBD).
+		}
+		off += span.Count
+	}
+	return eff
+}
+
+// applyAttrOverride sets the override field for attr to val and
+// marks the mask bit. Unknown attr names are no-ops.
+func applyAttrOverride(o *SvgAnimAttrOverride,
+	attr SvgAttrName, val float32) {
+	switch attr {
+	case SvgAttrCX:
+		o.CX = val
+		o.Mask |= SvgAnimMaskCX
+	case SvgAttrCY:
+		o.CY = val
+		o.Mask |= SvgAnimMaskCY
+	case SvgAttrR:
+		o.R = val
+		o.Mask |= SvgAnimMaskR
+	case SvgAttrRX:
+		o.RX = val
+		o.Mask |= SvgAnimMaskRX
+	case SvgAttrRY:
+		o.RY = val
+		o.Mask |= SvgAnimMaskRY
+	case SvgAttrX:
+		o.X = val
+		o.Mask |= SvgAnimMaskX
+	case SvgAttrY:
+		o.Y = val
+		o.Mask |= SvgAnimMaskY
+	case SvgAttrWidth:
+		o.Width = val
+		o.Mask |= SvgAnimMaskWidth
+	case SvgAttrHeight:
+		o.Height = val
+		o.Mask |= SvgAnimMaskHeight
+	}
 }
 
 // lerpKeyframes interpolates evenly-spaced keyframe values at
