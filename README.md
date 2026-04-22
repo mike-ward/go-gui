@@ -14,7 +14,7 @@ no diffing, just fast, composable UI.**
 
 ## 📋 About
 
-Go-Gui is an immediate-mode GUI framework where every frame, a plain Go
+Go-Gui is a hybrid immediate-mode GUI framework where every frame, a plain Go
 function returns a layout tree that gets sized, positioned, and rendered
 directly to the screen. State lives in a single typed slot per window.
 
