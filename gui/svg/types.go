@@ -13,6 +13,12 @@ const (
 	maxCoordinate   = float32(1000000)
 	maxAnimations   = 100
 	maxFlattenDepth = 16
+	// maxKeyframes caps the number of keyframes (values) and
+	// syncbase begin entries parsed from a single <animate> /
+	// <animateTransform>. Real assets use <20; this guards
+	// against a pathological input that lists thousands of
+	// semicolon-separated entries.
+	maxKeyframes = 256
 )
 
 // Tessellation and stroke constants.

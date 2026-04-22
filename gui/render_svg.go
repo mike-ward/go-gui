@@ -392,12 +392,10 @@ func applyAttrOverride(o *SvgAnimAttrOverride,
 	}
 }
 
-// lerpKeyframes interpolates evenly-spaced keyframe values at the
-// given fraction (0..1). When splines is non-nil, the per-segment
-// fraction is bent through a cubic-bezier ease (SMIL calcMode=
-// "spline"). splines layout: flat [x1,y1,x2,y2, ...], 4 floats per
-// segment. When len(splines) != 4*(len(vals)-1), splines is
-// ignored (linear fallback).
+// lerpKeyframes interpolates evenly-spaced keyframe scalars at
+// frac ∈ [0,1]. When splines has the expected 4*(len(vals)-1)
+// layout, per-segment fraction is bent via cubic-bezier ease;
+// otherwise linear.
 func lerpKeyframes(vals, splines []float32, frac float32) float32 {
 	n := len(vals)
 	if n == 0 {
@@ -406,23 +404,15 @@ func lerpKeyframes(vals, splines []float32, frac float32) float32 {
 	if n == 1 {
 		return vals[0]
 	}
-	seg := frac * float32(n-1)
-	idx := int(seg)
-	if idx >= n-1 {
+	idx, t, atEnd := locateSeg(n, frac, splines)
+	if atEnd {
 		return vals[n-1]
-	}
-	t := seg - float32(idx)
-	if len(splines) == 4*(n-1) {
-		off := idx * 4
-		t = bezierEase(t, splines[off], splines[off+1],
-			splines[off+2], splines[off+3])
 	}
 	return vals[idx] + (vals[idx+1]-vals[idx])*t
 }
 
 // lerpKeyframes2D interpolates a paired [x0,y0, x1,y1, ...]
-// keyframe stream. Segment-fraction bending via splines matches
-// lerpKeyframes' semantics (nil splines = linear fast path).
+// keyframe stream at frac ∈ [0,1].
 func lerpKeyframes2D(vals, splines []float32, frac float32) (float32, float32) {
 	n := len(vals) / 2
 	if n == 0 {
@@ -431,63 +421,41 @@ func lerpKeyframes2D(vals, splines []float32, frac float32) (float32, float32) {
 	if n == 1 {
 		return vals[0], vals[1]
 	}
-	seg := frac * float32(n-1)
-	idx := int(seg)
-	if idx >= n-1 {
+	idx, t, atEnd := locateSeg(n, frac, splines)
+	if atEnd {
 		return vals[(n-1)*2], vals[(n-1)*2+1]
-	}
-	t := seg - float32(idx)
-	if len(splines) == 4*(n-1) {
-		off := idx * 4
-		t = bezierEase(t, splines[off], splines[off+1],
-			splines[off+2], splines[off+3])
 	}
 	x0, y0 := vals[idx*2], vals[idx*2+1]
 	x1, y1 := vals[(idx+1)*2], vals[(idx+1)*2+1]
 	return x0 + (x1-x0)*t, y0 + (y1-y0)*t
 }
 
-// bezierEase evaluates a cubic-bezier timing function at x,
-// returning y. Control points are P0=(0,0), P1=(x1,y1),
-// P2=(x2,y2), P3=(1,1). Solves bezX(u)=x for u via Newton-Raphson
-// then returns bezY(u). Real-world keySplines have all control
-// points in [0,1], so Newton converges in 3-4 iterations.
-func bezierEase(x, x1, y1, x2, y2 float32) float32 {
-	if x <= 0 {
+// locateSeg returns the keyframe segment containing frac: the
+// lower index, the intra-segment fraction t (bent by splines
+// when provided), and atEnd when frac lands on or past the last
+// keyframe. frac is clamped; NaN / negative produce idx=0, t=0.
+func locateSeg(n int, frac float32, splines []float32) (int, float32, bool) {
+	frac = clampFrac(frac)
+	seg := frac * float32(n-1)
+	idx := max(int(seg), 0)
+	if idx >= n-1 {
+		return n - 1, 0, true
+	}
+	t := seg - float32(idx)
+	if len(splines) == 4*(n-1) {
+		off := idx * 4
+		t = bezierCalc(t, splines[off], splines[off+1],
+			splines[off+2], splines[off+3])
+	}
+	return idx, t, false
+}
+
+// clampFrac maps NaN / <0 → 0, >1 → 1; otherwise identity.
+func clampFrac(f float32) float32 {
+	if f != f {
 		return 0
 	}
-	if x >= 1 {
-		return 1
-	}
-	u := x
-	for range 8 {
-		cx := bezCoord(u, x1, x2) - x
-		if cx < 0 {
-			cx = -cx
-		}
-		if cx < 1e-5 {
-			break
-		}
-		dx := bezCoordDeriv(u, x1, x2)
-		if dx == 0 {
-			break
-		}
-		u -= (bezCoord(u, x1, x2) - x) / dx
-	}
-	return bezCoord(u, y1, y2)
-}
-
-// bezCoord evaluates one axis of a cubic-bezier with P0=0, P3=1
-// and mid control points a, b at parameter u.
-func bezCoord(u, a, b float32) float32 {
-	one := 1 - u
-	return 3*one*one*u*a + 3*one*u*u*b + u*u*u
-}
-
-// bezCoordDeriv evaluates the derivative of bezCoord wrt u.
-func bezCoordDeriv(u, a, b float32) float32 {
-	one := 1 - u
-	return 3*one*one*a + 6*one*u*(b-a) + 3*u*u*(1-b)
+	return clampUnit(f)
 }
 
 // fmod returns x mod y, always positive.

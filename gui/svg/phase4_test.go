@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -239,6 +240,17 @@ func TestPhase4ThreeDotsBounceStagger(t *testing.T) {
 		if !begins[want] {
 			t.Fatalf("missing begin=%g in set %+v", want, begins)
 		}
+	}
+}
+
+// TestParseBeginSpecsCapsAtMaxKeyframes — oversized begin list
+// is truncated so resolveBegins work stays bounded.
+func TestParseBeginSpecsCapsAtMaxKeyframes(t *testing.T) {
+	body := strings.Repeat("a.begin+0.1s;", maxKeyframes+50)
+	elem := `<animate begin="` + body + `"/>`
+	got := parseBeginSpecs(elem)
+	if len(got) > maxKeyframes {
+		t.Fatalf("want len<=%d, got %d", maxKeyframes, len(got))
 	}
 }
 

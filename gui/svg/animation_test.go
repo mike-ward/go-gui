@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -293,5 +294,31 @@ func TestAnimationSynthIDCouplesShapeAndAnim(t *testing.T) {
 	if pID != aID {
 		t.Fatalf("path %q != anim %q — animation would miss",
 			pID, aID)
+	}
+}
+
+// --- maxKeyframes DoS caps ---
+
+// TestParseSemicolonFloatsCapsAtMaxKeyframes — a pathological
+// input with more than maxKeyframes entries is truncated so
+// allocation stays bounded.
+func TestParseSemicolonFloatsCapsAtMaxKeyframes(t *testing.T) {
+	s := strings.Repeat("1;", maxKeyframes+100)
+	got := parseSemicolonFloats(s)
+	if len(got) > maxKeyframes {
+		t.Fatalf("want len<=%d, got %d", maxKeyframes, len(got))
+	}
+}
+
+// TestParseRotateValuesCapsAtMaxKeyframes — oversized rotate
+// values list is truncated; remaining angles still valid.
+func TestParseRotateValuesCapsAtMaxKeyframes(t *testing.T) {
+	s := strings.Repeat("0 12 12;", maxKeyframes+50)
+	angles, _, _, ok := parseRotateValues(s)
+	if !ok {
+		t.Fatal("parse failed on truncated-but-valid input")
+	}
+	if len(angles) > maxKeyframes {
+		t.Fatalf("want len<=%d, got %d", maxKeyframes, len(angles))
 	}
 }

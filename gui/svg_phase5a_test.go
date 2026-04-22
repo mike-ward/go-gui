@@ -89,6 +89,49 @@ func TestPhase5aComputeDefaultsWhenNoXform(t *testing.T) {
 	}
 }
 
+// TestLerpKeyframes2DNegativeFracReturnsFirst — negative frac
+// must clamp to 0 and return the first (x,y) pair without
+// panicking on a negative slice index.
+func TestLerpKeyframes2DNegativeFracReturnsFirst(t *testing.T) {
+	vals := []float32{10, 20, 0, 0}
+	x, y := lerpKeyframes2D(vals, nil, -5)
+	if x != 10 || y != 20 {
+		t.Fatalf("negative frac should clamp to first, got (%g,%g)", x, y)
+	}
+}
+
+// TestLerpKeyframes2DNaNFracReturnsFirst — NaN frac must clamp
+// to 0 (first pair).
+func TestLerpKeyframes2DNaNFracReturnsFirst(t *testing.T) {
+	vals := []float32{10, 20, 0, 0}
+	x, y := lerpKeyframes2D(vals, nil, float32(math.NaN()))
+	if x != 10 || y != 20 {
+		t.Fatalf("NaN frac should clamp to first, got (%g,%g)", x, y)
+	}
+}
+
+// TestLerpKeyframes2DSplineBendsBothAxes — with an ease-out
+// spline, the 2D lerp at frac=0.5 must bend both x and y past
+// the linear midpoint the same way the 1D form does.
+func TestLerpKeyframes2DSplineBendsBothAxes(t *testing.T) {
+	vals := []float32{0, 0, 100, 100}
+	splines := []float32{.33, .66, .66, 1}
+	linX, linY := lerpKeyframes2D(vals, nil, 0.5)
+	easedX, easedY := lerpKeyframes2D(vals, splines, 0.5)
+	if easedX <= linX {
+		t.Fatalf("expected x ease-out > linear: lin=%g eased=%g",
+			linX, easedX)
+	}
+	if easedY <= linY {
+		t.Fatalf("expected y ease-out > linear: lin=%g eased=%g",
+			linY, easedY)
+	}
+	if f32AbsP5(easedX-easedY) > 1e-5 {
+		t.Fatalf("symmetric 0→100 axes should match; got (%g,%g)",
+			easedX, easedY)
+	}
+}
+
 func f32AbsP5(f float32) float32 {
 	return float32(math.Abs(float64(f)))
 }

@@ -65,21 +65,22 @@ func TestPhase3MismatchedSplinesFallBackToLinear(t *testing.T) {
 	}
 }
 
-// TestPhase3BezierEdges verifies bezierEase clamps at extremes.
-func TestPhase3BezierEdges(t *testing.T) {
-	if bezierEase(0, .33, .66, .66, 1) != 0 {
-		t.Fatal("bezierEase(0) must be 0")
+// TestLerpKeyframesNegativeFracReturnsFirst — negative frac
+// clamps to 0; no panic on negative slice index.
+func TestLerpKeyframesNegativeFracReturnsFirst(t *testing.T) {
+	vals := []float32{10, 20, 30}
+	got := lerpKeyframes(vals, nil, -5)
+	if got != 10 {
+		t.Fatalf("negative frac should clamp to first, got %g", got)
 	}
-	if bezierEase(1, .33, .66, .66, 1) != 1 {
-		t.Fatal("bezierEase(1) must be 1")
-	}
-	// Out-of-range x gets clamped by lerpKeyframes, but bezierEase
-	// itself should clamp defensively too.
-	if bezierEase(-0.1, .4, 0, .6, 1) != 0 {
-		t.Fatal("bezierEase(<0) must clamp to 0")
-	}
-	if bezierEase(1.1, .4, 0, .6, 1) != 1 {
-		t.Fatal("bezierEase(>1) must clamp to 1")
+}
+
+// TestLerpKeyframesNaNFracReturnsFirst — NaN frac maps to 0.
+func TestLerpKeyframesNaNFracReturnsFirst(t *testing.T) {
+	vals := []float32{10, 20, 30}
+	got := lerpKeyframes(vals, nil, float32(math.NaN()))
+	if got != 10 {
+		t.Fatalf("NaN frac should clamp to first, got %g", got)
 	}
 }
 

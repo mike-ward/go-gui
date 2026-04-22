@@ -140,11 +140,19 @@ const (
 type SvgAnimation struct {
 	Kind    SvgAnimKind
 	GroupID string
-	Values  []float32 // opacity: keyframes; rotate: [from, to]
+	// Values layout depends on Kind:
+	//   SvgAnimOpacity / SvgAnimRotate / SvgAnimAttr — one scalar
+	//     per keyframe (opacity 0..1, rotate angle in deg, attr
+	//     native units).
+	//   SvgAnimTranslate / SvgAnimScale — interleaved [x,y,...]
+	//     with 2 floats per keyframe.
+	Values []float32
 	// KeySplines stores cubic-bezier control points for spline
 	// easing: flat [x1,y1,x2,y2, x1,y1,x2,y2, ...] with one
-	// 4-tuple per inter-keyframe segment (len(Values)-1).
-	// Nil when calcMode != "spline" or keySplines mismatched.
+	// 4-tuple per inter-keyframe segment (len-1 segments where
+	// len counts keyframes — scalar Values have len=len(Values);
+	// paired Values have len=len(Values)/2). Nil when calcMode !=
+	// "spline" or keySplines mismatched.
 	KeySplines []float32
 	CenterX    float32 // rotation center (SVG coords)
 	CenterY    float32

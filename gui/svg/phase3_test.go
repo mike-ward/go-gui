@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -119,4 +120,18 @@ func TestPhase3SpaceSeparatedKeySplines(t *testing.T) {
 		t.Fatalf("unexpected values: %v", a.KeySplines)
 	}
 	_ = gui.SvgAnimAttr // keep import live
+}
+
+// TestParseKeySplinesRejectsOversizedSegs — an animation claiming
+// more inter-keyframe segments than maxKeyframes must produce nil
+// splines (falls back to linear) rather than allocating a huge
+// control-point slice.
+func TestParseKeySplinesRejectsOversizedSegs(t *testing.T) {
+	raw := strings.Repeat(".33,.66,.66,1;", maxKeyframes+10)
+	elem := `<animate calcMode="spline" keySplines="` + raw + `"/>`
+	// nVals = maxKeyframes+11 → segs = maxKeyframes+10 > cap.
+	got := parseKeySplinesIfSpline(elem, maxKeyframes+11)
+	if got != nil {
+		t.Fatalf("want nil for segs>maxKeyframes, got len=%d", len(got))
+	}
 }

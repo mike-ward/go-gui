@@ -177,51 +177,28 @@ func parseAnimateTransformElement(
 
 // parseAnimateTranslateElement parses <animateTransform
 // type="translate"> with values="tx ty;tx ty;..." or from/to.
-// Emits Values as interleaved [tx,ty, ...] with 2 floats per
-// keyframe.
 func parseAnimateTranslateElement(
 	elem string, inherited groupStyle,
 ) (gui.SvgAnimation, bool) {
-	dur := parseDuration(elem)
-	if dur <= 0 {
-		return gui.SvgAnimation{}, false
-	}
-	var pairs []float32
-	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
-		pairs = parsePairedValues(valStr)
-	} else if fromStr, ok := findAttr(elem, "from"); ok {
-		toStr, okTo := findAttr(elem, "to")
-		if !okTo {
-			return gui.SvgAnimation{}, false
-		}
-		from := parseSpaceFloats(fromStr)
-		to := parseSpaceFloats(toStr)
-		if len(from) < 1 || len(to) < 1 {
-			return gui.SvgAnimation{}, false
-		}
-		pairs = []float32{
-			from[0], pairY(from),
-			to[0], pairY(to),
-		}
-	}
-	if len(pairs) < 4 {
-		return gui.SvgAnimation{}, false
-	}
-	return gui.SvgAnimation{
-		Kind:       gui.SvgAnimTranslate,
-		GroupID:    inherited.GroupID,
-		Values:     pairs,
-		KeySplines: parseKeySplinesIfSpline(elem, len(pairs)/2),
-		DurSec:     dur,
-		BeginSec:   parseBeginLiteral(elem),
-	}, true
+	return parsePairedAnimateTransform(
+		elem, inherited, gui.SvgAnimTranslate)
 }
 
 // parseAnimateScaleElement parses <animateTransform type="scale">
 // with values="s;s;..." (uniform) or "sx sy;sx sy;..." (non-
-// uniform). Normalizes to interleaved [sx,sy, ...] regardless.
+// uniform). Uniform entries are normalized to equal sx,sy.
 func parseAnimateScaleElement(
 	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	return parsePairedAnimateTransform(
+		elem, inherited, gui.SvgAnimScale)
+}
+
+// parsePairedAnimateTransform is the shared body for translate
+// and scale animateTransform elements. Both produce Values as an
+// interleaved [x,y, ...] stream with 2 floats per keyframe.
+func parsePairedAnimateTransform(
+	elem string, inherited groupStyle, kind gui.SvgAnimKind,
 ) (gui.SvgAnimation, bool) {
 	dur := parseDuration(elem)
 	if dur <= 0 {
@@ -249,7 +226,7 @@ func parseAnimateScaleElement(
 		return gui.SvgAnimation{}, false
 	}
 	return gui.SvgAnimation{
-		Kind:       gui.SvgAnimScale,
+		Kind:       kind,
 		GroupID:    inherited.GroupID,
 		Values:     pairs,
 		KeySplines: parseKeySplinesIfSpline(elem, len(pairs)/2),
@@ -271,9 +248,13 @@ func pairY(parts []float32) float32 {
 // parsePairedValues parses a semicolon-separated values= list
 // where each entry is "a [b]" (space-separated). Missing second
 // component is duplicated (uniform-scale / same-for-y shorthand).
-// Returns an interleaved flat slice of 2 floats per entry.
+// Returns an interleaved flat slice of 2 floats per entry. Caps
+// keyframe count at maxKeyframes.
 func parsePairedValues(s string) []float32 {
 	parts := strings.Split(s, ";")
+	if len(parts) > maxKeyframes {
+		parts = parts[:maxKeyframes]
+	}
 	out := make([]float32, 0, 2*len(parts))
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
@@ -301,6 +282,9 @@ func parsePairedValues(s string) []float32 {
 // accepted but only the first is honored (rare in practice).
 func parseRotateValues(s string) ([]float32, float32, float32, bool) {
 	parts := strings.Split(s, ";")
+	if len(parts) > maxKeyframes {
+		parts = parts[:maxKeyframes]
+	}
 	angles := make([]float32, 0, len(parts))
 	var cx, cy float32
 	first := true
@@ -371,7 +355,8 @@ type beginSpec struct {
 // element into an ordered spec list. Returns nil when the
 // attribute is absent, empty, or contains no syncbase references
 // (no post-pass resolution needed). Malformed entries are
-// skipped; the caller falls back to parseBeginLiteral.
+// skipped; the caller falls back to parseBeginLiteral. Caps at
+// maxKeyframes entries to bound allocation.
 func parseBeginSpecs(elem string) []beginSpec {
 	s, ok := findAttr(elem, "begin")
 	if !ok || s == "" {
@@ -381,6 +366,9 @@ func parseBeginSpecs(elem string) []beginSpec {
 		return nil
 	}
 	parts := strings.Split(s, ";")
+	if len(parts) > maxKeyframes {
+		parts = parts[:maxKeyframes]
+	}
 	out := make([]beginSpec, 0, len(parts))
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
@@ -543,9 +531,13 @@ func parseTimeValue(s string) float32 {
 }
 
 // parseSemicolonFloats splits a semicolon-separated string into
-// float32 values.
+// float32 values. Caps the result at maxKeyframes entries to
+// bound allocation on pathological input.
 func parseSemicolonFloats(s string) []float32 {
 	parts := strings.Split(s, ";")
+	if len(parts) > maxKeyframes {
+		parts = parts[:maxKeyframes]
+	}
 	out := make([]float32, 0, len(parts))
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
@@ -583,10 +575,13 @@ func parseKeySplinesIfSpline(elem string, nVals int) []float32 {
 		return nil
 	}
 	segs := nVals - 1
-	if segs <= 0 {
+	if segs <= 0 || segs > maxKeyframes {
 		return nil
 	}
 	parts := strings.Split(raw, ";")
+	if len(parts) > maxKeyframes {
+		parts = parts[:maxKeyframes]
+	}
 	out := make([]float32, 0, 4*segs)
 	for _, p := range parts {
 		p = strings.TrimSpace(p)

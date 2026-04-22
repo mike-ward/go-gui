@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -193,5 +194,15 @@ func TestPhase5aEndToEndPulseRing(t *testing.T) {
 	}
 	if groupID == "" {
 		t.Fatal("expected shared GroupID across the three animations")
+	}
+}
+
+// TestParsePairedValuesCapsAtMaxKeyframes — oversized paired
+// values list is truncated; output length at most 2*maxKeyframes.
+func TestParsePairedValuesCapsAtMaxKeyframes(t *testing.T) {
+	s := strings.Repeat("1 2;", maxKeyframes+50)
+	got := parsePairedValues(s)
+	if len(got) > 2*maxKeyframes {
+		t.Fatalf("want len<=%d, got %d", 2*maxKeyframes, len(got))
 	}
 }

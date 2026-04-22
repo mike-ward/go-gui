@@ -30,13 +30,11 @@ var showcase = []gui.SvgSpinnerKind{
 	gui.SvgSpinner90Ring,
 	gui.SvgSpinner180Ring,
 	gui.SvgSpinner270Ring,
-	gui.SvgSpinner90RingWithBg,
 	gui.SvgSpinner6DotsRotate,
 	gui.SvgSpinner8DotsRotate,
 	gui.SvgSpinner3DotsBounce,
 	gui.SvgSpinner3DotsFade,
 	gui.SvgSpinnerBars,
-	gui.SvgSpinnerPulseRing,
 }
 
 func main() {
@@ -44,8 +42,8 @@ func main() {
 	w := gui.NewWindow(gui.WindowCfg{
 		State:  &App{},
 		Title:  "svg_spinners",
-		Width:  cellsPerRow*cellSize + 24,
-		Height: 3*cellSize + 48,
+		Width:  cellsPerRow*cellSize + 65,
+		Height: 3 * cellSize,
 		OnInit: func(w *gui.Window) {
 			if useIsolation {
 				w.UpdateView(isolatedView)

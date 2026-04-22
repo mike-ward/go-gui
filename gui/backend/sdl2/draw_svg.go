@@ -28,27 +28,32 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 	}
 
 	hasXform := r.HasXform
+	var sx, sy, tx, ty float32
+	if hasXform {
+		sx, sy, tx, ty = r.ScaleX, r.ScaleY, r.TransX, r.TransY
+	}
 	// Precompute rotation if needed.
 	hasRot := r.RotAngle != 0
-	var sinA, cosA float32
+	var sinA, cosA, rcx, rcy float32
 	if hasRot {
 		rad := float64(r.RotAngle) * math.Pi / 180
 		sinA = float32(math.Sin(rad))
 		cosA = float32(math.Cos(rad))
+		rcx, rcy = r.RotCX, r.RotCY
 	}
 
 	for i := range numVerts {
 		vx := r.Triangles[i*2]
 		vy := r.Triangles[i*2+1]
 		if hasXform {
-			vx = vx*r.ScaleX + r.TransX
-			vy = vy*r.ScaleY + r.TransY
+			vx = vx*sx + tx
+			vy = vy*sy + ty
 		}
 		if hasRot {
-			dx := vx - r.RotCX
-			dy := vy - r.RotCY
-			vx = r.RotCX + dx*cosA - dy*sinA
-			vy = r.RotCY + dx*sinA + dy*cosA
+			dx := vx - rcx
+			dy := vy - rcy
+			vx = rcx + dx*cosA - dy*sinA
+			vy = rcy + dx*sinA + dy*cosA
 		}
 		verts[i].Position = sdl.FPoint{
 			X: (r.X + vx*r.Scale) * s,

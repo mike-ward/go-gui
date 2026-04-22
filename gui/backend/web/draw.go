@@ -475,12 +475,17 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 	}
 
 	hasXform := r.HasXform
+	var sx, sy, tx, ty float32
+	if hasXform {
+		sx, sy, tx, ty = r.ScaleX, r.ScaleY, r.TransX, r.TransY
+	}
 	hasRot := r.RotAngle != 0
-	var sinA, cosA float32
+	var sinA, cosA, rcx, rcy float32
 	if hasRot {
 		rad := float64(r.RotAngle) * math.Pi / 180
 		sinA = float32(math.Sin(rad))
 		cosA = float32(math.Cos(rad))
+		rcx, rcy = r.RotCX, r.RotCY
 	}
 
 	addTri := func(i int) {
@@ -489,14 +494,14 @@ func (b *Backend) drawSvg(r *gui.RenderCmd) {
 			vx := r.Triangles[vi*2]
 			vy := r.Triangles[vi*2+1]
 			if hasXform {
-				vx = vx*r.ScaleX + r.TransX
-				vy = vy*r.ScaleY + r.TransY
+				vx = vx*sx + tx
+				vy = vy*sy + ty
 			}
 			if hasRot {
-				dx := vx - r.RotCX
-				dy := vy - r.RotCY
-				vx = r.RotCX + dx*cosA - dy*sinA
-				vy = r.RotCY + dx*sinA + dy*cosA
+				dx := vx - rcx
+				dy := vy - rcy
+				vx = rcx + dx*cosA - dy*sinA
+				vy = rcy + dx*sinA + dy*cosA
 			}
 			px := float64(r.X + vx*r.Scale)
 			py := float64(r.Y + vy*r.Scale)
