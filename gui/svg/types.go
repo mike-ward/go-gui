@@ -63,6 +63,7 @@ type VectorPath struct {
 	StrokeGradientID string
 	FilterID         string
 	StrokeDasharray  []float32
+	StrokeDashOffset float32
 	Opacity          float32
 	FillOpacity      float32
 	StrokeOpacity    float32

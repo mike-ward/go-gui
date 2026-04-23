@@ -62,7 +62,8 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		contribScratch := w.scratch.svgAnimContribs.take(
 			len(cached.Animations))
 		animState = computeSvgAnimationsReuse(
-			cached.Animations, elapsed, animState, contribScratch)
+			cached.Animations, elapsed, animState, contribScratch,
+			cached.BaseByGroup)
 		w.scratch.svgAnimContribs.put(contribScratch)
 	}
 
@@ -184,8 +185,10 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	hasXform := false
 	var vAlphaScale float32
 	hasVAlpha := false
+	var animApplied bool
 	if animState != nil && path.GroupID != "" {
 		if st, ok := animState[path.GroupID]; ok {
+			animApplied = true
 			rotAngle = st.RotAngle
 			rotCX = st.RotCX
 			rotCY = st.RotCY
@@ -214,6 +217,14 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 				}
 			}
 		}
+	}
+	if !animApplied && path.HasBaseXform {
+		transX = path.BaseTransX
+		transY = path.BaseTransY
+		scaleX = path.BaseScaleX
+		scaleY = path.BaseScaleY
+		rotAngle = path.BaseRotAngle
+		hasXform = true
 	}
 
 	emitRenderer(RenderCmd{
@@ -302,15 +313,19 @@ func computeSvgAnimations(
 	anims []SvgAnimation, elapsedSec float32,
 	states map[string]svgAnimState,
 ) map[string]svgAnimState {
-	return computeSvgAnimationsReuse(anims, elapsedSec, states, nil)
+	return computeSvgAnimationsReuse(anims, elapsedSec, states, nil, nil)
 }
 
 // computeSvgAnimationsReuse is the render-path variant that
 // accepts a scratch []animContrib to avoid per-frame allocation.
+// baseByGroup seeds per-GroupID state with the author's decomposed
+// base transform so additive/replace animations compose over it.
+// Pass nil when no base seeding is needed (tests, no-base assets).
 func computeSvgAnimationsReuse(
 	anims []SvgAnimation, elapsedSec float32,
 	states map[string]svgAnimState,
 	contribScratch []animContrib,
+	baseByGroup map[string]svgBaseXform,
 ) map[string]svgAnimState {
 	if states == nil {
 		states = make(map[string]svgAnimState, len(anims))
@@ -323,7 +338,7 @@ func computeSvgAnimationsReuse(
 	}
 	slices.SortStableFunc(contribs, cmpAnimContrib)
 	for i := range contribs {
-		applyAnimContrib(&contribs[i], states)
+		applyAnimContrib(&contribs[i], states, baseByGroup)
 	}
 	return states
 }
@@ -337,12 +352,15 @@ func cmpAnimContrib(a, b animContrib) int {
 // animContrib is one animation's evaluated contribution at the
 // current frame: the resolved value(s), the last activation time
 // used for sandwich-priority ordering, and a back-pointer to the
-// animation for kind/group dispatch.
+// animation for kind/group dispatch. frac carries the raw [0,1]
+// phase for kinds (SvgAnimDashArray) whose apply step needs the
+// un-lerped fraction to do its own per-slot interpolation.
 type animContrib struct {
 	anim       *SvgAnimation
 	value      float32
 	valueX     float32
 	valueY     float32
+	frac       float32
 	activation float32
 }
 
@@ -406,39 +424,55 @@ func collectAnimContribs(
 				continue
 			}
 		}
-		c := animContrib{anim: a, activation: activation}
-		switch a.Kind {
-		case SvgAnimRotate, SvgAnimOpacity, SvgAnimAttr:
-			if len(a.Values) < 2 {
-				continue
-			}
-			c.value = lerpKeyframes(
-				a.Values, a.KeySplines, a.KeyTimes, a.CalcMode, frac)
-			if a.Accumulate {
-				c.value += accumOffset(a, activation) *
-					(a.Values[len(a.Values)-1] - a.Values[0])
-			}
-		case SvgAnimTranslate, SvgAnimScale:
-			if len(a.Values) < 4 {
-				continue
-			}
-			c.valueX, c.valueY = lerpKeyframes2D(
-				a.Values, a.KeySplines, a.KeyTimes, a.CalcMode, frac)
-			if a.Accumulate {
-				n := accumOffset(a, activation)
-				last := len(a.Values) - 2
-				c.valueX += n * (a.Values[last] - a.Values[0])
-				c.valueY += n * (a.Values[last+1] - a.Values[1])
-			}
-		case SvgAnimMotion:
-			if len(a.MotionPath) < 4 || len(a.MotionLengths) < 2 {
-				continue
-			}
-			c.valueX, c.valueY, c.value = motionSample(a, frac)
+		c := animContrib{anim: a, activation: activation, frac: frac}
+		if !evalAnimContrib(&c, a, frac, activation) {
+			continue
 		}
 		out = append(out, c)
 	}
 	return out
+}
+
+// evalAnimContrib fills c with the kind-specific lerped values for
+// this frame. Returns false when the animation lacks enough data to
+// contribute (too few values, stride mismatch, etc.).
+func evalAnimContrib(c *animContrib, a *SvgAnimation,
+	frac, activation float32) bool {
+	switch a.Kind {
+	case SvgAnimRotate, SvgAnimOpacity, SvgAnimAttr, SvgAnimDashOffset:
+		if len(a.Values) < 2 {
+			return false
+		}
+		c.value = lerpKeyframes(
+			a.Values, a.KeySplines, a.KeyTimes, a.CalcMode, frac)
+		if a.Accumulate {
+			c.value += accumOffset(a, activation) *
+				(a.Values[len(a.Values)-1] - a.Values[0])
+		}
+	case SvgAnimDashArray:
+		k := int(a.DashKeyframeLen)
+		if k <= 0 || k > SvgAnimDashArrayCap || len(a.Values) < 2*k {
+			return false
+		}
+	case SvgAnimTranslate, SvgAnimScale:
+		if len(a.Values) < 4 {
+			return false
+		}
+		c.valueX, c.valueY = lerpKeyframes2D(
+			a.Values, a.KeySplines, a.KeyTimes, a.CalcMode, frac)
+		if a.Accumulate {
+			n := accumOffset(a, activation)
+			last := len(a.Values) - 2
+			c.valueX += n * (a.Values[last] - a.Values[0])
+			c.valueY += n * (a.Values[last+1] - a.Values[1])
+		}
+	case SvgAnimMotion:
+		if len(a.MotionPath) < 4 || len(a.MotionLengths) < 2 {
+			return false
+		}
+		c.valueX, c.valueY, c.value = motionSample(a, frac)
+	}
+	return true
 }
 
 // motionSample interpolates along an animateMotion's flattened path
@@ -507,7 +541,8 @@ func accumOffset(a *SvgAnimation, activation float32) float32 {
 // initializing the per-group state on first touch. Replace
 // semantics (not multiply) — sandwich priority is enforced by the
 // sort ordering before this call.
-func applyAnimContrib(c *animContrib, states map[string]svgAnimState) {
+func applyAnimContrib(c *animContrib, states map[string]svgAnimState,
+	baseByGroup map[string]svgBaseXform) {
 	a := c.anim
 	st := states[a.GroupID]
 	if !st.Inited {
@@ -516,6 +551,14 @@ func applyAnimContrib(c *animContrib, states map[string]svgAnimState) {
 		st.StrokeOpacity = 1
 		st.ScaleX = 1
 		st.ScaleY = 1
+		if base, ok := baseByGroup[a.GroupID]; ok {
+			st.TransX = base.TransX
+			st.TransY = base.TransY
+			st.ScaleX = base.ScaleX
+			st.ScaleY = base.ScaleY
+			st.RotAngle = base.RotAngle
+			st.HasXform = true
+		}
 		st.Inited = true
 	}
 	switch a.Kind {
@@ -562,8 +605,51 @@ func applyAnimContrib(c *animContrib, states map[string]svgAnimState) {
 			st.RotAngle = c.value
 		}
 		st.HasXform = true
+	case SvgAnimDashOffset:
+		ov := &st.AttrOverride
+		if a.Additive {
+			if ov.Mask&SvgAnimMaskStrokeDashOffset == 0 {
+				ov.StrokeDashOffset = c.value
+				ov.AdditiveMask |= SvgAnimMaskStrokeDashOffset
+			} else {
+				ov.StrokeDashOffset += c.value
+			}
+		} else {
+			ov.StrokeDashOffset = c.value
+			ov.AdditiveMask &^= SvgAnimMaskStrokeDashOffset
+		}
+		ov.Mask |= SvgAnimMaskStrokeDashOffset
+	case SvgAnimDashArray:
+		applyDashArrayContrib(&st.AttrOverride, a, c.frac)
 	}
 	states[a.GroupID] = st
+}
+
+// applyDashArrayContrib lerps a DashKeyframeLen-stride keyframe
+// stream at frac into the override StrokeDashArray slots. Uses
+// locateSeg for consistent discrete / spline / keyTimes handling
+// across all other animation kinds.
+func applyDashArrayContrib(ov *SvgAnimAttrOverride,
+	a *SvgAnimation, frac float32) {
+	k := int(a.DashKeyframeLen)
+	n := len(a.Values) / k
+	idx, t, atEnd := locateSeg(n, frac, a.KeySplines, a.KeyTimes, a.CalcMode)
+	for i := range k {
+		var v float32
+		switch {
+		case atEnd:
+			v = a.Values[(n-1)*k+i]
+		case a.CalcMode == SvgAnimCalcDiscrete:
+			v = a.Values[idx*k+i]
+		default:
+			v0 := a.Values[idx*k+i]
+			v1 := a.Values[(idx+1)*k+i]
+			v = v0 + (v1-v0)*t
+		}
+		ov.StrokeDashArray[i] = v
+	}
+	ov.StrokeDashArrayLen = uint8(k)
+	ov.Mask |= SvgAnimMaskStrokeDashArray
 }
 
 // applyOpacityContrib dispatches the opacity value to the correct

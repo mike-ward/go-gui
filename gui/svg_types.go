@@ -25,6 +25,18 @@ type TessellatedPath struct {
 	// Primitive carries raw attributes for re-tessellation; zero
 	// value when the source is not a primitive.
 	Primitive SvgPrimitive
+	// Author's base transform, decomposed into translate/scale/
+	// rotate. Tessellated vertices are in local coords when
+	// HasBaseXform is true and the decomposition was clean; the
+	// render path composes BaseTransX..BaseRotAngle per vertex.
+	// When decomposition fails (shear), the raw matrix is baked
+	// into Triangles and HasBaseXform is false.
+	BaseTransX   float32
+	BaseTransY   float32
+	BaseScaleX   float32
+	BaseScaleY   float32
+	BaseRotAngle float32 // degrees
+	HasBaseXform bool
 }
 
 // SvgText holds a parsed SVG text element.
@@ -127,6 +139,13 @@ const (
 	// vertex. The animation writes to st.TransX/TransY; with
 	// MotionRotate=auto it also writes st.RotAngle (tangent angle).
 	SvgAnimMotion
+	// SvgAnimDashArray animates stroke-dasharray. Values is a flat
+	// [f0_0..f0_k-1, f1_0..f1_k-1, ...] layout with DashKeyframeLen
+	// floats per keyframe (k<=8). Per-slot linear interp.
+	SvgAnimDashArray
+	// SvgAnimDashOffset animates stroke-dashoffset. Values is one
+	// scalar per keyframe.
+	SvgAnimDashOffset
 )
 
 // SvgAnimMotionRotate selects the rotate= mode on animateMotion.
@@ -258,6 +277,10 @@ type SvgAnimation struct {
 	MotionPath    []float32
 	MotionLengths []float32
 	MotionRotate  SvgAnimMotionRotate
+	// DashKeyframeLen is the number of floats per keyframe for
+	// SvgAnimDashArray (1..8). Keyframe count = len(Values) /
+	// DashKeyframeLen. Zero on all other kinds.
+	DashKeyframeLen uint8
 }
 
 // SvgPrimitiveKind identifies the source primitive of a VectorPath.

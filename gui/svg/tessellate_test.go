@@ -3,6 +3,7 @@ package svg
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/mike-ward/go-gui/gui"
 )
@@ -528,7 +529,7 @@ func TestTessellateFlattenPathMultipleSubpaths(t *testing.T) {
 func TestTessellateApplyDasharrayBasic(t *testing.T) {
 	// Horizontal line from (0,0) to (10,0), dash=[3,2]
 	poly := []float32{0, 0, 10, 0}
-	result := applyDasharray([][]float32{poly}, []float32{3, 2})
+	result := applyDasharray([][]float32{poly}, []float32{3, 2}, 0)
 	// Expected dashes: 0-3 (draw), 3-5 (gap), 5-8 (draw), 8-10 (gap)
 	if len(result) != 2 {
 		t.Fatalf("expected 2 dash segments, got %d", len(result))
@@ -550,7 +551,7 @@ func TestTessellateApplyDasharrayBasic(t *testing.T) {
 func TestTessellateApplyDasharrayEmpty(t *testing.T) {
 	poly := []float32{0, 0, 10, 0}
 	polys := [][]float32{poly}
-	result := applyDasharray(polys, nil)
+	result := applyDasharray(polys, nil, 0)
 	if len(result) != 1 {
 		t.Fatalf("empty dasharray should return input, got %d", len(result))
 	}
@@ -559,7 +560,7 @@ func TestTessellateApplyDasharrayEmpty(t *testing.T) {
 func TestTessellateApplyDasharrayShortSegment(t *testing.T) {
 	// Polyline shorter than one dash
 	poly := []float32{0, 0, 1, 0}
-	result := applyDasharray([][]float32{poly}, []float32{5, 5})
+	result := applyDasharray([][]float32{poly}, []float32{5, 5}, 0)
 	if len(result) != 1 {
 		t.Fatalf("expected 1 dash segment, got %d", len(result))
 	}
@@ -568,10 +569,224 @@ func TestTessellateApplyDasharrayShortSegment(t *testing.T) {
 func TestTessellateApplyDasharrayTooShort(t *testing.T) {
 	// Polyline with < 4 floats is skipped
 	poly := []float32{0, 0}
-	result := applyDasharray([][]float32{poly}, []float32{3, 2})
+	result := applyDasharray([][]float32{poly}, []float32{3, 2}, 0)
 	if len(result) != 0 {
 		t.Fatalf("expected 0 dash segments from short poly, got %d",
 			len(result))
+	}
+}
+
+// All-zero dasharray cycle must short-circuit to "solid" rather than
+// loop forever. Guards against author error and DoS.
+func TestApplyDasharray_AllZeroCycleReturnsSolid(t *testing.T) {
+	poly := []float32{0, 0, 10, 0}
+	result := applyDasharray([][]float32{poly}, []float32{0, 0}, 0)
+	if len(result) != 1 || len(result[0]) != 4 {
+		t.Fatalf("zero-cycle should return input unchanged; got %v", result)
+	}
+}
+
+// Sub-epsilon cycle must short-circuit to "solid" — guards inner
+// consume loop from running segLen / cycleLen iterations.
+func TestApplyDasharray_NearZeroCycleReturnsSolid(t *testing.T) {
+	poly := []float32{0, 0, 10, 0}
+	tiny := []float32{1e-9, 1e-9}
+	result := applyDasharray([][]float32{poly}, tiny, 0)
+	if len(result) != 1 {
+		t.Fatalf("expected solid passthrough; got %d segments", len(result))
+	}
+}
+
+// NaN entries → cycleLen NaN → must short-circuit to solid.
+func TestApplyDasharray_NaNDasharrayReturnsSolid(t *testing.T) {
+	poly := []float32{0, 0, 10, 0}
+	nan := float32(math.NaN())
+	result := applyDasharray([][]float32{poly}, []float32{nan, 5}, 0)
+	if len(result) != 1 {
+		t.Fatalf("NaN dash should solid-passthrough; got %d", len(result))
+	}
+}
+
+// Inf entries → cycleLen +Inf → must short-circuit to solid.
+func TestApplyDasharray_InfDasharrayReturnsSolid(t *testing.T) {
+	poly := []float32{0, 0, 10, 0}
+	inf := float32(math.Inf(1))
+	result := applyDasharray([][]float32{poly}, []float32{inf, 1}, 0)
+	if len(result) != 1 {
+		t.Fatalf("Inf dash should solid-passthrough; got %d", len(result))
+	}
+}
+
+// Pathological micro-cycle (just above minDashCycleLen) over a long
+// segment must terminate via maxDashIterPerPoly cap, not stall.
+func TestApplyDasharray_PathologicalCycleCapsIters(t *testing.T) {
+	poly := []float32{0, 0, 1e6, 0}
+	dash := []float32{1.5e-3, 1.5e-3} // cycle ≈ 3e-3, > minDashCycleLen
+	done := make(chan struct{})
+	go func() {
+		applyDasharray([][]float32{poly}, dash, 0)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("applyDasharray did not terminate within 1s")
+	}
+}
+
+// dashPhase: positive offset advances forward through the cycle.
+func TestDashPhase_PositiveOffsetSkipsIntoGap(t *testing.T) {
+	idx, drawing, remaining := dashPhase([]float32{3, 2}, 4, 5)
+	// offset 4: skip first 3 of [3,2]; remaining 1 of gap.
+	if idx != 1 || drawing {
+		t.Fatalf("idx=%d drawing=%v want (1,false)", idx, drawing)
+	}
+	if remaining < 0.99 || remaining > 1.01 {
+		t.Fatalf("remaining=%v want 1", remaining)
+	}
+}
+
+// dashPhase: negative offset wraps via cycle length modulo.
+func TestDashPhase_NegativeOffsetWraps(t *testing.T) {
+	idx, drawing, remaining := dashPhase([]float32{3, 2}, -4, 5)
+	// -4 mod 5 = 1; skip 1 of first dash; still in dash[0].
+	if idx != 0 || !drawing {
+		t.Fatalf("idx=%d drawing=%v want (0,true)", idx, drawing)
+	}
+	if remaining < 1.99 || remaining > 2.01 {
+		t.Fatalf("remaining=%v want 2", remaining)
+	}
+}
+
+// dashPhase: leading zero entry must be skipped so [0,150] starts in
+// the gap rather than emitting a degenerate zero-length dash.
+func TestDashPhase_ZeroLeadingEntrySkipped(t *testing.T) {
+	idx, drawing, remaining := dashPhase([]float32{0, 150}, 0, 150)
+	if idx != 1 || drawing {
+		t.Fatalf("idx=%d drawing=%v want (1,false)", idx, drawing)
+	}
+	if remaining != 150 {
+		t.Fatalf("remaining=%v want 150", remaining)
+	}
+}
+
+// dashPhase: NaN offset degrades to zero-offset.
+func TestDashPhase_NaNOffsetDegrades(t *testing.T) {
+	nan := float32(math.NaN())
+	idx, drawing, remaining := dashPhase([]float32{3, 2}, nan, 5)
+	if idx != 0 || !drawing || remaining != 3 {
+		t.Fatalf("idx=%d drawing=%v rem=%v want (0,true,3)",
+			idx, drawing, remaining)
+	}
+}
+
+// dashPhase: Inf offset degrades to zero-offset.
+func TestDashPhase_InfOffsetDegrades(t *testing.T) {
+	inf := float32(math.Inf(1))
+	idx, drawing, remaining := dashPhase([]float32{3, 2}, inf, 5)
+	if idx != 0 || !drawing || remaining != 3 {
+		t.Fatalf("idx=%d drawing=%v rem=%v want (0,true,3)",
+			idx, drawing, remaining)
+	}
+}
+
+// Shear-bake fallback: skewed transform fails decomposition, so
+// vertices bake the matrix and HasBaseXform stays false.
+func TestTessellate_ShearBakesIntoVerticesNoBase(t *testing.T) {
+	// skewX(45): a=1,b=0,c=1,d=1,e=0,f=0. Not pure TRS.
+	vg := &VectorGraphic{
+		Paths: []VectorPath{
+			{
+				Transform: [6]float32{1, 0, 1, 1, 0, 0},
+				FillColor: gui.SvgColor{R: 255, A: 255},
+				Opacity:   1,
+				Segments: []PathSegment{
+					{Cmd: CmdMoveTo, Points: []float32{0, 0}},
+					{Cmd: CmdLineTo, Points: []float32{10, 0}},
+					{Cmd: CmdLineTo, Points: []float32{10, 10}},
+					{Cmd: CmdClose},
+				},
+			},
+		},
+	}
+	out := vg.tessellatePaths(vg.Paths, 1)
+	if len(out) != 1 {
+		t.Fatalf("paths=%d want 1", len(out))
+	}
+	if out[0].HasBaseXform {
+		t.Fatal("shear must bake; HasBaseXform should be false")
+	}
+	// Sheared verts: x ranges include c*y skew. (10,10) → x=20.
+	maxX := float32(-1)
+	for i := 0; i+1 < len(out[0].Triangles); i += 2 {
+		if x := out[0].Triangles[i]; x > maxX {
+			maxX = x
+		}
+	}
+	if maxX < 19 {
+		t.Fatalf("expected baked skew (maxX≥19); got %v", maxX)
+	}
+}
+
+// appendDegeneratePlaceholders: stroke-only animated primitive emits
+// a stroke placeholder, no fill placeholder.
+func TestAppendDegenerate_StrokeOnly(t *testing.T) {
+	p := &VectorPath{
+		Animated:    true,
+		Primitive:   gui.SvgPrimitive{Kind: gui.SvgPrimCircle},
+		StrokeColor: gui.SvgColor{R: 255, A: 255},
+		StrokeWidth: 2,
+		GroupID:     "g",
+	}
+	out := appendDegeneratePlaceholders(nil, p,
+		gui.TessellatedPath{GroupID: "g"})
+	if len(out) != 1 {
+		t.Fatalf("want 1 placeholder; got %d", len(out))
+	}
+	if !out[0].IsStroke {
+		t.Fatal("expected stroke placeholder")
+	}
+	if len(out[0].Triangles) != 0 {
+		t.Fatalf("expected zero triangles; got %d", len(out[0].Triangles))
+	}
+}
+
+// appendDegeneratePlaceholders: no paint at all → still emits one
+// fill placeholder so the animation system sees the path.
+func TestAppendDegenerate_NoPaintForcesFillPlaceholder(t *testing.T) {
+	p := &VectorPath{
+		Animated:  true,
+		Primitive: gui.SvgPrimitive{Kind: gui.SvgPrimCircle},
+		GroupID:   "g",
+	}
+	out := appendDegeneratePlaceholders(nil, p,
+		gui.TessellatedPath{GroupID: "g"})
+	if len(out) != 1 {
+		t.Fatalf("want 1 placeholder; got %d", len(out))
+	}
+	if out[0].IsStroke {
+		t.Fatal("forced placeholder should be fill")
+	}
+}
+
+// appendDegeneratePlaceholders: fill + stroke both set → two
+// placeholders, fill first then stroke.
+func TestAppendDegenerate_FillAndStroke(t *testing.T) {
+	p := &VectorPath{
+		Animated:    true,
+		Primitive:   gui.SvgPrimitive{Kind: gui.SvgPrimCircle},
+		FillColor:   gui.SvgColor{R: 255, A: 255},
+		StrokeColor: gui.SvgColor{B: 255, A: 255},
+		StrokeWidth: 1,
+		GroupID:     "g",
+	}
+	out := appendDegeneratePlaceholders(nil, p,
+		gui.TessellatedPath{GroupID: "g", HasBaseXform: true})
+	if len(out) != 2 || out[0].IsStroke || !out[1].IsStroke {
+		t.Fatalf("want fill,stroke order; got %+v", out)
+	}
+	if !out[0].HasBaseXform || !out[1].HasBaseXform {
+		t.Fatal("HasBaseXform should propagate to both placeholders")
 	}
 }
 

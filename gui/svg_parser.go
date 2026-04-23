@@ -38,7 +38,17 @@ const (
 	SvgAnimMaskY
 	SvgAnimMaskWidth
 	SvgAnimMaskHeight
+	// SvgAnimMaskStrokeDashArray marks StrokeDashArray/Len as live.
+	SvgAnimMaskStrokeDashArray
+	// SvgAnimMaskStrokeDashOffset marks StrokeDashOffset as live.
+	SvgAnimMaskStrokeDashOffset
 )
+
+// SvgAnimDashArrayCap caps the max pairs-count for an animated
+// stroke-dasharray. 8 floats handles every real-world spinner
+// pattern (ring-resize uses 2). Fixed-size storage avoids heap
+// churn in the hot-path SvgAnimAttrOverride struct.
+const SvgAnimDashArrayCap = 8
 
 // SvgAnimAttrOverride carries current animated attribute values to
 // apply when re-tessellating a primitive. Fields are valid only when
@@ -47,14 +57,20 @@ const (
 // to add to the parsed primitive value rather than a replacement —
 // matches SMIL additive="sum" / by= shorthand semantics.
 type SvgAnimAttrOverride struct {
-	Mask         SvgAnimAttrMask
-	AdditiveMask SvgAnimAttrMask
-	CX, CY       float32
-	R            float32
-	RX, RY       float32
-	X, Y         float32
-	Width        float32
-	Height       float32
+	Mask             SvgAnimAttrMask
+	AdditiveMask     SvgAnimAttrMask
+	CX, CY           float32
+	R                float32
+	RX, RY           float32
+	X, Y             float32
+	Width            float32
+	Height           float32
+	StrokeDashOffset float32
+	// StrokeDashArray carries up to SvgAnimDashArrayCap floats of
+	// live stroke-dasharray pattern. StrokeDashArrayLen gives the
+	// used prefix; values past Len are undefined.
+	StrokeDashArray    [SvgAnimDashArrayCap]float32
+	StrokeDashArrayLen uint8
 }
 
 // AnimatedSvgParser is an optional extension of SvgParser for backends

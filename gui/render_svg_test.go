@@ -887,3 +887,174 @@ func TestComputeSvgAnimations_MotionAdditiveStacks(t *testing.T) {
 			st["g"].TransX, st["g"].TransY)
 	}
 }
+
+// applyDashArrayContrib: linear lerp between stride-2 keyframes.
+// Values [0,150 ; 42,150] at frac=0.5 → [21, 150].
+func TestApplyDashArrayContrib_LinearMidpoint(t *testing.T) {
+	ov := &SvgAnimAttrOverride{}
+	a := &SvgAnimation{
+		Kind:            SvgAnimDashArray,
+		Values:          []float32{0, 150, 42, 150},
+		DashKeyframeLen: 2,
+	}
+	applyDashArrayContrib(ov, a, 0.5)
+	if ov.StrokeDashArrayLen != 2 {
+		t.Fatalf("len=%d want 2", ov.StrokeDashArrayLen)
+	}
+	if ov.StrokeDashArray[0] != 21 || ov.StrokeDashArray[1] != 150 {
+		t.Fatalf("got [%v %v] want [21 150]",
+			ov.StrokeDashArray[0], ov.StrokeDashArray[1])
+	}
+	if ov.Mask&SvgAnimMaskStrokeDashArray == 0 {
+		t.Fatal("mask bit not set")
+	}
+}
+
+// applyDashArrayContrib: discrete picks the left keyframe value.
+func TestApplyDashArrayContrib_DiscreteSelectsLeft(t *testing.T) {
+	ov := &SvgAnimAttrOverride{}
+	a := &SvgAnimation{
+		Kind:            SvgAnimDashArray,
+		Values:          []float32{0, 150, 42, 100},
+		DashKeyframeLen: 2,
+		CalcMode:        SvgAnimCalcDiscrete,
+	}
+	// frac in first half of two keyframes → idx=0 → values[0:2].
+	applyDashArrayContrib(ov, a, 0.25)
+	if ov.StrokeDashArray[0] != 0 || ov.StrokeDashArray[1] != 150 {
+		t.Fatalf("got [%v %v] want [0 150]",
+			ov.StrokeDashArray[0], ov.StrokeDashArray[1])
+	}
+}
+
+// applyDashArrayContrib: frac>=1 picks the last keyframe regardless
+// of mode (atEnd branch).
+func TestApplyDashArrayContrib_AtEndPicksLast(t *testing.T) {
+	ov := &SvgAnimAttrOverride{}
+	a := &SvgAnimation{
+		Kind:            SvgAnimDashArray,
+		Values:          []float32{1, 2, 3, 4, 5, 6},
+		DashKeyframeLen: 2,
+	}
+	applyDashArrayContrib(ov, a, 1.0)
+	if ov.StrokeDashArray[0] != 5 || ov.StrokeDashArray[1] != 6 {
+		t.Fatalf("got [%v %v] want [5 6]",
+			ov.StrokeDashArray[0], ov.StrokeDashArray[1])
+	}
+}
+
+// applyDashArrayContrib: stride=1 (single-value pattern) writes one
+// slot and updates Len accordingly.
+func TestApplyDashArrayContrib_Stride1(t *testing.T) {
+	ov := &SvgAnimAttrOverride{}
+	a := &SvgAnimation{
+		Kind:            SvgAnimDashArray,
+		Values:          []float32{10, 20},
+		DashKeyframeLen: 1,
+	}
+	applyDashArrayContrib(ov, a, 0.5)
+	if ov.StrokeDashArrayLen != 1 || ov.StrokeDashArray[0] != 15 {
+		t.Fatalf("got len=%d val=%v want len=1 val=15",
+			ov.StrokeDashArrayLen, ov.StrokeDashArray[0])
+	}
+}
+
+// SvgAnimDashOffset replace: writes value, clears AdditiveMask bit.
+func TestApplyAnimContrib_DashOffsetReplace(t *testing.T) {
+	states := map[string]svgAnimState{}
+	a := &SvgAnimation{
+		Kind: SvgAnimDashOffset, GroupID: "g",
+		Values: []float32{0, -16}, DurSec: 1, Cycle: 1,
+	}
+	c := &animContrib{anim: a, value: -8}
+	applyAnimContrib(c, states, nil)
+	st := states["g"]
+	if st.AttrOverride.Mask&SvgAnimMaskStrokeDashOffset == 0 {
+		t.Fatal("mask bit not set")
+	}
+	if st.AttrOverride.StrokeDashOffset != -8 {
+		t.Fatalf("offset=%v want -8", st.AttrOverride.StrokeDashOffset)
+	}
+	if st.AttrOverride.AdditiveMask&SvgAnimMaskStrokeDashOffset != 0 {
+		t.Fatal("AdditiveMask bit must be clear on replace")
+	}
+}
+
+// SvgAnimDashOffset additive on first touch: stores value AND marks
+// AdditiveMask so subsequent writes accumulate, not stomp.
+func TestApplyAnimContrib_DashOffsetAdditiveFirst(t *testing.T) {
+	states := map[string]svgAnimState{}
+	a := &SvgAnimation{
+		Kind: SvgAnimDashOffset, GroupID: "g", Additive: true,
+	}
+	c := &animContrib{anim: a, value: 5}
+	applyAnimContrib(c, states, nil)
+	st := states["g"]
+	if st.AttrOverride.StrokeDashOffset != 5 {
+		t.Fatalf("first additive: offset=%v want 5",
+			st.AttrOverride.StrokeDashOffset)
+	}
+	if st.AttrOverride.AdditiveMask&SvgAnimMaskStrokeDashOffset == 0 {
+		t.Fatal("AdditiveMask bit must be set after additive write")
+	}
+}
+
+// SvgAnimDashOffset additive subsequent: accumulates onto prior.
+func TestApplyAnimContrib_DashOffsetAdditiveAccumulates(t *testing.T) {
+	states := map[string]svgAnimState{}
+	a1 := &SvgAnimation{Kind: SvgAnimDashOffset, GroupID: "g",
+		Additive: true}
+	a2 := &SvgAnimation{Kind: SvgAnimDashOffset, GroupID: "g",
+		Additive: true}
+	applyAnimContrib(&animContrib{anim: a1, value: 3}, states, nil)
+	applyAnimContrib(&animContrib{anim: a2, value: 4}, states, nil)
+	if states["g"].AttrOverride.StrokeDashOffset != 7 {
+		t.Fatalf("offset=%v want 7",
+			states["g"].AttrOverride.StrokeDashOffset)
+	}
+}
+
+// computeSvgAnimationsReuse seeds svgAnimState from baseByGroup so
+// non-transform animations leave the author's base xform intact.
+func TestComputeSvgAnimationsReuse_SeedsBaseFromGroup(t *testing.T) {
+	anims := []SvgAnimation{{
+		Kind: SvgAnimAttr, GroupID: "g",
+		AttrName: SvgAttrR,
+		Values:   []float32{0, 5}, DurSec: 1, Cycle: 1,
+	}}
+	base := map[string]svgBaseXform{
+		"g": {TransX: 12, TransY: 12, ScaleX: 2, ScaleY: 2,
+			RotAngle: 45},
+	}
+	st := computeSvgAnimationsReuse(anims, 0.5, nil, nil, base)
+	got := st["g"]
+	if !got.HasXform {
+		t.Fatal("HasXform must be true after seeding")
+	}
+	if got.TransX != 12 || got.TransY != 12 ||
+		got.ScaleX != 2 || got.ScaleY != 2 || got.RotAngle != 45 {
+		t.Fatalf("not seeded: %+v", got)
+	}
+	// AttrR animation still applied.
+	if got.AttrOverride.Mask&SvgAnimMaskR == 0 {
+		t.Fatal("attr animation lost when seeding base")
+	}
+}
+
+// Without a baseByGroup entry, init falls back to identity scale and
+// HasXform stays false (unless a transform anim sets it).
+func TestComputeSvgAnimationsReuse_NoBaseLeavesIdentity(t *testing.T) {
+	anims := []SvgAnimation{{
+		Kind: SvgAnimAttr, GroupID: "g",
+		AttrName: SvgAttrR,
+		Values:   []float32{0, 5}, DurSec: 1, Cycle: 1,
+	}}
+	st := computeSvgAnimationsReuse(anims, 0.5, nil, nil, nil)
+	got := st["g"]
+	if got.HasXform {
+		t.Fatal("HasXform should be false when no base + no xform anim")
+	}
+	if got.ScaleX != 1 || got.ScaleY != 1 {
+		t.Fatalf("scale not identity: (%v,%v)", got.ScaleX, got.ScaleY)
+	}
+}

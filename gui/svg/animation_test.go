@@ -1014,3 +1014,70 @@ func TestAnimationMotionPathD_BareHrefResolves(t *testing.T) {
 		t.Fatalf("expected ~15, got %f", total)
 	}
 }
+
+// parseDashFrameFloats truncates fields exceeding cap+1 to bound
+// allocation against hostile inputs with millions of fields.
+func TestParseDashFrameFloats_TruncatesHostileWidth(t *testing.T) {
+	// cap=8 → truncate at 9 fields. Build 100-field string.
+	parts := make([]string, 100)
+	for i := range parts {
+		parts[i] = "1"
+	}
+	got := parseDashFrameFloats(strings.Join(parts, " "))
+	if len(got) > gui.SvgAnimDashArrayCap+1 {
+		t.Fatalf("len=%d should be ≤cap+1=%d",
+			len(got), gui.SvgAnimDashArrayCap+1)
+	}
+}
+
+// Empty input → nil. Whitespace-only treated identically.
+func TestParseDashFrameFloats_EmptyReturnsNil(t *testing.T) {
+	if got := parseDashFrameFloats(""); got != nil {
+		t.Fatalf("empty: want nil, got %v", got)
+	}
+	if got := parseDashFrameFloats("   "); got != nil {
+		t.Fatalf("ws: want nil, got %v", got)
+	}
+}
+
+// Comma-separated values parse the same as whitespace-separated.
+func TestParseDashFrameFloats_CommaSeparated(t *testing.T) {
+	got := parseDashFrameFloats("3,5,7")
+	if len(got) != 3 || got[0] != 3 || got[1] != 5 || got[2] != 7 {
+		t.Fatalf("got %v want [3 5 7]", got)
+	}
+}
+
+// repeatCount=indefinite must clamp the cycle to maxCycleSec when
+// dur itself is huge. Guards against pathological assets producing
+// runaway anim durations.
+func TestParseRepeatCycle_IndefiniteClamped(t *testing.T) {
+	elem := `<animate dur="200000s" repeatCount="indefinite"/>`
+	dur := parseDuration(elem)
+	cycle := parseRepeatCycle(elem, dur)
+	if cycle != maxCycleSec {
+		t.Fatalf("indefinite cycle=%v want clamp to %v",
+			cycle, maxCycleSec)
+	}
+}
+
+// repeatCount with a finite count whose product overflows the
+// per-cycle clamp must clamp.
+func TestParseRepeatCycle_LargeCountClamped(t *testing.T) {
+	elem := `<animate dur="1s" repeatCount="999999999"/>`
+	cycle := parseRepeatCycle(elem, 1)
+	if cycle != maxCycleSec {
+		t.Fatalf("cycle=%v want %v", cycle, maxCycleSec)
+	}
+}
+
+// repeatDur=indefinite is equivalent to repeatCount=indefinite for
+// clamping purposes.
+func TestParseRepeatCycle_RepeatDurIndefiniteClamped(t *testing.T) {
+	elem := `<animate dur="200000s" repeatDur="indefinite"/>`
+	dur := parseDuration(elem)
+	cycle := parseRepeatCycle(elem, dur)
+	if cycle != maxCycleSec {
+		t.Fatalf("cycle=%v want %v", cycle, maxCycleSec)
+	}
+}

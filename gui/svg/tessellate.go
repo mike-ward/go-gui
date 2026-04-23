@@ -30,29 +30,37 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 	for i := range paths {
 		path := &paths[i]
 
-		// Clip group
 		clipGroup := 0
 		if path.ClipPathID != "" {
-			if clipGeom, ok := vg.ClipPaths[path.ClipPathID]; ok {
-				clipGroupCounter++
-				clipGroup = clipGroupCounter
-				for j := range clipGeom {
-					cpPoly := flattenPath(&clipGeom[j], tolerance)
-					clipTris := tessellatePolylines(cpPoly)
-					if len(clipTris) > 0 {
-						result = append(result, gui.TessellatedPath{
-							Triangles:  clipTris,
-							Color:      gui.SvgColor{R: 255, G: 255, B: 255, A: 255},
-							IsClipMask: true,
-							ClipGroup:  clipGroup,
-							GroupID:    path.GroupID,
-						})
-					}
-				}
-			}
+			result, clipGroup = vg.appendClipMasks(result, path,
+				tolerance, &clipGroupCounter)
 		}
 
-		polylines := flattenPath(path, tolerance)
+		// Decompose path.Transform into TRS. On success, tessellate
+		// at identity and propagate the base onto each emitted
+		// TessellatedPath so the render-time sandwich composes it.
+		// On failure (shear), bake the matrix into vertices; the
+		// emitted path then carries no Base* data.
+		var seed gui.TessellatedPath
+		var bake bool
+		if !isIdentityTransform(path.Transform) {
+			tx, ty, sx, sy, rot, ok := decomposeTRS(path.Transform)
+			if ok {
+				seed.BaseTransX, seed.BaseTransY = tx, ty
+				seed.BaseScaleX, seed.BaseScaleY = sx, sy
+				seed.BaseRotAngle = rot
+				seed.HasBaseXform = true
+			} else {
+				bake = true
+			}
+		}
+		seed.ClipGroup = clipGroup
+		seed.GroupID = path.GroupID
+		seed.Animated = path.Animated
+		seed.Primitive = path.Primitive
+		polylines := flattenPathWithBake(path, tolerance, bake)
+
+		emittedGeometry := false
 
 		// Fill tessellation
 		hasGradient := path.FillGradientID != ""
@@ -80,25 +88,19 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 							}
 							vcols[vi] = c
 						}
-						result = append(result, gui.TessellatedPath{
-							Triangles:    fillTris,
-							Color:        path.FillColor,
-							VertexColors: vcols,
-							ClipGroup:    clipGroup,
-							GroupID:      path.GroupID,
-							Animated:     path.Animated,
-							Primitive:    path.Primitive,
-						})
+						out := seed
+						out.Triangles = fillTris
+						out.Color = path.FillColor
+						out.VertexColors = vcols
+						result = append(result, out)
+						emittedGeometry = true
 					}
 				} else {
-					result = append(result, gui.TessellatedPath{
-						Triangles: rawTris,
-						Color:     path.FillColor,
-						ClipGroup: clipGroup,
-						GroupID:   path.GroupID,
-						Animated:  path.Animated,
-						Primitive: path.Primitive,
-					})
+					out := seed
+					out.Triangles = rawTris
+					out.Color = path.FillColor
+					result = append(result, out)
+					emittedGeometry = true
 				}
 			}
 		}
@@ -113,7 +115,8 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 			strokeWidth := path.StrokeWidth
 			strokePoly := polylines
 			if len(path.StrokeDasharray) > 0 {
-				strokePoly = applyDasharray(polylines, path.StrokeDasharray)
+				strokePoly = applyDasharray(polylines,
+					path.StrokeDasharray, path.StrokeDashOffset)
 			}
 			rawStroke := tessellateStroke(strokePoly, strokeWidth, path.StrokeCap, path.StrokeJoin)
 			if len(rawStroke) > 0 {
@@ -138,52 +141,143 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 							}
 							vcols[vi] = c
 						}
-						result = append(result, gui.TessellatedPath{
-							Triangles:    sTris,
-							Color:        path.StrokeColor,
-							VertexColors: vcols,
-							ClipGroup:    clipGroup,
-							GroupID:      path.GroupID,
-							Animated:     path.Animated,
-							IsStroke:     true,
-							Primitive:    path.Primitive,
-						})
+						out := seed
+						out.Triangles = sTris
+						out.Color = path.StrokeColor
+						out.VertexColors = vcols
+						out.IsStroke = true
+						result = append(result, out)
+						emittedGeometry = true
 					}
 				} else {
-					result = append(result, gui.TessellatedPath{
-						Triangles: rawStroke,
-						Color:     path.StrokeColor,
-						ClipGroup: clipGroup,
-						GroupID:   path.GroupID,
-						Animated:  path.Animated,
-						IsStroke:  true,
-						Primitive: path.Primitive,
-					})
+					out := seed
+					out.Triangles = rawStroke
+					out.Color = path.StrokeColor
+					out.IsStroke = true
+					result = append(result, out)
+					emittedGeometry = true
 				}
 			}
+		}
+
+		if !emittedGeometry && path.Animated &&
+			path.Primitive.Kind != gui.SvgPrimNone {
+			result = appendDegeneratePlaceholders(result, path, seed)
 		}
 	}
 	return result
 }
 
-// applyDasharray splits polylines into dash segments.
-func applyDasharray(polylines [][]float32, dasharray []float32) [][]float32 {
+// appendClipMasks emits per-subpath clip-mask TessellatedPaths for
+// the path's referenced clipPath. Bumps counter and returns the
+// assigned clipGroup so subsequent fill/stroke entries inherit it.
+func (vg *VectorGraphic) appendClipMasks(result []gui.TessellatedPath,
+	path *VectorPath, tolerance float32, counter *int,
+) ([]gui.TessellatedPath, int) {
+	clipGeom, ok := vg.ClipPaths[path.ClipPathID]
+	if !ok {
+		return result, 0
+	}
+	*counter++
+	clipGroup := *counter
+	for j := range clipGeom {
+		cpPoly := flattenPath(&clipGeom[j], tolerance)
+		clipTris := tessellatePolylines(cpPoly)
+		if len(clipTris) == 0 {
+			continue
+		}
+		result = append(result, gui.TessellatedPath{
+			Triangles:  clipTris,
+			Color:      gui.SvgColor{R: 255, G: 255, B: 255, A: 255},
+			IsClipMask: true,
+			ClipGroup:  clipGroup,
+			GroupID:    path.GroupID,
+		})
+	}
+	return result, clipGroup
+}
+
+// appendDegeneratePlaceholders emits zero-triangle TessellatedPath
+// entries for an Animated primitive that produced no static geometry
+// (e.g. <circle r="0"> animating r). One placeholder per configured
+// paint (fill / stroke) keeps span counts matching the live result
+// from TessellateAnimated; without these the spinner is invisible.
+// seed carries clip/group/primitive/base-transform state shared with
+// the concrete fill/stroke emissions.
+func appendDegeneratePlaceholders(result []gui.TessellatedPath,
+	path *VectorPath, seed gui.TessellatedPath,
+) []gui.TessellatedPath {
+	wantsFill := path.FillColor.A > 0 || path.FillGradientID != ""
+	wantsStroke := (path.StrokeColor.A > 0 ||
+		path.StrokeGradientID != "") && path.StrokeWidth > 0
+	if !wantsFill && !wantsStroke {
+		wantsFill = true // ensure at least one placeholder
+	}
+	seed.Animated = true
+	if wantsFill {
+		out := seed
+		out.Color = path.FillColor
+		result = append(result, out)
+	}
+	if wantsStroke {
+		out := seed
+		out.Color = path.StrokeColor
+		out.IsStroke = true
+		result = append(result, out)
+	}
+	return result
+}
+
+// minDashCycleLen bounds the smallest accepted dasharray cycle.
+// Sub-threshold cycles would force the inner consume loop to iterate
+// segLen / cycleLen times — hostile or buggy authors with cycles
+// near float32 epsilon could DoS the tessellator. ~thousandth of a
+// pixel is finer than any real renderer needs.
+const minDashCycleLen = float32(1e-3)
+
+// maxDashIterPerPoly caps the inner dash-consume loop per polyline
+// so a finite-but-pathological dasharray (extremely small relative
+// to segment length) cannot stall tessellation.
+const maxDashIterPerPoly = 1 << 20
+
+// applyDasharray splits polylines into dash segments. offset is the
+// SVG stroke-dashoffset in viewBox units: positive advances the dash
+// phase forward (first dash starts later); negative wraps backward.
+func applyDasharray(polylines [][]float32, dasharray []float32,
+	offset float32) [][]float32 {
 	if len(dasharray) == 0 {
 		return polylines
 	}
-	var result [][]float32
+	// All-zero / non-finite dasharray: per SVG spec, treat as solid.
+	// Also guards the inner loop, where remaining=0 never advances.
+	cycleLen := float32(0)
+	for _, v := range dasharray {
+		cycleLen += v
+	}
+	if cycleLen < minDashCycleLen ||
+		math.IsInf(float64(cycleLen), 0) ||
+		math.IsNaN(float64(cycleLen)) {
+		return polylines
+	}
+	startIdx, startDrawing, startRemaining := dashPhase(dasharray, offset, cycleLen)
+	result := make([][]float32, 0, len(polylines)*2)
 	for _, poly := range polylines {
 		if len(poly) < 4 {
 			continue
 		}
-		dashIdx := 0
-		drawing := true
-		remaining := dasharray[0]
-		current := make([]float32, 0, len(poly))
+		dashIdx := startIdx
+		drawing := startDrawing
+		remaining := startRemaining
+		// Emitted sub-slices use cap=len to block future appends
+		// from stomping retained segments.
+		arena := make([]float32, 0, len(poly)*2)
+		segStart := 0
 		px, py := poly[0], poly[1]
 		if drawing {
-			current = append(current, px, py)
+			arena = append(arena, px, py)
 		}
+		iter := 0
+	walkPoly:
 		for i := 2; i < len(poly); i += 2 {
 			nx, ny := poly[i], poly[i+1]
 			dx, dy := nx-px, ny-py
@@ -193,19 +287,25 @@ func applyDasharray(polylines [][]float32, dasharray []float32) [][]float32 {
 			}
 			consumed := float32(0)
 			for consumed < segLen-1e-6 {
+				if iter++; iter > maxDashIterPerPoly {
+					break walkPoly
+				}
 				avail := segLen - consumed
 				if remaining <= avail {
 					t := (consumed + remaining) / segLen
 					ix := px + t*dx
 					iy := py + t*dy
 					if drawing {
-						current = append(current, ix, iy)
-						if len(current) >= 4 {
-							result = append(result, current)
+						arena = append(arena, ix, iy)
+						if len(arena)-segStart >= 4 {
+							end := len(arena)
+							result = append(result,
+								arena[segStart:end:end])
 						}
-						current = make([]float32, 0, len(poly))
+						segStart = len(arena)
 					} else {
-						current = append(current, ix, iy)
+						segStart = len(arena)
+						arena = append(arena, ix, iy)
 					}
 					consumed += remaining
 					drawing = !drawing
@@ -214,28 +314,70 @@ func applyDasharray(polylines [][]float32, dasharray []float32) [][]float32 {
 				} else {
 					remaining -= avail
 					if drawing {
-						current = append(current, nx, ny)
+						arena = append(arena, nx, ny)
 					}
 					break
 				}
 			}
 			px, py = nx, ny
 		}
-		if drawing && len(current) >= 4 {
-			result = append(result, current)
+		if drawing && len(arena)-segStart >= 4 {
+			end := len(arena)
+			result = append(result, arena[segStart:end:end])
 		}
 	}
 	return result
 }
 
+// dashPhase advances the dash cycle by offset and returns the
+// starting (dashIdx, drawing, remaining) triple. Positive offset
+// advances forward; negative wraps via cycleLen. NaN/Inf → 0.
+func dashPhase(dasharray []float32, offset, cycleLen float32) (int, bool, float32) {
+	if math.IsNaN(float64(offset)) || math.IsInf(float64(offset), 0) {
+		return 0, true, dasharray[0]
+	}
+	// Normalize into [0, cycleLen).
+	skip := float32(math.Mod(float64(offset), float64(cycleLen)))
+	if skip < 0 {
+		skip += cycleLen
+	}
+	dashIdx := 0
+	drawing := true
+	remaining := dasharray[0]
+	for skip > remaining {
+		skip -= remaining
+		dashIdx = (dashIdx + 1) % len(dasharray)
+		remaining = dasharray[dashIdx]
+		drawing = !drawing
+	}
+	remaining -= skip
+	// Skip past zero-length dash/gap entries so the main loop does
+	// not emit degenerate zero-point segments or mis-start in the
+	// wrong phase ([0,150] wants to begin in the gap).
+	for remaining == 0 && len(dasharray) > 1 {
+		dashIdx = (dashIdx + 1) % len(dasharray)
+		remaining = dasharray[dashIdx]
+		drawing = !drawing
+	}
+	return dashIdx, drawing, remaining
+}
+
 // --- Curve flattening ---
 
 func flattenPath(path *VectorPath, tolerance float32) [][]float32 {
+	return flattenPathWithBake(path, tolerance, !isIdentityTransform(path.Transform))
+}
+
+// flattenPathWithBake is flattenPath with explicit control over whether
+// path.Transform is baked into vertex coordinates. When bakeXform is
+// false, vertices emit in local (pre-transform) space — caller applies
+// the transform at render time via TessellatedPath.Base* fields.
+func flattenPathWithBake(path *VectorPath, tolerance float32, bakeXform bool) [][]float32 {
 	var polylines [][]float32
 	estimatedCap := len(path.Segments) * 16
 	current := make([]float32, 0, estimatedCap)
 	var x, y, startX, startY float32
-	hasTx := !isIdentityTransform(path.Transform)
+	hasTx := bakeXform
 
 	for _, seg := range path.Segments {
 		switch seg.Cmd {

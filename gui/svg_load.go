@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,14 @@ type CachedSvgPath struct {
 	// the matching path.
 	IsStroke  bool
 	Primitive SvgPrimitive
+	// Author's base transform, decomposed. Applied at render-time
+	// when HasBaseXform is true. See TessellatedPath for details.
+	BaseTransX   float32
+	BaseTransY   float32
+	BaseScaleX   float32
+	BaseScaleY   float32
+	BaseRotAngle float32
+	HasBaseXform bool
 }
 
 // CachedSvgTextDraw holds cached text rendering data.
@@ -69,6 +78,15 @@ type AnimatedSpan struct {
 	Count int
 }
 
+// svgBaseXform holds a decomposed author base transform, keyed by
+// GroupID. Used to seed svgAnimState at sandwich init so animations
+// compose over the author's base.
+type svgBaseXform struct {
+	TransX, TransY float32
+	ScaleX, ScaleY float32
+	RotAngle       float32
+}
+
 // CachedSvg holds pre-tessellated SVG data for efficient rendering.
 type CachedSvg struct {
 	RenderPaths    []CachedSvgPath
@@ -86,7 +104,12 @@ type CachedSvg struct {
 	Width          float32
 	Height         float32
 	Scale          float32
-	defsPathData   map[string]cachedDefsPathData
+	// BaseByGroup maps GroupID → decomposed author base transform.
+	// Populated only for groups that have animations targeting them
+	// AND whose base transform decomposed cleanly; used to seed
+	// svgAnimState so animations compose over the author's base.
+	BaseByGroup  map[string]svgBaseXform
+	defsPathData map[string]cachedDefsPathData
 }
 
 type svgCacheKey struct {
@@ -117,6 +140,12 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 			Animated:     p.Animated,
 			IsStroke:     p.IsStroke,
 			Primitive:    p.Primitive,
+			BaseTransX:   p.BaseTransX,
+			BaseTransY:   p.BaseTransY,
+			BaseScaleX:   p.BaseScaleX,
+			BaseScaleY:   p.BaseScaleY,
+			BaseRotAngle: p.BaseRotAngle,
+			HasBaseXform: p.HasBaseXform,
 		}
 	}
 	return out
@@ -574,14 +603,15 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		})
 	}
 
-	hasAttrAnim := false
-	for i := range parsed.Animations {
-		if parsed.Animations[i].Kind == SvgAnimAttr {
-			hasAttrAnim = true
-			break
-		}
-	}
+	hasAttrAnim := slices.ContainsFunc(parsed.Animations,
+		func(a SvgAnimation) bool {
+			return a.Kind == SvgAnimAttr ||
+				a.Kind == SvgAnimDashArray ||
+				a.Kind == SvgAnimDashOffset
+		})
 	animatedSpans := buildAnimatedSpans(renderPaths)
+	baseByGroup := buildBaseByGroup(renderPaths, filteredGroups,
+		parsed.Animations)
 
 	cached := &CachedSvg{
 		RenderPaths:    renderPaths,
@@ -599,6 +629,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		Width:          parsed.Width,
 		Height:         parsed.Height,
 		Scale:          scale,
+		BaseByGroup:    baseByGroup,
 		defsPathData:   defsPathData,
 	}
 
@@ -695,6 +726,59 @@ func (w *Window) ClearSvgCache() {
 	if inv, ok := w.svgParser.(svgParserCacheInvalidator); ok {
 		inv.ClearSvgParserCache()
 	}
+}
+
+// buildBaseByGroup collects decomposed author base transforms keyed by
+// GroupID, for groups that have any animation targeting them. Seeding
+// the per-frame svgAnimState with these lets SMIL additive / replace
+// compose over the author's base (see CachedSvg.BaseByGroup).
+func buildBaseByGroup(
+	paths []CachedSvgPath,
+	filteredGroups []CachedFilteredGroup,
+	anims []SvgAnimation,
+) map[string]svgBaseXform {
+	if len(anims) == 0 {
+		return nil
+	}
+	animated := make(map[string]struct{}, len(anims))
+	for i := range anims {
+		if anims[i].GroupID != "" {
+			animated[anims[i].GroupID] = struct{}{}
+		}
+	}
+	if len(animated) == 0 {
+		return nil
+	}
+	out := make(map[string]svgBaseXform)
+	collect := func(ps []CachedSvgPath) {
+		for i := range ps {
+			p := &ps[i]
+			if !p.HasBaseXform || p.GroupID == "" {
+				continue
+			}
+			if _, ok := animated[p.GroupID]; !ok {
+				continue
+			}
+			if _, already := out[p.GroupID]; already {
+				continue
+			}
+			out[p.GroupID] = svgBaseXform{
+				TransX:   p.BaseTransX,
+				TransY:   p.BaseTransY,
+				ScaleX:   p.BaseScaleX,
+				ScaleY:   p.BaseScaleY,
+				RotAngle: p.BaseRotAngle,
+			}
+		}
+	}
+	collect(paths)
+	for i := range filteredGroups {
+		collect(filteredGroups[i].RenderPaths)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // buildAnimatedSpans scans cached render paths and records contiguous

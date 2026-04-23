@@ -106,8 +106,11 @@ func TestPhase5aSplineAppliesToTranslate(t *testing.T) {
 }
 
 // TestPhase5bResetsPlaceholderTransform — a path with a scale(0)
-// placeholder transform that is fully replaced by animateTransform
-// must tessellate at its natural coords, not collapsed to a point.
+// placeholder transform that is animated must tessellate at its
+// local (pre-transform) coords so the render-time sandwich can
+// compose the animation over the decomposed base. The emitted
+// TessellatedPath carries the decomposed base (BaseScaleX=0,
+// BaseTransX=12) for the animation sandwich to consume.
 // Regression guard for the pulse-ring "paths=0" bug.
 func TestPhase5bResetsPlaceholderTransform(t *testing.T) {
 	asset := `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +

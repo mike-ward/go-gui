@@ -445,30 +445,14 @@ func parseShapeElement(
 	parseShapeInlineChildren(body, shapeGS, state)
 	// Clip-pathed shapes skip re-tessellation.
 	if pathIdx >= 0 && (*paths)[pathIdx].ClipPathID == "" {
-		hasAttrAnim := false
-		hasXformAnim := false
 		for i := animStart; i < len(state.animations); i++ {
-			switch state.animations[i].Kind {
-			case gui.SvgAnimAttr:
-				hasAttrAnim = true
-			case gui.SvgAnimTranslate, gui.SvgAnimScale:
-				hasXformAnim = true
+			k := state.animations[i].Kind
+			if k == gui.SvgAnimAttr ||
+				k == gui.SvgAnimDashArray ||
+				k == gui.SvgAnimDashOffset {
+				(*paths)[pathIdx].Animated = true
+				break
 			}
-		}
-		if hasAttrAnim {
-			(*paths)[pathIdx].Animated = true
-		}
-		if hasXformAnim {
-			// Author base transforms on animateTransform targets
-			// are often placeholders (pulse-ring: `translate(12,12)
-			// scale(0)`). Baking them into vertices at tessellate
-			// time would collapse the shape, since Transform is
-			// applied pre-tessellate. Reset to the parent's
-			// inherited transform so vertices tessellate at natural
-			// coords; the animation supplies the per-frame transform
-			// at render time. Proper fix (defer Transform to render
-			// time) is out of scope here.
-			(*paths)[pathIdx].Transform = inherited.Transform
 		}
 	}
 
@@ -477,6 +461,29 @@ func parseShapeElement(
 		return len(content)
 	}
 	return bodyEnd + closeEnd + 1
+}
+
+// parseAnimateForDispatch picks the right <animate> parser based on
+// attributeName: opacity/fill-opacity/stroke-opacity → opacity;
+// stroke-dasharray → dash array; stroke-dashoffset → dash offset;
+// primitive attrs (cx/cy/r/...) → attribute animation. Unknown names
+// reject (ok=false).
+func parseAnimateForDispatch(
+	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	attr, ok := findAttr(elem, "attributeName")
+	if !ok {
+		return gui.SvgAnimation{}, false
+	}
+	switch attr {
+	case "opacity", "fill-opacity", "stroke-opacity":
+		return parseAnimateElement(elem, inherited)
+	case "stroke-dasharray":
+		return parseAnimateDashArrayElement(elem, inherited)
+	case "stroke-dashoffset":
+		return parseAnimateDashOffsetElement(elem, inherited)
+	}
+	return parseAnimateAttributeElement(elem, inherited)
 }
 
 // shapeHasInlineAnimation cheaply detects whether a shape body
@@ -558,12 +565,7 @@ func parseShapeInlineChildren(
 		switch tag {
 		case "animate":
 			if len(state.animations) < maxAnimations {
-				if a, ok := parseAnimateElement(elem, shapeGS); ok {
-					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
-						len(state.animations)-1)
-				} else if a, ok := parseAnimateAttributeElement(
-					elem, shapeGS); ok {
+				if a, ok := parseAnimateForDispatch(elem, shapeGS); ok {
 					state.animations = append(state.animations, a)
 					registerAnimation(state, elem,
 						len(state.animations)-1)

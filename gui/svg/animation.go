@@ -281,6 +281,119 @@ func parseAnimateAttributeElement(
 	}, true
 }
 
+// parseAnimateDashOffsetElement parses an <animate> element
+// targeting stroke-dashoffset. Scalar values per keyframe.
+func parseAnimateDashOffsetElement(
+	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	dur := parseDuration(elem)
+	if dur <= 0 {
+		return gui.SvgAnimation{}, false
+	}
+	vals, additive, ok := parseScalarValues(elem)
+	if !ok {
+		return gui.SvgAnimation{}, false
+	}
+	return gui.SvgAnimation{
+		Kind:       gui.SvgAnimDashOffset,
+		GroupID:    inherited.GroupID,
+		Values:     vals,
+		KeySplines: parseKeySplinesIfSpline(elem, len(vals)),
+		KeyTimes:   parseKeyTimes(elem, len(vals)),
+		DurSec:     dur,
+		BeginSec:   parseBeginLiteral(elem),
+		Cycle:      parseRepeatCycle(elem, dur),
+		Freeze:     parseFreeze(elem),
+		Additive:   additive || parseAdditiveSum(elem),
+		Accumulate: parseAccumulateSum(elem),
+		CalcMode:   parseCalcMode(elem),
+		Restart:    parseRestart(elem),
+	}, true
+}
+
+// parseAnimateDashArrayElement parses an <animate> element targeting
+// stroke-dasharray. Each keyframe is a whitespace/comma-separated
+// list of floats; all keyframes must have the same count (1..cap).
+// Mismatched lengths or cap overflow reject the animation.
+func parseAnimateDashArrayElement(
+	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	dur := parseDuration(elem)
+	if dur <= 0 {
+		return gui.SvgAnimation{}, false
+	}
+	valStr, ok := findAttr(elem, "values")
+	if !ok || valStr == "" {
+		return gui.SvgAnimation{}, false
+	}
+	frames := strings.Split(valStr, ";")
+	if len(frames) > maxKeyframes {
+		frames = frames[:maxKeyframes]
+	}
+	var flat []float32
+	stride := -1
+	for _, f := range frames {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		nums := parseDashFrameFloats(f)
+		if len(nums) == 0 {
+			return gui.SvgAnimation{}, false
+		}
+		if len(nums) > gui.SvgAnimDashArrayCap {
+			return gui.SvgAnimation{}, false
+		}
+		if stride < 0 {
+			stride = len(nums)
+		} else if len(nums) != stride {
+			return gui.SvgAnimation{}, false
+		}
+		flat = append(flat, nums...)
+	}
+	if stride <= 0 || len(flat) < 2*stride {
+		return gui.SvgAnimation{}, false
+	}
+	nKeys := len(flat) / stride
+	return gui.SvgAnimation{
+		Kind:            gui.SvgAnimDashArray,
+		GroupID:         inherited.GroupID,
+		Values:          flat,
+		KeySplines:      parseKeySplinesIfSpline(elem, nKeys),
+		KeyTimes:        parseKeyTimes(elem, nKeys),
+		DurSec:          dur,
+		BeginSec:        parseBeginLiteral(elem),
+		Cycle:           parseRepeatCycle(elem, dur),
+		Freeze:          parseFreeze(elem),
+		Additive:        parseAdditiveSum(elem),
+		Accumulate:      parseAccumulateSum(elem),
+		CalcMode:        parseCalcMode(elem),
+		Restart:         parseRestart(elem),
+		DashKeyframeLen: uint8(stride),
+	}, true
+}
+
+// parseDashFrameFloats splits one dasharray keyframe (e.g.
+// "42 150" or "42,150") into float32s. Field count is capped at
+// SvgAnimDashArrayCap+1 so a hostile keyframe with millions of
+// fields cannot drive a huge alloc; caller rejects overflow.
+func parseDashFrameFloats(s string) []float32 {
+	fields := strings.FieldsFunc(s, func(r rune) bool {
+		return r == ' ' || r == '\t' || r == ',' || r == '\n' || r == '\r'
+	})
+	if len(fields) == 0 {
+		return nil
+	}
+	if len(fields) > gui.SvgAnimDashArrayCap+1 {
+		fields = fields[:gui.SvgAnimDashArrayCap+1]
+	}
+	out := make([]float32, 0, len(fields))
+	for _, f := range fields {
+		out = append(out, parseF32(f))
+	}
+	return out
+}
+
 func attrNameFromString(s string) gui.SvgAttrName {
 	switch s {
 	case "cx":
@@ -612,7 +725,7 @@ func parseFreeze(elem string) bool {
 func parseRepeatCycle(elem string, dur float32) float32 {
 	if v, ok := findAttr(elem, "repeatCount"); ok && v != "" {
 		if v == "indefinite" {
-			return dur
+			return clampCycle(dur)
 		}
 		n := parseF32(v)
 		if n > maxRepeatCountCycle {
@@ -624,7 +737,7 @@ func parseRepeatCycle(elem string, dur float32) float32 {
 	}
 	if v, ok := findAttr(elem, "repeatDur"); ok && v != "" {
 		if v == "indefinite" {
-			return dur
+			return clampCycle(dur)
 		}
 		t := parseTimeValue(v)
 		if t > 0 {

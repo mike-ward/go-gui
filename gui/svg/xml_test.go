@@ -407,3 +407,48 @@ func TestXmlReadElementBody_MissingClose(t *testing.T) {
 			elemEnd+1, next)
 	}
 }
+
+// parseAnimateForDispatch routes by attributeName: opacity → opacity
+// parser, stroke-dasharray → dasharray parser, stroke-dashoffset →
+// dashoffset parser, anything else → primitive-attribute parser.
+func TestParseAnimateForDispatch_OpacityKind(t *testing.T) {
+	elem := `<animate attributeName="opacity" dur="1s" values="0;1"/>`
+	a, ok := parseAnimateForDispatch(elem, groupStyle{GroupID: "g"})
+	if !ok || a.Kind != gui.SvgAnimOpacity {
+		t.Fatalf("kind=%v ok=%v", a.Kind, ok)
+	}
+}
+
+func TestParseAnimateForDispatch_DashArrayKind(t *testing.T) {
+	elem := `<animate attributeName="stroke-dasharray" dur="1s" ` +
+		`values="0 5;5 5"/>`
+	a, ok := parseAnimateForDispatch(elem, groupStyle{GroupID: "g"})
+	if !ok || a.Kind != gui.SvgAnimDashArray {
+		t.Fatalf("kind=%v ok=%v", a.Kind, ok)
+	}
+}
+
+func TestParseAnimateForDispatch_DashOffsetKind(t *testing.T) {
+	elem := `<animate attributeName="stroke-dashoffset" dur="1s" ` +
+		`values="0;-10"/>`
+	a, ok := parseAnimateForDispatch(elem, groupStyle{GroupID: "g"})
+	if !ok || a.Kind != gui.SvgAnimDashOffset {
+		t.Fatalf("kind=%v ok=%v", a.Kind, ok)
+	}
+}
+
+func TestParseAnimateForDispatch_PrimitiveAttrFallback(t *testing.T) {
+	elem := `<animate attributeName="r" dur="1s" values="0;5"/>`
+	a, ok := parseAnimateForDispatch(elem, groupStyle{GroupID: "g"})
+	if !ok || a.Kind != gui.SvgAnimAttr {
+		t.Fatalf("kind=%v ok=%v", a.Kind, ok)
+	}
+}
+
+func TestParseAnimateForDispatch_MissingAttrNameRejects(t *testing.T) {
+	elem := `<animate dur="1s" values="0;1"/>`
+	if _, ok := parseAnimateForDispatch(elem,
+		groupStyle{GroupID: "g"}); ok {
+		t.Fatal("missing attributeName must reject")
+	}
+}

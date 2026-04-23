@@ -2,6 +2,7 @@ package svg
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -146,10 +147,24 @@ func (p *Parser) TessellateAnimated(
 }
 
 // applyOverridesToPath mutates p's primitive fields and segments to
-// reflect the live animation overrides. Only primitive paths react;
-// non-primitive animated paths are a no-op. AdditiveMask bits add
+// reflect the live animation overrides. Only primitive paths react
+// to CX/CY/R/...; dash overrides apply regardless of kind since
+// stroke-dasharray/offset work on any path. AdditiveMask bits add
 // the override to the parsed base value; non-additive bits replace.
 func applyOverridesToPath(p *VectorPath, ov gui.SvgAnimAttrOverride) {
+	if ov.Mask&gui.SvgAnimMaskStrokeDashArray != 0 {
+		n := min(int(ov.StrokeDashArrayLen), gui.SvgAnimDashArrayCap)
+		// Fresh alloc required: clone shares backing with cached
+		// src; in-place mutation would corrupt the cache.
+		p.StrokeDasharray = slices.Clone(ov.StrokeDashArray[:n])
+	}
+	if ov.Mask&gui.SvgAnimMaskStrokeDashOffset != 0 {
+		if ov.AdditiveMask&gui.SvgAnimMaskStrokeDashOffset != 0 {
+			p.StrokeDashOffset += ov.StrokeDashOffset
+		} else {
+			p.StrokeDashOffset = ov.StrokeDashOffset
+		}
+	}
 	prim := p.Primitive
 	switch prim.Kind {
 	case gui.SvgPrimCircle:

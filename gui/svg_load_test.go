@@ -430,3 +430,101 @@ func TestCachedSvgTextDrawsAnchorEnd(t *testing.T) {
 			result[0].X)
 	}
 }
+
+// buildBaseByGroup: no animations → returns nil; nothing to seed.
+func TestBuildBaseByGroup_NilWhenNoAnims(t *testing.T) {
+	paths := []CachedSvgPath{{GroupID: "g", HasBaseXform: true,
+		BaseTransX: 5}}
+	if got := buildBaseByGroup(paths, nil, nil); got != nil {
+		t.Fatalf("want nil; got %+v", got)
+	}
+}
+
+// Animations exist but all GroupID empty → no targets → nil.
+func TestBuildBaseByGroup_NilWhenNoTargetGroups(t *testing.T) {
+	anims := []SvgAnimation{{Kind: SvgAnimRotate}}
+	paths := []CachedSvgPath{{GroupID: "g", HasBaseXform: true}}
+	if got := buildBaseByGroup(paths, nil, anims); got != nil {
+		t.Fatalf("want nil; got %+v", got)
+	}
+}
+
+// Paths without HasBaseXform are skipped even when their GroupID is
+// targeted by an animation.
+func TestBuildBaseByGroup_SkipsPathsWithoutBase(t *testing.T) {
+	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g"}}
+	paths := []CachedSvgPath{{GroupID: "g", HasBaseXform: false,
+		BaseTransX: 99}}
+	if got := buildBaseByGroup(paths, nil, anims); got != nil {
+		t.Fatalf("want nil; got %+v", got)
+	}
+}
+
+// Only paths whose GroupID appears in animations are recorded.
+func TestBuildBaseByGroup_FiltersByAnimatedGroupID(t *testing.T) {
+	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g1"}}
+	paths := []CachedSvgPath{
+		{GroupID: "g1", HasBaseXform: true, BaseTransX: 1},
+		{GroupID: "g2", HasBaseXform: true, BaseTransX: 2},
+	}
+	got := buildBaseByGroup(paths, nil, anims)
+	if len(got) != 1 {
+		t.Fatalf("len=%d want 1", len(got))
+	}
+	if _, ok := got["g1"]; !ok {
+		t.Fatal("g1 missing")
+	}
+	if _, ok := got["g2"]; ok {
+		t.Fatal("g2 should not be recorded")
+	}
+}
+
+// First write wins: multiple paths sharing a GroupID — earlier base
+// is kept, later paths do not overwrite.
+func TestBuildBaseByGroup_DedupesFirstWriteWins(t *testing.T) {
+	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g"}}
+	paths := []CachedSvgPath{
+		{GroupID: "g", HasBaseXform: true, BaseTransX: 10},
+		{GroupID: "g", HasBaseXform: true, BaseTransX: 99},
+	}
+	got := buildBaseByGroup(paths, nil, anims)
+	if got["g"].TransX != 10 {
+		t.Fatalf("got TransX=%v want 10", got["g"].TransX)
+	}
+}
+
+// Filtered-group RenderPaths are also scanned for base xforms.
+func TestBuildBaseByGroup_ScansFilteredGroups(t *testing.T) {
+	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g"}}
+	groups := []CachedFilteredGroup{
+		{
+			RenderPaths: []CachedSvgPath{{
+				GroupID:      "g",
+				HasBaseXform: true,
+				BaseScaleX:   3,
+				BaseScaleY:   3,
+			}},
+		},
+	}
+	got := buildBaseByGroup(nil, groups, anims)
+	if got["g"].ScaleX != 3 || got["g"].ScaleY != 3 {
+		t.Fatalf("got %+v want ScaleX=3 ScaleY=3", got["g"])
+	}
+}
+
+// Decomposed fields propagate fully (translate, scale, rotate).
+func TestBuildBaseByGroup_PropagatesAllFields(t *testing.T) {
+	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g"}}
+	paths := []CachedSvgPath{{
+		GroupID: "g", HasBaseXform: true,
+		BaseTransX: 1, BaseTransY: 2,
+		BaseScaleX: 3, BaseScaleY: 4,
+		BaseRotAngle: 90,
+	}}
+	got := buildBaseByGroup(paths, nil, anims)
+	b := got["g"]
+	if b.TransX != 1 || b.TransY != 2 || b.ScaleX != 3 ||
+		b.ScaleY != 4 || b.RotAngle != 90 {
+		t.Fatalf("got %+v", b)
+	}
+}
