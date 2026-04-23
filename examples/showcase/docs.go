@@ -6043,19 +6043,29 @@ for i := 0; i < gui.SvgSpinnerCount(); i++ {
 
 ## Caveats
 
-The SMIL parser handles rotate, translate, scale, opacity (plus
-fill-opacity and stroke-opacity), and primitive attribute animation
-(cx/cy/r/x/y/width/height/rx/ry) with keyTimes, keySplines easing,
-calcMode=discrete, syncbase begin chains, ` + "`<set>`" + `,
-additive/accumulate="sum", from/to/by shorthand, min/max dur clamps,
-restart="never"/"whenNotActive", and ` + "`<animateMotion>`" + ` with
-inline path or ` + "`<mpath>`" + ` reference plus rotate="auto". A
-handful of assets that rely on SMIL features outside this subset may
-render as their static first frame. ` + "`<set>`" + ` defaults to
-freeze semantics (SMIL default is remove); authors who want remove
-must set ` + "`fill=\"remove\"`" + ` explicitly. ` + "`SvgSpinnerCount`" + ` and
-enum values are generated from the embedded asset directory, so
-numeric values shift when assets are added or removed — always
-reference kinds by their named constant.
+SMIL parser supports:
+
+- rotate, translate, scale transforms
+- opacity, fill-opacity, stroke-opacity
+- primitive attribute animation (cx/cy/r/x/y/width/height/rx/ry)
+- keyTimes, keySplines easing, calcMode=discrete
+- syncbase begin chains
+- ` + "`<set>`" + ` elements
+- additive/accumulate="sum"
+- from/to/by shorthand
+- min/max dur clamps
+- restart="never"/"whenNotActive"
+- ` + "`<animateMotion>`" + ` with inline path or ` + "`<mpath>`" + ` reference,
+  plus rotate="auto"
+
+Other notes:
+
+- Assets relying on SMIL features outside this subset may render as
+  their static first frame.
+- ` + "`<set>`" + ` defaults to freeze semantics (SMIL default is remove);
+  authors who want remove must set ` + "`fill=\"remove\"`" + ` explicitly.
+- ` + "`SvgSpinnerCount`" + ` and enum values are generated from the embedded
+  asset directory, so numeric values shift when assets are added or
+  removed — always reference kinds by their named constant.
 `,
 }
