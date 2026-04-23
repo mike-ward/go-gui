@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) in this repo.
 
 ## Commands
 
@@ -15,7 +15,7 @@ go run ./examples/get_started/  # run the example app (requires SDL2)
 
 ## Architecture
 
-Immediate-mode pipeline — no virtual DOM, no diffing:
+Immediate-mode pipeline. No virtual DOM, no diffing:
 
 ```
 View fn → GenerateViewLayout() → Layout tree
@@ -26,30 +26,30 @@ View fn → GenerateViewLayout() → Layout tree
 
 ### Packages
 
-- `gui/` — core package: all widget factories, layout engine, theme system,
-  animation subsystem, event dispatch, state management (~160 .go files)
-- `gui/backend/sdl2/` — SDL2 backend; implements `TextMeasurer`, `SvgParser`,
-  `NativePlatform`; wires into window via `sdl2.New(w)`
-- `gui/backend/metal/` — Metal rendering backend (macOS)
-- `gui/backend/gl/` — OpenGL rendering backend
-- `gui/backend/filedialog/` — native file dialog support
-- `gui/backend/printdialog/` — native print dialog support
+- `gui/` — core: widget factories, layout engine, theme, animation,
+  event dispatch, state mgmt (~160 .go files)
+- `gui/backend/sdl2/` — SDL2 backend. Implements `TextMeasurer`, `SvgParser`,
+  `NativePlatform`. Wires into window via `sdl2.New(w)`
+- `gui/backend/metal/` — Metal backend (macOS)
+- `gui/backend/gl/` — OpenGL backend
+- `gui/backend/filedialog/` — native file dialog
+- `gui/backend/printdialog/` — native print dialog
 - `gui/backend/internal/` — shared backend internals
-- `gui/backend/test/` — headless no-op backend used by all unit tests
+- `gui/backend/test/` — headless no-op backend for unit tests
 - `examples/` — 25 example apps (get_started, showcase, calculator, todo,
   snake, markdown, custom_shader, draw_canvas, etc.)
 
 ### Core Types
 
-- `Layout` — tree node with `*Shape`, `*Layout` parent, `[]Layout` children
-- `Shape` — central renderable: position, size, color, type, events, text, effects
-- `RenderCmd` — single draw operation (rect, text, circle, image, SVG, …)
-- `Window` — top-level container; holds typed state slot, layout tree, animations
-- `View` — interface satisfied by `*Layout`; widget factories return `*Layout`
+- `Layout` — tree node. `*Shape`, `*Layout` parent, `[]Layout` children
+- `Shape` — central renderable. Position, size, color, type, events, text, effects
+- `RenderCmd` — single draw op (rect, text, circle, image, SVG, …)
+- `Window` — top-level container. Holds typed state slot, layout tree, animations
+- `View` — interface satisfied by `*Layout`. Widget factories return `*Layout`
 
 ### State Management
 
-One typed slot per window — no globals, no closures:
+One typed slot per window. No globals, no closures:
 
 ```go
 w := gui.NewWindow(gui.WindowCfg{State: &App{}})
@@ -58,27 +58,26 @@ app := gui.State[App](w)  // type-asserts; panics if wrong type
 
 ### Sizing
 
-`Sizing` is a combined axis enum: `SizingFit`, `SizingFixed`, `SizingGrow`,
+`Sizing` = combined axis enum: `SizingFit`, `SizingFixed`, `SizingGrow`,
 `SizingFitFixed`, `SizingFixedFixed`, `SizingGrowGrow`, `SizingFixedGrow`,
-`SizingGrowFixed`. Convenience aliases: `FitFit`, `FixedFixed`, `GrowGrow`, etc.
+`SizingGrowFixed`. Aliases: `FitFit`, `FixedFixed`, `GrowGrow`, etc.
 
 ### Widgets
 
-All widgets accept a `*Cfg` struct (zero-initializable). Event callbacks share
-the signature `func(*Layout, *Event, *Window)`. `IDFocus uint32 > 0` opts a
-widget into tab-order focus.
+All widgets take `*Cfg` struct (zero-initializable). Event callbacks share
+sig `func(*Layout, *Event, *Window)`. `IDFocus uint32 > 0` opts widget into
+tab-order focus.
 
 ### External Dependencies
 
-- `glyph` — text shaping/rendering library; local replace directive
-  points to `../go-glyph` (`~/Documents/github/go-glyph`).
-  For any text-related work, consult glyph first to check if it already
-  provides the needed functionality. Only create new text handling
-  routines when glyph does not supply them.
+- `glyph` — text shaping/rendering lib. Local replace directive points to
+  `../go-glyph` (`~/Documents/github/go-glyph`).
+  For text work, check glyph first. Only add new text routines when glyph
+  lacks them.
 
 ### Injected Interfaces
 
-Backend injects at startup; nil in tests:
+Backend injects at startup. Nil in tests:
 - `TextMeasurer` — glyph metrics for layout
 - `SvgParser` — SVG parse + tessellate
 - `NativePlatform` — native dialogs, notifications, print, a11y, IME, titlebar
@@ -86,32 +85,31 @@ Backend injects at startup; nil in tests:
 ### Key Implementation Notes
 
 - `(*Layout).spacing()` counts only visible children (`ShapeType != ShapeNone`,
-  `!Float`, `!OverDraw`) — fence-post gap calculation
-- Shape text fields live in `Shape.TC` (`*ShapeTextConfig`), not on `Shape`
-- `ContainerCfg.Title`/`TitleBG` render a group-box label in the top border
-  (floating eraser + text, like HTML fieldset). `TitleBG` should match the
-  parent's background color to erase the border behind the title.
-- `Children []Layout` holds values; parents are pointers — avoids cycles
-- `StateMap` (keyed by namespace constants like `nsOverflow`, `nsSvgCache`) is
-  the per-window typed key-value store used by widgets for internal state
-- `AmendLayout` hook on shapes runs after sizing to reposition overlay elements
-  (color picker circles, splitter handles, etc.) or manage hover state.
-  Layout uses absolute coordinates — moving a parent in `AmendLayout` does NOT
-  move children. Use the float system (`FloatAnchor`/`FloatTieOff`/`FloatOffset`)
-  for positioning elements that have children.
-- Event callbacks must set `e.IsHandled = true` when the event is consumed to
-  prevent further propagation
+  `!Float`, `!OverDraw`). Fence-post gap calc
+- Shape text fields in `Shape.TC` (`*ShapeTextConfig`), not on `Shape`
+- `ContainerCfg.Title`/`TitleBG` render group-box label in top border
+  (floating eraser + text, like HTML fieldset). `TitleBG` must match
+  parent bg color to erase border behind title.
+- `Children []Layout` = values. Parents = pointers. Avoids cycles
+- `StateMap` (keyed by namespace consts like `nsOverflow`, `nsSvgCache`) =
+  per-window typed kv store for widget internal state
+- `AmendLayout` hook on shapes runs after sizing to reposition overlays
+  (color picker circles, splitter handles, etc.) or manage hover.
+  Layout uses absolute coords. Moving parent in `AmendLayout` does NOT
+  move children. Use float system (`FloatAnchor`/`FloatTieOff`/`FloatOffset`)
+  to position elements with children.
+- Event callbacks must set `e.IsHandled = true` when consumed to stop
+  propagation
 
 ## Coding Conventions
 
-- **No variable shadowing.** Never use `:=` to redeclare a variable that
-  already exists in an outer scope. Use `=` to assign to the existing
-  variable, or choose a distinct name.
+- **No variable shadowing.** Never `:=` redeclare var from outer scope.
+  Use `=` to assign existing var, or pick distinct name.
 - Committed code must pass `golangci-lint run ./...` and `gofmt`.
   PostToolUse hook auto-runs lint-fix + tests on every .go edit.
 
 ## context-mode
 
-Routing rules injected by SessionStart hook. Summary: use `ctx_batch_execute`
-/ `ctx_search` / `ctx_execute_file` for research; Bash only for short
-git/mkdir/rm/ls output; `ctx_fetch_and_index` instead of curl/wget/WebFetch.
+Routing rules injected by SessionStart hook. Use `ctx_batch_execute` /
+`ctx_search` / `ctx_execute_file` for research. Bash only for short
+git/mkdir/rm/ls output. `ctx_fetch_and_index` instead of curl/wget/WebFetch.
