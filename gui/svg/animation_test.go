@@ -322,3 +322,203 @@ func TestParseRotateValuesCapsAtMaxKeyframes(t *testing.T) {
 		t.Fatalf("want len<=%d, got %d", maxKeyframes, len(angles))
 	}
 }
+
+// --- parseFreeze ---
+
+func TestParseFreeze_RecognizesOnlyFreeze(t *testing.T) {
+	if !parseFreeze(`<animate fill="freeze">`) {
+		t.Fatal("fill=freeze should be recognized")
+	}
+	if parseFreeze(`<animate fill="remove">`) {
+		t.Fatal("fill=remove should be false")
+	}
+	if parseFreeze(`<animate>`) {
+		t.Fatal("missing fill attr should be false")
+	}
+	if parseFreeze(`<animate fill="FREEZE">`) {
+		t.Fatal("case-sensitive: FREEZE must not match")
+	}
+}
+
+// --- parseRepeatCycle ---
+
+func TestParseRepeatCycle_IndefiniteReturnsDur(t *testing.T) {
+	// repeatCount="indefinite" yields dur.
+	c := parseRepeatCycle(`<animate repeatCount="indefinite">`, 2.5)
+	if f32Abs(c-2.5) > 1e-5 {
+		t.Fatalf("expected cycle=2.5, got %f", c)
+	}
+	// repeatDur="indefinite" yields dur.
+	c = parseRepeatCycle(`<animate repeatDur="indefinite">`, 1.0)
+	if f32Abs(c-1.0) > 1e-5 {
+		t.Fatalf("expected cycle=1.0, got %f", c)
+	}
+	// No repeat attrs → 0 (play once).
+	if parseRepeatCycle(`<animate>`, 1.0) != 0 {
+		t.Fatal("no repeat attr should yield cycle=0")
+	}
+}
+
+func TestParseRepeatCycle_FiniteCountProducesDurTimesN(t *testing.T) {
+	c := parseRepeatCycle(`<animate repeatCount="3">`, 2)
+	if f32Abs(c-6) > 1e-5 {
+		t.Fatalf("expected cycle=6, got %f", c)
+	}
+}
+
+func TestParseRepeatCycle_RepeatDurProducesExplicitSeconds(t *testing.T) {
+	c := parseRepeatCycle(`<animate repeatDur="4s">`, 2)
+	if f32Abs(c-4) > 1e-5 {
+		t.Fatalf("expected cycle=4, got %f", c)
+	}
+}
+
+func TestParseRepeatCycle_ClampsHostileCount(t *testing.T) {
+	// Hostile repeatCount is clamped so dur*n stays finite and
+	// below maxCycleSec. Authoring mistakes or malicious SVGs
+	// cannot poison downstream timing math with +Inf.
+	c := parseRepeatCycle(`<animate repeatCount="1e30">`, 1)
+	if c <= 0 || c > maxCycleSec {
+		t.Fatalf("expected clamp into (0, %f], got %f", maxCycleSec, c)
+	}
+	c = parseRepeatCycle(`<animate repeatDur="1e30s">`, 1)
+	if c <= 0 || c > maxCycleSec {
+		t.Fatalf("expected clamp into (0, %f], got %f", maxCycleSec, c)
+	}
+}
+
+// --- clampCycle ---
+
+func TestClampCycle_BoundsAtMaxAndFloor(t *testing.T) {
+	if clampCycle(0) != 0 {
+		t.Fatal("0 should pass through as 0")
+	}
+	if clampCycle(-5) != 0 {
+		t.Fatal("negative should clamp to 0")
+	}
+	if clampCycle(maxCycleSec+1) != maxCycleSec {
+		t.Fatalf("above max should clamp to %f", maxCycleSec)
+	}
+	if clampCycle(10) != 10 {
+		t.Fatal("in-range should pass through")
+	}
+}
+
+// --- Opacity sub-target detection ---
+
+func TestParseAnimateElement_FillOpacityTargetsFill(t *testing.T) {
+	elem := `<animate attributeName="fill-opacity" values="1;0" dur="1s">`
+	a, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatal("expected ok=true for fill-opacity")
+	}
+	if a.Target != gui.SvgAnimTargetFill {
+		t.Fatalf("expected Target=Fill, got %d", a.Target)
+	}
+	if a.Kind != gui.SvgAnimOpacity {
+		t.Fatalf("expected Kind=Opacity, got %d", a.Kind)
+	}
+}
+
+func TestParseAnimateElement_StrokeOpacityTargetsStroke(t *testing.T) {
+	elem := `<animate attributeName="stroke-opacity" values="1;0" dur="1s">`
+	a, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatal("expected ok=true for stroke-opacity")
+	}
+	if a.Target != gui.SvgAnimTargetStroke {
+		t.Fatalf("expected Target=Stroke, got %d", a.Target)
+	}
+}
+
+func TestParseAnimateElement_OpacityTargetsAll(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="1;0" dur="1s">`
+	a, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	if a.Target != gui.SvgAnimTargetAll {
+		t.Fatalf("expected Target=All, got %d", a.Target)
+	}
+}
+
+// --- Rotate center transform baking ---
+
+func TestParseAnimateTransform_RotateCenterUsesInheritedTransform(t *testing.T) {
+	// Parent scale(2) translate(10,20) must fold into the rotate
+	// pivot so the animated rotation pivots in absolute SVG space.
+	inh := groupStyle{
+		GroupID:   "g",
+		Transform: [6]float32{2, 0, 0, 2, 10, 20},
+	}
+	elem := `<animateTransform type="rotate" dur="1s" values="0 5 5;360 5 5"/>`
+	a, ok := parseAnimateTransformElement(elem, inh)
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	// applyTransformPt on (5,5) with the matrix yields (20,30).
+	if f32Abs(a.CenterX-20) > 1e-5 || f32Abs(a.CenterY-30) > 1e-5 {
+		t.Fatalf("expected center (20,30), got (%f,%f)",
+			a.CenterX, a.CenterY)
+	}
+}
+
+// Translate / scale pair values MUST remain in local space.
+// Baking the ancestor transform here would apply it twice at
+// render time.
+func TestPairedTransform_TranslateValuesIgnoreInheritedTransform(t *testing.T) {
+	inh := groupStyle{
+		GroupID:   "g",
+		Transform: [6]float32{2, 0, 0, 2, 10, 20},
+	}
+	elem := `<animateTransform type="translate" dur="1s" values="0 0;30 40"/>`
+	a, ok := parsePairedAnimateTransform(elem, inh, gui.SvgAnimTranslate)
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	// Values must equal the raw input, not (10,20;70,100).
+	want := []float32{0, 0, 30, 40}
+	if len(a.Values) != len(want) {
+		t.Fatalf("len mismatch: %v", a.Values)
+	}
+	for i, v := range want {
+		if f32Abs(a.Values[i]-v) > 1e-5 {
+			t.Fatalf("values[%d]=%f, want %f (inherited transform "+
+				"must not be applied)", i, a.Values[i], v)
+		}
+	}
+}
+
+// --- Cycle propagation through resolveBegins ---
+
+// When multiple animations share a syncbase chain, resolveBegins
+// must propagate the largest derived cycle to chain participants
+// whose own Cycle is 0. Without this, a freeze-chained sequence
+// stalls after the first loop.
+func TestResolveBegins_PropagatesGlobalCycle(t *testing.T) {
+	// Construct a chain of two animations in a group. The first
+	// sets BeginSec=0 and repeatCount="indefinite" so it derives a
+	// Cycle from parseRepeatCycle. The second has BeginSec=0 but
+	// no cycle; it must inherit the global cycle since its begin
+	// spec references the first.
+	asset := `<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">` +
+		`<rect id="box" x="0" y="0" width="10" height="10">` +
+		`<animate id="a1" attributeName="opacity" values="1;0" ` +
+		`dur="1s" begin="0s" repeatCount="indefinite"/>` +
+		`<animate id="a2" attributeName="opacity" values="0;1" ` +
+		`dur="1s" begin="a1.end"/>` +
+		`</rect></svg>`
+	parsed, err := New().ParseSvg(asset)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(parsed.Animations) != 2 {
+		t.Fatalf("expected 2 animations, got %d", len(parsed.Animations))
+	}
+	// Both must carry a positive cycle; second inherits from first.
+	for i, a := range parsed.Animations {
+		if a.Cycle <= 0 {
+			t.Fatalf("anim[%d] expected Cycle>0, got %f", i, a.Cycle)
+		}
+	}
+}

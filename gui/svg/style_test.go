@@ -25,15 +25,15 @@ func TestStyleParseSvgColorNone(t *testing.T) {
 
 func TestStyleParseSvgColorInherit(t *testing.T) {
 	c := parseSvgColor("inherit")
-	if c != colorInherit {
-		t.Fatalf("expected inherit sentinel, got %+v", c)
+	if c != colorCurrent {
+		t.Fatalf("expected currentColor sentinel, got %+v", c)
 	}
 }
 
 func TestStyleParseSvgColorCurrentColor(t *testing.T) {
 	c := parseSvgColor("currentColor")
-	if c != colorInherit {
-		t.Fatalf("expected inherit sentinel, got %+v", c)
+	if c != colorCurrent {
+		t.Fatalf("expected currentColor sentinel, got %+v", c)
 	}
 }
 
@@ -442,5 +442,133 @@ func TestStyleParseTransformSkewX(t *testing.T) {
 	expected := float32(math.Tan(45.0 * math.Pi / 180.0))
 	if f32Abs(m[2]-expected) > 1e-4 {
 		t.Fatalf("expected m[2]=%f, got %f", expected, m[2])
+	}
+}
+
+// --- applyInheritedTransformPt ---
+
+func TestApplyInheritedTransformPt_ZeroAndIdentityNoop(t *testing.T) {
+	var zero [6]float32
+	x, y := applyInheritedTransformPt(3, 4, zero)
+	if x != 3 || y != 4 {
+		t.Fatalf("zero matrix should be no-op, got (%f,%f)", x, y)
+	}
+	x, y = applyInheritedTransformPt(3, 4, identityTransform)
+	if x != 3 || y != 4 {
+		t.Fatalf("identity should be no-op, got (%f,%f)", x, y)
+	}
+	// Real matrix: scale(2) + translate(10,20).
+	m := [6]float32{2, 0, 0, 2, 10, 20}
+	x, y = applyInheritedTransformPt(3, 4, m)
+	if x != 16 || y != 28 {
+		t.Fatalf("expected (16,28), got (%f,%f)", x, y)
+	}
+}
+
+// --- clampOpacity01 ---
+
+func TestClampOpacity01_EdgeInputs(t *testing.T) {
+	if clampOpacity01(0.5) != 0.5 {
+		t.Fatal("in-range unchanged")
+	}
+	if clampOpacity01(-1) != 0 {
+		t.Fatal("negative must clamp to 0")
+	}
+	if clampOpacity01(2) != 1 {
+		t.Fatal(">1 must clamp to 1")
+	}
+	if clampOpacity01(float32(math.NaN())) != 0 {
+		t.Fatal("NaN must clamp to 0")
+	}
+	if clampOpacity01(float32(math.Inf(1))) != 1 {
+		t.Fatal("+Inf must clamp to 1")
+	}
+	if clampOpacity01(float32(math.Inf(-1))) != 0 {
+		t.Fatal("-Inf must clamp to 0")
+	}
+}
+
+// --- bakePathOpacity ---
+
+func TestBakePathOpacity_SkipFlagsForceUnity(t *testing.T) {
+	// Static fill-opacity="0" would normally bake fill alpha to 0
+	// and cause tessellate to drop the geometry. SkipFillOpacity
+	// forces the multiplier to 1 so an inline animation can supply
+	// the value at render time.
+	path := &VectorPath{
+		FillColor:     gui.SvgColor{R: 10, G: 20, B: 30, A: 255},
+		StrokeColor:   gui.SvgColor{R: 40, G: 50, B: 60, A: 255},
+		Opacity:       1,
+		FillOpacity:   0,
+		StrokeOpacity: 0,
+	}
+	inh := defaultGroupStyle(identityTransform)
+	inh.SkipFillOpacity = true
+	inh.SkipStrokeOpacity = true
+	bakePathOpacity(path, inh)
+	if path.FillColor.A != 255 {
+		t.Fatalf("SkipFillOpacity should preserve alpha, got %d",
+			path.FillColor.A)
+	}
+	if path.StrokeColor.A != 255 {
+		t.Fatalf("SkipStrokeOpacity should preserve alpha, got %d",
+			path.StrokeColor.A)
+	}
+
+	// SkipOpacity forces combined to 1 even if path.Opacity=0.
+	// FillOpacity=1 triggers use of inherited (which is 1).
+	path = &VectorPath{
+		FillColor:   gui.SvgColor{R: 0, G: 0, B: 0, A: 255},
+		Opacity:     0,
+		FillOpacity: 1,
+	}
+	inh = defaultGroupStyle(identityTransform)
+	inh.SkipOpacity = true
+	bakePathOpacity(path, inh)
+	if path.FillColor.A != 255 {
+		t.Fatalf("SkipOpacity should preserve alpha, got %d",
+			path.FillColor.A)
+	}
+}
+
+func TestBakePathOpacity_SentinelAlphaPromoted(t *testing.T) {
+	// Sentinel colors carry tiny marker alphas (1 or 2). With a
+	// nontrivial inherited opacity, naive multiplication would
+	// collapse to 0 and drop the path. bakePathOpacity must lift
+	// sentinel A to 255 before baking so small opacities survive.
+	path := &VectorPath{
+		FillColor:     colorCurrent,
+		StrokeColor:   colorInherit,
+		Opacity:       0.5,
+		FillOpacity:   1,
+		StrokeOpacity: 1,
+	}
+	inh := defaultGroupStyle(identityTransform)
+	bakePathOpacity(path, inh)
+	// Combined opacity 0.5 * 1 = 0.5. A promoted from 2 → 255,
+	// then applyOpacity yields ~127. Without promotion A would be
+	// uint8(2 * 0.5) = 1 and likely cause drop.
+	if path.FillColor.A < 100 {
+		t.Fatalf("expected sentinel promoted then scaled ~127, got %d",
+			path.FillColor.A)
+	}
+	if path.StrokeColor.A < 100 {
+		t.Fatalf("expected sentinel stroke promoted then scaled, got %d",
+			path.StrokeColor.A)
+	}
+}
+
+func TestBakePathOpacity_NaNInputClampsSafely(t *testing.T) {
+	// Hostile NaN opacity must not reach applyOpacity's uint8 cast.
+	path := &VectorPath{
+		FillColor: gui.SvgColor{R: 10, G: 20, B: 30, A: 200},
+		Opacity:   float32(math.NaN()),
+	}
+	inh := defaultGroupStyle(identityTransform)
+	bakePathOpacity(path, inh)
+	// clampOpacity01(NaN*x) → 0, so alpha becomes 0.
+	if path.FillColor.A != 0 {
+		t.Fatalf("NaN opacity must clamp alpha to 0, got %d",
+			path.FillColor.A)
 	}
 }

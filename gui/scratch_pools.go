@@ -97,6 +97,15 @@ type scratchPools struct {
 
 	svgAnimTriangles  scratchSlice[TessellatedPath]
 	effectiveSvgPaths scratchSlice[CachedSvgPath]
+	svgAnimContribs   scratchSlice[animContrib]
+
+	// svgVColArena is a grow-only, frame-scoped arena for per-path
+	// vertex color buffers emitted by emitSvgPathRenderer. Each
+	// call reserves a subslice via takeVColors; the arena is reset
+	// to len=0 in resetRenderPools. Realloc is safe because Go
+	// retains the old backing array via any emitted subslices that
+	// still reference it.
+	svgVColArena []Color
 
 	// View-phase pool: reuse Shape allocations across frames.
 	// Reset before GenerateViewLayout; valid through buildRenderers.
@@ -144,6 +153,7 @@ func newScratchPools() scratchPools {
 		svgAnimOverrides:       scratchMap[string, SvgAnimAttrOverride]{retainMax: 4096},
 		svgAnimTriangles:       scratchSlice[TessellatedPath]{retainMax: 1024, shrinkTo: 64},
 		effectiveSvgPaths:      scratchSlice[CachedSvgPath]{retainMax: 4096, shrinkTo: 256},
+		svgAnimContribs:        scratchSlice[animContrib]{retainMax: 1024, shrinkTo: 64},
 		viewShapes:             scratchObjPool[Shape]{retainMax: 16384, shrinkTo: 1024},
 		buttonColors:           scratchObjPool[ShapeButtonColors]{retainMax: 512, shrinkTo: 32},
 		renderTextStyles:       scratchObjPool[TextStyle]{retainMax: 4096, shrinkTo: 256},
@@ -161,10 +171,68 @@ func (p *scratchPools) resetViewPools() {
 
 // resetRenderPools resets the render-phase object pools. Called at the
 // start of each frame before building the render command list.
+// svgVColArena is shrunk when it has grown past svgVColRetainMax so a
+// one-off spike frame does not hold hundreds of KB of vertex-color
+// capacity indefinitely.
 func (p *scratchPools) resetRenderPools() {
 	p.renderTextStyles.reset()
 	p.renderGlyphLayouts.reset()
 	p.renderAffineTransforms.reset()
+	if cap(p.svgVColArena) > svgVColRetainMax {
+		p.svgVColArena = make([]Color, 0, svgVColShrinkTo)
+	} else {
+		p.svgVColArena = p.svgVColArena[:0]
+	}
+}
+
+const (
+	svgVColRetainMax = 1 << 14 // 16 384 colors (~64KB)
+	svgVColShrinkTo  = 1 << 10 // 1 024 colors (~4KB)
+)
+
+// maxVColReservation bounds how much the arena is allowed to
+// grow for a single reservation. Beyond this, a standalone slice
+// is returned so arena memory is not held across frames and no
+// arithmetic overflow can occur. A reasonable tessellated path
+// carries hundreds-to-low-thousands of vertices; the cap is
+// generous enough that normal content never hits it.
+const maxVColReservation = 1 << 20
+
+// takeVColors reserves a subslice of n Colors from the frame-
+// scoped vertex-color arena. The returned slice has its cap
+// pinned so subsequent appends by the caller cannot bleed into
+// the next reservation. Realloc of the underlying arena is safe:
+// prior reservations remain valid because their slice headers
+// keep the old backing array alive. Non-positive n returns nil;
+// pathological sizes bypass the arena entirely.
+func (p *scratchPools) takeVColors(n int) []Color {
+	if n <= 0 {
+		return nil
+	}
+	if n > maxVColReservation {
+		return make([]Color, n)
+	}
+	start := len(p.svgVColArena)
+	need := start + n
+	if cap(p.svgVColArena) < need {
+		grown := make([]Color, need, growCap(cap(p.svgVColArena), need))
+		copy(grown, p.svgVColArena)
+		p.svgVColArena = grown
+	} else {
+		p.svgVColArena = p.svgVColArena[:need]
+	}
+	return p.svgVColArena[start:need:need]
+}
+
+// growCap returns a new capacity at least need, roughly doubling
+// from oldCap to amortize arena growth. Guards against overflow
+// of oldCap*2 on 32-bit platforms or pathological sizes.
+func growCap(oldCap, need int) int {
+	doubled := oldCap * 2
+	if doubled < oldCap {
+		doubled = need
+	}
+	return max(doubled, need)
 }
 
 func (p *scratchPools) takeFloatingLayouts(requiredCap int) []*Layout {

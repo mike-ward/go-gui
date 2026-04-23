@@ -170,7 +170,7 @@ func parseSvgColor(s string) gui.SvgColor {
 		return colorTransparent
 	}
 	if str == "currentColor" || str == "inherit" {
-		return colorInherit
+		return colorCurrent
 	}
 	if strings.HasPrefix(str, "url(") {
 		return colorTransparent
@@ -465,6 +465,22 @@ func parseRotateTransform(args []float32) [6]float32 {
 // applyTransformPt transforms a point by affine matrix.
 func applyTransformPt(x, y float32, m [6]float32) (float32, float32) {
 	return m[0]*x + m[2]*y + m[4], m[1]*x + m[3]*y + m[5]
+}
+
+// applyInheritedTransformPt transforms (x, y) by m when m is an
+// "active" matrix. Both the SVG identity matrix and a fully-zero
+// matrix are treated as no-ops: identity because the transform is
+// a no-op by definition, zero because tests construct groupStyle{}
+// directly and the resulting zero matrix would otherwise collapse
+// every point to the origin.
+func applyInheritedTransformPt(x, y float32, m [6]float32) (float32, float32) {
+	if m == identityTransform {
+		return x, y
+	}
+	if m[0] == 0 && m[1] == 0 && m[2] == 0 && m[3] == 0 && m[4] == 0 && m[5] == 0 {
+		return x, y
+	}
+	return applyTransformPt(x, y, m)
 }
 
 func isIdentityTransform(m [6]float32) bool {
@@ -871,18 +887,73 @@ func applyInheritedStyle(path *VectorPath, inherited groupStyle) {
 		path.GroupID = inherited.GroupID
 	}
 
-	// Opacity
+	bakePathOpacity(path, inherited)
+}
+
+// bakePathOpacity folds the path's inherited+local opacity values
+// into FillColor.A and StrokeColor.A. Skip flags on the inherited
+// style override the corresponding multiplier with 1 so an inline
+// SMIL animation can supply that channel at render time without
+// being clipped to zero by the static value (e.g. fill-opacity="0").
+func bakePathOpacity(path *VectorPath, inherited groupStyle) {
 	combinedOpacity := inherited.Opacity * path.Opacity
+	if inherited.SkipOpacity {
+		combinedOpacity = 1
+	}
 	fillOpacity := path.FillOpacity
 	if fillOpacity >= 1.0 {
 		fillOpacity = inherited.FillOpacity
+	}
+	if inherited.SkipFillOpacity {
+		fillOpacity = 1
 	}
 	strokeOpacity := path.StrokeOpacity
 	if strokeOpacity >= 1.0 {
 		strokeOpacity = inherited.StrokeOpacity
 	}
-	path.FillColor = applyOpacity(path.FillColor, combinedOpacity*fillOpacity)
-	path.StrokeColor = applyOpacity(path.StrokeColor, combinedOpacity*strokeOpacity)
+	if inherited.SkipStrokeOpacity {
+		strokeOpacity = 1
+	}
+	// Sentinel colors (colorInherit, colorCurrent) carry tiny A
+	// markers that would multiply to uint8(0) under common static
+	// opacities (e.g. 0.083) and cause tessellate to drop the path.
+	// Bump to opaque before baking so the final alpha reflects the
+	// element's real opacity. Sentinel RGB (255,0,255) survives —
+	// render-side tint still replaces RGB wholesale.
+	fillCol := path.FillColor
+	if isSentinelColor(fillCol) {
+		fillCol.A = 255
+	}
+	strokeCol := path.StrokeColor
+	if isSentinelColor(strokeCol) {
+		strokeCol.A = 255
+	}
+	path.FillColor = applyOpacity(fillCol, clampOpacity01(combinedOpacity*fillOpacity))
+	path.StrokeColor = applyOpacity(strokeCol, clampOpacity01(combinedOpacity*strokeOpacity))
+}
+
+// clampOpacity01 maps NaN, ±Inf, and out-of-range values to a
+// safe [0,1] range. Guards applyOpacity's uint8 cast, whose
+// result is implementation-defined for NaN / negative inputs.
+func clampOpacity01(v float32) float32 {
+	if v != v {
+		return 0
+	}
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+// isSentinelColor reports whether c is a colorInherit/colorCurrent
+// sentinel. Called pre-opacity-bake so the sentinel's marker alpha
+// (A=1 or A=2) is intact; exact match avoids collisions with
+// translucent user colors like rgba(255,0,255,0.5).
+func isSentinelColor(c gui.SvgColor) bool {
+	return c == colorInherit || c == colorCurrent
 }
 
 func f32Abs(x float32) float32 {

@@ -228,18 +228,74 @@ func TestTessellateTessellatePolylinesSingle(t *testing.T) {
 }
 
 func TestTessellateTessellatePolylinesWithHole(t *testing.T) {
-	// Outer square (CCW → positive area after reversal)
+	// Outer square (CCW, positive area = 100).
 	outer := []float32{0, 0, 10, 0, 10, 10, 0, 10}
-	// Inner square hole (CW → negative area)
-	hole := []float32{3, 3, 7, 3, 7, 7, 3, 7}
+	// Inner square with OPPOSITE winding (CW, negative area = -16).
+	// Under the default SVG nonzero fill-rule this is a real hole;
+	// total filled area should be outer - hole = 84.
+	hole := []float32{3, 3, 3, 7, 7, 7, 7, 3}
 	tris := tessellatePolylines([][]float32{outer, hole})
 	if len(tris) == 0 {
 		t.Fatal("expected triangles from polygon with hole")
 	}
-	// Total area should be outer - hole = 100 - 16 = 84
 	totalArea := triangleAreaSum(tris)
 	if f32Abs(totalArea-84.0) > 1.0 {
 		t.Fatalf("expected area ~84, got %f", totalArea)
+	}
+}
+
+func TestTessellateTessellatePolylinesSameWindingSeparateRegions(t *testing.T) {
+	// Two non-overlapping squares with the same CCW winding. Under
+	// nonzero they're independent filled regions, not outer + hole.
+	a := []float32{0, 0, 10, 0, 10, 10, 0, 10}
+	b := []float32{20, 20, 30, 20, 30, 30, 20, 30}
+	tris := tessellatePolylines([][]float32{a, b})
+	if len(tris) == 0 {
+		t.Fatal("expected triangles from two same-winding contours")
+	}
+	totalArea := triangleAreaSum(tris)
+	if f32Abs(totalArea-200.0) > 1.0 {
+		t.Fatalf("expected combined area ~200, got %f", totalArea)
+	}
+}
+
+// TestTessellatePathsStrokeWidthViewBoxUnits locks the semantics
+// that tessellatePaths passes StrokeWidth through in viewBox units.
+// Pre-scaling the width here (old behavior) combined with render-
+// side vertex scaling produced width*scale² on screen; the fix
+// relies on stroke triangles being identical across scale values.
+func TestTessellatePathsStrokeWidthViewBoxUnits(t *testing.T) {
+	mkPath := func() VectorPath {
+		return VectorPath{
+			Transform: identityTransform,
+			Segments: []PathSegment{
+				{Cmd: CmdMoveTo, Points: []float32{0, 0}},
+				{Cmd: CmdLineTo, Points: []float32{10, 0}},
+			},
+			StrokeColor: gui.SvgColor{R: 0, G: 0, B: 0, A: 255},
+			StrokeWidth: 4,
+			StrokeCap:   gui.ButtCap,
+			StrokeJoin:  gui.MiterJoin,
+			Opacity:     1,
+		}
+	}
+	vg := &VectorGraphic{}
+	a := mkPath()
+	b := mkPath()
+	lo := vg.tessellatePaths([]VectorPath{a}, 1)
+	hi := vg.tessellatePaths([]VectorPath{b}, 100)
+	if len(lo) != 1 || len(hi) != 1 {
+		t.Fatalf("expected one stroke path each, got lo=%d hi=%d",
+			len(lo), len(hi))
+	}
+	if len(lo[0].Triangles) != len(hi[0].Triangles) {
+		t.Fatalf("triangle counts differ across scale: lo=%d hi=%d",
+			len(lo[0].Triangles), len(hi[0].Triangles))
+	}
+	for i, v := range lo[0].Triangles {
+		if f32Abs(v-hi[0].Triangles[i]) > 1e-4 {
+			t.Fatalf("vertex %d differs: lo=%f hi=%f", i, v, hi[0].Triangles[i])
+		}
 	}
 }
 
@@ -249,6 +305,92 @@ func TestTessellateTessellatePolylinesShortContour(t *testing.T) {
 	tris := tessellatePolylines([][]float32{short})
 	if tris != nil {
 		t.Fatalf("short contour should return nil, got %d floats", len(tris))
+	}
+}
+
+// Unattached hole (opposite winding, not contained by any region)
+// must be dropped silently rather than force-merged into regions[0].
+func TestTessellatePolylines_UnattachedHoleDropped(t *testing.T) {
+	outer := []float32{0, 0, 10, 0, 10, 10, 0, 10}
+	// Hole located far outside outer, opposite winding.
+	stray := []float32{100, 100, 100, 104, 104, 104, 104, 100}
+	tris := tessellatePolylines([][]float32{outer, stray})
+	if len(tris) == 0 {
+		t.Fatal("expected outer triangulation")
+	}
+	got := triangleAreaSum(tris)
+	// Outer alone is 100; stray dropped means total stays ~100.
+	if f32Abs(got-100.0) > 1.0 {
+		t.Fatalf("expected area ~100 (stray dropped), got %f", got)
+	}
+}
+
+// --- polygonRepresentativePoint ---
+
+func TestPolygonRepresentativePoint_CentroidAndDegenerate(t *testing.T) {
+	// Square — centroid at (5,5).
+	sq := []float32{0, 0, 10, 0, 10, 10, 0, 10}
+	x, y, ok := polygonRepresentativePoint(sq)
+	if !ok {
+		t.Fatal("expected ok for square")
+	}
+	if f32Abs(x-5) > 1e-5 || f32Abs(y-5) > 1e-5 {
+		t.Fatalf("expected centroid (5,5), got (%f,%f)", x, y)
+	}
+
+	// Degenerate (n < 3) must report ok=false.
+	twoPt := []float32{0, 0, 1, 1}
+	if _, _, ok := polygonRepresentativePoint(twoPt); ok {
+		t.Fatal("expected ok=false for 2-vertex polygon")
+	}
+	if _, _, ok := polygonRepresentativePoint(nil); ok {
+		t.Fatal("expected ok=false for nil")
+	}
+}
+
+// --- sameSignArea ---
+
+func TestSameSignArea_ZeroTreatedAsMatching(t *testing.T) {
+	if !sameSignArea(1, 2) {
+		t.Fatal("both positive should match")
+	}
+	if !sameSignArea(-1, -3) {
+		t.Fatal("both negative should match")
+	}
+	if sameSignArea(1, -1) {
+		t.Fatal("opposite signs should not match")
+	}
+	// Zero on either side treated as matching (avoids spurious
+	// hole promotion on degenerate contours).
+	if !sameSignArea(0, 1) || !sameSignArea(1, 0) || !sameSignArea(0, 0) {
+		t.Fatal("zero should be treated as matching any sign")
+	}
+}
+
+// --- pointInPolygon ---
+
+func TestPointInPolygon_NaNAndDegenerate(t *testing.T) {
+	sq := []float32{0, 0, 10, 0, 10, 10, 0, 10}
+	if !pointInPolygon(sq, 5, 5) {
+		t.Fatal("center should be inside")
+	}
+	if pointInPolygon(sq, 20, 5) {
+		t.Fatal("outside point should not be inside")
+	}
+	// NaN coords must not panic; treated as outside.
+	nan := float32(math.NaN())
+	if pointInPolygon(sq, nan, 5) {
+		t.Fatal("NaN x must be treated as outside")
+	}
+	if pointInPolygon(sq, 5, nan) {
+		t.Fatal("NaN y must be treated as outside")
+	}
+	// Empty / single-vertex polygon returns false without panic.
+	if pointInPolygon(nil, 0, 0) {
+		t.Fatal("nil polygon should return false")
+	}
+	if pointInPolygon([]float32{1, 1}, 1, 1) {
+		t.Fatal("1-vertex polygon should return false")
 	}
 }
 

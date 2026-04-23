@@ -98,8 +98,15 @@ type VectorGraphic struct {
 var identityTransform = [6]float32{1, 0, 0, 1, 0, 0}
 
 // Sentinel colors for style inheritance.
+// colorInherit marks a fill/stroke that was not explicitly set —
+// resolve from the parent chain during applyInheritedStyle.
+// colorCurrent marks an explicit "currentColor" or "inherit"
+// keyword — preserve it so the render-time tint (SvgCfg.Color)
+// can substitute the actual color. Both are recognized by their
+// magenta RGB so opacity baking can still scale alpha safely.
 var (
 	colorInherit     = gui.SvgColor{R: 255, G: 0, B: 255, A: 1}
+	colorCurrent     = gui.SvgColor{R: 255, G: 0, B: 255, A: 2}
 	colorTransparent = gui.SvgColor{}
 	colorBlack       = gui.SvgColor{R: 0, G: 0, B: 0, A: 255}
 )
@@ -123,6 +130,15 @@ type groupStyle struct {
 	FillOpacity   float32
 	StrokeOpacity float32
 	GroupID       string
+	// SkipOpacity / SkipFillOpacity / SkipStrokeOpacity tell the
+	// shape-style baker to leave the corresponding alpha channel
+	// at full strength because an inline opacity animation will
+	// supply the value at render time. Without this, a static
+	// fill-opacity="0" bakes the fill alpha to zero and tessellate
+	// drops the geometry, leaving the animation nothing to scale.
+	SkipOpacity       bool
+	SkipFillOpacity   bool
+	SkipStrokeOpacity bool
 }
 
 // defaultGroupStyle returns the root group style.

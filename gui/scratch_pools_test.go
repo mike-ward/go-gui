@@ -160,3 +160,128 @@ func TestAllocFloatingLayoutReuse(t *testing.T) {
 		t.Fatal("expected width 2")
 	}
 }
+
+// --- takeVColors ---
+
+func TestTakeVColors_NonPositiveReturnsNil(t *testing.T) {
+	var p scratchPools
+	if p.takeVColors(0) != nil {
+		t.Fatal("n=0 must return nil")
+	}
+	if p.takeVColors(-5) != nil {
+		t.Fatal("negative n must return nil")
+	}
+}
+
+func TestTakeVColors_BasicReservation(t *testing.T) {
+	var p scratchPools
+	a := p.takeVColors(4)
+	if len(a) != 4 || cap(a) != 4 {
+		t.Fatalf("want len=cap=4, got len=%d cap=%d", len(a), cap(a))
+	}
+	// Appending to 'a' must not bleed into the next reservation:
+	// cap is pinned to its length.
+	b := p.takeVColors(3)
+	if len(b) != 3 || cap(b) != 3 {
+		t.Fatalf("want len=cap=3, got len=%d cap=%d", len(b), cap(b))
+	}
+	// Writes to b must not overwrite a.
+	for i := range b {
+		b[i] = Color{1, 2, 3, 4, true}
+	}
+	for i := range a {
+		if a[i] != (Color{}) {
+			t.Fatalf("a[%d] clobbered by b: %+v", i, a[i])
+		}
+	}
+}
+
+// Arena growth must preserve slices returned before the realloc.
+// Prior reservations reference the old backing array; Go's GC
+// keeps it alive.
+func TestTakeVColors_ArenaGrowthPreservesPriorSlices(t *testing.T) {
+	var p scratchPools
+	first := p.takeVColors(4)
+	for i := range first {
+		first[i] = Color{byte(i + 1), 0, 0, 255, true}
+	}
+	// Force at least one realloc by requesting a huge chunk.
+	_ = p.takeVColors(1024)
+	// first must still hold its original data.
+	for i := range first {
+		want := Color{byte(i + 1), 0, 0, 255, true}
+		if first[i] != want {
+			t.Fatalf("first[%d]=%+v clobbered by arena growth, want %+v",
+				i, first[i], want)
+		}
+	}
+}
+
+func TestTakeVColors_OversizeBypassesArena(t *testing.T) {
+	var p scratchPools
+	// Large n must bypass arena; returned slice has len=n but
+	// arena remains empty (no capacity held across frames).
+	a := p.takeVColors(maxVColReservation + 10)
+	if len(a) != maxVColReservation+10 {
+		t.Fatalf("expected len=%d, got %d",
+			maxVColReservation+10, len(a))
+	}
+	if len(p.svgVColArena) != 0 {
+		t.Fatalf("arena should stay empty for oversize requests, "+
+			"got len=%d", len(p.svgVColArena))
+	}
+}
+
+func TestResetRenderPools_TruncatesVColArena(t *testing.T) {
+	var p scratchPools
+	_ = p.takeVColors(32)
+	if len(p.svgVColArena) == 0 {
+		t.Fatal("precondition: arena should have content")
+	}
+	prevCap := cap(p.svgVColArena)
+	p.resetRenderPools()
+	if len(p.svgVColArena) != 0 {
+		t.Fatalf("arena len should reset to 0, got %d",
+			len(p.svgVColArena))
+	}
+	if cap(p.svgVColArena) != prevCap {
+		t.Fatal("small arena cap should be retained across reset")
+	}
+}
+
+// A spike frame must not hold megabytes of vertex-color capacity
+// forever; the arena shrinks back to svgVColShrinkTo when it has
+// grown past svgVColRetainMax.
+func TestResetRenderPools_ShrinksOversizedVColArena(t *testing.T) {
+	var p scratchPools
+	_ = p.takeVColors(svgVColRetainMax + 1)
+	p.resetRenderPools()
+	if cap(p.svgVColArena) > svgVColShrinkTo {
+		t.Fatalf("expected shrink to <=%d, got cap=%d",
+			svgVColShrinkTo, cap(p.svgVColArena))
+	}
+}
+
+// --- growCap ---
+
+func TestGrowCap_NormalDoubling(t *testing.T) {
+	if growCap(4, 5) != 8 {
+		t.Fatalf("expected doubling from 4 → 8, got %d", growCap(4, 5))
+	}
+	if growCap(0, 10) != 10 {
+		t.Fatalf("expected need when oldCap=0, got %d", growCap(0, 10))
+	}
+}
+
+// Overflow of oldCap*2 must not return a negative/absurd capacity;
+// the helper falls back to need when doubling would overflow.
+func TestGrowCap_HandlesOverflow(t *testing.T) {
+	huge := int(^uint(0) >> 1) // math.MaxInt
+	// oldCap*2 overflows; growCap should return need, not a
+	// negative or tiny value.
+	got := growCap(huge, huge)
+	if got < huge {
+		t.Fatalf("overflow must not produce shrunken cap: got %d, want >= %d",
+			got, huge)
+	}
+}

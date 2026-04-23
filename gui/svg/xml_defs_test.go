@@ -225,3 +225,43 @@ func TestDefsGradientStopOpacity(t *testing.T) {
 		t.Error("stop alpha should be reduced by stop-opacity")
 	}
 }
+
+// A stop declared as stop-color="currentColor" must have its
+// sentinel marker alpha lifted to opaque before stop-opacity is
+// baked in; otherwise a small stop-opacity multiplied by A=2
+// collapses to 0 and the gradient sample disappears.
+func TestParseGradientStops_CurrentColorStopsPromoteAlpha(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">` +
+		`<defs>` +
+		`<linearGradient id="gc">` +
+		`<stop offset="0" stop-color="currentColor" stop-opacity="0.5"/>` +
+		`<stop offset="1" stop-color="currentColor" stop-opacity="1"/>` +
+		`</linearGradient>` +
+		`</defs></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	g, ok := vg.Gradients["gc"]
+	if !ok {
+		t.Fatal("gradient gc not found")
+	}
+	if len(g.Stops) != 2 {
+		t.Fatalf("stops = %d, want 2", len(g.Stops))
+	}
+	// Sentinel RGB (magenta) must survive so render-time tint can
+	// substitute. A must be ~127 (255*0.5) for the first stop and
+	// 255 for the second — if sentinel bump failed, A would be 1.
+	s := g.Stops[0].Color
+	if s.R != 255 || s.B != 255 {
+		t.Fatalf("stop 0: expected sentinel magenta RGB, got %+v", s)
+	}
+	if s.A < 100 || s.A > 160 {
+		t.Fatalf("stop 0: expected A~127 (sentinel promoted then "+
+			"scaled by 0.5), got %d", s.A)
+	}
+	if g.Stops[1].Color.A != 255 {
+		t.Fatalf("stop 1: expected A=255 (opacity=1), got %d",
+			g.Stops[1].Color.A)
+	}
+}

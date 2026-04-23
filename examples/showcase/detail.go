@@ -209,6 +209,7 @@ var componentDemos = map[string]func(*gui.Window) gui.View{
 	"theme_picker":        demoThemePicker,
 	"multi_window":        demoMultiWindow,
 	"spinner":             demoSpinner,
+	"svg_spinner":         demoSvgSpinner,
 }
 
 func componentDemo(w *gui.Window, id string) gui.View {

@@ -5872,4 +5872,172 @@ gui.Spinner(gui.SpinnerCfg{
 | CurveSpiral           | Spiral       | Archimedean spiral                  |
 | CurveFourier          | Fourier      | Multi-harmonic sum                  |
 `,
+	"svg_spinner": `Forty-five built-in animated SVG spinners drawn from the
+open-source svg-spinners collection. Each kind is embedded as raw
+SVG and rendered through the same pipeline as ` + "`gui.Svg`" + `, so
+assets recolor via ` + "`fill=\"currentColor\"`" + ` and scale cleanly
+at any size. Identify a spinner by its ` + "`SvgSpinnerKind`" + `
+constant; call ` + "`SvgSpinnerCount`" + ` or ` + "`SvgSpinnerName`" + `
+to enumerate or label them.
+
+## Usage
+
+` + "```go" + `
+gui.SvgSpinner(gui.SvgSpinnerCfg{
+    ID:   "loading",
+    Kind: gui.SvgSpinnerTailSpin,
+})
+` + "```" + `
+
+## With Color
+
+` + "```go" + `
+gui.SvgSpinner(gui.SvgSpinnerCfg{
+    ID:    "save",
+    Kind:  gui.SvgSpinner3DotsBounce,
+    Color: gui.RGB(46, 160, 67),
+})
+` + "```" + `
+
+## Explicit Size
+
+` + "```go" + `
+gui.SvgSpinner(gui.SvgSpinnerCfg{
+    ID:     "hero",
+    Kind:   gui.SvgSpinner90Ring,
+    Width:  96,
+    Height: 96,
+})
+` + "```" + `
+
+When both ` + "`Width`" + ` and ` + "`Height`" + ` are zero, the spinner
+defaults to 48x48. Setting only one axis leaves the other at zero so
+the containing layout or aspect ratio of the asset controls it.
+
+## Enumerating Kinds
+
+` + "```go" + `
+for i := 0; i < gui.SvgSpinnerCount(); i++ {
+    k := gui.SvgSpinnerKind(i)
+    fmt.Println(gui.SvgSpinnerName(k)) // e.g. "90-ring"
+}
+` + "```" + `
+
+## Key Properties
+
+| Property  | Type           | Description                          |
+|-----------|----------------|--------------------------------------|
+| ID        | string         | Unique identifier (required)         |
+| Kind      | SvgSpinnerKind | One of 45 built-in spinners          |
+| Color     | Color          | Recolor monochrome assets            |
+| Width     | float32        | Explicit width (default 48 if both 0)|
+| Height    | float32        | Explicit height (default 48 if both 0)|
+| Sizing    | Sizing         | Combined axis sizing mode            |
+| Padding   | Opt[Padding]   | Outer padding                        |
+| MinWidth  | float32        | Minimum width                        |
+| MaxWidth  | float32        | Maximum width                        |
+| MinHeight | float32        | Minimum height                       |
+| MaxHeight | float32        | Maximum height                       |
+| OnClick   | func           | Click handler (optional)             |
+
+## Accessibility
+
+| Property        | Type   | Description                                |
+|-----------------|--------|--------------------------------------------|
+| A11YLabel       | string | Short name announced by screen readers     |
+| A11YDescription | string | Longer description (e.g. "loading, please wait") |
+
+## Helpers
+
+| Function            | Description                                   |
+|---------------------|-----------------------------------------------|
+| SvgSpinnerCount()   | Returns the number of built-in kinds (45)     |
+| SvgSpinnerName(k)   | Returns the asset basename (e.g. "tail-spin") |
+
+## Kinds: Rings & Circles
+
+| Constant                   | Asset              |
+|----------------------------|--------------------|
+| SvgSpinner90Ring           | 90-ring            |
+| SvgSpinner180Ring          | 180-ring           |
+| SvgSpinner270Ring          | 270-ring           |
+| SvgSpinnerCircles          | circles            |
+| SvgSpinnerEclipse          | eclipse            |
+| SvgSpinnerEclipseHalf      | eclipse-half       |
+| SvgSpinnerSpinner          | spinner            |
+| SvgSpinnerSpinnerDouble    | spinner-double     |
+| SvgSpinnerSpinningCircles  | spinning-circles   |
+| SvgSpinnerTailSpin         | tail-spin          |
+
+## Kinds: Dots
+
+| Constant                     | Asset                 |
+|------------------------------|-----------------------|
+| SvgSpinner12DotsScaleRotate  | 12-dots-scale-rotate  |
+| SvgSpinner3DotsBounce        | 3-dots-bounce         |
+| SvgSpinner3DotsFade          | 3-dots-fade           |
+| SvgSpinner3DotsMove          | 3-dots-move           |
+| SvgSpinner3DotsRotate        | 3-dots-rotate         |
+| SvgSpinner3DotsScale         | 3-dots-scale          |
+| SvgSpinner3DotsScaleMiddle   | 3-dots-scale-middle   |
+| SvgSpinner6DotsRotate        | 6-dots-rotate         |
+| SvgSpinner8DotsRotate        | 8-dots-rotate         |
+
+## Kinds: Bars
+
+| Constant                   | Asset               |
+|----------------------------|---------------------|
+| SvgSpinnerBars             | bars                |
+| SvgSpinnerBarsFade         | bars-fade           |
+| SvgSpinnerBarsRotateFade   | bars-rotate-fade    |
+| SvgSpinnerBarsScale        | bars-scale          |
+| SvgSpinnerBarsScaleFade    | bars-scale-fade     |
+| SvgSpinnerBarsScaleMiddle  | bars-scale-middle   |
+| SvgSpinnerHorizontalBar    | horizontal-bar      |
+
+## Kinds: Loaders
+
+| Constant           | Asset     |
+|--------------------|-----------|
+| SvgSpinnerLoader1  | loader1   |
+| SvgSpinnerLoader3  | loader3   |
+| SvgSpinnerLoader4  | loader4   |
+| SvgSpinnerLoader5  | loader5   |
+| SvgSpinnerLoader6  | loader6   |
+| SvgSpinnerLoader7  | loader7   |
+| SvgSpinnerLoader8  | loader8   |
+| SvgSpinnerLoader9  | loader9   |
+| SvgSpinnerLoader10 | loader10  |
+
+## Kinds: Blocks
+
+| Constant                  | Asset             |
+|---------------------------|-------------------|
+| SvgSpinnerBlocksScale     | blocks-scale      |
+| SvgSpinnerBlocksShuffle2  | blocks-shuffle-2  |
+| SvgSpinnerBlocksShuffle3  | blocks-shuffle-3  |
+| SvgSpinnerBlocksWave      | blocks-wave       |
+
+## Kinds: Miscellaneous
+
+| Constant                | Asset          |
+|-------------------------|----------------|
+| SvgSpinnerAudio         | audio          |
+| SvgSpinnerBouncingBall  | bouncing-ball  |
+| SvgSpinnerGrid          | grid           |
+| SvgSpinnerHearts        | hearts         |
+| SvgSpinnerTadpole       | tadpole        |
+| SvgSpinnerWindToy       | wind-toy       |
+
+## Caveats
+
+The SMIL parser handles rotate, translate, scale, opacity (plus
+fill-opacity and stroke-opacity), and primitive attribute animation
+(cx/cy/r/x/y/width/height/rx/ry) with keyTimes and keySplines easing
+and syncbase begin chains. A handful of assets that rely on SMIL
+features outside this subset may render as their static first frame.
+` + "`SvgSpinnerCount`" + ` and enum values are generated from the
+embedded asset directory, so numeric values shift when assets are
+added or removed — always reference kinds by their named constant.
+`,
 }

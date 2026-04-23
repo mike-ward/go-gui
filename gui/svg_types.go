@@ -17,6 +17,11 @@ type TessellatedPath struct {
 	// an inline <animate> with an animatable attribute (cx, cy, r,
 	// x, y, width, height, rx, ry) targets this shape.
 	Animated bool
+	// IsStroke marks this path as the stroke contribution of its
+	// source shape (vs. the fill contribution). Lets opacity
+	// animations targeting fill-opacity / stroke-opacity scale only
+	// the matching path at render time.
+	IsStroke bool
 	// Primitive carries raw attributes for re-tessellation; zero
 	// value when the source is not a primitive.
 	Primitive SvgPrimitive
@@ -136,6 +141,19 @@ const (
 	SvgAttrRY
 )
 
+// SvgAnimTarget identifies which sub-attribute an opacity animation
+// targets. Non-opacity kinds ignore this field.
+type SvgAnimTarget uint8
+
+// SvgAnimTarget constants. SvgAnimTargetAll covers attributeName=
+// "opacity"; Fill and Stroke cover the per-paint variants and only
+// affect the matching tessellated path role at render time.
+const (
+	SvgAnimTargetAll SvgAnimTarget = iota
+	SvgAnimTargetFill
+	SvgAnimTargetStroke
+)
+
 // SvgAnimation holds parsed SMIL animation data.
 type SvgAnimation struct {
 	Kind    SvgAnimKind
@@ -158,7 +176,20 @@ type SvgAnimation struct {
 	CenterY    float32
 	DurSec     float32
 	BeginSec   float32
-	AttrName   SvgAttrName // valid when Kind == SvgAnimAttr
+	// Cycle is the activation period in seconds. 0 means single-play
+	// (no looping; freeze or remove after dur). >0 means the
+	// animation re-fires every Cycle seconds, allowing chained-
+	// freeze SMIL sequences and indefinite repeats to be modeled
+	// uniformly: lastActivation = BeginSec + n*Cycle for the largest
+	// n with lastActivation <= elapsed.
+	Cycle float32
+	// Freeze reflects fill="freeze". When true, after dur elapses
+	// the animation continues to contribute its last keyframe value
+	// until either the cycle restarts or another animation takes
+	// over the same attribute (sandwich semantics).
+	Freeze   bool
+	AttrName SvgAttrName   // valid when Kind == SvgAnimAttr
+	Target   SvgAnimTarget // valid when Kind == SvgAnimOpacity
 }
 
 // SvgPrimitiveKind identifies the source primitive of a VectorPath.

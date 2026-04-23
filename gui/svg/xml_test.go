@@ -262,3 +262,116 @@ func TestXmlParseSvgFileTooLarge(t *testing.T) {
 
 // suppress unused import
 var _ = gui.SvgColor{}
+
+// --- findRootElementTag ---
+
+func TestFindRootElementTag_LocatesRootSvg(t *testing.T) {
+	body := `<svg viewBox="0 0 10 10"><rect/></svg>`
+	tag, ok := findRootElementTag(body, "svg")
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	if tag != `<svg viewBox="0 0 10 10">` {
+		t.Fatalf("unexpected tag: %q", tag)
+	}
+}
+
+func TestFindRootElementTag_RejectsPrefixMatches(t *testing.T) {
+	// `<svgfoo` must not match tag "svg": the character after the
+	// tag name must be whitespace, '>', or '/'.
+	_, ok := findRootElementTag(`<svgfoo width="1"/>`, "svg")
+	if ok {
+		t.Fatal("prefix-only match must be rejected")
+	}
+}
+
+func TestFindRootElementTag_MissingTag(t *testing.T) {
+	_, ok := findRootElementTag(`<foo/>`, "svg")
+	if ok {
+		t.Fatal("missing tag must return ok=false")
+	}
+}
+
+func TestFindRootElementTag_UnterminatedTag(t *testing.T) {
+	// `<svg` without a closing `>` is malformed — must not panic
+	// or return a stale buffer.
+	_, ok := findRootElementTag(`<svg viewBox="0 0 1 1"`, "svg")
+	if ok {
+		t.Fatal("unterminated tag must return ok=false")
+	}
+}
+
+// --- scanOpacityAnimTargets ---
+
+func TestScanOpacityAnimTargets_DetectsEachTarget(t *testing.T) {
+	body := `<animate attributeName="opacity" values="1;0" dur="1s"/>` +
+		`<animate attributeName="fill-opacity" values="1;0" dur="1s"/>` +
+		`<animate attributeName="stroke-opacity" values="1;0" dur="1s"/>`
+	all, fill, stroke := scanOpacityAnimTargets(body)
+	if !all {
+		t.Fatal("expected opacity → all=true")
+	}
+	if !fill {
+		t.Fatal("expected fill-opacity → fill=true")
+	}
+	if !stroke {
+		t.Fatal("expected stroke-opacity → stroke=true")
+	}
+}
+
+func TestScanOpacityAnimTargets_IgnoresAnimateTransform(t *testing.T) {
+	// <animateTransform> never targets opacity; must be skipped so
+	// it cannot trip the bake-suppression heuristics.
+	body := `<animateTransform type="rotate" attributeName="transform" ` +
+		`values="0 5 5;360 5 5" dur="1s"/>`
+	all, fill, stroke := scanOpacityAnimTargets(body)
+	if all || fill || stroke {
+		t.Fatalf("animateTransform must not set any flag; "+
+			"got all=%v fill=%v stroke=%v", all, fill, stroke)
+	}
+}
+
+func TestScanOpacityAnimTargets_EmptyBody(t *testing.T) {
+	all, fill, stroke := scanOpacityAnimTargets("")
+	if all || fill || stroke {
+		t.Fatal("empty body must report no targets")
+	}
+}
+
+func TestScanOpacityAnimTargets_MalformedTagTerminatesSafely(t *testing.T) {
+	// `<animate` without `>` should not loop forever and must not
+	// flag any target. Exits cleanly when IndexByte('>') fails.
+	body := `<animate attributeName="opacity"` // no close
+	all, fill, stroke := scanOpacityAnimTargets(body)
+	if all || fill || stroke {
+		t.Fatal("malformed <animate> must not flag targets")
+	}
+}
+
+// --- Root-level presentation attribute inheritance ---
+
+// `fill="currentColor"` on the root <svg> element must propagate
+// to child shapes so render-time tint can replace the placeholder.
+func TestParseSvg_RootFillInheritedByShapes(t *testing.T) {
+	svg := `<svg viewBox="0 0 10 10" fill="currentColor" ` +
+		`xmlns="http://www.w3.org/2000/svg">` +
+		`<rect x="0" y="0" width="10" height="10"/>` +
+		`</svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(vg.Paths) == 0 {
+		t.Fatal("expected a path from the rect")
+	}
+	// The rect must inherit the currentColor sentinel (magenta RGB)
+	// from the root; bakePathOpacity then promotes A to 255.
+	// Sentinel RGB survives so render-side tint can substitute.
+	if vg.Paths[0].FillColor.R != 255 || vg.Paths[0].FillColor.B != 255 {
+		t.Fatalf("expected sentinel magenta RGB on fill, got %+v",
+			vg.Paths[0].FillColor)
+	}
+	if vg.Paths[0].FillColor.A == 0 {
+		t.Fatal("fill alpha collapsed to 0 — sentinel bump failed")
+	}
+}

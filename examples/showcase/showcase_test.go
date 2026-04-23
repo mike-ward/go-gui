@@ -340,13 +340,6 @@ func TestDemoTextLayout(t *testing.T) {
 				g.Direction)
 		}
 	})
-
-	t.Run("curved text section exists", func(t *testing.T) {
-		// SVG parser not available in headless tests; skip if not found.
-		if _, ok := layout.FindByID("text-curved-svg"); !ok {
-			t.Skip("text-curved-svg not found (no SVG parser in test)")
-		}
-	})
 }
 
 func TestFormValidationHelpers(t *testing.T) {

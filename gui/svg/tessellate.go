@@ -103,10 +103,14 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 			}
 		}
 
-		// Stroke tessellation
+		// Stroke tessellation. Stroke width stays in viewBox units
+		// here — render-side vertex scaling applies once. Pre-scaling
+		// here plus render scaling produces width × scale² on screen,
+		// which collapses to sub-pixel for large viewBoxes (e.g.
+		// spinner.svg at scale=0.03 rendered 200→0.18px).
 		hasStrokeGrad := path.StrokeGradientID != ""
 		if (path.StrokeColor.A > 0 || hasStrokeGrad) && path.StrokeWidth > 0 {
-			strokeWidth := path.StrokeWidth * scale
+			strokeWidth := path.StrokeWidth
 			strokePoly := polylines
 			if len(path.StrokeDasharray) > 0 {
 				strokePoly = applyDasharray(polylines, path.StrokeDasharray)
@@ -141,6 +145,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 							ClipGroup:    clipGroup,
 							GroupID:      path.GroupID,
 							Animated:     path.Animated,
+							IsStroke:     true,
 							Primitive:    path.Primitive,
 						})
 					}
@@ -151,6 +156,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 						ClipGroup: clipGroup,
 						GroupID:   path.GroupID,
 						Animated:  path.Animated,
+						IsStroke:  true,
 						Primitive: path.Primitive,
 					})
 				}
@@ -401,7 +407,11 @@ func tessellatePolylines(polylines [][]float32) []float32 {
 		return nil
 	}
 
-	// Multiple contours — handle holes
+	// Multiple contours — handle holes vs. separate regions.
+	// Subpaths with the same winding as the top-level contour are
+	// independent filled regions (e.g. circles.svg has 4 or 8
+	// separate circles in one path). Subpaths with opposite winding
+	// are holes to be bridged into their enclosing region.
 	type contour struct {
 		points []float32
 		area   float32
@@ -419,23 +429,107 @@ func tessellatePolylines(polylines [][]float32) []float32 {
 	slices.SortFunc(contours, func(a, b contour) int {
 		return cmp.Compare(f32Abs(b.area), f32Abs(a.area))
 	})
+	outerSign := contours[0].area
 
-	outer := make([]float32, len(contours[0].points))
-	copy(outer, contours[0].points)
-	if contours[0].area < 0 {
-		outer = reversePolygon(outer)
+	// Group contours into regions: each region is one outer plus
+	// any opposite-winding holes it encloses. Same-winding contours
+	// become their own regions.
+	type region struct {
+		outer []float32
+		holes [][]float32
 	}
-
-	for i := 1; i < len(contours); i++ {
-		hole := make([]float32, len(contours[i].points))
-		copy(hole, contours[i].points)
+	regions := make([]region, 0, len(contours))
+	for _, c := range contours {
+		if sameSignArea(c.area, outerSign) {
+			poly := make([]float32, len(c.points))
+			copy(poly, c.points)
+			if c.area < 0 {
+				poly = reversePolygon(poly)
+			}
+			regions = append(regions, region{outer: poly})
+			continue
+		}
+		// Opposite winding — hole. Attach to the first region whose
+		// outer contains this hole's representative (centroid) point.
+		// Centroid is more robust than the first vertex when the hole
+		// shares vertices with its enclosing outer. A hole that lies
+		// inside no region is dropped: rather than force-merge it
+		// into regions[0] and risk a malformed bridge, treat it as
+		// degenerate geometry.
+		hole := make([]float32, len(c.points))
+		copy(hole, c.points)
 		if polygonArea(hole) > 0 {
 			hole = reversePolygon(hole)
 		}
-		outer = mergeHole(outer, hole)
+		hx, hy, ok := polygonRepresentativePoint(hole)
+		if !ok {
+			continue
+		}
+		for i := range regions {
+			if pointInPolygon(regions[i].outer, hx, hy) {
+				regions[i].holes = append(regions[i].holes, hole)
+				break
+			}
+		}
 	}
 
-	return earClip(outer)
+	var result []float32
+	for _, r := range regions {
+		outer := r.outer
+		for _, hole := range r.holes {
+			outer = mergeHole(outer, hole)
+		}
+		result = append(result, earClip(outer)...)
+	}
+	return result
+}
+
+// sameSignArea reports whether two signed areas share a sign
+// (both > 0 or both < 0). Zero on either side is treated as
+// matching to avoid spurious hole promotion on degenerate shapes.
+func sameSignArea(a, b float32) bool {
+	if a == 0 || b == 0 {
+		return true
+	}
+	return (a > 0) == (b > 0)
+}
+
+// polygonRepresentativePoint returns the centroid of poly's
+// vertices. Using the centroid (vs. the first vertex) is robust
+// when the contour shares vertices with an enclosing outer.
+// Returns ok=false when poly has fewer than 3 vertices.
+func polygonRepresentativePoint(poly []float32) (float32, float32, bool) {
+	n := len(poly) / 2
+	if n < 3 {
+		return 0, 0, false
+	}
+	var sx, sy float32
+	for i := range n {
+		sx += poly[i*2]
+		sy += poly[i*2+1]
+	}
+	inv := 1 / float32(n)
+	return sx * inv, sy * inv, true
+}
+
+// pointInPolygon reports whether (x, y) lies inside poly using a
+// ray-cast odd-even test. poly is a flat [x0,y0, x1,y1, ...] slice.
+func pointInPolygon(poly []float32, x, y float32) bool {
+	inside := false
+	n := len(poly) / 2
+	j := n - 1
+	for i := range n {
+		xi, yi := poly[i*2], poly[i*2+1]
+		xj, yj := poly[j*2], poly[j*2+1]
+		if (yi > y) != (yj > y) {
+			xIntersect := (xj-xi)*(y-yi)/(yj-yi) + xi
+			if x < xIntersect {
+				inside = !inside
+			}
+		}
+		j = i
+	}
+	return inside
 }
 
 func reversePolygon(poly []float32) []float32 {

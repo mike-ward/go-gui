@@ -190,7 +190,14 @@ func parseGradientStops(content string) []gui.SvgGradientStop {
 		}
 		color := parseSvgColor(colorStr)
 		if color == colorInherit {
+			// Bare "inherit" at gradient-stop scope has no parent to
+			// resolve against; fall back to black.
 			color = colorBlack
+		} else if isSentinelColor(color) {
+			// Explicit currentColor: preserve sentinel RGB so the
+			// render-time tint can substitute, but lift A to opaque
+			// before stop-opacity bakes so small opacities survive.
+			color.A = 255
 		}
 
 		stopOpacity := parseOpacityAttr(stopElem, "stop-opacity", 1.0)

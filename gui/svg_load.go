@@ -27,7 +27,11 @@ type CachedSvgPath struct {
 	ClipGroup    int
 	GroupID      string
 	Animated     bool
-	Primitive    SvgPrimitive
+	// IsStroke marks the path as a stroke contribution; lets opacity
+	// animations targeting fill-opacity / stroke-opacity scale only
+	// the matching path.
+	IsStroke  bool
+	Primitive SvgPrimitive
 }
 
 // CachedSvgTextDraw holds cached text rendering data.
@@ -111,6 +115,7 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 			ClipGroup:    p.ClipGroup,
 			GroupID:      p.GroupID,
 			Animated:     p.Animated,
+			IsStroke:     p.IsStroke,
 			Primitive:    p.Primitive,
 		}
 	}

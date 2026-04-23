@@ -1,6 +1,9 @@
 package gui
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestRenderSvgNoParser(t *testing.T) {
 	w := &Window{}
@@ -135,7 +138,7 @@ func TestEmitSvgPathRendererAnimatedVertexAlphaNoCopy(t *testing.T) {
 		GroupID: "g1",
 	}
 	animState := map[string]svgAnimState{
-		"g1": {Opacity: 0.5},
+		"g1": {Opacity: 0.5, FillOpacity: 1, StrokeOpacity: 1, Inited: true},
 	}
 	emitSvgPathRenderer(path, Color{}, 0, 0, 1.0, animState, w)
 
@@ -373,5 +376,232 @@ func TestRenderImageDispatch(t *testing.T) {
 	}
 	if !hasImage {
 		t.Fatal("dispatch should call renderImage")
+	}
+}
+
+// --- finiteF32 ---
+
+func TestFiniteF32_NaNInfFinite(t *testing.T) {
+	if !finiteF32(0) || !finiteF32(1.5) || !finiteF32(-1e20) {
+		t.Fatal("finite values should report true")
+	}
+	if finiteF32(float32(math.NaN())) {
+		t.Fatal("NaN must report false")
+	}
+	if finiteF32(float32(math.Inf(1))) {
+		t.Fatal("+Inf must report false")
+	}
+	if finiteF32(float32(math.Inf(-1))) {
+		t.Fatal("-Inf must report false")
+	}
+}
+
+// --- collectAnimContribs timing guards ---
+
+// collectAnimContribs must reject animations whose timing fields
+// are NaN or ±Inf. Otherwise downstream lerp/floor math produces
+// NaN values that poison the anim state map.
+func TestCollectAnimContribs_RejectsNonFiniteTimings(t *testing.T) {
+	nan := float32(math.NaN())
+	inf := float32(math.Inf(1))
+	base := SvgAnimation{
+		Kind:    SvgAnimOpacity,
+		GroupID: "g",
+		Values:  []float32{0, 1},
+		DurSec:  1,
+	}
+	cases := []struct {
+		name string
+		mut  func(a *SvgAnimation)
+	}{
+		{"NaN Dur", func(a *SvgAnimation) { a.DurSec = nan }},
+		{"Inf Dur", func(a *SvgAnimation) { a.DurSec = inf }},
+		{"NaN Begin", func(a *SvgAnimation) { a.BeginSec = nan }},
+		{"Inf Begin", func(a *SvgAnimation) { a.BeginSec = inf }},
+		{"NaN Cycle", func(a *SvgAnimation) { a.Cycle = nan }},
+		{"Inf Cycle", func(a *SvgAnimation) { a.Cycle = inf }},
+	}
+	for _, tc := range cases {
+		a := base
+		tc.mut(&a)
+		out := collectAnimContribs([]SvgAnimation{a}, 0.5, nil)
+		if len(out) != 0 {
+			t.Fatalf("%s: expected no contribution, got %d", tc.name, len(out))
+		}
+	}
+	// Sanity: a clean animation still contributes.
+	out := collectAnimContribs([]SvgAnimation{base}, 0.5, nil)
+	if len(out) != 1 {
+		t.Fatalf("clean anim should contribute, got %d", len(out))
+	}
+}
+
+func TestCollectAnimContribs_RejectsNonFiniteElapsed(t *testing.T) {
+	a := SvgAnimation{
+		Kind:    SvgAnimOpacity,
+		GroupID: "g",
+		Values:  []float32{0, 1},
+		DurSec:  1,
+	}
+	out := collectAnimContribs([]SvgAnimation{a}, float32(math.NaN()), nil)
+	if len(out) != 0 {
+		t.Fatal("NaN elapsed must produce no contributions")
+	}
+}
+
+// --- Freeze semantics ---
+
+// fill="freeze" must hold the last keyframe value after dur and
+// before the next cycle. Without freeze the animation drops out.
+func TestComputeSvgAnimations_FreezeHoldsLastValue(t *testing.T) {
+	a := SvgAnimation{
+		Kind:    SvgAnimOpacity,
+		GroupID: "g",
+		Values:  []float32{1, 0},
+		DurSec:  1,
+		Freeze:  true,
+	}
+	// elapsed 5s, dur 1s, no cycle → past end. Freeze must hold
+	// frac=1 → value 0.
+	st := computeSvgAnimations([]SvgAnimation{a}, 5, nil)
+	if st["g"].Opacity != 0 {
+		t.Fatalf("freeze should hold final value 0, got %f", st["g"].Opacity)
+	}
+
+	// Without freeze, same animation contributes nothing: state
+	// for "g" never gets created.
+	a.Freeze = false
+	st = computeSvgAnimations([]SvgAnimation{a}, 5, nil)
+	if _, ok := st["g"]; ok {
+		t.Fatal("non-freeze past-dur must not contribute state")
+	}
+}
+
+// --- Cycle restart ---
+
+// Cycle>0 must re-fire the animation every cycle seconds. At
+// elapsed = Cycle+epsilon the phase is effectively 0 so the lerp
+// returns the first keyframe value again.
+func TestComputeSvgAnimations_CycleRestart(t *testing.T) {
+	a := SvgAnimation{
+		Kind:    SvgAnimOpacity,
+		GroupID: "g",
+		Values:  []float32{1, 0}, // 1→0 over dur
+		DurSec:  1,
+		Cycle:   2, // repeats every 2s
+	}
+	// At elapsed=2 (cycle boundary) phase ≈ 0 → opacity ≈ 1.
+	st := computeSvgAnimations([]SvgAnimation{a}, 2, nil)
+	if math.Abs(float64(st["g"].Opacity-1)) > 1e-3 {
+		t.Fatalf("expected opacity ~1 at cycle restart, got %f",
+			st["g"].Opacity)
+	}
+}
+
+// --- Sandwich priority ---
+
+// When two animations target the same attribute on the same
+// group, the one whose last activation is later must win under
+// SMIL sandwich semantics.
+func TestComputeSvgAnimations_SandwichLastActivationWins(t *testing.T) {
+	// a1 activates at t=0, a2 at t=1. At elapsed=2 both are past
+	// their dur (each is 1s). With Freeze both contribute; a2's
+	// activation (1) > a1's (0), so a2's final value wins.
+	a1 := SvgAnimation{
+		Kind:     SvgAnimOpacity,
+		GroupID:  "g",
+		Values:   []float32{0, 0.25},
+		DurSec:   1,
+		BeginSec: 0,
+		Freeze:   true,
+	}
+	a2 := SvgAnimation{
+		Kind:     SvgAnimOpacity,
+		GroupID:  "g",
+		Values:   []float32{0, 0.75},
+		DurSec:   1,
+		BeginSec: 1,
+		Freeze:   true,
+	}
+	st := computeSvgAnimations([]SvgAnimation{a1, a2}, 2, nil)
+	if math.Abs(float64(st["g"].Opacity-0.75)) > 1e-3 {
+		t.Fatalf("expected a2's value 0.75 to win, got %f", st["g"].Opacity)
+	}
+}
+
+// --- Opacity clamp on render ---
+
+// An opacity value outside [0,1] (reached via a hostile anim
+// values list) must not drive a negative or >1 multiplier into
+// the uint8 alpha cast. clampFrac in emitSvgPathRenderer guards
+// this; verify NaN opacity → alpha 0.
+func TestEmitSvgPathRenderer_OpacityNaNClampedToZero(t *testing.T) {
+	w := &Window{}
+	path := CachedSvgPath{
+		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
+		Color:     Color{10, 20, 30, 200, true},
+		GroupID:   "g1",
+	}
+	animState := map[string]svgAnimState{
+		"g1": {
+			Opacity:       float32(math.NaN()),
+			FillOpacity:   1,
+			StrokeOpacity: 1,
+			Inited:        true,
+		},
+	}
+	emitSvgPathRenderer(path, Color{}, 0, 0, 1.0, animState, w)
+	if len(w.renderers) != 1 {
+		t.Fatalf("expected 1 renderer, got %d", len(w.renderers))
+	}
+	if w.renderers[0].Color.A != 0 {
+		t.Fatalf("NaN opacity must clamp alpha to 0, got %d",
+			w.renderers[0].Color.A)
+	}
+}
+
+// Fill-opacity animation targeting a stroke path must NOT dim
+// the stroke (and vice-versa). emitSvgPathRenderer picks
+// FillOpacity vs StrokeOpacity based on path.IsStroke.
+func TestSvgRender_FillOpacityAnimDoesNotDimStroke(t *testing.T) {
+	w := &Window{}
+	strokePath := CachedSvgPath{
+		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
+		Color:     Color{0, 0, 0, 255, true},
+		GroupID:   "g1",
+		IsStroke:  true,
+	}
+	// FillOpacity drops to 0; StrokeOpacity stays 1. The stroke
+	// path's alpha must remain 255.
+	animState := map[string]svgAnimState{
+		"g1": {
+			Opacity:       1,
+			FillOpacity:   0,
+			StrokeOpacity: 1,
+			Inited:        true,
+		},
+	}
+	emitSvgPathRenderer(strokePath, Color{}, 0, 0, 1.0, animState, w)
+	if w.renderers[0].Color.A != 255 {
+		t.Fatalf("stroke should keep alpha 255 when only fill-opacity "+
+			"is animated, got %d", w.renderers[0].Color.A)
+	}
+
+	// Mirror: fill path under stroke-opacity=0 stays opaque.
+	w = &Window{}
+	fillPath := strokePath
+	fillPath.IsStroke = false
+	animState = map[string]svgAnimState{
+		"g1": {
+			Opacity:       1,
+			FillOpacity:   1,
+			StrokeOpacity: 0,
+			Inited:        true,
+		},
+	}
+	emitSvgPathRenderer(fillPath, Color{}, 0, 0, 1.0, animState, w)
+	if w.renderers[0].Color.A != 255 {
+		t.Fatalf("fill should keep alpha 255 when only stroke-opacity "+
+			"is animated, got %d", w.renderers[0].Color.A)
 	}
 }

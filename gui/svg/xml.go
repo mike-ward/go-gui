@@ -45,6 +45,13 @@ func parseSvg(content string) (*VectorGraphic, error) {
 		vbTransform = [6]float32{1, 0, 0, 1, -vg.ViewBoxX, -vg.ViewBoxY}
 	}
 	defStyle := defaultGroupStyle(vbTransform)
+	// Merge presentation attributes from the root <svg> tag (fill,
+	// stroke, stroke-width, stroke-linecap, stroke-linejoin, …) so
+	// shapes that rely on inheriting e.g. fill="currentColor" from
+	// the root pick it up.
+	if svgTag, ok := findRootElementTag(content, "svg"); ok {
+		defStyle = mergeGroupStyle(svgTag, defStyle)
+	}
 	state := &parseState{}
 	allPaths := parseSvgContent(content, defStyle, 0, state)
 
@@ -394,6 +401,10 @@ func parseShapeElement(
 			gid = fmt.Sprintf("__anim_%d", state.synthID)
 		}
 		shapeGS.GroupID = gid
+		all, fill, stroke := scanOpacityAnimTargets(body)
+		shapeGS.SkipOpacity = all
+		shapeGS.SkipFillOpacity = fill
+		shapeGS.SkipStrokeOpacity = stroke
 	}
 
 	pathIdx := -1
@@ -447,6 +458,44 @@ func parseShapeElement(
 func shapeHasInlineAnimation(body string) bool {
 	return strings.Contains(body, "<animate") ||
 		strings.Contains(body, "<animateTransform")
+}
+
+// scanOpacityAnimTargets reports which opacity sub-attributes are
+// animated by inline <animate attributeName="..."> children of a
+// shape body. Used to suppress static opacity baking for channels
+// the animation will overwrite at render time.
+func scanOpacityAnimTargets(body string) (all, fill, stroke bool) {
+	pos := 0
+	for pos < len(body) {
+		idx := strings.Index(body[pos:], "<animate")
+		if idx < 0 {
+			return
+		}
+		start := pos + idx + len("<animate")
+		end := strings.IndexByte(body[start:], '>')
+		if end < 0 {
+			return
+		}
+		elem := body[pos+idx : start+end+1]
+		pos = start + end + 1
+		// Skip <animateTransform> — it never targets opacity.
+		if strings.HasPrefix(elem, "<animateTransform") {
+			continue
+		}
+		attr, ok := findAttr(elem, "attributeName")
+		if !ok {
+			continue
+		}
+		switch attr {
+		case "opacity":
+			all = true
+		case "fill-opacity":
+			fill = true
+		case "stroke-opacity":
+			stroke = true
+		}
+	}
+	return
 }
 
 // parseShapeInlineChildren scans a shape body for
@@ -503,6 +552,31 @@ func parseShapeInlineChildren(
 		}
 		pos = elemEnd + 1
 	}
+}
+
+// findRootElementTag locates the first `<tag` opening element in
+// content and returns its full tag text up to and including the
+// closing `>`. Used to read presentation attributes off the root
+// <svg> element without recursing into it.
+func findRootElementTag(content, tag string) (string, bool) {
+	needle := "<" + tag
+	idx := strings.Index(content, needle)
+	if idx < 0 {
+		return "", false
+	}
+	after := idx + len(needle)
+	if after >= len(content) {
+		return "", false
+	}
+	c := content[after]
+	if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '>' && c != '/' {
+		return "", false
+	}
+	end := strings.IndexByte(content[idx:], '>')
+	if end < 0 {
+		return "", false
+	}
+	return content[idx : idx+end+1], true
 }
 
 func findTagNameEnd(s string, start int) int {

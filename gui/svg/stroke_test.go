@@ -162,3 +162,27 @@ func TestStrokeClosedSquare(t *testing.T) {
 			len(butt), len(sq))
 	}
 }
+
+// Closed polylines emit an extra segment wrapping the last point
+// back to the first so the stroke does not leave a visible gap.
+// Compare a closed square (last point duplicates first) to the
+// same square without the closing point: closed must emit exactly
+// one more segment of quad geometry.
+func TestTessellateStroke_ClosedEmitsExtraSegment(t *testing.T) {
+	closed := [][]float32{{0, 0, 10, 0, 10, 10, 0, 10, 0, 0}}
+	open := [][]float32{{0, 0, 10, 0, 10, 10, 0, 10}}
+	closedTris := tessellateStroke(closed, 2, gui.ButtCap, gui.BevelJoin)
+	openTris := tessellateStroke(open, 2, gui.ButtCap, gui.BevelJoin)
+	if len(closedTris) <= len(openTris) {
+		t.Fatalf("closed should emit more geometry: closed=%d open=%d",
+			len(closedTris), len(openTris))
+	}
+	// Each segment is 2 triangles × 3 verts × 2 floats = 12 floats,
+	// plus a bevel-join triangle (6 floats) per interior corner.
+	// We only assert the net increase is at least one segment's
+	// worth of floats (12) to avoid coupling to join minutiae.
+	if len(closedTris)-len(openTris) < 12 {
+		t.Fatalf("expected at least one extra segment (12 floats); "+
+			"closed=%d open=%d", len(closedTris), len(openTris))
+	}
+}

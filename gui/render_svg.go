@@ -1,8 +1,10 @@
 package gui
 
 import (
+	"cmp"
 	"log"
 	"math"
+	"slices"
 	"time"
 )
 
@@ -57,8 +59,11 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		}
 		elapsed := float32(nowNs-cached.AnimStartNs) /
 			float32(time.Second)
-		animState = computeSvgAnimations(
-			cached.Animations, elapsed, animState)
+		contribScratch := w.scratch.svgAnimContribs.take(
+			len(cached.Animations))
+		animState = computeSvgAnimationsReuse(
+			cached.Animations, elapsed, animState, contribScratch)
+		w.scratch.svgAnimContribs.put(contribScratch)
 	}
 
 	// Substitute fresh triangles for animated primitive shapes when
@@ -140,7 +145,9 @@ func emitSvgGroup(
 
 // emitSvgPathRenderer emits a single SVG path as a RenderSvg
 // command. If tint has alpha>0 and path has no vertex colors,
-// the tint overrides the path color. animState applies SMIL
+// the tint overrides the path color; the path's own alpha is
+// modulated in so per-element opacity (baked into path.Color.A
+// during parsing) survives the override. animState applies SMIL
 // rotation/opacity per GroupID.
 func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	x, y, scale float32,
@@ -149,10 +156,27 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	c := path.Color
 	if tint.A > 0 && !hasVCols {
 		c = tint
+		c.A = blendAlpha(tint.A, path.Color.A)
 	}
 	var vcols []Color
-	if hasVCols && tint.A == 0 {
-		vcols = path.VertexColors
+	if hasVCols {
+		if tint.A == 0 {
+			vcols = path.VertexColors
+		} else {
+			// Tint active on a gradient path: replace each vertex
+			// RGB with tint RGB while modulating its alpha so the
+			// gradient's alpha shape (e.g. fade-in tail of tail-
+			// spin) survives. vcols is allocated from a frame-
+			// scoped arena so repeated renders of tinted gradients
+			// avoid a per-frame heap allocation.
+			vcols = w.scratch.takeVColors(len(path.VertexColors))
+			for i, vc := range path.VertexColors {
+				t := tint
+				t.A = blendAlpha(tint.A, vc.A)
+				vcols[i] = t
+			}
+			c = tint
+		}
 	}
 
 	var rotAngle, rotCX, rotCY float32
@@ -172,10 +196,20 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 				scaleY = st.ScaleY
 				hasXform = true
 			}
-			if st.Opacity < 1 {
-				c.A = uint8(float32(c.A) * st.Opacity)
+			opa := st.Opacity
+			if path.IsStroke {
+				opa *= st.StrokeOpacity
+			} else {
+				opa *= st.FillOpacity
+			}
+			// Clamp to [0,1] so hostile or out-of-range animation
+			// values cannot drive a negative or oversized alpha
+			// through the uint8 cast (undefined conversion).
+			opa = clampFrac(opa)
+			if opa < 1 {
+				c.A = uint8(float32(c.A) * opa)
 				if len(vcols) > 0 {
-					vAlphaScale = st.Opacity
+					vAlphaScale = opa
 					hasVAlpha = true
 				}
 			}
@@ -241,7 +275,12 @@ type svgAnimState struct {
 	RotAngle float32 // rotation degrees
 	RotCX    float32 // rotation center X (SVG space)
 	RotCY    float32 // rotation center Y (SVG space)
-	Opacity  float32 // 0..1
+	Opacity  float32 // 0..1; <animate attributeName="opacity">
+	// FillOpacity / StrokeOpacity track the per-paint opacity
+	// animations. They scale only the matching path role at render
+	// time so a fill-opacity animation does not dim the stroke.
+	FillOpacity   float32
+	StrokeOpacity float32
 	// TransX/TransY is the animated translate; ScaleX/ScaleY the
 	// animated scale. Identity when HasXform is false.
 	TransX, TransY float32
@@ -251,66 +290,165 @@ type svgAnimState struct {
 	AttrOverride   SvgAnimAttrOverride // attribute overrides for re-tessellation
 }
 
-// computeSvgAnimations builds a map of per-group animation
-// state from parsed SMIL animations and elapsed time.
+// computeSvgAnimations builds a map of per-group animation state
+// from parsed SMIL animations and elapsed time. Implements SMIL
+// "sandwich" semantics: each animation's last activation time is
+// computed (BeginSec + n*Cycle for the largest n with that <=
+// elapsed); contributions are sorted by activation ascending and
+// applied last-write-wins per attribute. fill="freeze" lets a past
+// animation continue to contribute its last keyframe value until
+// its cycle restarts or a later-activated animation overrides.
 func computeSvgAnimations(
 	anims []SvgAnimation, elapsedSec float32,
 	states map[string]svgAnimState,
+) map[string]svgAnimState {
+	return computeSvgAnimationsReuse(anims, elapsedSec, states, nil)
+}
+
+// computeSvgAnimationsReuse is the render-path variant that
+// accepts a scratch []animContrib to avoid per-frame allocation.
+func computeSvgAnimationsReuse(
+	anims []SvgAnimation, elapsedSec float32,
+	states map[string]svgAnimState,
+	contribScratch []animContrib,
 ) map[string]svgAnimState {
 	if states == nil {
 		states = make(map[string]svgAnimState, len(anims))
 	} else {
 		clear(states)
 	}
-	for _, a := range anims {
-		if a.GroupID == "" || a.DurSec <= 0 {
-			continue
-		}
-		st := states[a.GroupID]
-		if !st.Inited {
-			st.Opacity = 1
-			st.ScaleX = 1
-			st.ScaleY = 1
-			st.Inited = true
-		}
-		adj := elapsedSec - a.BeginSec
-		adj = max(adj, 0)
-		frac := fmod(adj, a.DurSec) / a.DurSec
-
-		switch a.Kind {
-		case SvgAnimRotate:
-			if len(a.Values) >= 2 {
-				st.RotAngle = lerpKeyframes(a.Values, a.KeySplines, frac)
-				st.RotCX = a.CenterX
-				st.RotCY = a.CenterY
-			}
-		case SvgAnimOpacity:
-			if len(a.Values) >= 2 {
-				st.Opacity *= lerpKeyframes(a.Values, a.KeySplines, frac)
-			}
-		case SvgAnimAttr:
-			if len(a.Values) >= 2 {
-				applyAttrOverride(&st.AttrOverride, a.AttrName,
-					lerpKeyframes(a.Values, a.KeySplines, frac))
-			}
-		case SvgAnimTranslate:
-			if len(a.Values) >= 4 {
-				x, y := lerpKeyframes2D(a.Values, a.KeySplines, frac)
-				st.TransX = x
-				st.TransY = y
-				st.HasXform = true
-			}
-		case SvgAnimScale:
-			if len(a.Values) >= 4 {
-				x, y := lerpKeyframes2D(a.Values, a.KeySplines, frac)
-				st.ScaleX = x
-				st.ScaleY = y
-				st.HasXform = true
-			}
-		}
-		states[a.GroupID] = st
+	contribs := collectAnimContribs(anims, elapsedSec, contribScratch)
+	if len(contribs) == 0 {
+		return states
+	}
+	slices.SortStableFunc(contribs, cmpAnimContrib)
+	for i := range contribs {
+		applyAnimContrib(&contribs[i], states)
 	}
 	return states
+}
+
+// cmpAnimContrib orders contributions by ascending activation
+// time so sandwich priority applies last-write-wins.
+func cmpAnimContrib(a, b animContrib) int {
+	return cmp.Compare(a.activation, b.activation)
+}
+
+// animContrib is one animation's evaluated contribution at the
+// current frame: the resolved value(s), the last activation time
+// used for sandwich-priority ordering, and a back-pointer to the
+// animation for kind/group dispatch.
+type animContrib struct {
+	anim       *SvgAnimation
+	value      float32
+	valueX     float32
+	valueY     float32
+	activation float32
+}
+
+// collectAnimContribs evaluates every animation's phase against
+// elapsed and returns the subset that contributes this frame
+// (active or frozen). Skipped animations: missing GroupID/dur,
+// not-yet-activated (elapsed < BeginSec), past dur with !Freeze.
+// reuse may be a scratch slice whose backing array will be
+// reused in place; pass nil to allocate a fresh slice.
+func collectAnimContribs(
+	anims []SvgAnimation, elapsedSec float32,
+	reuse []animContrib,
+) []animContrib {
+	out := reuse[:0]
+	if cap(out) < len(anims) {
+		out = make([]animContrib, 0, len(anims))
+	}
+	for i := range anims {
+		a := &anims[i]
+		// Reject non-finite timing fields so downstream lerp / floor
+		// math cannot produce NaN values that would propagate into
+		// render state. DurSec must also be strictly positive for
+		// phase/duration to be meaningful.
+		if a.GroupID == "" ||
+			!finiteF32(a.DurSec) || a.DurSec <= 0 ||
+			!finiteF32(a.BeginSec) ||
+			!finiteF32(a.Cycle) ||
+			!finiteF32(elapsedSec) ||
+			elapsedSec < a.BeginSec {
+			continue
+		}
+		activation := a.BeginSec
+		if a.Cycle > 0 {
+			n := math.Floor(float64(elapsedSec-a.BeginSec) / float64(a.Cycle))
+			activation = a.BeginSec + float32(n)*a.Cycle
+		}
+		phase := elapsedSec - activation
+		var frac float32
+		switch {
+		case phase < a.DurSec:
+			frac = phase / a.DurSec
+		case a.Freeze:
+			frac = 1
+		default:
+			continue
+		}
+		c := animContrib{anim: a, activation: activation}
+		switch a.Kind {
+		case SvgAnimRotate, SvgAnimOpacity, SvgAnimAttr:
+			if len(a.Values) < 2 {
+				continue
+			}
+			c.value = lerpKeyframes(a.Values, a.KeySplines, frac)
+		case SvgAnimTranslate, SvgAnimScale:
+			if len(a.Values) < 4 {
+				continue
+			}
+			c.valueX, c.valueY = lerpKeyframes2D(
+				a.Values, a.KeySplines, frac)
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// applyAnimContrib writes one contribution into the state map,
+// initializing the per-group state on first touch. Replace
+// semantics (not multiply) — sandwich priority is enforced by the
+// sort ordering before this call.
+func applyAnimContrib(c *animContrib, states map[string]svgAnimState) {
+	a := c.anim
+	st := states[a.GroupID]
+	if !st.Inited {
+		st.Opacity = 1
+		st.FillOpacity = 1
+		st.StrokeOpacity = 1
+		st.ScaleX = 1
+		st.ScaleY = 1
+		st.Inited = true
+	}
+	switch a.Kind {
+	case SvgAnimRotate:
+		st.RotAngle = c.value
+		st.RotCX = a.CenterX
+		st.RotCY = a.CenterY
+	case SvgAnimOpacity:
+		switch a.Target {
+		case SvgAnimTargetFill:
+			st.FillOpacity = c.value
+		case SvgAnimTargetStroke:
+			st.StrokeOpacity = c.value
+		default:
+			st.Opacity = c.value
+		}
+	case SvgAnimAttr:
+		applyAttrOverride(&st.AttrOverride, a.AttrName, c.value)
+	case SvgAnimTranslate:
+		st.TransX = c.valueX
+		st.TransY = c.valueY
+		st.HasXform = true
+	case SvgAnimScale:
+		st.ScaleX = c.valueX
+		st.ScaleY = c.valueY
+		st.HasXform = true
+	}
+	states[a.GroupID] = st
 }
 
 // extractAttrOverrides pulls the AttrOverride from each svgAnimState
@@ -458,13 +596,18 @@ func clampFrac(f float32) float32 {
 	return clampUnit(f)
 }
 
-// fmod returns x mod y, always positive.
-func fmod(x, y float32) float32 {
-	r := float32(math.Mod(float64(x), float64(y)))
-	if r < 0 {
-		r += y
-	}
-	return r
+// finiteF32 reports whether f is finite (not NaN, not ±Inf).
+// Used by animation gating so hostile parsed timing values cannot
+// poison downstream render state with NaN.
+func finiteF32(f float32) bool {
+	return !math.IsNaN(float64(f)) && !math.IsInf(float64(f), 0)
+}
+
+// blendAlpha multiplies two 0..255 alpha channels as if they were
+// in [0,1], rounding toward zero. Used to fold a tint alpha into
+// the path's baked alpha without losing per-element opacity.
+func blendAlpha(a, b uint8) uint8 {
+	return uint8(uint16(a) * uint16(b) / 255)
 }
 
 // emitErrorPlaceholder draws a magenta rectangle placeholder.

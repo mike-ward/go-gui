@@ -9,12 +9,24 @@ import (
 )
 
 // parseAnimateElement parses an <animate> element targeting
-// opacity. Returns the animation and true if valid.
+// opacity (or fill-opacity / stroke-opacity, which scale the same
+// rendered alpha channel). Returns the animation and true if valid.
 func parseAnimateElement(
 	elem string, inherited groupStyle,
 ) (gui.SvgAnimation, bool) {
 	attr, ok := findAttr(elem, "attributeName")
-	if !ok || attr != "opacity" {
+	if !ok {
+		return gui.SvgAnimation{}, false
+	}
+	var target gui.SvgAnimTarget
+	switch attr {
+	case "opacity":
+		target = gui.SvgAnimTargetAll
+	case "fill-opacity":
+		target = gui.SvgAnimTargetFill
+	case "stroke-opacity":
+		target = gui.SvgAnimTargetStroke
+	default:
 		return gui.SvgAnimation{}, false
 	}
 	valStr, ok := findAttr(elem, "values")
@@ -36,6 +48,9 @@ func parseAnimateElement(
 		KeySplines: parseKeySplinesIfSpline(elem, len(vals)),
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
+		Cycle:      parseRepeatCycle(elem, dur),
+		Freeze:     parseFreeze(elem),
+		Target:     target,
 	}, true
 }
 
@@ -79,6 +94,8 @@ func parseAnimateAttributeElement(
 		KeySplines: parseKeySplinesIfSpline(elem, len(vals)),
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
+		Cycle:      parseRepeatCycle(elem, dur),
+		Freeze:     parseFreeze(elem),
 		AttrName:   name,
 	}, true
 }
@@ -141,6 +158,7 @@ func parseAnimateTransformElement(
 		if !ok {
 			return gui.SvgAnimation{}, false
 		}
+		cx, cy = applyInheritedTransformPt(cx, cy, inherited.Transform)
 		return gui.SvgAnimation{
 			Kind:       gui.SvgAnimRotate,
 			GroupID:    inherited.GroupID,
@@ -150,6 +168,8 @@ func parseAnimateTransformElement(
 			CenterY:    cy,
 			DurSec:     dur,
 			BeginSec:   parseBeginLiteral(elem),
+			Cycle:      parseRepeatCycle(elem, dur),
+			Freeze:     parseFreeze(elem),
 		}, true
 	}
 
@@ -163,15 +183,19 @@ func parseAnimateTransformElement(
 	if len(fromParts) < 3 || len(toParts) < 1 {
 		return gui.SvgAnimation{}, false
 	}
+	cx, cy := fromParts[1], fromParts[2]
+	cx, cy = applyInheritedTransformPt(cx, cy, inherited.Transform)
 	return gui.SvgAnimation{
 		Kind:       gui.SvgAnimRotate,
 		GroupID:    inherited.GroupID,
 		Values:     []float32{fromParts[0], toParts[0]},
 		KeySplines: parseKeySplinesIfSpline(elem, 2),
-		CenterX:    fromParts[1],
-		CenterY:    fromParts[2],
+		CenterX:    cx,
+		CenterY:    cy,
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
+		Cycle:      parseRepeatCycle(elem, dur),
+		Freeze:     parseFreeze(elem),
 	}, true
 }
 
@@ -197,6 +221,15 @@ func parseAnimateScaleElement(
 // parsePairedAnimateTransform is the shared body for translate
 // and scale animateTransform elements. Both produce Values as an
 // interleaved [x,y, ...] stream with 2 floats per keyframe.
+//
+// inherited.Transform is intentionally NOT applied to the pair
+// values: translate/scale animateTransform operates in the target
+// element's local coordinate space and composes with its inherited
+// transform at render time (see emitSvgPathRenderer). Baking the
+// ancestor transform into the values here would apply it twice.
+// Rotate's CenterX/CenterY are the exception — those are absolute
+// SVG-space points used as the pivot, so the ancestor transform
+// must be folded in during parse.
 func parsePairedAnimateTransform(
 	elem string, inherited groupStyle, kind gui.SvgAnimKind,
 ) (gui.SvgAnimation, bool) {
@@ -232,6 +265,8 @@ func parsePairedAnimateTransform(
 		KeySplines: parseKeySplinesIfSpline(elem, len(pairs)/2),
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
+		Cycle:      parseRepeatCycle(elem, dur),
+		Freeze:     parseFreeze(elem),
 	}, true
 }
 
@@ -308,6 +343,69 @@ func parseRotateValues(s string) ([]float32, float32, float32, bool) {
 		return nil, 0, 0, false
 	}
 	return angles, cx, cy, true
+}
+
+// parseFreeze reports whether the animation has fill="freeze".
+// SMIL fill defaults to "remove"; only "freeze" alters render-time
+// behavior in our model.
+func parseFreeze(elem string) bool {
+	v, ok := findAttr(elem, "fill")
+	return ok && v == "freeze"
+}
+
+// parseRepeatCycle returns the per-animation cycle period derived
+// from repeatCount/repeatDur. repeatCount="indefinite" yields the
+// dur (continuous loop). A finite numeric repeatCount yields
+// dur*count so the animation re-fires after the full repeat span.
+// Returns 0 when the animation should play once (no looping); a
+// later resolveBegins pass may still inherit a chain-derived cycle.
+// Hostile inputs are clamped: a huge repeatCount is capped at
+// maxRepeatCountCycle and the final cycle is never allowed to
+// exceed maxCycleSec so downstream comparisons / floor math stay
+// finite and bounded.
+func parseRepeatCycle(elem string, dur float32) float32 {
+	if v, ok := findAttr(elem, "repeatCount"); ok && v != "" {
+		if v == "indefinite" {
+			return dur
+		}
+		n := parseF32(v)
+		if n > maxRepeatCountCycle {
+			n = maxRepeatCountCycle
+		}
+		if n > 0 {
+			return clampCycle(dur * n)
+		}
+	}
+	if v, ok := findAttr(elem, "repeatDur"); ok && v != "" {
+		if v == "indefinite" {
+			return dur
+		}
+		t := parseTimeValue(v)
+		if t > 0 {
+			return clampCycle(t)
+		}
+	}
+	return 0
+}
+
+// maxRepeatCountCycle caps repeatCount to bound cycle duration.
+// Large finite repeats (e.g. 1e9) are semantically equivalent to
+// "indefinite" for any practical session length.
+const maxRepeatCountCycle = 1_000_000
+
+// maxCycleSec caps a single cycle period (seconds). Upper bound
+// is generous enough for any real asset (hours) while preventing
+// +Inf / absurd values from authoring mistakes or hostile SVGs.
+const maxCycleSec = float32(3600 * 24)
+
+func clampCycle(v float32) float32 {
+	if v <= 0 {
+		return 0
+	}
+	if v > maxCycleSec {
+		return maxCycleSec
+	}
+	return v
 }
 
 // parseDuration extracts the "dur" attribute as seconds.
@@ -453,29 +551,42 @@ func registerAnimation(state *parseState, elem string, idx int) {
 }
 
 // resolveBegins walks recorded syncbase specs and writes each
-// animation's final BeginSec. Resolution is first-match: the
-// earliest spec in each list that successfully resolves wins.
-// Literal entries resolve trivially; syncbase entries resolve
-// only when the target id maps to a known animation and that
-// target's BeginSec itself resolves (DFS with cycle guard).
-// Animations with no specs keep the parse-time literal value.
+// animation's final BeginSec, plus a per-animation Cycle when the
+// begin list defines a chain-restart (multiple resolvable begins
+// imply a periodic re-fire). After per-animation resolution, the
+// largest derived cycle is propagated to every animation that
+// participates in the chain (syncbase begin or BeginSec > 0) so
+// freeze-chained sequences re-fire as one global loop. Animations
+// with no specs and no repeatCount keep their parse-time defaults.
 func resolveBegins(
 	anims []gui.SvgAnimation,
 	specs map[int][]beginSpec,
 	ids map[string]int,
 ) {
-	if len(specs) == 0 {
-		return
+	if len(specs) > 0 {
+		resolveBeginsCore(anims, specs, ids)
 	}
-	resolved := make([]bool, len(anims))
+	propagateGlobalCycle(anims, specs)
+}
+
+// resolveBeginsCore resolves first-match BeginSec and derives a
+// per-animation Cycle from any second resolvable begin entry. A
+// "second begin" indicates the animation re-fires after the first
+// activation; the cycle period is its offset from the first.
+func resolveBeginsCore(
+	anims []gui.SvgAnimation,
+	specs map[int][]beginSpec,
+	ids map[string]int,
+) {
+	resolvedFirst := make([]bool, len(anims))
 	for i := range anims {
 		if _, has := specs[i]; !has {
-			resolved[i] = true
+			resolvedFirst[i] = true
 		}
 	}
-	var resolve func(i int, stack []int) bool
-	resolve = func(i int, stack []int) bool {
-		if resolved[i] {
+	var resolveFirst func(i int, stack []int) bool
+	resolveFirst = func(i int, stack []int) bool {
+		if resolvedFirst[i] {
 			return true
 		}
 		if slices.Contains(stack, i) {
@@ -483,35 +594,100 @@ func resolveBegins(
 		}
 		stack = append(stack, i)
 		for _, sp := range specs[i] {
-			if sp.targetID == "" {
-				anims[i].BeginSec = sp.offset
-				resolved[i] = true
-				return true
-			}
-			tgt, ok := ids[sp.targetID]
+			t, ok := resolveSpec(sp, anims, ids, stack, resolveFirst)
 			if !ok {
 				continue
 			}
-			if !resolve(tgt, stack) {
-				continue
-			}
-			base := anims[tgt].BeginSec
-			if sp.isEnd {
-				base += anims[tgt].DurSec
-			}
-			anims[i].BeginSec = base + sp.offset
-			resolved[i] = true
+			anims[i].BeginSec = t
+			resolvedFirst[i] = true
 			return true
 		}
-		// No spec resolved — leave BeginSec at its parse-time value
-		// and report non-authoritative so callers don't derive a
-		// cascaded offset from a stale default (e.g. cycle branches).
-		resolved[i] = true
+		resolvedFirst[i] = true
 		return false
 	}
 	for i := range anims {
-		if !resolved[i] {
-			resolve(i, nil)
+		if !resolvedFirst[i] {
+			resolveFirst(i, nil)
+		}
+	}
+	// Second pass: derive Cycle from a second resolvable begin spec.
+	for i, list := range specs {
+		if anims[i].Cycle > 0 || len(list) < 2 {
+			continue
+		}
+		seen := false
+		var first float32
+		for _, sp := range list {
+			t, ok := resolveSpec(sp, anims, ids, nil, resolveFirst)
+			if !ok {
+				continue
+			}
+			if !seen {
+				first = t
+				seen = true
+				continue
+			}
+			if t > first {
+				anims[i].Cycle = t - first
+				break
+			}
+		}
+	}
+}
+
+// resolveSpec evaluates a single begin entry to an absolute time.
+// stack and recurse may be nil for non-recursive read-only resolves
+// (used by the cycle pass after first-pass resolution is complete).
+func resolveSpec(
+	sp beginSpec, anims []gui.SvgAnimation,
+	ids map[string]int, stack []int,
+	recurse func(i int, stack []int) bool,
+) (float32, bool) {
+	if sp.targetID == "" {
+		return sp.offset, true
+	}
+	tgt, ok := ids[sp.targetID]
+	if !ok {
+		return 0, false
+	}
+	if recurse != nil && !recurse(tgt, stack) {
+		return 0, false
+	}
+	base := anims[tgt].BeginSec
+	if sp.isEnd {
+		base += anims[tgt].DurSec
+	}
+	return base + sp.offset, true
+}
+
+// propagateGlobalCycle picks the largest per-animation cycle and
+// applies it to chain-participating animations whose own cycle is
+// still 0. Chain participation is approximated by "has a syncbase
+// begin spec" or "has a non-zero BeginSec" — both indicate the
+// animation depends on a chain that must, by design, restart
+// periodically. Animations with neither marker (e.g. a one-shot
+// fade with no begin and no repeatCount) keep Cycle=0 and play
+// once. When no animation has any explicit cycle, this is a no-op.
+func propagateGlobalCycle(
+	anims []gui.SvgAnimation,
+	specs map[int][]beginSpec,
+) {
+	var global float32
+	for i := range anims {
+		if anims[i].Cycle > global {
+			global = anims[i].Cycle
+		}
+	}
+	if global <= 0 {
+		return
+	}
+	for i := range anims {
+		if anims[i].Cycle > 0 {
+			continue
+		}
+		_, hasSpec := specs[i]
+		if hasSpec || anims[i].BeginSec > 0 {
+			anims[i].Cycle = global
 		}
 	}
 }

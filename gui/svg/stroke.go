@@ -56,12 +56,24 @@ func tessellateStroke(polylines [][]float32, width float32, lineCap gui.StrokeCa
 			}
 		}
 
-		// Generate stroke quads
-		for i := 0; i < pointCount-1; i++ {
-			x0 := poly[i*2]
-			y0 := poly[i*2+1]
-			x1 := poly[(i+1)*2]
-			y1 := poly[(i+1)*2+1]
+		// Generate stroke quads. Closed polylines emit an extra
+		// segment wrapping the last point back to the first; without
+		// it the stroke leaves a visible gap (e.g. circle outlines
+		// in spinning-circles.svg appearing broken).
+		segCount := pointCount - 1
+		if isClosed {
+			segCount = pointCount
+		}
+		for i := 0; i < segCount; i++ {
+			i0 := i
+			i1 := i + 1
+			if i1 == pointCount {
+				i1 = 0
+			}
+			x0 := poly[i0*2]
+			y0 := poly[i0*2+1]
+			x1 := poly[i1*2]
+			y1 := poly[i1*2+1]
 			nx := normals[i*2]
 			ny := normals[i*2+1]
 
