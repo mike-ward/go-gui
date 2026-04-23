@@ -67,8 +67,8 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	}
 
 	// Substitute fresh triangles for animated primitive shapes when
-	// attribute overrides are live (phase-2). Falls back to cached
-	// triangles when no parser support, no spans, or empty overrides.
+	// attribute overrides are live. Falls back to cached triangles
+	// when no parser support, no spans, or empty overrides.
 	renderPaths := cached.RenderPaths
 	var animTris []TessellatedPath
 	if cached.HasAttrAnim && len(cached.AnimatedSpans) > 0 {
@@ -364,10 +364,11 @@ func collectAnimContribs(
 		a := &anims[i]
 		// Reject non-finite timing fields so downstream lerp / floor
 		// math cannot produce NaN values that would propagate into
-		// render state. DurSec must also be strictly positive for
-		// phase/duration to be meaningful.
+		// render state. DurSec must be strictly positive for normal
+		// animations; <set> is zero-duration and bypasses this check.
 		if a.GroupID == "" ||
-			!finiteF32(a.DurSec) || a.DurSec <= 0 ||
+			!finiteF32(a.DurSec) ||
+			(!a.IsSet && a.DurSec <= 0) ||
 			!finiteF32(a.BeginSec) ||
 			!finiteF32(a.Cycle) ||
 			!finiteF32(elapsedSec) ||
@@ -375,19 +376,35 @@ func collectAnimContribs(
 			continue
 		}
 		activation := a.BeginSec
-		if a.Cycle > 0 {
+		if a.Cycle > 0 && a.Restart != SvgAnimRestartNever {
 			n := math.Floor(float64(elapsedSec-a.BeginSec) / float64(a.Cycle))
+			if a.Restart == SvgAnimRestartWhenNotActive && n > 0 {
+				prev := a.BeginSec + float32(n-1)*a.Cycle
+				if elapsedSec-prev < a.DurSec {
+					// Previous activation still within its active
+					// duration — suppress the re-trigger.
+					n--
+				}
+			}
 			activation = a.BeginSec + float32(n)*a.Cycle
 		}
-		phase := elapsedSec - activation
 		var frac float32
-		switch {
-		case phase < a.DurSec:
-			frac = phase / a.DurSec
-		case a.Freeze:
+		if a.IsSet {
+			// Zero-duration: always contribute to-value once active.
+			// Freeze=false is a parse flag only — the value still
+			// contributes, but sandwich ordering lets later activations
+			// replace it (matching SMIL instantaneous semantics).
 			frac = 1
-		default:
-			continue
+		} else {
+			phase := elapsedSec - activation
+			switch {
+			case phase < a.DurSec:
+				frac = phase / a.DurSec
+			case a.Freeze:
+				frac = 1
+			default:
+				continue
+			}
 		}
 		c := animContrib{anim: a, activation: activation}
 		switch a.Kind {
@@ -395,17 +412,95 @@ func collectAnimContribs(
 			if len(a.Values) < 2 {
 				continue
 			}
-			c.value = lerpKeyframes(a.Values, a.KeySplines, frac)
+			c.value = lerpKeyframes(
+				a.Values, a.KeySplines, a.KeyTimes, a.CalcMode, frac)
+			if a.Accumulate {
+				c.value += accumOffset(a, activation) *
+					(a.Values[len(a.Values)-1] - a.Values[0])
+			}
 		case SvgAnimTranslate, SvgAnimScale:
 			if len(a.Values) < 4 {
 				continue
 			}
 			c.valueX, c.valueY = lerpKeyframes2D(
-				a.Values, a.KeySplines, frac)
+				a.Values, a.KeySplines, a.KeyTimes, a.CalcMode, frac)
+			if a.Accumulate {
+				n := accumOffset(a, activation)
+				last := len(a.Values) - 2
+				c.valueX += n * (a.Values[last] - a.Values[0])
+				c.valueY += n * (a.Values[last+1] - a.Values[1])
+			}
+		case SvgAnimMotion:
+			if len(a.MotionPath) < 4 || len(a.MotionLengths) < 2 {
+				continue
+			}
+			c.valueX, c.valueY, c.value = motionSample(a, frac)
 		}
 		out = append(out, c)
 	}
 	return out
+}
+
+// motionSample interpolates along an animateMotion's flattened path
+// by arc length. frac ∈ [0,1] scales to [0, totalLen]; returns the
+// (x,y) point and — when MotionRotate==auto — the tangent angle in
+// degrees. Returns zeros when lens/poly are inconsistent or the
+// total length is non-finite — the caller treats that as the
+// identity contribution.
+func motionSample(a *SvgAnimation, frac float32) (float32, float32, float32) {
+	lens := a.MotionLengths
+	poly := a.MotionPath
+	n := len(lens)
+	if n < 2 || len(poly) < 2*n {
+		return 0, 0, 0
+	}
+	total := lens[n-1]
+	if !finiteF32(total) || total < 0 {
+		return 0, 0, 0
+	}
+	target := clampFrac(frac) * total
+	idx := 0
+	for i := 1; i < n; i++ {
+		if lens[i] >= target {
+			idx = i - 1
+			break
+		}
+		idx = i
+	}
+	if idx >= n-1 {
+		idx = n - 2
+	}
+	span := lens[idx+1] - lens[idx]
+	var t float32
+	if span > 0 {
+		t = (target - lens[idx]) / span
+	}
+	x0, y0 := poly[idx*2], poly[idx*2+1]
+	x1, y1 := poly[(idx+1)*2], poly[(idx+1)*2+1]
+	x := x0 + (x1-x0)*t
+	y := y0 + (y1-y0)*t
+	var angle float32
+	if a.MotionRotate != SvgAnimMotionRotateNone {
+		dx := x1 - x0
+		dy := y1 - y0
+		angle = float32(math.Atan2(float64(dy), float64(dx))) *
+			(180 / math.Pi)
+		if a.MotionRotate == SvgAnimMotionRotateAutoReverse {
+			angle += 180
+		}
+	}
+	return x, y, angle
+}
+
+// accumOffset returns the repeat-count offset for accumulate=sum.
+// The count is floor((activation - BeginSec) / Cycle) — the number
+// of completed prior cycles. Cycle must be >0.
+func accumOffset(a *SvgAnimation, activation float32) float32 {
+	if a.Cycle <= 0 {
+		return 0
+	}
+	return float32(math.Floor(
+		float64(activation-a.BeginSec) / float64(a.Cycle)))
 }
 
 // applyAnimContrib writes one contribution into the state map,
@@ -425,30 +520,78 @@ func applyAnimContrib(c *animContrib, states map[string]svgAnimState) {
 	}
 	switch a.Kind {
 	case SvgAnimRotate:
-		st.RotAngle = c.value
+		if a.Additive {
+			st.RotAngle += c.value
+		} else {
+			st.RotAngle = c.value
+		}
 		st.RotCX = a.CenterX
 		st.RotCY = a.CenterY
 	case SvgAnimOpacity:
-		switch a.Target {
-		case SvgAnimTargetFill:
-			st.FillOpacity = c.value
-		case SvgAnimTargetStroke:
-			st.StrokeOpacity = c.value
-		default:
-			st.Opacity = c.value
-		}
+		applyOpacityContrib(&st, c.value, a.Target, a.Additive)
 	case SvgAnimAttr:
-		applyAttrOverride(&st.AttrOverride, a.AttrName, c.value)
+		applyAttrOverride(&st.AttrOverride, a.AttrName,
+			c.value, a.Additive)
 	case SvgAnimTranslate:
-		st.TransX = c.valueX
-		st.TransY = c.valueY
+		if a.Additive {
+			st.TransX += c.valueX
+			st.TransY += c.valueY
+		} else {
+			st.TransX = c.valueX
+			st.TransY = c.valueY
+		}
 		st.HasXform = true
 	case SvgAnimScale:
-		st.ScaleX = c.valueX
-		st.ScaleY = c.valueY
+		if a.Additive {
+			st.ScaleX += c.valueX
+			st.ScaleY += c.valueY
+		} else {
+			st.ScaleX = c.valueX
+			st.ScaleY = c.valueY
+		}
+		st.HasXform = true
+	case SvgAnimMotion:
+		if a.Additive {
+			st.TransX += c.valueX
+			st.TransY += c.valueY
+		} else {
+			st.TransX = c.valueX
+			st.TransY = c.valueY
+		}
+		if a.MotionRotate != SvgAnimMotionRotateNone {
+			st.RotAngle = c.value
+		}
 		st.HasXform = true
 	}
 	states[a.GroupID] = st
+}
+
+// applyOpacityContrib dispatches the opacity value to the correct
+// sub-channel, honoring additive=sum. Additive adds to the existing
+// channel (init 1 on first touch per sandwich); non-additive
+// replaces. Clamping to [0,1] is deferred to render time.
+func applyOpacityContrib(st *svgAnimState, v float32,
+	target SvgAnimTarget, additive bool) {
+	switch target {
+	case SvgAnimTargetFill:
+		if additive {
+			st.FillOpacity += v
+		} else {
+			st.FillOpacity = v
+		}
+	case SvgAnimTargetStroke:
+		if additive {
+			st.StrokeOpacity += v
+		} else {
+			st.StrokeOpacity = v
+		}
+	default:
+		if additive {
+			st.Opacity += v
+		} else {
+			st.Opacity = v
+		}
+	}
 }
 
 // extractAttrOverrides pulls the AttrOverride from each svgAnimState
@@ -488,53 +631,108 @@ func buildEffectiveRenderPaths(w *Window, cached *CachedSvg,
 			base.Triangles = t.Triangles
 			// Keep cached color / group / clip metadata; triangles
 			// are the only dynamic field. Vertex colors are not
-			// re-evaluated in phase-2 (gradient overrides TBD).
+			// re-evaluated here (gradient overrides TBD).
 		}
 		off += span.Count
 	}
 	return eff
 }
 
-// applyAttrOverride sets the override field for attr to val and
-// marks the mask bit. Unknown attr names are no-ops.
+// applyAttrOverride writes val into the override field for attr.
+// Sandwich semantics with additive:
+//   - non-additive: replace the field, clear AdditiveMask bit.
+//   - additive, bit unset: set field=val, mark both Mask and
+//     AdditiveMask; delta will be applied to the primitive base at
+//     re-tessellate time.
+//   - additive, bit set: sum val into the existing field; leave
+//     AdditiveMask unchanged (pre-existing non-additive value stays
+//     pre-resolved, pre-existing additive value stays a delta).
+//
+// Unknown attr names are no-ops.
 func applyAttrOverride(o *SvgAnimAttrOverride,
-	attr SvgAttrName, val float32) {
-	switch attr {
-	case SvgAttrCX:
-		o.CX = val
-		o.Mask |= SvgAnimMaskCX
-	case SvgAttrCY:
-		o.CY = val
-		o.Mask |= SvgAnimMaskCY
-	case SvgAttrR:
-		o.R = val
-		o.Mask |= SvgAnimMaskR
-	case SvgAttrRX:
-		o.RX = val
-		o.Mask |= SvgAnimMaskRX
-	case SvgAttrRY:
-		o.RY = val
-		o.Mask |= SvgAnimMaskRY
-	case SvgAttrX:
-		o.X = val
-		o.Mask |= SvgAnimMaskX
-	case SvgAttrY:
-		o.Y = val
-		o.Mask |= SvgAnimMaskY
-	case SvgAttrWidth:
-		o.Width = val
-		o.Mask |= SvgAnimMaskWidth
-	case SvgAttrHeight:
-		o.Height = val
-		o.Mask |= SvgAnimMaskHeight
+	attr SvgAttrName, val float32, additive bool) {
+	bit := attrMaskBit(attr)
+	if bit == 0 {
+		return
 	}
+	f := attrFieldPtr(o, attr)
+	if f == nil {
+		return
+	}
+	if additive {
+		if o.Mask&bit == 0 {
+			*f = val
+			o.AdditiveMask |= bit
+		} else {
+			*f += val
+		}
+		o.Mask |= bit
+		return
+	}
+	*f = val
+	o.Mask |= bit
+	o.AdditiveMask &^= bit
 }
 
-// lerpKeyframes interpolates evenly-spaced keyframe scalars at
-// frac ∈ [0,1]. When splines has the expected 4*(len(vals)-1)
-// layout, per-segment fraction is bent via cubic-bezier ease;
-// otherwise linear.
-func lerpKeyframes(vals, splines []float32, frac float32) float32 {
+// attrMaskBit maps a SvgAttrName to its SvgAnimAttrMask bit.
+func attrMaskBit(attr SvgAttrName) SvgAnimAttrMask {
+	switch attr {
+	case SvgAttrCX:
+		return SvgAnimMaskCX
+	case SvgAttrCY:
+		return SvgAnimMaskCY
+	case SvgAttrR:
+		return SvgAnimMaskR
+	case SvgAttrRX:
+		return SvgAnimMaskRX
+	case SvgAttrRY:
+		return SvgAnimMaskRY
+	case SvgAttrX:
+		return SvgAnimMaskX
+	case SvgAttrY:
+		return SvgAnimMaskY
+	case SvgAttrWidth:
+		return SvgAnimMaskWidth
+	case SvgAttrHeight:
+		return SvgAnimMaskHeight
+	}
+	return 0
+}
+
+// attrFieldPtr returns a pointer to the override field for attr.
+func attrFieldPtr(o *SvgAnimAttrOverride,
+	attr SvgAttrName) *float32 {
+	switch attr {
+	case SvgAttrCX:
+		return &o.CX
+	case SvgAttrCY:
+		return &o.CY
+	case SvgAttrR:
+		return &o.R
+	case SvgAttrRX:
+		return &o.RX
+	case SvgAttrRY:
+		return &o.RY
+	case SvgAttrX:
+		return &o.X
+	case SvgAttrY:
+		return &o.Y
+	case SvgAttrWidth:
+		return &o.Width
+	case SvgAttrHeight:
+		return &o.Height
+	}
+	return nil
+}
+
+// lerpKeyframes interpolates keyframe scalars at frac ∈ [0,1].
+// Linear by default; spline bends per-segment t via cubic-bezier;
+// discrete returns the covering keyframe. keyTimes, when non-nil,
+// overrides uniform i/(n-1) spacing.
+func lerpKeyframes(
+	vals, splines, keyTimes []float32,
+	mode SvgAnimCalcMode, frac float32,
+) float32 {
 	n := len(vals)
 	if n == 0 {
 		return 1
@@ -542,16 +740,22 @@ func lerpKeyframes(vals, splines []float32, frac float32) float32 {
 	if n == 1 {
 		return vals[0]
 	}
-	idx, t, atEnd := locateSeg(n, frac, splines)
+	idx, t, atEnd := locateSeg(n, frac, splines, keyTimes, mode)
 	if atEnd {
 		return vals[n-1]
+	}
+	if mode == SvgAnimCalcDiscrete {
+		return vals[idx]
 	}
 	return vals[idx] + (vals[idx+1]-vals[idx])*t
 }
 
 // lerpKeyframes2D interpolates a paired [x0,y0, x1,y1, ...]
 // keyframe stream at frac ∈ [0,1].
-func lerpKeyframes2D(vals, splines []float32, frac float32) (float32, float32) {
+func lerpKeyframes2D(
+	vals, splines, keyTimes []float32,
+	mode SvgAnimCalcMode, frac float32,
+) (float32, float32) {
 	n := len(vals) / 2
 	if n == 0 {
 		return 0, 0
@@ -559,9 +763,12 @@ func lerpKeyframes2D(vals, splines []float32, frac float32) (float32, float32) {
 	if n == 1 {
 		return vals[0], vals[1]
 	}
-	idx, t, atEnd := locateSeg(n, frac, splines)
+	idx, t, atEnd := locateSeg(n, frac, splines, keyTimes, mode)
 	if atEnd {
 		return vals[(n-1)*2], vals[(n-1)*2+1]
+	}
+	if mode == SvgAnimCalcDiscrete {
+		return vals[idx*2], vals[idx*2+1]
 	}
 	x0, y0 := vals[idx*2], vals[idx*2+1]
 	x1, y1 := vals[(idx+1)*2], vals[(idx+1)*2+1]
@@ -569,18 +776,71 @@ func lerpKeyframes2D(vals, splines []float32, frac float32) (float32, float32) {
 }
 
 // locateSeg returns the keyframe segment containing frac: the
-// lower index, the intra-segment fraction t (bent by splines
-// when provided), and atEnd when frac lands on or past the last
-// keyframe. frac is clamped; NaN / negative produce idx=0, t=0.
-func locateSeg(n int, frac float32, splines []float32) (int, float32, bool) {
+// lower index, the intra-segment fraction t (bent by splines when
+// mode==Spline), and atEnd when frac lands on or past the last
+// keyframe. Segment boundaries come from keyTimes when supplied,
+// else uniform i/(n-1) for linear/spline and i/n for discrete.
+// frac is clamped; NaN / negative → idx=0, t=0.
+func locateSeg(
+	n int, frac float32, splines, keyTimes []float32,
+	mode SvgAnimCalcMode,
+) (int, float32, bool) {
 	frac = clampFrac(frac)
+	if len(keyTimes) == n {
+		return locateSegKeyTimes(n, frac, splines, keyTimes, mode)
+	}
+	if mode == SvgAnimCalcDiscrete {
+		if frac >= 1 {
+			return n - 1, 0, true
+		}
+		idx := int(frac * float32(n))
+		if idx >= n {
+			idx = n - 1
+		}
+		return idx, 0, false
+	}
 	seg := frac * float32(n-1)
 	idx := max(int(seg), 0)
 	if idx >= n-1 {
 		return n - 1, 0, true
 	}
 	t := seg - float32(idx)
-	if len(splines) == 4*(n-1) {
+	if mode == SvgAnimCalcSpline && len(splines) == 4*(n-1) {
+		off := idx * 4
+		t = bezierCalc(t, splines[off], splines[off+1],
+			splines[off+2], splines[off+3])
+	}
+	return idx, t, false
+}
+
+// locateSegKeyTimes walks keyTimes to find the segment covering
+// frac. Discrete: keyTimes[i] starts keyframe i. Linear/spline:
+// intra-segment t is (frac-keyTimes[i]) / (keyTimes[i+1]-
+// keyTimes[i]); zero-width segments (duplicate keyTimes) yield
+// t=0 (jump to upper keyframe — matches SMIL discrete-boundary).
+func locateSegKeyTimes(
+	n int, frac float32, splines, keyTimes []float32,
+	mode SvgAnimCalcMode,
+) (int, float32, bool) {
+	if frac >= keyTimes[n-1] {
+		return n - 1, 0, true
+	}
+	idx := 0
+	for i := 0; i < n-1; i++ {
+		if frac >= keyTimes[i] && frac < keyTimes[i+1] {
+			idx = i
+			break
+		}
+	}
+	if mode == SvgAnimCalcDiscrete {
+		return idx, 0, false
+	}
+	span := keyTimes[idx+1] - keyTimes[idx]
+	var t float32
+	if span > 0 {
+		t = (frac - keyTimes[idx]) / span
+	}
+	if mode == SvgAnimCalcSpline && len(splines) == 4*(n-1) {
 		off := idx * 4
 		t = bezierCalc(t, splines[off], splines[off+1],
 			splines[off+2], splines[off+3])

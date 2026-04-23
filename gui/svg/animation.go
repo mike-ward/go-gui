@@ -2,6 +2,7 @@
 package svg
 
 import (
+	"math"
 	"slices"
 	"strings"
 
@@ -29,16 +30,12 @@ func parseAnimateElement(
 	default:
 		return gui.SvgAnimation{}, false
 	}
-	valStr, ok := findAttr(elem, "values")
-	if !ok || valStr == "" {
-		return gui.SvgAnimation{}, false
-	}
-	vals := parseSemicolonFloats(valStr)
-	if len(vals) < 2 {
-		return gui.SvgAnimation{}, false
-	}
 	dur := parseDuration(elem)
 	if dur <= 0 {
+		return gui.SvgAnimation{}, false
+	}
+	vals, additive, ok := parseScalarValues(elem)
+	if !ok {
 		return gui.SvgAnimation{}, false
 	}
 	return gui.SvgAnimation{
@@ -46,19 +43,207 @@ func parseAnimateElement(
 		GroupID:    inherited.GroupID,
 		Values:     vals,
 		KeySplines: parseKeySplinesIfSpline(elem, len(vals)),
+		KeyTimes:   parseKeyTimes(elem, len(vals)),
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
 		Cycle:      parseRepeatCycle(elem, dur),
 		Freeze:     parseFreeze(elem),
+		Additive:   additive || parseAdditiveSum(elem),
+		Accumulate: parseAccumulateSum(elem),
 		Target:     target,
+		CalcMode:   parseCalcMode(elem),
+		Restart:    parseRestart(elem),
 	}, true
+}
+
+// parseScalarValues resolves values=/from+to/by into a 2+-entry
+// Values slice. Returns (vals, additiveImplied, ok). additiveImplied
+// is true when only by= was provided: Values=[0, by] with Additive=
+// true composes correctly against the base value at apply time.
+// Explicit additive="sum" may further upgrade the flag.
+func parseScalarValues(elem string) ([]float32, bool, bool) {
+	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
+		vs := parseSemicolonFloats(valStr)
+		if len(vs) < 2 {
+			return nil, false, false
+		}
+		return vs, false, true
+	}
+	fromStr, fromOK := findAttr(elem, "from")
+	toStr, toOK := findAttr(elem, "to")
+	if fromOK && toOK {
+		return []float32{parseF32(fromStr), parseF32(toStr)}, false, true
+	}
+	if byStr, ok := findAttr(elem, "by"); ok {
+		return []float32{0, parseF32(byStr)}, true, true
+	}
+	if toOK {
+		// to= without from= is spec-legal but needs the base value
+		// at apply time. Emit [0, to] + additive so the base sums in.
+		return []float32{0, parseF32(toStr)}, true, true
+	}
+	return nil, false, false
+}
+
+// parseAdditiveSum reports whether the element has additive="sum".
+func parseAdditiveSum(elem string) bool {
+	v, ok := findAttr(elem, "additive")
+	return ok && v == "sum"
+}
+
+// parseAccumulateSum reports whether the element has accumulate="sum".
+func parseAccumulateSum(elem string) bool {
+	v, ok := findAttr(elem, "accumulate")
+	return ok && v == "sum"
+}
+
+// motionFlattenTolerance is the curve-flattening tolerance used for
+// animateMotion paths. Matches the tessellation default at scale 1.
+const motionFlattenTolerance = 0.5
+
+// maxMotionVertices caps the flattened animateMotion polyline so a
+// pathological path can't drive an unbounded per-frame arc-length
+// scan or allocation. Real assets have <100 vertices after flatten.
+const maxMotionVertices = 1024
+
+// parseAnimateMotionElement parses an <animateMotion> element with
+// an optional <mpath> body. Supports path=/from/to/by; the <mpath>
+// href resolves from state.defsPaths. Returns a flattened polyline
+// + cumulative arc lengths baked into the SvgAnimation.
+func parseAnimateMotionElement(
+	elem, body string, inherited groupStyle, state *parseState,
+) (gui.SvgAnimation, bool) {
+	if inherited.GroupID == "" {
+		return gui.SvgAnimation{}, false
+	}
+	dur := parseDuration(elem)
+	if dur <= 0 {
+		return gui.SvgAnimation{}, false
+	}
+	d := motionPathD(elem, body, state)
+	if d == "" {
+		return gui.SvgAnimation{}, false
+	}
+	poly, lens := flattenMotionD(d)
+	if len(poly) < 4 || len(lens) < 2 {
+		return gui.SvgAnimation{}, false
+	}
+	return gui.SvgAnimation{
+		Kind:          gui.SvgAnimMotion,
+		GroupID:       inherited.GroupID,
+		DurSec:        dur,
+		BeginSec:      parseBeginLiteral(elem),
+		Cycle:         parseRepeatCycle(elem, dur),
+		Freeze:        parseFreeze(elem),
+		Additive:      parseAdditiveSum(elem),
+		Accumulate:    parseAccumulateSum(elem),
+		KeyTimes:      parseKeyTimes(elem, len(poly)/2),
+		CalcMode:      parseCalcMode(elem),
+		Restart:       parseRestart(elem),
+		MotionPath:    poly,
+		MotionLengths: lens,
+		MotionRotate:  parseMotionRotate(elem),
+	}, true
+}
+
+// motionPathD extracts the path d-string from an animateMotion:
+// first via path= attr, else via <mpath xlink:href="#id"/> in body.
+func motionPathD(elem, body string, state *parseState) string {
+	if p, ok := findAttr(elem, "path"); ok && p != "" {
+		return p
+	}
+	if body == "" || state == nil || len(state.defsPaths) == 0 {
+		return ""
+	}
+	pos := strings.Index(body, "<mpath")
+	if pos < 0 {
+		return ""
+	}
+	end := strings.IndexByte(body[pos:], '>')
+	if end < 0 {
+		return ""
+	}
+	tag := body[pos : pos+end+1]
+	href, ok := findAttr(tag, "xlink:href")
+	if !ok {
+		href, ok = findAttr(tag, "href")
+	}
+	if !ok || !strings.HasPrefix(href, "#") {
+		return ""
+	}
+	return state.defsPaths[href[1:]]
+}
+
+// parseMotionRotate reads the rotate= attr on animateMotion.
+func parseMotionRotate(elem string) gui.SvgAnimMotionRotate {
+	v, ok := findAttr(elem, "rotate")
+	if !ok {
+		return gui.SvgAnimMotionRotateNone
+	}
+	switch v {
+	case "auto":
+		return gui.SvgAnimMotionRotateAuto
+	case "auto-reverse":
+		return gui.SvgAnimMotionRotateAutoReverse
+	}
+	return gui.SvgAnimMotionRotateNone
+}
+
+// flattenMotionD parses a path d-string and returns the flattened
+// polyline + cumulative arc length array. Only the first subpath is
+// used — animateMotion conventionally follows a single continuous
+// curve; multi-M paths are uncommon.
+func flattenMotionD(d string) ([]float32, []float32) {
+	segs := parsePathD(d)
+	if len(segs) == 0 {
+		return nil, nil
+	}
+	vp := &VectorPath{
+		Segments:  segs,
+		Transform: identityTransform,
+	}
+	polys := flattenPath(vp, motionFlattenTolerance)
+	if len(polys) == 0 {
+		return nil, nil
+	}
+	poly := polys[0]
+	if len(poly) < 4 {
+		return nil, nil
+	}
+	n := len(poly) / 2
+	if n > maxMotionVertices {
+		n = maxMotionVertices
+		poly = poly[:2*n]
+	}
+	lens := make([]float32, n)
+	for i := 1; i < n; i++ {
+		dx := poly[i*2] - poly[(i-1)*2]
+		dy := poly[i*2+1] - poly[(i-1)*2+1]
+		lens[i] = lens[i-1] +
+			float32(math.Sqrt(float64(dx*dx+dy*dy)))
+	}
+	return poly, lens
+}
+
+// parseRestart returns the restart attribute as SvgAnimRestart.
+// Defaults to always (SMIL default).
+func parseRestart(elem string) gui.SvgAnimRestart {
+	v, ok := findAttr(elem, "restart")
+	if !ok {
+		return gui.SvgAnimRestartAlways
+	}
+	switch v {
+	case "never":
+		return gui.SvgAnimRestartNever
+	case "whenNotActive":
+		return gui.SvgAnimRestartWhenNotActive
+	}
+	return gui.SvgAnimRestartAlways
 }
 
 // parseAnimateAttributeElement parses an <animate> element
 // targeting an animatable primitive attribute (cx, cy, r, x, y,
-// width, height, rx, ry). Phase-1 records the animation so shapes
-// can be flagged Animated; phase-2 evaluates overrides and
-// re-tessellates.
+// width, height, rx, ry).
 func parseAnimateAttributeElement(
 	elem string, inherited groupStyle,
 ) (gui.SvgAnimation, bool) {
@@ -74,17 +259,8 @@ func parseAnimateAttributeElement(
 	if dur <= 0 {
 		return gui.SvgAnimation{}, false
 	}
-	var vals []float32
-	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
-		vals = parseSemicolonFloats(valStr)
-	} else {
-		fromStr, fromOK := findAttr(elem, "from")
-		toStr, toOK := findAttr(elem, "to")
-		if fromOK && toOK {
-			vals = []float32{parseF32(fromStr), parseF32(toStr)}
-		}
-	}
-	if len(vals) < 2 {
+	vals, additive, ok := parseScalarValues(elem)
+	if !ok {
 		return gui.SvgAnimation{}, false
 	}
 	return gui.SvgAnimation{
@@ -92,11 +268,16 @@ func parseAnimateAttributeElement(
 		GroupID:    inherited.GroupID,
 		Values:     vals,
 		KeySplines: parseKeySplinesIfSpline(elem, len(vals)),
+		KeyTimes:   parseKeyTimes(elem, len(vals)),
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
 		Cycle:      parseRepeatCycle(elem, dur),
 		Freeze:     parseFreeze(elem),
+		Additive:   additive || parseAdditiveSum(elem),
+		Accumulate: parseAccumulateSum(elem),
 		AttrName:   name,
+		CalcMode:   parseCalcMode(elem),
+		Restart:    parseRestart(elem),
 	}, true
 }
 
@@ -126,11 +307,11 @@ func attrNameFromString(s string) gui.SvgAttrName {
 
 // parseAnimateTransformElement parses an <animateTransform>
 // element. Supports type="rotate" (from/to or values), plus
-// type="translate" and type="scale" (values form). The
-// additive="sum" attribute is not honored in phase 5a —
-// animated values replace the base transform. The only corpus
-// asset affected is pulse-ring.svg, where the base transform
-// is a scale(0) placeholder that the animation fully overrides.
+// type="translate" and type="scale" (values form). additive="sum"
+// is not honored — animated values replace the base transform.
+// The only corpus asset affected is pulse-ring.svg, where the
+// base transform is a scale(0) placeholder that the animation
+// fully overrides.
 func parseAnimateTransformElement(
 	elem string, inherited groupStyle,
 ) (gui.SvgAnimation, bool) {
@@ -164,39 +345,73 @@ func parseAnimateTransformElement(
 			GroupID:    inherited.GroupID,
 			Values:     angles,
 			KeySplines: parseKeySplinesIfSpline(elem, len(angles)),
+			KeyTimes:   parseKeyTimes(elem, len(angles)),
 			CenterX:    cx,
 			CenterY:    cy,
 			DurSec:     dur,
 			BeginSec:   parseBeginLiteral(elem),
 			Cycle:      parseRepeatCycle(elem, dur),
 			Freeze:     parseFreeze(elem),
+			Additive:   parseAdditiveSum(elem),
+			Accumulate: parseAccumulateSum(elem),
+			CalcMode:   parseCalcMode(elem),
+			Restart:    parseRestart(elem),
 		}, true
 	}
 
-	fromStr, _ := findAttr(elem, "from")
-	toStr, _ := findAttr(elem, "to")
-	if fromStr == "" || toStr == "" {
+	angles, cx, cy, additive, ok := parseRotateFromToBy(elem)
+	if !ok {
 		return gui.SvgAnimation{}, false
 	}
-	fromParts := parseSpaceFloats(fromStr)
-	toParts := parseSpaceFloats(toStr)
-	if len(fromParts) < 3 || len(toParts) < 1 {
-		return gui.SvgAnimation{}, false
-	}
-	cx, cy := fromParts[1], fromParts[2]
 	cx, cy = applyInheritedTransformPt(cx, cy, inherited.Transform)
 	return gui.SvgAnimation{
 		Kind:       gui.SvgAnimRotate,
 		GroupID:    inherited.GroupID,
-		Values:     []float32{fromParts[0], toParts[0]},
+		Values:     angles,
 		KeySplines: parseKeySplinesIfSpline(elem, 2),
+		KeyTimes:   parseKeyTimes(elem, 2),
 		CenterX:    cx,
 		CenterY:    cy,
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
 		Cycle:      parseRepeatCycle(elem, dur),
 		Freeze:     parseFreeze(elem),
+		Additive:   additive || parseAdditiveSum(elem),
+		Accumulate: parseAccumulateSum(elem),
+		CalcMode:   parseCalcMode(elem),
+		Restart:    parseRestart(elem),
 	}, true
+}
+
+// parseRotateFromToBy resolves the from/to or by shorthand on an
+// animateTransform type="rotate". Returns angle slice, center, and
+// whether the shorthand implies additive composition. by= alone
+// maps to Values=[0, byAngle] with additive=true so the animation
+// sums onto the base rotation (0).
+func parseRotateFromToBy(elem string) ([]float32, float32, float32, bool, bool) {
+	if byStr, ok := findAttr(elem, "by"); ok {
+		parts := parseSpaceFloats(byStr)
+		if len(parts) < 1 {
+			return nil, 0, 0, false, false
+		}
+		var cx, cy float32
+		if len(parts) >= 3 {
+			cx, cy = parts[1], parts[2]
+		}
+		return []float32{0, parts[0]}, cx, cy, true, true
+	}
+	fromStr, _ := findAttr(elem, "from")
+	toStr, _ := findAttr(elem, "to")
+	if fromStr == "" || toStr == "" {
+		return nil, 0, 0, false, false
+	}
+	fromParts := parseSpaceFloats(fromStr)
+	toParts := parseSpaceFloats(toStr)
+	if len(fromParts) < 3 || len(toParts) < 1 {
+		return nil, 0, 0, false, false
+	}
+	return []float32{fromParts[0], toParts[0]},
+		fromParts[1], fromParts[2], false, true
 }
 
 // parseAnimateTranslateElement parses <animateTransform
@@ -237,25 +452,8 @@ func parsePairedAnimateTransform(
 	if dur <= 0 {
 		return gui.SvgAnimation{}, false
 	}
-	var pairs []float32
-	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
-		pairs = parsePairedValues(valStr)
-	} else if fromStr, ok := findAttr(elem, "from"); ok {
-		toStr, okTo := findAttr(elem, "to")
-		if !okTo {
-			return gui.SvgAnimation{}, false
-		}
-		from := parseSpaceFloats(fromStr)
-		to := parseSpaceFloats(toStr)
-		if len(from) < 1 || len(to) < 1 {
-			return gui.SvgAnimation{}, false
-		}
-		pairs = []float32{
-			from[0], pairY(from),
-			to[0], pairY(to),
-		}
-	}
-	if len(pairs) < 4 {
+	pairs, additive, ok := parsePairedFromToBy(elem)
+	if !ok {
 		return gui.SvgAnimation{}, false
 	}
 	return gui.SvgAnimation{
@@ -263,11 +461,59 @@ func parsePairedAnimateTransform(
 		GroupID:    inherited.GroupID,
 		Values:     pairs,
 		KeySplines: parseKeySplinesIfSpline(elem, len(pairs)/2),
+		KeyTimes:   parseKeyTimes(elem, len(pairs)/2),
 		DurSec:     dur,
 		BeginSec:   parseBeginLiteral(elem),
 		Cycle:      parseRepeatCycle(elem, dur),
 		Freeze:     parseFreeze(elem),
+		Additive:   additive || parseAdditiveSum(elem),
+		Accumulate: parseAccumulateSum(elem),
+		CalcMode:   parseCalcMode(elem),
+		Restart:    parseRestart(elem),
 	}, true
+}
+
+// parsePairedFromToBy resolves values=/from+to/by shorthand on a
+// paired animateTransform. by= emits Values=[0,0, bx,by] with
+// additive=true so the animation sums onto the base translate (0,0)
+// or scale (kept as 0,0 here — apply-time base injection of (1,1)
+// depends on additive semantics; see applyAnimContrib).
+func parsePairedFromToBy(elem string) ([]float32, bool, bool) {
+	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
+		pairs := parsePairedValues(valStr)
+		if len(pairs) < 4 {
+			return nil, false, false
+		}
+		return pairs, false, true
+	}
+	if byStr, ok := findAttr(elem, "by"); ok {
+		by := parseSpaceFloats(byStr)
+		if len(by) < 1 {
+			return nil, false, false
+		}
+		return []float32{0, 0, by[0], pairY(by)}, true, true
+	}
+	fromStr, fromOK := findAttr(elem, "from")
+	toStr, toOK := findAttr(elem, "to")
+	if !toOK {
+		return nil, false, false
+	}
+	to := parseSpaceFloats(toStr)
+	if len(to) < 1 {
+		return nil, false, false
+	}
+	if fromOK {
+		from := parseSpaceFloats(fromStr)
+		if len(from) < 1 {
+			return nil, false, false
+		}
+		return []float32{
+			from[0], pairY(from),
+			to[0], pairY(to),
+		}, false, true
+	}
+	// to= only: sum onto base with additive=true.
+	return []float32{0, 0, to[0], pairY(to)}, true, true
 }
 
 // pairY returns the second component from a parsed space-float
@@ -408,13 +654,32 @@ func clampCycle(v float32) float32 {
 	return v
 }
 
-// parseDuration extracts the "dur" attribute as seconds.
+// parseDuration extracts the "dur" attribute as seconds and applies
+// the SMIL min/max clamp. Effective dur = clamp(dur, min, max). Min
+// and max default to 0 (unset); unset bounds do not clamp. A max ≤
+// min is ignored (min wins) — matches SMIL precedence.
 func parseDuration(elem string) float32 {
 	s, ok := findAttr(elem, "dur")
 	if !ok || s == "" {
 		return 0
 	}
-	return parseTimeValue(s)
+	dur := parseTimeValue(s)
+	if dur <= 0 {
+		return dur
+	}
+	if v, ok := findAttr(elem, "min"); ok && v != "" {
+		minD := parseTimeValue(v)
+		if minD > 0 && dur < minD {
+			dur = minD
+		}
+	}
+	if v, ok := findAttr(elem, "max"); ok && v != "" {
+		maxD := parseTimeValue(v)
+		if maxD > 0 && dur > maxD {
+			dur = maxD
+		}
+	}
+	return dur
 }
 
 // parseBeginLiteral returns the first absolute-time entry in a
@@ -734,6 +999,120 @@ func parseSpaceFloats(s string) []float32 {
 		out = append(out, parseF32(f))
 	}
 	return out
+}
+
+// parseKeyTimes parses the keyTimes attribute as a monotonic [0,1]
+// list with exactly nKeys entries. Returns nil when the attribute is
+// absent, malformed, mismatched in length, not bracketed by 0..1, or
+// not monotonic — caller falls back to uniform spacing. Strict mode
+// is the SMIL default (applies to calcMode linear/spline/paced; for
+// discrete the last entry may be < 1 but we still require 0..1 for
+// simplicity — authors rarely omit the trailing 1).
+func parseKeyTimes(elem string, nKeys int) []float32 {
+	raw, ok := findAttr(elem, "keyTimes")
+	if !ok || raw == "" {
+		return nil
+	}
+	if nKeys < 2 {
+		return nil
+	}
+	parts := parseSemicolonFloats(raw)
+	if len(parts) != nKeys {
+		return nil
+	}
+	if parts[0] != 0 || parts[nKeys-1] != 1 {
+		return nil
+	}
+	for i := 1; i < nKeys; i++ {
+		if parts[i] < parts[i-1] {
+			return nil
+		}
+	}
+	return parts
+}
+
+// parseSetElement parses a <set attributeName="X" to="Y"> element
+// as a zero-duration animation. attributeName must be opacity (or
+// its fill-/stroke- variants) or a primitive attr; other names are
+// rejected. IsSet=true flags the special eval path that ignores dur.
+// Per plan decision: fill defaults to freeze semantics here — once
+// activated, the value contributes until a later-activated <set>
+// overrides, matching the corpus expectation. Actual fill="remove"
+// is still honored: when !Freeze the contribution is still added
+// (IsSet overrides the dur reject) but sandwich ordering and the
+// cycle re-fire let subsequent activations replace it cleanly.
+func parseSetElement(
+	elem string, inherited groupStyle,
+) (gui.SvgAnimation, bool) {
+	attr, ok := findAttr(elem, "attributeName")
+	if !ok {
+		return gui.SvgAnimation{}, false
+	}
+	toStr, ok := findAttr(elem, "to")
+	if !ok || toStr == "" {
+		return gui.SvgAnimation{}, false
+	}
+	kind, target, attrName, ok := classifySetAttr(attr)
+	if !ok {
+		return gui.SvgAnimation{}, false
+	}
+	v := parseF32(toStr)
+	anim := gui.SvgAnimation{
+		Kind:     kind,
+		GroupID:  inherited.GroupID,
+		Values:   []float32{v, v},
+		BeginSec: parseBeginLiteral(elem),
+		Freeze:   true,
+		IsSet:    true,
+		Target:   target,
+		AttrName: attrName,
+		Restart:  parseRestart(elem),
+	}
+	// Honor explicit fill="remove" so <set fill="remove"> still works.
+	if fv, ok := findAttr(elem, "fill"); ok && fv == "remove" {
+		anim.Freeze = false
+	}
+	return anim, true
+}
+
+// classifySetAttr maps an attributeName to the set's target Kind +
+// sub-selectors. Only opacity and primitive attrs are supported.
+func classifySetAttr(
+	attr string,
+) (gui.SvgAnimKind, gui.SvgAnimTarget, gui.SvgAttrName, bool) {
+	switch attr {
+	case "opacity":
+		return gui.SvgAnimOpacity, gui.SvgAnimTargetAll,
+			gui.SvgAttrNone, true
+	case "fill-opacity":
+		return gui.SvgAnimOpacity, gui.SvgAnimTargetFill,
+			gui.SvgAttrNone, true
+	case "stroke-opacity":
+		return gui.SvgAnimOpacity, gui.SvgAnimTargetStroke,
+			gui.SvgAttrNone, true
+	}
+	if n := attrNameFromString(attr); n != gui.SvgAttrNone {
+		return gui.SvgAnimAttr, gui.SvgAnimTargetAll, n, true
+	}
+	return 0, 0, 0, false
+}
+
+// parseCalcMode returns the calcMode attribute as SvgAnimCalcMode.
+// Absent / unrecognized values fall through to linear (the SMIL
+// default). "paced" is treated as linear — it would need per-segment
+// distance math and no corpus asset currently uses it.
+func parseCalcMode(elem string) gui.SvgAnimCalcMode {
+	mode, ok := findAttr(elem, "calcMode")
+	if !ok {
+		return gui.SvgAnimCalcLinear
+	}
+	switch mode {
+	case "spline":
+		return gui.SvgAnimCalcSpline
+	case "discrete":
+		return gui.SvgAnimCalcDiscrete
+	}
+	return gui.SvgAnimCalcLinear
 }
 
 // parseKeySplinesIfSpline returns flat 4*(nVals-1) spline control

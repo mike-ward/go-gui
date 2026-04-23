@@ -9,7 +9,7 @@ import (
 // yield (5, 5).
 func TestPhase5aLerp2DLinear(t *testing.T) {
 	vals := []float32{0, 10, 10, 0}
-	x, y := lerpKeyframes2D(vals, nil, 0.5)
+	x, y := lerpKeyframes2D(vals, nil, nil, SvgAnimCalcLinear, 0.5)
 	if f32AbsP5(x-5) > 1e-5 || f32AbsP5(y-5) > 1e-5 {
 		t.Fatalf("want (5,5), got (%g,%g)", x, y)
 	}
@@ -19,11 +19,11 @@ func TestPhase5aLerp2DLinear(t *testing.T) {
 // gives last pair.
 func TestPhase5aLerp2DEdgeClamp(t *testing.T) {
 	vals := []float32{12, 12, 0, 0}
-	x, y := lerpKeyframes2D(vals, nil, 0)
+	x, y := lerpKeyframes2D(vals, nil, nil, SvgAnimCalcLinear, 0)
 	if x != 12 || y != 12 {
 		t.Fatalf("frac=0: want (12,12), got (%g,%g)", x, y)
 	}
-	x, y = lerpKeyframes2D(vals, nil, 1)
+	x, y = lerpKeyframes2D(vals, nil, nil, SvgAnimCalcLinear, 1)
 	if x != 0 || y != 0 {
 		t.Fatalf("frac=1: want (0,0), got (%g,%g)", x, y)
 	}
@@ -94,7 +94,7 @@ func TestPhase5aComputeDefaultsWhenNoXform(t *testing.T) {
 // panicking on a negative slice index.
 func TestLerpKeyframes2DNegativeFracReturnsFirst(t *testing.T) {
 	vals := []float32{10, 20, 0, 0}
-	x, y := lerpKeyframes2D(vals, nil, -5)
+	x, y := lerpKeyframes2D(vals, nil, nil, SvgAnimCalcLinear, -5)
 	if x != 10 || y != 20 {
 		t.Fatalf("negative frac should clamp to first, got (%g,%g)", x, y)
 	}
@@ -104,7 +104,7 @@ func TestLerpKeyframes2DNegativeFracReturnsFirst(t *testing.T) {
 // to 0 (first pair).
 func TestLerpKeyframes2DNaNFracReturnsFirst(t *testing.T) {
 	vals := []float32{10, 20, 0, 0}
-	x, y := lerpKeyframes2D(vals, nil, float32(math.NaN()))
+	x, y := lerpKeyframes2D(vals, nil, nil, SvgAnimCalcLinear, float32(math.NaN()))
 	if x != 10 || y != 20 {
 		t.Fatalf("NaN frac should clamp to first, got (%g,%g)", x, y)
 	}
@@ -116,8 +116,8 @@ func TestLerpKeyframes2DNaNFracReturnsFirst(t *testing.T) {
 func TestLerpKeyframes2DSplineBendsBothAxes(t *testing.T) {
 	vals := []float32{0, 0, 100, 100}
 	splines := []float32{.33, .66, .66, 1}
-	linX, linY := lerpKeyframes2D(vals, nil, 0.5)
-	easedX, easedY := lerpKeyframes2D(vals, splines, 0.5)
+	linX, linY := lerpKeyframes2D(vals, nil, nil, SvgAnimCalcLinear, 0.5)
+	easedX, easedY := lerpKeyframes2D(vals, splines, nil, SvgAnimCalcSpline, 0.5)
 	if easedX <= linX {
 		t.Fatalf("expected x ease-out > linear: lin=%g eased=%g",
 			linX, easedX)
@@ -129,6 +129,21 @@ func TestLerpKeyframes2DSplineBendsBothAxes(t *testing.T) {
 	if f32AbsP5(easedX-easedY) > 1e-5 {
 		t.Fatalf("symmetric 0→100 axes should match; got (%g,%g)",
 			easedX, easedY)
+	}
+}
+
+// TestLerpKeyframes2DDiscreteHoldsPair — discrete mode on a paired
+// keyframe stream returns the covering pair unchanged.
+func TestLerpKeyframes2DDiscreteHoldsPair(t *testing.T) {
+	vals := []float32{0, 0, 10, 20, 30, 40, 50, 60}
+	x, y := lerpKeyframes2D(vals, nil, nil, SvgAnimCalcDiscrete, 0.3)
+	// n=4 pairs, idx = floor(0.3*4) = 1 → (10, 20).
+	if x != 10 || y != 20 {
+		t.Fatalf("discrete mid want (10,20), got (%g,%g)", x, y)
+	}
+	x, y = lerpKeyframes2D(vals, nil, nil, SvgAnimCalcDiscrete, 1.0)
+	if x != 50 || y != 60 {
+		t.Fatalf("discrete end want (50,60), got (%g,%g)", x, y)
 	}
 }
 

@@ -56,7 +56,7 @@ func TestApplyAttrOverrideSetsMaskAndValue(t *testing.T) {
 	}
 	for _, c := range cases {
 		var o SvgAnimAttrOverride
-		applyAttrOverride(&o, c.attr, 7)
+		applyAttrOverride(&o, c.attr, 7, false)
 		if o.Mask&c.mask == 0 {
 			t.Fatalf("attr %d: mask bit not set", c.attr)
 		}

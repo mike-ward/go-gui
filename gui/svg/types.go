@@ -165,6 +165,9 @@ type parseState struct {
 	// index. Populated only when begin= references another
 	// animation via syncbase (.begin/.end).
 	animBeginSpecs map[int][]beginSpec
+	// defsPaths maps defs <path id="..."> to its d-attribute. Used
+	// by animateMotion's <mpath xlink:href="#id"/>.
+	defsPaths map[string]string
 }
 
 // elementStyle holds common style properties extracted from an SVG element.

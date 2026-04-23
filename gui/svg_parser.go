@@ -43,14 +43,18 @@ const (
 // SvgAnimAttrOverride carries current animated attribute values to
 // apply when re-tessellating a primitive. Fields are valid only when
 // their Mask bit is set; unset fields retain the parsed static value.
+// When AdditiveMask bit is also set, the override value is a delta
+// to add to the parsed primitive value rather than a replacement —
+// matches SMIL additive="sum" / by= shorthand semantics.
 type SvgAnimAttrOverride struct {
-	Mask   SvgAnimAttrMask
-	CX, CY float32
-	R      float32
-	RX, RY float32
-	X, Y   float32
-	Width  float32
-	Height float32
+	Mask         SvgAnimAttrMask
+	AdditiveMask SvgAnimAttrMask
+	CX, CY       float32
+	R            float32
+	RX, RY       float32
+	X, Y         float32
+	Width        float32
+	Height       float32
 }
 
 // AnimatedSvgParser is an optional extension of SvgParser for backends

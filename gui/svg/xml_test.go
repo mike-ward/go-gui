@@ -375,3 +375,35 @@ func TestParseSvg_RootFillInheritedByShapes(t *testing.T) {
 		t.Fatal("fill alpha collapsed to 0 — sentinel bump failed")
 	}
 }
+
+// readElementBody returns an empty body and cursor just past the
+// self-closing tag so the caller advances without scanning for a
+// close token that does not exist.
+func TestXmlReadElementBody_SelfClosing(t *testing.T) {
+	body := `<animateMotion path="M0,0 L10,0" dur="1s"/><rect/>`
+	elem := `<animateMotion path="M0,0 L10,0" dur="1s"/>`
+	elemEnd := len(elem) - 1 // index of '>'
+	inner, next := readElementBody(body, elem, elemEnd, "animateMotion")
+	if inner != "" {
+		t.Fatalf("self-closing: want empty body, got %q", inner)
+	}
+	if next != elemEnd+1 {
+		t.Fatalf("self-closing: want next=%d, got %d", elemEnd+1, next)
+	}
+}
+
+// Missing close tag falls back to empty body + cursor past the open
+// tag so the outer parser recovers instead of looping forever.
+func TestXmlReadElementBody_MissingClose(t *testing.T) {
+	body := `<animateMotion dur="1s"><mpath href="#p"/>`
+	elem := `<animateMotion dur="1s">`
+	elemEnd := len(elem) - 1
+	inner, next := readElementBody(body, elem, elemEnd, "animateMotion")
+	if inner != "" {
+		t.Fatalf("missing-close: want empty body, got %q", inner)
+	}
+	if next != elemEnd+1 {
+		t.Fatalf("missing-close: want next=%d, got %d",
+			elemEnd+1, next)
+	}
+}

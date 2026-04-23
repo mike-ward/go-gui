@@ -52,7 +52,7 @@ func parseSvg(content string) (*VectorGraphic, error) {
 	if svgTag, ok := findRootElementTag(content, "svg"); ok {
 		defStyle = mergeGroupStyle(svgTag, defStyle)
 	}
-	state := &parseState{}
+	state := &parseState{defsPaths: vg.DefsPaths}
 	allPaths := parseSvgContent(content, defStyle, 0, state)
 
 	// Separate filtered paths from main paths
@@ -353,6 +353,31 @@ func parseSvgContent(content string, inherited groupStyle, depth int, state *par
 			}
 			pos = elemEnd + 1
 
+		case "set":
+			state.elemCount++
+			if len(state.animations) < maxAnimations {
+				if a, ok := parseSetElement(elem, inherited); ok {
+					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
+				}
+			}
+			pos = elemEnd + 1
+
+		case "animateMotion":
+			state.elemCount++
+			motionBody, next := readElementBody(
+				content, elem, elemEnd, "animateMotion")
+			if len(state.animations) < maxAnimations {
+				if a, ok := parseAnimateMotionElement(
+					elem, motionBody, inherited, state); ok {
+					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
+				}
+			}
+			pos = next
+
 		default:
 			pos = elemEnd + 1
 		}
@@ -418,7 +443,7 @@ func parseShapeElement(
 
 	animStart := len(state.animations)
 	parseShapeInlineChildren(body, shapeGS, state)
-	// Phase-2 scope: clip-pathed shapes skip re-tessellation.
+	// Clip-pathed shapes skip re-tessellation.
 	if pathIdx >= 0 && (*paths)[pathIdx].ClipPathID == "" {
 		hasAttrAnim := false
 		hasXformAnim := false
@@ -434,14 +459,15 @@ func parseShapeElement(
 			(*paths)[pathIdx].Animated = true
 		}
 		if hasXformAnim {
-			// Phase 5a treats animateTransform as additive=
-			// "replace" (sum not honored). The element's local
-			// transform is typically a placeholder — pulse-ring's
-			// `translate(12,12) scale(0)` would otherwise bake
-			// every vertex onto a single point. Reset to the
-			// parent's inherited transform so local vertices
-			// tessellate at their natural coords; the animation
-			// supplies the per-frame transform at render time.
+			// Author base transforms on animateTransform targets
+			// are often placeholders (pulse-ring: `translate(12,12)
+			// scale(0)`). Baking them into vertices at tessellate
+			// time would collapse the shape, since Transform is
+			// applied pre-tessellate. Reset to the parent's
+			// inherited transform so vertices tessellate at natural
+			// coords; the animation supplies the per-frame transform
+			// at render time. Proper fix (defer Transform to render
+			// time) is out of scope here.
 			(*paths)[pathIdx].Transform = inherited.Transform
 		}
 	}
@@ -457,7 +483,9 @@ func parseShapeElement(
 // contains animation children worth parsing.
 func shapeHasInlineAnimation(body string) bool {
 	return strings.Contains(body, "<animate") ||
-		strings.Contains(body, "<animateTransform")
+		strings.Contains(body, "<animateTransform") ||
+		strings.Contains(body, "<animateMotion") ||
+		strings.Contains(body, "<set")
 }
 
 // scanOpacityAnimTargets reports which opacity sub-attributes are
@@ -549,9 +577,53 @@ func parseShapeInlineChildren(
 						len(state.animations)-1)
 				}
 			}
+		case "set":
+			if len(state.animations) < maxAnimations {
+				if a, ok := parseSetElement(elem, shapeGS); ok {
+					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
+				}
+			}
+		case "animateMotion":
+			motionBody, next := readElementBody(
+				body, elem, elemEnd, "animateMotion")
+			if len(state.animations) < maxAnimations {
+				if a, ok := parseAnimateMotionElement(
+					elem, motionBody, shapeGS, state); ok {
+					state.animations = append(state.animations, a)
+					registerAnimation(state, elem,
+						len(state.animations)-1)
+				}
+			}
+			pos = next
+			continue
 		}
 		pos = elemEnd + 1
 	}
+}
+
+// readElementBody returns the inner content of an open element and
+// the cursor position past its closing tag. For self-closing or
+// missing-close elements returns empty body and pos just past elem.
+func readElementBody(
+	body, elem string, elemEnd int, tag string,
+) (string, int) {
+	if strings.HasSuffix(strings.TrimSpace(elem), "/>") {
+		return "", elemEnd + 1
+	}
+	closeTok := "</" + tag
+	closeIdx := strings.Index(body[elemEnd+1:], closeTok)
+	if closeIdx < 0 {
+		return "", elemEnd + 1
+	}
+	bodyStart := elemEnd + 1
+	bodyEnd := bodyStart + closeIdx
+	gt := strings.IndexByte(body[bodyEnd:], '>')
+	if gt < 0 {
+		return body[bodyStart:bodyEnd], bodyEnd
+	}
+	return body[bodyStart:bodyEnd], bodyEnd + gt + 1
 }
 
 // findRootElementTag locates the first `<tag` opening element in

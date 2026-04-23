@@ -85,8 +85,8 @@ func (p *Parser) Tessellate(parsed *gui.SvgParsed, scale float32) []gui.Tessella
 // triangles for every VectorPath flagged Animated at the given scale,
 // applying attribute overrides keyed by GroupID. Result order follows
 // the Animated-flagged paths' document order. Animated paths that
-// carry a ClipPathID are out of phase-2 scope and are skipped: the
-// caller should fall back to cached triangles for them.
+// carry a ClipPathID are skipped: the caller should fall back to
+// cached triangles for them.
 //
 // Returns nil when overrides is empty/nil or no animated paths
 // qualify. When reuse is non-nil its backing array is reused.
@@ -115,8 +115,8 @@ func (p *Parser) TessellateAnimated(
 		if !src.Animated {
 			continue
 		}
-		// Phase-2 scope: skip clip-pathed animated paths; caller
-		// falls back to cached triangles.
+		// Skip clip-pathed animated paths; caller falls back to
+		// cached triangles.
 		if src.ClipPathID != "" {
 			continue
 		}
@@ -147,65 +147,52 @@ func (p *Parser) TessellateAnimated(
 
 // applyOverridesToPath mutates p's primitive fields and segments to
 // reflect the live animation overrides. Only primitive paths react;
-// non-primitive animated paths are a no-op.
+// non-primitive animated paths are a no-op. AdditiveMask bits add
+// the override to the parsed base value; non-additive bits replace.
 func applyOverridesToPath(p *VectorPath, ov gui.SvgAnimAttrOverride) {
 	prim := p.Primitive
 	switch prim.Kind {
 	case gui.SvgPrimCircle:
-		if ov.Mask&gui.SvgAnimMaskCX != 0 {
-			prim.CX = ov.CX
-		}
-		if ov.Mask&gui.SvgAnimMaskCY != 0 {
-			prim.CY = ov.CY
-		}
-		if ov.Mask&gui.SvgAnimMaskR != 0 {
-			prim.R = ov.R
-		}
+		prim.CX = overrideScalar(prim.CX, ov.CX, &ov, gui.SvgAnimMaskCX)
+		prim.CY = overrideScalar(prim.CY, ov.CY, &ov, gui.SvgAnimMaskCY)
+		prim.R = overrideScalar(prim.R, ov.R, &ov, gui.SvgAnimMaskR)
 		p.Segments = segmentsForEllipse(prim.CX, prim.CY, prim.R, prim.R)
 	case gui.SvgPrimEllipse:
-		if ov.Mask&gui.SvgAnimMaskCX != 0 {
-			prim.CX = ov.CX
-		}
-		if ov.Mask&gui.SvgAnimMaskCY != 0 {
-			prim.CY = ov.CY
-		}
-		if ov.Mask&gui.SvgAnimMaskRX != 0 {
-			prim.RX = ov.RX
-		}
-		if ov.Mask&gui.SvgAnimMaskRY != 0 {
-			prim.RY = ov.RY
-		}
+		prim.CX = overrideScalar(prim.CX, ov.CX, &ov, gui.SvgAnimMaskCX)
+		prim.CY = overrideScalar(prim.CY, ov.CY, &ov, gui.SvgAnimMaskCY)
+		prim.RX = overrideScalar(prim.RX, ov.RX, &ov, gui.SvgAnimMaskRX)
+		prim.RY = overrideScalar(prim.RY, ov.RY, &ov, gui.SvgAnimMaskRY)
 		p.Segments = segmentsForEllipse(prim.CX, prim.CY, prim.RX, prim.RY)
 	case gui.SvgPrimRect:
-		if ov.Mask&gui.SvgAnimMaskX != 0 {
-			prim.X = ov.X
-		}
-		if ov.Mask&gui.SvgAnimMaskY != 0 {
-			prim.Y = ov.Y
-		}
-		if ov.Mask&gui.SvgAnimMaskWidth != 0 {
-			prim.W = ov.Width
-		}
-		if ov.Mask&gui.SvgAnimMaskHeight != 0 {
-			prim.H = ov.Height
-		}
-		if ov.Mask&gui.SvgAnimMaskRX != 0 {
-			prim.RX = ov.RX
-		}
-		if ov.Mask&gui.SvgAnimMaskRY != 0 {
-			prim.RY = ov.RY
-		}
-		p.Segments = segmentsForRect(prim.X, prim.Y, prim.W, prim.H, prim.RX, prim.RY)
+		prim.X = overrideScalar(prim.X, ov.X, &ov, gui.SvgAnimMaskX)
+		prim.Y = overrideScalar(prim.Y, ov.Y, &ov, gui.SvgAnimMaskY)
+		prim.W = overrideScalar(prim.W, ov.Width, &ov,
+			gui.SvgAnimMaskWidth)
+		prim.H = overrideScalar(prim.H, ov.Height, &ov,
+			gui.SvgAnimMaskHeight)
+		prim.RX = overrideScalar(prim.RX, ov.RX, &ov, gui.SvgAnimMaskRX)
+		prim.RY = overrideScalar(prim.RY, ov.RY, &ov, gui.SvgAnimMaskRY)
+		p.Segments = segmentsForRect(prim.X, prim.Y, prim.W, prim.H,
+			prim.RX, prim.RY)
 	case gui.SvgPrimLine:
-		if ov.Mask&gui.SvgAnimMaskX != 0 {
-			prim.X = ov.X
-		}
-		if ov.Mask&gui.SvgAnimMaskY != 0 {
-			prim.Y = ov.Y
-		}
+		prim.X = overrideScalar(prim.X, ov.X, &ov, gui.SvgAnimMaskX)
+		prim.Y = overrideScalar(prim.Y, ov.Y, &ov, gui.SvgAnimMaskY)
 		p.Segments = segmentsForLine(prim.X, prim.Y, prim.X2, prim.Y2)
 	}
 	p.Primitive = prim
+}
+
+// overrideScalar returns base when the mask bit is unset, base+v
+// for additive overrides, or v for replace overrides.
+func overrideScalar(base, v float32, ov *gui.SvgAnimAttrOverride,
+	bit gui.SvgAnimAttrMask) float32 {
+	if ov.Mask&bit == 0 {
+		return base
+	}
+	if ov.AdditiveMask&bit != 0 {
+		return base + v
+	}
+	return v
 }
 
 // ReleaseParsed drops parser-side references for a parsed SVG once

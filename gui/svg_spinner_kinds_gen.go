@@ -22,6 +22,7 @@ const (
 	SvgSpinner3DotsScaleMiddle
 	SvgSpinner3DotsScale
 	SvgSpinner6DotsRotate
+	SvgSpinner6DotsScale
 	SvgSpinner8DotsRotate
 	SvgSpinner90Ring
 	SvgSpinnerAudio
@@ -51,15 +52,21 @@ const (
 	SvgSpinnerLoader7
 	SvgSpinnerLoader8
 	SvgSpinnerLoader9
+	SvgSpinnerPuff
+	SvgSpinnerPulseRings2
+	SvgSpinnerPulseRings3
+	SvgSpinnerPulseRingsMultiple
+	SvgSpinnerRingResize
 	SvgSpinnerSpinnerDouble
 	SvgSpinnerSpinner
 	SvgSpinnerSpinningCircles
 	SvgSpinnerTadpole
 	SvgSpinnerTailSpin
+	SvgSpinnerWifi
 	SvgSpinnerWindToy
 )
 
-const svgSpinnerCount = 45
+const svgSpinnerCount = 52
 
 //go:embed assets/svg-spinners/12-dots-scale-rotate.svg
 var svgSpinnerDataSvgSpinner12DotsScaleRotate string
@@ -90,6 +97,9 @@ var svgSpinnerDataSvgSpinner3DotsScale string
 
 //go:embed assets/svg-spinners/6-dots-rotate.svg
 var svgSpinnerDataSvgSpinner6DotsRotate string
+
+//go:embed assets/svg-spinners/6-dots-scale.svg
+var svgSpinnerDataSvgSpinner6DotsScale string
 
 //go:embed assets/svg-spinners/8-dots-rotate.svg
 var svgSpinnerDataSvgSpinner8DotsRotate string
@@ -178,6 +188,21 @@ var svgSpinnerDataSvgSpinnerLoader8 string
 //go:embed assets/svg-spinners/loader9.svg
 var svgSpinnerDataSvgSpinnerLoader9 string
 
+//go:embed assets/svg-spinners/puff.svg
+var svgSpinnerDataSvgSpinnerPuff string
+
+//go:embed assets/svg-spinners/pulse-rings-2.svg
+var svgSpinnerDataSvgSpinnerPulseRings2 string
+
+//go:embed assets/svg-spinners/pulse-rings-3.svg
+var svgSpinnerDataSvgSpinnerPulseRings3 string
+
+//go:embed assets/svg-spinners/pulse-rings-multiple.svg
+var svgSpinnerDataSvgSpinnerPulseRingsMultiple string
+
+//go:embed assets/svg-spinners/ring-resize.svg
+var svgSpinnerDataSvgSpinnerRingResize string
+
 //go:embed assets/svg-spinners/spinner-double.svg
 var svgSpinnerDataSvgSpinnerSpinnerDouble string
 
@@ -193,101 +218,118 @@ var svgSpinnerDataSvgSpinnerTadpole string
 //go:embed assets/svg-spinners/tail-spin.svg
 var svgSpinnerDataSvgSpinnerTailSpin string
 
+//go:embed assets/svg-spinners/wifi.svg
+var svgSpinnerDataSvgSpinnerWifi string
+
 //go:embed assets/svg-spinners/wind-toy.svg
 var svgSpinnerDataSvgSpinnerWindToy string
 
 var svgSpinnerData = [svgSpinnerCount]string{
-	SvgSpinner12DotsScaleRotate: svgSpinnerDataSvgSpinner12DotsScaleRotate,
-	SvgSpinner180Ring:           svgSpinnerDataSvgSpinner180Ring,
-	SvgSpinner270Ring:           svgSpinnerDataSvgSpinner270Ring,
-	SvgSpinner3DotsBounce:       svgSpinnerDataSvgSpinner3DotsBounce,
-	SvgSpinner3DotsFade:         svgSpinnerDataSvgSpinner3DotsFade,
-	SvgSpinner3DotsMove:         svgSpinnerDataSvgSpinner3DotsMove,
-	SvgSpinner3DotsRotate:       svgSpinnerDataSvgSpinner3DotsRotate,
-	SvgSpinner3DotsScaleMiddle:  svgSpinnerDataSvgSpinner3DotsScaleMiddle,
-	SvgSpinner3DotsScale:        svgSpinnerDataSvgSpinner3DotsScale,
-	SvgSpinner6DotsRotate:       svgSpinnerDataSvgSpinner6DotsRotate,
-	SvgSpinner8DotsRotate:       svgSpinnerDataSvgSpinner8DotsRotate,
-	SvgSpinner90Ring:            svgSpinnerDataSvgSpinner90Ring,
-	SvgSpinnerAudio:             svgSpinnerDataSvgSpinnerAudio,
-	SvgSpinnerBarsFade:          svgSpinnerDataSvgSpinnerBarsFade,
-	SvgSpinnerBarsRotateFade:    svgSpinnerDataSvgSpinnerBarsRotateFade,
-	SvgSpinnerBarsScaleFade:     svgSpinnerDataSvgSpinnerBarsScaleFade,
-	SvgSpinnerBarsScaleMiddle:   svgSpinnerDataSvgSpinnerBarsScaleMiddle,
-	SvgSpinnerBarsScale:         svgSpinnerDataSvgSpinnerBarsScale,
-	SvgSpinnerBars:              svgSpinnerDataSvgSpinnerBars,
-	SvgSpinnerBlocksScale:       svgSpinnerDataSvgSpinnerBlocksScale,
-	SvgSpinnerBlocksShuffle2:    svgSpinnerDataSvgSpinnerBlocksShuffle2,
-	SvgSpinnerBlocksShuffle3:    svgSpinnerDataSvgSpinnerBlocksShuffle3,
-	SvgSpinnerBlocksWave:        svgSpinnerDataSvgSpinnerBlocksWave,
-	SvgSpinnerBouncingBall:      svgSpinnerDataSvgSpinnerBouncingBall,
-	SvgSpinnerCircles:           svgSpinnerDataSvgSpinnerCircles,
-	SvgSpinnerEclipseHalf:       svgSpinnerDataSvgSpinnerEclipseHalf,
-	SvgSpinnerEclipse:           svgSpinnerDataSvgSpinnerEclipse,
-	SvgSpinnerGrid:              svgSpinnerDataSvgSpinnerGrid,
-	SvgSpinnerHearts:            svgSpinnerDataSvgSpinnerHearts,
-	SvgSpinnerHorizontalBar:     svgSpinnerDataSvgSpinnerHorizontalBar,
-	SvgSpinnerLoader1:           svgSpinnerDataSvgSpinnerLoader1,
-	SvgSpinnerLoader10:          svgSpinnerDataSvgSpinnerLoader10,
-	SvgSpinnerLoader3:           svgSpinnerDataSvgSpinnerLoader3,
-	SvgSpinnerLoader4:           svgSpinnerDataSvgSpinnerLoader4,
-	SvgSpinnerLoader5:           svgSpinnerDataSvgSpinnerLoader5,
-	SvgSpinnerLoader6:           svgSpinnerDataSvgSpinnerLoader6,
-	SvgSpinnerLoader7:           svgSpinnerDataSvgSpinnerLoader7,
-	SvgSpinnerLoader8:           svgSpinnerDataSvgSpinnerLoader8,
-	SvgSpinnerLoader9:           svgSpinnerDataSvgSpinnerLoader9,
-	SvgSpinnerSpinnerDouble:     svgSpinnerDataSvgSpinnerSpinnerDouble,
-	SvgSpinnerSpinner:           svgSpinnerDataSvgSpinnerSpinner,
-	SvgSpinnerSpinningCircles:   svgSpinnerDataSvgSpinnerSpinningCircles,
-	SvgSpinnerTadpole:           svgSpinnerDataSvgSpinnerTadpole,
-	SvgSpinnerTailSpin:          svgSpinnerDataSvgSpinnerTailSpin,
-	SvgSpinnerWindToy:           svgSpinnerDataSvgSpinnerWindToy,
+	SvgSpinner12DotsScaleRotate:  svgSpinnerDataSvgSpinner12DotsScaleRotate,
+	SvgSpinner180Ring:            svgSpinnerDataSvgSpinner180Ring,
+	SvgSpinner270Ring:            svgSpinnerDataSvgSpinner270Ring,
+	SvgSpinner3DotsBounce:        svgSpinnerDataSvgSpinner3DotsBounce,
+	SvgSpinner3DotsFade:          svgSpinnerDataSvgSpinner3DotsFade,
+	SvgSpinner3DotsMove:          svgSpinnerDataSvgSpinner3DotsMove,
+	SvgSpinner3DotsRotate:        svgSpinnerDataSvgSpinner3DotsRotate,
+	SvgSpinner3DotsScaleMiddle:   svgSpinnerDataSvgSpinner3DotsScaleMiddle,
+	SvgSpinner3DotsScale:         svgSpinnerDataSvgSpinner3DotsScale,
+	SvgSpinner6DotsRotate:        svgSpinnerDataSvgSpinner6DotsRotate,
+	SvgSpinner6DotsScale:         svgSpinnerDataSvgSpinner6DotsScale,
+	SvgSpinner8DotsRotate:        svgSpinnerDataSvgSpinner8DotsRotate,
+	SvgSpinner90Ring:             svgSpinnerDataSvgSpinner90Ring,
+	SvgSpinnerAudio:              svgSpinnerDataSvgSpinnerAudio,
+	SvgSpinnerBarsFade:           svgSpinnerDataSvgSpinnerBarsFade,
+	SvgSpinnerBarsRotateFade:     svgSpinnerDataSvgSpinnerBarsRotateFade,
+	SvgSpinnerBarsScaleFade:      svgSpinnerDataSvgSpinnerBarsScaleFade,
+	SvgSpinnerBarsScaleMiddle:    svgSpinnerDataSvgSpinnerBarsScaleMiddle,
+	SvgSpinnerBarsScale:          svgSpinnerDataSvgSpinnerBarsScale,
+	SvgSpinnerBars:               svgSpinnerDataSvgSpinnerBars,
+	SvgSpinnerBlocksScale:        svgSpinnerDataSvgSpinnerBlocksScale,
+	SvgSpinnerBlocksShuffle2:     svgSpinnerDataSvgSpinnerBlocksShuffle2,
+	SvgSpinnerBlocksShuffle3:     svgSpinnerDataSvgSpinnerBlocksShuffle3,
+	SvgSpinnerBlocksWave:         svgSpinnerDataSvgSpinnerBlocksWave,
+	SvgSpinnerBouncingBall:       svgSpinnerDataSvgSpinnerBouncingBall,
+	SvgSpinnerCircles:            svgSpinnerDataSvgSpinnerCircles,
+	SvgSpinnerEclipseHalf:        svgSpinnerDataSvgSpinnerEclipseHalf,
+	SvgSpinnerEclipse:            svgSpinnerDataSvgSpinnerEclipse,
+	SvgSpinnerGrid:               svgSpinnerDataSvgSpinnerGrid,
+	SvgSpinnerHearts:             svgSpinnerDataSvgSpinnerHearts,
+	SvgSpinnerHorizontalBar:      svgSpinnerDataSvgSpinnerHorizontalBar,
+	SvgSpinnerLoader1:            svgSpinnerDataSvgSpinnerLoader1,
+	SvgSpinnerLoader10:           svgSpinnerDataSvgSpinnerLoader10,
+	SvgSpinnerLoader3:            svgSpinnerDataSvgSpinnerLoader3,
+	SvgSpinnerLoader4:            svgSpinnerDataSvgSpinnerLoader4,
+	SvgSpinnerLoader5:            svgSpinnerDataSvgSpinnerLoader5,
+	SvgSpinnerLoader6:            svgSpinnerDataSvgSpinnerLoader6,
+	SvgSpinnerLoader7:            svgSpinnerDataSvgSpinnerLoader7,
+	SvgSpinnerLoader8:            svgSpinnerDataSvgSpinnerLoader8,
+	SvgSpinnerLoader9:            svgSpinnerDataSvgSpinnerLoader9,
+	SvgSpinnerPuff:               svgSpinnerDataSvgSpinnerPuff,
+	SvgSpinnerPulseRings2:        svgSpinnerDataSvgSpinnerPulseRings2,
+	SvgSpinnerPulseRings3:        svgSpinnerDataSvgSpinnerPulseRings3,
+	SvgSpinnerPulseRingsMultiple: svgSpinnerDataSvgSpinnerPulseRingsMultiple,
+	SvgSpinnerRingResize:         svgSpinnerDataSvgSpinnerRingResize,
+	SvgSpinnerSpinnerDouble:      svgSpinnerDataSvgSpinnerSpinnerDouble,
+	SvgSpinnerSpinner:            svgSpinnerDataSvgSpinnerSpinner,
+	SvgSpinnerSpinningCircles:    svgSpinnerDataSvgSpinnerSpinningCircles,
+	SvgSpinnerTadpole:            svgSpinnerDataSvgSpinnerTadpole,
+	SvgSpinnerTailSpin:           svgSpinnerDataSvgSpinnerTailSpin,
+	SvgSpinnerWifi:               svgSpinnerDataSvgSpinnerWifi,
+	SvgSpinnerWindToy:            svgSpinnerDataSvgSpinnerWindToy,
 }
 
 var svgSpinnerName = [svgSpinnerCount]string{
-	SvgSpinner12DotsScaleRotate: "12-dots-scale-rotate",
-	SvgSpinner180Ring:           "180-ring",
-	SvgSpinner270Ring:           "270-ring",
-	SvgSpinner3DotsBounce:       "3-dots-bounce",
-	SvgSpinner3DotsFade:         "3-dots-fade",
-	SvgSpinner3DotsMove:         "3-dots-move",
-	SvgSpinner3DotsRotate:       "3-dots-rotate",
-	SvgSpinner3DotsScaleMiddle:  "3-dots-scale-middle",
-	SvgSpinner3DotsScale:        "3-dots-scale",
-	SvgSpinner6DotsRotate:       "6-dots-rotate",
-	SvgSpinner8DotsRotate:       "8-dots-rotate",
-	SvgSpinner90Ring:            "90-ring",
-	SvgSpinnerAudio:             "audio",
-	SvgSpinnerBarsFade:          "bars-fade",
-	SvgSpinnerBarsRotateFade:    "bars-rotate-fade",
-	SvgSpinnerBarsScaleFade:     "bars-scale-fade",
-	SvgSpinnerBarsScaleMiddle:   "bars-scale-middle",
-	SvgSpinnerBarsScale:         "bars-scale",
-	SvgSpinnerBars:              "bars",
-	SvgSpinnerBlocksScale:       "blocks-scale",
-	SvgSpinnerBlocksShuffle2:    "blocks-shuffle-2",
-	SvgSpinnerBlocksShuffle3:    "blocks-shuffle-3",
-	SvgSpinnerBlocksWave:        "blocks-wave",
-	SvgSpinnerBouncingBall:      "bouncing-ball",
-	SvgSpinnerCircles:           "circles",
-	SvgSpinnerEclipseHalf:       "eclipse-half",
-	SvgSpinnerEclipse:           "eclipse",
-	SvgSpinnerGrid:              "grid",
-	SvgSpinnerHearts:            "hearts",
-	SvgSpinnerHorizontalBar:     "horizontal-bar",
-	SvgSpinnerLoader1:           "loader1",
-	SvgSpinnerLoader10:          "loader10",
-	SvgSpinnerLoader3:           "loader3",
-	SvgSpinnerLoader4:           "loader4",
-	SvgSpinnerLoader5:           "loader5",
-	SvgSpinnerLoader6:           "loader6",
-	SvgSpinnerLoader7:           "loader7",
-	SvgSpinnerLoader8:           "loader8",
-	SvgSpinnerLoader9:           "loader9",
-	SvgSpinnerSpinnerDouble:     "spinner-double",
-	SvgSpinnerSpinner:           "spinner",
-	SvgSpinnerSpinningCircles:   "spinning-circles",
-	SvgSpinnerTadpole:           "tadpole",
-	SvgSpinnerTailSpin:          "tail-spin",
-	SvgSpinnerWindToy:           "wind-toy",
+	SvgSpinner12DotsScaleRotate:  "12-dots-scale-rotate",
+	SvgSpinner180Ring:            "180-ring",
+	SvgSpinner270Ring:            "270-ring",
+	SvgSpinner3DotsBounce:        "3-dots-bounce",
+	SvgSpinner3DotsFade:          "3-dots-fade",
+	SvgSpinner3DotsMove:          "3-dots-move",
+	SvgSpinner3DotsRotate:        "3-dots-rotate",
+	SvgSpinner3DotsScaleMiddle:   "3-dots-scale-middle",
+	SvgSpinner3DotsScale:         "3-dots-scale",
+	SvgSpinner6DotsRotate:        "6-dots-rotate",
+	SvgSpinner6DotsScale:         "6-dots-scale",
+	SvgSpinner8DotsRotate:        "8-dots-rotate",
+	SvgSpinner90Ring:             "90-ring",
+	SvgSpinnerAudio:              "audio",
+	SvgSpinnerBarsFade:           "bars-fade",
+	SvgSpinnerBarsRotateFade:     "bars-rotate-fade",
+	SvgSpinnerBarsScaleFade:      "bars-scale-fade",
+	SvgSpinnerBarsScaleMiddle:    "bars-scale-middle",
+	SvgSpinnerBarsScale:          "bars-scale",
+	SvgSpinnerBars:               "bars",
+	SvgSpinnerBlocksScale:        "blocks-scale",
+	SvgSpinnerBlocksShuffle2:     "blocks-shuffle-2",
+	SvgSpinnerBlocksShuffle3:     "blocks-shuffle-3",
+	SvgSpinnerBlocksWave:         "blocks-wave",
+	SvgSpinnerBouncingBall:       "bouncing-ball",
+	SvgSpinnerCircles:            "circles",
+	SvgSpinnerEclipseHalf:        "eclipse-half",
+	SvgSpinnerEclipse:            "eclipse",
+	SvgSpinnerGrid:               "grid",
+	SvgSpinnerHearts:             "hearts",
+	SvgSpinnerHorizontalBar:      "horizontal-bar",
+	SvgSpinnerLoader1:            "loader1",
+	SvgSpinnerLoader10:           "loader10",
+	SvgSpinnerLoader3:            "loader3",
+	SvgSpinnerLoader4:            "loader4",
+	SvgSpinnerLoader5:            "loader5",
+	SvgSpinnerLoader6:            "loader6",
+	SvgSpinnerLoader7:            "loader7",
+	SvgSpinnerLoader8:            "loader8",
+	SvgSpinnerLoader9:            "loader9",
+	SvgSpinnerPuff:               "puff",
+	SvgSpinnerPulseRings2:        "pulse-rings-2",
+	SvgSpinnerPulseRings3:        "pulse-rings-3",
+	SvgSpinnerPulseRingsMultiple: "pulse-rings-multiple",
+	SvgSpinnerRingResize:         "ring-resize",
+	SvgSpinnerSpinnerDouble:      "spinner-double",
+	SvgSpinnerSpinner:            "spinner",
+	SvgSpinnerSpinningCircles:    "spinning-circles",
+	SvgSpinnerTadpole:            "tadpole",
+	SvgSpinnerTailSpin:           "tail-spin",
+	SvgSpinnerWifi:               "wifi",
+	SvgSpinnerWindToy:            "wind-toy",
 }

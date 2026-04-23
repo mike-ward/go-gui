@@ -5872,7 +5872,7 @@ gui.Spinner(gui.SpinnerCfg{
 | CurveSpiral           | Spiral       | Archimedean spiral                  |
 | CurveFourier          | Fourier      | Multi-harmonic sum                  |
 `,
-	"svg_spinner": `Forty-five built-in animated SVG spinners drawn from the
+	"svg_spinner": `Fifty-two built-in animated SVG spinners drawn from the
 open-source svg-spinners collection. Each kind is embedded as raw
 SVG and rendered through the same pipeline as ` + "`gui.Svg`" + `, so
 assets recolor via ` + "`fill=\"currentColor\"`" + ` and scale cleanly
@@ -5928,7 +5928,7 @@ for i := 0; i < gui.SvgSpinnerCount(); i++ {
 | Property  | Type           | Description                          |
 |-----------|----------------|--------------------------------------|
 | ID        | string         | Unique identifier (required)         |
-| Kind      | SvgSpinnerKind | One of 45 built-in spinners          |
+| Kind      | SvgSpinnerKind | One of 52 built-in spinners          |
 | Color     | Color          | Recolor monochrome assets            |
 | Width     | float32        | Explicit width (default 48 if both 0)|
 | Height    | float32        | Explicit height (default 48 if both 0)|
@@ -5951,7 +5951,7 @@ for i := 0; i < gui.SvgSpinnerCount(); i++ {
 
 | Function            | Description                                   |
 |---------------------|-----------------------------------------------|
-| SvgSpinnerCount()   | Returns the number of built-in kinds (45)     |
+| SvgSpinnerCount()   | Returns the number of built-in kinds (52)     |
 | SvgSpinnerName(k)   | Returns the asset basename (e.g. "tail-spin") |
 
 ## Kinds: Rings & Circles
@@ -5964,6 +5964,7 @@ for i := 0; i < gui.SvgSpinnerCount(); i++ {
 | SvgSpinnerCircles          | circles            |
 | SvgSpinnerEclipse          | eclipse            |
 | SvgSpinnerEclipseHalf      | eclipse-half       |
+| SvgSpinnerRingResize       | ring-resize        |
 | SvgSpinnerSpinner          | spinner            |
 | SvgSpinnerSpinnerDouble    | spinner-double     |
 | SvgSpinnerSpinningCircles  | spinning-circles   |
@@ -5981,6 +5982,7 @@ for i := 0; i < gui.SvgSpinnerCount(); i++ {
 | SvgSpinner3DotsScale         | 3-dots-scale          |
 | SvgSpinner3DotsScaleMiddle   | 3-dots-scale-middle   |
 | SvgSpinner6DotsRotate        | 6-dots-rotate         |
+| SvgSpinner6DotsScale         | 6-dots-scale          |
 | SvgSpinner8DotsRotate        | 8-dots-rotate         |
 
 ## Kinds: Bars
@@ -6018,6 +6020,15 @@ for i := 0; i < gui.SvgSpinnerCount(); i++ {
 | SvgSpinnerBlocksShuffle3  | blocks-shuffle-3  |
 | SvgSpinnerBlocksWave      | blocks-wave       |
 
+## Kinds: Pulse
+
+| Constant                      | Asset                  |
+|-------------------------------|------------------------|
+| SvgSpinnerPuff                | puff                   |
+| SvgSpinnerPulseRings2         | pulse-rings-2          |
+| SvgSpinnerPulseRings3         | pulse-rings-3          |
+| SvgSpinnerPulseRingsMultiple  | pulse-rings-multiple   |
+
 ## Kinds: Miscellaneous
 
 | Constant                | Asset          |
@@ -6027,17 +6038,24 @@ for i := 0; i < gui.SvgSpinnerCount(); i++ {
 | SvgSpinnerGrid          | grid           |
 | SvgSpinnerHearts        | hearts         |
 | SvgSpinnerTadpole       | tadpole        |
+| SvgSpinnerWifi          | wifi           |
 | SvgSpinnerWindToy       | wind-toy       |
 
 ## Caveats
 
 The SMIL parser handles rotate, translate, scale, opacity (plus
 fill-opacity and stroke-opacity), and primitive attribute animation
-(cx/cy/r/x/y/width/height/rx/ry) with keyTimes and keySplines easing
-and syncbase begin chains. A handful of assets that rely on SMIL
-features outside this subset may render as their static first frame.
-` + "`SvgSpinnerCount`" + ` and enum values are generated from the
-embedded asset directory, so numeric values shift when assets are
-added or removed — always reference kinds by their named constant.
+(cx/cy/r/x/y/width/height/rx/ry) with keyTimes, keySplines easing,
+calcMode=discrete, syncbase begin chains, ` + "`<set>`" + `,
+additive/accumulate="sum", from/to/by shorthand, min/max dur clamps,
+restart="never"/"whenNotActive", and ` + "`<animateMotion>`" + ` with
+inline path or ` + "`<mpath>`" + ` reference plus rotate="auto". A
+handful of assets that rely on SMIL features outside this subset may
+render as their static first frame. ` + "`<set>`" + ` defaults to
+freeze semantics (SMIL default is remove); authors who want remove
+must set ` + "`fill=\"remove\"`" + ` explicitly. ` + "`SvgSpinnerCount`" + ` and
+enum values are generated from the embedded asset directory, so
+numeric values shift when assets are added or removed — always
+reference kinds by their named constant.
 `,
 }

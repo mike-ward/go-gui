@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -113,6 +114,376 @@ func TestAnimationParseAnimateElementZeroDur(t *testing.T) {
 	_, ok := parseAnimateElement(elem, groupStyle{})
 	if ok {
 		t.Fatalf("expected ok=false for zero duration")
+	}
+}
+
+func TestAnimationParseCalcModeDiscrete(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="1;0;1" ` +
+		`dur="1s" calcMode="discrete">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.CalcMode != gui.SvgAnimCalcDiscrete {
+		t.Fatalf("expected discrete, got %d", anim.CalcMode)
+	}
+}
+
+func TestAnimationParseCalcModeSpline(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" dur="1s" ` +
+		`calcMode="spline" keySplines="0 0 1 1">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.CalcMode != gui.SvgAnimCalcSpline {
+		t.Fatalf("expected spline, got %d", anim.CalcMode)
+	}
+}
+
+func TestAnimationParseCalcModeLinearDefault(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" dur="1s">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.CalcMode != gui.SvgAnimCalcLinear {
+		t.Fatalf("expected linear default, got %d", anim.CalcMode)
+	}
+}
+
+func TestAnimationParseKeyTimesValid(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;0.5;1" ` +
+		`dur="1s" keyTimes="0;.2;1">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if len(anim.KeyTimes) != 3 {
+		t.Fatalf("expected 3 keyTimes, got %v", anim.KeyTimes)
+	}
+	if anim.KeyTimes[0] != 0 || f32Abs(anim.KeyTimes[1]-0.2) > 1e-5 ||
+		anim.KeyTimes[2] != 1 {
+		t.Fatalf("unexpected keyTimes: %v", anim.KeyTimes)
+	}
+}
+
+func TestAnimationParseKeyTimesLengthMismatchDropped(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;0.5;1" ` +
+		`dur="1s" keyTimes="0;1">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.KeyTimes != nil {
+		t.Fatalf("expected nil keyTimes on length mismatch, got %v",
+			anim.KeyTimes)
+	}
+}
+
+func TestAnimationParseKeyTimesNonMonotonicDropped(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;0.5;1" ` +
+		`dur="1s" keyTimes="0;.7;.3">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.KeyTimes != nil {
+		t.Fatalf("expected nil keyTimes on non-monotonic, got %v",
+			anim.KeyTimes)
+	}
+}
+
+func TestAnimationParseSetOpacity(t *testing.T) {
+	elem := `<set attributeName="opacity" to="0" begin="0.5s"/>`
+	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Kind != gui.SvgAnimOpacity {
+		t.Fatalf("expected SvgAnimOpacity, got %d", anim.Kind)
+	}
+	if !anim.IsSet {
+		t.Fatalf("expected IsSet=true")
+	}
+	if !anim.Freeze {
+		t.Fatalf("expected Freeze=true by default")
+	}
+	if f32Abs(anim.BeginSec-0.5) > 1e-5 {
+		t.Fatalf("expected begin=0.5, got %f", anim.BeginSec)
+	}
+	if len(anim.Values) != 2 || anim.Values[0] != 0 ||
+		anim.Values[1] != 0 {
+		t.Fatalf("expected Values=[0,0], got %v", anim.Values)
+	}
+}
+
+func TestAnimationParseSetAttr(t *testing.T) {
+	elem := `<set attributeName="r" to="12" begin="1s"/>`
+	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Kind != gui.SvgAnimAttr || anim.AttrName != gui.SvgAttrR {
+		t.Fatalf("expected SvgAnimAttr/R, got %d/%d",
+			anim.Kind, anim.AttrName)
+	}
+	if anim.Values[0] != 12 {
+		t.Fatalf("expected to=12, got %v", anim.Values)
+	}
+}
+
+func TestAnimationParseSetRejectsBadAttr(t *testing.T) {
+	elem := `<set attributeName="fill" to="red"/>`
+	_, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	if ok {
+		t.Fatalf("expected ok=false for unsupported attr")
+	}
+}
+
+func TestAnimationParseAnimateMotionInlinePath(t *testing.T) {
+	elem := `<animateMotion path="M0,0 L10,0" dur="1s"/>`
+	anim, ok := parseAnimateMotionElement(
+		elem, "", groupStyle{GroupID: "g"}, &parseState{})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Kind != gui.SvgAnimMotion {
+		t.Fatalf("expected SvgAnimMotion, got %d", anim.Kind)
+	}
+	if len(anim.MotionPath) < 4 {
+		t.Fatalf("expected flattened polyline, got %v", anim.MotionPath)
+	}
+	if anim.MotionLengths[len(anim.MotionLengths)-1] < 9.5 ||
+		anim.MotionLengths[len(anim.MotionLengths)-1] > 10.5 {
+		t.Fatalf("expected total length ~10, got %v",
+			anim.MotionLengths)
+	}
+}
+
+func TestAnimationParseAnimateMotionRotateAuto(t *testing.T) {
+	elem := `<animateMotion path="M0,0 L10,0" dur="1s" rotate="auto"/>`
+	anim, ok := parseAnimateMotionElement(
+		elem, "", groupStyle{GroupID: "g"}, &parseState{})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.MotionRotate != gui.SvgAnimMotionRotateAuto {
+		t.Fatalf("expected auto, got %d", anim.MotionRotate)
+	}
+}
+
+func TestAnimationParseAnimateMotionMpath(t *testing.T) {
+	elem := `<animateMotion dur="1s">`
+	body := `<mpath xlink:href="#p1"/></animateMotion>`
+	state := &parseState{
+		defsPaths: map[string]string{"p1": "M0,0 L20,0"},
+	}
+	anim, ok := parseAnimateMotionElement(
+		elem, body, groupStyle{GroupID: "g"}, state)
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	total := anim.MotionLengths[len(anim.MotionLengths)-1]
+	if total < 19.5 || total > 20.5 {
+		t.Fatalf("expected total length ~20 from mpath, got %f", total)
+	}
+}
+
+func TestAnimationParseAccumulateSum(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="1s" accumulate="sum" repeatCount="3">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if !anim.Accumulate {
+		t.Fatalf("expected Accumulate=true")
+	}
+}
+
+func TestAnimationParseRestartNever(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="1s" restart="never">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Restart != gui.SvgAnimRestartNever {
+		t.Fatalf("expected never, got %d", anim.Restart)
+	}
+}
+
+func TestAnimationParseRestartWhenNotActive(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="1s" restart="whenNotActive">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Restart != gui.SvgAnimRestartWhenNotActive {
+		t.Fatalf("expected whenNotActive, got %d", anim.Restart)
+	}
+}
+
+func TestAnimationParseDurationMinClamp(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="5s" min="6s">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if f32Abs(anim.DurSec-6) > 1e-5 {
+		t.Fatalf("expected dur clamped to 6, got %f", anim.DurSec)
+	}
+}
+
+func TestAnimationParseDurationMaxClamp(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="5s" max="2s">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if f32Abs(anim.DurSec-2) > 1e-5 {
+		t.Fatalf("expected dur clamped to 2, got %f", anim.DurSec)
+	}
+}
+
+func TestAnimationParseDurationMinMaxInBand(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="3s" min="1s" max="5s">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if f32Abs(anim.DurSec-3) > 1e-5 {
+		t.Fatalf("expected dur unchanged at 3, got %f", anim.DurSec)
+	}
+}
+
+func TestAnimationParseOpacityFromTo(t *testing.T) {
+	elem := `<animate attributeName="opacity" from="1" to="0" dur="1s">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if len(anim.Values) != 2 ||
+		anim.Values[0] != 1 || anim.Values[1] != 0 {
+		t.Fatalf("expected Values=[1,0], got %v", anim.Values)
+	}
+	if anim.Additive {
+		t.Fatalf("from/to must not imply additive")
+	}
+}
+
+func TestAnimationParseOpacityBy(t *testing.T) {
+	elem := `<animate attributeName="opacity" by="-0.5" dur="1s">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if len(anim.Values) != 2 ||
+		anim.Values[0] != 0 || anim.Values[1] != -0.5 {
+		t.Fatalf("expected Values=[0,-0.5], got %v", anim.Values)
+	}
+	if !anim.Additive {
+		t.Fatalf("by= must imply Additive=true")
+	}
+}
+
+func TestAnimationParseAttrBy(t *testing.T) {
+	elem := `<animate attributeName="r" by="5" dur="1s">`
+	anim, ok := parseAnimateAttributeElement(
+		elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if len(anim.Values) != 2 ||
+		anim.Values[0] != 0 || anim.Values[1] != 5 {
+		t.Fatalf("expected Values=[0,5], got %v", anim.Values)
+	}
+	if !anim.Additive {
+		t.Fatalf("by= must imply Additive=true")
+	}
+}
+
+func TestAnimationParseRotateBy(t *testing.T) {
+	elem := `<animateTransform attributeName="transform" ` +
+		`type="rotate" by="90 12 12" dur="1s">`
+	anim, ok := parseAnimateTransformElement(
+		elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if len(anim.Values) != 2 ||
+		anim.Values[0] != 0 || anim.Values[1] != 90 {
+		t.Fatalf("expected angles=[0,90], got %v", anim.Values)
+	}
+	if anim.CenterX != 12 || anim.CenterY != 12 {
+		t.Fatalf("expected center=(12,12), got (%f,%f)",
+			anim.CenterX, anim.CenterY)
+	}
+	if !anim.Additive {
+		t.Fatalf("by= must imply Additive=true")
+	}
+}
+
+func TestAnimationParseTranslateBy(t *testing.T) {
+	elem := `<animateTransform attributeName="transform" ` +
+		`type="translate" by="10 20" dur="1s">`
+	anim, ok := parseAnimateTransformElement(
+		elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	want := []float32{0, 0, 10, 20}
+	if len(anim.Values) != 4 {
+		t.Fatalf("expected 4 pair floats, got %v", anim.Values)
+	}
+	for i := range want {
+		if anim.Values[i] != want[i] {
+			t.Fatalf("want %v, got %v", want, anim.Values)
+		}
+	}
+	if !anim.Additive {
+		t.Fatalf("by= must imply Additive=true")
+	}
+}
+
+func TestAnimationParseAdditiveSumExplicit(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="1s" additive="sum">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if !anim.Additive {
+		t.Fatalf("explicit additive=sum must set Additive")
+	}
+}
+
+func TestAnimationParseSetFillRemove(t *testing.T) {
+	elem := `<set attributeName="opacity" to="0.5" fill="remove"/>`
+	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Freeze {
+		t.Fatalf("expected Freeze=false when fill=remove")
+	}
+}
+
+func TestAnimationParseKeyTimesBadEndpointsDropped(t *testing.T) {
+	elem := `<animate attributeName="opacity" values="0;1" ` +
+		`dur="1s" keyTimes="0.1;1">`
+	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.KeyTimes != nil {
+		t.Fatalf("expected nil keyTimes when first != 0, got %v",
+			anim.KeyTimes)
 	}
 }
 
@@ -520,5 +891,126 @@ func TestResolveBegins_PropagatesGlobalCycle(t *testing.T) {
 		if a.Cycle <= 0 {
 			t.Fatalf("anim[%d] expected Cycle>0, got %f", i, a.Cycle)
 		}
+	}
+}
+
+// --- Hardening and edge-case coverage ---
+
+// flattenMotionD truncates the polyline at maxMotionVertices so a
+// pathological path cannot drive unbounded per-frame arc scans.
+func TestFlattenMotionD_CapsAtMaxVertices(t *testing.T) {
+	// Build a path with > maxMotionVertices L segments.
+	var b strings.Builder
+	b.WriteString("M0,0")
+	for i := 1; i <= maxMotionVertices+200; i++ {
+		b.WriteString(" L")
+		// One unit apart on x-axis.
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(",0")
+	}
+	poly, lens := flattenMotionD(b.String())
+	if len(poly)/2 > maxMotionVertices {
+		t.Fatalf("polyline not capped: got %d vertices, cap %d",
+			len(poly)/2, maxMotionVertices)
+	}
+	if len(lens) != len(poly)/2 {
+		t.Fatalf("lens/poly length mismatch: %d vs %d",
+			len(lens), len(poly)/2)
+	}
+}
+
+// <set attributeName="fill-opacity"> must route to Target=Fill so
+// only the fill channel receives the value at render time.
+func TestAnimationParseSet_FillOpacityTargetsFill(t *testing.T) {
+	elem := `<set attributeName="fill-opacity" to="0.25">`
+	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Kind != gui.SvgAnimOpacity {
+		t.Fatalf("expected SvgAnimOpacity, got %d", anim.Kind)
+	}
+	if anim.Target != gui.SvgAnimTargetFill {
+		t.Fatalf("expected TargetFill, got %d", anim.Target)
+	}
+}
+
+// <set attributeName="stroke-opacity"> must route to Target=Stroke.
+func TestAnimationParseSet_StrokeOpacityTargetsStroke(t *testing.T) {
+	elem := `<set attributeName="stroke-opacity" to="0.75">`
+	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.Target != gui.SvgAnimTargetStroke {
+		t.Fatalf("expected TargetStroke, got %d", anim.Target)
+	}
+}
+
+// animateTransform with to= but no from= must imply additive=true
+// so the animation sums onto the base transform at apply time.
+func TestAnimationParsePairedTransform_ToOnlyImpliesAdditive(t *testing.T) {
+	elem := `<animateTransform attributeName="transform" ` +
+		`type="translate" to="5 7" dur="1s">`
+	anim, ok := parseAnimateTransformElement(
+		elem, groupStyle{GroupID: "g"})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if !anim.Additive {
+		t.Fatalf("to= without from= must imply Additive=true")
+	}
+	want := []float32{0, 0, 5, 7}
+	if len(anim.Values) != 4 {
+		t.Fatalf("expected 4 pair floats, got %v", anim.Values)
+	}
+	for i := range want {
+		if anim.Values[i] != want[i] {
+			t.Fatalf("want %v, got %v", want, anim.Values)
+		}
+	}
+}
+
+// rotate="auto-reverse" and unrecognized values map to AutoReverse
+// and None respectively.
+func TestAnimationParseMotionRotate_AutoReverseAndUnknown(t *testing.T) {
+	revElem := `<animateMotion path="M0,0 L10,0" dur="1s" ` +
+		`rotate="auto-reverse"/>`
+	anim, ok := parseAnimateMotionElement(
+		revElem, "", groupStyle{GroupID: "g"}, &parseState{})
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	if anim.MotionRotate != gui.SvgAnimMotionRotateAutoReverse {
+		t.Fatalf("expected AutoReverse, got %d", anim.MotionRotate)
+	}
+
+	unkElem := `<animateMotion path="M0,0 L10,0" dur="1s" rotate="45"/>`
+	anim2, ok := parseAnimateMotionElement(
+		unkElem, "", groupStyle{GroupID: "g"}, &parseState{})
+	if !ok {
+		t.Fatalf("unknown-rotate: expected ok=true")
+	}
+	if anim2.MotionRotate != gui.SvgAnimMotionRotateNone {
+		t.Fatalf("unknown rotate= must fall through to None, got %d",
+			anim2.MotionRotate)
+	}
+}
+
+// <mpath href="#id"> (non-xlink) must resolve against defsPaths.
+func TestAnimationMotionPathD_BareHrefResolves(t *testing.T) {
+	elem := `<animateMotion dur="1s">`
+	body := `<mpath href="#p2"/></animateMotion>`
+	state := &parseState{
+		defsPaths: map[string]string{"p2": "M0,0 L15,0"},
+	}
+	anim, ok := parseAnimateMotionElement(
+		elem, body, groupStyle{GroupID: "g"}, state)
+	if !ok {
+		t.Fatalf("expected ok=true")
+	}
+	total := anim.MotionLengths[len(anim.MotionLengths)-1]
+	if total < 14.5 || total > 15.5 {
+		t.Fatalf("expected ~15, got %f", total)
 	}
 }

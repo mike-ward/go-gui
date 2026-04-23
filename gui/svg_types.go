@@ -112,8 +112,7 @@ const (
 	SvgAnimOpacity SvgAnimKind = iota
 	SvgAnimRotate
 	// SvgAnimAttr is a generic per-attribute animation (cx, cy, r,
-	// x, y, width, height, rx, ry). Phase-1 records the animation;
-	// phase-2 evaluates overrides and re-tessellates.
+	// x, y, width, height, rx, ry).
 	SvgAnimAttr
 	// SvgAnimTranslate animates <animateTransform type="translate">.
 	// Values is interleaved [tx,ty, tx,ty, ...] (2 per keyframe).
@@ -122,6 +121,22 @@ const (
 	// is interleaved [sx,sy, sx,sy, ...] (2 per keyframe; uniform
 	// scale values are normalized to equal sx,sy at parse time).
 	SvgAnimScale
+	// SvgAnimMotion animates <animateMotion>: position follows a
+	// path. MotionPath holds a flattened polyline as interleaved
+	// [x,y,...]; MotionLengths is the cumulative arc length at each
+	// vertex. The animation writes to st.TransX/TransY; with
+	// MotionRotate=auto it also writes st.RotAngle (tangent angle).
+	SvgAnimMotion
+)
+
+// SvgAnimMotionRotate selects the rotate= mode on animateMotion.
+type SvgAnimMotionRotate uint8
+
+// SvgAnimMotionRotate constants.
+const (
+	SvgAnimMotionRotateNone SvgAnimMotionRotate = iota
+	SvgAnimMotionRotateAuto
+	SvgAnimMotionRotateAutoReverse
 )
 
 // SvgAttrName identifies an animatable primitive attribute.
@@ -154,6 +169,31 @@ const (
 	SvgAnimTargetStroke
 )
 
+// SvgAnimRestart controls re-trigger behavior on repeating begin
+// entries: "always" fires each activation (default), "whenNotActive"
+// skips re-triggers while the previous activation is still within
+// its active duration, "never" keeps only the first activation.
+type SvgAnimRestart uint8
+
+// SvgAnimRestart constants.
+const (
+	SvgAnimRestartAlways SvgAnimRestart = iota
+	SvgAnimRestartWhenNotActive
+	SvgAnimRestartNever
+)
+
+// SvgAnimCalcMode selects the keyframe interpolation style.
+type SvgAnimCalcMode uint8
+
+// SvgAnimCalcMode constants. Linear is the SMIL default; Spline bends
+// per-segment fraction via KeySplines; Discrete holds each keyframe's
+// value for its entire segment (no interpolation).
+const (
+	SvgAnimCalcLinear SvgAnimCalcMode = iota
+	SvgAnimCalcSpline
+	SvgAnimCalcDiscrete
+)
+
 // SvgAnimation holds parsed SMIL animation data.
 type SvgAnimation struct {
 	Kind    SvgAnimKind
@@ -172,10 +212,17 @@ type SvgAnimation struct {
 	// paired Values have len=len(Values)/2). Nil when calcMode !=
 	// "spline" or keySplines mismatched.
 	KeySplines []float32
-	CenterX    float32 // rotation center (SVG coords)
-	CenterY    float32
-	DurSec     float32
-	BeginSec   float32
+	// KeyTimes is the non-uniform keyframe timing list on [0,1].
+	// Length equals the number of keyframes (scalar Values have
+	// len=len(Values); paired Values have len=len(Values)/2).
+	// Must start at 0, end at 1, and be monotonic non-decreasing.
+	// Nil when absent or when validation failed — uniform i/(n-1)
+	// spacing is used instead.
+	KeyTimes []float32
+	CenterX  float32 // rotation center (SVG coords)
+	CenterY  float32
+	DurSec   float32
+	BeginSec float32
 	// Cycle is the activation period in seconds. 0 means single-play
 	// (no looping; freeze or remove after dur). >0 means the
 	// animation re-fires every Cycle seconds, allowing chained-
@@ -187,9 +234,30 @@ type SvgAnimation struct {
 	// the animation continues to contribute its last keyframe value
 	// until either the cycle restarts or another animation takes
 	// over the same attribute (sandwich semantics).
-	Freeze   bool
-	AttrName SvgAttrName   // valid when Kind == SvgAnimAttr
-	Target   SvgAnimTarget // valid when Kind == SvgAnimOpacity
+	Freeze bool
+	// Accumulate=true reflects accumulate="sum": each repeat starts
+	// from the prior end value so repeated animations stack.
+	Accumulate bool
+	// Additive=true reflects additive="sum": the animation adds its
+	// value to the base rather than replacing. For rotate/translate/
+	// scale the base is identity (0 / (0,0) / (1,1)); for opacity the
+	// base is 1; for attr the base is the primitive's static value.
+	Additive bool
+	// IsSet marks a <set> element: zero-duration animation that
+	// contributes its single to-value from BeginSec onward. Sandwich
+	// ordering lets later <set>s override earlier ones.
+	IsSet    bool
+	AttrName SvgAttrName     // valid when Kind == SvgAnimAttr
+	Target   SvgAnimTarget   // valid when Kind == SvgAnimOpacity
+	CalcMode SvgAnimCalcMode // keyframe interpolation mode
+	Restart  SvgAnimRestart  // re-trigger policy
+	// MotionPath is a flattened polyline [x0,y0, x1,y1, ...] for
+	// SvgAnimMotion. MotionLengths is the cumulative arc length
+	// (same count as vertices; last entry = total length). Nil on
+	// non-motion kinds.
+	MotionPath    []float32
+	MotionLengths []float32
+	MotionRotate  SvgAnimMotionRotate
 }
 
 // SvgPrimitiveKind identifies the source primitive of a VectorPath.

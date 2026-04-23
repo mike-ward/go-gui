@@ -477,6 +477,223 @@ func TestComputeSvgAnimations_FreezeHoldsLastValue(t *testing.T) {
 	}
 }
 
+// Additive=true on translate sums the animated value onto the prior
+// state (init 0) rather than replacing.
+func TestComputeSvgAnimations_AdditiveTranslate(t *testing.T) {
+	base := SvgAnimation{
+		Kind:    SvgAnimTranslate,
+		GroupID: "g",
+		Values:  []float32{10, 20, 10, 20}, // constant (10,20)
+		DurSec:  1,
+		Freeze:  true,
+	}
+	add := SvgAnimation{
+		Kind:     SvgAnimTranslate,
+		GroupID:  "g",
+		Values:   []float32{0, 0, 3, 4}, // by (3,4)
+		DurSec:   1,
+		Freeze:   true,
+		Additive: true,
+	}
+	// Same activation time → stable sort keeps input order: base
+	// first, additive second sums on top.
+	st := computeSvgAnimations([]SvgAnimation{base, add}, 1.0, nil)
+	if st["g"].TransX != 13 || st["g"].TransY != 24 {
+		t.Fatalf("additive translate want (13,24), got (%f,%f)",
+			st["g"].TransX, st["g"].TransY)
+	}
+}
+
+// Additive=true on attr with no base-contrib marks AdditiveMask so
+// the override adds to the primitive's parsed value at render.
+func TestComputeSvgAnimations_AdditiveAttrMarksAdditiveMask(t *testing.T) {
+	a := SvgAnimation{
+		Kind:     SvgAnimAttr,
+		AttrName: SvgAttrR,
+		GroupID:  "g",
+		Values:   []float32{0, 5}, // by 5
+		DurSec:   1,
+		Freeze:   true,
+		Additive: true,
+	}
+	st := computeSvgAnimations([]SvgAnimation{a}, 1.0, nil)
+	ov := st["g"].AttrOverride
+	if ov.Mask&SvgAnimMaskR == 0 {
+		t.Fatal("expected R mask set")
+	}
+	if ov.AdditiveMask&SvgAnimMaskR == 0 {
+		t.Fatal("expected R AdditiveMask set")
+	}
+	if ov.R != 5 {
+		t.Fatalf("expected R=5 delta, got %f", ov.R)
+	}
+}
+
+// animateMotion samples along a flattened straight-line path by
+// arc length and writes TransX/TransY.
+func TestComputeSvgAnimations_MotionStraightLine(t *testing.T) {
+	// Horizontal line of length 10. At frac=0.5, point = (5, 0).
+	a := SvgAnimation{
+		Kind:          SvgAnimMotion,
+		GroupID:       "g",
+		DurSec:        1,
+		Freeze:        true,
+		MotionPath:    []float32{0, 0, 10, 0},
+		MotionLengths: []float32{0, 10},
+	}
+	st := computeSvgAnimations([]SvgAnimation{a}, 0.5, nil)
+	if st["g"].TransX < 4.9 || st["g"].TransX > 5.1 ||
+		st["g"].TransY != 0 {
+		t.Fatalf("expected (5,0), got (%f,%f)",
+			st["g"].TransX, st["g"].TransY)
+	}
+	if !st["g"].HasXform {
+		t.Fatal("expected HasXform=true")
+	}
+}
+
+// rotate=auto writes the tangent angle into RotAngle.
+func TestComputeSvgAnimations_MotionRotateAuto(t *testing.T) {
+	// Vertical line: tangent = (0, 1) → atan2(1,0) = 90°.
+	a := SvgAnimation{
+		Kind:          SvgAnimMotion,
+		GroupID:       "g",
+		DurSec:        1,
+		Freeze:        true,
+		MotionPath:    []float32{0, 0, 0, 10},
+		MotionLengths: []float32{0, 10},
+		MotionRotate:  SvgAnimMotionRotateAuto,
+	}
+	st := computeSvgAnimations([]SvgAnimation{a}, 0.5, nil)
+	if st["g"].RotAngle < 89 || st["g"].RotAngle > 91 {
+		t.Fatalf("expected ~90°, got %f", st["g"].RotAngle)
+	}
+}
+
+// Accumulate=sum stacks each cycle's delta onto the value.
+func TestComputeSvgAnimations_AccumulateSum(t *testing.T) {
+	a := SvgAnimation{
+		Kind:       SvgAnimRotate,
+		GroupID:    "g",
+		Values:     []float32{0, 360}, // one full turn per cycle
+		DurSec:     1,
+		Cycle:      1, // re-fire each second
+		Freeze:     true,
+		Accumulate: true,
+	}
+	// At t=3.5s: 3 completed prior cycles → accum offset = 3*360 = 1080.
+	// In the current cycle, phase=0.5 → lerp → 180. Total = 1260.
+	st := computeSvgAnimations([]SvgAnimation{a}, 3.5, nil)
+	got := st["g"].RotAngle
+	if got < 1259 || got > 1261 {
+		t.Fatalf("accumulate sum want ≈1260 deg, got %f", got)
+	}
+}
+
+// Accumulate and Additive are orthogonal per SMIL: accumulate stacks
+// prior-iteration deltas onto the current value; additive then sums
+// onto the base (existing sandwich state). Both active must apply.
+func TestComputeSvgAnimations_AccumulateWithAdditive(t *testing.T) {
+	// Base rotate holds at 10°. Second animation: rotate 0→90 with
+	// repeatCount=3 (via Cycle=1), accumulate="sum", additive="sum".
+	// At t=2.5s, iteration 2, localFrac=0.5 → local=45. Accum delta
+	// from 2 prior iterations = 2*90 = 180. animValue = 45+180 = 225.
+	// Additive sums onto base 10 → effective 235.
+	base := SvgAnimation{
+		Kind:    SvgAnimRotate,
+		GroupID: "g",
+		Values:  []float32{10, 10},
+		DurSec:  1,
+		Freeze:  true,
+	}
+	acc := SvgAnimation{
+		Kind:       SvgAnimRotate,
+		GroupID:    "g",
+		Values:     []float32{0, 90},
+		DurSec:     1,
+		Cycle:      1,
+		Freeze:     true,
+		Accumulate: true,
+		Additive:   true,
+	}
+	st := computeSvgAnimations([]SvgAnimation{base, acc}, 2.5, nil)
+	got := st["g"].RotAngle
+	if got < 234 || got > 236 {
+		t.Fatalf("accumulate+additive want ≈235, got %f", got)
+	}
+}
+
+// Restart=never clamps activation to BeginSec even when Cycle>0.
+func TestComputeSvgAnimations_RestartNever(t *testing.T) {
+	a := SvgAnimation{
+		Kind:    SvgAnimOpacity,
+		GroupID: "g",
+		Values:  []float32{1, 0},
+		DurSec:  1,
+		Cycle:   1, // would normally re-fire
+		Freeze:  true,
+		Restart: SvgAnimRestartNever,
+	}
+	// At t=5 (5 cycles in): without never, activation would be 5.0
+	// and phase=0 → value=1. With never, activation stays at 0 and
+	// phase=5 → past dur, freeze holds frac=1 → value=0.
+	st := computeSvgAnimations([]SvgAnimation{a}, 5, nil)
+	if st["g"].Opacity != 0 {
+		t.Fatalf("restart=never should freeze at 0, got %f",
+			st["g"].Opacity)
+	}
+}
+
+// Restart=whenNotActive suppresses re-trigger while previous activation
+// still within dur.
+func TestComputeSvgAnimations_RestartWhenNotActive(t *testing.T) {
+	a := SvgAnimation{
+		Kind:    SvgAnimOpacity,
+		GroupID: "g",
+		Values:  []float32{1, 0},
+		DurSec:  2, // longer than cycle
+		Cycle:   1, // re-fires at t=1, 2, 3...
+		Freeze:  true,
+		Restart: SvgAnimRestartWhenNotActive,
+	}
+	// At t=1.5: always-mode would jump to activation=1 (phase=0.5).
+	// whenNotActive: prev activation 0 is still active (0<dur=2), so
+	// suppress → activation stays 0, phase=1.5, frac=0.75 → 0.25.
+	st := computeSvgAnimations([]SvgAnimation{a}, 1.5, nil)
+	if st["g"].Opacity < 0.2 || st["g"].Opacity > 0.3 {
+		t.Fatalf("whenNotActive should keep prev activation, "+
+			"got opacity=%f", st["g"].Opacity)
+	}
+}
+
+// <set> zero-duration animation: inactive before BeginSec, contributes
+// to-value after BeginSec regardless of dur.
+func TestComputeSvgAnimations_SetZeroDuration(t *testing.T) {
+	a := SvgAnimation{
+		Kind:     SvgAnimOpacity,
+		GroupID:  "g",
+		Values:   []float32{0, 0}, // to=0
+		BeginSec: 1,
+		IsSet:    true,
+		Freeze:   true,
+	}
+	// Before begin: no contribution.
+	st := computeSvgAnimations([]SvgAnimation{a}, 0.5, nil)
+	if _, ok := st["g"]; ok {
+		t.Fatal("before BeginSec must not contribute")
+	}
+	// At begin and beyond: opacity is forced to 0.
+	st = computeSvgAnimations([]SvgAnimation{a}, 1.0, nil)
+	if st["g"].Opacity != 0 {
+		t.Fatalf("expected opacity=0 at begin, got %f", st["g"].Opacity)
+	}
+	st = computeSvgAnimations([]SvgAnimation{a}, 10.0, nil)
+	if st["g"].Opacity != 0 {
+		t.Fatalf("expected opacity=0 long after begin, got %f",
+			st["g"].Opacity)
+	}
+}
+
 // --- Cycle restart ---
 
 // Cycle>0 must re-fire the animation every cycle seconds. At
@@ -603,5 +820,70 @@ func TestSvgRender_FillOpacityAnimDoesNotDimStroke(t *testing.T) {
 	if w.renderers[0].Color.A != 255 {
 		t.Fatalf("fill should keep alpha 255 when only stroke-opacity "+
 			"is animated, got %d", w.renderers[0].Color.A)
+	}
+}
+
+// motionSample returns zeros when MotionPath holds fewer vertices
+// than MotionLengths claims — without the guard, poly[(idx+1)*2]
+// would panic on out-of-bounds.
+func TestMotionSample_InconsistentPolyLengthReturnsZero(t *testing.T) {
+	a := &SvgAnimation{
+		MotionLengths: []float32{0, 10, 20, 30},
+		MotionPath:    []float32{0, 0, 10, 0}, // only 2 vertices
+	}
+	x, y, ang := motionSample(a, 0.5)
+	if x != 0 || y != 0 || ang != 0 {
+		t.Fatalf("inconsistent lens/poly: want (0,0,0), got (%f,%f,%f)",
+			x, y, ang)
+	}
+}
+
+// motionSample returns zeros when the total arc length is non-
+// finite so NaN/Inf cannot poison TransX/TransY.
+func TestMotionSample_NonFiniteTotalReturnsZero(t *testing.T) {
+	inf := float32(math.Inf(1))
+	a := &SvgAnimation{
+		MotionLengths: []float32{0, inf},
+		MotionPath:    []float32{0, 0, 1, 0},
+	}
+	x, y, ang := motionSample(a, 0.5)
+	if x != 0 || y != 0 || ang != 0 {
+		t.Fatalf("non-finite total: want (0,0,0), got (%f,%f,%f)",
+			x, y, ang)
+	}
+
+	nan := float32(math.NaN())
+	a.MotionLengths = []float32{0, nan}
+	x, y, ang = motionSample(a, 0.5)
+	if x != 0 || y != 0 || ang != 0 {
+		t.Fatalf("NaN total: want (0,0,0), got (%f,%f,%f)", x, y, ang)
+	}
+}
+
+// Additive=true on animateMotion sums its (x,y) onto the prior
+// sandwich state rather than replacing.
+func TestComputeSvgAnimations_MotionAdditiveStacks(t *testing.T) {
+	base := SvgAnimation{
+		Kind:          SvgAnimMotion,
+		GroupID:       "g",
+		DurSec:        1,
+		Freeze:        true,
+		MotionPath:    []float32{100, 200, 100, 200},
+		MotionLengths: []float32{0, 0}, // total=0 → stays at (100,200)
+	}
+	add := SvgAnimation{
+		Kind:          SvgAnimMotion,
+		GroupID:       "g",
+		DurSec:        1,
+		Freeze:        true,
+		Additive:      true,
+		MotionPath:    []float32{0, 0, 6, 8},
+		MotionLengths: []float32{0, 10},
+	}
+	// At frac=1, additive sample = (6,8). Expect (100+6, 200+8).
+	st := computeSvgAnimations([]SvgAnimation{base, add}, 1.0, nil)
+	if st["g"].TransX != 106 || st["g"].TransY != 208 {
+		t.Fatalf("additive motion want (106,208), got (%f,%f)",
+			st["g"].TransX, st["g"].TransY)
 	}
 }

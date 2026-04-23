@@ -155,3 +155,57 @@ func TestPhase2ReuseBufferIsReused(t *testing.T) {
 		t.Fatal("expected returned slice to alias reuse backing array")
 	}
 }
+
+// overrideScalar replaces the base value when the mask bit is set
+// without AdditiveMask, and sums base+delta when AdditiveMask is
+// also set.
+func TestApplyOverridesToPath_NonAdditiveReplaces(t *testing.T) {
+	p := &VectorPath{
+		Primitive: gui.SvgPrimitive{
+			Kind: gui.SvgPrimCircle, CX: 12, CY: 12, R: 5,
+		},
+	}
+	ov := gui.SvgAnimAttrOverride{
+		Mask: gui.SvgAnimMaskR,
+		R:    9,
+	}
+	applyOverridesToPath(p, ov)
+	if p.Primitive.R != 9 {
+		t.Fatalf("replace: want R=9, got %f", p.Primitive.R)
+	}
+}
+
+func TestApplyOverridesToPath_AdditiveAddsDelta(t *testing.T) {
+	p := &VectorPath{
+		Primitive: gui.SvgPrimitive{
+			Kind: gui.SvgPrimCircle, CX: 12, CY: 12, R: 5,
+		},
+	}
+	ov := gui.SvgAnimAttrOverride{
+		Mask:         gui.SvgAnimMaskR,
+		AdditiveMask: gui.SvgAnimMaskR,
+		R:            3, // delta
+	}
+	applyOverridesToPath(p, ov)
+	if p.Primitive.R != 8 {
+		t.Fatalf("additive: want R=5+3=8, got %f", p.Primitive.R)
+	}
+}
+
+// Unset mask bits leave the parsed base untouched regardless of the
+// field value or AdditiveMask bit.
+func TestApplyOverridesToPath_UnsetMaskKeepsBase(t *testing.T) {
+	p := &VectorPath{
+		Primitive: gui.SvgPrimitive{
+			Kind: gui.SvgPrimCircle, CX: 12, CY: 12, R: 5,
+		},
+	}
+	ov := gui.SvgAnimAttrOverride{
+		// No mask bits set; R payload must be ignored.
+		R: 99,
+	}
+	applyOverridesToPath(p, ov)
+	if p.Primitive.R != 5 {
+		t.Fatalf("unset mask: want R=5 unchanged, got %f", p.Primitive.R)
+	}
+}
