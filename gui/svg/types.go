@@ -61,6 +61,12 @@ type PathSegment struct {
 
 // VectorPath represents a single filled/stroked path.
 type VectorPath struct {
+	// PathID is a monotonic per-SvgParsed identifier assigned at parse
+	// time. Every VectorPath carries a unique ID; derived tessellated
+	// paths (fill, stroke, clip masks) inherit it so animation state
+	// is routed per-path rather than per-GroupID. Zero means unset
+	// (clip-mask or fallback). GroupID stays as a debug hint.
+	PathID           uint32
 	Segments         []PathSegment
 	FillColor        gui.SvgColor
 	StrokeColor      gui.SvgColor
@@ -169,8 +175,11 @@ func defaultGroupStyle(transform [6]float32) groupStyle {
 
 // parseState tracks mutable state during SVG parsing.
 type parseState struct {
-	elemCount  int
-	synthID    int
+	elemCount int
+	synthID   int
+	// pathIDSeq assigns monotonic PathIDs to every parsed VectorPath.
+	// Starts at 1; zero is reserved for "unset".
+	pathIDSeq  uint32
 	texts      []gui.SvgText
 	textPaths  []gui.SvgTextPath
 	animations []gui.SvgAnimation

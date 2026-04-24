@@ -23,8 +23,8 @@ func TestPhase2CircleCyOverrideShiftsTriangles(t *testing.T) {
 		t.Fatal("no static triangles")
 	}
 
-	overrides := map[string]gui.SvgAnimAttrOverride{
-		"__anim_1": {Mask: gui.SvgAnimMaskCY, CY: 6},
+	overrides := map[uint32]gui.SvgAnimAttrOverride{
+		firstAnimatedPathID(parsed): {Mask: gui.SvgAnimMaskCY, CY: 6},
 	}
 	animTris := p.TessellateAnimated(parsed, 1, overrides, nil)
 	if len(animTris) == 0 {
@@ -68,8 +68,8 @@ func TestPhase2RectHeightAndYOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	overrides := map[string]gui.SvgAnimAttrOverride{
-		"__anim_1": {
+	overrides := map[uint32]gui.SvgAnimAttrOverride{
+		firstAnimatedPathID(parsed): {
 			Mask:   gui.SvgAnimMaskY | gui.SvgAnimMaskHeight,
 			Y:      1,
 			Height: 22,
@@ -111,8 +111,8 @@ func TestPhase2ClipPathedAnimatedSkipsRetessellation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	overrides := map[string]gui.SvgAnimAttrOverride{
-		"__anim_1": {Mask: gui.SvgAnimMaskCY, CY: 6},
+	overrides := map[uint32]gui.SvgAnimAttrOverride{
+		firstAnimatedPathID(parsed): {Mask: gui.SvgAnimMaskCY, CY: 6},
 	}
 	out := p.TessellateAnimated(parsed, 1, overrides, nil)
 	if out != nil {
@@ -141,8 +141,8 @@ func TestPhase2ReuseBufferIsReused(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	overrides := map[string]gui.SvgAnimAttrOverride{
-		"__anim_1": {Mask: gui.SvgAnimMaskCY, CY: 6},
+	overrides := map[uint32]gui.SvgAnimAttrOverride{
+		firstAnimatedPathID(parsed): {Mask: gui.SvgAnimMaskCY, CY: 6},
 	}
 	reuse := make([]gui.TessellatedPath, 0, 8)
 	out1 := p.TessellateAnimated(parsed, 1, overrides, reuse)

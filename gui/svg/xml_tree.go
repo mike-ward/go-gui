@@ -1,0 +1,228 @@
+package svg
+
+// xml_tree.go — SVG document decoded once into an xmlNode tree via
+// encoding/xml. All downstream parsing walks this tree; no substring
+// tag scanning remains in the parsing path.
+//
+// Helpers that take raw opening-tag strings (findAttr,
+// findAttrOrStyle, mergeGroupStyle, shape/animation parsers) keep
+// their signatures. The walker hands them the reconstructed OpenTag
+// text of the current node, so the entire attribute-read path is
+// unchanged from the old string-scan backbone.
+//
+// For elements whose body content is needed as text (<text>,
+// <tspan>, <textPath>), the decoder's concatenated character data
+// is surfaced on the node. Child elements are navigated via
+// Children — no body re-scan required.
+
+import (
+	"encoding/xml"
+	"fmt"
+	"slices"
+	"strings"
+)
+
+// xmlAttr stores one attribute in the authored name form. xlink: and
+// xml: prefixes are preserved so findAttr(openTag, "xlink:href")
+// matches. Other namespaces fall back to the local name.
+type xmlAttr struct {
+	Name  string
+	Value string
+}
+
+// xmlNode is one decoded SVG element.
+type xmlNode struct {
+	Name      string            // local tag name
+	Attrs     []xmlAttr         // authored order
+	AttrMap   map[string]string // fast lookup by authored name
+	OpenTag   string            // reconstructed "<name a=b c=d>" or "<name .../>"
+	Leading   string            // text content before first child element
+	Text      string            // all character data concatenated (trimmed on use)
+	Children  []xmlNode
+	SelfClose bool
+}
+
+// decodeSvgTree parses an SVG document into an xmlNode tree.
+// Returns the root element (the outermost tag) or an error if the
+// document is malformed or exceeds limits.
+func decodeSvgTree(content string) (*xmlNode, error) {
+	dec := xml.NewDecoder(strings.NewReader(content))
+	dec.Strict = false
+	dec.AutoClose = xml.HTMLAutoClose
+	// HTML entities are not enabled by default; SVG assets use named
+	// entities rarely, numeric references are always decoded.
+	dec.Entity = xml.HTMLEntity
+
+	var root *xmlNode
+	stack := make([]*xmlNode, 0, 16)
+	elemCount := 0
+	depth := 0
+
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			break
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			elemCount++
+			if elemCount > maxElements {
+				return nil, fmt.Errorf("svg: element limit exceeded")
+			}
+			depth++
+			if depth > maxGroupDepth+8 {
+				// +8 slack vs group depth: the root and defs can
+				// wrap genuine group nesting.
+				return nil, fmt.Errorf("svg: depth limit exceeded")
+			}
+			n := xmlNode{Name: t.Name.Local}
+			n.Attrs = make([]xmlAttr, 0, len(t.Attr))
+			n.AttrMap = make(map[string]string, len(t.Attr))
+			for _, a := range t.Attr {
+				name := attrAuthoredName(a.Name)
+				if name == "" {
+					continue
+				}
+				if len(a.Value) > maxAttrLen {
+					continue
+				}
+				n.Attrs = append(n.Attrs, xmlAttr{Name: name, Value: a.Value})
+				n.AttrMap[name] = a.Value
+			}
+			n.OpenTag = buildOpenTag(n.Name, n.Attrs, false)
+			if len(stack) == 0 {
+				// Attach to root holder. We defer until EndElement to
+				// finalize the node.
+				stack = append(stack, &n)
+			} else {
+				parent := stack[len(stack)-1]
+				parent.Children = append(parent.Children, n)
+				// Push pointer to the slot we just appended.
+				stack = append(stack, &parent.Children[len(parent.Children)-1])
+			}
+		case xml.EndElement:
+			if len(stack) == 0 {
+				return nil, fmt.Errorf("svg: unbalanced close </%s>",
+					t.Name.Local)
+			}
+			top := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			depth--
+			if len(stack) == 0 {
+				// Finished the root element.
+				root = top
+			}
+		case xml.CharData:
+			if len(stack) == 0 {
+				continue
+			}
+			top := stack[len(stack)-1]
+			s := string(t)
+			top.Text += s
+			if len(top.Children) == 0 {
+				top.Leading += s
+			}
+		case xml.Comment, xml.ProcInst, xml.Directive:
+			// Ignore.
+		}
+	}
+
+	if root == nil {
+		return nil, fmt.Errorf("svg: no root element")
+	}
+	// Finalize: emit self-closing OpenTag for childless empty nodes
+	// so helpers that inspect the closing "/>" see the right form.
+	finalizeSelfClose(root)
+	return root, nil
+}
+
+// attrAuthoredName reconstructs the authored attribute name from
+// encoding/xml's namespace-resolved xml.Name. xlink and xml prefixes
+// are the only namespaces SVG attributes routinely use; other
+// namespaces fall through to the local name.
+func attrAuthoredName(n xml.Name) string {
+	switch n.Space {
+	case "":
+		return n.Local
+	case "http://www.w3.org/1999/xlink":
+		return "xlink:" + n.Local
+	case "http://www.w3.org/XML/1998/namespace":
+		return "xml:" + n.Local
+	case "http://www.w3.org/2000/svg":
+		return n.Local
+	default:
+		// xmlns declarations arrive as Space="xmlns", Local=prefix —
+		// drop them; they don't participate in presentation attrs.
+		if n.Space == "xmlns" {
+			return ""
+		}
+		return n.Local
+	}
+}
+
+// buildOpenTag reconstructs a raw opening-tag string so helpers like
+// findAttr can substring-scan a single element. selfClose controls
+// the closing slash.
+func buildOpenTag(name string, attrs []xmlAttr, selfClose bool) string {
+	var b strings.Builder
+	b.Grow(16 + len(attrs)*24)
+	b.WriteByte('<')
+	b.WriteString(name)
+	for _, a := range attrs {
+		b.WriteByte(' ')
+		b.WriteString(a.Name)
+		b.WriteString(`="`)
+		// Attributes come back from encoding/xml already decoded
+		// (entities expanded). Re-escape the minimal set needed for a
+		// valid embedded attr value so findAttr's quote-aware scan
+		// behaves like it did on the raw input.
+		writeAttrEscaped(&b, a.Value)
+		b.WriteByte('"')
+	}
+	if selfClose {
+		b.WriteString("/>")
+	} else {
+		b.WriteByte('>')
+	}
+	return b.String()
+}
+
+func writeAttrEscaped(b *strings.Builder, v string) {
+	for i := 0; i < len(v); i++ {
+		switch v[i] {
+		case '"':
+			b.WriteString("&quot;")
+		case '&':
+			b.WriteString("&amp;")
+		case '<':
+			b.WriteString("&lt;")
+		default:
+			b.WriteByte(v[i])
+		}
+	}
+}
+
+// finalizeSelfClose walks the tree and marks nodes with no children
+// and no text content as self-closing, rewriting OpenTag to the />
+// form. Matches the old scanner's isSelfClosing detection.
+func finalizeSelfClose(n *xmlNode) {
+	if len(n.Children) == 0 && strings.TrimSpace(n.Text) == "" {
+		n.SelfClose = true
+		n.OpenTag = buildOpenTag(n.Name, n.Attrs, true)
+	}
+	for i := range n.Children {
+		finalizeSelfClose(&n.Children[i])
+	}
+}
+
+// findChild returns the first child element whose local name matches
+// any of the given names.
+func (n *xmlNode) findChild(names ...string) *xmlNode {
+	for i := range n.Children {
+		c := &n.Children[i]
+		if slices.Contains(names, c.Name) {
+			return c
+		}
+	}
+	return nil
+}

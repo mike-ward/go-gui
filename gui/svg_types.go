@@ -13,6 +13,11 @@ type TessellatedPath struct {
 	IsClipMask   bool
 	ClipGroup    int
 	GroupID      string
+	// PathID inherited from the source VectorPath. Uniquely identifies
+	// the authored path across all its tessellated pieces (fill +
+	// stroke + clip masks share the same ID). Animation state is keyed
+	// by PathID; GroupID stays as a debug hint. Zero = unset.
+	PathID uint32
 	// Animated marks the path as a re-tessellation target. Set when
 	// an inline <animate> with an animatable attribute (cx, cy, r,
 	// x, y, width, height, rx, ry) targets this shape.
@@ -36,6 +41,14 @@ type TessellatedPath struct {
 	BaseScaleX   float32
 	BaseScaleY   float32
 	BaseRotAngle float32 // degrees
+	// BaseRotCX / BaseRotCY is the rotation pivot of the author's
+	// base transform. For rotate-about-(cx,cy) authored transforms
+	// the pivot is (cx,cy) and BaseTransX/Y are zero, keeping the
+	// translation semantics separable from rotation — so a SMIL
+	// animateTransform replace-rotate can overwrite the rotation
+	// alone without disturbing an unrelated translate component.
+	BaseRotCX    float32
+	BaseRotCY    float32
 	HasBaseXform bool
 }
 
@@ -215,8 +228,15 @@ const (
 
 // SvgAnimation holds parsed SMIL animation data.
 type SvgAnimation struct {
-	Kind    SvgAnimKind
+	Kind SvgAnimKind
+	// GroupID is the authored binding hint; retained for debug only.
+	// Render-time routing uses TargetPathIDs, resolved at parse.
 	GroupID string
+	// TargetPathIDs lists the VectorPath.PathID values this animation
+	// affects. An animation bound to a <g> expands to every descendant
+	// primitive path's ID; an animation bound to a single shape lists
+	// just that shape's ID. Populated during parse.
+	TargetPathIDs []uint32
 	// Values layout depends on Kind:
 	//   SvgAnimOpacity / SvgAnimRotate / SvgAnimAttr — one scalar
 	//     per keyframe (opacity 0..1, rotate angle in deg, attr

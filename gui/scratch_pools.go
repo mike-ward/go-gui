@@ -92,12 +92,11 @@ type scratchPools struct {
 	layerLayouts        scratchSlice[Layout]
 
 	focusSeen        scratchMap[uint32, struct{}]
-	svgAnimStates    scratchMap[string, svgAnimState]
-	svgAnimOverrides scratchMap[string, SvgAnimAttrOverride]
+	svgAnimStates    scratchMap[uint32, svgAnimState]
+	svgAnimOverrides scratchMap[uint32, SvgAnimAttrOverride]
 
-	svgAnimTriangles  scratchSlice[TessellatedPath]
-	effectiveSvgPaths scratchSlice[CachedSvgPath]
-	svgAnimContribs   scratchSlice[animContrib]
+	svgAnimTriangles scratchSlice[TessellatedPath]
+	svgAnimContribs  scratchSlice[animContrib]
 
 	// svgVColArena is a grow-only, frame-scoped arena for per-path
 	// vertex color buffers emitted by emitSvgPathRenderer. Each
@@ -149,10 +148,9 @@ func newScratchPools() scratchPools {
 		wrapRows:               scratchSlice[wrapRowRange]{retainMax: 4096, shrinkTo: 256},
 		layerLayouts:           scratchSlice[Layout]{retainMax: 4096, shrinkTo: 256},
 		focusSeen:              scratchMap[uint32, struct{}]{retainMax: 4096},
-		svgAnimStates:          scratchMap[string, svgAnimState]{retainMax: 4096},
-		svgAnimOverrides:       scratchMap[string, SvgAnimAttrOverride]{retainMax: 4096},
+		svgAnimStates:          scratchMap[uint32, svgAnimState]{retainMax: 4096},
+		svgAnimOverrides:       scratchMap[uint32, SvgAnimAttrOverride]{retainMax: 4096},
 		svgAnimTriangles:       scratchSlice[TessellatedPath]{retainMax: 1024, shrinkTo: 64},
-		effectiveSvgPaths:      scratchSlice[CachedSvgPath]{retainMax: 4096, shrinkTo: 256},
 		svgAnimContribs:        scratchSlice[animContrib]{retainMax: 1024, shrinkTo: 64},
 		viewShapes:             scratchObjPool[Shape]{retainMax: 16384, shrinkTo: 1024},
 		buttonColors:           scratchObjPool[ShapeButtonColors]{retainMax: 512, shrinkTo: 32},

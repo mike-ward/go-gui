@@ -102,7 +102,7 @@ func (p *Parser) Tessellate(parsed *gui.SvgParsed, scale float32) []gui.Tessella
 // qualify. When reuse is non-nil its backing array is reused.
 func (p *Parser) TessellateAnimated(
 	parsed *gui.SvgParsed, scale float32,
-	overrides map[string]gui.SvgAnimAttrOverride,
+	overrides map[uint32]gui.SvgAnimAttrOverride,
 	reuse []gui.TessellatedPath,
 ) []gui.TessellatedPath {
 	if len(overrides) == 0 {
@@ -130,7 +130,7 @@ func (p *Parser) TessellateAnimated(
 		if src.ClipPathID != "" {
 			continue
 		}
-		ov, hasOv := overrides[src.GroupID]
+		ov, hasOv := overrides[src.PathID]
 		if !hasOv || ov.Mask == 0 {
 			// Animated but no live overrides this frame — still
 			// re-tessellate from static primitive to preserve
@@ -184,7 +184,7 @@ func traceOverride(p *VectorPath, ov gui.SvgAnimAttrOverride) {
 // viewBox — diagnostic for spurious full-cell fills.
 func traceAnimatedTriangles(vg *VectorGraphic,
 	paths []gui.TessellatedPath, animated []VectorPath,
-	overrides map[string]gui.SvgAnimAttrOverride,
+	overrides map[uint32]gui.SvgAnimAttrOverride,
 ) {
 	xLim := vg.Width * 2
 	yLim := vg.Height * 2
@@ -223,7 +223,7 @@ func traceAnimatedTriangles(vg *VectorGraphic,
 				p.Primitive.R, p.Primitive.RX, p.Primitive.RY,
 				p.Primitive.X, p.Primitive.Y,
 				p.Primitive.W, p.Primitive.H)
-			if ov, ok := overrides[p.GroupID]; ok {
+			if ov, ok := overrides[p.PathID]; ok {
 				ovStr = fmt.Sprintf("ov={Mask:%b Add:%b CX:%.3f CY:%.3f "+
 					"R:%.3f RX:%.3f RY:%.3f X:%.3f Y:%.3f W:%.3f H:%.3f}",
 					ov.Mask, ov.AdditiveMask, ov.CX, ov.CY,
@@ -369,18 +369,8 @@ func (p *Parser) ClearSvgParserCache() {
 }
 
 func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui.SvgParsed {
+	resolveAnimationTargets(vg)
 	tpaths := vg.getTriangles(scale)
-	// Rotation centers and motion paths are in absolute viewBox
-	// coords; triangles and sx/sy render in content-from-origin
-	// coords after viewBox shift. Shift these animation fields so
-	// rotation pivots and motion traces land at the same vertex
-	// positions they target in content-from-origin space.
-	anims := vg.Animations
-	if (vg.ViewBoxX != 0 || vg.ViewBoxY != 0) &&
-		finiteViewBox(vg.ViewBoxX, vg.ViewBoxY) {
-		anims = cloneAnimationsForShift(vg.Animations)
-		shiftAnimationsForViewBox(anims, vg.ViewBoxX, vg.ViewBoxY)
-	}
 	result := &gui.SvgParsed{
 		Paths:          tpaths,
 		Texts:          vg.Texts,
@@ -388,9 +378,11 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 		DefsPaths:      vg.DefsPaths,
 		Gradients:      vg.Gradients,
 		FilteredGroups: tessellateFilteredGroups(vg, scale),
-		Animations:     anims,
+		Animations:     vg.Animations,
 		Width:          vg.Width,
 		Height:         vg.Height,
+		ViewBoxX:       vg.ViewBoxX,
+		ViewBoxY:       vg.ViewBoxY,
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -409,38 +401,6 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 		}
 	}
 	return result
-}
-
-// cloneAnimationsForShift deep-clones MotionPath vertex streams.
-// Without this, a second buildParsed on the same VectorGraphic
-// would subtract the viewBox origin again and drift.
-func cloneAnimationsForShift(src []gui.SvgAnimation) []gui.SvgAnimation {
-	out := append([]gui.SvgAnimation(nil), src...)
-	for i := range out {
-		if out[i].Kind == gui.SvgAnimMotion && len(out[i].MotionPath) > 0 {
-			out[i].MotionPath = append([]float32(nil), out[i].MotionPath...)
-		}
-	}
-	return out
-}
-
-// shiftAnimationsForViewBox subtracts (vbX, vbY) from rotation
-// centers and motion path vertices. Mutates in place; caller must
-// own the slice (use cloneAnimationsForShift).
-func shiftAnimationsForViewBox(anims []gui.SvgAnimation, vbX, vbY float32) {
-	for i := range anims {
-		a := &anims[i]
-		switch a.Kind {
-		case gui.SvgAnimRotate:
-			a.CenterX -= vbX
-			a.CenterY -= vbY
-		case gui.SvgAnimMotion:
-			for j := 0; j+1 < len(a.MotionPath); j += 2 {
-				a.MotionPath[j] -= vbX
-				a.MotionPath[j+1] -= vbY
-			}
-		}
-	}
 }
 
 func (p *Parser) cachedParsed(hash uint64) *gui.SvgParsed {
@@ -503,6 +463,40 @@ func parserSourceHash(src string, inline bool) uint64 {
 		h *= fnvPrime
 	}
 	return h
+}
+
+// resolveAnimationTargets populates each SvgAnimation.TargetPathIDs
+// by scanning vg.Paths (and filtered-group paths) for VectorPaths
+// whose GroupID matches the animation's binding. A single shape-id
+// match yields one PathID; a group-id match yields every descendant
+// primitive's PathID, enabling per-path animation routing without
+// sibling-collision collapses.
+func resolveAnimationTargets(vg *VectorGraphic) {
+	if len(vg.Animations) == 0 {
+		return
+	}
+	// Index PathIDs by GroupID across main + filtered paths.
+	byGroup := make(map[string][]uint32)
+	collect := func(paths []VectorPath) {
+		for i := range paths {
+			p := &paths[i]
+			if p.GroupID == "" || p.PathID == 0 {
+				continue
+			}
+			byGroup[p.GroupID] = append(byGroup[p.GroupID], p.PathID)
+		}
+	}
+	collect(vg.Paths)
+	for i := range vg.FilteredGroups {
+		collect(vg.FilteredGroups[i].Paths)
+	}
+	for i := range vg.Animations {
+		a := &vg.Animations[i]
+		if a.GroupID == "" {
+			continue
+		}
+		a.TargetPathIDs = byGroup[a.GroupID]
+	}
 }
 
 func tessellateFilteredGroups(vg *VectorGraphic, scale float32) []gui.SvgParsedFilteredGroup {

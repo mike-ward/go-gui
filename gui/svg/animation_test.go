@@ -8,6 +8,23 @@ import (
 	"github.com/mike-ward/go-gui/gui"
 )
 
+// testAnimMotionNode builds an xmlNode from a standalone
+// <animateMotion ...> fragment. Returns a pointer into a local tree;
+// safe to use for the duration of the test.
+func testAnimMotionNode(frag string) *xmlNode {
+	root, err := decodeSvgTree(`<svg xmlns="http://www.w3.org/2000/svg">` +
+		frag + `</svg>`)
+	if err != nil {
+		panic(err)
+	}
+	for i := range root.Children {
+		if root.Children[i].Name == "animateMotion" {
+			return &root.Children[i]
+		}
+	}
+	panic("no animateMotion in fragment")
+}
+
 // --- Time parsing ---
 
 func TestAnimationParseTimeValueSeconds(t *testing.T) {
@@ -242,9 +259,9 @@ func TestAnimationParseSetRejectsBadAttr(t *testing.T) {
 }
 
 func TestAnimationParseAnimateMotionInlinePath(t *testing.T) {
-	elem := `<animateMotion path="M0,0 L10,0" dur="1s"/>`
+	n := testAnimMotionNode(`<animateMotion path="M0,0 L10,0" dur="1s"/>`)
 	anim, ok := parseAnimateMotionElement(
-		elem, "", groupStyle{GroupID: "g"}, &parseState{})
+		n, groupStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -262,9 +279,10 @@ func TestAnimationParseAnimateMotionInlinePath(t *testing.T) {
 }
 
 func TestAnimationParseAnimateMotionRotateAuto(t *testing.T) {
-	elem := `<animateMotion path="M0,0 L10,0" dur="1s" rotate="auto"/>`
+	n := testAnimMotionNode(
+		`<animateMotion path="M0,0 L10,0" dur="1s" rotate="auto"/>`)
 	anim, ok := parseAnimateMotionElement(
-		elem, "", groupStyle{GroupID: "g"}, &parseState{})
+		n, groupStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -274,13 +292,13 @@ func TestAnimationParseAnimateMotionRotateAuto(t *testing.T) {
 }
 
 func TestAnimationParseAnimateMotionMpath(t *testing.T) {
-	elem := `<animateMotion dur="1s">`
-	body := `<mpath xlink:href="#p1"/></animateMotion>`
+	n := testAnimMotionNode(
+		`<animateMotion dur="1s"><mpath xlink:href="#p1"/></animateMotion>`)
 	state := &parseState{
 		defsPaths: map[string]string{"p1": "M0,0 L20,0"},
 	}
 	anim, ok := parseAnimateMotionElement(
-		elem, body, groupStyle{GroupID: "g"}, state)
+		n, groupStyle{GroupID: "g"}, state)
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -974,10 +992,10 @@ func TestAnimationParsePairedTransform_ToOnlyImpliesAdditive(t *testing.T) {
 // rotate="auto-reverse" and unrecognized values map to AutoReverse
 // and None respectively.
 func TestAnimationParseMotionRotate_AutoReverseAndUnknown(t *testing.T) {
-	revElem := `<animateMotion path="M0,0 L10,0" dur="1s" ` +
-		`rotate="auto-reverse"/>`
+	revN := testAnimMotionNode(`<animateMotion path="M0,0 L10,0" dur="1s" ` +
+		`rotate="auto-reverse"/>`)
 	anim, ok := parseAnimateMotionElement(
-		revElem, "", groupStyle{GroupID: "g"}, &parseState{})
+		revN, groupStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -985,9 +1003,10 @@ func TestAnimationParseMotionRotate_AutoReverseAndUnknown(t *testing.T) {
 		t.Fatalf("expected AutoReverse, got %d", anim.MotionRotate)
 	}
 
-	unkElem := `<animateMotion path="M0,0 L10,0" dur="1s" rotate="45"/>`
+	unkN := testAnimMotionNode(
+		`<animateMotion path="M0,0 L10,0" dur="1s" rotate="45"/>`)
 	anim2, ok := parseAnimateMotionElement(
-		unkElem, "", groupStyle{GroupID: "g"}, &parseState{})
+		unkN, groupStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("unknown-rotate: expected ok=true")
 	}
@@ -999,13 +1018,13 @@ func TestAnimationParseMotionRotate_AutoReverseAndUnknown(t *testing.T) {
 
 // <mpath href="#id"> (non-xlink) must resolve against defsPaths.
 func TestAnimationMotionPathD_BareHrefResolves(t *testing.T) {
-	elem := `<animateMotion dur="1s">`
-	body := `<mpath href="#p2"/></animateMotion>`
+	n := testAnimMotionNode(
+		`<animateMotion dur="1s"><mpath href="#p2"/></animateMotion>`)
 	state := &parseState{
 		defsPaths: map[string]string{"p2": "M0,0 L15,0"},
 	}
 	anim, ok := parseAnimateMotionElement(
-		elem, body, groupStyle{GroupID: "g"}, state)
+		n, groupStyle{GroupID: "g"}, state)
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}

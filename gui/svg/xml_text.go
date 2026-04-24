@@ -11,7 +11,8 @@ import (
 
 // parseTextElement extracts text from a <text> element,
 // including <tspan> children and <textPath> references.
-func parseTextElement(elem, body string, inherited groupStyle, state *parseState) {
+func parseTextElement(n *xmlNode, inherited groupStyle, state *parseState) {
+	elem := n.OpenTag
 	x := attrFloat(elem, "x", 0)
 	y := attrFloat(elem, "y", 0)
 	fontSize := float32(16)
@@ -100,7 +101,7 @@ func parseTextElement(elem, body string, inherited groupStyle, state *parseState
 	opacity := inherited.Opacity * parseOpacityAttr(elem, "opacity", 1.0)
 
 	// Parse body: direct text, <tspan>, and <textPath>.
-	parseTextBody(elem, body, textParentAttrs{
+	parseTextBody(n, textParentAttrs{
 		x: x, y: y,
 		fontSize: fontSize, fontFamily: fontFamily,
 		color: color, fillGradientID: fillGradientID,
@@ -131,97 +132,31 @@ type textParentAttrs struct {
 	filterID                 string
 }
 
-// parseTextBody parses direct text, <tspan>, and <textPath>
-// children within a <text> element body.
-func parseTextBody(_, body string, p textParentAttrs, state *parseState) {
-	pos := 0
+// parseTextBody walks the direct text and <tspan>/<textPath>
+// children of a <text> element node.
+func parseTextBody(n *xmlNode, p textParentAttrs, state *parseState) {
 	curY := p.y
 
-	// Extract direct text before first child element.
-	text := extractPlainText(body)
-	if text != "" {
+	// Direct text that precedes any child element.
+	lead := html.UnescapeString(strings.TrimSpace(n.Leading))
+	if lead != "" {
 		state.texts = append(state.texts, makeTextFromParent(
-			text, p.x, curY, p))
+			lead, p.x, curY, p))
 	}
 
-	// Iterate child elements.
-	for pos < len(body) {
-		start := strings.Index(body[pos:], "<")
-		if start < 0 {
-			break
-		}
-		start += pos
-
-		// Skip closing tags.
-		if start+1 < len(body) && body[start+1] == '/' {
-			end := strings.IndexByte(body[start:], '>')
-			if end < 0 {
-				break
-			}
-			pos = start + end + 1
-			continue
-		}
-
-		tagEnd := findTagNameEnd(body, start+1)
-		if tagEnd <= start+1 {
-			pos = start + 1
-			continue
-		}
-		tagName := body[start+1 : tagEnd]
-
-		elemEndRel := strings.IndexByte(body[start:], '>')
-		if elemEndRel < 0 {
-			break
-		}
-		elemEnd := start + elemEndRel
-		childElem := body[start : elemEnd+1]
-		isSelfClosing := elemEnd > 0 && body[elemEnd-1] == '/'
-
-		switch tagName {
+	for i := range n.Children {
+		c := &n.Children[i]
+		switch c.Name {
 		case "tspan":
-			if isSelfClosing {
-				pos = elemEnd + 1
+			if c.SelfClose {
 				continue
 			}
-			tspanStart := elemEnd + 1
-			tspanEnd := findClosingTag(body, "tspan", tspanStart)
-			if tspanEnd <= tspanStart {
-				pos = elemEnd + 1
-				continue
-			}
-			tspanBody := body[tspanStart:tspanEnd]
-			parseTspan(childElem, tspanBody, p, &curY, state)
-
-			closeIdx := strings.IndexByte(body[tspanEnd:], '>')
-			if closeIdx < 0 {
-				pos = tspanEnd
-				continue
-			}
-			pos = tspanEnd + closeIdx + 1
-
+			parseTspan(c, p, &curY, state)
 		case "textPath":
-			if isSelfClosing {
-				pos = elemEnd + 1
+			if c.SelfClose {
 				continue
 			}
-			tpStart := elemEnd + 1
-			tpEnd := findClosingTag(body, "textPath", tpStart)
-			if tpEnd <= tpStart {
-				pos = elemEnd + 1
-				continue
-			}
-			tpBody := body[tpStart:tpEnd]
-			parseTextPathChild(childElem, tpBody, p, state)
-
-			closeIdx := strings.IndexByte(body[tpEnd:], '>')
-			if closeIdx < 0 {
-				pos = tpEnd
-				continue
-			}
-			pos = tpEnd + closeIdx + 1
-
-		default:
-			pos = elemEnd + 1
+			parseTextPathChild(c, p, state)
 		}
 	}
 }
@@ -252,8 +187,9 @@ func makeTextFromParent(text string, x, y float32, p textParentAttrs) gui.SvgTex
 
 // parseTspan parses a <tspan> element, inheriting parent <text>
 // attrs and applying overrides.
-func parseTspan(elem, body string, p textParentAttrs, curY *float32, state *parseState) {
-	text := html.UnescapeString(strings.TrimSpace(body))
+func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState) {
+	elem := n.OpenTag
+	text := html.UnescapeString(strings.TrimSpace(n.Text))
 	if text == "" {
 		return
 	}
@@ -328,8 +264,9 @@ func parseTspan(elem, body string, p textParentAttrs, curY *float32, state *pars
 }
 
 // parseTextPathChild parses a <textPath> child element.
-func parseTextPathChild(elem, body string, p textParentAttrs, state *parseState) {
-	text := html.UnescapeString(strings.TrimSpace(body))
+func parseTextPathChild(n *xmlNode, p textParentAttrs, state *parseState) {
+	elem := n.OpenTag
+	text := html.UnescapeString(strings.TrimSpace(n.Text))
 	if text == "" {
 		return
 	}
@@ -413,12 +350,4 @@ func cleanFontFamily(ff string) string {
 		return strings.TrimSpace(before)
 	}
 	return ff
-}
-
-func extractPlainText(body string) string {
-	before, _, found := strings.Cut(body, "<")
-	if !found {
-		return html.UnescapeString(strings.TrimSpace(body))
-	}
-	return html.UnescapeString(strings.TrimSpace(before))
 }

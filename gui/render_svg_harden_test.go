@@ -52,12 +52,13 @@ func TestEmitSvgPathRenderer_AnimStateRotCenterOverridesBase(t *testing.T) {
 		Triangles:    []float32{0, 0, 1, 0, 0, 1},
 		Color:        Color{0, 0, 0, 255, true},
 		GroupID:      "g",
+		PathID:       1,
 		BaseTransX:   10,
 		BaseTransY:   20,
 		HasBaseXform: true,
 	}
-	animState := map[string]svgAnimState{
-		"g": {
+	animState := map[uint32]svgAnimState{
+		1: {
 			Inited:        true,
 			Opacity:       1,
 			FillOpacity:   1,
@@ -85,16 +86,17 @@ func TestEmitSvgPathRenderer_AnimStateRotCenterOverridesBase(t *testing.T) {
 // TRS decomposition. A later SvgAnimRotate contrib then overwrites
 // with its own cx/cy if present.
 func TestApplyAnimContrib_BaseSeedRotCenterFollowsTranslate(t *testing.T) {
-	states := map[string]svgAnimState{}
-	base := map[string]svgBaseXform{
-		"g": {TransX: 12, TransY: 16, ScaleX: 1, ScaleY: 1, RotAngle: 30},
+	states := map[uint32]svgAnimState{}
+	base := map[uint32]svgBaseXform{
+		1: {TransX: 12, TransY: 16, ScaleX: 1, ScaleY: 1, RotAngle: 30},
 	}
 	a := &SvgAnimation{
-		Kind: SvgAnimOpacity, GroupID: "g", Target: SvgAnimTargetAll,
+		Kind: SvgAnimOpacity, GroupID: "g", TargetPathIDs: []uint32{1},
+		Target: SvgAnimTargetAll,
 		Values: []float32{0, 1}, DurSec: 1, Cycle: 1,
 	}
 	applyAnimContrib(&animContrib{anim: a, value: 1}, states, base)
-	st := states["g"]
+	st := states[1]
 	if !st.HasXform {
 		t.Fatal("HasXform must be set after base seed")
 	}
@@ -106,12 +108,12 @@ func TestApplyAnimContrib_BaseSeedRotCenterFollowsTranslate(t *testing.T) {
 	// A subsequent SvgAnimRotate contrib with explicit center
 	// overwrites the seed.
 	aRot := &SvgAnimation{
-		Kind: SvgAnimRotate, GroupID: "g",
+		Kind: SvgAnimRotate, GroupID: "g", TargetPathIDs: []uint32{1},
 		CenterX: 50, CenterY: 60,
 		Values: []float32{0, 90}, DurSec: 1, Cycle: 1,
 	}
 	applyAnimContrib(&animContrib{anim: aRot, value: 45}, states, base)
-	st = states["g"]
+	st = states[1]
 	if st.RotCX != 50 || st.RotCY != 60 {
 		t.Fatalf("rotate anim must overwrite center: got (%v,%v) want (50,60)",
 			st.RotCX, st.RotCY)

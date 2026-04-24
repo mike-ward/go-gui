@@ -30,13 +30,21 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 
 	// Center SVG content within container (aspect-preserving
 	// scale may leave unused space in one dimension).
-	sx := shape.X + (shape.Width-cached.Width*cached.Scale)/2
-	sy := shape.Y + (shape.Height-cached.Height*cached.Scale)/2
+	clipX := shape.X + (shape.Width-cached.Width*cached.Scale)/2
+	clipY := shape.Y + (shape.Height-cached.Height*cached.Scale)/2
+	// ViewBoxX/Y are folded into sx/sy as an outer translate so
+	// authored coords stay in raw viewBox space through tessellation
+	// and SMIL animation — animateTransform replace cannot reach this
+	// offset. Backend applies (sx + vertex * scale), so subtracting
+	// vbXY*scale here shifts authored coords (vbX..vbX+W) into the
+	// clip rect (clipX..clipX+W*scale).
+	sx := clipX - cached.ViewBoxX*cached.Scale
+	sy := clipY - cached.ViewBoxY*cached.Scale
 
 	// Clip to intersection of parent clip and scaled viewBox.
 	svgClip, ok := rectIntersection(clip, DrawClip{
-		X:      sx,
-		Y:      sy,
+		X:      clipX,
+		Y:      clipY,
 		Width:  cached.Width * cached.Scale,
 		Height: cached.Height * cached.Scale,
 	})
@@ -46,7 +54,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	emitClipCmd(svgClip, w)
 
 	// Compute animation state for SMIL animations.
-	var animState map[string]svgAnimState
+	var animState map[uint32]svgAnimState
 	if cached.HasAnimations && cached.AnimStartNs != 0 {
 		animState = w.scratch.svgAnimStates.take(len(cached.Animations))
 		defer w.scratch.svgAnimStates.put(animState)
@@ -63,16 +71,16 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			len(cached.Animations))
 		animState = computeSvgAnimationsReuse(
 			cached.Animations, elapsed, animState, contribScratch,
-			cached.BaseByGroup)
+			cached.BaseByPath)
 		w.scratch.svgAnimContribs.put(contribScratch)
 	}
 
 	// Substitute fresh triangles for animated primitive shapes when
-	// attribute overrides are live. Falls back to cached triangles
-	// when no parser support, no spans, or empty overrides.
-	renderPaths := cached.RenderPaths
+	// attribute overrides are live. animTris is ordered to match
+	// cached.RenderPaths' Animated entries in doc order; the emit
+	// path walks both in lockstep and swaps triangles on the fly.
 	var animTris []TessellatedPath
-	if cached.HasAttrAnim && len(cached.AnimatedSpans) > 0 {
+	if cached.HasAttrAnim && cached.HasAnimatedPaths {
 		overrides := extractAttrOverrides(w, animState)
 		if len(overrides) > 0 {
 			if ap, ok := w.svgParser.(AnimatedSvgParser); ok {
@@ -83,14 +91,10 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			}
 			w.scratch.svgAnimOverrides.put(overrides)
 		}
-		if len(animTris) > 0 {
-			renderPaths = buildEffectiveRenderPaths(w, cached, animTris)
-			defer w.scratch.effectiveSvgPaths.put(renderPaths)
-		}
 	}
 
 	// Emit main paths, text, and textPath elements.
-	emitSvgGroup(renderPaths, cached.TextDraws,
+	emitSvgGroup(cached.RenderPaths, animTris, cached.TextDraws,
 		cached.TextPathDraws, color, sx, sy,
 		cached.Scale, animState, w)
 
@@ -107,7 +111,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			BlurRadius: fg.Filter.StdDev * cached.Scale,
 			Layers:     fg.Filter.BlurLayers,
 		}, w)
-		emitSvgGroup(fg.RenderPaths, fg.TextDraws,
+		emitSvgGroup(fg.RenderPaths, nil, fg.TextDraws,
 			fg.TextPathDraws, color, sx, sy,
 			cached.Scale, animState, w)
 		emitRenderer(RenderCmd{
@@ -116,7 +120,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 
 		// KeepSource: re-draw sharp original on top of blur.
 		if fg.Filter.KeepSource {
-			emitSvgGroup(fg.RenderPaths, fg.TextDraws,
+			emitSvgGroup(fg.RenderPaths, nil, fg.TextDraws,
 				fg.TextPathDraws, color, sx, sy,
 				cached.Scale, animState, w)
 		}
@@ -127,14 +131,28 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 }
 
 // emitSvgGroup emits paths, text draws, and text path draws.
+// animTris, when non-empty, carries fresh triangles for animated
+// primitive shapes in doc order matching the Animated entries of
+// paths. A cursor through animTris advances in lockstep so each
+// Animated path picks up its override geometry.
 func emitSvgGroup(
-	paths []CachedSvgPath, textDraws []CachedSvgTextDraw,
+	paths []CachedSvgPath,
+	animTris []TessellatedPath,
+	textDraws []CachedSvgTextDraw,
 	textPathDraws []CachedSvgTextPathDraw,
 	color Color, sx, sy, scale float32,
-	animState map[string]svgAnimState, w *Window,
+	animState map[uint32]svgAnimState, w *Window,
 ) {
-	for _, path := range paths {
-		emitSvgPathRenderer(path, color, sx, sy, scale, animState, w)
+	cursor := 0
+	for i := range paths {
+		p := paths[i]
+		if p.Animated && cursor < len(animTris) {
+			// Substitute override triangles from this frame. Keep
+			// cached metadata (color, group, clip, base xform).
+			p.Triangles = animTris[cursor].Triangles
+			cursor++
+		}
+		emitSvgPathRenderer(p, color, sx, sy, scale, animState, w)
 	}
 	for i := range textDraws {
 		emitCachedSvgTextDraw(&textDraws[i], sx, sy, w)
@@ -152,7 +170,7 @@ func emitSvgGroup(
 // rotation/opacity per GroupID.
 func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	x, y, scale float32,
-	animState map[string]svgAnimState, w *Window) {
+	animState map[uint32]svgAnimState, w *Window) {
 	hasVCols := len(path.VertexColors) > 0
 	c := path.Color
 	if tint.A > 0 && !hasVCols {
@@ -186,8 +204,8 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 	var vAlphaScale float32
 	hasVAlpha := false
 	var animApplied bool
-	if animState != nil && path.GroupID != "" {
-		if st, ok := animState[path.GroupID]; ok {
+	if animState != nil && path.PathID != 0 {
+		if st, ok := animState[path.PathID]; ok {
 			animApplied = true
 			rotAngle = st.RotAngle
 			rotCX = st.RotCX
@@ -225,10 +243,17 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 		scaleY = path.BaseScaleY
 		rotAngle = path.BaseRotAngle
 		hasXform = true
-		// Backend rotates about (rcx,rcy) AFTER translate; TRS rotates
-		// about origin BEFORE translate. Equivalent iff pivot == offset.
-		rotCX = transX
-		rotCY = transY
+		// seedFromTransform absorbs the translate column into a
+		// rotation pivot when rotation is present, so the decomposed
+		// base replays as R_(rcx,rcy)(v*scale + (0,0)). Fall back to
+		// pivot==offset for pure-translate bases where rcx/rcy are
+		// zero but BaseTransX/Y carry the translation.
+		rotCX = path.BaseRotCX
+		rotCY = path.BaseRotCY
+		if rotCX == 0 && rotCY == 0 {
+			rotCX = transX
+			rotCY = transY
+		}
 	}
 
 	emitRenderer(RenderCmd{
@@ -315,24 +340,24 @@ type svgAnimState struct {
 // its cycle restarts or a later-activated animation overrides.
 func computeSvgAnimations(
 	anims []SvgAnimation, elapsedSec float32,
-	states map[string]svgAnimState,
-) map[string]svgAnimState {
+	states map[uint32]svgAnimState,
+) map[uint32]svgAnimState {
 	return computeSvgAnimationsReuse(anims, elapsedSec, states, nil, nil)
 }
 
 // computeSvgAnimationsReuse is the render-path variant that
 // accepts a scratch []animContrib to avoid per-frame allocation.
-// baseByGroup seeds per-GroupID state with the author's decomposed
+// baseByPath seeds per-PathID state with the author's decomposed
 // base transform so additive/replace animations compose over it.
 // Pass nil when no base seeding is needed (tests, no-base assets).
 func computeSvgAnimationsReuse(
 	anims []SvgAnimation, elapsedSec float32,
-	states map[string]svgAnimState,
+	states map[uint32]svgAnimState,
 	contribScratch []animContrib,
-	baseByGroup map[string]svgBaseXform,
-) map[string]svgAnimState {
+	baseByPath map[uint32]svgBaseXform,
+) map[uint32]svgAnimState {
 	if states == nil {
-		states = make(map[string]svgAnimState, len(anims))
+		states = make(map[uint32]svgAnimState, len(anims))
 	} else {
 		clear(states)
 	}
@@ -342,7 +367,7 @@ func computeSvgAnimationsReuse(
 	}
 	slices.SortStableFunc(contribs, cmpAnimContrib)
 	for i := range contribs {
-		applyAnimContrib(&contribs[i], states, baseByGroup)
+		applyAnimContrib(&contribs[i], states, baseByPath)
 	}
 	return states
 }
@@ -370,8 +395,8 @@ type animContrib struct {
 
 // collectAnimContribs evaluates every animation's phase against
 // elapsed and returns the subset that contributes this frame
-// (active or frozen). Skipped animations: missing GroupID/dur,
-// not-yet-activated (elapsed < BeginSec), past dur with !Freeze.
+// (active or frozen). Skipped animations: no target paths, missing
+// dur, not-yet-activated (elapsed < BeginSec), past dur with !Freeze.
 // reuse may be a scratch slice whose backing array will be
 // reused in place; pass nil to allocate a fresh slice.
 func collectAnimContribs(
@@ -388,7 +413,7 @@ func collectAnimContribs(
 		// math cannot produce NaN values that would propagate into
 		// render state. DurSec must be strictly positive for normal
 		// animations; <set> is zero-duration and bypasses this check.
-		if a.GroupID == "" ||
+		if len(a.TargetPathIDs) == 0 ||
 			!isFiniteF(a.DurSec) ||
 			(!a.IsSet && a.DurSec <= 0) ||
 			!isFiniteF(a.BeginSec) ||
@@ -541,76 +566,122 @@ func accumOffset(a *SvgAnimation, activation float32) float32 {
 		float64(activation-a.BeginSec) / float64(a.Cycle)))
 }
 
-// applyAnimContrib writes one contribution into the state map,
-// initializing the per-group state on first touch. Replace
+// applyAnimContrib writes one contribution into every target path's
+// state, initializing per-path state on first touch. Replace
 // semantics (not multiply) — sandwich priority is enforced by the
 // sort ordering before this call.
-func applyAnimContrib(c *animContrib, states map[string]svgAnimState,
-	baseByGroup map[string]svgBaseXform) {
+func applyAnimContrib(c *animContrib, states map[uint32]svgAnimState,
+	baseByPath map[uint32]svgBaseXform) {
 	a := c.anim
-	st := states[a.GroupID]
+	for _, pid := range a.TargetPathIDs {
+		applyAnimContribToPath(c, a, pid, states, baseByPath)
+	}
+}
+
+func applyAnimContribToPath(c *animContrib, a *SvgAnimation, pid uint32,
+	states map[uint32]svgAnimState,
+	baseByPath map[uint32]svgBaseXform) {
+	st := states[pid]
+	base, hasBase := baseByPath[pid]
 	if !st.Inited {
 		st.Opacity = 1
 		st.FillOpacity = 1
 		st.StrokeOpacity = 1
 		st.ScaleX = 1
 		st.ScaleY = 1
-		if base, ok := baseByGroup[a.GroupID]; ok {
+		if hasBase {
 			st.TransX = base.TransX
 			st.TransY = base.TransY
 			st.ScaleX = base.ScaleX
 			st.ScaleY = base.ScaleY
 			st.RotAngle = base.RotAngle
 			st.HasXform = true
-			// See pivot==offset note in emitSvgPathRenderer. SvgAnim-
-			// Rotate may overwrite RotCX/RotCY below if cx/cy given.
-			st.RotCX = base.TransX
-			st.RotCY = base.TransY
+			// Use the base's rotation pivot when present so a SMIL
+			// animateTransform that does not touch rotation leaves
+			// the author's rotate-about-(cx,cy) intact. Falls back
+			// to pivot==offset for pure-translate bases.
+			st.RotCX = base.RotCX
+			st.RotCY = base.RotCY
+			if st.RotCX == 0 && st.RotCY == 0 {
+				st.RotCX = base.TransX
+				st.RotCY = base.TransY
+			}
 		}
 		st.Inited = true
 	}
+	// Group-level animations expand to every descendant path. Each
+	// descendant may carry its own authored transform (e.g. the 7
+	// rects in bars-rotate-fade, each with rotate(N 12 12)). A plain
+	// replace would clobber the child's base, so when the anim has
+	// multiple targets, compose with the base: sum for rotate/
+	// translate, multiply for scale. Same-pivot rotate case exact;
+	// differing pivots fall back to the base pivot (lossy but matches
+	// the pre-Stage-3 force-bake behavior for icon SVGs).
+	inherited := hasBase && len(a.TargetPathIDs) > 1
 	switch a.Kind {
 	case SvgAnimRotate:
-		if a.Additive {
+		switch {
+		case inherited:
+			st.RotAngle = base.RotAngle + c.value
+		case a.Additive:
 			st.RotAngle += c.value
-		} else {
+			st.RotCX = a.CenterX
+			st.RotCY = a.CenterY
+		default:
 			st.RotAngle = c.value
+			st.RotCX = a.CenterX
+			st.RotCY = a.CenterY
 		}
-		st.RotCX = a.CenterX
-		st.RotCY = a.CenterY
+		st.HasXform = true
 	case SvgAnimOpacity:
 		applyOpacityContrib(&st, c.value, a.Target, a.Additive)
 	case SvgAnimAttr:
 		applyAttrOverride(&st.AttrOverride, a.AttrName,
 			c.value, a.Additive)
 	case SvgAnimTranslate:
-		if a.Additive {
+		switch {
+		case inherited:
+			st.TransX = base.TransX + c.valueX
+			st.TransY = base.TransY + c.valueY
+		case a.Additive:
 			st.TransX += c.valueX
 			st.TransY += c.valueY
-		} else {
+		default:
 			st.TransX = c.valueX
 			st.TransY = c.valueY
 		}
 		st.HasXform = true
 	case SvgAnimScale:
-		if a.Additive {
+		switch {
+		case inherited:
+			st.ScaleX = base.ScaleX * c.valueX
+			st.ScaleY = base.ScaleY * c.valueY
+		case a.Additive:
 			st.ScaleX += c.valueX
 			st.ScaleY += c.valueY
-		} else {
+		default:
 			st.ScaleX = c.valueX
 			st.ScaleY = c.valueY
 		}
 		st.HasXform = true
 	case SvgAnimMotion:
-		if a.Additive {
+		switch {
+		case inherited:
+			st.TransX = base.TransX + c.valueX
+			st.TransY = base.TransY + c.valueY
+		case a.Additive:
 			st.TransX += c.valueX
 			st.TransY += c.valueY
-		} else {
+		default:
 			st.TransX = c.valueX
 			st.TransY = c.valueY
 		}
 		if a.MotionRotate != SvgAnimMotionRotateNone {
-			st.RotAngle = c.value
+			if inherited {
+				st.RotAngle = base.RotAngle + c.value
+			} else {
+				st.RotAngle = c.value
+			}
 		}
 		st.HasXform = true
 	case SvgAnimDashOffset:
@@ -630,7 +701,7 @@ func applyAnimContrib(c *animContrib, states map[string]svgAnimState,
 	case SvgAnimDashArray:
 		applyDashArrayContrib(&st.AttrOverride, a, c.frac)
 	}
-	states[a.GroupID] = st
+	states[pid] = st
 }
 
 // applyDashArrayContrib lerps a DashKeyframeLen-stride keyframe
@@ -689,47 +760,18 @@ func applyOpacityContrib(st *svgAnimState, v float32,
 }
 
 // extractAttrOverrides pulls the AttrOverride from each svgAnimState
-// with a non-zero mask into a scratch-backed map keyed by GroupID.
+// with a non-zero mask into a scratch-backed map keyed by PathID.
 // Returns an empty map when no overrides are live.
 func extractAttrOverrides(w *Window,
-	states map[string]svgAnimState,
-) map[string]SvgAnimAttrOverride {
+	states map[uint32]svgAnimState,
+) map[uint32]SvgAnimAttrOverride {
 	overrides := w.scratch.svgAnimOverrides.take(len(states))
-	for gid, st := range states {
+	for pid, st := range states {
 		if st.AttrOverride.Mask != 0 {
-			overrides[gid] = st.AttrOverride
+			overrides[pid] = st.AttrOverride
 		}
 	}
 	return overrides
-}
-
-// buildEffectiveRenderPaths returns a scratch-backed copy of
-// cached.RenderPaths with animated spans overlaid by fresh triangles
-// from animTris. animTris is indexed by span in document order:
-// spans[i] maps to animTris[offset ..+spans[i].Count].
-func buildEffectiveRenderPaths(w *Window, cached *CachedSvg,
-	animTris []TessellatedPath,
-) []CachedSvgPath {
-	eff := w.scratch.effectiveSvgPaths.take(len(cached.RenderPaths))
-	eff = append(eff, cached.RenderPaths...)
-	off := 0
-	for _, span := range cached.AnimatedSpans {
-		if off+span.Count > len(animTris) {
-			// Defensive: parser returned fewer than expected — keep
-			// cached for the unfulfilled tail.
-			break
-		}
-		for k := range span.Count {
-			t := &animTris[off+k]
-			base := &eff[span.Start+k]
-			base.Triangles = t.Triangles
-			// Keep cached color / group / clip metadata; triangles
-			// are the only dynamic field. Vertex colors are not
-			// re-evaluated here (gradient overrides TBD).
-		}
-		off += span.Count
-	}
-	return eff
 }
 
 // applyAttrOverride writes val into the override field for attr.

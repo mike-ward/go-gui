@@ -54,48 +54,11 @@ func TestOverrideScalar_NaNFallsBackToBase(t *testing.T) {
 	}
 }
 
-// cloneAnimationsForShift must deep-copy every MotionPath backing
-// array. A shallow clone (outer slice only) would still alias the
-// source's MotionPath, and a second shift pass on cache rebuild would
-// accumulate drift.
-func TestCloneAnimationsForShift_DeepCopiesMotionPath(t *testing.T) {
-	src := []gui.SvgAnimation{
-		{Kind: gui.SvgAnimMotion, MotionPath: []float32{1, 2, 3, 4}},
-		{Kind: gui.SvgAnimRotate, CenterX: 10, CenterY: 20},
-	}
-	out := cloneAnimationsForShift(src)
-	if len(out) != len(src) {
-		t.Fatalf("len mismatch: got %d want %d", len(out), len(src))
-	}
-	// Motion path must have its own backing array.
-	if &out[0].MotionPath[0] == &src[0].MotionPath[0] {
-		t.Fatal("MotionPath aliases source backing array")
-	}
-	// Mutate clone; source must be untouched.
-	out[0].MotionPath[0] = 999
-	if src[0].MotionPath[0] != 1 {
-		t.Fatalf("source mutated via clone: got %v want 1",
-			src[0].MotionPath[0])
-	}
-}
-
-// cloneAnimationsForShift handles an empty Motion path without
-// crashing. Nil slices are legitimate for non-motion kinds.
-func TestCloneAnimationsForShift_EmptyMotionPathSafe(t *testing.T) {
-	src := []gui.SvgAnimation{
-		{Kind: gui.SvgAnimMotion, MotionPath: nil},
-		{Kind: gui.SvgAnimRotate},
-	}
-	out := cloneAnimationsForShift(src)
-	if len(out) != 2 || out[0].MotionPath != nil {
-		t.Fatalf("unexpected clone: %+v", out)
-	}
-}
-
-// Re-running buildParsed on the same VectorGraphic must not accumulate
-// viewBox shift on MotionPath. Regression: a shallow slice clone
-// would alias and re-subtract the origin each call.
-func TestBuildParsed_ViewBoxShiftIsIdempotent(t *testing.T) {
+// buildParsed must propagate the viewBox origin onto SvgParsed so the
+// render path can apply it as an outer translate. Animation fields
+// and path coords stay in raw viewBox space so SMIL animateTransform
+// in replace mode cannot erase the mapping.
+func TestBuildParsed_PropagatesViewBoxOrigin(t *testing.T) {
 	p := New()
 	vg := &VectorGraphic{
 		Width: 32, Height: 32,
@@ -113,67 +76,21 @@ func TestBuildParsed_ViewBoxShiftIsIdempotent(t *testing.T) {
 			},
 		},
 	}
-	originalMotion := append([]float32(nil), vg.Animations[0].MotionPath...)
-	originalCX := vg.Animations[1].CenterX
-	originalCY := vg.Animations[1].CenterY
-
-	first := p.buildParsed(1, vg, 1)
-	// First call: shifted by (-10,-20).
-	if first.Animations[0].MotionPath[0] != 90 ||
-		first.Animations[0].MotionPath[1] != 180 {
-		t.Fatalf("first shift wrong: %v",
-			first.Animations[0].MotionPath[:2])
+	parsed := p.buildParsed(1, vg, 1)
+	if parsed.ViewBoxX != 10 || parsed.ViewBoxY != 20 {
+		t.Fatalf("viewBox origin not propagated: x=%v y=%v",
+			parsed.ViewBoxX, parsed.ViewBoxY)
 	}
-	if first.Animations[1].CenterX != 40 ||
-		first.Animations[1].CenterY != 40 {
-		t.Fatalf("rotate center wrong: cx=%v cy=%v",
-			first.Animations[1].CenterX, first.Animations[1].CenterY)
+	// MotionPath and rotate center must stay in authored viewBox
+	// coords — render applies the outer shift.
+	if parsed.Animations[0].MotionPath[0] != 100 ||
+		parsed.Animations[0].MotionPath[1] != 200 {
+		t.Fatalf("motion path shifted at parse: %v",
+			parsed.Animations[0].MotionPath[:2])
 	}
-	// Source must be unchanged so the next rebuild starts from
-	// absolute viewBox coords again.
-	for i, v := range vg.Animations[0].MotionPath {
-		if v != originalMotion[i] {
-			t.Fatalf("source MotionPath mutated at %d: got %v want %v",
-				i, v, originalMotion[i])
-		}
-	}
-	if vg.Animations[1].CenterX != originalCX ||
-		vg.Animations[1].CenterY != originalCY {
-		t.Fatalf("source rotate center mutated")
-	}
-	// Second call must produce the same shifted output, not
-	// double-shifted values.
-	second := p.buildParsed(2, vg, 1)
-	if second.Animations[0].MotionPath[0] != 90 ||
-		second.Animations[0].MotionPath[1] != 180 {
-		t.Fatalf("second shift drifted: %v",
-			second.Animations[0].MotionPath[:2])
-	}
-	if second.Animations[1].CenterX != 40 {
-		t.Fatalf("second rotate center drifted: %v",
-			second.Animations[1].CenterX)
-	}
-}
-
-// Non-finite viewBox origin must skip the shift entirely so geometry
-// and animations still render with authored coords instead of being
-// splattered with NaN/Inf.
-func TestBuildParsed_NaNViewBoxSkipsAnimShift(t *testing.T) {
-	p := New()
-	vg := &VectorGraphic{
-		Width: 32, Height: 32,
-		ViewBoxX: float32(math.NaN()), ViewBoxY: 0,
-		Animations: []gui.SvgAnimation{
-			{
-				Kind:    gui.SvgAnimRotate,
-				GroupID: "g1",
-				CenterX: 5, CenterY: 7,
-			},
-		},
-	}
-	out := p.buildParsed(99, vg, 1)
-	if out.Animations[0].CenterX != 5 || out.Animations[0].CenterY != 7 {
-		t.Fatalf("NaN viewBox leaked into centers: cx=%v cy=%v",
-			out.Animations[0].CenterX, out.Animations[0].CenterY)
+	if parsed.Animations[1].CenterX != 50 ||
+		parsed.Animations[1].CenterY != 60 {
+		t.Fatalf("rotate center shifted at parse: cx=%v cy=%v",
+			parsed.Animations[1].CenterX, parsed.Animations[1].CenterY)
 	}
 }

@@ -57,8 +57,8 @@ func TestPhase8TessellateAnimatedRevives(t *testing.T) {
 	p := New()
 	parsed, _ := p.ParseSvg(doc)
 	tp := parsed.Paths[0]
-	overrides := map[string]gui.SvgAnimAttrOverride{
-		tp.GroupID: {Mask: gui.SvgAnimMaskR, R: 3},
+	overrides := map[uint32]gui.SvgAnimAttrOverride{
+		tp.PathID: {Mask: gui.SvgAnimMaskR, R: 3},
 	}
 	live := p.TessellateAnimated(parsed, 1.0, overrides, nil)
 	if len(live) != 1 {

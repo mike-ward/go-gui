@@ -3,20 +3,24 @@ package svg
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
 )
 
 // parseSvg parses an SVG string and returns a VectorGraphic.
 func parseSvg(content string) (*VectorGraphic, error) {
+	root, err := decodeSvgTree(content)
+	if err != nil {
+		return nil, err
+	}
+
 	vg := &VectorGraphic{
 		Width:  defaultIconSize,
 		Height: defaultIconSize,
 	}
 
-	// Parse viewBox
-	if vb, ok := findAttr(content, "viewBox"); ok {
+	// viewBox on root.
+	if vb, ok := root.AttrMap["viewBox"]; ok {
 		nums := parseNumberList(vb)
 		if len(nums) >= 4 {
 			vg.ViewBoxX = nums[0]
@@ -25,37 +29,32 @@ func parseSvg(content string) (*VectorGraphic, error) {
 			vg.Height = clampViewBoxDim(nums[3])
 		}
 	} else {
-		if w, ok := findAttr(content, "width"); ok {
+		if w, ok := root.AttrMap["width"]; ok {
 			vg.Width = clampViewBoxDim(parseLength(w))
 		}
-		if h, ok := findAttr(content, "height"); ok {
+		if h, ok := root.AttrMap["height"]; ok {
 			vg.Height = clampViewBoxDim(parseLength(h))
 		}
 	}
 
-	// Pre-pass: extract <defs>
-	vg.ClipPaths = parseDefsClipPaths(content)
-	vg.Gradients = parseDefsGradients(content)
-	vg.Filters = parseDefsFilters(content)
-	vg.DefsPaths = parseDefsPaths(content)
+	// Pre-pass: extract <defs>.
+	vg.ClipPaths = parseDefsClipPaths(root)
+	vg.Gradients = parseDefsGradients(root)
+	vg.Filters = parseDefsFilters(root)
+	vg.DefsPaths = parseDefsPaths(root)
 
-	// viewBox offset is applied at tessellation time by shifting
-	// vertex coords (see tessellatePaths). Keeping it out of the
-	// inherited path.Transform chain prevents SMIL <animateTransform>
-	// replace semantics from clobbering the viewBox shift when
-	// decomposed bases feed the per-group animation state.
+	// viewBox offset is applied at render time; triangles, animation
+	// centers, and motion paths all stay in raw viewBox space.
 	defStyle := defaultGroupStyle(identityTransform)
 	// Merge presentation attributes from the root <svg> tag (fill,
 	// stroke, stroke-width, stroke-linecap, stroke-linejoin, …) so
-	// shapes that rely on inheriting e.g. fill="currentColor" from
-	// the root pick it up.
-	if svgTag, ok := findRootElementTag(content, "svg"); ok {
-		defStyle = mergeGroupStyle(svgTag, defStyle)
-	}
-	state := &parseState{defsPaths: vg.DefsPaths}
-	allPaths := parseSvgContent(content, defStyle, 0, state)
+	// shapes that inherit e.g. fill="currentColor" pick it up.
+	defStyle = mergeGroupStyle(root.OpenTag, defStyle)
 
-	// Separate filtered paths from main paths
+	state := &parseState{defsPaths: vg.DefsPaths}
+	allPaths := parseSvgContent(root, defStyle, 0, state)
+
+	// Separate filtered paths from main paths.
 	if len(vg.Filters) > 0 {
 		filtered := map[string][]VectorPath{}
 		filteredTexts := map[string][]gui.SvgText{}
@@ -125,7 +124,10 @@ func parseSvgFile(path string) (*VectorGraphic, error) {
 	return parseSvg(string(data))
 }
 
-// parseSvgDimensions extracts only width/height without full parse.
+// parseSvgDimensions extracts only width/height without a full
+// parse. Operates on the raw string so callers can probe dimensions
+// on incomplete or fragment-only SVG content (no closing tag
+// required).
 func parseSvgDimensions(content string) (float32, float32) {
 	if vb, ok := findAttr(content, "viewBox"); ok {
 		nums := parseNumberList(vb)
@@ -144,289 +146,157 @@ func parseSvgDimensions(content string) (float32, float32) {
 	return w, h
 }
 
-// parseSvgContent parses SVG content recursively, handling groups.
+// parseSvgContent walks n's children, emitting VectorPaths for
+// shape/group elements and pushing animations onto state. Recurses
+// into <g>/<a> groups with merged styles; defs children are skipped
+// (defs pre-pass already ran). Returns the accumulated path list.
 //
 //nolint:gocyclo // SVG element switch
-func parseSvgContent(content string, inherited groupStyle, depth int, state *parseState) []VectorPath {
+func parseSvgContent(n *xmlNode, inherited groupStyle, depth int,
+	state *parseState) []VectorPath {
 	var paths []VectorPath
-	pos := 0
-
 	if depth > maxGroupDepth {
 		return paths
 	}
-
-	for pos < len(content) {
+	for i := range n.Children {
 		if state.elemCount >= maxElements {
 			break
 		}
-		// Find next element
-		start := strings.Index(content[pos:], "<")
-		if start < 0 {
-			break
-		}
-		start += pos
-
-		// Skip comments and declarations
-		if start+3 < len(content) {
-			if content[start:start+4] == "<!--" {
-				end := strings.Index(content[start:], "-->")
-				if end < 0 {
-					break
-				}
-				pos = start + end + 3
-				continue
-			}
-			if content[start+1] == '!' || content[start+1] == '?' {
-				end := strings.IndexByte(content[start:], '>')
-				if end < 0 {
-					break
-				}
-				pos = start + end + 1
-				continue
-			}
-		}
-
-		// Closing tag
-		if start+1 < len(content) && content[start+1] == '/' {
-			end := strings.IndexByte(content[start:], '>')
-			if end < 0 {
-				break
-			}
-			pos = start + end + 1
+		c := &n.Children[i]
+		switch c.Name {
+		case "defs":
+			// Already handled by defs pre-pass; skip.
 			continue
-		}
 
-		// Tag name
-		tagEnd := findTagNameEnd(content, start+1)
-		if tagEnd <= start+1 {
-			pos = start + 1
-			continue
-		}
-		tagName := content[start+1 : tagEnd]
-
-		// Element end
-		elemEndRel := strings.IndexByte(content[start:], '>')
-		if elemEndRel < 0 {
-			break
-		}
-		elemEnd := start + elemEndRel
-		elem := content[start : elemEnd+1]
-		isSelfClosing := elemEnd > 0 && content[elemEnd-1] == '/'
-
-		// Skip <defs> (already parsed)
-		if tagName == "defs" {
-			if isSelfClosing {
-				pos = elemEnd + 1
-				continue
-			}
-			defsEnd := findClosingTag(content, "defs", elemEnd+1)
-			closeEnd := strings.IndexByte(content[defsEnd:], '>')
-			if closeEnd < 0 {
-				break
-			}
-			pos = defsEnd + closeEnd + 1
-			continue
-		}
-
-		switch tagName {
 		case "g", "a":
-			gs := mergeGroupStyle(elem, inherited)
+			gs := mergeGroupStyle(c.OpenTag, inherited)
 			state.elemCount++
-			if isSelfClosing {
-				pos = elemEnd + 1
-				continue
+			// Synthesize a GroupID when the group has no id but
+			// contains inline animations, so descendants can bind.
+			if gs.GroupID == "" && nodeHasInlineAnimation(c) {
+				state.synthID++
+				gs.GroupID = fmt.Sprintf("__anim_%d", state.synthID)
 			}
-			groupStart := elemEnd + 1
-			groupEnd := findClosingTag(content, tagName, groupStart)
-			if groupEnd > groupStart {
-				groupContent := content[groupStart:groupEnd]
-				// When a group lacks an explicit id but contains
-				// inline <animate>/<animateTransform> children,
-				// synthesize a GroupID so descendants can bind to
-				// the animation. Mirrors parseShapeElement's
-				// synth-id logic. Substring check also matches
-				// nested animations; inner groups with their own
-				// id or synth assignment override.
-				if gs.GroupID == "" &&
-					shapeHasInlineAnimation(groupContent) {
-					state.synthID++
-					gs.GroupID = fmt.Sprintf("__anim_%d",
-						state.synthID)
-				}
-				paths = append(paths,
-					parseSvgContent(groupContent, gs, depth+1, state)...)
-			}
-			closeEnd := strings.IndexByte(content[groupEnd:], '>')
-			if closeEnd < 0 {
-				pos = len(content)
-				continue
-			}
-			pos = groupEnd + closeEnd + 1
+			paths = append(paths, parseSvgContent(c, gs, depth+1, state)...)
 
 		case "path":
-			pos = parseShapeElement(content, elem, tagName, elemEnd,
-				isSelfClosing, inherited, state, &paths,
+			appendShape(c, inherited, state, &paths,
 				func(gs groupStyle) (VectorPath, bool) {
-					return parsePathWithStyle(elem, gs)
+					return parsePathWithStyle(c.OpenTag, gs)
 				})
 
 		case "rect":
-			pos = parseShapeElement(content, elem, tagName, elemEnd,
-				isSelfClosing, inherited, state, &paths,
+			appendShape(c, inherited, state, &paths,
 				func(gs groupStyle) (VectorPath, bool) {
-					return parseRectWithStyle(elem, gs)
+					return parseRectWithStyle(c.OpenTag, gs)
 				})
 
 		case "circle":
-			pos = parseShapeElement(content, elem, tagName, elemEnd,
-				isSelfClosing, inherited, state, &paths,
+			appendShape(c, inherited, state, &paths,
 				func(gs groupStyle) (VectorPath, bool) {
-					return parseCircleWithStyle(elem, gs)
+					return parseCircleWithStyle(c.OpenTag, gs)
 				})
 
 		case "ellipse":
-			pos = parseShapeElement(content, elem, tagName, elemEnd,
-				isSelfClosing, inherited, state, &paths,
+			appendShape(c, inherited, state, &paths,
 				func(gs groupStyle) (VectorPath, bool) {
-					return parseEllipseWithStyle(elem, gs)
+					return parseEllipseWithStyle(c.OpenTag, gs)
 				})
 
 		case "polygon":
-			pos = parseShapeElement(content, elem, tagName, elemEnd,
-				isSelfClosing, inherited, state, &paths,
+			appendShape(c, inherited, state, &paths,
 				func(gs groupStyle) (VectorPath, bool) {
-					return parsePolygonWithStyle(elem, gs, true)
+					return parsePolygonWithStyle(c.OpenTag, gs, true)
 				})
 
 		case "polyline":
-			pos = parseShapeElement(content, elem, tagName, elemEnd,
-				isSelfClosing, inherited, state, &paths,
+			appendShape(c, inherited, state, &paths,
 				func(gs groupStyle) (VectorPath, bool) {
-					return parsePolygonWithStyle(elem, gs, false)
+					return parsePolygonWithStyle(c.OpenTag, gs, false)
 				})
 
 		case "line":
-			pos = parseShapeElement(content, elem, tagName, elemEnd,
-				isSelfClosing, inherited, state, &paths,
+			appendShape(c, inherited, state, &paths,
 				func(gs groupStyle) (VectorPath, bool) {
-					return parseLineWithStyle(elem, gs)
+					return parseLineWithStyle(c.OpenTag, gs)
 				})
 
 		case "text":
 			state.elemCount++
-			if !isSelfClosing {
-				textStart := elemEnd + 1
-				textEnd := findClosingTag(content, "text", textStart)
-				if textEnd > textStart {
-					textBody := content[textStart:textEnd]
-					parseTextElement(elem, textBody, inherited, state)
-				}
-				closeIdx := strings.IndexByte(content[textEnd:], '>')
-				if closeIdx < 0 {
-					pos = len(content)
-					continue
-				}
-				pos = textEnd + closeIdx + 1
-			} else {
-				pos = elemEnd + 1
-			}
+			parseTextElement(c, inherited, state)
 
 		case "animate":
 			state.elemCount++
 			if len(state.animations) < maxAnimations {
-				if a, ok := parseAnimateElement(elem, inherited); ok {
+				if a, ok := parseAnimateElement(c.OpenTag, inherited); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
-			pos = elemEnd + 1
 
 		case "animateTransform":
 			state.elemCount++
 			if len(state.animations) < maxAnimations {
-				if a, ok := parseAnimateTransformElement(elem, inherited); ok {
+				if a, ok := parseAnimateTransformElement(
+					c.OpenTag, inherited); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
-			pos = elemEnd + 1
 
 		case "set":
 			state.elemCount++
 			if len(state.animations) < maxAnimations {
-				if a, ok := parseSetElement(elem, inherited); ok {
+				if a, ok := parseSetElement(c.OpenTag, inherited); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
-			pos = elemEnd + 1
 
 		case "animateMotion":
 			state.elemCount++
-			motionBody, next := readElementBody(
-				content, elem, elemEnd, "animateMotion")
 			if len(state.animations) < maxAnimations {
 				if a, ok := parseAnimateMotionElement(
-					elem, motionBody, inherited, state); ok {
+					c, inherited, state); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
-			pos = next
 
 		default:
-			pos = elemEnd + 1
+			// Unknown element: ignore. (Descendants also ignored —
+			// would need explicit handling.)
 		}
 	}
 	return paths
 }
 
-// parseShapeElement parses a shape (path/rect/circle/…) via the
-// supplied parser, handling nested <animate>/<animateTransform>
-// children when the element is not self-closing. When inline
-// animations are present the shape's id (or a synthesized one)
-// is propagated to the path's GroupID so animations key onto
-// the owning shape. Returns the new pos after parsing.
-func parseShapeElement(
-	content, elem, tagName string, elemEnd int,
-	isSelfClosing bool,
+// appendShape wraps parseShapeElement's original bookkeeping: the
+// shape parser runs with an optionally-synthesized GroupID if the
+// node carries inline animation children, then inline anims are
+// folded onto the path's state.
+func appendShape(
+	c *xmlNode,
 	inherited groupStyle,
 	state *parseState,
 	paths *[]VectorPath,
 	parser func(gs groupStyle) (VectorPath, bool),
-) int {
+) {
 	state.elemCount++
 
-	if isSelfClosing {
-		if p, ok := parser(inherited); ok {
-			*paths = append(*paths, p)
-		}
-		return elemEnd + 1
-	}
-
-	bodyStart := elemEnd + 1
-	bodyEnd := findClosingTag(content, tagName, bodyStart)
-	if bodyEnd <= bodyStart {
-		if p, ok := parser(inherited); ok {
-			*paths = append(*paths, p)
-		}
-		return elemEnd + 1
-	}
-	body := content[bodyStart:bodyEnd]
-
 	shapeGS := inherited
-	if shapeHasInlineAnimation(body) {
-		gid, ok := findAttr(elem, "id")
-		if !ok || gid == "" {
+	if nodeHasInlineAnimation(c) {
+		gid := c.AttrMap["id"]
+		if gid == "" {
 			state.synthID++
 			gid = fmt.Sprintf("__anim_%d", state.synthID)
 		}
 		shapeGS.GroupID = gid
-		all, fill, stroke := scanOpacityAnimTargets(body)
+		all, fill, stroke := scanOpacityAnimTargets(c)
 		shapeGS.SkipOpacity = all
 		shapeGS.SkipFillOpacity = fill
 		shapeGS.SkipStrokeOpacity = stroke
@@ -437,12 +307,14 @@ func parseShapeElement(
 		if shapeGS.GroupID != inherited.GroupID {
 			p.GroupID = shapeGS.GroupID
 		}
+		state.pathIDSeq++
+		p.PathID = state.pathIDSeq
 		*paths = append(*paths, p)
 		pathIdx = len(*paths) - 1
 	}
 
 	animStart := len(state.animations)
-	parseShapeInlineChildren(body, shapeGS, state)
+	parseShapeInlineChildren(c, shapeGS, state)
 	// Clip-pathed shapes skip re-tessellation.
 	if pathIdx >= 0 && (*paths)[pathIdx].ClipPathID == "" {
 		for i := animStart; i < len(state.animations); i++ {
@@ -455,12 +327,6 @@ func parseShapeElement(
 			}
 		}
 	}
-
-	closeEnd := strings.IndexByte(content[bodyEnd:], '>')
-	if closeEnd < 0 {
-		return len(content)
-	}
-	return bodyEnd + closeEnd + 1
 }
 
 // parseAnimateForDispatch picks the right <animate> parser based on
@@ -486,42 +352,29 @@ func parseAnimateForDispatch(
 	return parseAnimateAttributeElement(elem, inherited)
 }
 
-// shapeHasInlineAnimation cheaply detects whether a shape body
-// contains animation children worth parsing.
-func shapeHasInlineAnimation(body string) bool {
-	return strings.Contains(body, "<animate") ||
-		strings.Contains(body, "<animateTransform") ||
-		strings.Contains(body, "<animateMotion") ||
-		strings.Contains(body, "<set")
+// nodeHasInlineAnimation reports whether any direct child of n is a
+// SMIL animation element.
+func nodeHasInlineAnimation(n *xmlNode) bool {
+	for i := range n.Children {
+		switch n.Children[i].Name {
+		case "animate", "animateTransform", "animateMotion", "set":
+			return true
+		}
+	}
+	return false
 }
 
 // scanOpacityAnimTargets reports which opacity sub-attributes are
-// animated by inline <animate attributeName="..."> children of a
-// shape body. Used to suppress static opacity baking for channels
-// the animation will overwrite at render time.
-func scanOpacityAnimTargets(body string) (all, fill, stroke bool) {
-	pos := 0
-	for pos < len(body) {
-		idx := strings.Index(body[pos:], "<animate")
-		if idx < 0 {
-			return
-		}
-		start := pos + idx + len("<animate")
-		end := strings.IndexByte(body[start:], '>')
-		if end < 0 {
-			return
-		}
-		elem := body[pos+idx : start+end+1]
-		pos = start + end + 1
-		// Skip <animateTransform> — it never targets opacity.
-		if strings.HasPrefix(elem, "<animateTransform") {
+// animated by inline <animate> children of a shape. Used to suppress
+// static opacity baking for channels the animation will overwrite at
+// render time.
+func scanOpacityAnimTargets(n *xmlNode) (all, fill, stroke bool) {
+	for i := range n.Children {
+		c := &n.Children[i]
+		if c.Name != "animate" {
 			continue
 		}
-		attr, ok := findAttr(elem, "attributeName")
-		if !ok {
-			continue
-		}
-		switch attr {
+		switch c.AttrMap["attributeName"] {
 		case "opacity":
 			all = true
 		case "fill-opacity":
@@ -533,183 +386,49 @@ func scanOpacityAnimTargets(body string) (all, fill, stroke bool) {
 	return
 }
 
-// parseShapeInlineChildren scans a shape body for
-// <animate>/<animateTransform> elements and appends them to
-// state.animations keyed by shapeGS.GroupID.
+// parseShapeInlineChildren walks a shape's children for
+// <animate>/<animateTransform>/<animateMotion>/<set> and appends
+// them to state.animations keyed by shapeGS.GroupID.
 func parseShapeInlineChildren(
-	body string, shapeGS groupStyle, state *parseState,
+	n *xmlNode, shapeGS groupStyle, state *parseState,
 ) {
-	pos := 0
-	for pos < len(body) {
-		lt := strings.IndexByte(body[pos:], '<')
-		if lt < 0 {
-			return
-		}
-		start := pos + lt + 1
-		if start >= len(body) {
-			return
-		}
-		tagEnd := findTagNameEnd(body, start)
-		if tagEnd <= start {
-			pos = start
-			continue
-		}
-		tag := body[start:tagEnd]
-		elemEndRel := strings.IndexByte(body[start:], '>')
-		if elemEndRel < 0 {
-			return
-		}
-		elemEnd := start + elemEndRel
-		elem := body[start-1 : elemEnd+1]
-
-		switch tag {
+	for i := range n.Children {
+		c := &n.Children[i]
+		switch c.Name {
 		case "animate":
 			if len(state.animations) < maxAnimations {
-				if a, ok := parseAnimateForDispatch(elem, shapeGS); ok {
+				if a, ok := parseAnimateForDispatch(c.OpenTag, shapeGS); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
 		case "animateTransform":
 			if len(state.animations) < maxAnimations {
-				if a, ok := parseAnimateTransformElement(elem, shapeGS); ok {
+				if a, ok := parseAnimateTransformElement(
+					c.OpenTag, shapeGS); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
 		case "set":
 			if len(state.animations) < maxAnimations {
-				if a, ok := parseSetElement(elem, shapeGS); ok {
+				if a, ok := parseSetElement(c.OpenTag, shapeGS); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
 		case "animateMotion":
-			motionBody, next := readElementBody(
-				body, elem, elemEnd, "animateMotion")
 			if len(state.animations) < maxAnimations {
 				if a, ok := parseAnimateMotionElement(
-					elem, motionBody, shapeGS, state); ok {
+					c, shapeGS, state); ok {
 					state.animations = append(state.animations, a)
-					registerAnimation(state, elem,
+					registerAnimation(state, c.OpenTag,
 						len(state.animations)-1)
 				}
 			}
-			pos = next
-			continue
 		}
-		pos = elemEnd + 1
 	}
-}
-
-// readElementBody returns the inner content of an open element and
-// the cursor position past its closing tag. For self-closing or
-// missing-close elements returns empty body and pos just past elem.
-func readElementBody(
-	body, elem string, elemEnd int, tag string,
-) (string, int) {
-	if strings.HasSuffix(strings.TrimSpace(elem), "/>") {
-		return "", elemEnd + 1
-	}
-	closeTok := "</" + tag
-	closeIdx := strings.Index(body[elemEnd+1:], closeTok)
-	if closeIdx < 0 {
-		return "", elemEnd + 1
-	}
-	bodyStart := elemEnd + 1
-	bodyEnd := bodyStart + closeIdx
-	gt := strings.IndexByte(body[bodyEnd:], '>')
-	if gt < 0 {
-		return body[bodyStart:bodyEnd], bodyEnd
-	}
-	return body[bodyStart:bodyEnd], bodyEnd + gt + 1
-}
-
-// findRootElementTag locates the first `<tag` opening element in
-// content and returns its full tag text up to and including the
-// closing `>`. Used to read presentation attributes off the root
-// <svg> element without recursing into it.
-func findRootElementTag(content, tag string) (string, bool) {
-	needle := "<" + tag
-	idx := strings.Index(content, needle)
-	if idx < 0 {
-		return "", false
-	}
-	after := idx + len(needle)
-	if after >= len(content) {
-		return "", false
-	}
-	c := content[after]
-	if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '>' && c != '/' {
-		return "", false
-	}
-	end := strings.IndexByte(content[idx:], '>')
-	if end < 0 {
-		return "", false
-	}
-	return content[idx : idx+end+1], true
-}
-
-func findTagNameEnd(s string, start int) int {
-	i := start
-	for i < len(s) {
-		c := s[i]
-		if c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '>' || c == '/' {
-			break
-		}
-		i++
-	}
-	return i
-}
-
-func findClosingTag(content, tag string, start int) int {
-	closeTag := "</" + tag
-	openTag := "<" + tag
-	depth := 1
-	pos := start
-	iterations := 0
-
-	for pos < len(content) && depth > 0 {
-		iterations++
-		if iterations > maxElements {
-			break
-		}
-		next := strings.IndexByte(content[pos:], '<')
-		if next < 0 {
-			break
-		}
-		next += pos
-
-		// Closing tag — verify full tag name boundary so
-		// e.g. "</textPath>" doesn't match "</text".
-		if next+len(closeTag) <= len(content) && content[next:next+len(closeTag)] == closeTag {
-			endPos := next + len(closeTag)
-			if endPos >= len(content) || content[endPos] == '>' ||
-				content[endPos] == ' ' || content[endPos] == '\t' ||
-				content[endPos] == '\n' || content[endPos] == '\r' {
-				depth--
-				if depth == 0 {
-					return next
-				}
-			}
-			pos = next + len(closeTag)
-			continue
-		}
-
-		// Opening tag
-		if next+len(openTag) <= len(content) && content[next:next+len(openTag)] == openTag {
-			endPos := next + len(openTag)
-			if endPos < len(content) {
-				c := content[endPos]
-				if c == ' ' || c == '\t' || c == '\n' || c == '>' || c == '/' {
-					depth++
-				}
-			}
-		}
-		pos = next + 1
-	}
-	return len(content)
 }

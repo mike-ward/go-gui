@@ -27,6 +27,7 @@ type CachedSvgPath struct {
 	IsClipMask   bool
 	ClipGroup    int
 	GroupID      string
+	PathID       uint32
 	Animated     bool
 	// IsStroke marks the path as a stroke contribution; lets opacity
 	// animations targeting fill-opacity / stroke-opacity scale only
@@ -40,6 +41,8 @@ type CachedSvgPath struct {
 	BaseScaleX   float32
 	BaseScaleY   float32
 	BaseRotAngle float32
+	BaseRotCX    float32
+	BaseRotCY    float32
 	HasBaseXform bool
 }
 
@@ -69,46 +72,43 @@ type CachedFilteredGroup struct {
 	BBox          [4]float32 // x, y, width, height
 }
 
-// AnimatedSpan describes a contiguous run of CachedSvgPath entries
-// originating from a single animated VectorPath. Start+Count locate
-// the cached range so TessellateAnimated's i-th returned batch can
-// substitute for the i-th span when overrides are live.
-type AnimatedSpan struct {
-	Start int
-	Count int
-}
-
 // svgBaseXform holds a decomposed author base transform, keyed by
-// GroupID. Used to seed svgAnimState at sandwich init so animations
+// PathID. Used to seed svgAnimState at sandwich init so animations
 // compose over the author's base.
 type svgBaseXform struct {
 	TransX, TransY float32
 	ScaleX, ScaleY float32
 	RotAngle       float32
+	RotCX, RotCY   float32
 }
 
 // CachedSvg holds pre-tessellated SVG data for efficient rendering.
 type CachedSvg struct {
-	RenderPaths    []CachedSvgPath
-	TextDraws      []CachedSvgTextDraw
-	TextPathDraws  []CachedSvgTextPathDraw
-	FilteredGroups []CachedFilteredGroup
-	Gradients      map[string]SvgGradientDef
-	Animations     []SvgAnimation
-	HasAnimations  bool
-	HasAttrAnim    bool // any SvgAnimAttr present → try re-tessellation
-	AnimatedSpans  []AnimatedSpan
-	Parsed         *SvgParsed // retained for TessellateAnimated
-	AnimStartNs    int64
-	AnimHash       string
-	Width          float32
-	Height         float32
-	Scale          float32
-	// BaseByGroup maps GroupID → decomposed author base transform.
-	// Populated only for groups that have animations targeting them
+	RenderPaths      []CachedSvgPath
+	TextDraws        []CachedSvgTextDraw
+	TextPathDraws    []CachedSvgTextPathDraw
+	FilteredGroups   []CachedFilteredGroup
+	Gradients        map[string]SvgGradientDef
+	Animations       []SvgAnimation
+	HasAnimations    bool
+	HasAttrAnim      bool       // any SvgAnimAttr present → try re-tessellation
+	HasAnimatedPaths bool       // any RenderPath has Animated=true
+	Parsed           *SvgParsed // retained for TessellateAnimated
+	AnimStartNs      int64
+	AnimHash         string
+	Width            float32
+	Height           float32
+	Scale            float32
+	// ViewBoxX / ViewBoxY are the authored viewBox origin. Applied at
+	// render time as an outer translate on sx/sy so authored coords
+	// stay in raw viewBox space throughout tessellation and animation.
+	ViewBoxX float32
+	ViewBoxY float32
+	// BaseByPath maps PathID → decomposed author base transform.
+	// Populated only for paths that have animations targeting them
 	// AND whose base transform decomposed cleanly; used to seed
 	// svgAnimState so animations compose over the author's base.
-	BaseByGroup  map[string]svgBaseXform
+	BaseByPath   map[uint32]svgBaseXform
 	defsPathData map[string]cachedDefsPathData
 }
 
@@ -137,6 +137,7 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 			IsClipMask:   p.IsClipMask,
 			ClipGroup:    p.ClipGroup,
 			GroupID:      p.GroupID,
+			PathID:       p.PathID,
 			Animated:     p.Animated,
 			IsStroke:     p.IsStroke,
 			Primitive:    p.Primitive,
@@ -145,6 +146,8 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 			BaseScaleX:   p.BaseScaleX,
 			BaseScaleY:   p.BaseScaleY,
 			BaseRotAngle: p.BaseRotAngle,
+			BaseRotCX:    p.BaseRotCX,
+			BaseRotCY:    p.BaseRotCY,
 			HasBaseXform: p.HasBaseXform,
 		}
 	}
@@ -609,28 +612,31 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 				a.Kind == SvgAnimDashArray ||
 				a.Kind == SvgAnimDashOffset
 		})
-	animatedSpans := buildAnimatedSpans(renderPaths)
-	baseByGroup := buildBaseByGroup(renderPaths, filteredGroups,
+	hasAnimatedPaths := slices.ContainsFunc(renderPaths,
+		func(p CachedSvgPath) bool { return p.Animated })
+	baseByPath := buildBaseByPath(renderPaths, filteredGroups,
 		parsed.Animations)
 
 	cached := &CachedSvg{
-		RenderPaths:    renderPaths,
-		TextDraws:      textDraws,
-		TextPathDraws:  textPathDraws,
-		FilteredGroups: filteredGroups,
-		Gradients:      parsed.Gradients,
-		Animations:     parsed.Animations,
-		HasAnimations:  len(parsed.Animations) > 0,
-		HasAttrAnim:    hasAttrAnim,
-		AnimatedSpans:  animatedSpans,
-		Parsed:         parsed,
-		AnimStartNs:    time.Now().UnixNano(),
-		AnimHash:       strconv.FormatUint(srcHash, 16),
-		Width:          parsed.Width,
-		Height:         parsed.Height,
-		Scale:          scale,
-		BaseByGroup:    baseByGroup,
-		defsPathData:   defsPathData,
+		RenderPaths:      renderPaths,
+		TextDraws:        textDraws,
+		TextPathDraws:    textPathDraws,
+		FilteredGroups:   filteredGroups,
+		Gradients:        parsed.Gradients,
+		Animations:       parsed.Animations,
+		HasAnimations:    len(parsed.Animations) > 0,
+		HasAttrAnim:      hasAttrAnim,
+		HasAnimatedPaths: hasAnimatedPaths,
+		Parsed:           parsed,
+		AnimStartNs:      time.Now().UnixNano(),
+		AnimHash:         strconv.FormatUint(srcHash, 16),
+		Width:            parsed.Width,
+		Height:           parsed.Height,
+		Scale:            scale,
+		ViewBoxX:         parsed.ViewBoxX,
+		ViewBoxY:         parsed.ViewBoxY,
+		BaseByPath:       baseByPath,
+		defsPathData:     defsPathData,
 	}
 
 	// Cache if vertex count is reasonable.
@@ -728,46 +734,48 @@ func (w *Window) ClearSvgCache() {
 	}
 }
 
-// buildBaseByGroup collects decomposed author base transforms keyed by
-// GroupID, for groups that have any animation targeting them. Seeding
-// the per-frame svgAnimState with these lets SMIL additive / replace
-// compose over the author's base (see CachedSvg.BaseByGroup).
-func buildBaseByGroup(
+// buildBaseByPath collects decomposed author base transforms keyed
+// by PathID, for paths that any animation targets. Seeding the
+// per-frame svgAnimState with these lets SMIL additive / replace
+// compose over the author's base (see CachedSvg.BaseByPath).
+func buildBaseByPath(
 	paths []CachedSvgPath,
 	filteredGroups []CachedFilteredGroup,
 	anims []SvgAnimation,
-) map[string]svgBaseXform {
+) map[uint32]svgBaseXform {
 	if len(anims) == 0 {
 		return nil
 	}
-	animated := make(map[string]struct{}, len(anims))
+	targeted := make(map[uint32]struct{}, len(anims))
 	for i := range anims {
-		if anims[i].GroupID != "" {
-			animated[anims[i].GroupID] = struct{}{}
+		for _, pid := range anims[i].TargetPathIDs {
+			targeted[pid] = struct{}{}
 		}
 	}
-	if len(animated) == 0 {
+	if len(targeted) == 0 {
 		return nil
 	}
-	out := make(map[string]svgBaseXform)
+	out := make(map[uint32]svgBaseXform)
 	collect := func(ps []CachedSvgPath) {
 		for i := range ps {
 			p := &ps[i]
-			if !p.HasBaseXform || p.GroupID == "" {
+			if !p.HasBaseXform || p.PathID == 0 {
 				continue
 			}
-			if _, ok := animated[p.GroupID]; !ok {
+			if _, ok := targeted[p.PathID]; !ok {
 				continue
 			}
-			if _, already := out[p.GroupID]; already {
+			if _, already := out[p.PathID]; already {
 				continue
 			}
-			out[p.GroupID] = svgBaseXform{
+			out[p.PathID] = svgBaseXform{
 				TransX:   p.BaseTransX,
 				TransY:   p.BaseTransY,
 				ScaleX:   p.BaseScaleX,
 				ScaleY:   p.BaseScaleY,
 				RotAngle: p.BaseRotAngle,
+				RotCX:    p.BaseRotCX,
+				RotCY:    p.BaseRotCY,
 			}
 		}
 	}
@@ -779,29 +787,6 @@ func buildBaseByGroup(
 		return nil
 	}
 	return out
-}
-
-// buildAnimatedSpans scans cached render paths and records contiguous
-// runs that originated from a single animated VectorPath (same
-// GroupID, adjacent indices). One span per animated source path, in
-// document order — matches TessellateAnimated's return order.
-func buildAnimatedSpans(paths []CachedSvgPath) []AnimatedSpan {
-	var spans []AnimatedSpan
-	i := 0
-	for i < len(paths) {
-		if !paths[i].Animated {
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(paths) && paths[j].Animated &&
-			paths[j].GroupID == paths[i].GroupID {
-			j++
-		}
-		spans = append(spans, AnimatedSpan{Start: i, Count: j - i})
-		i = j
-	}
-	return spans
 }
 
 // computeTriangleBBox computes bounding box from tessellated paths.

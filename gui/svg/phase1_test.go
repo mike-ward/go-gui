@@ -142,8 +142,8 @@ func TestPhase1TessellateAnimatedReturnsOnlyFlaggedPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	overrides := map[string]gui.SvgAnimAttrOverride{
-		"__anim_1": {Mask: gui.SvgAnimMaskCY, CY: 6},
+	overrides := map[uint32]gui.SvgAnimAttrOverride{
+		firstAnimatedPathID(parsed): {Mask: gui.SvgAnimMaskCY, CY: 6},
 	}
 	out := p.TessellateAnimated(parsed, 1, overrides, nil)
 	if len(out) == 0 {

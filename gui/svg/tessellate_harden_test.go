@@ -7,37 +7,14 @@ import (
 	"github.com/mike-ward/go-gui/gui"
 )
 
-// finiteViewBox rejects NaN and ±Inf on either axis; zero and
-// ordinary finite values pass.
-func TestFiniteViewBox(t *testing.T) {
-	nan := float32(math.NaN())
-	inf := float32(math.Inf(1))
-	cases := []struct {
-		x, y float32
-		ok   bool
-	}{
-		{0, 0, true},
-		{10, -20, true},
-		{nan, 0, false},
-		{0, nan, false},
-		{inf, 0, false},
-		{0, -inf, false},
-	}
-	for _, c := range cases {
-		if got := finiteViewBox(c.x, c.y); got != c.ok {
-			t.Errorf("finiteViewBox(%v,%v)=%v want %v",
-				c.x, c.y, got, c.ok)
-		}
-	}
-}
-
 // seedFromTransform defers TRS-decomposable non-identity transforms
 // onto Base* seed fields; identity returns zero seed with bake=false;
-// shear forces bake.
+// shear forces bake. Per-path animation routing means sibling
+// collisions are impossible, so TRS-decomposable always defers.
 func TestSeedFromTransform_IdentityDefersShearBakes(t *testing.T) {
 	// Identity: no base, no bake.
 	id := &VectorPath{Transform: identityTransform}
-	seed, bake := seedFromTransform(id, nil)
+	seed, bake := seedFromTransform(id)
 	if seed.HasBaseXform || bake {
 		t.Fatalf("identity: want no base/no bake, got %+v bake=%v",
 			seed, bake)
@@ -45,7 +22,7 @@ func TestSeedFromTransform_IdentityDefersShearBakes(t *testing.T) {
 
 	// Pure translate (10,20) — TRS-decomposable.
 	tr := &VectorPath{Transform: [6]float32{1, 0, 0, 1, 10, 20}}
-	seed, bake = seedFromTransform(tr, nil)
+	seed, bake = seedFromTransform(tr)
 	if bake || !seed.HasBaseXform {
 		t.Fatalf("translate: want deferred base, got bake=%v seed=%+v",
 			bake, seed)
@@ -56,87 +33,43 @@ func TestSeedFromTransform_IdentityDefersShearBakes(t *testing.T) {
 
 	// Shear matrix is not TRS-decomposable — forces bake.
 	sh := &VectorPath{Transform: [6]float32{1, 0.5, 0, 1, 0, 0}}
-	seed, bake = seedFromTransform(sh, nil)
+	seed, bake = seedFromTransform(sh)
 	if !bake || seed.HasBaseXform {
 		t.Fatalf("shear: want bake, got bake=%v seed=%+v", bake, seed)
 	}
 }
 
-// When the force-bake set contains the path's GroupID, a TRS-decomposable
-// transform is still baked so sibling paths with divergent bases all
-// render at their authored positions.
-func TestSeedFromTransform_ForceBakeOverridesDecompose(t *testing.T) {
-	p := &VectorPath{
+// Sibling paths with divergent TRS transforms now each defer
+// independently — per-PathID animation state ensures no collision.
+func TestSeedFromTransform_SiblingsDeferIndependently(t *testing.T) {
+	a := &VectorPath{
+		PathID:    1,
 		GroupID:   "g1",
-		Transform: [6]float32{1, 0, 0, 1, 10, 20},
+		Transform: [6]float32{1, 0, 0, 1, 5, 0},
 	}
-	seed, bake := seedFromTransform(p, map[string]bool{"g1": true})
-	if !bake || seed.HasBaseXform {
-		t.Fatalf("forceBake: want bake and no base, got bake=%v seed=%+v",
-			bake, seed)
+	b := &VectorPath{
+		PathID:    2,
+		GroupID:   "g1",
+		Transform: [6]float32{1, 0, 0, 1, 0, 7},
 	}
-}
-
-// buildForceBakeSet returns nil unless a transform-kind animation
-// targets a group AND >=2 member paths carry non-identity Transforms.
-func TestBuildForceBakeSet_MultiPathTransformAnimGroup(t *testing.T) {
-	anims := []gui.SvgAnimation{
-		{Kind: gui.SvgAnimRotate, GroupID: "g1"},
+	sa, bakeA := seedFromTransform(a)
+	sb, bakeB := seedFromTransform(b)
+	if bakeA || bakeB || !sa.HasBaseXform || !sb.HasBaseXform {
+		t.Fatalf("siblings must both defer; a=%+v bakeA=%v b=%+v bakeB=%v",
+			sa, bakeA, sb, bakeB)
 	}
-	paths := []VectorPath{
-		{GroupID: "g1", Transform: [6]float32{1, 0, 0, 1, 5, 0}},
-		{GroupID: "g1", Transform: [6]float32{1, 0, 0, 1, 0, 7}},
-	}
-	got := buildForceBakeSet(paths, anims)
-	if !got["g1"] {
-		t.Fatalf("expected g1 in force-bake set: %v", got)
+	if sa.BaseTransX != 5 || sb.BaseTransY != 7 {
+		t.Fatalf("sibling bases overwritten: a=%+v b=%+v", sa, sb)
 	}
 }
 
-// Only one path with a non-identity transform in the animated group:
-// per-GroupID animation state can still seed it without conflict.
-func TestBuildForceBakeSet_SinglePathGroupDeferred(t *testing.T) {
-	anims := []gui.SvgAnimation{
-		{Kind: gui.SvgAnimTranslate, GroupID: "g1"},
-	}
-	paths := []VectorPath{
-		{GroupID: "g1", Transform: [6]float32{1, 0, 0, 1, 5, 0}},
-		{GroupID: "g1", Transform: identityTransform},
-		// Sibling in an unrelated group with a transform — doesn't
-		// count toward g1.
-		{GroupID: "g2", Transform: [6]float32{1, 0, 0, 1, 9, 9}},
-	}
-	got := buildForceBakeSet(paths, anims)
-	if got["g1"] {
-		t.Fatalf("expected g1 NOT in force-bake set: %v", got)
-	}
-}
-
-// No transform-kind animations → nil set. Opacity / attr animations
-// don't need force-bake since they do not touch Base*.
-func TestBuildForceBakeSet_OpacityAnimNoBake(t *testing.T) {
-	anims := []gui.SvgAnimation{
-		{Kind: gui.SvgAnimOpacity, GroupID: "g1"},
-	}
-	paths := []VectorPath{
-		{GroupID: "g1", Transform: [6]float32{1, 0, 0, 1, 1, 0}},
-		{GroupID: "g1", Transform: [6]float32{1, 0, 0, 1, 2, 0}},
-	}
-	if got := buildForceBakeSet(paths, anims); got != nil {
-		t.Fatalf("opacity-only: expected nil, got %v", got)
-	}
-}
-
-func TestBuildForceBakeSet_EmptyAnimsReturnsNil(t *testing.T) {
-	if got := buildForceBakeSet(nil, nil); got != nil {
-		t.Fatalf("want nil, got %v", got)
-	}
-}
-
-// Tessellation with non-zero viewBox origin must shift every vertex
-// into content-from-origin coords. A <rect x=10 y=20 w=5 h=5> in a
-// viewBox starting at (10,20) must land near (0,0) after shift.
-func TestTessellatePaths_ViewBoxOriginShiftsVertices(t *testing.T) {
+// Parsing with non-zero viewBox origin keeps triangle coords in raw
+// authored viewBox space; the shift is surfaced through
+// parsed.ViewBoxX/Y for the render path to apply as an outer
+// translate. A <rect x=10 y=20 w=5 h=5> in viewBox "10 20 32 32"
+// therefore tessellates at (10,20)-(15,25), and subtracting
+// (ViewBoxX, ViewBoxY) lands it at (0,0)-(5,5).
+func TestTessellatePaths_ViewBoxOriginPreservesCoords(t *testing.T) {
 	p := New()
 	parsed, err := p.ParseSvg(`<svg viewBox="10 20 32 32"
 		xmlns="http://www.w3.org/2000/svg">
@@ -145,13 +78,21 @@ func TestTessellatePaths_ViewBoxOriginShiftsVertices(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
+	if parsed.ViewBoxX != 10 || parsed.ViewBoxY != 20 {
+		t.Fatalf("viewBox not propagated: (%v,%v)",
+			parsed.ViewBoxX, parsed.ViewBoxY)
+	}
 	tris := p.Tessellate(parsed, 1)
 	if len(tris) == 0 || len(tris[0].Triangles) == 0 {
 		t.Fatal("no triangles")
 	}
+	tp := tris[0]
+	if tp.HasBaseXform {
+		t.Fatalf("identity author transform must not set base: %+v", tp)
+	}
 	var minX, minY, maxX, maxY float32 = 1e30, 1e30, -1e30, -1e30
-	for i := 0; i+1 < len(tris[0].Triangles); i += 2 {
-		x, y := tris[0].Triangles[i], tris[0].Triangles[i+1]
+	for i := 0; i+1 < len(tp.Triangles); i += 2 {
+		x, y := tp.Triangles[i], tp.Triangles[i+1]
 		if x < minX {
 			minX = x
 		}
@@ -165,12 +106,16 @@ func TestTessellatePaths_ViewBoxOriginShiftsVertices(t *testing.T) {
 			maxY = y
 		}
 	}
-	// After -10,-20 shift: (0,0)-(5,5).
-	if minX < -0.1 || minX > 0.1 || minY < -0.1 || minY > 0.1 {
-		t.Fatalf("min post-shift wrong: (%.3f,%.3f)", minX, minY)
+	// Raw viewBox coords: (10,20)-(15,25).
+	if minX < 9.9 || minX > 10.1 || minY < 19.9 || minY > 20.1 {
+		t.Fatalf("min raw wrong: (%.3f,%.3f)", minX, minY)
 	}
-	if maxX < 4.9 || maxX > 5.1 || maxY < 4.9 || maxY > 5.1 {
-		t.Fatalf("max post-shift wrong: (%.3f,%.3f)", maxX, maxY)
+	if maxX < 14.9 || maxX > 15.1 || maxY < 24.9 || maxY > 25.1 {
+		t.Fatalf("max raw wrong: (%.3f,%.3f)", maxX, maxY)
+	}
+	// After outer shift: (0,0)-(5,5).
+	if minX-parsed.ViewBoxX > 0.1 || minY-parsed.ViewBoxY > 0.1 {
+		t.Fatalf("post-shift min drift")
 	}
 }
 

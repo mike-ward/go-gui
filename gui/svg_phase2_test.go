@@ -2,41 +2,6 @@ package gui
 
 import "testing"
 
-// TestBuildAnimatedSpansContiguous groups contiguous Animated entries
-// with matching GroupID into a single span.
-func TestBuildAnimatedSpansContiguous(t *testing.T) {
-	paths := []CachedSvgPath{
-		{GroupID: "", Animated: false},
-		{GroupID: "a", Animated: true},
-		{GroupID: "a", Animated: true},
-		{GroupID: "", Animated: false},
-		{GroupID: "b", Animated: true},
-	}
-	spans := buildAnimatedSpans(paths)
-	if len(spans) != 2 {
-		t.Fatalf("want 2 spans, got %d: %+v", len(spans), spans)
-	}
-	if spans[0].Start != 1 || spans[0].Count != 2 {
-		t.Fatalf("want {1,2}, got %+v", spans[0])
-	}
-	if spans[1].Start != 4 || spans[1].Count != 1 {
-		t.Fatalf("want {4,1}, got %+v", spans[1])
-	}
-}
-
-// TestBuildAnimatedSpansSeparatesByGroupID does not merge two
-// different-GroupID animated entries even when adjacent.
-func TestBuildAnimatedSpansSeparatesByGroupID(t *testing.T) {
-	paths := []CachedSvgPath{
-		{GroupID: "a", Animated: true},
-		{GroupID: "b", Animated: true},
-	}
-	spans := buildAnimatedSpans(paths)
-	if len(spans) != 2 {
-		t.Fatalf("want 2 spans, got %d", len(spans))
-	}
-}
-
 // TestApplyAttrOverrideSetsMaskAndValue exercises every SvgAttrName
 // case so no attribute silently drops.
 func TestApplyAttrOverrideSetsMaskAndValue(t *testing.T) {
@@ -68,19 +33,20 @@ func TestApplyAttrOverrideSetsMaskAndValue(t *testing.T) {
 // mid-keyframe fraction.
 func TestComputeSvgAnimationsWritesAttrOverride(t *testing.T) {
 	anims := []SvgAnimation{{
-		Kind:     SvgAnimAttr,
-		GroupID:  "g",
-		Values:   []float32{12, 6, 12},
-		DurSec:   0.6,
-		BeginSec: 0,
-		AttrName: SvgAttrCY,
+		Kind:          SvgAnimAttr,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{12, 6, 12},
+		DurSec:        0.6,
+		BeginSec:      0,
+		AttrName:      SvgAttrCY,
 	}}
-	states := make(map[string]svgAnimState, 1)
+	states := make(map[uint32]svgAnimState, 1)
 	// frac=0.5 → segment index = 1 exactly → returns vals[1] = 6.
 	states = computeSvgAnimations(anims, 0.3, states)
-	st, ok := states["g"]
+	st, ok := states[1]
 	if !ok {
-		t.Fatal("no state for GroupID g")
+		t.Fatal("no state for PathID 1")
 	}
 	if st.AttrOverride.Mask&SvgAnimMaskCY == 0 {
 		t.Fatal("CY mask not set")

@@ -34,20 +34,22 @@ func TestPhase5aLerp2DEdgeClamp(t *testing.T) {
 func TestPhase5aComputeTranslateScalePopulatesState(t *testing.T) {
 	anims := []SvgAnimation{
 		{
-			Kind:    SvgAnimTranslate,
-			GroupID: "g",
-			Values:  []float32{12, 12, 0, 0},
-			DurSec:  1,
+			Kind:          SvgAnimTranslate,
+			GroupID:       "g",
+			TargetPathIDs: []uint32{1},
+			Values:        []float32{12, 12, 0, 0},
+			DurSec:        1,
 		},
 		{
-			Kind:    SvgAnimScale,
-			GroupID: "g",
-			Values:  []float32{0, 0, 1, 1},
-			DurSec:  1,
+			Kind:          SvgAnimScale,
+			GroupID:       "g",
+			TargetPathIDs: []uint32{1},
+			Values:        []float32{0, 0, 1, 1},
+			DurSec:        1,
 		},
 	}
 	states := computeSvgAnimations(anims, 0.5, nil)
-	st, ok := states["g"]
+	st, ok := states[1]
 	if !ok {
 		t.Fatal("state for 'g' missing")
 	}
@@ -70,14 +72,15 @@ func TestPhase5aComputeTranslateScalePopulatesState(t *testing.T) {
 func TestPhase5aComputeDefaultsWhenNoXform(t *testing.T) {
 	anims := []SvgAnimation{
 		{
-			Kind:    SvgAnimOpacity,
-			GroupID: "g",
-			Values:  []float32{1, 0},
-			DurSec:  1,
+			Kind:          SvgAnimOpacity,
+			GroupID:       "g",
+			TargetPathIDs: []uint32{1},
+			Values:        []float32{1, 0},
+			DurSec:        1,
 		},
 	}
 	states := computeSvgAnimations(anims, 0.5, nil)
-	st := states["g"]
+	st := states[1]
 	if st.HasXform {
 		t.Fatal("HasXform must stay false for opacity-only anim")
 	}

@@ -208,8 +208,8 @@ func TestPhase7TessellateAnimatedSubstitutesDashes(t *testing.T) {
 	ov.StrokeDashArray[0] = 42
 	ov.StrokeDashArray[1] = 150
 	got := p.TessellateAnimated(parsed, 1,
-		map[string]gui.SvgAnimAttrOverride{
-			findGroupID(parsed): ov,
+		map[uint32]gui.SvgAnimAttrOverride{
+			firstAnimatedPathID(parsed): ov,
 		}, nil)
 	if len(got) == 0 {
 		t.Fatal("TessellateAnimated returned empty")
@@ -227,13 +227,4 @@ func TestPhase7TessellateAnimatedSubstitutesDashes(t *testing.T) {
 		t.Fatalf("dashed stroke should differ from solid; both %d",
 			animTris)
 	}
-}
-
-func findGroupID(parsed *gui.SvgParsed) string {
-	for _, a := range parsed.Animations {
-		if a.Kind == gui.SvgAnimDashArray {
-			return a.GroupID
-		}
-	}
-	return ""
 }

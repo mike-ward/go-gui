@@ -111,16 +111,17 @@ const maxMotionVertices = 1024
 // href resolves from state.defsPaths. Returns a flattened polyline
 // + cumulative arc lengths baked into the SvgAnimation.
 func parseAnimateMotionElement(
-	elem, body string, inherited groupStyle, state *parseState,
+	n *xmlNode, inherited groupStyle, state *parseState,
 ) (gui.SvgAnimation, bool) {
 	if inherited.GroupID == "" {
 		return gui.SvgAnimation{}, false
 	}
+	elem := n.OpenTag
 	dur := parseDuration(elem)
 	if dur <= 0 {
 		return gui.SvgAnimation{}, false
 	}
-	d := motionPathD(elem, body, state)
+	d := motionPathD(n, state)
 	if d == "" {
 		return gui.SvgAnimation{}, false
 	}
@@ -147,26 +148,21 @@ func parseAnimateMotionElement(
 }
 
 // motionPathD extracts the path d-string from an animateMotion:
-// first via path= attr, else via <mpath xlink:href="#id"/> in body.
-func motionPathD(elem, body string, state *parseState) string {
-	if p, ok := findAttr(elem, "path"); ok && p != "" {
+// first via path= attr, else via <mpath xlink:href="#id"/> child.
+func motionPathD(n *xmlNode, state *parseState) string {
+	if p, ok := n.AttrMap["path"]; ok && p != "" {
 		return p
 	}
-	if body == "" || state == nil || len(state.defsPaths) == 0 {
+	if state == nil || len(state.defsPaths) == 0 {
 		return ""
 	}
-	pos := strings.Index(body, "<mpath")
-	if pos < 0 {
+	mp := n.findChild("mpath")
+	if mp == nil {
 		return ""
 	}
-	end := strings.IndexByte(body[pos:], '>')
-	if end < 0 {
-		return ""
-	}
-	tag := body[pos : pos+end+1]
-	href, ok := findAttr(tag, "xlink:href")
+	href, ok := mp.AttrMap["xlink:href"]
 	if !ok {
-		href, ok = findAttr(tag, "href")
+		href, ok = mp.AttrMap["href"]
 	}
 	if !ok || !strings.HasPrefix(href, "#") {
 		return ""

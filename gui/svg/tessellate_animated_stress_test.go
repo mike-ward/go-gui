@@ -41,7 +41,7 @@ func loadSpinnerCorpus(tb testing.TB) []string {
 // hostileOverride produces an override with some NaN/Inf and
 // out-of-range values sprinkled across masked fields, to exercise
 // overrideScalar + nonNegF32 guards under stress.
-func hostileOverride(rng *rand.Rand, gid string) gui.SvgAnimAttrOverride {
+func hostileOverride(rng *rand.Rand, pid uint32) gui.SvgAnimAttrOverride {
 	pick := func() float32 {
 		switch rng.IntN(6) {
 		case 0:
@@ -72,28 +72,28 @@ func hostileOverride(rng *rand.Rand, gid string) gui.SvgAnimAttrOverride {
 	if rng.IntN(2) == 0 {
 		ov.AdditiveMask = ov.Mask
 	}
-	_ = gid
+	_ = pid
 	return ov
 }
 
-// collectGroupIDs returns every non-empty GroupID among the parsed
-// animated paths — used to target overrides at live groups.
-func collectGroupIDs(parsed *gui.SvgParsed) []string {
-	seen := map[string]struct{}{}
-	var out []string
+// collectAnimatedPathIDs returns every PathID among the parsed
+// animated paths — used to target overrides at live paths.
+func collectAnimatedPathIDs(parsed *gui.SvgParsed) []uint32 {
+	seen := map[uint32]struct{}{}
+	var out []uint32
 	for i := range parsed.Paths {
 		if !parsed.Paths[i].Animated {
 			continue
 		}
-		gid := parsed.Paths[i].GroupID
-		if gid == "" {
+		pid := parsed.Paths[i].PathID
+		if pid == 0 {
 			continue
 		}
-		if _, ok := seen[gid]; ok {
+		if _, ok := seen[pid]; ok {
 			continue
 		}
-		seen[gid] = struct{}{}
-		out = append(out, gid)
+		seen[pid] = struct{}{}
+		out = append(out, pid)
 	}
 	return out
 }
@@ -130,7 +130,7 @@ func TestTessellateAnimated_StressConcurrent(t *testing.T) {
 
 	type parsedEntry struct {
 		parsed *gui.SvgParsed
-		gids   []string
+		pids   []uint32
 	}
 	parsed := make([]parsedEntry, 0, len(corpus))
 	for _, src := range corpus {
@@ -138,11 +138,11 @@ func TestTessellateAnimated_StressConcurrent(t *testing.T) {
 		if err != nil || ps == nil {
 			continue
 		}
-		gids := collectGroupIDs(ps)
-		if len(gids) == 0 {
+		pids := collectAnimatedPathIDs(ps)
+		if len(pids) == 0 {
 			continue
 		}
-		parsed = append(parsed, parsedEntry{ps, gids})
+		parsed = append(parsed, parsedEntry{ps, pids})
 	}
 	if len(parsed) == 0 {
 		t.Fatal("no animated spinners")
@@ -167,11 +167,11 @@ func TestTessellateAnimated_StressConcurrent(t *testing.T) {
 			for range framesPerWorker {
 				pe := parsed[rng.IntN(len(parsed))]
 				overrides := make(
-					map[string]gui.SvgAnimAttrOverride,
-					len(pe.gids),
+					map[uint32]gui.SvgAnimAttrOverride,
+					len(pe.pids),
 				)
-				for _, gid := range pe.gids {
-					overrides[gid] = hostileOverride(rng, gid)
+				for _, pid := range pe.pids {
+					overrides[pid] = hostileOverride(rng, pid)
 				}
 				scale := 0.25 + rng.Float32()*4
 				out := p.TessellateAnimated(

@@ -65,72 +65,6 @@ func TestXmlCleanFontFamilySingle(t *testing.T) {
 	}
 }
 
-func TestXmlExtractPlainText(t *testing.T) {
-	r := extractPlainText("Hello World")
-	if r != "Hello World" {
-		t.Fatalf("expected 'Hello World', got %q", r)
-	}
-}
-
-func TestXmlExtractPlainTextBeforeTag(t *testing.T) {
-	r := extractPlainText("Hello <tspan>World</tspan>")
-	if r != "Hello" {
-		t.Fatalf("expected 'Hello', got %q", r)
-	}
-}
-
-func TestXmlExtractPlainTextEntityDecode(t *testing.T) {
-	r := extractPlainText("A &amp; B")
-	if r != "A & B" {
-		t.Fatalf("expected 'A & B', got %q", r)
-	}
-}
-
-// --- Tag helpers ---
-
-func TestXmlFindTagNameEnd(t *testing.T) {
-	s := "rect width=\"10\">"
-	end := findTagNameEnd(s, 0)
-	if s[:end] != "rect" {
-		t.Fatalf("expected 'rect', got %q", s[:end])
-	}
-}
-
-func TestXmlFindTagNameEndSlash(t *testing.T) {
-	s := "circle/>"
-	end := findTagNameEnd(s, 0)
-	if s[:end] != "circle" {
-		t.Fatalf("expected 'circle', got %q", s[:end])
-	}
-}
-
-func TestXmlFindClosingTagSimple(t *testing.T) {
-	content := "<text>hello</text> rest"
-	pos := findClosingTag(content, "text", 6) // after opening tag
-	if content[pos:pos+7] != "</text>" {
-		t.Fatalf("expected closing tag at pos=%d, got %q", pos, content[pos:])
-	}
-}
-
-func TestXmlFindClosingTagNested(t *testing.T) {
-	content := "<g><g>inner</g></g> rest"
-	pos := findClosingTag(content, "g", 3) // after first <g>
-	// Should find the outer </g>, not the inner one
-	if pos != 15 {
-		t.Fatalf("expected outer </g> at 15, got %d", pos)
-	}
-}
-
-func TestXmlFindClosingTagBoundary(t *testing.T) {
-	// "</text" must not match "</textPath"
-	content := "<text><textPath>path</textPath>text</text>"
-	pos := findClosingTag(content, "text", 6)
-	expected := 35 // position of </text>
-	if pos != expected {
-		t.Fatalf("expected </text> at %d, got %d, substring=%q", expected, pos, content[pos:])
-	}
-}
-
 // --- Gradient parsing ---
 
 func TestXmlParseGradientCoordOBBPercent(t *testing.T) {
@@ -155,8 +89,14 @@ func TestXmlParseGradientCoordUserSpace(t *testing.T) {
 }
 
 func TestXmlParseGradientStops(t *testing.T) {
-	content := `<stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/>`
-	stops := parseGradientStops(content)
+	root, err := decodeSvgTree(`<linearGradient>` +
+		`<stop offset="0" stop-color="red"/>` +
+		`<stop offset="1" stop-color="blue"/>` +
+		`</linearGradient>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	stops := parseGradientStops(root)
 	if len(stops) != 2 {
 		t.Fatalf("expected 2 stops, got %d", len(stops))
 	}
@@ -263,51 +203,25 @@ func TestXmlParseSvgFileTooLarge(t *testing.T) {
 // suppress unused import
 var _ = gui.SvgColor{}
 
-// --- findRootElementTag ---
-
-func TestFindRootElementTag_LocatesRootSvg(t *testing.T) {
-	body := `<svg viewBox="0 0 10 10"><rect/></svg>`
-	tag, ok := findRootElementTag(body, "svg")
-	if !ok {
-		t.Fatal("expected ok=true")
-	}
-	if tag != `<svg viewBox="0 0 10 10">` {
-		t.Fatalf("unexpected tag: %q", tag)
-	}
-}
-
-func TestFindRootElementTag_RejectsPrefixMatches(t *testing.T) {
-	// `<svgfoo` must not match tag "svg": the character after the
-	// tag name must be whitespace, '>', or '/'.
-	_, ok := findRootElementTag(`<svgfoo width="1"/>`, "svg")
-	if ok {
-		t.Fatal("prefix-only match must be rejected")
-	}
-}
-
-func TestFindRootElementTag_MissingTag(t *testing.T) {
-	_, ok := findRootElementTag(`<foo/>`, "svg")
-	if ok {
-		t.Fatal("missing tag must return ok=false")
-	}
-}
-
-func TestFindRootElementTag_UnterminatedTag(t *testing.T) {
-	// `<svg` without a closing `>` is malformed — must not panic
-	// or return a stale buffer.
-	_, ok := findRootElementTag(`<svg viewBox="0 0 1 1"`, "svg")
-	if ok {
-		t.Fatal("unterminated tag must return ok=false")
-	}
-}
-
 // --- scanOpacityAnimTargets ---
 
+// scanOpacityAnimNode builds an xmlNode wrapping the given animation
+// children, for scanOpacityAnimTargets testing.
+func scanOpacityAnimNode(t *testing.T, children string) *xmlNode {
+	t.Helper()
+	root, err := decodeSvgTree(`<shape>` + children + `</shape>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	return root
+}
+
 func TestScanOpacityAnimTargets_DetectsEachTarget(t *testing.T) {
-	body := `<animate attributeName="opacity" values="1;0" dur="1s"/>` +
-		`<animate attributeName="fill-opacity" values="1;0" dur="1s"/>` +
-		`<animate attributeName="stroke-opacity" values="1;0" dur="1s"/>`
-	all, fill, stroke := scanOpacityAnimTargets(body)
+	n := scanOpacityAnimNode(t,
+		`<animate attributeName="opacity" values="1;0" dur="1s"/>`+
+			`<animate attributeName="fill-opacity" values="1;0" dur="1s"/>`+
+			`<animate attributeName="stroke-opacity" values="1;0" dur="1s"/>`)
+	all, fill, stroke := scanOpacityAnimTargets(n)
 	if !all {
 		t.Fatal("expected opacity → all=true")
 	}
@@ -322,9 +236,10 @@ func TestScanOpacityAnimTargets_DetectsEachTarget(t *testing.T) {
 func TestScanOpacityAnimTargets_IgnoresAnimateTransform(t *testing.T) {
 	// <animateTransform> never targets opacity; must be skipped so
 	// it cannot trip the bake-suppression heuristics.
-	body := `<animateTransform type="rotate" attributeName="transform" ` +
-		`values="0 5 5;360 5 5" dur="1s"/>`
-	all, fill, stroke := scanOpacityAnimTargets(body)
+	n := scanOpacityAnimNode(t,
+		`<animateTransform type="rotate" attributeName="transform" `+
+			`values="0 5 5;360 5 5" dur="1s"/>`)
+	all, fill, stroke := scanOpacityAnimTargets(n)
 	if all || fill || stroke {
 		t.Fatalf("animateTransform must not set any flag; "+
 			"got all=%v fill=%v stroke=%v", all, fill, stroke)
@@ -332,19 +247,10 @@ func TestScanOpacityAnimTargets_IgnoresAnimateTransform(t *testing.T) {
 }
 
 func TestScanOpacityAnimTargets_EmptyBody(t *testing.T) {
-	all, fill, stroke := scanOpacityAnimTargets("")
+	n := scanOpacityAnimNode(t, "")
+	all, fill, stroke := scanOpacityAnimTargets(n)
 	if all || fill || stroke {
 		t.Fatal("empty body must report no targets")
-	}
-}
-
-func TestScanOpacityAnimTargets_MalformedTagTerminatesSafely(t *testing.T) {
-	// `<animate` without `>` should not loop forever and must not
-	// flag any target. Exits cleanly when IndexByte('>') fails.
-	body := `<animate attributeName="opacity"` // no close
-	all, fill, stroke := scanOpacityAnimTargets(body)
-	if all || fill || stroke {
-		t.Fatal("malformed <animate> must not flag targets")
 	}
 }
 
@@ -373,38 +279,6 @@ func TestParseSvg_RootFillInheritedByShapes(t *testing.T) {
 	}
 	if vg.Paths[0].FillColor.A == 0 {
 		t.Fatal("fill alpha collapsed to 0 — sentinel bump failed")
-	}
-}
-
-// readElementBody returns an empty body and cursor just past the
-// self-closing tag so the caller advances without scanning for a
-// close token that does not exist.
-func TestXmlReadElementBody_SelfClosing(t *testing.T) {
-	body := `<animateMotion path="M0,0 L10,0" dur="1s"/><rect/>`
-	elem := `<animateMotion path="M0,0 L10,0" dur="1s"/>`
-	elemEnd := len(elem) - 1 // index of '>'
-	inner, next := readElementBody(body, elem, elemEnd, "animateMotion")
-	if inner != "" {
-		t.Fatalf("self-closing: want empty body, got %q", inner)
-	}
-	if next != elemEnd+1 {
-		t.Fatalf("self-closing: want next=%d, got %d", elemEnd+1, next)
-	}
-}
-
-// Missing close tag falls back to empty body + cursor past the open
-// tag so the outer parser recovers instead of looping forever.
-func TestXmlReadElementBody_MissingClose(t *testing.T) {
-	body := `<animateMotion dur="1s"><mpath href="#p"/>`
-	elem := `<animateMotion dur="1s">`
-	elemEnd := len(elem) - 1
-	inner, next := readElementBody(body, elem, elemEnd, "animateMotion")
-	if inner != "" {
-		t.Fatalf("missing-close: want empty body, got %q", inner)
-	}
-	if next != elemEnd+1 {
-		t.Fatalf("missing-close: want next=%d, got %d",
-			elemEnd+1, next)
 	}
 }
 

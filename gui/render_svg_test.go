@@ -136,9 +136,10 @@ func TestEmitSvgPathRendererAnimatedVertexAlphaNoCopy(t *testing.T) {
 			{255, 0, 255, 255, true},
 		},
 		GroupID: "g1",
+		PathID:  1,
 	}
-	animState := map[string]svgAnimState{
-		"g1": {Opacity: 0.5, FillOpacity: 1, StrokeOpacity: 1, Inited: true},
+	animState := map[uint32]svgAnimState{
+		1: {Opacity: 0.5, FillOpacity: 1, StrokeOpacity: 1, Inited: true},
 	}
 	emitSvgPathRenderer(path, Color{}, 0, 0, 1.0, animState, w)
 
@@ -267,22 +268,24 @@ func TestComputeSvgAnimationsOpacityZeroPreserved(t *testing.T) {
 	// Opacity must stay 0, not reset to 1.
 	anims := []SvgAnimation{
 		{
-			GroupID: "g1",
-			Kind:    SvgAnimOpacity,
-			DurSec:  1,
-			Values:  []float32{0, 0}, // constant 0
+			GroupID:       "g1",
+			TargetPathIDs: []uint32{1},
+			Kind:          SvgAnimOpacity,
+			DurSec:        1,
+			Values:        []float32{0, 0}, // constant 0
 		},
 		{
-			GroupID: "g1",
-			Kind:    SvgAnimRotate,
-			DurSec:  2,
-			Values:  []float32{0, 360},
-			CenterX: 50,
-			CenterY: 50,
+			GroupID:       "g1",
+			TargetPathIDs: []uint32{1},
+			Kind:          SvgAnimRotate,
+			DurSec:        2,
+			Values:        []float32{0, 360},
+			CenterX:       50,
+			CenterY:       50,
 		},
 	}
 	states := computeSvgAnimations(anims, 0.5, nil)
-	st, ok := states["g1"]
+	st, ok := states[1]
 	if !ok {
 		t.Fatal("expected state for g1")
 	}
@@ -405,10 +408,11 @@ func TestCollectAnimContribs_RejectsNonFiniteTimings(t *testing.T) {
 	nan := float32(math.NaN())
 	inf := float32(math.Inf(1))
 	base := SvgAnimation{
-		Kind:    SvgAnimOpacity,
-		GroupID: "g",
-		Values:  []float32{0, 1},
-		DurSec:  1,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 1},
+		DurSec:        1,
 	}
 	cases := []struct {
 		name string
@@ -438,10 +442,11 @@ func TestCollectAnimContribs_RejectsNonFiniteTimings(t *testing.T) {
 
 func TestCollectAnimContribs_RejectsNonFiniteElapsed(t *testing.T) {
 	a := SvgAnimation{
-		Kind:    SvgAnimOpacity,
-		GroupID: "g",
-		Values:  []float32{0, 1},
-		DurSec:  1,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 1},
+		DurSec:        1,
 	}
 	out := collectAnimContribs([]SvgAnimation{a}, float32(math.NaN()), nil)
 	if len(out) != 0 {
@@ -455,24 +460,25 @@ func TestCollectAnimContribs_RejectsNonFiniteElapsed(t *testing.T) {
 // before the next cycle. Without freeze the animation drops out.
 func TestComputeSvgAnimations_FreezeHoldsLastValue(t *testing.T) {
 	a := SvgAnimation{
-		Kind:    SvgAnimOpacity,
-		GroupID: "g",
-		Values:  []float32{1, 0},
-		DurSec:  1,
-		Freeze:  true,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{1, 0},
+		DurSec:        1,
+		Freeze:        true,
 	}
 	// elapsed 5s, dur 1s, no cycle → past end. Freeze must hold
 	// frac=1 → value 0.
 	st := computeSvgAnimations([]SvgAnimation{a}, 5, nil)
-	if st["g"].Opacity != 0 {
-		t.Fatalf("freeze should hold final value 0, got %f", st["g"].Opacity)
+	if st[1].Opacity != 0 {
+		t.Fatalf("freeze should hold final value 0, got %f", st[1].Opacity)
 	}
 
 	// Without freeze, same animation contributes nothing: state
 	// for "g" never gets created.
 	a.Freeze = false
 	st = computeSvgAnimations([]SvgAnimation{a}, 5, nil)
-	if _, ok := st["g"]; ok {
+	if _, ok := st[1]; ok {
 		t.Fatal("non-freeze past-dur must not contribute state")
 	}
 }
@@ -481,26 +487,28 @@ func TestComputeSvgAnimations_FreezeHoldsLastValue(t *testing.T) {
 // state (init 0) rather than replacing.
 func TestComputeSvgAnimations_AdditiveTranslate(t *testing.T) {
 	base := SvgAnimation{
-		Kind:    SvgAnimTranslate,
-		GroupID: "g",
-		Values:  []float32{10, 20, 10, 20}, // constant (10,20)
-		DurSec:  1,
-		Freeze:  true,
+		Kind:          SvgAnimTranslate,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{10, 20, 10, 20}, // constant (10,20)
+		DurSec:        1,
+		Freeze:        true,
 	}
 	add := SvgAnimation{
-		Kind:     SvgAnimTranslate,
-		GroupID:  "g",
-		Values:   []float32{0, 0, 3, 4}, // by (3,4)
-		DurSec:   1,
-		Freeze:   true,
-		Additive: true,
+		Kind:          SvgAnimTranslate,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 0, 3, 4}, // by (3,4)
+		DurSec:        1,
+		Freeze:        true,
+		Additive:      true,
 	}
 	// Same activation time → stable sort keeps input order: base
 	// first, additive second sums on top.
 	st := computeSvgAnimations([]SvgAnimation{base, add}, 1.0, nil)
-	if st["g"].TransX != 13 || st["g"].TransY != 24 {
+	if st[1].TransX != 13 || st[1].TransY != 24 {
 		t.Fatalf("additive translate want (13,24), got (%f,%f)",
-			st["g"].TransX, st["g"].TransY)
+			st[1].TransX, st[1].TransY)
 	}
 }
 
@@ -508,16 +516,17 @@ func TestComputeSvgAnimations_AdditiveTranslate(t *testing.T) {
 // the override adds to the primitive's parsed value at render.
 func TestComputeSvgAnimations_AdditiveAttrMarksAdditiveMask(t *testing.T) {
 	a := SvgAnimation{
-		Kind:     SvgAnimAttr,
-		AttrName: SvgAttrR,
-		GroupID:  "g",
-		Values:   []float32{0, 5}, // by 5
-		DurSec:   1,
-		Freeze:   true,
-		Additive: true,
+		Kind:          SvgAnimAttr,
+		AttrName:      SvgAttrR,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 5}, // by 5
+		DurSec:        1,
+		Freeze:        true,
+		Additive:      true,
 	}
 	st := computeSvgAnimations([]SvgAnimation{a}, 1.0, nil)
-	ov := st["g"].AttrOverride
+	ov := st[1].AttrOverride
 	if ov.Mask&SvgAnimMaskR == 0 {
 		t.Fatal("expected R mask set")
 	}
@@ -536,18 +545,19 @@ func TestComputeSvgAnimations_MotionStraightLine(t *testing.T) {
 	a := SvgAnimation{
 		Kind:          SvgAnimMotion,
 		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
 		DurSec:        1,
 		Freeze:        true,
 		MotionPath:    []float32{0, 0, 10, 0},
 		MotionLengths: []float32{0, 10},
 	}
 	st := computeSvgAnimations([]SvgAnimation{a}, 0.5, nil)
-	if st["g"].TransX < 4.9 || st["g"].TransX > 5.1 ||
-		st["g"].TransY != 0 {
+	if st[1].TransX < 4.9 || st[1].TransX > 5.1 ||
+		st[1].TransY != 0 {
 		t.Fatalf("expected (5,0), got (%f,%f)",
-			st["g"].TransX, st["g"].TransY)
+			st[1].TransX, st[1].TransY)
 	}
-	if !st["g"].HasXform {
+	if !st[1].HasXform {
 		t.Fatal("expected HasXform=true")
 	}
 }
@@ -558,6 +568,7 @@ func TestComputeSvgAnimations_MotionRotateAuto(t *testing.T) {
 	a := SvgAnimation{
 		Kind:          SvgAnimMotion,
 		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
 		DurSec:        1,
 		Freeze:        true,
 		MotionPath:    []float32{0, 0, 0, 10},
@@ -565,26 +576,27 @@ func TestComputeSvgAnimations_MotionRotateAuto(t *testing.T) {
 		MotionRotate:  SvgAnimMotionRotateAuto,
 	}
 	st := computeSvgAnimations([]SvgAnimation{a}, 0.5, nil)
-	if st["g"].RotAngle < 89 || st["g"].RotAngle > 91 {
-		t.Fatalf("expected ~90°, got %f", st["g"].RotAngle)
+	if st[1].RotAngle < 89 || st[1].RotAngle > 91 {
+		t.Fatalf("expected ~90°, got %f", st[1].RotAngle)
 	}
 }
 
 // Accumulate=sum stacks each cycle's delta onto the value.
 func TestComputeSvgAnimations_AccumulateSum(t *testing.T) {
 	a := SvgAnimation{
-		Kind:       SvgAnimRotate,
-		GroupID:    "g",
-		Values:     []float32{0, 360}, // one full turn per cycle
-		DurSec:     1,
-		Cycle:      1, // re-fire each second
-		Freeze:     true,
-		Accumulate: true,
+		Kind:          SvgAnimRotate,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 360}, // one full turn per cycle
+		DurSec:        1,
+		Cycle:         1, // re-fire each second
+		Freeze:        true,
+		Accumulate:    true,
 	}
 	// At t=3.5s: 3 completed prior cycles → accum offset = 3*360 = 1080.
 	// In the current cycle, phase=0.5 → lerp → 180. Total = 1260.
 	st := computeSvgAnimations([]SvgAnimation{a}, 3.5, nil)
-	got := st["g"].RotAngle
+	got := st[1].RotAngle
 	if got < 1259 || got > 1261 {
 		t.Fatalf("accumulate sum want ≈1260 deg, got %f", got)
 	}
@@ -600,24 +612,26 @@ func TestComputeSvgAnimations_AccumulateWithAdditive(t *testing.T) {
 	// from 2 prior iterations = 2*90 = 180. animValue = 45+180 = 225.
 	// Additive sums onto base 10 → effective 235.
 	base := SvgAnimation{
-		Kind:    SvgAnimRotate,
-		GroupID: "g",
-		Values:  []float32{10, 10},
-		DurSec:  1,
-		Freeze:  true,
+		Kind:          SvgAnimRotate,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{10, 10},
+		DurSec:        1,
+		Freeze:        true,
 	}
 	acc := SvgAnimation{
-		Kind:       SvgAnimRotate,
-		GroupID:    "g",
-		Values:     []float32{0, 90},
-		DurSec:     1,
-		Cycle:      1,
-		Freeze:     true,
-		Accumulate: true,
-		Additive:   true,
+		Kind:          SvgAnimRotate,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 90},
+		DurSec:        1,
+		Cycle:         1,
+		Freeze:        true,
+		Accumulate:    true,
+		Additive:      true,
 	}
 	st := computeSvgAnimations([]SvgAnimation{base, acc}, 2.5, nil)
-	got := st["g"].RotAngle
+	got := st[1].RotAngle
 	if got < 234 || got > 236 {
 		t.Fatalf("accumulate+additive want ≈235, got %f", got)
 	}
@@ -626,21 +640,22 @@ func TestComputeSvgAnimations_AccumulateWithAdditive(t *testing.T) {
 // Restart=never clamps activation to BeginSec even when Cycle>0.
 func TestComputeSvgAnimations_RestartNever(t *testing.T) {
 	a := SvgAnimation{
-		Kind:    SvgAnimOpacity,
-		GroupID: "g",
-		Values:  []float32{1, 0},
-		DurSec:  1,
-		Cycle:   1, // would normally re-fire
-		Freeze:  true,
-		Restart: SvgAnimRestartNever,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{1, 0},
+		DurSec:        1,
+		Cycle:         1, // would normally re-fire
+		Freeze:        true,
+		Restart:       SvgAnimRestartNever,
 	}
 	// At t=5 (5 cycles in): without never, activation would be 5.0
 	// and phase=0 → value=1. With never, activation stays at 0 and
 	// phase=5 → past dur, freeze holds frac=1 → value=0.
 	st := computeSvgAnimations([]SvgAnimation{a}, 5, nil)
-	if st["g"].Opacity != 0 {
+	if st[1].Opacity != 0 {
 		t.Fatalf("restart=never should freeze at 0, got %f",
-			st["g"].Opacity)
+			st[1].Opacity)
 	}
 }
 
@@ -648,21 +663,22 @@ func TestComputeSvgAnimations_RestartNever(t *testing.T) {
 // still within dur.
 func TestComputeSvgAnimations_RestartWhenNotActive(t *testing.T) {
 	a := SvgAnimation{
-		Kind:    SvgAnimOpacity,
-		GroupID: "g",
-		Values:  []float32{1, 0},
-		DurSec:  2, // longer than cycle
-		Cycle:   1, // re-fires at t=1, 2, 3...
-		Freeze:  true,
-		Restart: SvgAnimRestartWhenNotActive,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{1, 0},
+		DurSec:        2, // longer than cycle
+		Cycle:         1, // re-fires at t=1, 2, 3...
+		Freeze:        true,
+		Restart:       SvgAnimRestartWhenNotActive,
 	}
 	// At t=1.5: always-mode would jump to activation=1 (phase=0.5).
 	// whenNotActive: prev activation 0 is still active (0<dur=2), so
 	// suppress → activation stays 0, phase=1.5, frac=0.75 → 0.25.
 	st := computeSvgAnimations([]SvgAnimation{a}, 1.5, nil)
-	if st["g"].Opacity < 0.2 || st["g"].Opacity > 0.3 {
+	if st[1].Opacity < 0.2 || st[1].Opacity > 0.3 {
 		t.Fatalf("whenNotActive should keep prev activation, "+
-			"got opacity=%f", st["g"].Opacity)
+			"got opacity=%f", st[1].Opacity)
 	}
 }
 
@@ -670,27 +686,28 @@ func TestComputeSvgAnimations_RestartWhenNotActive(t *testing.T) {
 // to-value after BeginSec regardless of dur.
 func TestComputeSvgAnimations_SetZeroDuration(t *testing.T) {
 	a := SvgAnimation{
-		Kind:     SvgAnimOpacity,
-		GroupID:  "g",
-		Values:   []float32{0, 0}, // to=0
-		BeginSec: 1,
-		IsSet:    true,
-		Freeze:   true,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 0}, // to=0
+		BeginSec:      1,
+		IsSet:         true,
+		Freeze:        true,
 	}
 	// Before begin: no contribution.
 	st := computeSvgAnimations([]SvgAnimation{a}, 0.5, nil)
-	if _, ok := st["g"]; ok {
+	if _, ok := st[1]; ok {
 		t.Fatal("before BeginSec must not contribute")
 	}
 	// At begin and beyond: opacity is forced to 0.
 	st = computeSvgAnimations([]SvgAnimation{a}, 1.0, nil)
-	if st["g"].Opacity != 0 {
-		t.Fatalf("expected opacity=0 at begin, got %f", st["g"].Opacity)
+	if st[1].Opacity != 0 {
+		t.Fatalf("expected opacity=0 at begin, got %f", st[1].Opacity)
 	}
 	st = computeSvgAnimations([]SvgAnimation{a}, 10.0, nil)
-	if st["g"].Opacity != 0 {
+	if st[1].Opacity != 0 {
 		t.Fatalf("expected opacity=0 long after begin, got %f",
-			st["g"].Opacity)
+			st[1].Opacity)
 	}
 }
 
@@ -701,17 +718,18 @@ func TestComputeSvgAnimations_SetZeroDuration(t *testing.T) {
 // returns the first keyframe value again.
 func TestComputeSvgAnimations_CycleRestart(t *testing.T) {
 	a := SvgAnimation{
-		Kind:    SvgAnimOpacity,
-		GroupID: "g",
-		Values:  []float32{1, 0}, // 1→0 over dur
-		DurSec:  1,
-		Cycle:   2, // repeats every 2s
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{1, 0}, // 1→0 over dur
+		DurSec:        1,
+		Cycle:         2, // repeats every 2s
 	}
 	// At elapsed=2 (cycle boundary) phase ≈ 0 → opacity ≈ 1.
 	st := computeSvgAnimations([]SvgAnimation{a}, 2, nil)
-	if math.Abs(float64(st["g"].Opacity-1)) > 1e-3 {
+	if math.Abs(float64(st[1].Opacity-1)) > 1e-3 {
 		t.Fatalf("expected opacity ~1 at cycle restart, got %f",
-			st["g"].Opacity)
+			st[1].Opacity)
 	}
 }
 
@@ -725,24 +743,26 @@ func TestComputeSvgAnimations_SandwichLastActivationWins(t *testing.T) {
 	// their dur (each is 1s). With Freeze both contribute; a2's
 	// activation (1) > a1's (0), so a2's final value wins.
 	a1 := SvgAnimation{
-		Kind:     SvgAnimOpacity,
-		GroupID:  "g",
-		Values:   []float32{0, 0.25},
-		DurSec:   1,
-		BeginSec: 0,
-		Freeze:   true,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 0.25},
+		DurSec:        1,
+		BeginSec:      0,
+		Freeze:        true,
 	}
 	a2 := SvgAnimation{
-		Kind:     SvgAnimOpacity,
-		GroupID:  "g",
-		Values:   []float32{0, 0.75},
-		DurSec:   1,
-		BeginSec: 1,
-		Freeze:   true,
+		Kind:          SvgAnimOpacity,
+		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
+		Values:        []float32{0, 0.75},
+		DurSec:        1,
+		BeginSec:      1,
+		Freeze:        true,
 	}
 	st := computeSvgAnimations([]SvgAnimation{a1, a2}, 2, nil)
-	if math.Abs(float64(st["g"].Opacity-0.75)) > 1e-3 {
-		t.Fatalf("expected a2's value 0.75 to win, got %f", st["g"].Opacity)
+	if math.Abs(float64(st[1].Opacity-0.75)) > 1e-3 {
+		t.Fatalf("expected a2's value 0.75 to win, got %f", st[1].Opacity)
 	}
 }
 
@@ -758,9 +778,10 @@ func TestEmitSvgPathRenderer_OpacityNaNClampedToZero(t *testing.T) {
 		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
 		Color:     Color{10, 20, 30, 200, true},
 		GroupID:   "g1",
+		PathID:    1,
 	}
-	animState := map[string]svgAnimState{
-		"g1": {
+	animState := map[uint32]svgAnimState{
+		1: {
 			Opacity:       float32(math.NaN()),
 			FillOpacity:   1,
 			StrokeOpacity: 1,
@@ -786,12 +807,13 @@ func TestSvgRender_FillOpacityAnimDoesNotDimStroke(t *testing.T) {
 		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
 		Color:     Color{0, 0, 0, 255, true},
 		GroupID:   "g1",
+		PathID:    1,
 		IsStroke:  true,
 	}
 	// FillOpacity drops to 0; StrokeOpacity stays 1. The stroke
 	// path's alpha must remain 255.
-	animState := map[string]svgAnimState{
-		"g1": {
+	animState := map[uint32]svgAnimState{
+		1: {
 			Opacity:       1,
 			FillOpacity:   0,
 			StrokeOpacity: 1,
@@ -808,8 +830,8 @@ func TestSvgRender_FillOpacityAnimDoesNotDimStroke(t *testing.T) {
 	w = &Window{}
 	fillPath := strokePath
 	fillPath.IsStroke = false
-	animState = map[string]svgAnimState{
-		"g1": {
+	animState = map[uint32]svgAnimState{
+		1: {
 			Opacity:       1,
 			FillOpacity:   1,
 			StrokeOpacity: 0,
@@ -866,6 +888,7 @@ func TestComputeSvgAnimations_MotionAdditiveStacks(t *testing.T) {
 	base := SvgAnimation{
 		Kind:          SvgAnimMotion,
 		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
 		DurSec:        1,
 		Freeze:        true,
 		MotionPath:    []float32{100, 200, 100, 200},
@@ -874,6 +897,7 @@ func TestComputeSvgAnimations_MotionAdditiveStacks(t *testing.T) {
 	add := SvgAnimation{
 		Kind:          SvgAnimMotion,
 		GroupID:       "g",
+		TargetPathIDs: []uint32{1},
 		DurSec:        1,
 		Freeze:        true,
 		Additive:      true,
@@ -882,9 +906,9 @@ func TestComputeSvgAnimations_MotionAdditiveStacks(t *testing.T) {
 	}
 	// At frac=1, additive sample = (6,8). Expect (100+6, 200+8).
 	st := computeSvgAnimations([]SvgAnimation{base, add}, 1.0, nil)
-	if st["g"].TransX != 106 || st["g"].TransY != 208 {
+	if st[1].TransX != 106 || st[1].TransY != 208 {
 		t.Fatalf("additive motion want (106,208), got (%f,%f)",
-			st["g"].TransX, st["g"].TransY)
+			st[1].TransX, st[1].TransY)
 	}
 }
 
@@ -961,14 +985,14 @@ func TestApplyDashArrayContrib_Stride1(t *testing.T) {
 
 // SvgAnimDashOffset replace: writes value, clears AdditiveMask bit.
 func TestApplyAnimContrib_DashOffsetReplace(t *testing.T) {
-	states := map[string]svgAnimState{}
+	states := map[uint32]svgAnimState{}
 	a := &SvgAnimation{
-		Kind: SvgAnimDashOffset, GroupID: "g",
+		Kind: SvgAnimDashOffset, GroupID: "g", TargetPathIDs: []uint32{1},
 		Values: []float32{0, -16}, DurSec: 1, Cycle: 1,
 	}
 	c := &animContrib{anim: a, value: -8}
 	applyAnimContrib(c, states, nil)
-	st := states["g"]
+	st := states[1]
 	if st.AttrOverride.Mask&SvgAnimMaskStrokeDashOffset == 0 {
 		t.Fatal("mask bit not set")
 	}
@@ -983,13 +1007,14 @@ func TestApplyAnimContrib_DashOffsetReplace(t *testing.T) {
 // SvgAnimDashOffset additive on first touch: stores value AND marks
 // AdditiveMask so subsequent writes accumulate, not stomp.
 func TestApplyAnimContrib_DashOffsetAdditiveFirst(t *testing.T) {
-	states := map[string]svgAnimState{}
+	states := map[uint32]svgAnimState{}
 	a := &SvgAnimation{
-		Kind: SvgAnimDashOffset, GroupID: "g", Additive: true,
+		Kind: SvgAnimDashOffset, GroupID: "g", TargetPathIDs: []uint32{1},
+		Additive: true,
 	}
 	c := &animContrib{anim: a, value: 5}
 	applyAnimContrib(c, states, nil)
-	st := states["g"]
+	st := states[1]
 	if st.AttrOverride.StrokeDashOffset != 5 {
 		t.Fatalf("first additive: offset=%v want 5",
 			st.AttrOverride.StrokeDashOffset)
@@ -1001,16 +1026,16 @@ func TestApplyAnimContrib_DashOffsetAdditiveFirst(t *testing.T) {
 
 // SvgAnimDashOffset additive subsequent: accumulates onto prior.
 func TestApplyAnimContrib_DashOffsetAdditiveAccumulates(t *testing.T) {
-	states := map[string]svgAnimState{}
+	states := map[uint32]svgAnimState{}
 	a1 := &SvgAnimation{Kind: SvgAnimDashOffset, GroupID: "g",
-		Additive: true}
+		TargetPathIDs: []uint32{1}, Additive: true}
 	a2 := &SvgAnimation{Kind: SvgAnimDashOffset, GroupID: "g",
-		Additive: true}
+		TargetPathIDs: []uint32{1}, Additive: true}
 	applyAnimContrib(&animContrib{anim: a1, value: 3}, states, nil)
 	applyAnimContrib(&animContrib{anim: a2, value: 4}, states, nil)
-	if states["g"].AttrOverride.StrokeDashOffset != 7 {
+	if states[1].AttrOverride.StrokeDashOffset != 7 {
 		t.Fatalf("offset=%v want 7",
-			states["g"].AttrOverride.StrokeDashOffset)
+			states[1].AttrOverride.StrokeDashOffset)
 	}
 }
 
@@ -1018,16 +1043,16 @@ func TestApplyAnimContrib_DashOffsetAdditiveAccumulates(t *testing.T) {
 // non-transform animations leave the author's base xform intact.
 func TestComputeSvgAnimationsReuse_SeedsBaseFromGroup(t *testing.T) {
 	anims := []SvgAnimation{{
-		Kind: SvgAnimAttr, GroupID: "g",
+		Kind: SvgAnimAttr, GroupID: "g", TargetPathIDs: []uint32{1},
 		AttrName: SvgAttrR,
 		Values:   []float32{0, 5}, DurSec: 1, Cycle: 1,
 	}}
-	base := map[string]svgBaseXform{
-		"g": {TransX: 12, TransY: 12, ScaleX: 2, ScaleY: 2,
+	base := map[uint32]svgBaseXform{
+		1: {TransX: 12, TransY: 12, ScaleX: 2, ScaleY: 2,
 			RotAngle: 45},
 	}
 	st := computeSvgAnimationsReuse(anims, 0.5, nil, nil, base)
-	got := st["g"]
+	got := st[1]
 	if !got.HasXform {
 		t.Fatal("HasXform must be true after seeding")
 	}
@@ -1045,12 +1070,12 @@ func TestComputeSvgAnimationsReuse_SeedsBaseFromGroup(t *testing.T) {
 // HasXform stays false (unless a transform anim sets it).
 func TestComputeSvgAnimationsReuse_NoBaseLeavesIdentity(t *testing.T) {
 	anims := []SvgAnimation{{
-		Kind: SvgAnimAttr, GroupID: "g",
+		Kind: SvgAnimAttr, GroupID: "g", TargetPathIDs: []uint32{1},
 		AttrName: SvgAttrR,
 		Values:   []float32{0, 5}, DurSec: 1, Cycle: 1,
 	}}
 	st := computeSvgAnimationsReuse(anims, 0.5, nil, nil, nil)
-	got := st["g"]
+	got := st[1]
 	if got.HasXform {
 		t.Fatal("HasXform should be false when no base + no xform anim")
 	}
