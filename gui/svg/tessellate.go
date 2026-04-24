@@ -630,6 +630,16 @@ type scanEdge struct {
 	sign           int8
 }
 
+// maxEarClipVerts caps the vertex count for the single-contour
+// ear-clip fast path. ear-clip is O(n³): at n≈30k the inner
+// pointInTriangle scan stalls for many seconds per call. Hostile
+// overrides (huge radii, scaled animation values) can inflate one
+// contour to tens of thousands of flattened vertices, starving
+// the race-detector test. Beyond this cap the polygon is almost
+// certainly outside the viewport anyway, so returning nil is
+// acceptable — scanline has its own maxScanEdges cap.
+const maxEarClipVerts = 2048
+
 // maxScanEdges caps the number of edges fed to the scanline
 // tessellator. The intersection scan in collectScanYs is O(E²)
 // and the strip loop is O(strips × E), so uncapped input (huge
@@ -901,6 +911,9 @@ func earClip(polygon []float32) []float32 {
 		}
 	}
 	if n < 3 {
+		return nil
+	}
+	if n > maxEarClipVerts {
 		return nil
 	}
 	poly := polygon[:n*2]
