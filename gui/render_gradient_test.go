@@ -8,6 +8,9 @@ import (
 func TestClampUnit(t *testing.T) {
 	tests := []struct{ in, want float32 }{
 		{-1, 0}, {0, 0}, {0.5, 0.5}, {1, 1}, {2, 1},
+		{float32(math.NaN()), 0},
+		{float32(math.Inf(1)), 1},
+		{float32(math.Inf(-1)), 0},
 	}
 	for _, tc := range tests {
 		if got := clampUnit(tc.in); got != tc.want {

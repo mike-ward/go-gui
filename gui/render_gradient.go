@@ -11,7 +11,8 @@ import (
 const gradientShaderStopLimit = 5
 
 func clampUnit(v float32) float32 {
-	if v < 0 {
+	// NaN compares false both ways; fold to 0 instead of propagating.
+	if v != v || v < 0 {
 		return 0
 	}
 	if v > 1 {

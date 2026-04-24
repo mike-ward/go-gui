@@ -208,7 +208,7 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 			// Clamp to [0,1] so hostile or out-of-range animation
 			// values cannot drive a negative or oversized alpha
 			// through the uint8 cast (undefined conversion).
-			opa = clampFrac(opa)
+			opa = clampUnit(opa)
 			if opa < 1 {
 				c.A = uint8(float32(c.A) * opa)
 				if len(vcols) > 0 {
@@ -225,6 +225,10 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 		scaleY = path.BaseScaleY
 		rotAngle = path.BaseRotAngle
 		hasXform = true
+		// Backend rotates about (rcx,rcy) AFTER translate; TRS rotates
+		// about origin BEFORE translate. Equivalent iff pivot == offset.
+		rotCX = transX
+		rotCY = transY
 	}
 
 	emitRenderer(RenderCmd{
@@ -385,11 +389,11 @@ func collectAnimContribs(
 		// render state. DurSec must be strictly positive for normal
 		// animations; <set> is zero-duration and bypasses this check.
 		if a.GroupID == "" ||
-			!finiteF32(a.DurSec) ||
+			!isFiniteF(a.DurSec) ||
 			(!a.IsSet && a.DurSec <= 0) ||
-			!finiteF32(a.BeginSec) ||
-			!finiteF32(a.Cycle) ||
-			!finiteF32(elapsedSec) ||
+			!isFiniteF(a.BeginSec) ||
+			!isFiniteF(a.Cycle) ||
+			!isFiniteF(elapsedSec) ||
 			elapsedSec < a.BeginSec {
 			continue
 		}
@@ -489,10 +493,10 @@ func motionSample(a *SvgAnimation, frac float32) (float32, float32, float32) {
 		return 0, 0, 0
 	}
 	total := lens[n-1]
-	if !finiteF32(total) || total < 0 {
+	if !isFiniteF(total) || total < 0 {
 		return 0, 0, 0
 	}
-	target := clampFrac(frac) * total
+	target := clampUnit(frac) * total
 	idx := 0
 	for i := 1; i < n; i++ {
 		if lens[i] >= target {
@@ -558,6 +562,10 @@ func applyAnimContrib(c *animContrib, states map[string]svgAnimState,
 			st.ScaleY = base.ScaleY
 			st.RotAngle = base.RotAngle
 			st.HasXform = true
+			// See pivot==offset note in emitSvgPathRenderer. SvgAnim-
+			// Rotate may overwrite RotCX/RotCY below if cx/cy given.
+			st.RotCX = base.TransX
+			st.RotCY = base.TransY
 		}
 		st.Inited = true
 	}
@@ -871,7 +879,7 @@ func locateSeg(
 	n int, frac float32, splines, keyTimes []float32,
 	mode SvgAnimCalcMode,
 ) (int, float32, bool) {
-	frac = clampFrac(frac)
+	frac = clampUnit(frac)
 	if len(keyTimes) == n {
 		return locateSegKeyTimes(n, frac, splines, keyTimes, mode)
 	}
@@ -893,8 +901,8 @@ func locateSeg(
 	t := seg - float32(idx)
 	if mode == SvgAnimCalcSpline && len(splines) == 4*(n-1) {
 		off := idx * 4
-		t = bezierCalc(t, splines[off], splines[off+1],
-			splines[off+2], splines[off+3])
+		t = clampUnit(bezierCalc(t, splines[off], splines[off+1],
+			splines[off+2], splines[off+3]))
 	}
 	return idx, t, false
 }
@@ -928,25 +936,10 @@ func locateSegKeyTimes(
 	}
 	if mode == SvgAnimCalcSpline && len(splines) == 4*(n-1) {
 		off := idx * 4
-		t = bezierCalc(t, splines[off], splines[off+1],
-			splines[off+2], splines[off+3])
+		t = clampUnit(bezierCalc(t, splines[off], splines[off+1],
+			splines[off+2], splines[off+3]))
 	}
 	return idx, t, false
-}
-
-// clampFrac maps NaN / <0 → 0, >1 → 1; otherwise identity.
-func clampFrac(f float32) float32 {
-	if f != f {
-		return 0
-	}
-	return clampUnit(f)
-}
-
-// finiteF32 reports whether f is finite (not NaN, not ±Inf).
-// Used by animation gating so hostile parsed timing values cannot
-// poison downstream render state with NaN.
-func finiteF32(f float32) bool {
-	return !math.IsNaN(float64(f)) && !math.IsInf(float64(f), 0)
 }
 
 // blendAlpha multiplies two 0..255 alpha channels as if they were

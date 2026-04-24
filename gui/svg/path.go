@@ -34,6 +34,9 @@ func parsePathD(d string) []PathSegment {
 			cmd = c
 			i++
 		}
+		// Progress guard: an unconsumable token would spin the outer
+		// loop forever (DoS).
+		iBefore := i
 
 		switch cmd {
 		case 'M', 'm':
@@ -278,6 +281,9 @@ func parsePathD(d string) []PathSegment {
 			curY = startY
 
 		default:
+			i++
+		}
+		if i == iBefore {
 			i++
 		}
 		lastCmd = cmd

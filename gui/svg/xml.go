@@ -39,12 +39,12 @@ func parseSvg(content string) (*VectorGraphic, error) {
 	vg.Filters = parseDefsFilters(content)
 	vg.DefsPaths = parseDefsPaths(content)
 
-	// Parse with viewBox offset
-	vbTransform := identityTransform
-	if vg.ViewBoxX != 0 || vg.ViewBoxY != 0 {
-		vbTransform = [6]float32{1, 0, 0, 1, -vg.ViewBoxX, -vg.ViewBoxY}
-	}
-	defStyle := defaultGroupStyle(vbTransform)
+	// viewBox offset is applied at tessellation time by shifting
+	// vertex coords (see tessellatePaths). Keeping it out of the
+	// inherited path.Transform chain prevents SMIL <animateTransform>
+	// replace semantics from clobbering the viewBox shift when
+	// decomposed bases feed the per-group animation state.
+	defStyle := defaultGroupStyle(identityTransform)
 	// Merge presentation attributes from the root <svg> tag (fill,
 	// stroke, stroke-width, stroke-linecap, stroke-linejoin, …) so
 	// shapes that rely on inheriting e.g. fill="currentColor" from

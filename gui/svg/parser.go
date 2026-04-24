@@ -1,6 +1,10 @@
 package svg
 
 import (
+	"fmt"
+	"log"
+	"math"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -8,6 +12,11 @@ import (
 
 	"github.com/mike-ward/go-gui/gui"
 )
+
+// svgTrace enables per-frame diagnostic logging of animated SVG
+// primitive overrides and geometry bounds. Set GOGUI_SVG_TRACE=1 to
+// activate. Off by default; evaluated once per process.
+var svgTrace = os.Getenv("GOGUI_SVG_TRACE") == "1"
 
 // Parser implements gui.SvgParser.
 type Parser struct {
@@ -110,7 +119,7 @@ func (p *Parser) TessellateAnimated(
 		return nil
 	}
 	vg := entry.vg
-	var animated []VectorPath
+	animated := make([]VectorPath, 0, len(vg.Paths))
 	for i := range vg.Paths {
 		src := &vg.Paths[i]
 		if !src.Animated {
@@ -138,6 +147,9 @@ func (p *Parser) TessellateAnimated(
 		return nil
 	}
 	result := vg.tessellatePaths(animated, scale)
+	if svgTrace {
+		traceAnimatedTriangles(vg, result, animated, overrides)
+	}
 	if reuse != nil && cap(reuse) >= len(result) {
 		reuse = reuse[:len(result)]
 		copy(reuse, result)
@@ -146,12 +158,94 @@ func (p *Parser) TessellateAnimated(
 	return result
 }
 
+func traceOverride(p *VectorPath, ov gui.SvgAnimAttrOverride) {
+	check := func(name string, bit gui.SvgAnimAttrMask, v float32) {
+		if ov.Mask&bit == 0 {
+			return
+		}
+		if !finiteF32(v) || v < -1e4 || v > 1e4 {
+			log.Printf("svg trace: gid=%q attr=%s val=%v "+
+				"mask=%b additive=%b",
+				p.GroupID, name, v, ov.Mask, ov.AdditiveMask)
+		}
+	}
+	check("cx", gui.SvgAnimMaskCX, ov.CX)
+	check("cy", gui.SvgAnimMaskCY, ov.CY)
+	check("r", gui.SvgAnimMaskR, ov.R)
+	check("rx", gui.SvgAnimMaskRX, ov.RX)
+	check("ry", gui.SvgAnimMaskRY, ov.RY)
+	check("x", gui.SvgAnimMaskX, ov.X)
+	check("y", gui.SvgAnimMaskY, ov.Y)
+	check("width", gui.SvgAnimMaskWidth, ov.Width)
+	check("height", gui.SvgAnimMaskHeight, ov.Height)
+}
+
+// traceAnimatedTriangles logs animated paths whose bbox escapes 2x
+// viewBox — diagnostic for spurious full-cell fills.
+func traceAnimatedTriangles(vg *VectorGraphic,
+	paths []gui.TessellatedPath, animated []VectorPath,
+	overrides map[string]gui.SvgAnimAttrOverride,
+) {
+	xLim := vg.Width * 2
+	yLim := vg.Height * 2
+	for i := range paths {
+		tris := paths[i].Triangles
+		if len(tris) == 0 {
+			continue
+		}
+		minX, minY := tris[0], tris[1]
+		maxX, maxY := minX, minY
+		for j := 2; j+1 < len(tris); j += 2 {
+			if tris[j] < minX {
+				minX = tris[j]
+			}
+			if tris[j] > maxX {
+				maxX = tris[j]
+			}
+			if tris[j+1] < minY {
+				minY = tris[j+1]
+			}
+			if tris[j+1] > maxY {
+				maxY = tris[j+1]
+			}
+		}
+		if finiteF32(minX) && finiteF32(minY) &&
+			finiteF32(maxX) && finiteF32(maxY) &&
+			maxX-minX <= xLim && maxY-minY <= yLim {
+			continue
+		}
+		var primStr, ovStr string
+		if i < len(animated) {
+			p := &animated[i]
+			primStr = fmt.Sprintf("prim={Kind:%d CX:%.3f CY:%.3f "+
+				"R:%.3f RX:%.3f RY:%.3f X:%.3f Y:%.3f W:%.3f H:%.3f}",
+				p.Primitive.Kind, p.Primitive.CX, p.Primitive.CY,
+				p.Primitive.R, p.Primitive.RX, p.Primitive.RY,
+				p.Primitive.X, p.Primitive.Y,
+				p.Primitive.W, p.Primitive.H)
+			if ov, ok := overrides[p.GroupID]; ok {
+				ovStr = fmt.Sprintf("ov={Mask:%b Add:%b CX:%.3f CY:%.3f "+
+					"R:%.3f RX:%.3f RY:%.3f X:%.3f Y:%.3f W:%.3f H:%.3f}",
+					ov.Mask, ov.AdditiveMask, ov.CX, ov.CY,
+					ov.R, ov.RX, ov.RY, ov.X, ov.Y, ov.Width, ov.Height)
+			}
+		}
+		log.Printf("svg trace: gid=%q oversized tris "+
+			"bbox=(%.2f,%.2f)-(%.2f,%.2f) vb=%.0fx%.0f nTris=%d %s %s",
+			paths[i].GroupID, minX, minY, maxX, maxY,
+			vg.Width, vg.Height, len(tris)/6, primStr, ovStr)
+	}
+}
+
 // applyOverridesToPath mutates p's primitive fields and segments to
 // reflect the live animation overrides. Only primitive paths react
 // to CX/CY/R/...; dash overrides apply regardless of kind since
 // stroke-dasharray/offset work on any path. AdditiveMask bits add
 // the override to the parsed base value; non-additive bits replace.
 func applyOverridesToPath(p *VectorPath, ov gui.SvgAnimAttrOverride) {
+	if svgTrace {
+		traceOverride(p, ov)
+	}
 	if ov.Mask&gui.SvgAnimMaskStrokeDashArray != 0 {
 		n := min(int(ov.StrokeDashArrayLen), gui.SvgAnimDashArrayCap)
 		// Fresh alloc required: clone shares backing with cached
@@ -170,23 +264,28 @@ func applyOverridesToPath(p *VectorPath, ov gui.SvgAnimAttrOverride) {
 	case gui.SvgPrimCircle:
 		prim.CX = overrideScalar(prim.CX, ov.CX, &ov, gui.SvgAnimMaskCX)
 		prim.CY = overrideScalar(prim.CY, ov.CY, &ov, gui.SvgAnimMaskCY)
-		prim.R = overrideScalar(prim.R, ov.R, &ov, gui.SvgAnimMaskR)
+		prim.R = nonNegF32(overrideScalar(prim.R, ov.R, &ov,
+			gui.SvgAnimMaskR))
 		p.Segments = segmentsForEllipse(prim.CX, prim.CY, prim.R, prim.R)
 	case gui.SvgPrimEllipse:
 		prim.CX = overrideScalar(prim.CX, ov.CX, &ov, gui.SvgAnimMaskCX)
 		prim.CY = overrideScalar(prim.CY, ov.CY, &ov, gui.SvgAnimMaskCY)
-		prim.RX = overrideScalar(prim.RX, ov.RX, &ov, gui.SvgAnimMaskRX)
-		prim.RY = overrideScalar(prim.RY, ov.RY, &ov, gui.SvgAnimMaskRY)
+		prim.RX = nonNegF32(overrideScalar(prim.RX, ov.RX, &ov,
+			gui.SvgAnimMaskRX))
+		prim.RY = nonNegF32(overrideScalar(prim.RY, ov.RY, &ov,
+			gui.SvgAnimMaskRY))
 		p.Segments = segmentsForEllipse(prim.CX, prim.CY, prim.RX, prim.RY)
 	case gui.SvgPrimRect:
 		prim.X = overrideScalar(prim.X, ov.X, &ov, gui.SvgAnimMaskX)
 		prim.Y = overrideScalar(prim.Y, ov.Y, &ov, gui.SvgAnimMaskY)
-		prim.W = overrideScalar(prim.W, ov.Width, &ov,
-			gui.SvgAnimMaskWidth)
-		prim.H = overrideScalar(prim.H, ov.Height, &ov,
-			gui.SvgAnimMaskHeight)
-		prim.RX = overrideScalar(prim.RX, ov.RX, &ov, gui.SvgAnimMaskRX)
-		prim.RY = overrideScalar(prim.RY, ov.RY, &ov, gui.SvgAnimMaskRY)
+		prim.W = nonNegF32(overrideScalar(prim.W, ov.Width, &ov,
+			gui.SvgAnimMaskWidth))
+		prim.H = nonNegF32(overrideScalar(prim.H, ov.Height, &ov,
+			gui.SvgAnimMaskHeight))
+		prim.RX = nonNegF32(overrideScalar(prim.RX, ov.RX, &ov,
+			gui.SvgAnimMaskRX))
+		prim.RY = nonNegF32(overrideScalar(prim.RY, ov.RY, &ov,
+			gui.SvgAnimMaskRY))
 		p.Segments = segmentsForRect(prim.X, prim.Y, prim.W, prim.H,
 			prim.RX, prim.RY)
 	case gui.SvgPrimLine:
@@ -197,15 +296,32 @@ func applyOverridesToPath(p *VectorPath, ov gui.SvgAnimAttrOverride) {
 	p.Primitive = prim
 }
 
-// overrideScalar returns base when the mask bit is unset, base+v
-// for additive overrides, or v for replace overrides.
+// overrideScalar returns base, base+v (additive), or v (replace).
+// Non-finite v falls back to base — would otherwise tessellate into
+// huge/fullscreen triangles.
 func overrideScalar(base, v float32, ov *gui.SvgAnimAttrOverride,
 	bit gui.SvgAnimAttrMask) float32 {
 	if ov.Mask&bit == 0 {
 		return base
 	}
+	if !finiteF32(v) {
+		return base
+	}
 	if ov.AdditiveMask&bit != 0 {
 		return base + v
+	}
+	return v
+}
+
+func finiteF32(f float32) bool {
+	return !math.IsNaN(float64(f)) && !math.IsInf(float64(f), 0)
+}
+
+// nonNegF32 maps NaN / negative → 0. Negative R/W/H tessellate with
+// reversed winding under non-zero fill — i.e. the whole cell.
+func nonNegF32(v float32) float32 {
+	if v != v || v < 0 {
+		return 0
 	}
 	return v
 }
@@ -254,6 +370,17 @@ func (p *Parser) ClearSvgParserCache() {
 
 func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui.SvgParsed {
 	tpaths := vg.getTriangles(scale)
+	// Rotation centers and motion paths are in absolute viewBox
+	// coords; triangles and sx/sy render in content-from-origin
+	// coords after viewBox shift. Shift these animation fields so
+	// rotation pivots and motion traces land at the same vertex
+	// positions they target in content-from-origin space.
+	anims := vg.Animations
+	if (vg.ViewBoxX != 0 || vg.ViewBoxY != 0) &&
+		finiteViewBox(vg.ViewBoxX, vg.ViewBoxY) {
+		anims = cloneAnimationsForShift(vg.Animations)
+		shiftAnimationsForViewBox(anims, vg.ViewBoxX, vg.ViewBoxY)
+	}
 	result := &gui.SvgParsed{
 		Paths:          tpaths,
 		Texts:          vg.Texts,
@@ -261,7 +388,7 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 		DefsPaths:      vg.DefsPaths,
 		Gradients:      vg.Gradients,
 		FilteredGroups: tessellateFilteredGroups(vg, scale),
-		Animations:     vg.Animations,
+		Animations:     anims,
 		Width:          vg.Width,
 		Height:         vg.Height,
 	}
@@ -282,6 +409,38 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 		}
 	}
 	return result
+}
+
+// cloneAnimationsForShift deep-clones MotionPath vertex streams.
+// Without this, a second buildParsed on the same VectorGraphic
+// would subtract the viewBox origin again and drift.
+func cloneAnimationsForShift(src []gui.SvgAnimation) []gui.SvgAnimation {
+	out := append([]gui.SvgAnimation(nil), src...)
+	for i := range out {
+		if out[i].Kind == gui.SvgAnimMotion && len(out[i].MotionPath) > 0 {
+			out[i].MotionPath = append([]float32(nil), out[i].MotionPath...)
+		}
+	}
+	return out
+}
+
+// shiftAnimationsForViewBox subtracts (vbX, vbY) from rotation
+// centers and motion path vertices. Mutates in place; caller must
+// own the slice (use cloneAnimationsForShift).
+func shiftAnimationsForViewBox(anims []gui.SvgAnimation, vbX, vbY float32) {
+	for i := range anims {
+		a := &anims[i]
+		switch a.Kind {
+		case gui.SvgAnimRotate:
+			a.CenterX -= vbX
+			a.CenterY -= vbY
+		case gui.SvgAnimMotion:
+			for j := 0; j+1 < len(a.MotionPath); j += 2 {
+				a.MotionPath[j] -= vbX
+				a.MotionPath[j+1] -= vbY
+			}
+		}
+	}
 }
 
 func (p *Parser) cachedParsed(hash uint64) *gui.SvgParsed {

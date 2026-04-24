@@ -25,6 +25,11 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 		tolerance = 0.15
 	}
 
+	// Per-GroupID svgAnimState holds one base; sibling paths with
+	// divergent transforms would collapse onto one representative
+	// at render. Force-bake those into vertex coords.
+	forceBake := buildForceBakeSet(paths, vg.Animations)
+
 	clipGroupCounter := 0
 
 	for i := range paths {
@@ -36,24 +41,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 				tolerance, &clipGroupCounter)
 		}
 
-		// Decompose path.Transform into TRS. On success, tessellate
-		// at identity and propagate the base onto each emitted
-		// TessellatedPath so the render-time sandwich composes it.
-		// On failure (shear), bake the matrix into vertices; the
-		// emitted path then carries no Base* data.
-		var seed gui.TessellatedPath
-		var bake bool
-		if !isIdentityTransform(path.Transform) {
-			tx, ty, sx, sy, rot, ok := decomposeTRS(path.Transform)
-			if ok {
-				seed.BaseTransX, seed.BaseTransY = tx, ty
-				seed.BaseScaleX, seed.BaseScaleY = sx, sy
-				seed.BaseRotAngle = rot
-				seed.HasBaseXform = true
-			} else {
-				bake = true
-			}
-		}
+		seed, bake := seedFromTransform(path, forceBake)
 		seed.ClipGroup = clipGroup
 		seed.GroupID = path.GroupID
 		seed.Animated = path.Animated
@@ -165,7 +153,104 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 			result = appendDegeneratePlaceholders(result, path, seed)
 		}
 	}
+	// Bake viewBox origin into vertex coords so every downstream
+	// coord is in content-from-origin space. Skip non-finite to
+	// avoid splatting NaN/Inf across the whole mesh.
+	if (vg.ViewBoxX != 0 || vg.ViewBoxY != 0) &&
+		finiteViewBox(vg.ViewBoxX, vg.ViewBoxY) {
+		shiftTriangles(result, -vg.ViewBoxX, -vg.ViewBoxY)
+	}
 	return result
+}
+
+// finiteViewBox guards coord shifts that would splat NaN/Inf
+// across every vertex in the tessellated output.
+func finiteViewBox(x, y float32) bool {
+	return finiteF32(x) && finiteF32(y)
+}
+
+func shiftTriangles(paths []gui.TessellatedPath, dx, dy float32) {
+	for i := range paths {
+		tris := paths[i].Triangles
+		for j := 0; j+1 < len(tris); j += 2 {
+			tris[j] += dx
+			tris[j+1] += dy
+		}
+	}
+}
+
+// seedFromTransform decides whether path.Transform is deferred to
+// render-time Base* composition or baked into vertex coords. Deferred
+// on TRS-decomposable matrices when the owning group is not in the
+// force-bake set. Baked otherwise (shear, or conflicting siblings
+// sharing one animation state). Returns the seed TessellatedPath
+// carrying Base* (when deferred) and a bake flag for the flattener.
+func seedFromTransform(
+	path *VectorPath, forceBake map[string]bool,
+) (gui.TessellatedPath, bool) {
+	var seed gui.TessellatedPath
+	if isIdentityTransform(path.Transform) {
+		return seed, false
+	}
+	if forceBake[path.GroupID] {
+		return seed, true
+	}
+	tx, ty, sx, sy, rot, ok := decomposeTRS(path.Transform)
+	if !ok {
+		return seed, true
+	}
+	seed.BaseTransX, seed.BaseTransY = tx, ty
+	seed.BaseScaleX, seed.BaseScaleY = sx, sy
+	seed.BaseRotAngle = rot
+	seed.HasBaseXform = true
+	return seed, false
+}
+
+// buildForceBakeSet returns GroupIDs where >=2 member paths carry
+// non-identity Transforms AND the group owns a transform-kind SMIL
+// animation. See pre-scan comment in tessellatePaths.
+func buildForceBakeSet(
+	paths []VectorPath, anims []gui.SvgAnimation,
+) map[string]bool {
+	if len(anims) == 0 {
+		return nil
+	}
+	xformAnimGroups := make(map[string]struct{}, len(anims))
+	for i := range anims {
+		a := &anims[i]
+		if a.GroupID == "" {
+			continue
+		}
+		switch a.Kind {
+		case gui.SvgAnimRotate, gui.SvgAnimTranslate,
+			gui.SvgAnimScale, gui.SvgAnimMotion:
+			xformAnimGroups[a.GroupID] = struct{}{}
+		}
+	}
+	if len(xformAnimGroups) == 0 {
+		return nil
+	}
+	counts := make(map[string]int)
+	for i := range paths {
+		p := &paths[i]
+		if p.GroupID == "" || isIdentityTransform(p.Transform) {
+			continue
+		}
+		if _, ok := xformAnimGroups[p.GroupID]; !ok {
+			continue
+		}
+		counts[p.GroupID]++
+	}
+	var out map[string]bool
+	for gid, n := range counts {
+		if n > 1 {
+			if out == nil {
+				out = make(map[string]bool)
+			}
+			out[gid] = true
+		}
+	}
+	return out
 }
 
 // appendClipMasks emits per-subpath clip-mask TessellatedPaths for
