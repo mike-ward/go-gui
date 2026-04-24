@@ -13,7 +13,9 @@ type SvgSpinnerKind uint16
 // SvgSpinnerKind values, one per embedded asset.
 const (
 	SvgSpinner12DotsScaleRotate SvgSpinnerKind = iota
+	SvgSpinner180RingWithBg
 	SvgSpinner180Ring
+	SvgSpinner270RingWithBg
 	SvgSpinner270Ring
 	SvgSpinner3DotsBounce
 	SvgSpinner3DotsFade
@@ -22,10 +24,13 @@ const (
 	SvgSpinner3DotsScaleMiddle
 	SvgSpinner3DotsScale
 	SvgSpinner6DotsRotate
+	SvgSpinner6DotsScaleMiddle
 	SvgSpinner6DotsScale
 	SvgSpinner8DotsRotate
+	SvgSpinner90RingWithBg
 	SvgSpinner90Ring
 	SvgSpinnerAudio
+	SvgSpinnerBallTriangle
 	SvgSpinnerBarsFade
 	SvgSpinnerBarsRotateFade
 	SvgSpinnerBarsScaleFade
@@ -38,6 +43,8 @@ const (
 	SvgSpinnerBlocksWave
 	SvgSpinnerBouncingBall
 	SvgSpinnerCircles
+	SvgSpinnerClock
+	SvgSpinnerDotRevolve
 	SvgSpinnerEclipseHalf
 	SvgSpinnerEclipse
 	SvgSpinnerGrid
@@ -45,6 +52,7 @@ const (
 	SvgSpinnerHorizontalBar
 	SvgSpinnerLoader1
 	SvgSpinnerLoader10
+	SvgSpinnerLoader2
 	SvgSpinnerLoader3
 	SvgSpinnerLoader4
 	SvgSpinnerLoader5
@@ -52,27 +60,40 @@ const (
 	SvgSpinnerLoader7
 	SvgSpinnerLoader8
 	SvgSpinnerLoader9
+	SvgSpinnerOval
 	SvgSpinnerPuff
+	SvgSpinnerPulse3
+	SvgSpinnerPulseMultiple
+	SvgSpinnerPulseRing
 	SvgSpinnerPulseRings2
 	SvgSpinnerPulseRings3
 	SvgSpinnerPulseRingsMultiple
+	SvgSpinnerPulse
 	SvgSpinnerRingResize
+	SvgSpinnerRings
 	SvgSpinnerSpinnerDouble
 	SvgSpinnerSpinner
 	SvgSpinnerSpinningCircles
 	SvgSpinnerTadpole
 	SvgSpinnerTailSpin
+	SvgSpinnerWifiFade
 	SvgSpinnerWifi
 	SvgSpinnerWindToy
 )
 
-const svgSpinnerCount = 52
+const svgSpinnerCount = 67
 
 //go:embed assets/svg-spinners/12-dots-scale-rotate.svg
 var svgSpinnerDataSvgSpinner12DotsScaleRotate string
 
+//go:embed assets/svg-spinners/180-ring-with-bg.svg
+var svgSpinnerDataSvgSpinner180RingWithBg string
+
 //go:embed assets/svg-spinners/180-ring.svg
 var svgSpinnerDataSvgSpinner180Ring string
+
+//go:embed assets/svg-spinners/270-ring-with-bg.svg
+var svgSpinnerDataSvgSpinner270RingWithBg string
 
 //go:embed assets/svg-spinners/270-ring.svg
 var svgSpinnerDataSvgSpinner270Ring string
@@ -98,17 +119,26 @@ var svgSpinnerDataSvgSpinner3DotsScale string
 //go:embed assets/svg-spinners/6-dots-rotate.svg
 var svgSpinnerDataSvgSpinner6DotsRotate string
 
+//go:embed assets/svg-spinners/6-dots-scale-middle.svg
+var svgSpinnerDataSvgSpinner6DotsScaleMiddle string
+
 //go:embed assets/svg-spinners/6-dots-scale.svg
 var svgSpinnerDataSvgSpinner6DotsScale string
 
 //go:embed assets/svg-spinners/8-dots-rotate.svg
 var svgSpinnerDataSvgSpinner8DotsRotate string
 
+//go:embed assets/svg-spinners/90-ring-with-bg.svg
+var svgSpinnerDataSvgSpinner90RingWithBg string
+
 //go:embed assets/svg-spinners/90-ring.svg
 var svgSpinnerDataSvgSpinner90Ring string
 
 //go:embed assets/svg-spinners/audio.svg
 var svgSpinnerDataSvgSpinnerAudio string
+
+//go:embed assets/svg-spinners/ball-triangle.svg
+var svgSpinnerDataSvgSpinnerBallTriangle string
 
 //go:embed assets/svg-spinners/bars-fade.svg
 var svgSpinnerDataSvgSpinnerBarsFade string
@@ -146,6 +176,12 @@ var svgSpinnerDataSvgSpinnerBouncingBall string
 //go:embed assets/svg-spinners/circles.svg
 var svgSpinnerDataSvgSpinnerCircles string
 
+//go:embed assets/svg-spinners/clock.svg
+var svgSpinnerDataSvgSpinnerClock string
+
+//go:embed assets/svg-spinners/dot-revolve.svg
+var svgSpinnerDataSvgSpinnerDotRevolve string
+
 //go:embed assets/svg-spinners/eclipse-half.svg
 var svgSpinnerDataSvgSpinnerEclipseHalf string
 
@@ -166,6 +202,9 @@ var svgSpinnerDataSvgSpinnerLoader1 string
 
 //go:embed assets/svg-spinners/loader10.svg
 var svgSpinnerDataSvgSpinnerLoader10 string
+
+//go:embed assets/svg-spinners/loader2.svg
+var svgSpinnerDataSvgSpinnerLoader2 string
 
 //go:embed assets/svg-spinners/loader3.svg
 var svgSpinnerDataSvgSpinnerLoader3 string
@@ -188,8 +227,20 @@ var svgSpinnerDataSvgSpinnerLoader8 string
 //go:embed assets/svg-spinners/loader9.svg
 var svgSpinnerDataSvgSpinnerLoader9 string
 
+//go:embed assets/svg-spinners/oval.svg
+var svgSpinnerDataSvgSpinnerOval string
+
 //go:embed assets/svg-spinners/puff.svg
 var svgSpinnerDataSvgSpinnerPuff string
+
+//go:embed assets/svg-spinners/pulse-3.svg
+var svgSpinnerDataSvgSpinnerPulse3 string
+
+//go:embed assets/svg-spinners/pulse-multiple.svg
+var svgSpinnerDataSvgSpinnerPulseMultiple string
+
+//go:embed assets/svg-spinners/pulse-ring.svg
+var svgSpinnerDataSvgSpinnerPulseRing string
 
 //go:embed assets/svg-spinners/pulse-rings-2.svg
 var svgSpinnerDataSvgSpinnerPulseRings2 string
@@ -200,8 +251,14 @@ var svgSpinnerDataSvgSpinnerPulseRings3 string
 //go:embed assets/svg-spinners/pulse-rings-multiple.svg
 var svgSpinnerDataSvgSpinnerPulseRingsMultiple string
 
+//go:embed assets/svg-spinners/pulse.svg
+var svgSpinnerDataSvgSpinnerPulse string
+
 //go:embed assets/svg-spinners/ring-resize.svg
 var svgSpinnerDataSvgSpinnerRingResize string
+
+//go:embed assets/svg-spinners/rings.svg
+var svgSpinnerDataSvgSpinnerRings string
 
 //go:embed assets/svg-spinners/spinner-double.svg
 var svgSpinnerDataSvgSpinnerSpinnerDouble string
@@ -218,6 +275,9 @@ var svgSpinnerDataSvgSpinnerTadpole string
 //go:embed assets/svg-spinners/tail-spin.svg
 var svgSpinnerDataSvgSpinnerTailSpin string
 
+//go:embed assets/svg-spinners/wifi-fade.svg
+var svgSpinnerDataSvgSpinnerWifiFade string
+
 //go:embed assets/svg-spinners/wifi.svg
 var svgSpinnerDataSvgSpinnerWifi string
 
@@ -226,7 +286,9 @@ var svgSpinnerDataSvgSpinnerWindToy string
 
 var svgSpinnerData = [svgSpinnerCount]string{
 	SvgSpinner12DotsScaleRotate:  svgSpinnerDataSvgSpinner12DotsScaleRotate,
+	SvgSpinner180RingWithBg:      svgSpinnerDataSvgSpinner180RingWithBg,
 	SvgSpinner180Ring:            svgSpinnerDataSvgSpinner180Ring,
+	SvgSpinner270RingWithBg:      svgSpinnerDataSvgSpinner270RingWithBg,
 	SvgSpinner270Ring:            svgSpinnerDataSvgSpinner270Ring,
 	SvgSpinner3DotsBounce:        svgSpinnerDataSvgSpinner3DotsBounce,
 	SvgSpinner3DotsFade:          svgSpinnerDataSvgSpinner3DotsFade,
@@ -235,10 +297,13 @@ var svgSpinnerData = [svgSpinnerCount]string{
 	SvgSpinner3DotsScaleMiddle:   svgSpinnerDataSvgSpinner3DotsScaleMiddle,
 	SvgSpinner3DotsScale:         svgSpinnerDataSvgSpinner3DotsScale,
 	SvgSpinner6DotsRotate:        svgSpinnerDataSvgSpinner6DotsRotate,
+	SvgSpinner6DotsScaleMiddle:   svgSpinnerDataSvgSpinner6DotsScaleMiddle,
 	SvgSpinner6DotsScale:         svgSpinnerDataSvgSpinner6DotsScale,
 	SvgSpinner8DotsRotate:        svgSpinnerDataSvgSpinner8DotsRotate,
+	SvgSpinner90RingWithBg:       svgSpinnerDataSvgSpinner90RingWithBg,
 	SvgSpinner90Ring:             svgSpinnerDataSvgSpinner90Ring,
 	SvgSpinnerAudio:              svgSpinnerDataSvgSpinnerAudio,
+	SvgSpinnerBallTriangle:       svgSpinnerDataSvgSpinnerBallTriangle,
 	SvgSpinnerBarsFade:           svgSpinnerDataSvgSpinnerBarsFade,
 	SvgSpinnerBarsRotateFade:     svgSpinnerDataSvgSpinnerBarsRotateFade,
 	SvgSpinnerBarsScaleFade:      svgSpinnerDataSvgSpinnerBarsScaleFade,
@@ -251,6 +316,8 @@ var svgSpinnerData = [svgSpinnerCount]string{
 	SvgSpinnerBlocksWave:         svgSpinnerDataSvgSpinnerBlocksWave,
 	SvgSpinnerBouncingBall:       svgSpinnerDataSvgSpinnerBouncingBall,
 	SvgSpinnerCircles:            svgSpinnerDataSvgSpinnerCircles,
+	SvgSpinnerClock:              svgSpinnerDataSvgSpinnerClock,
+	SvgSpinnerDotRevolve:         svgSpinnerDataSvgSpinnerDotRevolve,
 	SvgSpinnerEclipseHalf:        svgSpinnerDataSvgSpinnerEclipseHalf,
 	SvgSpinnerEclipse:            svgSpinnerDataSvgSpinnerEclipse,
 	SvgSpinnerGrid:               svgSpinnerDataSvgSpinnerGrid,
@@ -258,6 +325,7 @@ var svgSpinnerData = [svgSpinnerCount]string{
 	SvgSpinnerHorizontalBar:      svgSpinnerDataSvgSpinnerHorizontalBar,
 	SvgSpinnerLoader1:            svgSpinnerDataSvgSpinnerLoader1,
 	SvgSpinnerLoader10:           svgSpinnerDataSvgSpinnerLoader10,
+	SvgSpinnerLoader2:            svgSpinnerDataSvgSpinnerLoader2,
 	SvgSpinnerLoader3:            svgSpinnerDataSvgSpinnerLoader3,
 	SvgSpinnerLoader4:            svgSpinnerDataSvgSpinnerLoader4,
 	SvgSpinnerLoader5:            svgSpinnerDataSvgSpinnerLoader5,
@@ -265,23 +333,32 @@ var svgSpinnerData = [svgSpinnerCount]string{
 	SvgSpinnerLoader7:            svgSpinnerDataSvgSpinnerLoader7,
 	SvgSpinnerLoader8:            svgSpinnerDataSvgSpinnerLoader8,
 	SvgSpinnerLoader9:            svgSpinnerDataSvgSpinnerLoader9,
+	SvgSpinnerOval:               svgSpinnerDataSvgSpinnerOval,
 	SvgSpinnerPuff:               svgSpinnerDataSvgSpinnerPuff,
+	SvgSpinnerPulse3:             svgSpinnerDataSvgSpinnerPulse3,
+	SvgSpinnerPulseMultiple:      svgSpinnerDataSvgSpinnerPulseMultiple,
+	SvgSpinnerPulseRing:          svgSpinnerDataSvgSpinnerPulseRing,
 	SvgSpinnerPulseRings2:        svgSpinnerDataSvgSpinnerPulseRings2,
 	SvgSpinnerPulseRings3:        svgSpinnerDataSvgSpinnerPulseRings3,
 	SvgSpinnerPulseRingsMultiple: svgSpinnerDataSvgSpinnerPulseRingsMultiple,
+	SvgSpinnerPulse:              svgSpinnerDataSvgSpinnerPulse,
 	SvgSpinnerRingResize:         svgSpinnerDataSvgSpinnerRingResize,
+	SvgSpinnerRings:              svgSpinnerDataSvgSpinnerRings,
 	SvgSpinnerSpinnerDouble:      svgSpinnerDataSvgSpinnerSpinnerDouble,
 	SvgSpinnerSpinner:            svgSpinnerDataSvgSpinnerSpinner,
 	SvgSpinnerSpinningCircles:    svgSpinnerDataSvgSpinnerSpinningCircles,
 	SvgSpinnerTadpole:            svgSpinnerDataSvgSpinnerTadpole,
 	SvgSpinnerTailSpin:           svgSpinnerDataSvgSpinnerTailSpin,
+	SvgSpinnerWifiFade:           svgSpinnerDataSvgSpinnerWifiFade,
 	SvgSpinnerWifi:               svgSpinnerDataSvgSpinnerWifi,
 	SvgSpinnerWindToy:            svgSpinnerDataSvgSpinnerWindToy,
 }
 
 var svgSpinnerName = [svgSpinnerCount]string{
 	SvgSpinner12DotsScaleRotate:  "12-dots-scale-rotate",
+	SvgSpinner180RingWithBg:      "180-ring-with-bg",
 	SvgSpinner180Ring:            "180-ring",
+	SvgSpinner270RingWithBg:      "270-ring-with-bg",
 	SvgSpinner270Ring:            "270-ring",
 	SvgSpinner3DotsBounce:        "3-dots-bounce",
 	SvgSpinner3DotsFade:          "3-dots-fade",
@@ -290,10 +367,13 @@ var svgSpinnerName = [svgSpinnerCount]string{
 	SvgSpinner3DotsScaleMiddle:   "3-dots-scale-middle",
 	SvgSpinner3DotsScale:         "3-dots-scale",
 	SvgSpinner6DotsRotate:        "6-dots-rotate",
+	SvgSpinner6DotsScaleMiddle:   "6-dots-scale-middle",
 	SvgSpinner6DotsScale:         "6-dots-scale",
 	SvgSpinner8DotsRotate:        "8-dots-rotate",
+	SvgSpinner90RingWithBg:       "90-ring-with-bg",
 	SvgSpinner90Ring:             "90-ring",
 	SvgSpinnerAudio:              "audio",
+	SvgSpinnerBallTriangle:       "ball-triangle",
 	SvgSpinnerBarsFade:           "bars-fade",
 	SvgSpinnerBarsRotateFade:     "bars-rotate-fade",
 	SvgSpinnerBarsScaleFade:      "bars-scale-fade",
@@ -306,6 +386,8 @@ var svgSpinnerName = [svgSpinnerCount]string{
 	SvgSpinnerBlocksWave:         "blocks-wave",
 	SvgSpinnerBouncingBall:       "bouncing-ball",
 	SvgSpinnerCircles:            "circles",
+	SvgSpinnerClock:              "clock",
+	SvgSpinnerDotRevolve:         "dot-revolve",
 	SvgSpinnerEclipseHalf:        "eclipse-half",
 	SvgSpinnerEclipse:            "eclipse",
 	SvgSpinnerGrid:               "grid",
@@ -313,6 +395,7 @@ var svgSpinnerName = [svgSpinnerCount]string{
 	SvgSpinnerHorizontalBar:      "horizontal-bar",
 	SvgSpinnerLoader1:            "loader1",
 	SvgSpinnerLoader10:           "loader10",
+	SvgSpinnerLoader2:            "loader2",
 	SvgSpinnerLoader3:            "loader3",
 	SvgSpinnerLoader4:            "loader4",
 	SvgSpinnerLoader5:            "loader5",
@@ -320,16 +403,23 @@ var svgSpinnerName = [svgSpinnerCount]string{
 	SvgSpinnerLoader7:            "loader7",
 	SvgSpinnerLoader8:            "loader8",
 	SvgSpinnerLoader9:            "loader9",
+	SvgSpinnerOval:               "oval",
 	SvgSpinnerPuff:               "puff",
+	SvgSpinnerPulse3:             "pulse-3",
+	SvgSpinnerPulseMultiple:      "pulse-multiple",
+	SvgSpinnerPulseRing:          "pulse-ring",
 	SvgSpinnerPulseRings2:        "pulse-rings-2",
 	SvgSpinnerPulseRings3:        "pulse-rings-3",
 	SvgSpinnerPulseRingsMultiple: "pulse-rings-multiple",
+	SvgSpinnerPulse:              "pulse",
 	SvgSpinnerRingResize:         "ring-resize",
+	SvgSpinnerRings:              "rings",
 	SvgSpinnerSpinnerDouble:      "spinner-double",
 	SvgSpinnerSpinner:            "spinner",
 	SvgSpinnerSpinningCircles:    "spinning-circles",
 	SvgSpinnerTadpole:            "tadpole",
 	SvgSpinnerTailSpin:           "tail-spin",
+	SvgSpinnerWifiFade:           "wifi-fade",
 	SvgSpinnerWifi:               "wifi",
 	SvgSpinnerWindToy:            "wind-toy",
 }

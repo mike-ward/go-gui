@@ -15,12 +15,18 @@ var svgSpinnerCategories = []string{
 var svgSpinnerGroups = map[string][]gui.SvgSpinnerKind{
 	"Rings & Circles": {
 		gui.SvgSpinner90Ring,
+		gui.SvgSpinner90RingWithBg,
 		gui.SvgSpinner180Ring,
+		gui.SvgSpinner180RingWithBg,
 		gui.SvgSpinner270Ring,
+		gui.SvgSpinner270RingWithBg,
 		gui.SvgSpinnerCircles,
 		gui.SvgSpinnerEclipse,
 		gui.SvgSpinnerEclipseHalf,
+		gui.SvgSpinnerLoader2,
+		gui.SvgSpinnerOval,
 		gui.SvgSpinnerRingResize,
+		gui.SvgSpinnerRings,
 		gui.SvgSpinnerSpinner,
 		gui.SvgSpinnerSpinnerDouble,
 		gui.SvgSpinnerSpinningCircles,
@@ -36,7 +42,10 @@ var svgSpinnerGroups = map[string][]gui.SvgSpinnerKind{
 		gui.SvgSpinner3DotsScaleMiddle,
 		gui.SvgSpinner6DotsRotate,
 		gui.SvgSpinner6DotsScale,
+		gui.SvgSpinner6DotsScaleMiddle,
 		gui.SvgSpinner8DotsRotate,
+		gui.SvgSpinnerBallTriangle,
+		gui.SvgSpinnerDotRevolve,
 	},
 	"Bars": {
 		gui.SvgSpinnerBars,
@@ -66,6 +75,10 @@ var svgSpinnerGroups = map[string][]gui.SvgSpinnerKind{
 	},
 	"Pulse": {
 		gui.SvgSpinnerPuff,
+		gui.SvgSpinnerPulse,
+		gui.SvgSpinnerPulse3,
+		gui.SvgSpinnerPulseMultiple,
+		gui.SvgSpinnerPulseRing,
 		gui.SvgSpinnerPulseRings2,
 		gui.SvgSpinnerPulseRings3,
 		gui.SvgSpinnerPulseRingsMultiple,
@@ -73,10 +86,12 @@ var svgSpinnerGroups = map[string][]gui.SvgSpinnerKind{
 	"Miscellaneous": {
 		gui.SvgSpinnerAudio,
 		gui.SvgSpinnerBouncingBall,
+		gui.SvgSpinnerClock,
 		gui.SvgSpinnerGrid,
 		gui.SvgSpinnerHearts,
 		gui.SvgSpinnerTadpole,
 		gui.SvgSpinnerWifi,
+		gui.SvgSpinnerWifiFade,
 		gui.SvgSpinnerWindToy,
 	},
 }
