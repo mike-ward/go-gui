@@ -791,6 +791,8 @@ func mergeGroupStyle(elem string, inherited groupStyle) groupStyle {
 		gid = inherited.GroupID
 	}
 
+	fillRule := resolveFillRule(elem, inherited)
+
 	return groupStyle{
 		Transform:     combined,
 		Fill:          fill,
@@ -809,7 +811,23 @@ func mergeGroupStyle(elem string, inherited groupStyle) groupStyle {
 		FillOpacity:   fillOpacity,
 		StrokeOpacity: strokeOpacity,
 		GroupID:       gid,
+		FillRule:      fillRule,
 	}
+}
+
+// resolveFillRule reads fill-rule from elem, falling back to the
+// inherited group value. "evenodd" maps to FillRuleEvenOdd; any
+// other token (including the empty string) maps to FillRuleNonzero,
+// which is the SVG default. Case-sensitive per SVG spec.
+func resolveFillRule(elem string, inherited groupStyle) FillRule {
+	val, ok := findAttrOrStyle(elem, "fill-rule")
+	if !ok {
+		return inherited.FillRule
+	}
+	if strings.TrimSpace(val) == "evenodd" {
+		return FillRuleEvenOdd
+	}
+	return FillRuleNonzero
 }
 
 func attrOrDefault(elem, name, fallback string) string {

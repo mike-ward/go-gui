@@ -43,6 +43,16 @@ const (
 	CmdClose
 )
 
+// FillRule selects how overlapping subpaths are filled. Matches
+// the SVG fill-rule presentation attribute.
+type FillRule uint8
+
+// FillRule constants. Zero value is nonzero (SVG default).
+const (
+	FillRuleNonzero FillRule = iota
+	FillRuleEvenOdd
+)
+
 // PathSegment is one segment of an SVG path.
 type PathSegment struct {
 	Cmd    PathCmd
@@ -70,6 +80,7 @@ type VectorPath struct {
 	GroupID          string
 	Animated         bool
 	Primitive        gui.SvgPrimitive
+	FillRule         FillRule
 }
 
 // svgFilteredGroup holds paths/texts belonging to a filtered <g>.
@@ -140,6 +151,10 @@ type groupStyle struct {
 	SkipOpacity       bool
 	SkipFillOpacity   bool
 	SkipStrokeOpacity bool
+	// FillRule is the resolved fill-rule inherited from ancestor
+	// groups. Zero value (FillRuleNonzero) matches the SVG default
+	// when no ancestor sets the attribute.
+	FillRule FillRule
 }
 
 // defaultGroupStyle returns the root group style.

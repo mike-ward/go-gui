@@ -53,7 +53,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 		// Fill tessellation
 		hasGradient := path.FillGradientID != ""
 		if path.FillColor.A > 0 || hasGradient {
-			rawTris := tessellatePolylines(polylines)
+			rawTris := tessellatePolylines(polylines, path.FillRule)
 			if len(rawTris) > 0 {
 				if hasGradient {
 					if g, ok := vg.Gradients[path.FillGradientID]; ok {
@@ -267,7 +267,7 @@ func (vg *VectorGraphic) appendClipMasks(result []gui.TessellatedPath,
 	clipGroup := *counter
 	for j := range clipGeom {
 		cpPoly := flattenPath(&clipGeom[j], tolerance)
-		clipTris := tessellatePolylines(cpPoly)
+		clipTris := tessellatePolylines(cpPoly, FillRuleNonzero)
 		if len(clipTris) == 0 {
 			continue
 		}
@@ -621,260 +621,305 @@ func flattenCubicRec(x0, y0, c1x, c1y, c2x, c2y, x1, y1, tolerance float32, dept
 	}
 }
 
-// --- Ear clipping triangulation ---
+// --- Tessellation ---
 
-func tessellatePolylines(polylines [][]float32) []float32 {
+// tessellatePolylines triangulates one or more closed polylines
+// (flat [x0,y0,x1,y1,...] slices) honoring the given fill-rule.
+// A single polyline takes the ear-clip fast path; multiple
+// polylines go through a scanline trapezoidal decomposition that
+// respects nonzero / evenodd winding across all contours. The
+// decomposition correctly handles real outer+hole pairs, peer
+// subpaths with mixed windings (e.g. radial pinwheels), and
+// independent same-winding regions (e.g. circles.svg).
+func tessellatePolylines(polylines [][]float32, rule FillRule) []float32 {
 	if len(polylines) == 0 {
 		return nil
 	}
-	if len(polylines) == 1 {
-		if len(polylines[0]) >= 6 {
-			return earClip(polylines[0])
-		}
-		return nil
-	}
-
-	// Multiple contours — handle holes vs. separate regions.
-	// Subpaths with the same winding as the top-level contour are
-	// independent filled regions (e.g. circles.svg has 4 or 8
-	// separate circles in one path). Subpaths with opposite winding
-	// are holes to be bridged into their enclosing region.
-	type contour struct {
-		points []float32
-		area   float32
-	}
-	contours := make([]contour, 0, len(polylines))
+	contours := make([][]float32, 0, len(polylines))
 	for _, poly := range polylines {
 		if len(poly) >= 6 {
-			contours = append(contours, contour{points: poly, area: polygonArea(poly)})
+			contours = append(contours, poly)
 		}
 	}
 	if len(contours) == 0 {
 		return nil
 	}
-
-	slices.SortFunc(contours, func(a, b contour) int {
-		return cmp.Compare(f32Abs(b.area), f32Abs(a.area))
-	})
-	outerSign := contours[0].area
-
-	// Group contours into regions: each region is one outer plus
-	// any opposite-winding holes it encloses. Same-winding contours
-	// become their own regions.
-	type region struct {
-		outer []float32
-		holes [][]float32
+	// Single-contour nonzero: ear-clip fast path. Simple (non self-
+	// intersecting) polygons fill identically under both rules, so
+	// the fast path covers the common case. Evenodd on a self-
+	// intersecting single contour (e.g. figure-8) needs the winding
+	// decomposition, so route it to scanline.
+	if len(contours) == 1 && rule == FillRuleNonzero {
+		return earClip(contours[0])
 	}
-	regions := make([]region, 0, len(contours))
-	for _, c := range contours {
-		if sameSignArea(c.area, outerSign) {
-			poly := make([]float32, len(c.points))
-			copy(poly, c.points)
-			if c.area < 0 {
-				poly = reversePolygon(poly)
-			}
-			regions = append(regions, region{outer: poly})
+	return scanlineTessellate(contours, rule)
+}
+
+// scanEdge is a non-horizontal contour edge with y-normalized
+// endpoints (y0 <= y1). sign is +1 when the original edge ran
+// upward (y increasing) and -1 when downward; walking edges
+// left-to-right at a given y and summing sign yields the winding
+// number to the right of each edge.
+type scanEdge struct {
+	x0, y0, x1, y1 float32
+	sign           int8
+}
+
+// maxScanEdges caps the number of edges fed to the scanline
+// tessellator. The intersection scan in collectScanYs is O(E²)
+// and the strip loop is O(strips × E), so uncapped input (huge
+// or hostile SVGs) could stall tessellation. ~8k edges keeps
+// worst-case at ~64M ops, well under a frame budget.
+const maxScanEdges = 8192
+
+// maxScanYs caps the unique y-slice count. A radial pinwheel with
+// E edges can have O(E²) intersections; left uncapped, the strip
+// loop degrades to O(E³) and tris cap allocation explodes.
+const maxScanYs = 16384
+
+// buildScanEdges collects all non-horizontal edges from all
+// contours with y-normalized endpoints. Edges touching non-finite
+// coords are skipped (defense in depth against NaN/Inf that slip
+// past parsing). Returns at most maxScanEdges entries.
+func buildScanEdges(contours [][]float32) []scanEdge {
+	n := 0
+	for _, poly := range contours {
+		n += len(poly) / 2
+	}
+	if n > maxScanEdges {
+		n = maxScanEdges
+	}
+	edges := make([]scanEdge, 0, n)
+	for _, poly := range contours {
+		m := len(poly) / 2
+		if m < 3 {
 			continue
 		}
-		// Opposite winding — hole. Attach to the first region whose
-		// outer contains this hole's representative (centroid) point.
-		// Centroid is more robust than the first vertex when the hole
-		// shares vertices with its enclosing outer. A hole that lies
-		// inside no region is dropped: rather than force-merge it
-		// into regions[0] and risk a malformed bridge, treat it as
-		// degenerate geometry.
-		hole := make([]float32, len(c.points))
-		copy(hole, c.points)
-		if polygonArea(hole) > 0 {
-			hole = reversePolygon(hole)
-		}
-		hx, hy, ok := polygonRepresentativePoint(hole)
-		if !ok {
-			continue
-		}
-		for i := range regions {
-			if pointInPolygon(regions[i].outer, hx, hy) {
-				regions[i].holes = append(regions[i].holes, hole)
-				break
+		for k := range m {
+			if len(edges) >= maxScanEdges {
+				return edges
+			}
+			ax := poly[2*k]
+			ay := poly[2*k+1]
+			j := (k + 1) % m
+			bx := poly[2*j]
+			by := poly[2*j+1]
+			if ay == by {
+				continue
+			}
+			if !finiteF32(ax) || !finiteF32(ay) ||
+				!finiteF32(bx) || !finiteF32(by) {
+				continue
+			}
+			if ay < by {
+				edges = append(edges, scanEdge{ax, ay, bx, by, +1})
+			} else {
+				edges = append(edges, scanEdge{bx, by, ax, ay, -1})
 			}
 		}
 	}
-
-	var result []float32
-	for _, r := range regions {
-		outer := r.outer
-		for _, hole := range r.holes {
-			outer = mergeHole(outer, hole)
-		}
-		result = append(result, earClip(outer)...)
-	}
-	return result
+	return edges
 }
 
-// sameSignArea reports whether two signed areas share a sign
-// (both > 0 or both < 0). Zero on either side is treated as
-// matching to avoid spurious hole promotion on degenerate shapes.
-func sameSignArea(a, b float32) bool {
-	if a == 0 || b == 0 {
-		return true
+// segmentIntersectionY returns the y-coordinate where two segments
+// cross in their strict interiors. Endpoint touches are excluded
+// because those y values are already captured as edge endpoints.
+// denEps scales with the bbox area (cross products are unit²) so
+// parallel detection is meaningful across viewBox magnitudes.
+func segmentIntersectionY(a, b scanEdge, denEps float32) (float32, bool) {
+	d1x := a.x1 - a.x0
+	d1y := a.y1 - a.y0
+	d2x := b.x1 - b.x0
+	d2y := b.y1 - b.y0
+	den := d1x*d2y - d1y*d2x
+	if f32Abs(den) < denEps {
+		return 0, false
 	}
-	return (a > 0) == (b > 0)
+	ex := b.x0 - a.x0
+	ey := b.y0 - a.y0
+	t := (ex*d2y - ey*d2x) / den
+	s := (ex*d1y - ey*d1x) / den
+	const endEps = 1e-7
+	if t <= endEps || t >= 1-endEps || s <= endEps || s >= 1-endEps {
+		return 0, false
+	}
+	return a.y0 + t*d1y, true
 }
 
-// polygonRepresentativePoint returns the centroid of poly's
-// vertices. Using the centroid (vs. the first vertex) is robust
-// when the contour shares vertices with an enclosing outer.
-// Returns ok=false when poly has fewer than 3 vertices.
-func polygonRepresentativePoint(poly []float32) (float32, float32, bool) {
-	n := len(poly) / 2
-	if n < 3 {
-		return 0, 0, false
+// collectScanYs gathers unique y values from edge endpoints and
+// edge-edge intersections, sorted ascending. yEps and denEps are
+// bbox-scaled so the dedup collapses truly coincident values
+// regardless of viewBox magnitude. The intersection scan bails
+// once the y pool exceeds maxScanYs to cap worst-case memory on
+// dense self-intersecting contours (e.g. pinwheels).
+func collectScanYs(edges []scanEdge, yEps, denEps float32) []float32 {
+	ys := make([]float32, 0, min(2*len(edges), maxScanYs))
+	for i := range edges {
+		ys = append(ys, edges[i].y0, edges[i].y1)
 	}
-	var sx, sy float32
-	for i := range n {
-		sx += poly[i*2]
-		sy += poly[i*2+1]
-	}
-	inv := 1 / float32(n)
-	return sx * inv, sy * inv, true
-}
-
-// pointInPolygon reports whether (x, y) lies inside poly using a
-// ray-cast odd-even test. poly is a flat [x0,y0, x1,y1, ...] slice.
-func pointInPolygon(poly []float32, x, y float32) bool {
-	inside := false
-	n := len(poly) / 2
-	j := n - 1
-	for i := range n {
-		xi, yi := poly[i*2], poly[i*2+1]
-		xj, yj := poly[j*2], poly[j*2+1]
-		if (yi > y) != (yj > y) {
-			xIntersect := (xj-xi)*(y-yi)/(yj-yi) + xi
-			if x < xIntersect {
-				inside = !inside
-			}
-		}
-		j = i
-	}
-	return inside
-}
-
-func reversePolygon(poly []float32) []float32 {
-	n := len(poly) / 2
-	result := make([]float32, len(poly))
-	for i := n - 1; i >= 0; i-- {
-		result[(n-1-i)*2] = poly[i*2]
-		result[(n-1-i)*2+1] = poly[i*2+1]
-	}
-	return result
-}
-
-func mergeHole(outer, hole []float32) []float32 {
-	nHole := len(hole) / 2
-	holeIdx := 0
-	maxX := hole[0]
-	for i := 1; i < nHole; i++ {
-		if hole[i*2] > maxX {
-			maxX = hole[i*2]
-			holeIdx = i
-		}
-	}
-	holeX := hole[holeIdx*2]
-	holeY := hole[holeIdx*2+1]
-
-	nOuter := len(outer) / 2
-	bestIdx := 0
-	bestDist := float32(1e30)
-
-	for i := range nOuter {
-		x1 := outer[i*2]
-		y1 := outer[i*2+1]
-		j := (i + 1) % nOuter
-		x2 := outer[j*2]
-		y2 := outer[j*2+1]
-
-		if (y1 <= holeY && y2 > holeY) || (y2 <= holeY && y1 > holeY) {
-			t := (holeY - y1) / (y2 - y1)
-			ix := x1 + t*(x2-x1)
-			if ix >= holeX {
-				dist := ix - holeX
-				if dist < bestDist {
-					bestDist = dist
-					if f32Abs(y1-holeY) < f32Abs(y2-holeY) {
-						bestIdx = i
-					} else {
-						bestIdx = j
-					}
+collect:
+	for i := range edges {
+		for j := i + 1; j < len(edges); j++ {
+			if y, ok := segmentIntersectionY(edges[i], edges[j], denEps); ok {
+				ys = append(ys, y)
+				if len(ys) >= maxScanYs {
+					break collect
 				}
 			}
 		}
 	}
+	slices.Sort(ys)
+	out := ys[:0]
+	for _, y := range ys {
+		if len(out) == 0 || y-out[len(out)-1] > yEps {
+			out = append(out, y)
+		}
+	}
+	return out
+}
 
-	for i := range nOuter {
-		x := outer[i*2]
-		y := outer[i*2+1]
-		if x >= holeX {
-			dx := x - holeX
-			dy := y - holeY
-			dist := dx*dx + dy*dy
-			if dist < bestDist*bestDist {
-				if isVertexVisible(outer, i, holeX, holeY) {
-					bestDist = float32(math.Sqrt(float64(dist)))
-					bestIdx = i
-				}
+// edgesBoundsScale returns a representative linear scale for the
+// bbox of edges (max extent). Used to scale epsilons that are
+// absolute in viewBox units. Returns 1 when edges are degenerate
+// so eps values remain finite.
+func edgesBoundsScale(edges []scanEdge) float32 {
+	if len(edges) == 0 {
+		return 1
+	}
+	minX, minY := edges[0].x0, edges[0].y0
+	maxX, maxY := minX, minY
+	for i := range edges {
+		e := edges[i]
+		minX = min(minX, e.x0, e.x1)
+		maxX = max(maxX, e.x0, e.x1)
+		// scanEdge invariant: y0 < y1
+		minY = min(minY, e.y0)
+		maxY = max(maxY, e.y1)
+	}
+	s := max(maxX-minX, maxY-minY)
+	if s <= 0 {
+		return 1
+	}
+	return s
+}
+
+// xAtY linearly interpolates the edge's x at the given y.
+// Precondition: e.y0 <= y <= e.y1.
+func xAtY(e scanEdge, y float32) float32 {
+	dy := e.y1 - e.y0
+	if dy <= 0 {
+		return e.x0
+	}
+	t := (y - e.y0) / dy
+	return e.x0 + t*(e.x1-e.x0)
+}
+
+// scanlineTessellate decomposes the filled region under the fill
+// rule into trapezoidal strips between consecutive unique y
+// values. Within each strip no intersections occur (all are listed
+// in the y set), so active edges keep a stable left-to-right
+// order; winding is accumulated as edges are crossed and a
+// trapezoid is emitted wherever the rule reports "filled".
+func scanlineTessellate(contours [][]float32, rule FillRule) []float32 {
+	edges := buildScanEdges(contours)
+	if len(edges) == 0 {
+		return nil
+	}
+	scale := edgesBoundsScale(edges)
+	yEps := scale * 1e-6
+	stripEps := scale * 1e-7
+	activeEps := scale * 1e-6
+	denEps := scale * scale * 1e-6
+	areaEps := scale * scale * 1e-9
+	ys := collectScanYs(edges, yEps, denEps)
+	if len(ys) < 2 {
+		return nil
+	}
+	active := make([]int, 0, len(edges))
+	tris := make([]float32, 0, 6*len(ys))
+	for i := 0; i+1 < len(ys); i++ {
+		yTop := ys[i]
+		yBot := ys[i+1]
+		if yBot-yTop < stripEps {
+			continue
+		}
+		yMid := (yTop + yBot) * 0.5
+
+		active = active[:0]
+		for j := range edges {
+			if edges[j].y0 <= yTop+activeEps && edges[j].y1 >= yBot-activeEps {
+				active = append(active, j)
+			}
+		}
+		if len(active) < 2 {
+			continue
+		}
+		slices.SortFunc(active, func(a, b int) int {
+			return cmp.Compare(xAtY(edges[a], yMid), xAtY(edges[b], yMid))
+		})
+
+		winding := int32(0)
+		leftIdx := -1
+		for k := range active {
+			eg := edges[active[k]]
+			winding += int32(eg.sign)
+			inside := false
+			switch rule {
+			case FillRuleEvenOdd:
+				inside = winding&1 != 0
+			default:
+				inside = winding != 0
+			}
+			if inside && leftIdx < 0 {
+				leftIdx = k
+				continue
+			}
+			if !inside && leftIdx >= 0 {
+				le := edges[active[leftIdx]]
+				re := eg
+				xLT := xAtY(le, yTop)
+				xRT := xAtY(re, yTop)
+				xLB := xAtY(le, yBot)
+				xRB := xAtY(re, yBot)
+				tris = appendTrapezoid(tris, xLT, xRT, xLB, xRB, yTop, yBot, areaEps)
+				leftIdx = -1
 			}
 		}
 	}
-
-	estCap := len(outer) + len(hole) + 4
-	if estCap/2 > 1000000 {
-		result := make([]float32, len(outer))
-		copy(result, outer)
-		return result
-	}
-	result := make([]float32, 0, estCap)
-
-	for i := 0; i <= bestIdx; i++ {
-		result = append(result, outer[i*2], outer[i*2+1])
-	}
-	for i := range nHole {
-		idx := (holeIdx + i) % nHole
-		result = append(result, hole[idx*2], hole[idx*2+1])
-	}
-	result = append(result, hole[holeIdx*2], hole[holeIdx*2+1])
-	for i := bestIdx; i < nOuter; i++ {
-		result = append(result, outer[i*2], outer[i*2+1])
-	}
-	return result
+	return tris
 }
 
-func isVertexVisible(outer []float32, idx int, px, py float32) bool {
-	vx := outer[idx*2]
-	vy := outer[idx*2+1]
-	n := len(outer) / 2
-	for i := range n {
-		j := (i + 1) % n
-		if i == idx || j == idx {
-			continue
-		}
-		if segmentsIntersect(px, py, vx, vy, outer[i*2], outer[i*2+1], outer[j*2], outer[j*2+1]) {
-			return false
-		}
+// appendTrapezoid emits the non-degenerate triangles of a
+// trapezoid with left edge (xLT,yTop)-(xLB,yBot) and right edge
+// (xRT,yTop)-(xRB,yBot). Each candidate triangle is skipped when
+// its signed area is below areaEps; this avoids degenerate slivers
+// at near-horizontal intersections that otherwise fool
+// point-in-triangle tests via float32 precision loss.
+func appendTrapezoid(dst []float32,
+	xLT, xRT, xLB, xRB, yTop, yBot, areaEps float32,
+) []float32 {
+	dst = appendNonDegenTri(dst, xLT, yTop, xRT, yTop, xRB, yBot, areaEps)
+	dst = appendNonDegenTri(dst, xLT, yTop, xRB, yBot, xLB, yBot, areaEps)
+	return dst
+}
+
+// appendNonDegenTri appends a triangle only when its 2× signed
+// area exceeds areaEps. NaN/Inf coordinates are dropped — NaN
+// comparisons always yield false, which would otherwise let
+// non-finite vertices splat into the GPU vertex buffer.
+func appendNonDegenTri(dst []float32,
+	ax, ay, bx, by, cx, cy, areaEps float32,
+) []float32 {
+	if !finiteF32(ax) || !finiteF32(ay) ||
+		!finiteF32(bx) || !finiteF32(by) ||
+		!finiteF32(cx) || !finiteF32(cy) {
+		return dst
 	}
-	return true
-}
-
-func segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy float32) bool {
-	d1 := crossProductSign(cx, cy, dx, dy, ax, ay)
-	d2 := crossProductSign(cx, cy, dx, dy, bx, by)
-	d3 := crossProductSign(ax, ay, bx, by, cx, cy)
-	d4 := crossProductSign(ax, ay, bx, by, dx, dy)
-	return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
-		((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))
-}
-
-func crossProductSign(ax, ay, bx, by, cx, cy float32) float32 {
-	return (bx-ax)*(cy-ay) - (by-ay)*(cx-ax)
+	area := f32Abs((bx-ax)*(cy-ay) - (cx-ax)*(by-ay))
+	if !(area >= areaEps) {
+		return dst
+	}
+	return append(dst, ax, ay, bx, by, cx, cy)
 }
 
 func earClip(polygon []float32) []float32 {

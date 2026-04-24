@@ -43,46 +43,6 @@ func TestTessellatePolygonAreaTriangle(t *testing.T) {
 	}
 }
 
-func TestTessellateReversePolygon(t *testing.T) {
-	poly := []float32{1, 2, 3, 4, 5, 6}
-	rev := reversePolygon(poly)
-	expected := []float32{5, 6, 3, 4, 1, 2}
-	if len(rev) != len(expected) {
-		t.Fatalf("length mismatch: %d vs %d", len(rev), len(expected))
-	}
-	for i := range expected {
-		if rev[i] != expected[i] {
-			t.Fatalf("rev[%d] = %f, want %f", i, rev[i], expected[i])
-		}
-	}
-}
-
-func TestTessellateReversePolygonSingle(t *testing.T) {
-	poly := []float32{7, 8}
-	rev := reversePolygon(poly)
-	if rev[0] != 7 || rev[1] != 8 {
-		t.Fatalf("single vertex reverse failed: got %v", rev)
-	}
-}
-
-func TestTessellateCrossProductSign(t *testing.T) {
-	// (1,0)→(0,1) relative to origin: positive (CCW)
-	val := crossProductSign(0, 0, 1, 0, 0, 1)
-	if val <= 0 {
-		t.Fatalf("expected positive cross product, got %f", val)
-	}
-	// (0,1)→(1,0) relative to origin: negative (CW)
-	val = crossProductSign(0, 0, 0, 1, 1, 0)
-	if val >= 0 {
-		t.Fatalf("expected negative cross product, got %f", val)
-	}
-	// Collinear: (0,0)→(2,0)→(1,0)
-	val = crossProductSign(0, 0, 2, 0, 1, 0)
-	if val != 0 {
-		t.Fatalf("expected zero cross product, got %f", val)
-	}
-}
-
 func TestTessellatePointInTriangleInside(t *testing.T) {
 	// Point (0.25, 0.25) inside triangle (0,0) (1,0) (0,1)
 	if !pointInTriangle(0.25, 0.25, 0, 0, 1, 0, 0, 1) {
@@ -112,26 +72,6 @@ func TestTessellatePointInTriangleOnEdge(t *testing.T) {
 	// On the AB edge, vv=0, uu depends on exact computation.
 	// Just verify no panic.
 	_ = result
-}
-
-func TestTessellateSegmentsIntersectCrossing(t *testing.T) {
-	// X-shaped crossing
-	if !segmentsIntersect(0, 0, 1, 1, 0, 1, 1, 0) {
-		t.Fatal("crossing segments should intersect")
-	}
-}
-
-func TestTessellateSegmentsIntersectParallel(t *testing.T) {
-	if segmentsIntersect(0, 0, 1, 0, 0, 1, 1, 1) {
-		t.Fatal("parallel segments should not intersect")
-	}
-}
-
-func TestTessellateSegmentsIntersectNoOverlap(t *testing.T) {
-	// L shape, no crossing
-	if segmentsIntersect(0, 0, 1, 0, 2, 0, 2, 1) {
-		t.Fatal("non-overlapping segments should not intersect")
-	}
 }
 
 func TestTessellateBboxFromTriangles(t *testing.T) {
@@ -212,17 +152,17 @@ func TestTessellateEarClipClosedDuplicate(t *testing.T) {
 }
 
 func TestTessellateTessellatePolylinesEmpty(t *testing.T) {
-	if tris := tessellatePolylines(nil); tris != nil {
+	if tris := tessellatePolylines(nil, FillRuleNonzero); tris != nil {
 		t.Fatalf("nil polylines should return nil")
 	}
-	if tris := tessellatePolylines([][]float32{}); tris != nil {
+	if tris := tessellatePolylines([][]float32{}, FillRuleNonzero); tris != nil {
 		t.Fatalf("empty polylines should return nil")
 	}
 }
 
 func TestTessellateTessellatePolylinesSingle(t *testing.T) {
 	poly := []float32{0, 0, 1, 0, 0, 1}
-	tris := tessellatePolylines([][]float32{poly})
+	tris := tessellatePolylines([][]float32{poly}, FillRuleNonzero)
 	if len(tris) != 6 {
 		t.Fatalf("expected 6 floats, got %d", len(tris))
 	}
@@ -235,7 +175,7 @@ func TestTessellateTessellatePolylinesWithHole(t *testing.T) {
 	// Under the default SVG nonzero fill-rule this is a real hole;
 	// total filled area should be outer - hole = 84.
 	hole := []float32{3, 3, 3, 7, 7, 7, 7, 3}
-	tris := tessellatePolylines([][]float32{outer, hole})
+	tris := tessellatePolylines([][]float32{outer, hole}, FillRuleNonzero)
 	if len(tris) == 0 {
 		t.Fatal("expected triangles from polygon with hole")
 	}
@@ -250,7 +190,7 @@ func TestTessellateTessellatePolylinesSameWindingSeparateRegions(t *testing.T) {
 	// nonzero they're independent filled regions, not outer + hole.
 	a := []float32{0, 0, 10, 0, 10, 10, 0, 10}
 	b := []float32{20, 20, 30, 20, 30, 30, 20, 30}
-	tris := tessellatePolylines([][]float32{a, b})
+	tris := tessellatePolylines([][]float32{a, b}, FillRuleNonzero)
 	if len(tris) == 0 {
 		t.Fatal("expected triangles from two same-winding contours")
 	}
@@ -303,95 +243,47 @@ func TestTessellatePathsStrokeWidthViewBoxUnits(t *testing.T) {
 func TestTessellateTessellatePolylinesShortContour(t *testing.T) {
 	// Contour with < 3 vertices should be skipped
 	short := []float32{0, 0, 1, 1}
-	tris := tessellatePolylines([][]float32{short})
+	tris := tessellatePolylines([][]float32{short}, FillRuleNonzero)
 	if tris != nil {
 		t.Fatalf("short contour should return nil, got %d floats", len(tris))
 	}
 }
 
-// Unattached hole (opposite winding, not contained by any region)
-// must be dropped silently rather than force-merged into regions[0].
-func TestTessellatePolylines_UnattachedHoleDropped(t *testing.T) {
+// Unattached opposite-winding subpath (not bbox-contained by any
+// region) is promoted to its own independent filled region rather
+// than force-merged into regions[0] via mergeHole. This matches the
+// nonzero fill-rule for peer subpaths with mixed windings (e.g.
+// radial pinwheels) where bridging corrupts the mesh.
+func TestTessellatePolylines_UnattachedHolePromoted(t *testing.T) {
 	outer := []float32{0, 0, 10, 0, 10, 10, 0, 10}
-	// Hole located far outside outer, opposite winding.
+	// Opposite-winding square located far outside outer.
 	stray := []float32{100, 100, 100, 104, 104, 104, 104, 100}
-	tris := tessellatePolylines([][]float32{outer, stray})
+	tris := tessellatePolylines([][]float32{outer, stray}, FillRuleNonzero)
 	if len(tris) == 0 {
-		t.Fatal("expected outer triangulation")
+		t.Fatal("expected triangulation")
 	}
 	got := triangleAreaSum(tris)
-	// Outer alone is 100; stray dropped means total stays ~100.
-	if f32Abs(got-100.0) > 1.0 {
-		t.Fatalf("expected area ~100 (stray dropped), got %f", got)
+	// Outer=100, stray=16, total=116.
+	if f32Abs(got-116.0) > 1.0 {
+		t.Fatalf("expected area ~116 (stray promoted), got %f", got)
 	}
 }
 
-// --- polygonRepresentativePoint ---
-
-func TestPolygonRepresentativePoint_CentroidAndDegenerate(t *testing.T) {
-	// Square — centroid at (5,5).
-	sq := []float32{0, 0, 10, 0, 10, 10, 0, 10}
-	x, y, ok := polygonRepresentativePoint(sq)
-	if !ok {
-		t.Fatal("expected ok for square")
+// Two overlapping peer subpaths with opposite windings (e.g.
+// rotated pinwheel blades on wind-toy) must carve at the overlap
+// under the SVG nonzero fill-rule. Each 10×10 square has area 100
+// and the 5×5 overlap cancels out (winding sum = 0), leaving
+// 100 + 100 − 2×25 = 150.
+func TestTessellatePolylines_PeerOverlapNonzeroCarved(t *testing.T) {
+	ccw := []float32{0, 0, 10, 0, 10, 10, 0, 10}
+	cw := []float32{5, 5, 5, 15, 15, 15, 15, 5}
+	tris := tessellatePolylines([][]float32{ccw, cw}, FillRuleNonzero)
+	if len(tris) == 0 {
+		t.Fatal("expected triangulation")
 	}
-	if f32Abs(x-5) > 1e-5 || f32Abs(y-5) > 1e-5 {
-		t.Fatalf("expected centroid (5,5), got (%f,%f)", x, y)
-	}
-
-	// Degenerate (n < 3) must report ok=false.
-	twoPt := []float32{0, 0, 1, 1}
-	if _, _, ok := polygonRepresentativePoint(twoPt); ok {
-		t.Fatal("expected ok=false for 2-vertex polygon")
-	}
-	if _, _, ok := polygonRepresentativePoint(nil); ok {
-		t.Fatal("expected ok=false for nil")
-	}
-}
-
-// --- sameSignArea ---
-
-func TestSameSignArea_ZeroTreatedAsMatching(t *testing.T) {
-	if !sameSignArea(1, 2) {
-		t.Fatal("both positive should match")
-	}
-	if !sameSignArea(-1, -3) {
-		t.Fatal("both negative should match")
-	}
-	if sameSignArea(1, -1) {
-		t.Fatal("opposite signs should not match")
-	}
-	// Zero on either side treated as matching (avoids spurious
-	// hole promotion on degenerate contours).
-	if !sameSignArea(0, 1) || !sameSignArea(1, 0) || !sameSignArea(0, 0) {
-		t.Fatal("zero should be treated as matching any sign")
-	}
-}
-
-// --- pointInPolygon ---
-
-func TestPointInPolygon_NaNAndDegenerate(t *testing.T) {
-	sq := []float32{0, 0, 10, 0, 10, 10, 0, 10}
-	if !pointInPolygon(sq, 5, 5) {
-		t.Fatal("center should be inside")
-	}
-	if pointInPolygon(sq, 20, 5) {
-		t.Fatal("outside point should not be inside")
-	}
-	// NaN coords must not panic; treated as outside.
-	nan := float32(math.NaN())
-	if pointInPolygon(sq, nan, 5) {
-		t.Fatal("NaN x must be treated as outside")
-	}
-	if pointInPolygon(sq, 5, nan) {
-		t.Fatal("NaN y must be treated as outside")
-	}
-	// Empty / single-vertex polygon returns false without panic.
-	if pointInPolygon(nil, 0, 0) {
-		t.Fatal("nil polygon should return false")
-	}
-	if pointInPolygon([]float32{1, 1}, 1, 1) {
-		t.Fatal("1-vertex polygon should return false")
+	got := triangleAreaSum(tris)
+	if f32Abs(got-150.0) > 1.0 {
+		t.Fatalf("expected nonzero-carved area ~150, got %f", got)
 	}
 }
 

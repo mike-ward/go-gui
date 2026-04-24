@@ -29,14 +29,15 @@ func parsePathD(d string) []PathSegment {
 		c := token[0]
 		isCmd := (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
 
+		// DoS guard. Captured before cmd-letter consumption so an
+		// arg-less command (e.g. Z) followed by another command
+		// (e.g. M) can't trip the post-switch skip and lose data.
+		iBefore := i
 		cmd := lastCmd
 		if isCmd {
 			cmd = c
 			i++
 		}
-		// Progress guard: an unconsumable token would spin the outer
-		// loop forever (DoS).
-		iBefore := i
 
 		switch cmd {
 		case 'M', 'm':

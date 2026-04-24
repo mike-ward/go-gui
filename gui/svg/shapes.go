@@ -11,6 +11,7 @@ func parsePathWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
 	if clipID, found := parseClipPathURL(elem); found {
 		path.ClipPathID = clipID
 	}
+	path.FillRule = resolveFillRule(elem, inherited)
 	applyInheritedStyle(&path, inherited)
 	return path, true
 }
@@ -23,6 +24,7 @@ func parseRectWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
 	if clipID, found := parseClipPathURL(elem); found {
 		path.ClipPathID = clipID
 	}
+	path.FillRule = resolveFillRule(elem, inherited)
 	applyInheritedStyle(&path, inherited)
 	return path, true
 }
@@ -35,6 +37,7 @@ func parseCircleWithStyle(elem string, inherited groupStyle) (VectorPath, bool) 
 	if clipID, found := parseClipPathURL(elem); found {
 		path.ClipPathID = clipID
 	}
+	path.FillRule = resolveFillRule(elem, inherited)
 	applyInheritedStyle(&path, inherited)
 	return path, true
 }
@@ -47,6 +50,7 @@ func parseEllipseWithStyle(elem string, inherited groupStyle) (VectorPath, bool)
 	if clipID, found := parseClipPathURL(elem); found {
 		path.ClipPathID = clipID
 	}
+	path.FillRule = resolveFillRule(elem, inherited)
 	applyInheritedStyle(&path, inherited)
 	return path, true
 }
@@ -59,6 +63,7 @@ func parsePolygonWithStyle(elem string, inherited groupStyle, closed bool) (Vect
 	if clipID, found := parseClipPathURL(elem); found {
 		path.ClipPathID = clipID
 	}
+	path.FillRule = resolveFillRule(elem, inherited)
 	applyInheritedStyle(&path, inherited)
 	return path, true
 }
@@ -71,6 +76,7 @@ func parseLineWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
 	if clipID, found := parseClipPathURL(elem); found {
 		path.ClipPathID = clipID
 	}
+	path.FillRule = resolveFillRule(elem, inherited)
 	applyInheritedStyle(&path, inherited)
 	return path, true
 }

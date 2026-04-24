@@ -214,6 +214,31 @@ func TestPathParsePathDEmpty(t *testing.T) {
 	}
 }
 
+// Regression: arg-less commands (Z) followed by another command
+// (M) must not swallow the subsequent command. Before the fix,
+// iBefore was captured after the cmd-letter was consumed, so the
+// post-switch "no progress" skip discarded the M and collapsed
+// all subpaths into one malformed contour (wind-toy bug).
+func TestPathParsePathDZFollowedByMKeepsSubpaths(t *testing.T) {
+	segs := parsePathD("M0,0 L1,0 L1,1 Z M5,5 L6,5 L6,6 Z")
+	moves := 0
+	closes := 0
+	for _, s := range segs {
+		switch s.Cmd {
+		case CmdMoveTo:
+			moves++
+		case CmdClose:
+			closes++
+		}
+	}
+	if moves != 2 {
+		t.Fatalf("expected 2 MoveTo segments, got %d (segs=%v)", moves, segs)
+	}
+	if closes != 2 {
+		t.Fatalf("expected 2 Close segments, got %d", closes)
+	}
+}
+
 // --- vectorAngle ---
 
 func TestPathVectorAngleParallel(t *testing.T) {
