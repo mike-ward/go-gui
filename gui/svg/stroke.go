@@ -8,7 +8,7 @@ import (
 
 // tessellateStroke converts polylines to stroke triangles.
 func tessellateStroke(polylines [][]float32, width float32, lineCap gui.StrokeCap, join gui.StrokeJoin) []float32 {
-	var result []float32
+	result := make([]float32, 0, estimateStrokeResultCap(polylines, lineCap, join))
 	halfW := width / 2
 
 	for _, poly := range polylines {
@@ -130,6 +130,52 @@ func tessellateStroke(polylines [][]float32, width float32, lineCap gui.StrokeCa
 		}
 	}
 	return result
+}
+
+func estimateStrokeResultCap(polylines [][]float32, lineCap gui.StrokeCap, join gui.StrokeJoin) int {
+	total := 0
+	for _, poly := range polylines {
+		if len(poly) < 4 || len(poly)%2 != 0 {
+			continue
+		}
+		n := len(poly) / 2
+		if n < 2 {
+			continue
+		}
+		pointCount := n
+		dxClose := poly[0] - poly[(n-1)*2]
+		dyClose := poly[1] - poly[(n-1)*2+1]
+		isClosed := n > 2 && f32Abs(dxClose) < closedPathEpsilon &&
+			f32Abs(dyClose) < closedPathEpsilon
+		if isClosed {
+			pointCount--
+		}
+		if pointCount < 2 {
+			continue
+		}
+		segCount := pointCount - 1
+		joinCount := pointCount - 2
+		if isClosed {
+			segCount = pointCount
+			joinCount = pointCount
+		}
+		total += segCount * 12
+		switch join {
+		case gui.MiterJoin, gui.BevelJoin:
+			total += joinCount * 6
+		case gui.RoundJoin:
+			total += joinCount * strokeRoundCapSegs * 6
+		}
+		if !isClosed {
+			switch lineCap {
+			case gui.SquareCap:
+				total += 2 * 12
+			case gui.RoundCap:
+				total += 2 * strokeRoundCapSegs * 6
+			}
+		}
+	}
+	return total
 }
 
 func addLineJoin(x, y, n1x, n1y, n2x, n2y, halfW float32, join gui.StrokeJoin, result *[]float32) {

@@ -18,6 +18,7 @@ package svg
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 )
@@ -47,8 +48,7 @@ type xmlNode struct {
 // document is malformed or exceeds limits.
 func decodeSvgTree(content string) (*xmlNode, error) {
 	dec := xml.NewDecoder(strings.NewReader(content))
-	dec.Strict = false
-	dec.AutoClose = xml.HTMLAutoClose
+	dec.Strict = true
 	// HTML entities are not enabled by default; SVG assets use named
 	// entities rarely, numeric references are always decoded.
 	dec.Entity = xml.HTMLEntity
@@ -61,7 +61,10 @@ func decodeSvgTree(content string) (*xmlNode, error) {
 	for {
 		tok, err := dec.Token()
 		if err != nil {
-			break
+			if err == io.EOF {
+				break
+			}
+			return nil, fmt.Errorf("svg: decode XML: %w", err)
 		}
 		switch t := tok.(type) {
 		case xml.StartElement:
@@ -127,6 +130,10 @@ func decodeSvgTree(content string) (*xmlNode, error) {
 		}
 	}
 
+	if len(stack) != 0 {
+		return nil, fmt.Errorf("svg: unterminated element <%s>",
+			stack[len(stack)-1].Name)
+	}
 	if root == nil {
 		return nil, fmt.Errorf("svg: no root element")
 	}

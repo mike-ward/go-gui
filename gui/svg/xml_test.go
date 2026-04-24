@@ -128,6 +128,15 @@ func TestXmlParseSvgDimensionsWidthHeight(t *testing.T) {
 	}
 }
 
+func TestXmlParseSvgDimensionsIgnoresChildWidthHeight(t *testing.T) {
+	svg := `<svg><rect width="200" height="100"/></svg>`
+	w, h := parseSvgDimensions(svg)
+	if w != defaultIconSize || h != defaultIconSize {
+		t.Fatalf("expected defaults (%d,%d), got (%f,%f)",
+			defaultIconSize, defaultIconSize, w, h)
+	}
+}
+
 // --- Integration ---
 
 func TestXmlParseSvgMinimalRect(t *testing.T) {
@@ -197,6 +206,19 @@ func TestXmlParseSvgFileTooLarge(t *testing.T) {
 	_, err := parseSvgFile(path)
 	if err == nil {
 		t.Fatal("expected error for oversized file")
+	}
+}
+
+func TestParseSvgRejectsMalformedXML(t *testing.T) {
+	cases := []string{
+		`<svg><g></svg>`,
+		`<svg><rect></svg>`,
+		`<svg><rect/></svg><`,
+	}
+	for _, svg := range cases {
+		if _, err := parseSvg(svg); err == nil {
+			t.Fatalf("expected malformed SVG to fail: %q", svg)
+		}
 	}
 }
 

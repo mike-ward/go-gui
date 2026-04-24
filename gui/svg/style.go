@@ -236,16 +236,25 @@ func parseRGBColor(s string) gui.SvgColor {
 	if start < 0 || end < 0 || end <= start+1 {
 		return colorBlack
 	}
-	parts := strings.Split(s[start+1:end], ",")
-	if len(parts) < 3 {
+	body := s[start+1 : end]
+	rv, next, ok := nextCommaValue(body, 0)
+	if !ok {
 		return colorBlack
 	}
-	r := clampByte(parseIntTrimmed(parts[0]))
-	g := clampByte(parseIntTrimmed(parts[1]))
-	b := clampByte(parseIntTrimmed(parts[2]))
+	gv, next, ok := nextCommaValue(body, next)
+	if !ok {
+		return colorBlack
+	}
+	bv, next, ok := nextCommaValue(body, next)
+	if !ok {
+		return colorBlack
+	}
+	r := clampByte(parseIntTrimmed(rv))
+	g := clampByte(parseIntTrimmed(gv))
+	b := clampByte(parseIntTrimmed(bv))
 	a := 255
-	if len(parts) >= 4 {
-		alpha := parseFloatTrimmed(parts[3])
+	if av, _, ok := nextCommaValue(body, next); ok {
+		alpha := parseFloatTrimmed(av)
 		if alpha <= 1.0 {
 			a = clampByte(int(alpha * 255))
 		} else {
@@ -273,6 +282,22 @@ func clampByte(v int) int {
 		return 255
 	}
 	return v
+}
+
+func nextCommaValue(s string, start int) (string, int, bool) {
+	i := start
+	for i < len(s) && (s[i] == ' ' || s[i] == '\t' ||
+		s[i] == '\n' || s[i] == '\r' || s[i] == ',') {
+		i++
+	}
+	if i >= len(s) {
+		return "", len(s), false
+	}
+	j := i
+	for j < len(s) && s[j] != ',' {
+		j++
+	}
+	return strings.TrimSpace(s[i:j]), j + 1, true
 }
 
 // applyOpacity multiplies opacity into color alpha channel.
@@ -717,16 +742,27 @@ func getStrokeDasharray(elem string) []float32 {
 	if strings.TrimSpace(val) == "none" {
 		return nil
 	}
-	parts := strings.Fields(strings.ReplaceAll(val, ",", " "))
-	result := make([]float32, 0, len(parts))
+	result := make([]float32, 0, 4)
 	var sum float32
-	for _, p := range parts {
-		n := parseFloatTrimmed(p)
+	for i := 0; i < len(val); {
+		start := i
+		for start < len(val) && isFloatListSep(val[start]) {
+			start++
+		}
+		if start >= len(val) {
+			break
+		}
+		end := start
+		for end < len(val) && !isFloatListSep(val[end]) {
+			end++
+		}
+		n := parseFloatTrimmed(val[start:end])
 		if n < 0 {
 			return nil
 		}
 		result = append(result, n)
 		sum += n
+		i = end
 	}
 	// Zero-sum dasharray = solid line (SVG spec).
 	if sum <= 0 {
@@ -736,6 +772,11 @@ func getStrokeDasharray(elem string) []float32 {
 		result = append(result, result...)
 	}
 	return result
+}
+
+func isFloatListSep(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\n' ||
+		b == '\r' || b == ','
 }
 
 func parseElementStyle(elem string) elementStyle {

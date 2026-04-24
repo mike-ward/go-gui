@@ -374,20 +374,11 @@ func parseAnimateDashArrayElement(
 // SvgAnimDashArrayCap+1 so a hostile keyframe with millions of
 // fields cannot drive a huge alloc; caller rejects overflow.
 func parseDashFrameFloats(s string) []float32 {
-	fields := strings.FieldsFunc(s, func(r rune) bool {
-		return r == ' ' || r == '\t' || r == ',' || r == '\n' || r == '\r'
-	})
-	if len(fields) == 0 {
-		return nil
-	}
-	if len(fields) > gui.SvgAnimDashArrayCap+1 {
-		fields = fields[:gui.SvgAnimDashArrayCap+1]
-	}
-	out := make([]float32, 0, len(fields))
-	for _, f := range fields {
-		out = append(out, parseF32(f))
-	}
-	return out
+	return scanFloatList(s, gui.SvgAnimDashArrayCap+1,
+		func(b byte) bool {
+			return b == ' ' || b == '\t' || b == ',' ||
+				b == '\n' || b == '\r'
+		})
 }
 
 func attrNameFromString(s string) gui.SvgAttrName {
@@ -1084,28 +1075,46 @@ func parseTimeValue(s string) float32 {
 // float32 values. Caps the result at maxKeyframes entries to
 // bound allocation on pathological input.
 func parseSemicolonFloats(s string) []float32 {
-	parts := strings.Split(s, ";")
-	if len(parts) > maxKeyframes {
-		parts = parts[:maxKeyframes]
-	}
-	out := make([]float32, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		out = append(out, parseF32(p))
-	}
-	return out
+	return scanFloatList(s, maxKeyframes,
+		func(b byte) bool { return b == ';' })
 }
 
 // parseSpaceFloats splits a space-separated string into float32
 // values.
 func parseSpaceFloats(s string) []float32 {
-	fields := strings.Fields(s)
-	out := make([]float32, 0, len(fields))
-	for _, f := range fields {
-		out = append(out, parseF32(f))
+	return scanFloatList(s, 0,
+		func(b byte) bool {
+			return b == ' ' || b == '\t' || b == '\n' || b == '\r'
+		})
+}
+
+func scanFloatList(s string, limit int, isSep func(byte) bool) []float32 {
+	if limit == 0 {
+		limit = len(s)
+	}
+	out := make([]float32, 0, min(limit, 8))
+	for i := 0; i < len(s); {
+		start := i
+		for start < len(s) && isSep(s[start]) {
+			start++
+		}
+		if start >= len(s) {
+			break
+		}
+		end := start
+		for end < len(s) && !isSep(s[end]) {
+			end++
+		}
+		if tok := strings.TrimSpace(s[start:end]); tok != "" {
+			out = append(out, parseF32(tok))
+			if len(out) >= limit {
+				break
+			}
+		}
+		i = end
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }

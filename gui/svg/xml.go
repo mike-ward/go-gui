@@ -3,6 +3,7 @@ package svg
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
 )
@@ -110,6 +111,14 @@ const maxSvgFileSize = 4 << 20 // 4 MB
 
 // parseSvgFile loads and parses an SVG file.
 func parseSvgFile(path string) (*VectorGraphic, error) {
+	data, err := loadSvgFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return parseSvg(string(data))
+}
+
+func loadSvgFile(path string) ([]byte, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("read SVG file: %w", err)
@@ -121,7 +130,7 @@ func parseSvgFile(path string) (*VectorGraphic, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read SVG file: %w", err)
 	}
-	return parseSvg(string(data))
+	return data, nil
 }
 
 // parseSvgDimensions extracts only width/height without a full
@@ -129,7 +138,11 @@ func parseSvgFile(path string) (*VectorGraphic, error) {
 // on incomplete or fragment-only SVG content (no closing tag
 // required).
 func parseSvgDimensions(content string) (float32, float32) {
-	if vb, ok := findAttr(content, "viewBox"); ok {
+	openTag := extractRootSVGOpenTag(content)
+	if openTag == "" {
+		openTag = content
+	}
+	if vb, ok := findAttr(openTag, "viewBox"); ok {
 		nums := parseNumberList(vb)
 		if len(nums) >= 4 {
 			return clampViewBoxDim(nums[2]), clampViewBoxDim(nums[3])
@@ -137,13 +150,45 @@ func parseSvgDimensions(content string) (float32, float32) {
 	}
 	w := float32(defaultIconSize)
 	h := float32(defaultIconSize)
-	if ws, ok := findAttr(content, "width"); ok {
+	if ws, ok := findAttr(openTag, "width"); ok {
 		w = clampViewBoxDim(parseLength(ws))
 	}
-	if hs, ok := findAttr(content, "height"); ok {
+	if hs, ok := findAttr(openTag, "height"); ok {
 		h = clampViewBoxDim(parseLength(hs))
 	}
 	return w, h
+}
+
+func extractRootSVGOpenTag(content string) string {
+	start := strings.Index(content, "<svg")
+	if start < 0 {
+		return ""
+	}
+	nameEnd := start + len("<svg")
+	if nameEnd < len(content) {
+		switch content[nameEnd] {
+		case '>', '/', ' ', '\t', '\n', '\r':
+		default:
+			return ""
+		}
+	}
+	inQuote := byte(0)
+	for i := nameEnd; i < len(content); i++ {
+		switch c := content[i]; c {
+		case '"', '\'':
+			switch inQuote {
+			case 0:
+				inQuote = c
+			case c:
+				inQuote = 0
+			}
+		case '>':
+			if inQuote == 0 {
+				return content[start : i+1]
+			}
+		}
+	}
+	return content[start:]
 }
 
 // parseSvgContent walks n's children, emitting VectorPaths for

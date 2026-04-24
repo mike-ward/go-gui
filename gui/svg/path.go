@@ -3,7 +3,6 @@ package svg
 import (
 	"math"
 	"strconv"
-	"strings"
 )
 
 // parsePathD parses the SVG path d attribute into segments.
@@ -411,9 +410,20 @@ func arcSegmentToCubic(cx, cy, rx, ry, phi, theta, dtheta float32) PathSegment {
 //nolint:gocyclo // character-level tokenizer
 func tokenizePath(d string) []string {
 	tokens := make([]string, 0, len(d)/4+1)
-	var current strings.Builder
-	current.Grow(16)
+	tokenStart := -1
 	hasDot := false
+	lastByte := byte(0)
+
+	flushCurrent := func(end int) bool {
+		if tokenStart < 0 {
+			return true
+		}
+		tokens = append(tokens, d[tokenStart:end])
+		tokenStart = -1
+		hasDot = false
+		lastByte = 0
+		return len(tokens) < maxPathSegments
+	}
 
 	for i := range len(d) {
 		if len(tokens) >= maxPathSegments {
@@ -422,56 +432,51 @@ func tokenizePath(d string) []string {
 		c := d[i]
 
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' {
-			if current.Len() > 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
-				hasDot = false
+			if !flushCurrent(i) {
+				break
 			}
 			continue
 		}
 
 		// Command letters
 		if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') {
-			if (c == 'e' || c == 'E') && current.Len() > 0 {
-				current.WriteByte(c)
+			if (c == 'e' || c == 'E') && tokenStart >= 0 {
+				lastByte = c
 				continue
 			}
-			if current.Len() > 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
-				hasDot = false
+			if !flushCurrent(i) {
+				break
 			}
-			tokens = append(tokens, string(c))
+			tokens = append(tokens, d[i:i+1])
 			continue
 		}
 
 		// Numbers
 		if (c >= '0' && c <= '9') || c == '-' || c == '+' || c == '.' {
-			if (c == '-' || c == '+') && current.Len() > 0 {
-				last := current.String()
-				lastByte := last[len(last)-1]
+			if (c == '-' || c == '+') && tokenStart >= 0 {
 				if lastByte != 'e' && lastByte != 'E' {
-					tokens = append(tokens, last)
-					current.Reset()
-					hasDot = false
+					if !flushCurrent(i) {
+						break
+					}
 				}
 			}
-			if c == '.' && hasDot {
-				tokens = append(tokens, current.String())
-				current.Reset()
-				hasDot = false
+			if c == '.' && hasDot && tokenStart >= 0 {
+				if !flushCurrent(i) {
+					break
+				}
 			}
-			current.WriteByte(c)
+			if tokenStart < 0 {
+				tokenStart = i
+			}
 			if c == '.' {
 				hasDot = true
 			}
+			lastByte = c
 			continue
 		}
 	}
 
-	if current.Len() > 0 {
-		tokens = append(tokens, current.String())
-	}
+	flushCurrent(len(d))
 	return tokens
 }
 

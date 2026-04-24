@@ -1,6 +1,10 @@
 package svg
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestParserReleaseParsedRemovesEntry(t *testing.T) {
 	p := New()
@@ -84,5 +88,34 @@ func TestParserInvalidateSvgSourceRemovesOnlyTarget(t *testing.T) {
 	}
 	if !okB {
 		t.Fatal("expected source B to remain")
+	}
+}
+
+func TestParserParseSvgFileCacheRefreshesWhenFileChanges(t *testing.T) {
+	p := New()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "icon.svg")
+	if err := os.WriteFile(path,
+		[]byte(`<svg width="10" height="10"></svg>`), 0o644); err != nil {
+		t.Fatalf("write first file: %v", err)
+	}
+	first, err := p.ParseSvgFile(path)
+	if err != nil {
+		t.Fatalf("first parse failed: %v", err)
+	}
+	if err := os.WriteFile(path,
+		[]byte(`<svg width="20" height="20"></svg>`), 0o644); err != nil {
+		t.Fatalf("write second file: %v", err)
+	}
+	second, err := p.ParseSvgFile(path)
+	if err != nil {
+		t.Fatalf("second parse failed: %v", err)
+	}
+	if second.Width != 20 || second.Height != 20 {
+		t.Fatalf("expected refreshed dimensions 20x20, got %vx%v",
+			second.Width, second.Height)
+	}
+	if first == second {
+		t.Fatal("expected file cache miss after file content change")
 	}
 }

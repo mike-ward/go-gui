@@ -20,10 +20,11 @@ var svgTrace = os.Getenv("GOGUI_SVG_TRACE") == "1"
 
 // Parser implements gui.SvgParser.
 type Parser struct {
-	mu       sync.Mutex
-	byHash   map[uint64]parserCacheEntry
-	byParsed map[*gui.SvgParsed]uint64
-	order    []uint64
+	mu              sync.Mutex
+	byHash          map[uint64]parserCacheEntry
+	byParsed        map[*gui.SvgParsed]uint64
+	order           []uint64
+	animatedScratch sync.Pool
 }
 
 const maxParsedRetained = 512
@@ -56,11 +57,15 @@ func (p *Parser) ParseSvg(data string) (*gui.SvgParsed, error) {
 
 // ParseSvgFile loads and parses an SVG file.
 func (p *Parser) ParseSvgFile(path string) (*gui.SvgParsed, error) {
-	hash := parserSourceHash(path, false)
+	fileData, err := loadSvgFile(path)
+	if err != nil {
+		return nil, err
+	}
+	hash := parserFileHash(path, fileData)
 	if parsed := p.cachedParsed(hash); parsed != nil {
 		return parsed, nil
 	}
-	vg, err := parseSvgFile(path)
+	vg, err := parseSvg(string(fileData))
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +98,7 @@ func (p *Parser) Tessellate(parsed *gui.SvgParsed, scale float32) []gui.Tessella
 
 // TessellateAnimated implements gui.AnimatedSvgParser. Returns fresh
 // triangles for every VectorPath flagged Animated at the given scale,
-// applying attribute overrides keyed by GroupID. Result order follows
+// applying attribute overrides keyed by PathID. Result order follows
 // the Animated-flagged paths' document order. Animated paths that
 // carry a ClipPathID are skipped: the caller should fall back to
 // cached triangles for them.
@@ -119,7 +124,7 @@ func (p *Parser) TessellateAnimated(
 		return nil
 	}
 	vg := entry.vg
-	animated := make([]VectorPath, 0, len(vg.Paths))
+	animated := p.getAnimatedScratch(len(vg.Paths))
 	for i := range vg.Paths {
 		src := &vg.Paths[i]
 		if !src.Animated {
@@ -144,6 +149,7 @@ func (p *Parser) TessellateAnimated(
 		animated = append(animated, clone)
 	}
 	if len(animated) == 0 {
+		p.putAnimatedScratch(animated)
 		return nil
 	}
 	result := vg.tessellatePaths(animated, scale)
@@ -153,9 +159,31 @@ func (p *Parser) TessellateAnimated(
 	if reuse != nil && cap(reuse) >= len(result) {
 		reuse = reuse[:len(result)]
 		copy(reuse, result)
+		p.putAnimatedScratch(animated)
 		return reuse
 	}
+	p.putAnimatedScratch(animated)
 	return result
+}
+
+func (p *Parser) getAnimatedScratch(minCap int) []VectorPath {
+	if v := p.animatedScratch.Get(); v != nil {
+		if buf, ok := v.(*[]VectorPath); ok && cap(*buf) >= minCap {
+			return (*buf)[:0]
+		}
+	}
+	return make([]VectorPath, 0, minCap)
+}
+
+func (p *Parser) putAnimatedScratch(buf []VectorPath) {
+	if cap(buf) == 0 {
+		return
+	}
+	for i := range buf {
+		buf[i] = VectorPath{}
+	}
+	buf = buf[:0]
+	p.animatedScratch.Put(&buf)
 }
 
 func traceOverride(p *VectorPath, ov gui.SvgAnimAttrOverride) {
@@ -460,6 +488,24 @@ func parserSourceHash(src string, inline bool) uint64 {
 	}
 	for i := range len(src) {
 		h ^= uint64(src[i])
+		h *= fnvPrime
+	}
+	return h
+}
+
+func parserFileHash(path string, data []byte) uint64 {
+	h := parserSourceHash(string(data), true)
+	clean := filepath.Clean(path)
+	if abs, err := filepath.Abs(clean); err == nil {
+		return mixHash(h, abs)
+	}
+	return mixHash(h, clean)
+}
+
+func mixHash(h uint64, extra string) uint64 {
+	const fnvPrime = uint64(0x100000001b3)
+	for i := range len(extra) {
+		h ^= uint64(extra[i])
 		h *= fnvPrime
 	}
 	return h
