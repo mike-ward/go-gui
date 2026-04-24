@@ -230,9 +230,9 @@ func traceAnimatedTriangles(vg *VectorGraphic,
 					ov.R, ov.RX, ov.RY, ov.X, ov.Y, ov.Width, ov.Height)
 			}
 		}
-		log.Printf("svg trace: gid=%q oversized tris "+
+		log.Printf("svg trace: pid=%d oversized tris "+
 			"bbox=(%.2f,%.2f)-(%.2f,%.2f) vb=%.0fx%.0f nTris=%d %s %s",
-			paths[i].GroupID, minX, minY, maxX, maxY,
+			paths[i].PathID, minX, minY, maxX, maxY,
 			vg.Width, vg.Height, len(tris)/6, primStr, ovStr)
 	}
 }

@@ -12,11 +12,10 @@ type TessellatedPath struct {
 	VertexColors []SvgColor
 	IsClipMask   bool
 	ClipGroup    int
-	GroupID      string
 	// PathID inherited from the source VectorPath. Uniquely identifies
 	// the authored path across all its tessellated pieces (fill +
 	// stroke + clip masks share the same ID). Animation state is keyed
-	// by PathID; GroupID stays as a debug hint. Zero = unset.
+	// by PathID. Zero = unset.
 	PathID uint32
 	// Animated marks the path as a re-tessellation target. Set when
 	// an inline <animate> with an animatable attribute (cx, cy, r,

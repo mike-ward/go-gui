@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -617,10 +618,11 @@ func TestAnimationRotateValuesEndToEnd(t *testing.T) {
 	if len(parsed.Paths) == 0 {
 		t.Fatal("expected at least one path")
 	}
-	if parsed.Paths[0].GroupID != anim.GroupID {
-		t.Fatalf("path GroupID %q != anim GroupID %q — animations "+
-			"would not bind to the shape",
-			parsed.Paths[0].GroupID, anim.GroupID)
+	pid := parsed.Paths[0].PathID
+	if pid == 0 || !slices.Contains(anim.TargetPathIDs, pid) {
+		t.Fatalf("path PathID %d not in anim.TargetPathIDs %v — "+
+			"animation would not bind to the shape",
+			pid, anim.TargetPathIDs)
 	}
 }
 
@@ -655,14 +657,15 @@ func TestAnimationGroupSynthIDBindsSiblings(t *testing.T) {
 		t.Fatalf("want 2 paths + 1 anim, got %d paths + %d anims",
 			len(parsed.Paths), len(parsed.Animations))
 	}
-	gid := parsed.Animations[0].GroupID
-	if gid == "" {
-		t.Fatal("animation GroupID must be non-empty")
+	targets := parsed.Animations[0].TargetPathIDs
+	if len(targets) != len(parsed.Paths) {
+		t.Fatalf("anim.TargetPathIDs len=%d, want %d",
+			len(targets), len(parsed.Paths))
 	}
 	for i, p := range parsed.Paths {
-		if p.GroupID != gid {
-			t.Fatalf("path[%d] GroupID %q != anim GroupID %q",
-				i, p.GroupID, gid)
+		if p.PathID == 0 || !slices.Contains(targets, p.PathID) {
+			t.Fatalf("path[%d] PathID %d not in TargetPathIDs %v",
+				i, p.PathID, targets)
 		}
 	}
 }
@@ -675,14 +678,15 @@ func TestAnimationSynthIDCouplesShapeAndAnim(t *testing.T) {
 	if len(parsed.Paths) == 0 || len(parsed.Animations) == 0 {
 		t.Fatal("expected at least one path and one animation")
 	}
-	pID := parsed.Paths[0].GroupID
-	aID := parsed.Animations[0].GroupID
-	if pID == "" {
-		t.Fatal("synthetic id should be non-empty on the path")
+	pid := parsed.Paths[0].PathID
+	targets := parsed.Animations[0].TargetPathIDs
+	if pid == 0 {
+		t.Fatal("PathID should be non-zero on the path")
 	}
-	if pID != aID {
-		t.Fatalf("path %q != anim %q — animation would miss",
-			pID, aID)
+	if !slices.Contains(targets, pid) {
+		t.Fatalf("path PathID %d not in TargetPathIDs %v — "+
+			"animation would miss",
+			pid, targets)
 	}
 }
 

@@ -42,8 +42,8 @@ func TestPhase8ZeroRadiusCirclePreserved(t *testing.T) {
 		t.Fatalf("cx,cy=%v,%v want 12,12",
 			tp.Primitive.CX, tp.Primitive.CY)
 	}
-	if tp.GroupID == "" {
-		t.Fatal("missing GroupID — TessellateAnimated cannot key it")
+	if tp.PathID == 0 {
+		t.Fatal("missing PathID — TessellateAnimated cannot key it")
 	}
 }
 

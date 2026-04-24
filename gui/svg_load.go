@@ -26,7 +26,6 @@ type CachedSvgPath struct {
 	VertexColors []Color
 	IsClipMask   bool
 	ClipGroup    int
-	GroupID      string
 	PathID       uint32
 	Animated     bool
 	// IsStroke marks the path as a stroke contribution; lets opacity
@@ -136,7 +135,6 @@ func cachedSvgPaths(paths []TessellatedPath) []CachedSvgPath {
 			VertexColors: vcols,
 			IsClipMask:   p.IsClipMask,
 			ClipGroup:    p.ClipGroup,
-			GroupID:      p.GroupID,
 			PathID:       p.PathID,
 			Animated:     p.Animated,
 			IsStroke:     p.IsStroke,

@@ -20,7 +20,7 @@ func TestCachedSvgPathsConversion(t *testing.T) {
 			Color:      SvgColor{255, 0, 0, 255},
 			IsClipMask: true,
 			ClipGroup:  2,
-			GroupID:    "g1",
+			PathID:     7,
 		},
 	}
 	result := cachedSvgPaths(paths)
@@ -37,8 +37,8 @@ func TestCachedSvgPathsConversion(t *testing.T) {
 	if p.ClipGroup != 2 {
 		t.Fatal("expected clip group 2")
 	}
-	if p.GroupID != "g1" {
-		t.Fatal("expected group g1")
+	if p.PathID != 7 {
+		t.Fatalf("expected PathID 7, got %d", p.PathID)
 	}
 }
 
@@ -433,7 +433,7 @@ func TestCachedSvgTextDrawsAnchorEnd(t *testing.T) {
 
 // buildBaseByPath: no animations → returns nil; nothing to seed.
 func TestBuildBaseByPath_NilWhenNoAnims(t *testing.T) {
-	paths := []CachedSvgPath{{GroupID: "g", PathID: 1, HasBaseXform: true,
+	paths := []CachedSvgPath{{PathID: 1, HasBaseXform: true,
 		BaseTransX: 5}}
 	if got := buildBaseByPath(paths, nil, nil); got != nil {
 		t.Fatalf("want nil; got %+v", got)
@@ -443,7 +443,7 @@ func TestBuildBaseByPath_NilWhenNoAnims(t *testing.T) {
 // Animations exist but all TargetPathIDs empty → no targets → nil.
 func TestBuildBaseByPath_NilWhenNoTargetPaths(t *testing.T) {
 	anims := []SvgAnimation{{Kind: SvgAnimRotate}}
-	paths := []CachedSvgPath{{GroupID: "g", PathID: 1, HasBaseXform: true}}
+	paths := []CachedSvgPath{{PathID: 1, HasBaseXform: true}}
 	if got := buildBaseByPath(paths, nil, anims); got != nil {
 		t.Fatalf("want nil; got %+v", got)
 	}
@@ -454,7 +454,7 @@ func TestBuildBaseByPath_NilWhenNoTargetPaths(t *testing.T) {
 func TestBuildBaseByPath_SkipsPathsWithoutBase(t *testing.T) {
 	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g",
 		TargetPathIDs: []uint32{1}}}
-	paths := []CachedSvgPath{{GroupID: "g", PathID: 1, HasBaseXform: false,
+	paths := []CachedSvgPath{{PathID: 1, HasBaseXform: false,
 		BaseTransX: 99}}
 	if got := buildBaseByPath(paths, nil, anims); got != nil {
 		t.Fatalf("want nil; got %+v", got)
@@ -466,8 +466,8 @@ func TestBuildBaseByPath_FiltersByAnimatedPathID(t *testing.T) {
 	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g1",
 		TargetPathIDs: []uint32{1}}}
 	paths := []CachedSvgPath{
-		{GroupID: "g1", PathID: 1, HasBaseXform: true, BaseTransX: 1},
-		{GroupID: "g2", PathID: 2, HasBaseXform: true, BaseTransX: 2},
+		{PathID: 1, HasBaseXform: true, BaseTransX: 1},
+		{PathID: 2, HasBaseXform: true, BaseTransX: 2},
 	}
 	got := buildBaseByPath(paths, nil, anims)
 	if len(got) != 1 {
@@ -487,8 +487,8 @@ func TestBuildBaseByPath_DedupesFirstWriteWins(t *testing.T) {
 	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g",
 		TargetPathIDs: []uint32{1}}}
 	paths := []CachedSvgPath{
-		{GroupID: "g", PathID: 1, HasBaseXform: true, BaseTransX: 10},
-		{GroupID: "g", PathID: 1, HasBaseXform: true, BaseTransX: 99},
+		{PathID: 1, HasBaseXform: true, BaseTransX: 10},
+		{PathID: 1, HasBaseXform: true, BaseTransX: 99},
 	}
 	got := buildBaseByPath(paths, nil, anims)
 	if got[1].TransX != 10 {
@@ -503,7 +503,6 @@ func TestBuildBaseByPath_ScansFilteredGroups(t *testing.T) {
 	groups := []CachedFilteredGroup{
 		{
 			RenderPaths: []CachedSvgPath{{
-				GroupID:      "g",
 				PathID:       1,
 				HasBaseXform: true,
 				BaseScaleX:   3,
@@ -522,7 +521,7 @@ func TestBuildBaseByPath_PropagatesAllFields(t *testing.T) {
 	anims := []SvgAnimation{{Kind: SvgAnimRotate, GroupID: "g",
 		TargetPathIDs: []uint32{1}}}
 	paths := []CachedSvgPath{{
-		GroupID: "g", PathID: 1, HasBaseXform: true,
+		PathID: 1, HasBaseXform: true,
 		BaseTransX: 1, BaseTransY: 2,
 		BaseScaleX: 3, BaseScaleY: 4,
 		BaseRotAngle: 90,

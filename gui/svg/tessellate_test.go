@@ -631,7 +631,7 @@ func TestAppendDegenerate_StrokeOnly(t *testing.T) {
 		GroupID:     "g",
 	}
 	out := appendDegeneratePlaceholders(nil, p,
-		gui.TessellatedPath{GroupID: "g"})
+		gui.TessellatedPath{PathID: 1})
 	if len(out) != 1 {
 		t.Fatalf("want 1 placeholder; got %d", len(out))
 	}
@@ -652,7 +652,7 @@ func TestAppendDegenerate_NoPaintForcesFillPlaceholder(t *testing.T) {
 		GroupID:   "g",
 	}
 	out := appendDegeneratePlaceholders(nil, p,
-		gui.TessellatedPath{GroupID: "g"})
+		gui.TessellatedPath{PathID: 1})
 	if len(out) != 1 {
 		t.Fatalf("want 1 placeholder; got %d", len(out))
 	}
@@ -673,7 +673,7 @@ func TestAppendDegenerate_FillAndStroke(t *testing.T) {
 		GroupID:     "g",
 	}
 	out := appendDegeneratePlaceholders(nil, p,
-		gui.TessellatedPath{GroupID: "g", HasBaseXform: true})
+		gui.TessellatedPath{PathID: 1, HasBaseXform: true})
 	if len(out) != 2 || out[0].IsStroke || !out[1].IsStroke {
 		t.Fatalf("want fill,stroke order; got %+v", out)
 	}

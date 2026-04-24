@@ -51,7 +51,6 @@ func TestEmitSvgPathRenderer_AnimStateRotCenterOverridesBase(t *testing.T) {
 	path := CachedSvgPath{
 		Triangles:    []float32{0, 0, 1, 0, 0, 1},
 		Color:        Color{0, 0, 0, 255, true},
-		GroupID:      "g",
 		PathID:       1,
 		BaseTransX:   10,
 		BaseTransY:   20,

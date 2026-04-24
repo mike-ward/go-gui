@@ -38,7 +38,6 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 
 		seed, bake := seedFromTransform(path)
 		seed.ClipGroup = clipGroup
-		seed.GroupID = path.GroupID
 		seed.PathID = path.PathID
 		// BaseRotCX/CY already set by seedFromTransform when
 		// applicable; preserve through the copy here.
@@ -242,7 +241,7 @@ func (vg *VectorGraphic) appendClipMasks(result []gui.TessellatedPath,
 			Color:      gui.SvgColor{R: 255, G: 255, B: 255, A: 255},
 			IsClipMask: true,
 			ClipGroup:  clipGroup,
-			GroupID:    path.GroupID,
+			PathID:     path.PathID,
 		})
 	}
 	return result, clipGroup

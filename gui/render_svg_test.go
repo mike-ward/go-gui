@@ -135,8 +135,7 @@ func TestEmitSvgPathRendererAnimatedVertexAlphaNoCopy(t *testing.T) {
 			{0, 255, 255, 255, true},
 			{255, 0, 255, 255, true},
 		},
-		GroupID: "g1",
-		PathID:  1,
+		PathID: 1,
 	}
 	animState := map[uint32]svgAnimState{
 		1: {Opacity: 0.5, FillOpacity: 1, StrokeOpacity: 1, Inited: true},
@@ -777,7 +776,6 @@ func TestEmitSvgPathRenderer_OpacityNaNClampedToZero(t *testing.T) {
 	path := CachedSvgPath{
 		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
 		Color:     Color{10, 20, 30, 200, true},
-		GroupID:   "g1",
 		PathID:    1,
 	}
 	animState := map[uint32]svgAnimState{
@@ -806,7 +804,6 @@ func TestSvgRender_FillOpacityAnimDoesNotDimStroke(t *testing.T) {
 	strokePath := CachedSvgPath{
 		Triangles: []float32{0, 0, 10, 0, 5, 10, 5, 10, 10, 0, 10, 10},
 		Color:     Color{0, 0, 0, 255, true},
-		GroupID:   "g1",
 		PathID:    1,
 		IsStroke:  true,
 	}

@@ -16,7 +16,7 @@ func (benchSvgParser) ParseSvg(_ string) (*SvgParsed, error) {
 			{
 				Triangles: []float32{0, 0, 100, 0, 50, 100},
 				Color:     SvgColor{R: 255, G: 0, B: 0, A: 255},
-				GroupID:   "g1",
+				PathID:    1,
 			},
 		},
 		Animations: []SvgAnimation{
