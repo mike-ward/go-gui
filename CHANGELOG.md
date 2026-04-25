@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.6] - 2026-04-25
+
+### Added
+
+- `SvgSpinner` widget for animated SVG loaders. Full SMIL pipeline:
+  `animate`, `animateTransform` (rotate/translate/scale), `animateMotion`,
+  per-shape animation keying, attribute overrides, spline easing,
+  syncbase `begin` timing, dash animations, TRS-sandwich transforms,
+  and per-role opacity. CSS pipeline added: cascade, `@keyframes`,
+  `@media`, animation shorthand. Ships with 39 spinner assets across
+  the SMIL and CSS sets. See `examples/showcase` for the live gallery.
+- `TessellateAnimated` plus parse benchmarks for the SVG path/anim
+  pipeline.
+- Standalone XML tree parser with per-path animation routing.
+
+### Changed
+
+- SVG parser correctness and performance improvements: scanline
+  fill-rule, `Z`-then-`M` path parse fix, dead `GroupID` stripped from
+  `TessellatedPath`/`CachedSvgPath`, deduped float helpers, hardened
+  animation pipeline.
+- Ear-clip tessellator capped at 2048 verts to keep CI under timeout.
+- README rewritten: accurate why-go-gui section, spinners video,
+  formatting fixes, immediate-mode framing toned down.
+
 ## [v0.12.5] - 2026-04-18
 
 ### Changed
