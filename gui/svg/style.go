@@ -1,11 +1,13 @@
 package svg
 
 import (
+	"maps"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/svg/css"
 )
 
 // Named SVG colors lookup table.
@@ -269,8 +271,15 @@ func parseIntTrimmed(s string) int {
 	return v
 }
 
+// parseFloatTrimmed parses s as a float32. NaN and ±Inf collapse to 0
+// so non-finite tokens (e.g. "NaN%", "1e500s") cannot poison downstream
+// arithmetic — uint8/uint16 casts of NaN are implementation-defined,
+// and Inf coords break tessellation, animation timing, and bbox math.
 func parseFloatTrimmed(s string) float32 {
 	v, _ := strconv.ParseFloat(strings.TrimSpace(s), 32)
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0
+	}
 	return float32(v)
 }
 
@@ -495,7 +504,7 @@ func applyTransformPt(x, y float32, m [6]float32) (float32, float32) {
 // applyInheritedTransformPt transforms (x, y) by m when m is an
 // "active" matrix. Both the SVG identity matrix and a fully-zero
 // matrix are treated as no-ops: identity because the transform is
-// a no-op by definition, zero because tests construct groupStyle{}
+// a no-op by definition, zero because tests construct ComputedStyle{}
 // directly and the resulting zero matrix would otherwise collapse
 // every point to the origin.
 func applyInheritedTransformPt(x, y float32, m [6]float32) (float32, float32) {
@@ -794,76 +803,170 @@ func parseElementStyle(elem string) elementStyle {
 	}
 }
 
-// --- Group style inheritance ---
-
 const strokeCapInherit = gui.StrokeCap(3)
 const strokeJoinInherit = gui.StrokeJoin(3)
 
-func mergeGroupStyle(elem string, inherited groupStyle) groupStyle {
-	elemTransform := getTransform(elem)
-	combined := matrixMultiply(inherited.Transform, elemTransform)
+// presAttrCascadeNames lists the SVG presentation attributes that
+// participate as cascade declarations (paint, stroke, opacity,
+// fill-rule, font, text-anchor). transform / clip-path / filter are
+// handled outside the decl loop because they compose or carry url()
+// references rather than being last-write-wins values.
+var presAttrCascadeNames = []string{
+	"fill", "stroke",
+	"stroke-width", "stroke-linecap", "stroke-linejoin",
+	"stroke-dasharray", "stroke-dashoffset",
+	"opacity", "fill-opacity", "stroke-opacity",
+	"fill-rule",
+	"font-family", "font-size", "font-weight", "font-style",
+	"text-anchor",
+	"transform-origin",
+	"display", "visibility",
+}
 
-	fill := attrOrDefault(elem, "fill", inherited.Fill)
-	stroke := attrOrDefault(elem, "stroke", inherited.Stroke)
-	strokeWidth := attrOrDefault(elem, "stroke-width", inherited.StrokeWidth)
-	strokeCap := attrOrDefault(elem, "stroke-linecap", inherited.StrokeCap)
-	strokeJoin := attrOrDefault(elem, "stroke-linejoin", inherited.StrokeJoin)
-	clipID, _ := parseClipPathURL(elem)
-	if clipID == "" {
-		clipID = inherited.ClipPathID
+// computeStyle walks one element under parent, returning the
+// resolved ComputedStyle. Cascade order:
+//
+//  1. Pres-attr decls (Origin=Pres, spec=0)
+//  2. Author CSS rule decls (Origin=Rule, spec from selector)
+//  3. Inline style="" decls (Origin=Inline, spec=0)
+//  4. !important promotes any layer above all normal layers
+//
+// Custom properties (--name) are gathered first and var(--x)
+// substitution happens at apply time. Transform composes parent ×
+// own; clip-path / filter are inherited unless the element overrides.
+func computeStyle(
+	elem string,
+	parent ComputedStyle,
+	state *parseState,
+	info css.ElementInfo,
+	ancestors []css.ElementInfo,
+) ComputedStyle {
+	out := parent
+	out.Transform = matrixMultiply(parent.Transform, getTransform(elem))
+	out.Vars = parent.Vars
+	// Reset per-element opacity scalar; combine with parent at the
+	// end. FillOpacity / StrokeOpacity inherit values directly.
+	out.Opacity = 1
+	out.FillOpacity = parent.FillOpacity
+	out.StrokeOpacity = parent.StrokeOpacity
+	// CSS animations are not inherited.
+	out.Animation = cssAnimSpec{}
+	// transform-origin is not inherited per CSS Transforms 1; reset.
+	out.TransformOrigin = ""
+	// display is not inherited; visibility is. Reset display so
+	// descendants of a non-skipped element start "rendered". Skip
+	// logic in parseSvgContent / appendShape filters elements whose
+	// own cascade resolves to display:none.
+	out.Display = DisplayInline
+
+	if cid, ok := parseClipPathURL(elem); ok {
+		out.ClipPathID = cid
+	} else {
+		out.ClipPathID = parent.ClipPathID
 	}
-	filterID, _ := parseFilterURL(elem)
-	if filterID == "" {
-		filterID = inherited.FilterID
+	if fid, ok := parseFilterURL(elem); ok {
+		out.FilterID = fid
+	} else {
+		out.FilterID = parent.FilterID
 	}
-	fontFamily := attrOrDefault(elem, "font-family", inherited.FontFamily)
-	fontSize := attrOrDefault(elem, "font-size", inherited.FontSize)
-	fontWeight := attrOrDefault(elem, "font-weight", inherited.FontWeight)
-	fontStyle := attrOrDefault(elem, "font-style", inherited.FontStyle)
-	textAnchor := attrOrDefault(elem, "text-anchor", inherited.TextAnchor)
-
-	elemOpacity := parseOpacityAttr(elem, "opacity", 1.0)
-	groupOpacity := inherited.Opacity * elemOpacity
-	fillOpacity := parseOpacityAttr(elem, "fill-opacity", inherited.FillOpacity)
-	strokeOpacity := parseOpacityAttr(elem, "stroke-opacity", inherited.StrokeOpacity)
-
-	gid, ok := findAttr(elem, "id")
-	if !ok {
-		gid = inherited.GroupID
+	if gid, ok := findAttr(elem, "id"); ok {
+		out.GroupID = gid
+	} else {
+		out.GroupID = parent.GroupID
 	}
 
-	fillRule := resolveFillRule(elem, inherited)
-
-	return groupStyle{
-		Transform:     combined,
-		Fill:          fill,
-		Stroke:        stroke,
-		StrokeWidth:   strokeWidth,
-		StrokeCap:     strokeCap,
-		StrokeJoin:    strokeJoin,
-		ClipPathID:    clipID,
-		FilterID:      filterID,
-		FontFamily:    fontFamily,
-		FontSize:      fontSize,
-		FontWeight:    fontWeight,
-		FontStyle:     fontStyle,
-		TextAnchor:    textAnchor,
-		Opacity:       groupOpacity,
-		FillOpacity:   fillOpacity,
-		StrokeOpacity: strokeOpacity,
-		GroupID:       gid,
-		FillRule:      fillRule,
+	var decls []css.MatchedDecl
+	for _, name := range presAttrCascadeNames {
+		if v, ok := findAttr(elem, name); ok {
+			decls = append(decls, css.MatchedDecl{
+				Decl:   css.Decl{Name: name, Value: v},
+				Origin: css.OriginPresAttr,
+			})
+		}
 	}
+	if state != nil && len(state.cssRules) > 0 {
+		decls = append(decls,
+			css.Match(state.cssRules, info, ancestors)...)
+	}
+	if styleAttr, ok := findAttr(elem, "style"); ok {
+		for _, d := range parseInlineStyle(styleAttr) {
+			decls = append(decls, css.MatchedDecl{
+				Decl:   d,
+				Origin: css.OriginInline,
+			})
+		}
+	}
+	if len(decls) == 0 {
+		out.Opacity = parent.Opacity
+		return out
+	}
+	css.SortCascade(decls)
+
+	out.Vars = collectVars(decls, parent.Vars)
+	for _, d := range decls {
+		if d.CustomProp {
+			continue
+		}
+		v := resolveVarRefs(d.Value, out.Vars)
+		if v == "" {
+			continue
+		}
+		if applyCSSAnimProp(d.Name, v, &out.Animation) {
+			continue
+		}
+		applyCSSProp(d.Name, v, &out)
+	}
+	out.Opacity = parent.Opacity * out.Opacity
+	return out
+}
+
+// collectVars folds custom-property declarations from a sorted
+// cascade into a vars map. When the element introduces no new vars,
+// the parent's map is shared (no allocation).
+func collectVars(decls []css.MatchedDecl,
+	parentVars map[string]string,
+) map[string]string {
+	var out map[string]string
+	for _, d := range decls {
+		if !d.CustomProp {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]string, len(parentVars)+4)
+			maps.Copy(out, parentVars)
+		}
+		out[strings.ToLower(d.Name)] = d.Value
+	}
+	if out == nil {
+		return parentVars
+	}
+	return out
+}
+
+// makeElementInfo builds a css.ElementInfo from the element tag,
+// raw open-tag text, and tree-walk metadata (1-based child index
+// in parent, isRoot for the root <svg>).
+func makeElementInfo(
+	tag, openTag string, index int, isRoot bool,
+) css.ElementInfo {
+	info := css.ElementInfo{Tag: tag, Index: index, IsRoot: isRoot}
+	if id, ok := findAttr(openTag, "id"); ok {
+		info.ID = id
+	}
+	if cls, ok := findAttr(openTag, "class"); ok {
+		info.Classes = splitClassAttr(cls)
+	}
+	return info
 }
 
 // resolveFillRule reads fill-rule from elem, falling back to the
-// inherited group value. "evenodd" maps to FillRuleEvenOdd; any
-// other token (including the empty string) maps to FillRuleNonzero,
+// inherited value. "evenodd" maps to FillRuleEvenOdd; any other
+// token (including the empty string) maps to FillRuleNonzero,
 // which is the SVG default. Case-sensitive per SVG spec.
-func resolveFillRule(elem string, inherited groupStyle) FillRule {
+func resolveFillRule(elem string, parent ComputedStyle) FillRule {
 	val, ok := findAttrOrStyle(elem, "fill-rule")
 	if !ok {
-		return inherited.FillRule
+		return parent.FillRule
 	}
 	if strings.TrimSpace(val) == "evenodd" {
 		return FillRuleEvenOdd
@@ -878,99 +981,142 @@ func attrOrDefault(elem, name, fallback string) string {
 	return fallback
 }
 
-func applyInheritedStyle(path *VectorPath, inherited groupStyle) {
-	path.Transform = matrixMultiply(inherited.Transform, path.Transform)
+func parseStrokeCap(v string) gui.StrokeCap {
+	switch v {
+	case "round":
+		return gui.RoundCap
+	case "square":
+		return gui.SquareCap
+	default:
+		return gui.ButtCap
+	}
+}
 
-	if path.ClipPathID == "" && inherited.ClipPathID != "" {
-		path.ClipPathID = inherited.ClipPathID
+func parseStrokeJoin(v string) gui.StrokeJoin {
+	switch v {
+	case "round":
+		return gui.RoundJoin
+	case "bevel":
+		return gui.BevelJoin
+	default:
+		return gui.MiterJoin
 	}
-	if path.FilterID == "" && inherited.FilterID != "" {
-		path.FilterID = inherited.FilterID
+}
+
+// applyComputedStyle folds the cascade-resolved style into a
+// shape's VectorPath. inh is authoritative for paint properties:
+// the cascade has already merged pres-attrs, author CSS, and inline
+// style with proper precedence, so any duplicate value the shape
+// parser stashed onto path is overwritten. Geometry (Segments,
+// Primitive, FillRule) and shape-owned IDs (ClipPathID, GroupID
+// when the shape has inline animations) survive.
+func applyComputedStyle(path *VectorPath, inh ComputedStyle) {
+	// inh.Transform = parent × own (composed in computeStyle). The
+	// shape parser already stashed `own` onto path.Transform via
+	// parseElementStyle; assigning inh.Transform replaces that with
+	// the fully composed matrix and avoids double-applying `own`.
+	path.Transform = inh.Transform
+
+	if path.ClipPathID == "" && inh.ClipPathID != "" {
+		path.ClipPathID = inh.ClipPathID
+	}
+	if path.FilterID == "" && inh.FilterID != "" {
+		path.FilterID = inh.FilterID
 	}
 
-	// Inherit fill (gradient fill takes precedence)
-	if path.FillGradientID == "" && path.FillColor == colorInherit {
-		if inherited.Fill != "" {
-			if gid, ok := parseFillURL(inherited.Fill); ok {
-				path.FillGradientID = gid
-			} else {
-				path.FillColor = parseSvgColor(inherited.Fill)
-			}
-		} else {
-			path.FillColor = colorBlack
-		}
+	// Fill — gradient takes precedence over color. Honor cascade
+	// winner over the shape's pres-attr-derived value.
+	switch {
+	case inh.FillGradient != "":
+		path.FillGradientID = inh.FillGradient
+		path.FillColor = colorTransparent
+	case inh.FillSet:
+		path.FillColor = inh.Fill
+		path.FillGradientID = ""
+	case path.FillGradientID == "" && path.FillColor == colorInherit:
+		path.FillColor = colorBlack
 	}
 
-	// Inherit stroke
-	if path.StrokeColor == colorInherit {
-		if inherited.Stroke != "" {
-			path.StrokeColor = parseSvgColor(inherited.Stroke)
-		} else {
-			path.StrokeColor = colorTransparent
-		}
+	switch {
+	case inh.StrokeGradient != "":
+		path.StrokeGradientID = inh.StrokeGradient
+		path.StrokeColor = colorTransparent
+	case inh.StrokeSet:
+		path.StrokeColor = inh.Stroke
+		path.StrokeGradientID = ""
+	case path.StrokeColor == colorInherit:
+		path.StrokeColor = colorTransparent
 	}
-	if inherited.StrokeWidth != "" && path.StrokeWidth < 0 {
-		path.StrokeWidth = parseLength(inherited.StrokeWidth)
+	if inh.StrokeWidth >= 0 {
+		path.StrokeWidth = inh.StrokeWidth
 	}
 	if path.StrokeWidth < 0 {
 		path.StrokeWidth = 1.0
 	}
-	if inherited.StrokeCap != "" && path.StrokeCap == strokeCapInherit {
-		switch inherited.StrokeCap {
-		case "round":
-			path.StrokeCap = gui.RoundCap
-		case "square":
-			path.StrokeCap = gui.SquareCap
-		default:
-			path.StrokeCap = gui.ButtCap
-		}
+	if inh.StrokeCap != strokeCapInherit {
+		path.StrokeCap = inh.StrokeCap
 	}
 	if path.StrokeCap == strokeCapInherit {
 		path.StrokeCap = gui.ButtCap
 	}
-	if inherited.StrokeJoin != "" && path.StrokeJoin == strokeJoinInherit {
-		switch inherited.StrokeJoin {
-		case "round":
-			path.StrokeJoin = gui.RoundJoin
-		case "bevel":
-			path.StrokeJoin = gui.BevelJoin
-		default:
-			path.StrokeJoin = gui.MiterJoin
-		}
+	if inh.StrokeJoin != strokeJoinInherit {
+		path.StrokeJoin = inh.StrokeJoin
 	}
 	if path.StrokeJoin == strokeJoinInherit {
 		path.StrokeJoin = gui.MiterJoin
 	}
-
-	if path.GroupID == "" && inherited.GroupID != "" {
-		path.GroupID = inherited.GroupID
+	if inh.StrokeDasharray != nil {
+		path.StrokeDasharray = inh.StrokeDasharray
+	}
+	if inh.StrokeDashOffsetSet {
+		path.StrokeDashOffset = inh.StrokeDashOffset
 	}
 
-	bakePathOpacity(path, inherited)
+	if path.GroupID == "" && inh.GroupID != "" {
+		path.GroupID = inh.GroupID
+	}
+
+	// Mirror cascade-resolved opacity scalars onto path so the
+	// gradient tessellator (which composes opacity per-vertex rather
+	// than baking into Color.A) reads the same values as
+	// bakePathOpacity's solid-color path.
+	path.Opacity = inh.Opacity
+	path.FillOpacity = inh.FillOpacity
+	path.StrokeOpacity = inh.StrokeOpacity
+
+	bakePathOpacity(path, inh)
+	path.Computed = inh
 }
 
-// bakePathOpacity folds the path's inherited+local opacity values
-// into FillColor.A and StrokeColor.A. Skip flags on the inherited
-// style override the corresponding multiplier with 1 so an inline
-// SMIL animation can supply that channel at render time without
-// being clipped to zero by the static value (e.g. fill-opacity="0").
-func bakePathOpacity(path *VectorPath, inherited groupStyle) {
-	combinedOpacity := inherited.Opacity * path.Opacity
-	if inherited.SkipOpacity {
+// bakePathOpacity folds the cascade-resolved opacity values into
+// FillColor.A and StrokeColor.A. inh.Opacity already includes the
+// element's own opacity multiplied through ancestors. Skip flags
+// on the inherited style override the corresponding multiplier with
+// 1 so an inline SMIL animation can supply that channel at render
+// time without being clipped to zero by the static value
+// (e.g. fill-opacity="0").
+func bakePathOpacity(path *VectorPath, inh ComputedStyle) {
+	// visibility:hidden suppresses paint without removing the element
+	// from the box tree. Force fill+stroke alpha to zero so tessellate
+	// drops the path and the gradient compositor sees zero opacity.
+	if inh.Visibility == VisibilityHidden {
+		path.FillColor = applyOpacity(path.FillColor, 0)
+		path.StrokeColor = applyOpacity(path.StrokeColor, 0)
+		path.Opacity = 0
+		path.FillOpacity = 0
+		path.StrokeOpacity = 0
+		return
+	}
+	combinedOpacity := inh.Opacity
+	if inh.SkipOpacity {
 		combinedOpacity = 1
 	}
-	fillOpacity := path.FillOpacity
-	if fillOpacity >= 1.0 {
-		fillOpacity = inherited.FillOpacity
-	}
-	if inherited.SkipFillOpacity {
+	fillOpacity := inh.FillOpacity
+	if inh.SkipFillOpacity {
 		fillOpacity = 1
 	}
-	strokeOpacity := path.StrokeOpacity
-	if strokeOpacity >= 1.0 {
-		strokeOpacity = inherited.StrokeOpacity
-	}
-	if inherited.SkipStrokeOpacity {
+	strokeOpacity := inh.StrokeOpacity
+	if inh.SkipStrokeOpacity {
 		strokeOpacity = 1
 	}
 	// Sentinel colors (colorInherit, colorCurrent) carry tiny A

@@ -5872,7 +5872,7 @@ gui.Spinner(gui.SpinnerCfg{
 | CurveSpiral           | Spiral       | Archimedean spiral                  |
 | CurveFourier          | Fourier      | Multi-harmonic sum                  |
 `,
-	"svg_spinner": `Fifty-two built-in animated SVG spinners drawn from the
+	"svg_spinner": `One hundred six built-in animated SVG spinners drawn from the
 open-source svg-spinners collection. Each kind is embedded as raw
 SVG and rendered through the same pipeline as ` + "`gui.Svg`" + `, so
 assets recolor via ` + "`fill=\"currentColor\"`" + ` and scale cleanly

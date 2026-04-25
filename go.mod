@@ -8,6 +8,7 @@ require (
 	github.com/go-pdf/fpdf v0.9.0
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/mike-ward/go-glyph v1.6.5
+	github.com/tdewolff/parse/v2 v2.8.12
 	github.com/veandco/go-sdl2 v0.4.40
 	github.com/yuin/goldmark v1.8.2
 	github.com/yuin/goldmark-emoji v1.0.6

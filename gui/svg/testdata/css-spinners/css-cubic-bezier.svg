@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes slide {
+      from { transform: translate(0, 0) }
+      to   { transform: translate(12, 0) }
+    }
+    .s {
+      animation: slide 1s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate;
+    }
+  </style>
+  <rect class="s" x="2" y="10" width="4" height="4" fill="#2196f3"/>
+</svg>

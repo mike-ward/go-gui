@@ -265,3 +265,78 @@ func TestParseGradientStops_CurrentColorStopsPromoteAlpha(t *testing.T) {
 			g.Stops[1].Color.A)
 	}
 }
+
+// linearGradient shorthand (no x1/y1/x2/y2 attrs) defaults to a
+// horizontal left-to-right sweep under objectBoundingBox units. x2
+// must be 1 — otherwise x1==x2 collapses the gradient to a degenerate
+// projection that maps every vertex to t=0.
+func TestParseDefsGradients_OBBShorthandDefaultsToHorizontalSweep(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+		<defs>
+			<linearGradient id="gh">
+				<stop offset="0" stop-color="#ff0000"/>
+				<stop offset="1" stop-color="#0000ff"/>
+			</linearGradient>
+		</defs>
+	</svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, ok := vg.Gradients["gh"]
+	if !ok {
+		t.Fatal("gradient gh not found")
+	}
+	if g.X1 != 0 || g.Y1 != 0 || g.X2 != 1 || g.Y2 != 0 {
+		t.Fatalf("OBB shorthand defaults: got (%g,%g)->(%g,%g), "+
+			"want (0,0)->(1,0)", g.X1, g.Y1, g.X2, g.Y2)
+	}
+}
+
+// userSpaceOnUse shorthand cannot resolve "100%" without the
+// viewport, so missing x2 falls back to 0 (degenerate but consistent
+// with pre-fix behavior; render-time resolution would require
+// viewport plumbing not present here).
+func TestParseDefsGradients_UserSpaceShorthandKeepsZeroDefault(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+		<defs>
+			<linearGradient id="gu" gradientUnits="userSpaceOnUse">
+				<stop offset="0" stop-color="#ff0000"/>
+				<stop offset="1" stop-color="#0000ff"/>
+			</linearGradient>
+		</defs>
+	</svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, ok := vg.Gradients["gu"]
+	if !ok {
+		t.Fatal("gradient gu not found")
+	}
+	if g.X1 != 0 || g.Y1 != 0 || g.X2 != 0 || g.Y2 != 0 {
+		t.Fatalf("userSpace shorthand defaults: got (%g,%g)->(%g,%g), "+
+			"want all zero", g.X1, g.Y1, g.X2, g.Y2)
+	}
+}
+
+func TestGradientCoordOrDefault_EmptyAndWhitespace(t *testing.T) {
+	cases := []struct {
+		name  string
+		attrs map[string]string
+		want  float32
+	}{
+		{"missing", map[string]string{}, 1},
+		{"empty", map[string]string{"x2": ""}, 1},
+		{"whitespace", map[string]string{"x2": "   "}, 1},
+		{"present", map[string]string{"x2": "0.5"}, 0.5},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := gradientCoordOrDefault(c.attrs, "x2", true, 1)
+			if got != c.want {
+				t.Fatalf("got %g, want %g", got, c.want)
+			}
+		})
+	}
+}

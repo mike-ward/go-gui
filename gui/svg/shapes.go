@@ -3,7 +3,7 @@ package svg
 import "github.com/mike-ward/go-gui/gui"
 
 // parsePathWithStyle parses a <path> element with inherited style.
-func parsePathWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
+func parsePathWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool) {
 	path, ok := parsePathElement(elem)
 	if !ok {
 		return VectorPath{}, false
@@ -12,11 +12,11 @@ func parsePathWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
 		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
-	applyInheritedStyle(&path, inherited)
+	applyComputedStyle(&path, inherited)
 	return path, true
 }
 
-func parseRectWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
+func parseRectWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool) {
 	path, ok := parseRectElement(elem)
 	if !ok {
 		return VectorPath{}, false
@@ -25,11 +25,11 @@ func parseRectWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
 		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
-	applyInheritedStyle(&path, inherited)
+	applyComputedStyle(&path, inherited)
 	return path, true
 }
 
-func parseCircleWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
+func parseCircleWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool) {
 	path, ok := parseCircleElement(elem)
 	if !ok {
 		return VectorPath{}, false
@@ -38,11 +38,11 @@ func parseCircleWithStyle(elem string, inherited groupStyle) (VectorPath, bool) 
 		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
-	applyInheritedStyle(&path, inherited)
+	applyComputedStyle(&path, inherited)
 	return path, true
 }
 
-func parseEllipseWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
+func parseEllipseWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool) {
 	path, ok := parseEllipseElement(elem)
 	if !ok {
 		return VectorPath{}, false
@@ -51,11 +51,11 @@ func parseEllipseWithStyle(elem string, inherited groupStyle) (VectorPath, bool)
 		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
-	applyInheritedStyle(&path, inherited)
+	applyComputedStyle(&path, inherited)
 	return path, true
 }
 
-func parsePolygonWithStyle(elem string, inherited groupStyle, closed bool) (VectorPath, bool) {
+func parsePolygonWithStyle(elem string, inherited ComputedStyle, closed bool) (VectorPath, bool) {
 	path, ok := parsePolygonElement(elem, closed)
 	if !ok {
 		return VectorPath{}, false
@@ -64,11 +64,11 @@ func parsePolygonWithStyle(elem string, inherited groupStyle, closed bool) (Vect
 		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
-	applyInheritedStyle(&path, inherited)
+	applyComputedStyle(&path, inherited)
 	return path, true
 }
 
-func parseLineWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
+func parseLineWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool) {
 	path, ok := parseLineElement(elem)
 	if !ok {
 		return VectorPath{}, false
@@ -77,7 +77,7 @@ func parseLineWithStyle(elem string, inherited groupStyle) (VectorPath, bool) {
 		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
-	applyInheritedStyle(&path, inherited)
+	applyComputedStyle(&path, inherited)
 	return path, true
 }
 
@@ -110,6 +110,7 @@ func parsePathElement(elem string) (VectorPath, bool) {
 	if len(path.Segments) == 0 {
 		return VectorPath{}, false
 	}
+	path.Bbox = bboxFromSegments(path.Segments)
 	return path, true
 }
 
@@ -217,6 +218,7 @@ func parseRectElement(elem string) (VectorPath, bool) {
 			RX:   rx,
 			RY:   ry,
 		},
+		Bbox: bboxFromRect(x, y, rw, rh),
 	}
 	if gid, found := parseFillURL(fill); found {
 		vp.FillGradientID = gid
@@ -242,6 +244,7 @@ func parseCircleElement(elem string) (VectorPath, bool) {
 		CY:   cy,
 		R:    r,
 	}
+	vp.Bbox = bboxFromEllipse(cx, cy, r, r)
 	return vp, true
 }
 
@@ -266,6 +269,7 @@ func parseEllipseElement(elem string) (VectorPath, bool) {
 		RX:   rx,
 		RY:   ry,
 	}
+	vp.Bbox = bboxFromEllipse(cx, cy, rx, ry)
 	return vp, true
 }
 
@@ -327,6 +331,7 @@ func parsePolygonElement(elem string, closed bool) (VectorPath, bool) {
 		StrokeGradientID: s.StrokeGradientID,
 		StrokeDasharray:  s.StrokeDasharray,
 	}
+	vp.Bbox = bboxFromSegments(segments)
 	if gid, found := parseFillURL(fill); found {
 		vp.FillGradientID = gid
 	}
@@ -365,6 +370,7 @@ func parseLineElement(elem string) (VectorPath, bool) {
 			X2:   x2,
 			Y2:   y2,
 		},
+		Bbox: bboxFromLine(x1, y1, x2, y2),
 	}, true
 }
 

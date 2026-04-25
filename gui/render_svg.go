@@ -75,11 +75,10 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		w.scratch.svgAnimContribs.put(contribScratch)
 	}
 
-	// Substitute fresh triangles for animated primitive shapes when
-	// attribute overrides are live. animTris is ordered to match
-	// cached.RenderPaths' Animated entries in doc order; the emit
-	// path walks both in lockstep and swaps triangles on the fly.
+	// animByPID lets emitSvgGroup look up override geometry per
+	// PathID, so the same map serves main and filtered-group passes.
 	var animTris []TessellatedPath
+	var animByPID map[uint32][]float32
 	if cached.HasAttrAnim && cached.HasAnimatedPaths {
 		overrides := extractAttrOverrides(w, animState)
 		if len(overrides) > 0 {
@@ -88,13 +87,20 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 				animTris = ap.TessellateAnimated(
 					cached.Parsed, cached.Scale, overrides, reuse)
 				defer w.scratch.svgAnimTriangles.put(animTris)
+				if len(animTris) > 0 {
+					animByPID = w.scratch.svgAnimByPID.take(len(animTris))
+					defer w.scratch.svgAnimByPID.put(animByPID)
+					for i := range animTris {
+						animByPID[animTris[i].PathID] = animTris[i].Triangles
+					}
+				}
 			}
 			w.scratch.svgAnimOverrides.put(overrides)
 		}
 	}
 
 	// Emit main paths, text, and textPath elements.
-	emitSvgGroup(cached.RenderPaths, animTris, cached.TextDraws,
+	emitSvgGroup(cached.RenderPaths, animByPID, cached.TextDraws,
 		cached.TextPathDraws, color, sx, sy,
 		cached.Scale, animState, w)
 
@@ -111,7 +117,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 			BlurRadius: fg.Filter.StdDev * cached.Scale,
 			Layers:     fg.Filter.BlurLayers,
 		}, w)
-		emitSvgGroup(fg.RenderPaths, nil, fg.TextDraws,
+		emitSvgGroup(fg.RenderPaths, animByPID, fg.TextDraws,
 			fg.TextPathDraws, color, sx, sy,
 			cached.Scale, animState, w)
 		emitRenderer(RenderCmd{
@@ -120,7 +126,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 
 		// KeepSource: re-draw sharp original on top of blur.
 		if fg.Filter.KeepSource {
-			emitSvgGroup(fg.RenderPaths, nil, fg.TextDraws,
+			emitSvgGroup(fg.RenderPaths, animByPID, fg.TextDraws,
 				fg.TextPathDraws, color, sx, sy,
 				cached.Scale, animState, w)
 		}
@@ -131,26 +137,23 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 }
 
 // emitSvgGroup emits paths, text draws, and text path draws.
-// animTris, when non-empty, carries fresh triangles for animated
-// primitive shapes in doc order matching the Animated entries of
-// paths. A cursor through animTris advances in lockstep so each
-// Animated path picks up its override geometry.
+// animByPID, when non-nil, carries fresh triangles for animated
+// primitive shapes keyed by PathID. Animated paths look up their
+// override geometry; absent entries fall back to cached triangles.
 func emitSvgGroup(
 	paths []CachedSvgPath,
-	animTris []TessellatedPath,
+	animByPID map[uint32][]float32,
 	textDraws []CachedSvgTextDraw,
 	textPathDraws []CachedSvgTextPathDraw,
 	color Color, sx, sy, scale float32,
 	animState map[uint32]svgAnimState, w *Window,
 ) {
-	cursor := 0
 	for i := range paths {
 		p := paths[i]
-		if p.Animated && cursor < len(animTris) {
-			// Substitute override triangles from this frame. Keep
-			// cached metadata (color, group, clip, base xform).
-			p.Triangles = animTris[cursor].Triangles
-			cursor++
+		if p.Animated && p.PathID != 0 {
+			if tris, ok := animByPID[p.PathID]; ok {
+				p.Triangles = tris
+			}
 		}
 		emitSvgPathRenderer(p, color, sx, sy, scale, animState, w)
 	}
@@ -210,6 +213,18 @@ func emitSvgPathRenderer(path CachedSvgPath, tint Color,
 			rotAngle = st.RotAngle
 			rotCX = st.RotCX
 			rotCY = st.RotCY
+			if !hasVCols {
+				switch {
+				case path.IsStroke && st.HasStrokeColor:
+					nc := svgToColor(st.StrokeColor)
+					nc.A = blendAlpha(c.A, nc.A)
+					c = nc
+				case !path.IsStroke && st.HasFillColor:
+					nc := svgToColor(st.FillColor)
+					nc.A = blendAlpha(c.A, nc.A)
+					c = nc
+				}
+			}
 			if st.HasXform {
 				transX = st.TransX
 				transY = st.TransY
@@ -328,6 +343,14 @@ type svgAnimState struct {
 	HasXform       bool
 	Inited         bool
 	AttrOverride   SvgAnimAttrOverride // attribute overrides for re-tessellation
+	// FillColor / StrokeColor carry CSS color-tween results
+	// (SvgAnimColor). Has*Color flags whether the channel is set;
+	// emitSvgPathRenderer overrides the path color when the
+	// matching path role is set.
+	FillColor      SvgColor
+	StrokeColor    SvgColor
+	HasFillColor   bool
+	HasStrokeColor bool
 }
 
 // computeSvgAnimations builds a map of per-group animation state
@@ -391,6 +414,9 @@ type animContrib struct {
 	valueY     float32
 	frac       float32
 	activation float32
+	// colorVal carries the lerped RGBA result for SvgAnimColor;
+	// other kinds leave it zero.
+	colorVal SvgColor
 }
 
 // collectAnimContribs evaluates every animation's phase against
@@ -418,40 +444,34 @@ func collectAnimContribs(
 			(!a.IsSet && a.DurSec <= 0) ||
 			!isFiniteF(a.BeginSec) ||
 			!isFiniteF(a.Cycle) ||
-			!isFiniteF(elapsedSec) ||
-			elapsedSec < a.BeginSec {
+			!isFiniteF(elapsedSec) {
 			continue
 		}
-		activation := a.BeginSec
-		if a.Cycle > 0 && a.Restart != SvgAnimRestartNever {
-			n := math.Floor(float64(elapsedSec-a.BeginSec) / float64(a.Cycle))
-			if a.Restart == SvgAnimRestartWhenNotActive && n > 0 {
-				prev := a.BeginSec + float32(n-1)*a.Cycle
-				if elapsedSec-prev < a.DurSec {
-					// Previous activation still within its active
-					// duration — suppress the re-trigger.
-					n--
-				}
-			}
-			activation = a.BeginSec + float32(n)*a.Cycle
+		if elapsedSec < a.BeginSec && !a.FillBackwards {
+			continue
 		}
-		var frac float32
-		if a.IsSet {
-			// Zero-duration: always contribute to-value once active.
-			// Freeze=false is a parse flag only — the value still
-			// contributes, but sandwich ordering lets later activations
-			// replace it (matching SMIL instantaneous semantics).
-			frac = 1
-		} else {
-			phase := elapsedSec - activation
-			switch {
-			case phase < a.DurSec:
-				frac = phase / a.DurSec
-			case a.Freeze:
-				frac = 1
-			default:
+		var (
+			activation = a.BeginSec
+			frac       float32
+		)
+		switch {
+		case a.IsSet:
+			if elapsedSec < a.BeginSec {
 				continue
 			}
+			frac = 1
+		case a.Iterations > 0:
+			ok, f, act := cssIterPhase(a, elapsedSec)
+			if !ok {
+				continue
+			}
+			frac, activation = f, act
+		default:
+			ok, f, act := smilPhase(a, elapsedSec)
+			if !ok {
+				continue
+			}
+			frac, activation = f, act
 		}
 		c := animContrib{anim: a, activation: activation, frac: frac}
 		if !evalAnimContrib(&c, a, frac, activation) {
@@ -460,6 +480,63 @@ func collectAnimContribs(
 		out = append(out, c)
 	}
 	return out
+}
+
+// smilPhase computes SMIL-style phase: cycle-based re-fire,
+// freeze on overrun, single play when Cycle==0.
+func smilPhase(a *SvgAnimation, elapsedSec float32) (bool, float32, float32) {
+	activation := a.BeginSec
+	if a.Cycle > 0 && a.Restart != SvgAnimRestartNever {
+		n := math.Floor(float64(elapsedSec-a.BeginSec) / float64(a.Cycle))
+		if a.Restart == SvgAnimRestartWhenNotActive && n > 0 {
+			prev := a.BeginSec + float32(n-1)*a.Cycle
+			if elapsedSec-prev < a.DurSec {
+				n--
+			}
+		}
+		activation = a.BeginSec + float32(n)*a.Cycle
+	}
+	phase := elapsedSec - activation
+	switch {
+	case phase < a.DurSec:
+		return true, phase / a.DurSec, activation
+	case a.Freeze:
+		return true, 1, activation
+	}
+	return false, 0, activation
+}
+
+// cssIterPhase computes CSS-style phase: a fixed iteration count,
+// each iteration of length DurSec. Alternate flips the phase on
+// odd iterations. FillBackwards contributes frac=0 before BeginSec.
+func cssIterPhase(a *SvgAnimation, elapsedSec float32) (bool, float32, float32) {
+	if elapsedSec < a.BeginSec {
+		// FillBackwards already gated upstream.
+		frac := float32(0)
+		if a.Alternate && a.Iterations != SvgAnimIterInfinite &&
+			(int(a.Iterations)-1)%2 == 1 {
+			frac = 1
+		}
+		return true, frac, a.BeginSec
+	}
+	phase := elapsedSec - a.BeginSec
+	iter := int(math.Floor(float64(phase) / float64(a.DurSec)))
+	iterPhase := phase - float32(iter)*a.DurSec
+	if a.Iterations != SvgAnimIterInfinite && iter >= int(a.Iterations) {
+		if !a.Freeze {
+			return false, 0, a.BeginSec
+		}
+		iter = int(a.Iterations) - 1
+		iterPhase = a.DurSec
+	}
+	frac := iterPhase / a.DurSec
+	if frac > 1 {
+		frac = 1
+	}
+	if a.Alternate && iter%2 == 1 {
+		frac = 1 - frac
+	}
+	return true, frac, a.BeginSec
 }
 
 // evalAnimContrib fills c with the kind-specific lerped values for
@@ -500,8 +577,64 @@ func evalAnimContrib(c *animContrib, a *SvgAnimation,
 			return false
 		}
 		c.valueX, c.valueY, c.value = motionSample(a, frac)
+	case SvgAnimColor:
+		if len(a.ColorValues) < 2 {
+			return false
+		}
+		c.colorVal = lerpColorKeyframes(
+			a.ColorValues, a.KeySplines, a.KeyTimes, a.CalcMode, frac)
 	}
 	return true
+}
+
+// lerpColorKeyframes interpolates packed RGBA stops at frac in
+// [0,1]. Uses locateSeg for consistent discrete/spline/keyTimes
+// behavior. sRGB lerp per channel — cheap and visually acceptable
+// for short tweens (premultiplied gamma-correct lerp is a follow-up).
+func lerpColorKeyframes(vals []uint32, splines, keyTimes []float32,
+	mode SvgAnimCalcMode, frac float32) SvgColor {
+	n := len(vals)
+	idx, t, atEnd := locateSeg(n, frac, splines, keyTimes, mode)
+	if atEnd {
+		return unpackRGBA(vals[n-1])
+	}
+	if mode == SvgAnimCalcDiscrete {
+		return unpackRGBA(vals[idx])
+	}
+	a := unpackRGBA(vals[idx])
+	b := unpackRGBA(vals[idx+1])
+	return SvgColor{
+		R: lerpU8(a.R, b.R, t),
+		G: lerpU8(a.G, b.G, t),
+		B: lerpU8(a.B, b.B, t),
+		A: lerpU8(a.A, b.A, t),
+	}
+}
+
+func unpackRGBA(v uint32) SvgColor {
+	return SvgColor{
+		R: uint8(v >> 24),
+		G: uint8(v >> 16),
+		B: uint8(v >> 8),
+		A: uint8(v),
+	}
+}
+
+func lerpU8(a, b uint8, t float32) uint8 {
+	if t <= 0 {
+		return a
+	}
+	if t >= 1 {
+		return b
+	}
+	v := float32(a) + (float32(b)-float32(a))*t
+	if v < 0 {
+		v = 0
+	}
+	if v > 255 {
+		v = 255
+	}
+	return uint8(v)
 }
 
 // motionSample interpolates along an animateMotion's flattened path
@@ -700,6 +833,20 @@ func applyAnimContribToPath(c *animContrib, a *SvgAnimation, pid uint32,
 		ov.Mask |= SvgAnimMaskStrokeDashOffset
 	case SvgAnimDashArray:
 		applyDashArrayContrib(&st.AttrOverride, a, c.frac)
+	case SvgAnimColor:
+		switch a.Target {
+		case SvgAnimTargetStroke:
+			st.StrokeColor = c.colorVal
+			st.HasStrokeColor = true
+		case SvgAnimTargetAll:
+			st.FillColor = c.colorVal
+			st.HasFillColor = true
+			st.StrokeColor = c.colorVal
+			st.HasStrokeColor = true
+		default:
+			st.FillColor = c.colorVal
+			st.HasFillColor = true
+		}
 	}
 	states[pid] = st
 }

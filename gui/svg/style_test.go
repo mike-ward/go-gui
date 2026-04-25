@@ -502,7 +502,7 @@ func TestBakePathOpacity_SkipFlagsForceUnity(t *testing.T) {
 		FillOpacity:   0,
 		StrokeOpacity: 0,
 	}
-	inh := defaultGroupStyle(identityTransform)
+	inh := defaultComputedStyle(identityTransform)
 	inh.SkipFillOpacity = true
 	inh.SkipStrokeOpacity = true
 	bakePathOpacity(path, inh)
@@ -522,7 +522,7 @@ func TestBakePathOpacity_SkipFlagsForceUnity(t *testing.T) {
 		Opacity:     0,
 		FillOpacity: 1,
 	}
-	inh = defaultGroupStyle(identityTransform)
+	inh = defaultComputedStyle(identityTransform)
 	inh.SkipOpacity = true
 	bakePathOpacity(path, inh)
 	if path.FillColor.A != 255 {
@@ -543,7 +543,7 @@ func TestBakePathOpacity_SentinelAlphaPromoted(t *testing.T) {
 		FillOpacity:   1,
 		StrokeOpacity: 1,
 	}
-	inh := defaultGroupStyle(identityTransform)
+	inh := defaultComputedStyle(identityTransform)
 	bakePathOpacity(path, inh)
 	// Combined opacity 0.5 * 1 = 0.5. A promoted from 2 → 255,
 	// then applyOpacity yields ~127. Without promotion A would be
@@ -560,13 +560,14 @@ func TestBakePathOpacity_SentinelAlphaPromoted(t *testing.T) {
 
 func TestBakePathOpacity_NaNInputClampsSafely(t *testing.T) {
 	// Hostile NaN opacity must not reach applyOpacity's uint8 cast.
+	// Phase C: opacity is now sourced from the cascade-resolved
+	// inh.Opacity (path.Opacity is mirror-only); inject NaN there.
 	path := &VectorPath{
 		FillColor: gui.SvgColor{R: 10, G: 20, B: 30, A: 200},
-		Opacity:   float32(math.NaN()),
 	}
-	inh := defaultGroupStyle(identityTransform)
+	inh := defaultComputedStyle(identityTransform)
+	inh.Opacity = float32(math.NaN())
 	bakePathOpacity(path, inh)
-	// clampOpacity01(NaN*x) → 0, so alpha becomes 0.
 	if path.FillColor.A != 0 {
 		t.Fatalf("NaN opacity must clamp alpha to 0, got %d",
 			path.FillColor.A)

@@ -11,7 +11,7 @@ import (
 
 // parseTextElement extracts text from a <text> element,
 // including <tspan> children and <textPath> references.
-func parseTextElement(n *xmlNode, inherited groupStyle, state *parseState) {
+func parseTextElement(n *xmlNode, inherited ComputedStyle, state *parseState) {
 	elem := n.OpenTag
 	x := attrFloat(elem, "x", 0)
 	y := attrFloat(elem, "y", 0)
@@ -29,8 +29,8 @@ func parseTextElement(n *xmlNode, inherited groupStyle, state *parseState) {
 	fillStr, _ := findAttrOrStyle(elem, "fill")
 	color := parseSvgColor(fillStr)
 	if color == colorInherit {
-		if inherited.Fill != "" {
-			color = parseSvgColor(inherited.Fill)
+		if inherited.FillSet {
+			color = inherited.Fill
 		} else {
 			color = colorBlack
 		}

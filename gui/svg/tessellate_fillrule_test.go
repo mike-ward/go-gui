@@ -151,22 +151,22 @@ func TestTessellate_FillRulePathOverridesGroup(t *testing.T) {
 // unrecognised string (including "EvenOdd") is treated as the
 // default nonzero.
 func TestResolveFillRule_Defaults(t *testing.T) {
-	if r := resolveFillRule(`<path/>`, groupStyle{}); r != FillRuleNonzero {
+	if r := resolveFillRule(`<path/>`, ComputedStyle{}); r != FillRuleNonzero {
 		t.Fatalf("no attr should resolve to nonzero, got %d", r)
 	}
-	if r := resolveFillRule(`<path fill-rule="evenodd"/>`, groupStyle{}); r != FillRuleEvenOdd {
+	if r := resolveFillRule(`<path fill-rule="evenodd"/>`, ComputedStyle{}); r != FillRuleEvenOdd {
 		t.Fatalf("explicit evenodd, got %d", r)
 	}
-	if r := resolveFillRule(`<path/>`, groupStyle{FillRule: FillRuleEvenOdd}); r != FillRuleEvenOdd {
+	if r := resolveFillRule(`<path/>`, ComputedStyle{FillRule: FillRuleEvenOdd}); r != FillRuleEvenOdd {
 		t.Fatalf("inherited evenodd, got %d", r)
 	}
 	// Case-sensitive per SVG spec; unknown tokens fall back to
 	// nonzero rather than panicking or defaulting to evenodd.
-	if r := resolveFillRule(`<path fill-rule="EvenOdd"/>`, groupStyle{}); r != FillRuleNonzero {
+	if r := resolveFillRule(`<path fill-rule="EvenOdd"/>`, ComputedStyle{}); r != FillRuleNonzero {
 		t.Fatalf("non-canonical case should fall back to nonzero, got %d", r)
 	}
 	// Leading/trailing whitespace is tolerated.
-	if r := resolveFillRule(`<path fill-rule="  evenodd  "/>`, groupStyle{}); r != FillRuleEvenOdd {
+	if r := resolveFillRule(`<path fill-rule="  evenodd  "/>`, ComputedStyle{}); r != FillRuleEvenOdd {
 		t.Fatalf("whitespace-padded evenodd, got %d", r)
 	}
 }

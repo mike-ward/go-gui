@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes orbit {
+      from { transform: rotate(0deg) translate(8px) }
+      to   { transform: rotate(360deg) translate(8px) }
+    }
+    .o {
+      animation: orbit 2s linear infinite;
+      transform-origin: 12px 12px;
+    }
+  </style>
+  <circle class="o" cx="12" cy="12" r="2" fill="#00bcd4"/>
+</svg>

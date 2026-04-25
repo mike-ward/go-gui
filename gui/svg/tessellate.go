@@ -14,6 +14,25 @@ func (vg *VectorGraphic) getTriangles(scale float32) []gui.TessellatedPath {
 	return vg.tessellatePaths(vg.Paths, scale)
 }
 
+// clampStrokeWidthForScale widens sub-pixel stroke widths to ~1 device
+// pixel (in viewBox units) so AA dropouts don't erase the line at small
+// render scales. Subnormal/tiny scales are floored at 1e-6 to keep
+// 1/scale finite.
+func clampStrokeWidthForScale(w, scale float32) float32 {
+	if scale <= 0 {
+		return w
+	}
+	const minScale = 1e-6
+	if scale < minScale {
+		scale = minScale
+	}
+	minVB := float32(1.0 / scale)
+	if w < minVB {
+		return minVB
+	}
+	return w
+}
+
 // tessellatePaths tessellates an arbitrary set of VectorPaths,
 // using the VectorGraphic's clip paths and gradients.
 func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gui.TessellatedPath {
@@ -91,13 +110,16 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 		}
 
 		// Stroke tessellation. Stroke width stays in viewBox units
-		// here — render-side vertex scaling applies once. Pre-scaling
-		// here plus render scaling produces width × scale² on screen,
-		// which collapses to sub-pixel for large viewBoxes (e.g.
-		// spinner.svg at scale=0.03 rendered 200→0.18px).
+		// here — render-side vertex scaling applies once. Strokes
+		// that would render sub-pixel on screen are widened to ~1px
+		// in viewBox units so AA dropouts don't erase the line at
+		// small render scales (e.g. spinner.svg viewBox 200 at
+		// scale=0.03 gives a 0.18px hairline that effectively
+		// disappears).
 		hasStrokeGrad := path.StrokeGradientID != ""
-		if (path.StrokeColor.A > 0 || hasStrokeGrad) && path.StrokeWidth > 0 {
-			strokeWidth := path.StrokeWidth
+		if (path.StrokeColor.A > 0 || hasStrokeGrad) && path.StrokeWidth > 0 &&
+			finiteF32(path.StrokeWidth) {
+			strokeWidth := clampStrokeWidthForScale(path.StrokeWidth, scale)
 			strokePoly := polylines
 			if len(path.StrokeDasharray) > 0 {
 				strokePoly = applyDasharray(polylines,

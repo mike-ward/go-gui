@@ -3,13 +3,29 @@ package svg
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/svg/css"
 )
+
+// ParseOptions controls environment-dependent parsing behavior.
+// PrefersReducedMotion is the snapshot fed to
+// `@media (prefers-reduced-motion: reduce)` evaluation; see
+// docs/svg-css-design.md "prefers-reduced-motion".
+type ParseOptions struct {
+	PrefersReducedMotion bool
+}
 
 // parseSvg parses an SVG string and returns a VectorGraphic.
 func parseSvg(content string) (*VectorGraphic, error) {
+	return parseSvgWith(content, ParseOptions{})
+}
+
+// parseSvgWith is the options-aware variant of parseSvg. opts is
+// snapshotted into the cascade (e.g. for @media reduced-motion).
+func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 	root, err := decodeSvgTree(content)
 	if err != nil {
 		return nil, err
@@ -20,8 +36,14 @@ func parseSvg(content string) (*VectorGraphic, error) {
 		Height: defaultIconSize,
 	}
 
-	// viewBox on root.
-	if vb, ok := root.AttrMap["viewBox"]; ok {
+	// viewBox on root. Fall back to lowercase "viewbox" — SVG-in-HTML
+	// authoring (and several svg-spinners assets) ship the attribute
+	// lowercased; XHTML strict-mode is rare in the wild.
+	vb, ok := root.AttrMap["viewBox"]
+	if !ok {
+		vb, ok = root.AttrMap["viewbox"]
+	}
+	if ok {
 		nums := parseNumberList(vb)
 		if len(nums) >= 4 {
 			vg.ViewBoxX = nums[0]
@@ -46,14 +68,22 @@ func parseSvg(content string) (*VectorGraphic, error) {
 
 	// viewBox offset is applied at render time; triangles, animation
 	// centers, and motion paths all stay in raw viewBox space.
-	defStyle := defaultGroupStyle(identityTransform)
-	// Merge presentation attributes from the root <svg> tag (fill,
-	// stroke, stroke-width, stroke-linecap, stroke-linejoin, …) so
-	// shapes that inherit e.g. fill="currentColor" pick it up.
-	defStyle = mergeGroupStyle(root.OpenTag, defStyle)
-
-	state := &parseState{defsPaths: vg.DefsPaths}
-	allPaths := parseSvgContent(root, defStyle, 0, state)
+	sheet := css.ParseFull(collectStyleBlocks(root), css.ParseOptions{
+		PrefersReducedMotion: opts.PrefersReducedMotion,
+	})
+	state := &parseState{
+		defsPaths:    vg.DefsPaths,
+		cssRules:     sheet.Rules,
+		cssKeyframes: sheet.Keyframes,
+	}
+	// Merge presentation attributes (and matched author rules, when
+	// any) from the root <svg> tag so shapes that inherit e.g.
+	// fill="currentColor" pick it up.
+	rootInfo := makeElementInfo("svg", root.OpenTag, 1, true)
+	defStyle := computeStyle(root.OpenTag,
+		defaultComputedStyle(identityTransform), state, rootInfo, nil)
+	ancestors := []css.ElementInfo{rootInfo}
+	allPaths := parseSvgContent(root, defStyle, 0, state, ancestors)
 
 	// Separate filtered paths from main paths.
 	if len(vg.Filters) > 0 {
@@ -103,6 +133,7 @@ func parseSvg(content string) (*VectorGraphic, error) {
 	}
 
 	vg.Animations = state.animations
+	vg.GroupParent = state.groupParent
 	resolveBegins(vg.Animations, state.animBeginSpecs, state.animIDIndex)
 	return vg, nil
 }
@@ -142,7 +173,11 @@ func parseSvgDimensions(content string) (float32, float32) {
 	if openTag == "" {
 		openTag = content
 	}
-	if vb, ok := findAttr(openTag, "viewBox"); ok {
+	vb, ok := findAttr(openTag, "viewBox")
+	if !ok {
+		vb, ok = findAttr(openTag, "viewbox")
+	}
+	if ok {
 		nums := parseNumberList(vb)
 		if len(nums) >= 4 {
 			return clampViewBoxDim(nums[2]), clampViewBoxDim(nums[3])
@@ -194,11 +229,13 @@ func extractRootSVGOpenTag(content string) string {
 // parseSvgContent walks n's children, emitting VectorPaths for
 // shape/group elements and pushing animations onto state. Recurses
 // into <g>/<a> groups with merged styles; defs children are skipped
-// (defs pre-pass already ran). Returns the accumulated path list.
+// (defs pre-pass already ran). ancestors is the css.ElementInfo
+// chain from root through n; combinator and :nth-child evaluation
+// reads it during cascade. Returns the accumulated path list.
 //
 //nolint:gocyclo // SVG element switch
-func parseSvgContent(n *xmlNode, inherited groupStyle, depth int,
-	state *parseState) []VectorPath {
+func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
+	state *parseState, ancestors []css.ElementInfo) []VectorPath {
 	var paths []VectorPath
 	if depth > maxGroupDepth {
 		return paths
@@ -208,61 +245,88 @@ func parseSvgContent(n *xmlNode, inherited groupStyle, depth int,
 			break
 		}
 		c := &n.Children[i]
+		info := makeElementInfo(c.Name, c.OpenTag, i+1, false)
 		switch c.Name {
 		case "defs":
 			// Already handled by defs pre-pass; skip.
 			continue
 
 		case "g", "a":
-			gs := mergeGroupStyle(c.OpenTag, inherited)
-			state.elemCount++
-			// Synthesize a GroupID when the group has no id but
-			// contains inline animations, so descendants can bind.
-			if gs.GroupID == "" && nodeHasInlineAnimation(c) {
-				state.synthID++
-				gs.GroupID = fmt.Sprintf("__anim_%d", state.synthID)
+			gs := computeStyle(c.OpenTag, inherited, state, info, ancestors)
+			if gs.Display == DisplayNone {
+				continue
 			}
-			paths = append(paths, parseSvgContent(c, gs, depth+1, state)...)
+			state.elemCount++
+			// Synthesize a GroupID when the group has no id of its own
+			// but carries an animation source — inline SMIL children or
+			// a CSS animation-name. Descendants then bind via the
+			// groupParent chain so resolveAnimationTargets can fan
+			// group-level anims onto every child path.
+			hasCSSAnim := gs.Animation.Name != ""
+			needsGroupBinding := nodeHasInlineAnimation(c) || hasCSSAnim
+			if gs.GroupID == inherited.GroupID && needsGroupBinding {
+				gs.GroupID = state.synthGroupID()
+			}
+			if gs.GroupID != "" && gs.GroupID != inherited.GroupID {
+				state.recordGroupParent(gs.GroupID, inherited.GroupID)
+			}
+			childAncestors := append(ancestors, info)
+			animStart := len(state.animations)
+			pathStart := len(paths)
+			paths = append(paths,
+				parseSvgContent(c, gs, depth+1, state, childAncestors)...)
+			if hasCSSAnim && pathStart < len(paths) {
+				groupBox := unionPathBboxes(paths[pathStart:])
+				compileCSSAnimations(gs.Animation, 0,
+					gs.TransformOrigin, groupBox, gs, state)
+				for ai := animStart; ai < len(state.animations); ai++ {
+					a := &state.animations[ai]
+					if a.GroupID == "" {
+						a.GroupID = gs.GroupID
+					}
+					a.TargetPathIDs = nil
+				}
+			}
 
 		case "path":
-			appendShape(c, inherited, state, &paths,
-				func(gs groupStyle) (VectorPath, bool) {
+			appendShape(c, inherited, state, info, ancestors, &paths,
+				func(gs ComputedStyle) (VectorPath, bool) {
 					return parsePathWithStyle(c.OpenTag, gs)
 				})
 
 		case "rect":
-			appendShape(c, inherited, state, &paths,
-				func(gs groupStyle) (VectorPath, bool) {
+			appendShape(c, inherited, state, info, ancestors, &paths,
+				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseRectWithStyle(c.OpenTag, gs)
 				})
 
 		case "circle":
-			appendShape(c, inherited, state, &paths,
-				func(gs groupStyle) (VectorPath, bool) {
+			appendShape(c, inherited, state, info, ancestors, &paths,
+				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseCircleWithStyle(c.OpenTag, gs)
 				})
 
 		case "ellipse":
-			appendShape(c, inherited, state, &paths,
-				func(gs groupStyle) (VectorPath, bool) {
+			appendShape(c, inherited, state, info, ancestors, &paths,
+				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseEllipseWithStyle(c.OpenTag, gs)
 				})
 
 		case "polygon":
-			appendShape(c, inherited, state, &paths,
-				func(gs groupStyle) (VectorPath, bool) {
+			appendShape(c, inherited, state, info, ancestors, &paths,
+				func(gs ComputedStyle) (VectorPath, bool) {
 					return parsePolygonWithStyle(c.OpenTag, gs, true)
 				})
 
 		case "polyline":
-			appendShape(c, inherited, state, &paths,
-				func(gs groupStyle) (VectorPath, bool) {
+			appendShape(c, inherited, state, info, ancestors, &paths,
+				func(gs ComputedStyle) (VectorPath, bool) {
 					return parsePolygonWithStyle(c.OpenTag, gs, false)
 				})
 
 		case "line":
-			appendShape(c, inherited, state, &paths,
-				func(gs groupStyle) (VectorPath, bool) {
+			appendShape(c, inherited, state, info, ancestors, &paths,
+				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseLineWithStyle(c.OpenTag, gs)
 				})
 
@@ -326,21 +390,33 @@ func parseSvgContent(n *xmlNode, inherited groupStyle, depth int,
 // folded onto the path's state.
 func appendShape(
 	c *xmlNode,
-	inherited groupStyle,
+	inherited ComputedStyle,
 	state *parseState,
+	info css.ElementInfo,
+	ancestors []css.ElementInfo,
 	paths *[]VectorPath,
-	parser func(gs groupStyle) (VectorPath, bool),
+	parser func(gs ComputedStyle) (VectorPath, bool),
 ) {
+	// Always run the cascade for the shape so pres-attrs, author
+	// rules, and inline style are layered with the spec-correct
+	// precedence. Pin GroupID back to the parent's value — the
+	// inline-animation branch below owns shape-level GroupID
+	// assignment.
+	shapeGS := computeStyle(c.OpenTag, inherited, state, info, ancestors)
+	if shapeGS.Display == DisplayNone {
+		return
+	}
 	state.elemCount++
-
-	shapeGS := inherited
+	shapeGS.GroupID = inherited.GroupID
 	if nodeHasInlineAnimation(c) {
 		gid := c.AttrMap["id"]
 		if gid == "" {
-			state.synthID++
-			gid = fmt.Sprintf("__anim_%d", state.synthID)
+			gid = state.synthGroupID()
 		}
 		shapeGS.GroupID = gid
+		if gid != inherited.GroupID {
+			state.recordGroupParent(gid, inherited.GroupID)
+		}
 		all, fill, stroke := scanOpacityAnimTargets(c)
 		shapeGS.SkipOpacity = all
 		shapeGS.SkipFillOpacity = fill
@@ -359,6 +435,12 @@ func appendShape(
 	}
 
 	animStart := len(state.animations)
+	if pathIdx >= 0 && shapeGS.Animation.Name != "" {
+		compileCSSAnimations(shapeGS.Animation,
+			(*paths)[pathIdx].PathID,
+			shapeGS.TransformOrigin,
+			(*paths)[pathIdx].Bbox, shapeGS, state)
+	}
 	parseShapeInlineChildren(c, shapeGS, state)
 	// Clip-pathed shapes skip re-tessellation.
 	if pathIdx >= 0 && (*paths)[pathIdx].ClipPathID == "" {
@@ -380,7 +462,7 @@ func appendShape(
 // primitive attrs (cx/cy/r/...) → attribute animation. Unknown names
 // reject (ok=false).
 func parseAnimateForDispatch(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	attr, ok := findAttr(elem, "attributeName")
 	if !ok {
@@ -395,6 +477,22 @@ func parseAnimateForDispatch(
 		return parseAnimateDashOffsetElement(elem, inherited)
 	}
 	return parseAnimateAttributeElement(elem, inherited)
+}
+
+// synthGroupID mints a fresh "__anim_N" id for a group that needs an
+// animation-binding handle but has no author id of its own.
+func (s *parseState) synthGroupID() string {
+	s.synthID++
+	return "__anim_" + strconv.Itoa(s.synthID)
+}
+
+// recordGroupParent registers child→parent in the GroupParent edge
+// map, lazy-initing the map on first write.
+func (s *parseState) recordGroupParent(child, parent string) {
+	if s.groupParent == nil {
+		s.groupParent = make(map[string]string, 16)
+	}
+	s.groupParent[child] = parent
 }
 
 // nodeHasInlineAnimation reports whether any direct child of n is a
@@ -435,7 +533,7 @@ func scanOpacityAnimTargets(n *xmlNode) (all, fill, stroke bool) {
 // <animate>/<animateTransform>/<animateMotion>/<set> and appends
 // them to state.animations keyed by shapeGS.GroupID.
 func parseShapeInlineChildren(
-	n *xmlNode, shapeGS groupStyle, state *parseState,
+	n *xmlNode, shapeGS ComputedStyle, state *parseState,
 ) {
 	for i := range n.Children {
 		c := &n.Children[i]

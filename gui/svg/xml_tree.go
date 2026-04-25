@@ -5,7 +5,7 @@ package svg
 // tag scanning remains in the parsing path.
 //
 // Helpers that take raw opening-tag strings (findAttr,
-// findAttrOrStyle, mergeGroupStyle, shape/animation parsers) keep
+// findAttrOrStyle, computeStyle, shape/animation parsers) keep
 // their signatures. The walker hands them the reconstructed OpenTag
 // text of the current node, so the entire attribute-read path is
 // unchanged from the old string-scan backbone.

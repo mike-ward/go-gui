@@ -94,6 +94,7 @@ type scratchPools struct {
 	focusSeen        scratchMap[uint32, struct{}]
 	svgAnimStates    scratchMap[uint32, svgAnimState]
 	svgAnimOverrides scratchMap[uint32, SvgAnimAttrOverride]
+	svgAnimByPID     scratchMap[uint32, []float32]
 
 	svgAnimTriangles scratchSlice[TessellatedPath]
 	svgAnimContribs  scratchSlice[animContrib]
@@ -150,6 +151,7 @@ func newScratchPools() scratchPools {
 		focusSeen:              scratchMap[uint32, struct{}]{retainMax: 4096},
 		svgAnimStates:          scratchMap[uint32, svgAnimState]{retainMax: 4096},
 		svgAnimOverrides:       scratchMap[uint32, SvgAnimAttrOverride]{retainMax: 4096},
+		svgAnimByPID:           scratchMap[uint32, []float32]{retainMax: 256},
 		svgAnimTriangles:       scratchSlice[TessellatedPath]{retainMax: 1024, shrinkTo: 64},
 		svgAnimContribs:        scratchSlice[animContrib]{retainMax: 1024, shrinkTo: 64},
 		viewShapes:             scratchObjPool[Shape]{retainMax: 16384, shrinkTo: 1024},

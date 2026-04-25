@@ -115,6 +115,11 @@ type svgCacheKey struct {
 	srcHash uint64
 	w10     int32
 	h10     int32
+	// reducedMotion is the snapshotted prefers-reduced-motion flag.
+	// Same SVG source rendered under different motion preferences
+	// must cache separately so a user toggling the OS pref
+	// invalidates the prior render naturally (Phase F).
+	reducedMotion bool
 }
 
 // cachedSvgPaths converts TessellatedPath slices to CachedSvgPath.
@@ -507,12 +512,48 @@ func buildDefsPathDataCache(
 	return cached
 }
 
-func buildSvgCacheLookupKey(srcHash uint64, width, height float32) svgCacheKey {
+func buildSvgCacheLookupKey(
+	srcHash uint64, width, height float32, opts SvgParseOpts,
+) svgCacheKey {
 	return svgCacheKey{
-		srcHash: srcHash,
-		w10:     int32(width * 10),
-		h10:     int32(height * 10),
+		srcHash:       srcHash,
+		w10:           int32(width * 10),
+		h10:           int32(height * 10),
+		reducedMotion: opts.PrefersReducedMotion,
 	}
+}
+
+// svgParseOpts snapshots the SVG-relevant environment toggles from
+// the window's NativePlatform via type-assertion adapters. Backends
+// opt in by implementing PrefersReducedMotion(); when absent, the
+// adapter returns the zero value (no preference).
+func (w *Window) svgParseOpts() SvgParseOpts {
+	var out SvgParseOpts
+	if rm, ok := w.nativePlatform.(interface{ PrefersReducedMotion() bool }); ok {
+		out.PrefersReducedMotion = rm.PrefersReducedMotion()
+	}
+	return out
+}
+
+// parseSvgWithOpts dispatches to ParseSvgWithOpts when the backend
+// implements SvgParserWithOpts, falling back to plain ParseSvg /
+// ParseSvgFile otherwise. Inline sources (svgSrc starts with '<')
+// route to the string parser; everything else routes to the file
+// parser using the resolved path.
+func (w *Window) parseSvgWithOpts(
+	svgSrc, resolvedSrc string, opts SvgParseOpts,
+) (*SvgParsed, error) {
+	inline := strings.HasPrefix(svgSrc, "<")
+	if pwo, ok := w.svgParser.(SvgParserWithOpts); ok {
+		if inline {
+			return pwo.ParseSvgWithOpts(svgSrc, opts)
+		}
+		return pwo.ParseSvgFileWithOpts(resolvedSrc, opts)
+	}
+	if inline {
+		return w.svgParser.ParseSvg(svgSrc)
+	}
+	return w.svgParser.ParseSvgFile(resolvedSrc)
 }
 
 // resolveAndCheckSvgSource validates, resolves, and size-checks
@@ -535,8 +576,9 @@ func (w *Window) resolveAndCheckSvgSource(svgSrc string) (string, error) {
 // LoadSvg loads and tessellates an SVG, caching the result.
 // svgSrc can be a file path or inline SVG data (starting with '<').
 func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, error) {
+	opts := w.svgParseOpts()
 	srcHash := hashString(svgSrc)
-	cacheKey := buildSvgCacheLookupKey(srcHash, width, height)
+	cacheKey := buildSvgCacheLookupKey(srcHash, width, height, opts)
 
 	sm := StateMapRead[svgCacheKey, *CachedSvg](w, nsSvgCache)
 	if sm != nil {
@@ -555,11 +597,7 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 	}
 
 	var parsed *SvgParsed
-	if strings.HasPrefix(svgSrc, "<") {
-		parsed, err = w.svgParser.ParseSvg(svgSrc)
-	} else {
-		parsed, err = w.svgParser.ParseSvgFile(resolvedSrc)
-	}
+	parsed, err = w.parseSvgWithOpts(svgSrc, resolvedSrc, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -610,8 +648,12 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 				a.Kind == SvgAnimDashArray ||
 				a.Kind == SvgAnimDashOffset
 		})
-	hasAnimatedPaths := slices.ContainsFunc(renderPaths,
-		func(p CachedSvgPath) bool { return p.Animated })
+	isAnim := func(p CachedSvgPath) bool { return p.Animated }
+	hasAnimatedPaths := slices.ContainsFunc(renderPaths, isAnim) ||
+		slices.ContainsFunc(filteredGroups,
+			func(g CachedFilteredGroup) bool {
+				return slices.ContainsFunc(g.RenderPaths, isAnim)
+			})
 	baseByPath := buildBaseByPath(renderPaths, filteredGroups,
 		parsed.Animations)
 

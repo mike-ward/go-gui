@@ -13,7 +13,7 @@ import (
 // opacity (or fill-opacity / stroke-opacity, which scale the same
 // rendered alpha channel). Returns the animation and true if valid.
 func parseAnimateElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	attr, ok := findAttr(elem, "attributeName")
 	if !ok {
@@ -111,7 +111,7 @@ const maxMotionVertices = 1024
 // href resolves from state.defsPaths. Returns a flattened polyline
 // + cumulative arc lengths baked into the SvgAnimation.
 func parseAnimateMotionElement(
-	n *xmlNode, inherited groupStyle, state *parseState,
+	n *xmlNode, inherited ComputedStyle, state *parseState,
 ) (gui.SvgAnimation, bool) {
 	if inherited.GroupID == "" {
 		return gui.SvgAnimation{}, false
@@ -241,7 +241,7 @@ func parseRestart(elem string) gui.SvgAnimRestart {
 // targeting an animatable primitive attribute (cx, cy, r, x, y,
 // width, height, rx, ry).
 func parseAnimateAttributeElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	attr, ok := findAttr(elem, "attributeName")
 	if !ok {
@@ -280,7 +280,7 @@ func parseAnimateAttributeElement(
 // parseAnimateDashOffsetElement parses an <animate> element
 // targeting stroke-dashoffset. Scalar values per keyframe.
 func parseAnimateDashOffsetElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	dur := parseDuration(elem)
 	if dur <= 0 {
@@ -312,7 +312,7 @@ func parseAnimateDashOffsetElement(
 // list of floats; all keyframes must have the same count (1..cap).
 // Mismatched lengths or cap overflow reject the animation.
 func parseAnimateDashArrayElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	dur := parseDuration(elem)
 	if dur <= 0 {
@@ -413,7 +413,7 @@ func attrNameFromString(s string) gui.SvgAttrName {
 // base transform is a scale(0) placeholder that the animation
 // fully overrides.
 func parseAnimateTransformElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	typ, ok := findAttr(elem, "type")
 	if !ok {
@@ -517,7 +517,7 @@ func parseRotateFromToBy(elem string) ([]float32, float32, float32, bool, bool) 
 // parseAnimateTranslateElement parses <animateTransform
 // type="translate"> with values="tx ty;tx ty;..." or from/to.
 func parseAnimateTranslateElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	return parsePairedAnimateTransform(
 		elem, inherited, gui.SvgAnimTranslate)
@@ -527,7 +527,7 @@ func parseAnimateTranslateElement(
 // with values="s;s;..." (uniform) or "sx sy;sx sy;..." (non-
 // uniform). Uniform entries are normalized to equal sx,sy.
 func parseAnimateScaleElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	return parsePairedAnimateTransform(
 		elem, inherited, gui.SvgAnimScale)
@@ -546,7 +546,7 @@ func parseAnimateScaleElement(
 // SVG-space points used as the pivot, so the ancestor transform
 // must be folded in during parse.
 func parsePairedAnimateTransform(
-	elem string, inherited groupStyle, kind gui.SvgAnimKind,
+	elem string, inherited ComputedStyle, kind gui.SvgAnimKind,
 ) (gui.SvgAnimation, bool) {
 	dur := parseDuration(elem)
 	if dur <= 0 {
@@ -1160,7 +1160,7 @@ func parseKeyTimes(elem string, nKeys int) []float32 {
 // (IsSet overrides the dur reject) but sandwich ordering and the
 // cycle re-fire let subsequent activations replace it cleanly.
 func parseSetElement(
-	elem string, inherited groupStyle,
+	elem string, inherited ComputedStyle,
 ) (gui.SvgAnimation, bool) {
 	attr, ok := findAttr(elem, "attributeName")
 	if !ok {

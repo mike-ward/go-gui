@@ -4,10 +4,16 @@ package gui
 
 // SvgSpinnerCfg configures a built-in SVG spinner.
 //
-// Phase 0 caveat: only assets that animate via rotation render
-// animated. Other assets render as the static initial frame
-// until the SMIL parser gains support for attribute animation
-// and spline easing.
+// Animation coverage: SMIL <animate>/<animateTransform>/
+// <animateMotion> with rotate, translate, scale, opacity / fill-
+// opacity / stroke-opacity, attribute keyframes, spline easing,
+// syncbase begins; CSS @keyframes for the same transform and
+// opacity properties (animation-delay, iteration count, fill-
+// mode, direction, timing-function). Out of scope: CSS keyframes
+// targeting stroke-dasharray, stroke-dashoffset, stroke-width,
+// or rect width; 3D rotateX / rotateY; calc() in transform-
+// origin; :is() / :where() selectors. Affected assets render
+// as the static initial frame.
 type SvgSpinnerCfg struct {
 	ID              string
 	Kind            SvgSpinnerKind

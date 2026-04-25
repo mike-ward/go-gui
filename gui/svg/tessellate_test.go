@@ -1000,3 +1000,43 @@ func verifyTriangleAreaSum(t *testing.T, tris []float32, expected float32) {
 		t.Fatalf("triangle area sum = %f, want ~%f", total, expected)
 	}
 }
+
+func TestClampStrokeWidthForScale(t *testing.T) {
+	cases := []struct {
+		name  string
+		w     float32
+		scale float32
+		want  float32
+	}{
+		{"scale_zero_unchanged", 0.5, 0, 0.5},
+		{"scale_negative_unchanged", 0.5, -1, 0.5},
+		{"subpixel_widened", 0.1, 1, 1},
+		{"already_above_minVB", 5, 1, 5},
+		{"high_dpi_scale", 0.01, 2, 0.5},
+		{"borderline_equal_to_minVB", 1, 1, 1},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := clampStrokeWidthForScale(c.w, c.scale)
+			if got != c.want {
+				t.Fatalf("got %g, want %g", got, c.want)
+			}
+			if math.IsNaN(float64(got)) || math.IsInf(float64(got), 0) {
+				t.Fatalf("non-finite result: %v", got)
+			}
+		})
+	}
+}
+
+// Subnormal/extremely small positive scale must not blow up the
+// derived 1/scale to +Inf — the function floors scale at 1e-6.
+func TestClampStrokeWidthForScale_SubnormalScaleStaysFinite(t *testing.T) {
+	got := clampStrokeWidthForScale(0.001, 1e-39)
+	if math.IsInf(float64(got), 0) || math.IsNaN(float64(got)) {
+		t.Fatalf("expected finite, got %v", got)
+	}
+	const wantMax = float32(1e6) + 1
+	if got > wantMax {
+		t.Fatalf("strokeWidth %g exceeds floor-derived cap %g", got, wantMax)
+	}
+}

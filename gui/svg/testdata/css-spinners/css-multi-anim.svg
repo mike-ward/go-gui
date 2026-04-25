@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg) }
+      to   { transform: rotate(360deg) }
+    }
+    @keyframes fade {
+      0%, 100% { opacity: 1 }
+      50%      { opacity: 0.3 }
+    }
+    .m {
+      animation: spin 1.5s linear infinite, fade 0.75s ease-in-out infinite;
+      transform-origin: 50% 50%;
+    }
+  </style>
+  <rect class="m" x="6" y="6" width="12" height="12" fill="#673ab7"/>
+</svg>

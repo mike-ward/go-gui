@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes blink {
+      0%, 100% { opacity: 1 }
+      50%      { opacity: 0 }
+    }
+    .a { animation: blink 0.5s linear 3 forwards }
+    .b { animation: blink 0.4s linear 5 }
+  </style>
+  <circle class="a" cx="9"  cy="12" r="2" fill="#000"/>
+  <circle class="b" cx="15" cy="12" r="2" fill="#000"/>
+</svg>

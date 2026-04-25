@@ -1,8 +1,8 @@
 // Svg_spinners showcases a curated subset of built-in
-// SvgSpinner kinds. The full catalog of 110 assets is available
-// via the SvgSpinnerKind enum; the gallery renders only a
-// representative selection so every cell stays visible on
-// screen and the framework is not asked to re-layout 100+
+// SvgSpinner kinds. The full catalog of 100+ assets is
+// available via the SvgSpinnerKind enum; the gallery renders
+// only a representative selection so every cell stays visible
+// on screen and the framework is not asked to re-layout 100+
 // animated SVGs per mouse event.
 package main
 
@@ -19,13 +19,14 @@ const (
 	spinnerSize = 72
 )
 
-// Curated showcase — one from each major family. Kinds animate
-// under the phase 0-5 SMIL subset: rotate (0), opacity / attr
-// keyframes (1-2), spline easing (3), syncbase begins (4),
-// animateTransform translate/scale (5). Stroke-only assets
-// (e.g. ring-resize, uses stroke-dasharray animation) and
-// CSS-stylesheet-driven assets (90-ring-with-gradient) remain
-// out of scope.
+// Curated showcase — one from each major family. SMIL kinds
+// (phase 0-5): rotate, opacity / attr keyframes, spline
+// easing, syncbase begins, animateTransform translate/scale.
+// CSS-stylesheet kinds (phase 6+): @keyframes rotate /
+// translate / opacity, animation-delay per element, linear-
+// Gradient strokes, feGaussianBlur filters. Stroke-dash
+// keyframes (ring-resize, jump, heart-pulse) and 3D rotateX/Y
+// (square) remain out of scope.
 var showcase = []gui.SvgSpinnerKind{
 	gui.SvgSpinner90Ring,
 	gui.SvgSpinner180Ring,
@@ -35,6 +36,13 @@ var showcase = []gui.SvgSpinnerKind{
 	gui.SvgSpinner3DotsBounce,
 	gui.SvgSpinner3DotsFade,
 	gui.SvgSpinnerBars,
+	gui.SvgSpinnerCog01,
+	gui.SvgSpinner4DotsRotate,
+	gui.SvgSpinnerGooeyBalls1,
+	gui.SvgSpinnerCircleFade,
+	gui.SvgSpinnerSpinnerMultiple,
+	gui.SvgSpinner90RingWithGradient,
+	gui.SvgSpinnerBlocksShuffle4,
 }
 
 func main() {
@@ -43,7 +51,7 @@ func main() {
 		State:  &App{},
 		Title:  "svg_spinners",
 		Width:  cellsPerRow*cellSize + 65,
-		Height: 3 * cellSize,
+		Height: 4 * cellSize,
 		OnInit: func(w *gui.Window) {
 			if useIsolation {
 				w.UpdateView(isolatedView)

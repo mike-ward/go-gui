@@ -52,9 +52,9 @@ func parseDefsClipPaths(root *xmlNode) map[string][]VectorPath {
 		if cp.SelfClose {
 			continue
 		}
-		defStyle := defaultGroupStyle(identityTransform)
+		defStyle := defaultComputedStyle(identityTransform)
 		st := &parseState{}
-		paths := parseSvgContent(cp, defStyle, 0, st)
+		paths := parseSvgContent(cp, defStyle, 0, st, nil)
 		if len(paths) > 0 {
 			clipPaths[clipID] = paths
 		}
@@ -78,10 +78,24 @@ func parseDefsGradients(root *xmlNode) map[string]gui.SvgGradientDef {
 		}
 		isOBB := unitsStr != "userSpaceOnUse"
 
-		x1 := parseGradientCoord(lg.AttrMap["x1"], isOBB)
-		y1 := parseGradientCoord(lg.AttrMap["y1"], isOBB)
-		x2 := parseGradientCoord(lg.AttrMap["x2"], isOBB)
-		y2 := parseGradientCoord(lg.AttrMap["y2"], isOBB)
+		// SVG spec defaults: x1=0%, y1=0%, x2=100%, y2=0% — i.e. a
+		// horizontal left-to-right gradient when no endpoint attrs
+		// are authored. For objectBoundingBox units 100% == 1.0 in
+		// the OBB-normalized space we already produce, so fall back
+		// to that default when the attr is missing — otherwise an
+		// empty string parses to 0 and collapses x1==x2, yielding a
+		// degenerate gradient that projects every vertex to t=0.
+		// Under userSpaceOnUse, "100%" resolves against the viewport
+		// at render time and isn't known here; preserve the pre-fix
+		// behavior (default 0) for that case.
+		defX2 := float32(0)
+		if isOBB {
+			defX2 = 1
+		}
+		x1 := gradientCoordOrDefault(lg.AttrMap, "x1", isOBB, 0)
+		y1 := gradientCoordOrDefault(lg.AttrMap, "y1", isOBB, 0)
+		x2 := gradientCoordOrDefault(lg.AttrMap, "x2", isOBB, defX2)
+		y2 := gradientCoordOrDefault(lg.AttrMap, "y2", isOBB, 0)
 
 		stops := parseGradientStops(lg)
 
@@ -100,6 +114,17 @@ func parseGradientCoord(s string, isOBB bool) float32 {
 		return parseF32(trimmed[:len(trimmed)-1]) / 100.0
 	}
 	return parseF32(trimmed)
+}
+
+// gradientCoordOrDefault returns the parsed coord for attr if present,
+// else the spec default for that endpoint.
+func gradientCoordOrDefault(attrs map[string]string, attr string,
+	isOBB bool, def float32) float32 {
+	v, ok := attrs[attr]
+	if !ok || strings.TrimSpace(v) == "" {
+		return def
+	}
+	return parseGradientCoord(v, isOBB)
 }
 
 func parseGradientStops(gradient *xmlNode) []gui.SvgGradientStop {

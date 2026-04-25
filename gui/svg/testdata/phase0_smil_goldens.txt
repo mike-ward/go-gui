@@ -1,0 +1,60 @@
+180-ring-with-bg.svg vg     w=24 h=24 vb=0,0 paths=2 anims=1
+180-ring-with-bg.svg static tris=2 hash=69bc92712083ad15
+180-ring-with-bg.svg anims  hash=7efe98debf4332d2
+180-ring-with-bg.svg live   tris=0 hash=cbf29ce484222325
+270-ring-with-bg.svg vg     w=24 h=24 vb=0,0 paths=2 anims=1
+270-ring-with-bg.svg static tris=2 hash=df119bd47ad319ec
+270-ring-with-bg.svg anims  hash=7efe98debf4332d2
+270-ring-with-bg.svg live   tris=0 hash=cbf29ce484222325
+6-dots-scale-middle.svg vg     w=24 h=24 vb=0,0 paths=12 anims=12
+6-dots-scale-middle.svg static tris=12 hash=b8a3970daf84cfd2
+6-dots-scale-middle.svg anims  hash=f10ce867576783e7
+6-dots-scale-middle.svg live   tris=12 hash=75dee0181df492be
+90-ring-with-bg.svg vg     w=24 h=24 vb=0,0 paths=2 anims=1
+90-ring-with-bg.svg static tris=2 hash=83aea991e7c19f0b
+90-ring-with-bg.svg anims  hash=7efe98debf4332d2
+90-ring-with-bg.svg live   tris=0 hash=cbf29ce484222325
+ball-triangle.svg vg     w=57 h=60 vb=0,0 paths=3 anims=6
+ball-triangle.svg static tris=3 hash=8a92bee9a281f51d
+ball-triangle.svg anims  hash=c0935d900f6b6008
+ball-triangle.svg live   tris=3 hash=c4f4e7975aff2b31
+clock.svg vg     w=24 h=24 vb=0,0 paths=3 anims=2
+clock.svg static tris=3 hash=08ed0817119f3a3e
+clock.svg anims  hash=8f1f854603da1193
+clock.svg live   tris=0 hash=cbf29ce484222325
+dot-revolve.svg vg     w=24 h=24 vb=0,0 paths=2 anims=1
+dot-revolve.svg static tris=2 hash=cc94558e3576e1e0
+dot-revolve.svg anims  hash=7efe98debf4332d2
+dot-revolve.svg live   tris=0 hash=cbf29ce484222325
+loader2.svg vg     w=100 h=100 vb=0,0 paths=3 anims=2
+loader2.svg static tris=3 hash=e306a1ad1cfd5ddc
+loader2.svg anims  hash=040cd94df334f713
+loader2.svg live   tris=0 hash=cbf29ce484222325
+oval.svg vg     w=38 h=38 vb=0,0 paths=2 anims=1
+oval.svg static tris=2 hash=5cbc0db9579d6146
+oval.svg anims  hash=af5e58820b50c5d2
+oval.svg live   tris=0 hash=cbf29ce484222325
+pulse-3.svg vg     w=24 h=24 vb=0,0 paths=3 anims=6
+pulse-3.svg static tris=3 hash=029c5791710c3486
+pulse-3.svg anims  hash=ccf6842dbeb31d76
+pulse-3.svg live   tris=3 hash=dbebcbb636e82f94
+pulse-multiple.svg vg     w=24 h=24 vb=0,0 paths=3 anims=6
+pulse-multiple.svg static tris=3 hash=029c5791710c3486
+pulse-multiple.svg anims  hash=b94a03b67568e6be
+pulse-multiple.svg live   tris=3 hash=dbebcbb636e82f94
+pulse-ring.svg vg     w=24 h=24 vb=0,0 paths=1 anims=3
+pulse-ring.svg static tris=1 hash=ca2d28622434e26a
+pulse-ring.svg anims  hash=41673724825a2cf8
+pulse-ring.svg live   tris=0 hash=cbf29ce484222325
+pulse.svg vg     w=24 h=24 vb=0,0 paths=1 anims=2
+pulse.svg static tris=1 hash=8bfb63d1e3dad169
+pulse.svg anims  hash=b760fda9909049f4
+pulse.svg live   tris=1 hash=0a02511451b1c1af
+rings.svg vg     w=45 h=45 vb=0,0 paths=3 anims=5
+rings.svg static tris=3 hash=954cdf70ba1fa370
+rings.svg anims  hash=028e4b02533ecf52
+rings.svg live   tris=3 hash=626ad6d5e455287d
+wifi-fade.svg vg     w=24 h=24 vb=0,0 paths=3 anims=6
+wifi-fade.svg static tris=3 hash=53c768549673416d
+wifi-fade.svg anims  hash=4b528199a7428159
+wifi-fade.svg live   tris=0 hash=cbf29ce484222325

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1 }
+      50%      { opacity: 0.2 }
+    }
+    .p { animation: pulse 1.2s ease-in-out infinite }
+  </style>
+  <circle class="p" cx="12" cy="12" r="6" fill="#e91e63"/>
+</svg>

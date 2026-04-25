@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg) }
+      to   { transform: rotate(360deg) }
+    }
+    .arm {
+      animation: spin 2s linear infinite;
+      transform-origin: 12px 12px;
+    }
+  </style>
+  <rect class="arm" x="11" y="2" width="2" height="10" fill="#000"/>
+  <circle cx="12" cy="12" r="3" fill="#3f51b5">
+    <animate attributeName="r" values="3;5;3" dur="1s" repeatCount="indefinite"/>
+  </circle>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes bounce {
+      from { transform: translate(0, 0) }
+      to   { transform: translate(0, 8) }
+    }
+    .b { animation: bounce 0.6s ease-in-out infinite alternate }
+  </style>
+  <circle class="b" cx="12" cy="6" r="3" fill="#4caf50"/>
+</svg>

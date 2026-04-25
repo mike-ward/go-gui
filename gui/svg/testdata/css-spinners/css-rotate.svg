@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg) }
+      to   { transform: rotate(360deg) }
+    }
+    .r { animation: spin 1s linear infinite; transform-origin: 50% 50% }
+  </style>
+  <rect class="r" x="10" y="2" width="4" height="20" fill="#3478f6"/>
+</svg>

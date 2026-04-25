@@ -89,7 +89,7 @@ func TestAnimationParseSpaceFloatsEmpty(t *testing.T) {
 
 func TestAnimationParseAnimateElementValid(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="1;0;1" dur="2s" begin="0.5s">`
-	gs := groupStyle{GroupID: "g1"}
+	gs := ComputedStyle{GroupID: "g1"}
 	anim, ok := parseAnimateElement(elem, gs)
 	if !ok {
 		t.Fatalf("expected ok=true")
@@ -113,7 +113,7 @@ func TestAnimationParseAnimateElementValid(t *testing.T) {
 
 func TestAnimationParseAnimateElementNonOpacity(t *testing.T) {
 	elem := `<animate attributeName="fill" values="red;blue" dur="1s">`
-	_, ok := parseAnimateElement(elem, groupStyle{})
+	_, ok := parseAnimateElement(elem, ComputedStyle{})
 	if ok {
 		t.Fatalf("expected ok=false for non-opacity")
 	}
@@ -121,7 +121,7 @@ func TestAnimationParseAnimateElementNonOpacity(t *testing.T) {
 
 func TestAnimationParseAnimateElementNoValues(t *testing.T) {
 	elem := `<animate attributeName="opacity" dur="1s">`
-	_, ok := parseAnimateElement(elem, groupStyle{})
+	_, ok := parseAnimateElement(elem, ComputedStyle{})
 	if ok {
 		t.Fatalf("expected ok=false for missing values")
 	}
@@ -129,7 +129,7 @@ func TestAnimationParseAnimateElementNoValues(t *testing.T) {
 
 func TestAnimationParseAnimateElementZeroDur(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="1;0" dur="0s">`
-	_, ok := parseAnimateElement(elem, groupStyle{})
+	_, ok := parseAnimateElement(elem, ComputedStyle{})
 	if ok {
 		t.Fatalf("expected ok=false for zero duration")
 	}
@@ -138,7 +138,7 @@ func TestAnimationParseAnimateElementZeroDur(t *testing.T) {
 func TestAnimationParseCalcModeDiscrete(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="1;0;1" ` +
 		`dur="1s" calcMode="discrete">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -150,7 +150,7 @@ func TestAnimationParseCalcModeDiscrete(t *testing.T) {
 func TestAnimationParseCalcModeSpline(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" dur="1s" ` +
 		`calcMode="spline" keySplines="0 0 1 1">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -161,7 +161,7 @@ func TestAnimationParseCalcModeSpline(t *testing.T) {
 
 func TestAnimationParseCalcModeLinearDefault(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" dur="1s">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -173,7 +173,7 @@ func TestAnimationParseCalcModeLinearDefault(t *testing.T) {
 func TestAnimationParseKeyTimesValid(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;0.5;1" ` +
 		`dur="1s" keyTimes="0;.2;1">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -189,7 +189,7 @@ func TestAnimationParseKeyTimesValid(t *testing.T) {
 func TestAnimationParseKeyTimesLengthMismatchDropped(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;0.5;1" ` +
 		`dur="1s" keyTimes="0;1">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -202,7 +202,7 @@ func TestAnimationParseKeyTimesLengthMismatchDropped(t *testing.T) {
 func TestAnimationParseKeyTimesNonMonotonicDropped(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;0.5;1" ` +
 		`dur="1s" keyTimes="0;.7;.3">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -214,7 +214,7 @@ func TestAnimationParseKeyTimesNonMonotonicDropped(t *testing.T) {
 
 func TestAnimationParseSetOpacity(t *testing.T) {
 	elem := `<set attributeName="opacity" to="0" begin="0.5s"/>`
-	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseSetElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -238,7 +238,7 @@ func TestAnimationParseSetOpacity(t *testing.T) {
 
 func TestAnimationParseSetAttr(t *testing.T) {
 	elem := `<set attributeName="r" to="12" begin="1s"/>`
-	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseSetElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -253,7 +253,7 @@ func TestAnimationParseSetAttr(t *testing.T) {
 
 func TestAnimationParseSetRejectsBadAttr(t *testing.T) {
 	elem := `<set attributeName="fill" to="red"/>`
-	_, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	_, ok := parseSetElement(elem, ComputedStyle{GroupID: "g"})
 	if ok {
 		t.Fatalf("expected ok=false for unsupported attr")
 	}
@@ -262,7 +262,7 @@ func TestAnimationParseSetRejectsBadAttr(t *testing.T) {
 func TestAnimationParseAnimateMotionInlinePath(t *testing.T) {
 	n := testAnimMotionNode(`<animateMotion path="M0,0 L10,0" dur="1s"/>`)
 	anim, ok := parseAnimateMotionElement(
-		n, groupStyle{GroupID: "g"}, &parseState{})
+		n, ComputedStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -283,7 +283,7 @@ func TestAnimationParseAnimateMotionRotateAuto(t *testing.T) {
 	n := testAnimMotionNode(
 		`<animateMotion path="M0,0 L10,0" dur="1s" rotate="auto"/>`)
 	anim, ok := parseAnimateMotionElement(
-		n, groupStyle{GroupID: "g"}, &parseState{})
+		n, ComputedStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -299,7 +299,7 @@ func TestAnimationParseAnimateMotionMpath(t *testing.T) {
 		defsPaths: map[string]string{"p1": "M0,0 L20,0"},
 	}
 	anim, ok := parseAnimateMotionElement(
-		n, groupStyle{GroupID: "g"}, state)
+		n, ComputedStyle{GroupID: "g"}, state)
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -312,7 +312,7 @@ func TestAnimationParseAnimateMotionMpath(t *testing.T) {
 func TestAnimationParseAccumulateSum(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="1s" accumulate="sum" repeatCount="3">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -324,7 +324,7 @@ func TestAnimationParseAccumulateSum(t *testing.T) {
 func TestAnimationParseRestartNever(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="1s" restart="never">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -336,7 +336,7 @@ func TestAnimationParseRestartNever(t *testing.T) {
 func TestAnimationParseRestartWhenNotActive(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="1s" restart="whenNotActive">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -348,7 +348,7 @@ func TestAnimationParseRestartWhenNotActive(t *testing.T) {
 func TestAnimationParseDurationMinClamp(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="5s" min="6s">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -360,7 +360,7 @@ func TestAnimationParseDurationMinClamp(t *testing.T) {
 func TestAnimationParseDurationMaxClamp(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="5s" max="2s">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -372,7 +372,7 @@ func TestAnimationParseDurationMaxClamp(t *testing.T) {
 func TestAnimationParseDurationMinMaxInBand(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="3s" min="1s" max="5s">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -383,7 +383,7 @@ func TestAnimationParseDurationMinMaxInBand(t *testing.T) {
 
 func TestAnimationParseOpacityFromTo(t *testing.T) {
 	elem := `<animate attributeName="opacity" from="1" to="0" dur="1s">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -398,7 +398,7 @@ func TestAnimationParseOpacityFromTo(t *testing.T) {
 
 func TestAnimationParseOpacityBy(t *testing.T) {
 	elem := `<animate attributeName="opacity" by="-0.5" dur="1s">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -414,7 +414,7 @@ func TestAnimationParseOpacityBy(t *testing.T) {
 func TestAnimationParseAttrBy(t *testing.T) {
 	elem := `<animate attributeName="r" by="5" dur="1s">`
 	anim, ok := parseAnimateAttributeElement(
-		elem, groupStyle{GroupID: "g"})
+		elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -431,7 +431,7 @@ func TestAnimationParseRotateBy(t *testing.T) {
 	elem := `<animateTransform attributeName="transform" ` +
 		`type="rotate" by="90 12 12" dur="1s">`
 	anim, ok := parseAnimateTransformElement(
-		elem, groupStyle{GroupID: "g"})
+		elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -452,7 +452,7 @@ func TestAnimationParseTranslateBy(t *testing.T) {
 	elem := `<animateTransform attributeName="transform" ` +
 		`type="translate" by="10 20" dur="1s">`
 	anim, ok := parseAnimateTransformElement(
-		elem, groupStyle{GroupID: "g"})
+		elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -473,7 +473,7 @@ func TestAnimationParseTranslateBy(t *testing.T) {
 func TestAnimationParseAdditiveSumExplicit(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="1s" additive="sum">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -484,7 +484,7 @@ func TestAnimationParseAdditiveSumExplicit(t *testing.T) {
 
 func TestAnimationParseSetFillRemove(t *testing.T) {
 	elem := `<set attributeName="opacity" to="0.5" fill="remove"/>`
-	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseSetElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -496,7 +496,7 @@ func TestAnimationParseSetFillRemove(t *testing.T) {
 func TestAnimationParseKeyTimesBadEndpointsDropped(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="0;1" ` +
 		`dur="1s" keyTimes="0.1;1">`
-	anim, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -510,7 +510,7 @@ func TestAnimationParseKeyTimesBadEndpointsDropped(t *testing.T) {
 
 func TestAnimationParseAnimateTransformValid(t *testing.T) {
 	elem := `<animateTransform type="rotate" from="0 50 50" to="360 50 50" dur="3s">`
-	gs := groupStyle{GroupID: "wheel"}
+	gs := ComputedStyle{GroupID: "wheel"}
 	anim, ok := parseAnimateTransformElement(elem, gs)
 	if !ok {
 		t.Fatalf("expected ok=true")
@@ -528,7 +528,7 @@ func TestAnimationParseAnimateTransformValid(t *testing.T) {
 
 func TestAnimationParseAnimateTransformUnknownType(t *testing.T) {
 	elem := `<animateTransform type="skewX" from="0" to="30" dur="1s">`
-	_, ok := parseAnimateTransformElement(elem, groupStyle{})
+	_, ok := parseAnimateTransformElement(elem, ComputedStyle{})
 	if ok {
 		t.Fatalf("expected ok=false for unsupported transform type")
 	}
@@ -537,7 +537,7 @@ func TestAnimationParseAnimateTransformUnknownType(t *testing.T) {
 func TestAnimationParseAnimateTransformValuesForm(t *testing.T) {
 	elem := `<animateTransform attributeName="transform" type="rotate" ` +
 		`dur="0.75s" values="0 12 12;360 12 12" repeatCount="indefinite"/>`
-	gs := groupStyle{GroupID: "ring"}
+	gs := ComputedStyle{GroupID: "ring"}
 	anim, ok := parseAnimateTransformElement(elem, gs)
 	if !ok {
 		t.Fatalf("expected ok=true")
@@ -563,7 +563,7 @@ func TestAnimationParseAnimateTransformValuesForm(t *testing.T) {
 func TestAnimationParseAnimateTransformValuesMulti(t *testing.T) {
 	elem := `<animateTransform type="rotate" dur="1s" ` +
 		`values="0 5 5;90 5 5;180 5 5;360 5 5"/>`
-	anim, ok := parseAnimateTransformElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseAnimateTransformElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -577,7 +577,7 @@ func TestAnimationParseAnimateTransformValuesMulti(t *testing.T) {
 
 func TestAnimationParseAnimateTransformValuesSinglePoint(t *testing.T) {
 	elem := `<animateTransform type="rotate" dur="1s" values="0 5 5"/>`
-	_, ok := parseAnimateTransformElement(elem, groupStyle{})
+	_, ok := parseAnimateTransformElement(elem, ComputedStyle{})
 	if ok {
 		t.Fatalf("expected ok=false for single-keyframe values")
 	}
@@ -801,7 +801,7 @@ func TestClampCycle_BoundsAtMaxAndFloor(t *testing.T) {
 
 func TestParseAnimateElement_FillOpacityTargetsFill(t *testing.T) {
 	elem := `<animate attributeName="fill-opacity" values="1;0" dur="1s">`
-	a, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	a, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatal("expected ok=true for fill-opacity")
 	}
@@ -815,7 +815,7 @@ func TestParseAnimateElement_FillOpacityTargetsFill(t *testing.T) {
 
 func TestParseAnimateElement_StrokeOpacityTargetsStroke(t *testing.T) {
 	elem := `<animate attributeName="stroke-opacity" values="1;0" dur="1s">`
-	a, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	a, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatal("expected ok=true for stroke-opacity")
 	}
@@ -826,7 +826,7 @@ func TestParseAnimateElement_StrokeOpacityTargetsStroke(t *testing.T) {
 
 func TestParseAnimateElement_OpacityTargetsAll(t *testing.T) {
 	elem := `<animate attributeName="opacity" values="1;0" dur="1s">`
-	a, ok := parseAnimateElement(elem, groupStyle{GroupID: "g"})
+	a, ok := parseAnimateElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatal("expected ok=true")
 	}
@@ -840,7 +840,7 @@ func TestParseAnimateElement_OpacityTargetsAll(t *testing.T) {
 func TestParseAnimateTransform_RotateCenterUsesInheritedTransform(t *testing.T) {
 	// Parent scale(2) translate(10,20) must fold into the rotate
 	// pivot so the animated rotation pivots in absolute SVG space.
-	inh := groupStyle{
+	inh := ComputedStyle{
 		GroupID:   "g",
 		Transform: [6]float32{2, 0, 0, 2, 10, 20},
 	}
@@ -860,7 +860,7 @@ func TestParseAnimateTransform_RotateCenterUsesInheritedTransform(t *testing.T) 
 // Baking the ancestor transform here would apply it twice at
 // render time.
 func TestPairedTransform_TranslateValuesIgnoreInheritedTransform(t *testing.T) {
-	inh := groupStyle{
+	inh := ComputedStyle{
 		GroupID:   "g",
 		Transform: [6]float32{2, 0, 0, 2, 10, 20},
 	}
@@ -945,7 +945,7 @@ func TestFlattenMotionD_CapsAtMaxVertices(t *testing.T) {
 // only the fill channel receives the value at render time.
 func TestAnimationParseSet_FillOpacityTargetsFill(t *testing.T) {
 	elem := `<set attributeName="fill-opacity" to="0.25">`
-	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseSetElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -960,7 +960,7 @@ func TestAnimationParseSet_FillOpacityTargetsFill(t *testing.T) {
 // <set attributeName="stroke-opacity"> must route to Target=Stroke.
 func TestAnimationParseSet_StrokeOpacityTargetsStroke(t *testing.T) {
 	elem := `<set attributeName="stroke-opacity" to="0.75">`
-	anim, ok := parseSetElement(elem, groupStyle{GroupID: "g"})
+	anim, ok := parseSetElement(elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -975,7 +975,7 @@ func TestAnimationParsePairedTransform_ToOnlyImpliesAdditive(t *testing.T) {
 	elem := `<animateTransform attributeName="transform" ` +
 		`type="translate" to="5 7" dur="1s">`
 	anim, ok := parseAnimateTransformElement(
-		elem, groupStyle{GroupID: "g"})
+		elem, ComputedStyle{GroupID: "g"})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -999,7 +999,7 @@ func TestAnimationParseMotionRotate_AutoReverseAndUnknown(t *testing.T) {
 	revN := testAnimMotionNode(`<animateMotion path="M0,0 L10,0" dur="1s" ` +
 		`rotate="auto-reverse"/>`)
 	anim, ok := parseAnimateMotionElement(
-		revN, groupStyle{GroupID: "g"}, &parseState{})
+		revN, ComputedStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}
@@ -1010,7 +1010,7 @@ func TestAnimationParseMotionRotate_AutoReverseAndUnknown(t *testing.T) {
 	unkN := testAnimMotionNode(
 		`<animateMotion path="M0,0 L10,0" dur="1s" rotate="45"/>`)
 	anim2, ok := parseAnimateMotionElement(
-		unkN, groupStyle{GroupID: "g"}, &parseState{})
+		unkN, ComputedStyle{GroupID: "g"}, &parseState{})
 	if !ok {
 		t.Fatalf("unknown-rotate: expected ok=true")
 	}
@@ -1028,7 +1028,7 @@ func TestAnimationMotionPathD_BareHrefResolves(t *testing.T) {
 		defsPaths: map[string]string{"p2": "M0,0 L15,0"},
 	}
 	anim, ok := parseAnimateMotionElement(
-		n, groupStyle{GroupID: "g"}, state)
+		n, ComputedStyle{GroupID: "g"}, state)
 	if !ok {
 		t.Fatalf("expected ok=true")
 	}

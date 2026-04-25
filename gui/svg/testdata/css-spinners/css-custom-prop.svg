@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    :root {
+      --brand: #ff5722;
+      --speed: 1.4s;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg) }
+      to   { transform: rotate(360deg) }
+    }
+    .ring {
+      fill: none;
+      stroke: var(--brand);
+      stroke-width: 2;
+      stroke-dasharray: 12 6;
+      animation: spin var(--speed) linear infinite;
+      transform-origin: 12px 12px;
+    }
+  </style>
+  <circle class="ring" cx="12" cy="12" r="9"/>
+</svg>

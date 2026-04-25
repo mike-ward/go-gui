@@ -28,6 +28,22 @@ type SvgParser interface {
 	Tessellate(parsed *SvgParsed, scale float32) []TessellatedPath
 }
 
+// SvgParseOpts carries per-parse environment toggles (Phase F).
+// PrefersReducedMotion is the snapshot from NativePlatform routed
+// into `@media (prefers-reduced-motion: reduce)` evaluation.
+type SvgParseOpts struct {
+	PrefersReducedMotion bool
+}
+
+// SvgParserWithOpts is an optional extension of SvgParser whose
+// parse calls take a SvgParseOpts snapshot. LoadSvg detects this via
+// type assertion and falls back to ParseSvg/ParseSvgFile when the
+// backend hasn't opted in.
+type SvgParserWithOpts interface {
+	ParseSvgWithOpts(data string, opts SvgParseOpts) (*SvgParsed, error)
+	ParseSvgFileWithOpts(path string, opts SvgParseOpts) (*SvgParsed, error)
+}
+
 // SvgAnimAttrMask flags which fields of SvgAnimAttrOverride are set.
 // Flat bits + flat float32 fields avoid per-frame heap allocations
 // that *float32 fields would incur through the map value.

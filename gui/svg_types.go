@@ -158,6 +158,10 @@ const (
 	// SvgAnimDashOffset animates stroke-dashoffset. Values is one
 	// scalar per keyframe.
 	SvgAnimDashOffset
+	// SvgAnimColor animates fill or stroke color. ColorValues holds
+	// packed uint32 RGBA per keyframe; sRGB lerp at frame eval. Target
+	// distinguishes fill (default), stroke, or all (rare).
+	SvgAnimColor
 )
 
 // SvgAnimMotionRotate selects the rotate= mode on animateMotion.
@@ -300,7 +304,27 @@ type SvgAnimation struct {
 	// SvgAnimDashArray (1..8). Keyframe count = len(Values) /
 	// DashKeyframeLen. Zero on all other kinds.
 	DashKeyframeLen uint8
+	// ColorValues holds packed RGBA stops for SvgAnimColor: one
+	// uint32 (0xRRGGBBAA) per keyframe. Nil on all other kinds.
+	ColorValues []uint32
+	// Alternate reflects CSS animation-direction: alternate /
+	// alternate-reverse. Each odd iteration plays in reverse phase.
+	Alternate bool
+	// FillBackwards reflects CSS animation-fill-mode: backwards / both.
+	// When true, the first keyframe value is applied during the
+	// pre-begin delay (BeginSec > elapsed) so the element reads the
+	// "0%" pose before the animation activates.
+	FillBackwards bool
+	// Iterations is the CSS animation-iteration-count: 0 means use
+	// the legacy SMIL Cycle-based scheduling (one play per Cycle);
+	// >0 means run that many DurSec iterations starting at BeginSec
+	// (CSS semantics), with a sentinel value of 0xFFFF meaning
+	// infinite. Alternate flips the phase on odd iterations.
+	Iterations uint16
 }
+
+// SvgAnimIterInfinite marks an infinite CSS animation.
+const SvgAnimIterInfinite uint16 = 0xFFFF
 
 // SvgPrimitiveKind identifies the source primitive of a VectorPath.
 type SvgPrimitiveKind uint8

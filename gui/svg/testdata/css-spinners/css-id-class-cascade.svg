@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    circle      { fill: #999 }
+    .dot        { fill: #2196f3 }
+    .dot.lit    { fill: #ffeb3b }
+    #hero       { fill: #f44336 !important }
+    @keyframes scale-mid {
+      0%, 100% { transform: scale(0.6) }
+      50%      { transform: scale(1.4) }
+    }
+    .dot {
+      animation: scale-mid 1s ease-in-out infinite;
+      transform-origin: 50% 50%;
+    }
+  </style>
+  <circle class="dot"      cx="6"  cy="12" r="2"/>
+  <circle class="dot lit"  cx="12" cy="12" r="2"/>
+  <circle class="dot" id="hero" cx="18" cy="12" r="2"/>
+</svg>

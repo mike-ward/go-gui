@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes grow {
+      from { transform: scale(0.5) }
+      to   { transform: scale(1.5) }
+    }
+    .a {
+      animation: grow 1s ease-out 0.25s 1 backwards;
+      transform-origin: 50% 50%;
+    }
+    .b {
+      animation: grow 1s ease-in 0.5s 1 forwards;
+      transform-origin: 50% 50%;
+    }
+  </style>
+  <circle class="a" cx="8" cy="12" r="3" fill="#ff9800"/>
+  <circle class="b" cx="16" cy="12" r="3" fill="#9c27b0"/>
+</svg>

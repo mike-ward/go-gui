@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg) }
+      to   { transform: rotate(360deg) }
+    }
+    .hidden { display: none }
+    .invis  { visibility: hidden }
+    .ring {
+      animation: spin 1s linear infinite;
+      transform-origin: 12px 12px;
+      fill: none;
+      stroke: #607d8b;
+      stroke-width: 2;
+      stroke-dasharray: 8 4;
+    }
+  </style>
+  <circle class="ring" cx="12" cy="12" r="9"/>
+  <rect class="hidden" x="0" y="0" width="24" height="24" fill="#000"/>
+  <rect class="invis"  x="0" y="0" width="24" height="24" fill="#000"/>
+</svg>

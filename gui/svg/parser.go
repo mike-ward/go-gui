@@ -44,32 +44,70 @@ func New() *Parser {
 
 // ParseSvg parses SVG string data.
 func (p *Parser) ParseSvg(data string) (*gui.SvgParsed, error) {
-	hash := parserSourceHash(data, true)
+	return p.ParseSvgWithOpts(data, gui.SvgParseOpts{})
+}
+
+// ParseSvgFile loads and parses an SVG file.
+func (p *Parser) ParseSvgFile(path string) (*gui.SvgParsed, error) {
+	return p.ParseSvgFileWithOpts(path, gui.SvgParseOpts{})
+}
+
+// ParseSvgWithOpts parses SVG string data, snapshotting environment
+// flags (e.g. prefers-reduced-motion) into the cascade. Implements
+// gui.SvgParserWithOpts.
+func (p *Parser) ParseSvgWithOpts(
+	data string, opts gui.SvgParseOpts,
+) (*gui.SvgParsed, error) {
+	hash := parserSourceHashWithOpts(data, true, opts)
 	if parsed := p.cachedParsed(hash); parsed != nil {
 		return parsed, nil
 	}
-	vg, err := parseSvg(data)
+	vg, err := parseSvgWith(data, optsToSvg(opts))
 	if err != nil {
 		return nil, err
 	}
 	return p.buildParsed(hash, vg, 1), nil
 }
 
-// ParseSvgFile loads and parses an SVG file.
-func (p *Parser) ParseSvgFile(path string) (*gui.SvgParsed, error) {
+// ParseSvgFileWithOpts loads and parses an SVG file with options.
+// Implements gui.SvgParserWithOpts.
+func (p *Parser) ParseSvgFileWithOpts(
+	path string, opts gui.SvgParseOpts,
+) (*gui.SvgParsed, error) {
 	fileData, err := loadSvgFile(path)
 	if err != nil {
 		return nil, err
 	}
-	hash := parserFileHash(path, fileData)
+	hash := mixOptsHash(parserFileHash(path, fileData), opts)
 	if parsed := p.cachedParsed(hash); parsed != nil {
 		return parsed, nil
 	}
-	vg, err := parseSvg(string(fileData))
+	vg, err := parseSvgWith(string(fileData), optsToSvg(opts))
 	if err != nil {
 		return nil, err
 	}
 	return p.buildParsed(hash, vg, 1), nil
+}
+
+func optsToSvg(o gui.SvgParseOpts) ParseOptions {
+	return ParseOptions{PrefersReducedMotion: o.PrefersReducedMotion}
+}
+
+func parserSourceHashWithOpts(
+	src string, inline bool, opts gui.SvgParseOpts,
+) uint64 {
+	return mixOptsHash(parserSourceHash(src, inline), opts)
+}
+
+func mixOptsHash(h uint64, opts gui.SvgParseOpts) uint64 {
+	const fnvPrime = uint64(0x100000001b3)
+	var b byte
+	if opts.PrefersReducedMotion {
+		b = 1
+	}
+	h ^= uint64(b)
+	h *= fnvPrime
+	return h
 }
 
 // ParseSvgDimensions extracts width/height without full parse.
@@ -124,29 +162,15 @@ func (p *Parser) TessellateAnimated(
 		return nil
 	}
 	vg := entry.vg
-	animated := p.getAnimatedScratch(len(vg.Paths))
-	for i := range vg.Paths {
-		src := &vg.Paths[i]
-		if !src.Animated {
-			continue
-		}
-		// Skip clip-pathed animated paths; caller falls back to
-		// cached triangles.
-		if src.ClipPathID != "" {
-			continue
-		}
-		ov, hasOv := overrides[src.PathID]
-		if !hasOv || ov.Mask == 0 {
-			// Animated but no live overrides this frame — still
-			// re-tessellate from static primitive to preserve
-			// cross-frame consistency with the override branch.
-			clone := *src
-			animated = append(animated, clone)
-			continue
-		}
-		clone := *src
-		applyOverridesToPath(&clone, ov)
-		animated = append(animated, clone)
+	totalCap := len(vg.Paths)
+	for i := range vg.FilteredGroups {
+		totalCap += len(vg.FilteredGroups[i].Paths)
+	}
+	animated := p.getAnimatedScratch(totalCap)
+	animated = collectAnimatedPaths(animated, vg.Paths, overrides)
+	for gi := range vg.FilteredGroups {
+		animated = collectAnimatedPaths(
+			animated, vg.FilteredGroups[gi].Paths, overrides)
 	}
 	if len(animated) == 0 {
 		p.putAnimatedScratch(animated)
@@ -164,6 +188,26 @@ func (p *Parser) TessellateAnimated(
 	}
 	p.putAnimatedScratch(animated)
 	return result
+}
+
+// collectAnimatedPaths appends clones of every Animated, non-clip-
+// pathed entry in src into dst, applying any matching attribute
+// override. Inlined (rather than a closure) so the hot path does not
+// allocate a closure capturing the override map per call.
+func collectAnimatedPaths(dst []VectorPath, src []VectorPath,
+	overrides map[uint32]gui.SvgAnimAttrOverride) []VectorPath {
+	for i := range src {
+		s := &src[i]
+		if !s.Animated || s.ClipPathID != "" {
+			continue
+		}
+		clone := *s
+		if ov, ok := overrides[s.PathID]; ok && ov.Mask != 0 {
+			applyOverridesToPath(&clone, ov)
+		}
+		dst = append(dst, clone)
+	}
+	return dst
 }
 
 func (p *Parser) getAnimatedScratch(minCap int) []VectorPath {
@@ -371,18 +415,27 @@ func (p *Parser) ReleaseParsed(parsed *gui.SvgParsed) {
 }
 
 // InvalidateSvgSource invalidates parser cache for one SVG source.
+// All option-variants of the source (e.g. with/without
+// prefers-reduced-motion) are dropped together since the source
+// string is the user-visible identity.
 func (p *Parser) InvalidateSvgSource(svgSrc string) {
+	dropVariants := func(base uint64) {
+		p.removeHash(mixOptsHash(base, gui.SvgParseOpts{}))
+		p.removeHash(mixOptsHash(base, gui.SvgParseOpts{
+			PrefersReducedMotion: true,
+		}))
+	}
 	inline := strings.HasPrefix(svgSrc, "<")
 	if inline {
-		p.removeHash(parserSourceHash(svgSrc, true))
+		dropVariants(parserSourceHash(svgSrc, true))
 		return
 	}
-	p.removeHash(parserSourceHash(svgSrc, false))
+	dropVariants(parserSourceHash(svgSrc, false))
 	clean := filepath.Clean(svgSrc)
 	if abs, err := filepath.Abs(clean); err == nil {
-		p.removeHash(parserSourceHash(abs, false))
+		dropVariants(parserSourceHash(abs, false))
 		if resolved, err := filepath.EvalSymlinks(abs); err == nil {
-			p.removeHash(parserSourceHash(resolved, false))
+			dropVariants(parserSourceHash(resolved, false))
 		}
 	}
 }
@@ -511,6 +564,11 @@ func mixHash(h uint64, extra string) uint64 {
 	return h
 }
 
+// maxGroupParentDepth caps GroupParent ancestor walks. Author-id
+// collisions could in theory form a cycle; combined with the per-walk
+// visited set this guards against pathological inputs.
+const maxGroupParentDepth = 64
+
 // resolveAnimationTargets populates each SvgAnimation.TargetPathIDs
 // by scanning vg.Paths (and filtered-group paths) for VectorPaths
 // whose GroupID matches the animation's binding. A single shape-id
@@ -521,15 +579,28 @@ func resolveAnimationTargets(vg *VectorGraphic) {
 	if len(vg.Animations) == 0 {
 		return
 	}
-	// Index PathIDs by GroupID across main + filtered paths.
-	byGroup := make(map[string][]uint32)
+	byGroup := make(map[string][]uint32, len(vg.GroupParent)+8)
+	visited := make(map[string]struct{}, 8)
 	collect := func(paths []VectorPath) {
 		for i := range paths {
 			p := &paths[i]
 			if p.GroupID == "" || p.PathID == 0 {
 				continue
 			}
-			byGroup[p.GroupID] = append(byGroup[p.GroupID], p.PathID)
+			gid := p.GroupID
+			clear(visited)
+			for depth := 0; gid != "" && depth < maxGroupParentDepth; depth++ {
+				if _, seen := visited[gid]; seen {
+					break
+				}
+				visited[gid] = struct{}{}
+				byGroup[gid] = append(byGroup[gid], p.PathID)
+				parent, ok := vg.GroupParent[gid]
+				if !ok || parent == gid {
+					break
+				}
+				gid = parent
+			}
 		}
 	}
 	collect(vg.Paths)
