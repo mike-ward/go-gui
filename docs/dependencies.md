@@ -1,34 +1,81 @@
-# Dependency Updates
+# Dependencies
 
-This project depends on `github.com/mike-ward/go-glyph` for text
-shaping/rendering. The module is public and fetched directly from GitHub.
+Inventory of every Go module pulled in by go-gui. Source of truth:
+[`go.mod`](../go.mod) (declarations) and [`go.sum`](../go.sum)
+(content checksums).
 
-## How dependency resolution works
+Go toolchain pin: `go 1.26.0`.
 
-- [`go.mod`](../go.mod) declares module requirements.
-- [`go.sum`](../go.sum) records checksums for exact dependency contents.
+## Direct Dependencies
 
-## Updating `go-glyph`
+| Module                            | Version  | Purpose                                                                  |
+| --------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `github.com/mike-ward/go-glyph`   | v1.6.5   | Text shaping + glyph rasterization. Required by every backend.           |
+| `github.com/veandco/go-sdl2`      | v0.4.40  | SDL2 backend (`gui/backend/sdl2`). Window, input, GL/Metal context glue. |
+| `github.com/go-gl/gl`             | (pseudo) | OpenGL bindings for `gui/backend/gl`.                                    |
+| `github.com/tdewolff/parse/v2`    | v2.8.12  | CSS tokenizer for the SVG `<style>` / `style=""` cascade pipeline.       |
+| `github.com/alecthomas/chroma/v2` | v2.23.1  | Syntax highlighting in the markdown widget.                              |
+| `github.com/yuin/goldmark`        | v1.8.2   | Markdown parser (markdown widget + showcase docs).                       |
+| `github.com/yuin/goldmark-emoji`  | v1.0.6   | Goldmark extension: `:emoji:` shortcodes.                                |
+| `github.com/go-pdf/fpdf`          | v0.9.0   | PDF generation for the print-dialog backend.                             |
+| `github.com/godbus/dbus/v5`       | v5.2.2   | Linux native platform: notifications, portals.                           |
+| `golang.org/x/tools`              | v0.42.0  | `go/analysis` framework for the `requiredid` analyzer (`tools/`).        |
 
-```bash
-go get github.com/mike-ward/go-glyph@vX.Y.Z
-go mod tidy
-```
+## Indirect Dependencies
 
-## Updating other dependencies
+Pulled in transitively; listed for completeness.
+
+| Module                       | Version | Pulled in by                         |
+| ---------------------------- | ------- | ------------------------------------ |
+| `github.com/dlclark/regexp2` | v1.11.5 | chroma                               |
+| `github.com/rivo/uniseg`     | v0.4.7  | grapheme segmentation (chroma/glyph) |
+| `golang.org/x/mod`           | v0.33.0 | x/tools                              |
+| `golang.org/x/sync`          | v0.20.0 | x/tools                              |
+| `golang.org/x/sys`           | v0.43.0 | sdl2 / godbus                        |
+
+## Updating
 
 ```bash
 go get <module>@<version>
 go mod tidy
 ```
 
-## Verification
-
-Run these checks before committing:
+Example:
 
 ```bash
-go test ./gui/...
-go vet ./...
+go get github.com/mike-ward/go-glyph@v1.6.6
+go mod tidy
 ```
 
-Commit both `go.mod` and `go.sum` whenever dependencies change.
+## Local go-glyph Workflow
+
+Day-to-day text work often runs against a sibling checkout at
+`~/Documents/github/go-glyph`. Wire it in via a `replace` directive:
+
+```bash
+go mod edit -replace github.com/mike-ward/go-glyph=../go-glyph
+```
+
+Drop the replace before tagging:
+
+```bash
+go mod edit -dropreplace github.com/mike-ward/go-glyph
+go mod tidy
+```
+
+`go.mod` on `main` must not carry a local replace — CI fetches the
+tagged module.
+
+## Verification
+
+Pre-commit checks (PostToolUse hook runs lint-fix + tests on every
+`.go` edit; reproduce manually with):
+
+```bash
+go build ./...
+go vet ./...
+golangci-lint run ./...
+go test ./...
+```
+
+Commit `go.mod` and `go.sum` together whenever either changes.

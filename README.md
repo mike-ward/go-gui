@@ -10,6 +10,9 @@ no diffing, just fast, composable UI.**
 
 ![showcase](assets/showcase.png)
 
+Showcase contains the framework documentation. Every widget demo has a button
+in the upper-right corner that displays documentation about the widget.
+
 ---
 
 ## 📋 About
