@@ -2,44 +2,44 @@ css-rotate.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
 css-rotate.svg static tris=1 hash=fe4f762601dac768
 css-rotate.svg anims  hash=aa3644efe93f4626
 css-pulse-opacity.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
-css-pulse-opacity.svg static tris=1 hash=6ceb86b61c7c48a4
+css-pulse-opacity.svg static tris=1 hash=0198f099f6c4b1dc
 css-pulse-opacity.svg anims  hash=71117a4c1082f0d5
 css-color-tween.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
-css-color-tween.svg static tris=1 hash=e003349d77748bcd
+css-color-tween.svg static tris=1 hash=5e652a8842326ebf
 css-color-tween.svg anims  hash=d49c0a3c245ea060
 css-alternate.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
-css-alternate.svg static tris=1 hash=a95fae88023927ca
+css-alternate.svg static tris=1 hash=aef9400b4391ee03
 css-alternate.svg anims  hash=e5e59a5fd36e0b42
 css-fill-modes.svg vg     w=24 h=24 vb=0,0 paths=2 anims=2
-css-fill-modes.svg static tris=2 hash=f7669e61a172cb1d
+css-fill-modes.svg static tris=2 hash=649bfeaa0e1178b6
 css-fill-modes.svg anims  hash=e37114ee47510493
 css-cubic-bezier.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
 css-cubic-bezier.svg static tris=1 hash=335446e784ffc6f7
 css-cubic-bezier.svg anims  hash=513ca1ea4125d086
 css-steps.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
-css-steps.svg static tris=1 hash=54cf1b898e5a25cf
+css-steps.svg static tris=1 hash=7ebce87eff33bde3
 css-steps.svg anims  hash=5988c4b257dc2de7
 css-compound-transform.svg vg     w=24 h=24 vb=0,0 paths=1 anims=2
-css-compound-transform.svg static tris=1 hash=0c39052ee2574055
+css-compound-transform.svg static tris=1 hash=6427462e2a89dc6d
 css-compound-transform.svg anims  hash=58339dc4b1fef8a8
 css-multi-anim.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
 css-multi-anim.svg static tris=1 hash=21471730b3fa6abc
 css-multi-anim.svg anims  hash=8dc2ba04deaafd67
 css-custom-prop.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
-css-custom-prop.svg static tris=1 hash=cdf82cbf6fd03b91
+css-custom-prop.svg static tris=1 hash=7c3230e063253268
 css-custom-prop.svg anims  hash=79b64880941ec841
 css-iteration-count.svg vg     w=24 h=24 vb=0,0 paths=2 anims=2
-css-iteration-count.svg static tris=2 hash=ff5d906fc5a8c6c9
+css-iteration-count.svg static tris=2 hash=a2b1b918a73505f4
 css-iteration-count.svg anims  hash=80367b619ebfed45
 css-id-class-cascade.svg vg     w=24 h=24 vb=0,0 paths=3 anims=3
-css-id-class-cascade.svg static tris=3 hash=55014d570fef4763
+css-id-class-cascade.svg static tris=3 hash=938d8ef6f7eadf73
 css-id-class-cascade.svg anims  hash=1e7272f42a72f464
 mixed-smil-css.svg vg     w=24 h=24 vb=0,0 paths=2 anims=2
-mixed-smil-css.svg static tris=2 hash=74513520521f9f69
+mixed-smil-css.svg static tris=2 hash=65013f1a73e675f3
 mixed-smil-css.svg anims  hash=2da56223027d2756
 mixed-presentation-cascade.svg vg     w=24 h=24 vb=0,0 paths=3 anims=3
 mixed-presentation-cascade.svg static tris=3 hash=050489a9fd8170a2
 mixed-presentation-cascade.svg anims  hash=a9cd7b45d48014dd
 mixed-display-none.svg vg     w=24 h=24 vb=0,0 paths=1 anims=1
-mixed-display-none.svg static tris=1 hash=fc545bc216776edf
+mixed-display-none.svg static tris=1 hash=3481816722ed18ef
 mixed-display-none.svg anims  hash=aa3644efe93f4626

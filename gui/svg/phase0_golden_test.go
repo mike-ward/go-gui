@@ -173,12 +173,12 @@ func hashTessellated(paths []gui.TessellatedPath) string {
 	put := func(f float32) {
 		// Normalize NaN to a single bit pattern so platform-specific
 		// NaN payloads cannot perturb the digest. Quantize finite
-		// values to 1e-4 so ULP-level drift between amd64 (asm
+		// values to 1e-3 so ULP-level drift between amd64 (asm
 		// math.Sin/Cos) and arm64 (pure-Go) does not flip the digest.
 		if math.IsNaN(float64(f)) {
 			f = float32(math.NaN())
 		} else if !math.IsInf(float64(f), 0) {
-			f = float32(math.Round(float64(f)*1e4) / 1e4)
+			f = float32(math.Round(float64(f)*1e3) / 1e3)
 		}
 		binary.LittleEndian.PutUint32(buf[:], math.Float32bits(f))
 		h.Write(buf[:])
@@ -232,7 +232,7 @@ func hashAnimations(anims []gui.SvgAnimation) string {
 		if math.IsNaN(float64(f)) {
 			f = float32(math.NaN())
 		} else if !math.IsInf(float64(f), 0) {
-			f = float32(math.Round(float64(f)*1e4) / 1e4)
+			f = float32(math.Round(float64(f)*1e3) / 1e3)
 		}
 		binary.LittleEndian.PutUint32(buf[:], math.Float32bits(f))
 		h.Write(buf[:])
