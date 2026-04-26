@@ -49,6 +49,10 @@ type TessellatedPath struct {
 	BaseRotCX    float32
 	BaseRotCY    float32
 	HasBaseXform bool
+	// Bbox over Triangles in local (pre-base-transform) coordinates.
+	// Populated by the tessellator. Used for fast hit-test reject in
+	// ContainsPoint and may be reused by future viewport culling.
+	MinX, MinY, MaxX, MaxY float32
 }
 
 // SvgText holds a parsed SVG text element.

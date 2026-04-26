@@ -441,6 +441,10 @@ gui.Input(gui.InputCfg{
 | [`showcase`](examples/showcase/)                           | Interactive widget showcase                 |
 | [`snake`](examples/snake/)                                 | Snake game                                  |
 | [`svg`](examples/svg/)                                     | SVG loading and display                     |
+| [`svg_a11y`](examples/svg_a11y/)                           | SVG accessibility metadata (title/desc/aria) |
+| [`svg_aspect`](examples/svg_aspect/)                       | preserveAspectRatio alignment grid          |
+| [`svg_hittest`](examples/svg_hittest/)                     | Click-hit test on tessellated SVG paths     |
+| [`svg_radial`](examples/svg_radial/)                       | radialGradient rendering                    |
 | [`system_tray`](examples/system_tray/)                     | System tray icon and menu                   |
 | [`time_travel`](examples/time_travel/)                     | Counter with time-travel scrubber window    |
 | [`todo`](examples/todo/)                                   | Classic todo app                            |

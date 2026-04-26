@@ -24,14 +24,14 @@ buildapp [-o outdir] [-name Name] [-id bundle.id] [-icon icon.png|.icns] [-versi
 
 Positional arg: path to a compiled Mach-O executable.
 
-| Flag       | Default                 | Purpose                            |
-| ---------- | ----------------------- | ---------------------------------- |
-| `-o`       | `.`                     | Output directory                   |
-| `-name`    | binary basename, capped | Bundle display name                |
-| `-id`      | `local.gogui.<name>`    | `CFBundleIdentifier`               |
-| `-icon`    | none                    | `.png` (auto-converted) or `.icns` |
-| `-version` | `1.0`                   | `CFBundleVersion` / short version  |
-| `-bundle-deps` | `false`             | Bundle non-system dylibs into `Contents/Frameworks` |
+| Flag           | Default                 | Purpose                                             |
+| -------------- | ----------------------- | --------------------------------------------------- |
+| `-o`           | `.`                     | Output directory                                    |
+| `-name`        | binary basename, capped | Bundle display name                                 |
+| `-id`          | `local.gogui.<name>`    | `CFBundleIdentifier`                                |
+| `-icon`        | none                    | `.png` (auto-converted) or `.icns`                  |
+| `-version`     | `1.0`                   | `CFBundleVersion` / short version                   |
+| `-bundle-deps` | `false`                 | Bundle non-system dylibs into `Contents/Frameworks` |
 
 ### `-bundle-deps`
 
@@ -48,9 +48,11 @@ re-signed with `codesign -s -` (required on Apple Silicon). Requires `otool`,
 `install_name_tool`, and `codesign` (Xcode Command Line Tools).
 
 Verify a clean bundle:
+
 ```
 find Foo.app -type f -perm +111 -exec otool -L {} \; | grep -E '/opt/homebrew|/usr/local'
 ```
+
 Empty output means no host paths leaked into the bundle.
 
 `.png` icons are converted to `.icns` via `sips` and `iconutil` (both

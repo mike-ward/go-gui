@@ -60,6 +60,10 @@ func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 		}
 	}
 
+	vg.A11y = parseRootA11y(root)
+	vg.PreserveAlign, vg.PreserveSlice = parsePreserveAspectRatio(
+		root.AttrMap["preserveAspectRatio"])
+
 	// Pre-pass: extract <defs>.
 	vg.ClipPaths = parseDefsClipPaths(root)
 	vg.Gradients = parseDefsGradients(root)

@@ -172,6 +172,11 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 			result = appendDegeneratePlaceholders(result, path, seed)
 		}
 	}
+	for i := range result {
+		result[i].MinX, result[i].MinY,
+			result[i].MaxX, result[i].MaxY =
+			bboxFromTriangles(result[i].Triangles)
+	}
 	return result
 }
 
@@ -1065,6 +1070,25 @@ func pointInTriangle(px, py, ax, ay, bx, by, cx, cy float32) bool {
 func resolveGradient(g gui.SvgGradientDef, minX, minY, maxX, maxY float32) gui.SvgGradientDef {
 	w := maxX - minX
 	h := maxY - minY
+	if g.IsRadial {
+		// OBB → user space mapping. Spec maps the OBB to a 1×1
+		// square then transforms back, which can yield elliptical
+		// gradients. Approximation: scale R uniformly by the average
+		// of width and height. For square viewBoxes (most icon use)
+		// this is exact; for wide/tall bboxes the gradient stays
+		// circular rather than stretching to an ellipse.
+		avg := (w + h) * 0.5
+		return gui.SvgGradientDef{
+			Stops:         g.Stops,
+			CX:            minX + g.CX*w,
+			CY:            minY + g.CY*h,
+			R:             g.R * avg,
+			FX:            minX + g.FX*w,
+			FY:            minY + g.FY*h,
+			IsRadial:      true,
+			GradientUnits: "userSpaceOnUse",
+		}
+	}
 	return gui.SvgGradientDef{
 		Stops:         g.Stops,
 		X1:            minX + g.X1*w,
@@ -1092,6 +1116,9 @@ func bboxFromTriangles(tris []float32) (float32, float32, float32, float32) {
 }
 
 func projectOntoGradient(vx, vy float32, g gui.SvgGradientDef) float32 {
+	if g.IsRadial {
+		return projectOntoRadial(vx, vy, g)
+	}
 	dx := g.X2 - g.X1
 	dy := g.Y2 - g.Y1
 	lenSq := dx*dx + dy*dy
@@ -1099,6 +1126,32 @@ func projectOntoGradient(vx, vy float32, g gui.SvgGradientDef) float32 {
 		return 0
 	}
 	t := ((vx-g.X1)*dx + (vy-g.Y1)*dy) / lenSq
+	if t < 0 {
+		return 0
+	}
+	if t > 1 {
+		return 1
+	}
+	return t
+}
+
+// projectOntoRadial computes gradient parameter t for a radial
+// gradient at vertex (vx, vy). Simplified implementation: distance
+// from focal point divided by R, clamped to [0,1]. Full spec maps
+// the focal-to-edge vector through a cone, which produces subtly
+// different falloff when fx,fy != cx,cy. Tracked as future polish.
+func projectOntoRadial(vx, vy float32, g gui.SvgGradientDef) float32 {
+	r64 := float64(g.R)
+	if g.R <= 0 || math.IsNaN(r64) || math.IsInf(r64, 0) {
+		return 0
+	}
+	dx := vx - g.FX
+	dy := vy - g.FY
+	d := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+	t := d / g.R
+	if t != t { // NaN
+		return 0
+	}
 	if t < 0 {
 		return 0
 	}
@@ -1140,6 +1193,9 @@ func interpolateGradient(stops []gui.SvgGradientStop, t float32) gui.SvgColor {
 }
 
 func subdivideGradientTris(tris []float32, grad gui.SvgGradientDef) []float32 {
+	if grad.IsRadial {
+		return subdivideRadialTris(tris, grad)
+	}
 	if len(grad.Stops) <= 2 {
 		return tris
 	}
@@ -1158,6 +1214,61 @@ func subdivideGradientTris(tris []float32, grad gui.SvgGradientDef) []float32 {
 			tris[i+4], tris[i+5], grad, stopTs, 0, &result)
 	}
 	return result
+}
+
+// subdivideRadialTris recursively splits triangles whose edges span
+// more than ~1/24 of the gradient radius. Per-vertex sampling on
+// long edges interpolates linearly across the triangle, which
+// linearizes the radial falloff and produces a flat appearance for
+// large primitives (e.g. a 100×100 rect filled by 2 triangles).
+// Smaller triangles approximate the circular iso-t lines closely
+// enough that vertex coloring reads as a smooth radial gradient.
+func subdivideRadialTris(tris []float32, grad gui.SvgGradientDef) []float32 {
+	// Guard against non-finite R (NaN survives the < comparison and
+	// would defeat the depth-cap heuristic, forcing every source
+	// triangle to recurse to maxRadialDepth = 4096 splits).
+	r64 := float64(grad.R)
+	if math.IsNaN(r64) || math.IsInf(r64, 0) || grad.R <= 0 {
+		return tris
+	}
+	target := grad.R / 24
+	if target < 1e-3 {
+		target = 1e-3
+	}
+	result := make([]float32, 0, len(tris)*4)
+	for i := 0; i+5 < len(tris); i += 6 {
+		splitRadialTri(tris[i], tris[i+1], tris[i+2], tris[i+3],
+			tris[i+4], tris[i+5], target, 0, &result)
+	}
+	return result
+}
+
+func splitRadialTri(ax, ay, bx, by, cx, cy float32,
+	target float32, depth int, result *[]float32) {
+	const maxRadialDepth = 6
+	abx := bx - ax
+	aby := by - ay
+	bcx := cx - bx
+	bcy := cy - by
+	cax := ax - cx
+	cay := ay - cy
+	maxLenSq := max(abx*abx+aby*aby,
+		max(bcx*bcx+bcy*bcy, cax*cax+cay*cay))
+	if depth >= maxRadialDepth || maxLenSq <= target*target {
+		*result = append(*result, ax, ay, bx, by, cx, cy)
+		return
+	}
+	mabx, maby := (ax+bx)*0.5, (ay+by)*0.5
+	mbcx, mbcy := (bx+cx)*0.5, (by+cy)*0.5
+	mcax, mcay := (cx+ax)*0.5, (cy+ay)*0.5
+	splitRadialTri(ax, ay, mabx, maby, mcax, mcay,
+		target, depth+1, result)
+	splitRadialTri(mabx, maby, bx, by, mbcx, mbcy,
+		target, depth+1, result)
+	splitRadialTri(mcax, mcay, mbcx, mbcy, cx, cy,
+		target, depth+1, result)
+	splitRadialTri(mabx, maby, mbcx, mbcy, mcax, mcay,
+		target, depth+1, result)
 }
 
 func splitTriAtStops(ax, ay, bx, by, cx, cy float32, grad gui.SvgGradientDef, stopTs []float32, depth int, result *[]float32) {

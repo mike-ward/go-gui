@@ -105,6 +105,46 @@ func parseDefsGradients(root *xmlNode) map[string]gui.SvgGradientDef {
 			GradientUnits: unitsStr,
 		}
 	}
+
+	var rnodes []*xmlNode
+	findAllByName(root, "radialGradient", &rnodes)
+	for _, rg := range rnodes {
+		gradID := rg.AttrMap["id"]
+		if gradID == "" {
+			continue
+		}
+
+		unitsStr := rg.AttrMap["gradientUnits"]
+		if unitsStr == "" {
+			unitsStr = "objectBoundingBox"
+		}
+		isOBB := unitsStr != "userSpaceOnUse"
+
+		// SVG spec defaults for radialGradient: cx=cy=r=50%, fx=cx,
+		// fy=cy. In OBB units 50% == 0.5; in userSpaceOnUse the
+		// percentages resolve against the viewport at render time —
+		// fall back to the parsed numeric (typically 0) for that
+		// case so existing fixtures don't shift.
+		defHalf := float32(0)
+		if isOBB {
+			defHalf = 0.5
+		}
+		cx := gradientCoordOrDefault(rg.AttrMap, "cx", isOBB, defHalf)
+		cy := gradientCoordOrDefault(rg.AttrMap, "cy", isOBB, defHalf)
+		r := gradientCoordOrDefault(rg.AttrMap, "r", isOBB, defHalf)
+		fx := gradientCoordOrDefault(rg.AttrMap, "fx", isOBB, cx)
+		fy := gradientCoordOrDefault(rg.AttrMap, "fy", isOBB, cy)
+
+		stops := parseGradientStops(rg)
+
+		gradients[gradID] = gui.SvgGradientDef{
+			CX: cx, CY: cy, R: r,
+			FX: fx, FY: fy,
+			IsRadial:      true,
+			Stops:         stops,
+			GradientUnits: unitsStr,
+		}
+	}
 	return gradients
 }
 

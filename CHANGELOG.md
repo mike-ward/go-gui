@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.13.0] - unreleased
+
+### Added
+
+- SVG accessibility metadata. `<title>`, `<desc>`, `aria-label`,
+  `aria-roledescription`, and `aria-hidden` on the root `<svg>` are
+  now parsed and exposed via `SvgParsed.A11y` (new `SvgA11y` nested
+  struct). Previously dropped silently.
+- `<radialGradient>` is now parsed and rendered. Supports
+  `cx`/`cy`/`r`/`fx`/`fy` in `objectBoundingBox` (default) or
+  `userSpaceOnUse`. Stops use the same semantics as linear
+  gradients. Focal interpolation uses a simplified
+  distance-from-focal model; full SVG cone-focused projection is
+  noted as future polish in `docs/svg-support.md`.
+- `preserveAspectRatio` is now honored on the root `<svg>`. All 9
+  alignment values (`xMin`/`Mid`/`Max` × `YMin`/`Mid`/`Max`) plus
+  `meet`/`slice` are supported. The default (`xMidYMid meet`) is
+  unchanged from prior behavior, so existing SVGs render
+  identically. `none` (non-uniform stretch) currently falls back to
+  default — adding non-uniform render support is tracked as polish.
+- `(*TessellatedPath).ContainsPoint(px, py)` for hit-testing filled
+  SVG paths. `TessellatedPath` now carries a precomputed bbox
+  (`MinX`/`MinY`/`MaxX`/`MaxY`) for fast reject. Author base
+  transforms are inverted before the barycentric triangle test.
+  Stroke contributions are skipped — pass the fill `TessellatedPath`
+  for hit-testing.
+- `examples/svg_a11y`, `examples/svg_radial`, `examples/svg_aspect`,
+  `examples/svg_hittest` — visual demos for each new feature.
+
+### Changed
+
+- `SvgParsed`, `TessellatedPath`, and `CachedSvg` gained additive
+  fields. Keyed struct literals are unaffected; positional literals
+  would need to be updated (none found in tree or sibling repos —
+  go-glyph, go-charts, go-edit, go-kite).
+
 ## [v0.12.7] - 2026-04-26
 
 ### Fixed

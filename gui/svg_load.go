@@ -19,7 +19,10 @@ type svgParserCacheInvalidator interface {
 	ClearSvgParserCache()
 }
 
-// CachedSvgPath holds tessellated geometry with vertex colors.
+// CachedSvgPath holds tessellated geometry with vertex colors. The
+// MinX/MaxX/MinY/MaxY bbox carried by TessellatedPath is intentionally
+// NOT mirrored here — ContainsPoint hit-testing operates on
+// SvgParsed.Paths (TessellatedPath), not on render paths.
 type CachedSvgPath struct {
 	Triangles    []float32
 	Color        Color
@@ -103,6 +106,12 @@ type CachedSvg struct {
 	// stay in raw viewBox space throughout tessellation and animation.
 	ViewBoxX float32
 	ViewBoxY float32
+	// PreserveAlign / PreserveSlice mirror the parsed SVG's
+	// preserveAspectRatio attribute so renderSvg can offset content
+	// without re-loading the parser. PreserveSlice also drives the
+	// scale picked above (max for slice, min for meet).
+	PreserveAlign SvgAlign
+	PreserveSlice bool
 	// BaseByPath maps PathID → decomposed author base transform.
 	// Populated only for paths that have animations targeting them
 	// AND whose base transform decomposed cleanly; used to seed
@@ -606,7 +615,9 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 	dimCache := StateMap[uint64, [2]float32](w, nsSvgDimCache, capModerate)
 	dimCache.Set(srcHash, [2]float32{parsed.Width, parsed.Height})
 
-	// Compute scale.
+	// Compute scale. preserveAspectRatio="<align> meet" → fit
+	// (min); "<align> slice" → fill (max). Alignment offset is
+	// applied in renderSvg using PreserveAlign.
 	scale := float32(1)
 	if width > 0 && height > 0 {
 		scaleX := float32(1)
@@ -617,7 +628,11 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		if parsed.Height > 0 {
 			scaleY = height / parsed.Height
 		}
-		scale = min(scaleX, scaleY)
+		if parsed.PreserveSlice {
+			scale = max(scaleX, scaleY)
+		} else {
+			scale = min(scaleX, scaleY)
+		}
 	}
 
 	triangles := w.svgParser.Tessellate(parsed, scale)
@@ -675,6 +690,8 @@ func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, erro
 		Scale:            scale,
 		ViewBoxX:         parsed.ViewBoxX,
 		ViewBoxY:         parsed.ViewBoxY,
+		PreserveAlign:    parsed.PreserveAlign,
+		PreserveSlice:    parsed.PreserveSlice,
 		BaseByPath:       baseByPath,
 		defsPathData:     defsPathData,
 	}

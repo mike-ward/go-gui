@@ -17,6 +17,52 @@ type SvgParsed struct {
 	// animateTransform in replace mode cannot clobber the mapping.
 	ViewBoxX float32
 	ViewBoxY float32
+	// A11y carries document-level accessibility metadata from <title>,
+	// <desc>, and aria-* attributes on the root <svg>. Empty fields
+	// indicate the source SVG omitted them.
+	A11y SvgA11y
+	// PreserveAlign encodes the alignment portion of the SVG
+	// preserveAspectRatio attribute. Default is SvgAlignXMidYMid,
+	// which matches the renderer's pre-existing centered scale.
+	PreserveAlign SvgAlign
+	// PreserveSlice is true when preserveAspectRatio specifies
+	// "slice"; default false ("meet"). Slice scales to fill and
+	// clips overflow; meet scales to fit and leaves slack.
+	PreserveSlice bool
+}
+
+// SvgAlign encodes the SVG preserveAspectRatio alignment grid.
+// Values match the spec's nine xMin/Mid/Max × yMin/Mid/Max keywords.
+// SvgAlignNone is reserved for the spec's "none" keyword which
+// requests non-uniform stretch — currently treated as
+// SvgAlignXMidYMid + meet pending renderer support.
+type SvgAlign uint8
+
+// SvgAlign values. SvgAlignXMidYMid is the spec default and the zero
+// value so default-initialized SvgParsed values match historical
+// renderer behavior without explicit setup.
+const (
+	SvgAlignXMidYMid SvgAlign = iota
+	SvgAlignXMinYMin
+	SvgAlignXMidYMin
+	SvgAlignXMaxYMin
+	SvgAlignXMinYMid
+	SvgAlignXMaxYMid
+	SvgAlignXMinYMax
+	SvgAlignXMidYMax
+	SvgAlignXMaxYMax
+	SvgAlignNone
+)
+
+// SvgA11y holds accessibility metadata from the root <svg> element.
+// Title/Desc come from direct <title>/<desc> child elements; aria-*
+// fields read from root attributes.
+type SvgA11y struct {
+	Title        string
+	Desc         string
+	AriaLabel    string
+	AriaRoleDesc string
+	AriaHidden   bool
 }
 
 // SvgParser parses and tessellates SVG documents. Set by the

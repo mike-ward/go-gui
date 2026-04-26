@@ -28,10 +28,14 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		color = dimAlpha(color)
 	}
 
-	// Center SVG content within container (aspect-preserving
-	// scale may leave unused space in one dimension).
-	clipX := shape.X + (shape.Width-cached.Width*cached.Scale)/2
-	clipY := shape.Y + (shape.Height-cached.Height*cached.Scale)/2
+	// Position SVG content per preserveAspectRatio. Align splits
+	// the slack (or, under slice, the overflow) along each axis;
+	// default xMidYMid centers — historic behavior.
+	slackX := shape.Width - cached.Width*cached.Scale
+	slackY := shape.Height - cached.Height*cached.Scale
+	xFrac, yFrac := preserveAlignFractions(cached.PreserveAlign)
+	clipX := shape.X + slackX*xFrac
+	clipY := shape.Y + slackY*yFrac
 	// ViewBoxX/Y are folded into sx/sy as an outer translate so
 	// authored coords stay in raw viewBox space through tessellation
 	// and SMIL animation — animateTransform replace cannot reach this
@@ -41,12 +45,15 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	sx := clipX - cached.ViewBoxX*cached.Scale
 	sy := clipY - cached.ViewBoxY*cached.Scale
 
-	// Clip to intersection of parent clip and scaled viewBox.
+	// Clip to intersection of parent clip and the shape rect. Under
+	// preserveAspectRatio=slice the scaled content is larger than the
+	// shape; the shape rect bounds the visible region. Under meet the
+	// shape is the bounding box and content fits within it.
 	svgClip, ok := rectIntersection(clip, DrawClip{
-		X:      clipX,
-		Y:      clipY,
-		Width:  cached.Width * cached.Scale,
-		Height: cached.Height * cached.Scale,
+		X:      shape.X,
+		Y:      shape.Y,
+		Width:  shape.Width,
+		Height: shape.Height,
 	})
 	if !ok {
 		return
@@ -134,6 +141,35 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 
 	// Restore parent clip.
 	emitClipCmd(clip, w)
+}
+
+// preserveAlignFractions returns the (x, y) slack fraction for an
+// SvgAlign value. xMin / yMin → 0 (origin), xMid / yMid → 0.5
+// (center), xMax / yMax → 1 (right/bottom). SvgAlignNone falls back
+// to xMidYMid pending non-uniform stretch support.
+func preserveAlignFractions(a SvgAlign) (float32, float32) {
+	switch a {
+	case SvgAlignXMinYMin:
+		return 0, 0
+	case SvgAlignXMidYMin:
+		return 0.5, 0
+	case SvgAlignXMaxYMin:
+		return 1, 0
+	case SvgAlignXMinYMid:
+		return 0, 0.5
+	case SvgAlignXMaxYMid:
+		return 1, 0.5
+	case SvgAlignXMinYMax:
+		return 0, 1
+	case SvgAlignXMidYMax:
+		return 0.5, 1
+	case SvgAlignXMaxYMax:
+		return 1, 1
+	}
+	// Default branch covers SvgAlignXMidYMid + SvgAlignNone.
+	// TODO: SvgAlignNone should non-uniformly stretch (independent
+	// scaleX/scaleY in svg_load.go); currently treated as xMidYMid.
+	return 0.5, 0.5
 }
 
 // emitSvgGroup emits paths, text draws, and text path draws.

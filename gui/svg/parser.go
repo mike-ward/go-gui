@@ -464,6 +464,9 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 		Height:         vg.Height,
 		ViewBoxX:       vg.ViewBoxX,
 		ViewBoxY:       vg.ViewBoxY,
+		A11y:           vg.A11y,
+		PreserveAlign:  vg.PreserveAlign,
+		PreserveSlice:  vg.PreserveSlice,
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()

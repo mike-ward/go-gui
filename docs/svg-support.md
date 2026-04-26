@@ -32,11 +32,14 @@ Parse is allocation-conscious; render is per-frame and lock-free.
 
 | Attribute             | Status    | Notes                                       |
 | --------------------- | --------- | ------------------------------------------- |
-| `viewBox`             | Supported | Lowercase `viewbox` accepted (HTML quirk)   |
-| `width` / `height`    | Supported | Numeric, `%`, length units (px stripped)    |
-| `xmlns`               | Ignored   | Namespaces collapsed; xlink + svg both work |
-| `preserveAspectRatio` | Ignored   | Layout sizing decides aspect, not the asset |
-| `version`             | Ignored   | Treated as SVG 1.1                          |
+| `viewBox`             | Supported | Lowercase `viewbox` accepted (HTML quirk)            |
+| `width` / `height`    | Supported | Numeric, `%`, length units (px stripped)             |
+| `xmlns`               | Ignored   | Namespaces collapsed; xlink + svg both work          |
+| `preserveAspectRatio` | Supported | All 9 align values + `meet`/`slice`. `none` falls back to `xMidYMid meet` (non-uniform stretch deferred). |
+| `version`             | Ignored   | Treated as SVG 1.1                                   |
+| `aria-label`          | Supported | Surfaced via `SvgParsed.A11y.AriaLabel`              |
+| `aria-roledescription`| Supported | Surfaced via `SvgParsed.A11y.AriaRoleDesc`           |
+| `aria-hidden`         | Supported | `"true"` → `SvgParsed.A11y.AriaHidden`               |
 
 The viewBox dimension cap is `10000` per axis. Coordinates are
 clamped at ±`1000000`. Documents larger than `100000` elements or
@@ -63,7 +66,7 @@ clamped at ±`1000000`. Documents larger than `100000` elements or
 | `<image>`            | **Not supported**                                |
 | `<switch>`           | **Not supported**                                |
 | `<foreignObject>`    | **Not supported**                                |
-| `<title>` / `<desc>` | Ignored (parsed, dropped)                        |
+| `<title>` / `<desc>` | Supported (parsed → `SvgParsed.A11y.Title/Desc`) |
 
 `<use href="#id">` references are silently dropped — inline the
 referenced geometry instead, or duplicate paths.
@@ -112,8 +115,17 @@ the scanline tessellator.
 - `<stop offset stop-color stop-opacity>` (offset honored as `%` or 0–1)
 - `currentColor` stops (substituted at render-time tint)
 
-**Not supported:** `<radialGradient>`, `gradientTransform`,
-`spreadMethod` (treated as `pad`), `<pattern>`, `<meshgradient>`.
+`<radialGradient>` is supported with:
+
+- `cx`/`cy`/`r`/`fx`/`fy` as numbers or `%` (defaults: 50%; `fx`/`fy` default to `cx`/`cy`)
+- Same units + stop semantics as linear
+- Simplified focal interpolation: parameter `t` is `distance / R`
+  clamped to `[0,1]`. The full SVG cone-focused projection (subtle
+  edge-falloff difference when `fx`/`fy` differ from `cx`/`cy`) is a
+  future polish.
+
+**Not supported:** `gradientTransform`, `spreadMethod` (treated as
+`pad`), `<pattern>`, `<meshgradient>`.
 
 ### Stroke
 
@@ -184,7 +196,7 @@ renders without the filter).
 | `font-size`   | Supported (lengths)                       |
 | `font-weight` | Numeric or `bold` (≥600 → bold)           |
 | `font-style`  | `italic` honored                          |
-| `fill`        | Solid + linearGradient                    |
+| `fill`        | Solid + linearGradient + radialGradient   |
 | `<textPath>`  | Supported                                 |
 
 **Not supported:** `rotate` per-glyph, `lengthAdjust`, `textLength`,

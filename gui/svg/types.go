@@ -142,6 +142,13 @@ type VectorGraphic struct {
 	// animations onto descendant paths whose own GroupID is a
 	// nested synth ID.
 	GroupParent map[string]string
+	// A11y carries root-level accessibility metadata; mirrored into
+	// gui.SvgParsed by buildParsed.
+	A11y gui.SvgA11y
+	// PreserveAlign / PreserveSlice mirror the parsed
+	// preserveAspectRatio attribute. Defaults: xMidYMid meet.
+	PreserveAlign gui.SvgAlign
+	PreserveSlice bool
 }
 
 // identityTransform is the identity affine matrix.
