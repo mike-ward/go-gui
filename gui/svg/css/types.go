@@ -62,31 +62,67 @@ func (f NthFormula) Matches(idx int) bool {
 	return d <= 0 && (-d)%(-f.A) == 0
 }
 
-// Compound is a compound selector: an optional tag, an optional id,
-// zero or more classes, and optional pseudo-class constraints.
-// Tag == "" matches any element when no other constraints are
-// present; "*" is the explicit universal form.
-type Compound struct {
-	Tag      string
-	ID       string
-	Classes  []string
-	NthChild *NthFormula
-	Root     bool
-	Spec     Specificity
+// AttrOp identifies the operator in an attribute selector.
+type AttrOp uint8
+
+// AttrOp constants. Values mirror the CSS Selectors L4 operator set.
+const (
+	AttrOpExists    AttrOp = iota // [name]
+	AttrOpEqual                   // [name=value]
+	AttrOpInclude                 // [name~=value] (whitespace-separated word)
+	AttrOpDashMatch               // [name|=value] (value or value-prefixed)
+	AttrOpPrefix                  // [name^=value]
+	AttrOpSuffix                  // [name$=value]
+	AttrOpSubstring               // [name*=value]
+)
+
+// AttrSel is one [name op value] attribute constraint on a compound
+// selector. Name is lowercased. Op == AttrOpExists ignores Value.
+type AttrSel struct {
+	Name  string
+	Op    AttrOp
+	Value string
 }
 
+// Compound is a compound selector: an optional tag, an optional id,
+// zero or more classes, attribute constraints, and pseudo-class
+// constraints. Tag == "" matches any element when no other constraints
+// are present; "*" is the explicit universal form.
+type Compound struct {
+	Tag         string
+	ID          string
+	Classes     []string
+	Attrs       []AttrSel
+	NthChild    *NthFormula
+	Root        bool
+	HoverPseudo bool
+	FocusPseudo bool
+	// Not is an inner compound for :not(inner). Single-compound scope:
+	// :not(.a, .b) and nested :not(:not(...)) are not supported.
+	Not  *Compound
+	Spec Specificity
+}
+
+// Combinator joins two compound selectors in a complex selector.
+type Combinator byte
+
 // Combinator constants. CombStart marks the leftmost compound in a
-// complex selector (no left-hand neighbor).
+// complex selector (no left-hand neighbor). The single-byte values
+// for descendant/child/adjacent/general-sibling are the same as the
+// CSS source-form delim characters so combinatorFromDelim can map
+// directly.
 const (
-	CombStart      byte = 0
-	CombDescendant byte = ' '
-	CombChild      byte = '>'
+	CombStart          Combinator = 0
+	CombDescendant     Combinator = ' '
+	CombChild          Combinator = '>'
+	CombAdjacent       Combinator = '+'
+	CombGeneralSibling Combinator = '~'
 )
 
 // SelectorPart is one compound in a complex selector together with
 // the combinator that joins it to the previous part.
 type SelectorPart struct {
-	Combinator byte
+	Combinator Combinator
 	Compound   Compound
 }
 
@@ -152,13 +188,26 @@ type ParseOptions struct {
 	PrefersReducedMotion bool
 }
 
+// MatchState carries the runtime UI state pseudo-classes consult.
+// Hover and Focus mirror the user-agent's element-state bits and are
+// toggled by the renderer's mouse / focus dispatcher. Zero value =
+// neutral (no element hovered or focused).
+type MatchState struct {
+	Hover bool
+	Focus bool
+}
+
 // ElementInfo is the per-element identity the matcher needs.
 // Callers populate Index (1-based child position in the parent)
 // and IsRoot (true for the root <svg>) for pseudo-class evaluation.
+// Attrs feeds attribute selectors; nil map disables attr matching
+// for the element. State carries hover/focus flags.
 type ElementInfo struct {
 	Tag     string
 	ID      string
 	Classes []string
+	Attrs   map[string]string
 	Index   int
 	IsRoot  bool
+	State   MatchState
 }

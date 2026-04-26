@@ -129,7 +129,7 @@ func TestMatch_BasicAndSpecificity(t *testing.T) {
 		Tag:     "rect",
 		ID:      "id",
 		Classes: []string{"cls"},
-	}, nil)
+	}, nil, nil)
 	if len(got) != 3 {
 		t.Fatalf("matched: %d", len(got))
 	}
@@ -148,7 +148,7 @@ func TestMatch_ImportantBeatsSpecificity(t *testing.T) {
 	got := Match(rules, ElementInfo{
 		ID:      "id",
 		Classes: []string{"cls"},
-	}, nil)
+	}, nil, nil)
 	SortCascade(got)
 	if got[len(got)-1].Value != "blue" || !got[len(got)-1].Important {
 		t.Errorf("!important didn't win: %+v", got)
@@ -157,7 +157,7 @@ func TestMatch_ImportantBeatsSpecificity(t *testing.T) {
 
 func TestMatch_SourceOrderTiebreak(t *testing.T) {
 	rules := ParseStylesheet(`.a { fill: red } .a { fill: blue }`, ParseOptions{})
-	got := Match(rules, ElementInfo{Classes: []string{"a"}}, nil)
+	got := Match(rules, ElementInfo{Classes: []string{"a"}}, nil, nil)
 	SortCascade(got)
 	if got[len(got)-1].Value != "blue" {
 		t.Errorf("source order tiebreak failed: %+v", got)
@@ -170,12 +170,12 @@ func TestMatch_DescendantCombinator(t *testing.T) {
 		{Tag: "svg"},
 		{Tag: "g"},
 	}
-	got := Match(rules, ElementInfo{Tag: "circle"}, ancestors)
+	got := Match(rules, ElementInfo{Tag: "circle"}, ancestors, nil)
 	if len(got) != 1 || got[0].Value != "red" {
 		t.Errorf("descendant match failed: %+v", got)
 	}
 	none := Match(rules, ElementInfo{Tag: "circle"},
-		[]ElementInfo{{Tag: "svg"}})
+		[]ElementInfo{{Tag: "svg"}}, nil)
 	if len(none) != 0 {
 		t.Errorf("descendant matched without g ancestor: %+v", none)
 	}
@@ -184,13 +184,13 @@ func TestMatch_DescendantCombinator(t *testing.T) {
 func TestMatch_ChildCombinator(t *testing.T) {
 	rules := ParseStylesheet(`g > circle { fill: red }`, ParseOptions{})
 	got := Match(rules, ElementInfo{Tag: "circle"},
-		[]ElementInfo{{Tag: "svg"}, {Tag: "g"}})
+		[]ElementInfo{{Tag: "svg"}, {Tag: "g"}}, nil)
 	if len(got) != 1 {
 		t.Errorf("child match failed: %+v", got)
 	}
 	// Indirect — fails child combinator.
 	none := Match(rules, ElementInfo{Tag: "circle"},
-		[]ElementInfo{{Tag: "g"}, {Tag: "a"}})
+		[]ElementInfo{{Tag: "g"}, {Tag: "a"}}, nil)
 	if len(none) != 0 {
 		t.Errorf("child shouldn't match indirect: %+v", none)
 	}
@@ -198,11 +198,11 @@ func TestMatch_ChildCombinator(t *testing.T) {
 
 func TestMatch_NthChild(t *testing.T) {
 	rules := ParseStylesheet(`rect:nth-child(odd) { fill: red }`, ParseOptions{})
-	got := Match(rules, ElementInfo{Tag: "rect", Index: 1}, nil)
+	got := Match(rules, ElementInfo{Tag: "rect", Index: 1}, nil, nil)
 	if len(got) != 1 {
 		t.Errorf("nth-child(odd) idx=1: %+v", got)
 	}
-	none := Match(rules, ElementInfo{Tag: "rect", Index: 2}, nil)
+	none := Match(rules, ElementInfo{Tag: "rect", Index: 2}, nil, nil)
 	if len(none) != 0 {
 		t.Errorf("nth-child(odd) idx=2: %+v", none)
 	}
@@ -210,11 +210,11 @@ func TestMatch_NthChild(t *testing.T) {
 
 func TestMatch_Root(t *testing.T) {
 	rules := ParseStylesheet(`:root { fill: red }`, ParseOptions{})
-	got := Match(rules, ElementInfo{Tag: "svg", IsRoot: true}, nil)
+	got := Match(rules, ElementInfo{Tag: "svg", IsRoot: true}, nil, nil)
 	if len(got) != 1 {
 		t.Errorf(":root match: %+v", got)
 	}
-	none := Match(rules, ElementInfo{Tag: "g", IsRoot: false}, nil)
+	none := Match(rules, ElementInfo{Tag: "g", IsRoot: false}, nil, nil)
 	if len(none) != 0 {
 		t.Errorf(":root matched non-root: %+v", none)
 	}

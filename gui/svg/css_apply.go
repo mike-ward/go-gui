@@ -269,11 +269,11 @@ func parseInlineStyle(s string) []css.Decl {
 	return out
 }
 
-// resolveVarRefs substitutes var(--name) references in v using the
-// supplied vars map. Undefined references drop the whole value
-// (returns "") per CSS "invalid-at-computed-value-time → initial".
-// The "var(--name, fallback)" form is parsed but the fallback is
-// ignored — fallback chains are out of scope.
+// resolveVarRefs substitutes var(--name) and var(--name, fallback)
+// references in v using the supplied vars map. Undefined references
+// without a fallback drop the whole value (returns "") per CSS
+// "invalid-at-computed-value-time → initial". With a fallback, the
+// fallback is itself var-resolved recursively.
 //
 // Cyclic (--a → --b → --a) and deeply-nested chains are bounded by
 // maxVarRecursion; exceeding the cap drops the value.
@@ -300,30 +300,21 @@ func resolveVarRefsAt(v string, vars map[string]string, depthIn int) string {
 		}
 		b.WriteString(v[i : i+idx])
 		argStart := i + idx + len("var(")
-		depth := 1
-		j := argStart
-		for j < len(v) && depth > 0 {
-			switch v[j] {
-			case '(':
-				depth++
-			case ')':
-				depth--
-			}
-			if depth == 0 {
-				break
-			}
-			j++
-		}
-		if depth != 0 {
+		j, ok := findClosingParen(v, argStart)
+		if !ok {
 			return ""
 		}
 		argText := strings.TrimSpace(v[argStart:j])
-		if comma := strings.IndexByte(argText, ','); comma >= 0 {
-			argText = strings.TrimSpace(argText[:comma])
-		}
-		repl, ok := vars[strings.ToLower(argText)]
+		// Split name from fallback at the FIRST top-level comma. The
+		// fallback may itself be `var(--x, default)`, so naive Index
+		// would split inside the inner var().
+		name, fallback, hasFallback := splitVarArgs(argText)
+		repl, ok := vars[strings.ToLower(strings.TrimSpace(name))]
 		if !ok {
-			return ""
+			if !hasFallback {
+				return ""
+			}
+			repl = strings.TrimSpace(fallback)
 		}
 		repl = resolveVarRefsAt(repl, vars, depthIn+1)
 		if repl == "" {
@@ -333,4 +324,48 @@ func resolveVarRefsAt(v string, vars map[string]string, depthIn int) string {
 		i = j + 1
 	}
 	return b.String()
+}
+
+// findClosingParen returns the index of the `)` that matches the
+// open paren whose position is start-1. start points one past the
+// opening `(`. Used by `var()` and `calc()` resolvers to locate the
+// end of a function call within a CSS value string. Returns ok=false
+// when the input is not balanced.
+func findClosingParen(s string, start int) (int, bool) {
+	depth := 1
+	for j := start; j < len(s); j++ {
+		switch s[j] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return j, true
+			}
+		}
+	}
+	return -1, false
+}
+
+// splitVarArgs splits a var() argument list at the first top-level
+// comma. Returns (name, fallback, hasFallback). Top-level means
+// outside any nested parens, so a fallback containing
+// `var(--x, default)` does not get prematurely split.
+func splitVarArgs(arg string) (string, string, bool) {
+	depth := 0
+	for i := 0; i < len(arg); i++ {
+		switch arg[i] {
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+		case ',':
+			if depth == 0 {
+				return arg[:i], arg[i+1:], true
+			}
+		}
+	}
+	return arg, "", false
 }

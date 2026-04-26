@@ -56,3 +56,40 @@ func TestApplyCSSProp_OpacityMalformedPercent(t *testing.T) {
 		t.Errorf("abc%%: got %v want 0 (clamped NaN)", out.Opacity)
 	}
 }
+
+func TestSplitVarArgs_EmptyAndNoComma(t *testing.T) {
+	cases := []struct {
+		in               string
+		wantName, wantFB string
+		wantHas          bool
+	}{
+		{"", "", "", false},
+		{"--brand", "--brand", "", false},
+		{"--brand,red", "--brand", "red", true},
+		{"  --brand  ,  red  ", "  --brand  ", "  red  ", true},
+	}
+	for _, tc := range cases {
+		name, fb, has := splitVarArgs(tc.in)
+		if name != tc.wantName || fb != tc.wantFB || has != tc.wantHas {
+			t.Errorf("splitVarArgs(%q) = (%q,%q,%v), want (%q,%q,%v)",
+				tc.in, name, fb, has, tc.wantName, tc.wantFB, tc.wantHas)
+		}
+	}
+}
+
+func TestSplitVarArgs_NestedParens(t *testing.T) {
+	// Top-level comma split must not fire inside nested parens.
+	in := "--a, var(--b, red)"
+	name, fb, has := splitVarArgs(in)
+	if !has || name != "--a" || fb != " var(--b, red)" {
+		t.Errorf("nested parens split wrong: name=%q fb=%q has=%v",
+			name, fb, has)
+	}
+	// calc() inside fallback.
+	in = "--w, calc(10px + 4px)"
+	name, fb, has = splitVarArgs(in)
+	if !has || name != "--w" || fb != " calc(10px + 4px)" {
+		t.Errorf("calc fallback split: name=%q fb=%q has=%v",
+			name, fb, has)
+	}
+}

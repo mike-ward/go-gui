@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.14.0] - unreleased
+
+### Added
+
+- CSS sibling combinators: adjacent (`+`) and general sibling (`~`).
+  Match engine (`gui/svg/css`) now takes a preceding-siblings slice
+  alongside ancestors when resolving complex selectors.
+- CSS attribute selectors: `[name]`, `[name=v]`, `[name~=v]`,
+  `[name|=v]`, `[name^=v]`, `[name$=v]`, `[name*=v]`. Names are
+  case-insensitive; values are case-sensitive (no `i`/`s` flag).
+  `ElementInfo.Attrs map[string]string` carries the per-element
+  attribute map; svg parser populates it from the raw open tag.
+- CSS `:hover`, `:focus`, `:not(inner)` selectors — parser + matcher
+  only. `Compound` gained `HoverPseudo`, `FocusPseudo`, `Not`
+  fields; `ElementInfo` gained a `MatchState{Hover, Focus bool}`
+  block. Build-time state can be set via `ElementInfo.State`;
+  runtime mouse-event auto-toggle is deferred to v0.15.0.
+- `:not()` is single-compound only — comma-list (`:not(.a, .b)`)
+  and nested `:not(:not(...))` are deferred.
+- `var(--name, fallback)` resolution. The fallback is itself
+  resolved recursively (so `var(--a, var(--b, red))` works);
+  recursion bounded at depth 32.
+- `calc()` arithmetic: `+ - * /`, parens, units `px` and unitless.
+  Mixed-unit operands and divide-by-zero invalidate the declaration
+  per spec. Nested `calc()` and `calc()` inside `var()` fallback
+  are resolved.
+- `examples/svg_css_selectors`, `examples/svg_css_vars` — visual
+  demos for the new selector and value-resolution machinery.
+
+### Changed
+
+- `css.Match()` and `css.ComplexSelector.Matches()` gained a
+  `siblings []ElementInfo` parameter. The sole external caller in
+  `gui/svg/style.go` is updated; sibling repos (go-glyph,
+  go-charts, go-edit, go-kite) do not call into `gui/svg/css`
+  directly. Internal test sites pass `nil` for the new param.
+- `Compound`, `ElementInfo`, `MatchedDecl` gained additive fields.
+  Keyed struct literals are unaffected.
+- `gui/svg.makeElementInfo()` signature gained an `attrs
+  map[string]string` parameter (the parsed open-tag attributes).
+- The CSS package status table in `docs/svg-support.md` flips
+  several rows from "No" to "Yes" (sibling combinators, attribute
+  selectors, `:not()`, `var()` fallback, `calc()`).
+
+### Deferred to v0.15.0
+
+- `:hover` / `:focus` runtime mouse-event auto-toggle. The selector
+  is recognized today; v0.15.0 will wire the dispatcher (sits at
+  the `gui` ↔ `gui/svg` ↔ backend interface boundary, lands cleanly
+  alongside `<use>`/`<symbol>` dynamic-cascade work).
+- `examples/svg_css_states` — depends on the runtime auto-toggle.
+
 ## [v0.13.0] - unreleased
 
 ### Added

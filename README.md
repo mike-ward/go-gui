@@ -443,6 +443,8 @@ gui.Input(gui.InputCfg{
 | [`svg`](examples/svg/)                                     | SVG loading and display                     |
 | [`svg_a11y`](examples/svg_a11y/)                           | SVG accessibility metadata (title/desc/aria) |
 | [`svg_aspect`](examples/svg_aspect/)                       | preserveAspectRatio alignment grid          |
+| [`svg_css_selectors`](examples/svg_css_selectors/)         | Sibling, attribute, `:not()` selectors      |
+| [`svg_css_vars`](examples/svg_css_vars/)                   | `var()` fallback + `calc()` arithmetic      |
 | [`svg_hittest`](examples/svg_hittest/)                     | Click-hit test on tessellated SVG paths     |
 | [`svg_radial`](examples/svg_radial/)                       | radialGradient rendering                    |
 | [`system_tray`](examples/system_tray/)                     | System tray icon and menu                   |

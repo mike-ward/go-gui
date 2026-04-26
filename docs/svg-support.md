@@ -222,9 +222,11 @@ CSS lives in `<style>` blocks (any element scope) or inline
 | Universal (`*`)                                             | Yes             |
 | `:nth-child(an+b)`                                          | Yes             |
 | `:root`                                                     | Yes (= `<svg>`) |
-| Sibling (`+`, `~`)                                          | **No**          |
-| Attribute (`[fill=red]`)                                    | **No**          |
-| Pseudo-classes (`:hover`, `:focus`, `:active`, `:not()`, …) | **No**          |
+| Sibling (`+`, `~`)                                          | Yes             |
+| Attribute (`[name]`, `[name=v]`, `~=`, `\|=`, `^=`, `$=`, `*=`) | Yes          |
+| `:hover` / `:focus`                                         | Selector parsed + matched; runtime mouse-event auto-toggle deferred to v0.15.0 |
+| `:not(inner)`                                               | Yes (single-compound; comma-list deferred) |
+| `:active` and other pseudo-classes                          | **No**          |
 | Pseudo-elements (`::before`)                                | **No**          |
 
 ### Cascade
@@ -235,8 +237,19 @@ attributes > inherited > initial.
 
 ### Custom Properties
 
-`var(--name)` resolved against the element + ancestor chain. No
-fallback chain (`var(--x, fallback)`), no `calc()`.
+`var(--name)` resolved against the element + ancestor chain.
+`var(--x, fallback)` honored when `--x` is undefined; the fallback
+itself may contain another `var()` call (recursive resolution
+bounded at depth 32).
+
+### `calc()`
+
+Basic arithmetic: `+`, `-`, `*`, `/`, parenthesized subexpressions.
+Units `px` and unitless. Mixed-unit operands are rejected per spec
+(e.g. `calc(10px + 50%)` invalidates the declaration). Nested
+`calc()` and `calc()` inside `var()` fallback are resolved
+recursively. Resolution happens at parse time — the literal result
+is substituted into the value string.
 
 ### `@media`
 

@@ -1,6 +1,9 @@
 package css
 
-import "slices"
+import (
+	"slices"
+	"strings"
+)
 
 // Matches reports whether a compound selector matches el.
 func (c Compound) Matches(el ElementInfo) bool {
@@ -15,19 +18,68 @@ func (c Compound) Matches(el ElementInfo) bool {
 			return false
 		}
 	}
+	for _, a := range c.Attrs {
+		if !matchAttr(a, el.Attrs) {
+			return false
+		}
+	}
 	if c.Root && !el.IsRoot {
 		return false
 	}
 	if c.NthChild != nil && !c.NthChild.Matches(el.Index) {
 		return false
 	}
+	if c.HoverPseudo && !el.State.Hover {
+		return false
+	}
+	if c.FocusPseudo && !el.State.Focus {
+		return false
+	}
+	if c.Not != nil && c.Not.Matches(el) {
+		return false
+	}
 	return true
 }
 
+// matchAttr reports whether the (op, value) pair holds for el's named
+// attribute. Missing attributes never match (even AttrOpExists is
+// false when the attr is absent). Empty selector value is rejected
+// for operators that require a non-empty needle.
+func matchAttr(a AttrSel, attrs map[string]string) bool {
+	v, ok := attrs[a.Name]
+	if !ok {
+		return false
+	}
+	switch a.Op {
+	case AttrOpExists:
+		return true
+	case AttrOpEqual:
+		return v == a.Value
+	case AttrOpInclude:
+		if a.Value == "" || strings.ContainsAny(a.Value, " \t\n\r\f") {
+			return false
+		}
+		return slices.Contains(strings.Fields(v), a.Value)
+	case AttrOpDashMatch:
+		return v == a.Value || strings.HasPrefix(v, a.Value+"-")
+	case AttrOpPrefix:
+		return a.Value != "" && strings.HasPrefix(v, a.Value)
+	case AttrOpSuffix:
+		return a.Value != "" && strings.HasSuffix(v, a.Value)
+	case AttrOpSubstring:
+		return a.Value != "" && strings.Contains(v, a.Value)
+	}
+	return false
+}
+
 // Matches reports whether the complex selector matches el under the
-// given ancestor stack. Ancestors are ordered root-first so
-// ancestors[len-1] is the immediate parent.
-func (cs ComplexSelector) Matches(el ElementInfo, ancestors []ElementInfo) bool {
+// given ancestor stack and preceding sibling list. Ancestors are
+// ordered root-first; ancestors[len-1] is the immediate parent.
+// Siblings are ordered first-to-last with siblings[len-1] = el's
+// immediate previous sibling. Both slices may be nil.
+func (cs ComplexSelector) Matches(
+	el ElementInfo, ancestors, siblings []ElementInfo,
+) bool {
 	parts := cs.Parts
 	if len(parts) == 0 {
 		return false
@@ -37,6 +89,7 @@ func (cs ComplexSelector) Matches(el ElementInfo, ancestors []ElementInfo) bool 
 		return false
 	}
 	ai := len(ancestors) - 1
+	si := len(siblings) - 1
 	for i := len(parts) - 2; i >= 0; i-- {
 		comb := parts[i+1].Combinator
 		switch comb {
@@ -50,6 +103,23 @@ func (cs ComplexSelector) Matches(el ElementInfo, ancestors []ElementInfo) bool 
 			for j := ai; j >= 0; j-- {
 				if parts[i].Compound.Matches(ancestors[j]) {
 					ai = j - 1
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				return false
+			}
+		case CombAdjacent:
+			if si < 0 || !parts[i].Compound.Matches(siblings[si]) {
+				return false
+			}
+			si--
+		case CombGeneralSibling:
+			matched := false
+			for j := si; j >= 0; j-- {
+				if parts[i].Compound.Matches(siblings[j]) {
+					si = j - 1
 					matched = true
 					break
 				}
@@ -75,9 +145,12 @@ type MatchedDecl struct {
 }
 
 // Match returns every author-rule declaration whose rule has at
-// least one selector matching el under ancestors. The result is in
-// source order; callers run SortCascade to apply spec ordering.
-func Match(rules []Rule, el ElementInfo, ancestors []ElementInfo) []MatchedDecl {
+// least one selector matching el under ancestors and preceding
+// siblings. The result is in source order; callers run SortCascade
+// to apply spec ordering.
+func Match(
+	rules []Rule, el ElementInfo, ancestors, siblings []ElementInfo,
+) []MatchedDecl {
 	if len(rules) == 0 {
 		return nil
 	}
@@ -87,7 +160,7 @@ func Match(rules []Rule, el ElementInfo, ancestors []ElementInfo) []MatchedDecl 
 		var spec Specificity
 		matched := false
 		for _, sel := range r.Selectors {
-			if !sel.Matches(el, ancestors) {
+			if !sel.Matches(el, ancestors, siblings) {
 				continue
 			}
 			if !matched || spec.Less(sel.Spec) {

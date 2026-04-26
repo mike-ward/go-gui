@@ -83,9 +83,9 @@ func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 	// Merge presentation attributes (and matched author rules, when
 	// any) from the root <svg> tag so shapes that inherit e.g.
 	// fill="currentColor" pick it up.
-	rootInfo := makeElementInfo("svg", root.OpenTag, 1, true)
+	rootInfo := makeElementInfo("svg", root.OpenTag, 1, true, root.AttrMap)
 	defStyle := computeStyle(root.OpenTag,
-		defaultComputedStyle(identityTransform), state, rootInfo, nil)
+		defaultComputedStyle(identityTransform), state, rootInfo, nil, nil)
 	ancestors := []css.ElementInfo{rootInfo}
 	allPaths := parseSvgContent(root, defStyle, 0, state, ancestors)
 
@@ -244,19 +244,25 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 	if depth > maxGroupDepth {
 		return paths
 	}
+	siblings := make([]css.ElementInfo, 0, len(n.Children))
 	for i := range n.Children {
 		if state.elemCount >= maxElements {
 			break
 		}
 		c := &n.Children[i]
-		info := makeElementInfo(c.Name, c.OpenTag, i+1, false)
+		info := makeElementInfo(c.Name, c.OpenTag, i+1, false, c.AttrMap)
+		// sibsForThis captures preceding-sibling state at this element's
+		// position. siblings then accumulates `info` so the next
+		// iteration sees the current element as a preceding sibling.
+		sibsForThis := siblings
+		siblings = append(siblings, info)
 		switch c.Name {
 		case "defs":
-			// Already handled by defs pre-pass; skip.
-			continue
+			// Already handled by defs pre-pass; sibling tracking above
+			// keeps document order intact for combinators.
 
 		case "g", "a":
-			gs := computeStyle(c.OpenTag, inherited, state, info, ancestors)
+			gs := computeStyle(c.OpenTag, inherited, state, info, ancestors, sibsForThis)
 			if gs.Display == DisplayNone {
 				continue
 			}
@@ -293,43 +299,43 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 			}
 
 		case "path":
-			appendShape(c, inherited, state, info, ancestors, &paths,
+			appendShape(c, inherited, state, info, ancestors, sibsForThis, &paths,
 				func(gs ComputedStyle) (VectorPath, bool) {
 					return parsePathWithStyle(c.OpenTag, gs)
 				})
 
 		case "rect":
-			appendShape(c, inherited, state, info, ancestors, &paths,
+			appendShape(c, inherited, state, info, ancestors, sibsForThis, &paths,
 				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseRectWithStyle(c.OpenTag, gs)
 				})
 
 		case "circle":
-			appendShape(c, inherited, state, info, ancestors, &paths,
+			appendShape(c, inherited, state, info, ancestors, sibsForThis, &paths,
 				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseCircleWithStyle(c.OpenTag, gs)
 				})
 
 		case "ellipse":
-			appendShape(c, inherited, state, info, ancestors, &paths,
+			appendShape(c, inherited, state, info, ancestors, sibsForThis, &paths,
 				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseEllipseWithStyle(c.OpenTag, gs)
 				})
 
 		case "polygon":
-			appendShape(c, inherited, state, info, ancestors, &paths,
+			appendShape(c, inherited, state, info, ancestors, sibsForThis, &paths,
 				func(gs ComputedStyle) (VectorPath, bool) {
 					return parsePolygonWithStyle(c.OpenTag, gs, true)
 				})
 
 		case "polyline":
-			appendShape(c, inherited, state, info, ancestors, &paths,
+			appendShape(c, inherited, state, info, ancestors, sibsForThis, &paths,
 				func(gs ComputedStyle) (VectorPath, bool) {
 					return parsePolygonWithStyle(c.OpenTag, gs, false)
 				})
 
 		case "line":
-			appendShape(c, inherited, state, info, ancestors, &paths,
+			appendShape(c, inherited, state, info, ancestors, sibsForThis, &paths,
 				func(gs ComputedStyle) (VectorPath, bool) {
 					return parseLineWithStyle(c.OpenTag, gs)
 				})
@@ -398,6 +404,7 @@ func appendShape(
 	state *parseState,
 	info css.ElementInfo,
 	ancestors []css.ElementInfo,
+	siblings []css.ElementInfo,
 	paths *[]VectorPath,
 	parser func(gs ComputedStyle) (VectorPath, bool),
 ) {
@@ -406,7 +413,7 @@ func appendShape(
 	// precedence. Pin GroupID back to the parent's value — the
 	// inline-animation branch below owns shape-level GroupID
 	// assignment.
-	shapeGS := computeStyle(c.OpenTag, inherited, state, info, ancestors)
+	shapeGS := computeStyle(c.OpenTag, inherited, state, info, ancestors, siblings)
 	if shapeGS.Display == DisplayNone {
 		return
 	}

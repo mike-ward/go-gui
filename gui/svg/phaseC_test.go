@@ -166,16 +166,114 @@ func TestPhaseC_UndefinedVarDropsDecl(t *testing.T) {
 	}
 }
 
-func TestPhaseC_VarFallbackIgnored(t *testing.T) {
-	// Per design: no fallback chain. The fallback after the comma is
-	// parsed but ignored; an undefined var still drops the decl.
+func TestPhaseC_VarFallbackUsed(t *testing.T) {
+	// v0.14.0: fallback after the comma is honored when the named
+	// variable is undefined.
 	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
 		<style>rect { fill: var(--missing, blue) }</style>
 		<rect width="10" height="10"/>
 	</svg>`
 	vg := parseSvgT(t, src)
+	if vg.Paths[0].FillColor != (gui.SvgColor{B: 255, A: 255}) {
+		t.Errorf("fallback should be used: %+v",
+			vg.Paths[0].FillColor)
+	}
+}
+
+func TestPhaseC_VarFallbackChain(t *testing.T) {
+	// Nested fallback: var(--a, var(--b, red)) where --a undefined
+	// and --b undefined → uses outer fallback's fallback.
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+		<style>rect { fill: var(--a, var(--b, red)) }</style>
+		<rect width="10" height="10"/>
+	</svg>`
+	vg := parseSvgT(t, src)
+	if vg.Paths[0].FillColor != (gui.SvgColor{R: 255, A: 255}) {
+		t.Errorf("nested fallback chain should resolve: %+v",
+			vg.Paths[0].FillColor)
+	}
+}
+
+func TestPhaseC_VarSelfReferenceWithFallback(t *testing.T) {
+	// Cycle bound + fallback interaction: --a refers to itself, with
+	// a fallback. The recursion cap kicks in before the fallback can
+	// rescue, so the decl drops. Documents observable behavior.
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+		<style>
+			:root { --a: var(--a, red) }
+			rect  { fill: var(--a) }
+		</style>
+		<rect width="10" height="10"/>
+	</svg>`
+	vg := parseSvgT(t, src)
 	if vg.Paths[0].FillColor != colorBlack {
-		t.Errorf("fallback should be ignored: %+v",
+		t.Errorf("self-ref var w/ fallback: %+v",
+			vg.Paths[0].FillColor)
+	}
+}
+
+func TestPhaseC_AttrSelectorEndToEnd(t *testing.T) {
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 10">
+		<style>
+			rect { fill: blue }
+			rect[data-state=active] { fill: red }
+		</style>
+		<rect x="0"  y="0" width="10" height="10"/>
+		<rect x="10" y="0" width="10" height="10" data-state="active"/>
+		<rect x="20" y="0" width="10" height="10" data-state="other"/>
+	</svg>`
+	vg := parseSvgT(t, src)
+	if got := vg.Paths[0].FillColor; got != (gui.SvgColor{B: 255, A: 255}) {
+		t.Errorf("plain rect: %+v", got)
+	}
+	if got := vg.Paths[1].FillColor; got != (gui.SvgColor{R: 255, A: 255}) {
+		t.Errorf("active rect: %+v", got)
+	}
+	if got := vg.Paths[2].FillColor; got != (gui.SvgColor{B: 255, A: 255}) {
+		t.Errorf("other rect: %+v", got)
+	}
+}
+
+func TestPhaseC_AdjacentSiblingEndToEnd(t *testing.T) {
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 10">
+		<style>
+			circle { fill: blue }
+			rect + circle { fill: red }
+		</style>
+		<circle cx="5"  cy="5" r="4"/>
+		<rect   x="10" y="0" width="10" height="10"/>
+		<circle cx="25" cy="5" r="4"/>
+		<circle cx="35" cy="5" r="4"/>
+	</svg>`
+	vg := parseSvgT(t, src)
+	// Path order: circle, rect, circle, circle.
+	// Path[0] circle: no preceding sibling → blue.
+	// Path[1] rect.
+	// Path[2] circle: prev sibling rect → red.
+	// Path[3] circle: prev sibling circle → blue.
+	if got := vg.Paths[0].FillColor; got != (gui.SvgColor{B: 255, A: 255}) {
+		t.Errorf("first circle (no rect prev): %+v", got)
+	}
+	if got := vg.Paths[2].FillColor; got != (gui.SvgColor{R: 255, A: 255}) {
+		t.Errorf("circle after rect: %+v", got)
+	}
+	if got := vg.Paths[3].FillColor; got != (gui.SvgColor{B: 255, A: 255}) {
+		t.Errorf("circle after circle: %+v", got)
+	}
+}
+
+func TestPhaseC_VarDefinedBeatsFallback(t *testing.T) {
+	// When --primary IS defined, fallback is unused.
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+		<style>
+			:root { --primary: blue }
+			rect  { fill: var(--primary, red) }
+		</style>
+		<rect width="10" height="10"/>
+	</svg>`
+	vg := parseSvgT(t, src)
+	if vg.Paths[0].FillColor != (gui.SvgColor{B: 255, A: 255}) {
+		t.Errorf("defined var should beat fallback: %+v",
 			vg.Paths[0].FillColor)
 	}
 }

@@ -840,6 +840,7 @@ func computeStyle(
 	state *parseState,
 	info css.ElementInfo,
 	ancestors []css.ElementInfo,
+	siblings []css.ElementInfo,
 ) ComputedStyle {
 	out := parent
 	out.Transform = matrixMultiply(parent.Transform, getTransform(elem))
@@ -886,7 +887,7 @@ func computeStyle(
 	}
 	if state != nil && len(state.cssRules) > 0 {
 		decls = append(decls,
-			css.Match(state.cssRules, info, ancestors)...)
+			css.Match(state.cssRules, info, ancestors, siblings)...)
 	}
 	if styleAttr, ok := findAttr(elem, "style"); ok {
 		for _, d := range parseInlineStyle(styleAttr) {
@@ -908,6 +909,10 @@ func computeStyle(
 			continue
 		}
 		v := resolveVarRefs(d.Value, out.Vars)
+		if v == "" {
+			continue
+		}
+		v = resolveCalcRefs(v)
 		if v == "" {
 			continue
 		}
@@ -945,9 +950,13 @@ func collectVars(decls []css.MatchedDecl,
 
 // makeElementInfo builds a css.ElementInfo from the element tag,
 // raw open-tag text, and tree-walk metadata (1-based child index
-// in parent, isRoot for the root <svg>).
+// in parent, isRoot for the root <svg>). attrs is the parsed
+// attribute map (nil to disable attribute-selector matching for
+// this element). The map is aliased, not copied: callers must treat
+// it as read-only — `matchAttr` honors that contract today.
 func makeElementInfo(
 	tag, openTag string, index int, isRoot bool,
+	attrs map[string]string,
 ) css.ElementInfo {
 	info := css.ElementInfo{Tag: tag, Index: index, IsRoot: isRoot}
 	if id, ok := findAttr(openTag, "id"); ok {
@@ -956,6 +965,7 @@ func makeElementInfo(
 	if cls, ok := findAttr(openTag, "class"); ok {
 		info.Classes = splitClassAttr(cls)
 	}
+	info.Attrs = attrs
 	return info
 }
 

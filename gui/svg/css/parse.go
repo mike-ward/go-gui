@@ -335,10 +335,10 @@ func joinTokens(toks []tdcss.Token) string {
 }
 
 // parseSelectorList splits a selector token stream by ',' and parses
-// each group into a ComplexSelector. Groups containing unsupported
-// constructs (attribute selectors, sibling combinators, unrecognized
-// pseudo-classes) are dropped. `:is(a, b)` groups expand into one
-// selector per argument before parsing.
+// each group into a ComplexSelector. Groups containing unrecognized
+// pseudo-classes or syntactically malformed compounds are dropped.
+// `:is(a, b)` groups expand into one selector per argument before
+// parsing.
 func parseSelectorList(toks []tdcss.Token) []ComplexSelector {
 	var out []ComplexSelector
 	for _, g := range splitByComma(toks) {
@@ -452,7 +452,8 @@ func trimWS(toks []tdcss.Token) []tdcss.Token {
 }
 
 // parseComplexSelector walks a selector group, splitting it into
-// compound chunks separated by descendant or child combinators.
+// compound chunks separated by descendant, child, adjacent (`+`), or
+// general-sibling (`~`) combinators.
 func parseComplexSelector(toks []tdcss.Token) (ComplexSelector, bool) {
 	if len(toks) == 0 {
 		return ComplexSelector{}, false
@@ -461,21 +462,31 @@ func parseComplexSelector(toks []tdcss.Token) (ComplexSelector, bool) {
 	nextComb := CombStart
 	i := 0
 	for i < len(toks) {
-		// Collect tokens for this compound until we hit whitespace
-		// or '>'.
+		// Collect tokens for this compound until we hit whitespace,
+		// or one of the explicit combinator delim tokens.
 		start := i
 		for i < len(toks) {
 			t := toks[i]
 			if t.TokenType == tdcss.WhitespaceToken {
 				break
 			}
-			if isChildCombinator(t) {
+			if _, ok := combinatorFromDelim(t); ok {
 				break
 			}
 			// Skip the matched argument span of a function token
-			// (nth-child's "(...)").
+			// (nth-child / :not() / :is() arg list).
 			if t.TokenType == tdcss.FunctionToken {
 				j := skipFunctionArgs(toks, i+1)
+				if j < 0 {
+					return ComplexSelector{}, false
+				}
+				i = j + 1
+				continue
+			}
+			// Skip the matched [...] span so internal whitespace in
+			// `[name = "value"]` does not split the compound.
+			if t.TokenType == tdcss.LeftBracketToken {
+				j := skipBrackets(toks, i+1)
 				if j < 0 {
 					return ComplexSelector{}, false
 				}
@@ -496,8 +507,8 @@ func parseComplexSelector(toks []tdcss.Token) (ComplexSelector, bool) {
 			Combinator: nextComb,
 			Compound:   c,
 		})
-		// Skip whitespace and an optional '>' to determine next
-		// combinator.
+		// Skip whitespace, then accept an optional explicit combinator
+		// delim. Whitespace alone is the descendant combinator.
 		sawWS := false
 		for i < len(toks) && toks[i].TokenType == tdcss.WhitespaceToken {
 			sawWS = true
@@ -506,8 +517,8 @@ func parseComplexSelector(toks []tdcss.Token) (ComplexSelector, bool) {
 		if i >= len(toks) {
 			break
 		}
-		if isChildCombinator(toks[i]) {
-			nextComb = CombChild
+		if comb, ok := combinatorFromDelim(toks[i]); ok {
+			nextComb = comb
 			i++
 			for i < len(toks) && toks[i].TokenType == tdcss.WhitespaceToken {
 				i++
@@ -515,7 +526,7 @@ func parseComplexSelector(toks []tdcss.Token) (ComplexSelector, bool) {
 		} else if sawWS {
 			nextComb = CombDescendant
 		} else {
-			// No whitespace, no '>', yet more tokens — malformed.
+			// No whitespace, no combinator, yet more tokens — malformed.
 			return ComplexSelector{}, false
 		}
 	}
@@ -529,9 +540,40 @@ func parseComplexSelector(toks []tdcss.Token) (ComplexSelector, bool) {
 	return ComplexSelector{Parts: parts, Spec: spec}, true
 }
 
-func isChildCombinator(t tdcss.Token) bool {
-	return t.TokenType == tdcss.DelimToken && len(t.Data) == 1 &&
-		t.Data[0] == '>'
+// combinatorFromDelim recognizes the single-char combinator delim
+// tokens. Returns the combinator and true on match.
+func combinatorFromDelim(t tdcss.Token) (Combinator, bool) {
+	if t.TokenType != tdcss.DelimToken || len(t.Data) != 1 {
+		return 0, false
+	}
+	switch t.Data[0] {
+	case '>':
+		return CombChild, true
+	case '+':
+		return CombAdjacent, true
+	case '~':
+		return CombGeneralSibling, true
+	}
+	return 0, false
+}
+
+// skipBrackets returns the index of the RightBracketToken matching a
+// LeftBracketToken's opening. start points one past the
+// LeftBracketToken.
+func skipBrackets(toks []tdcss.Token, start int) int {
+	depth := 1
+	for j := start; j < len(toks); j++ {
+		switch toks[j].TokenType {
+		case tdcss.LeftBracketToken:
+			depth++
+		case tdcss.RightBracketToken:
+			depth--
+			if depth == 0 {
+				return j
+			}
+		}
+	}
+	return -1
 }
 
 // skipFunctionArgs returns the index of the RightParenthesisToken
@@ -553,110 +595,285 @@ func skipFunctionArgs(toks []tdcss.Token, start int) int {
 	return -1
 }
 
+// maxNotDepth caps recursion depth on adversarial nested `:not(...)`
+// so a pathological stylesheet cannot exhaust the goroutine stack.
+// Mirrors maxIsDepth's role for `:is()` expansion.
+const maxNotDepth = 8
+
 // parseCompound parses one compound selector. Rejects (returns
-// ok=false) any chunk that contains unsupported constructs.
+// ok=false) any chunk that contains unsupported constructs. Top-level
+// callers use parseCompound; the `:not(inner)` handler recurses via
+// parseCompoundAt with an incremented depth so nested negation cannot
+// blow the stack.
 func parseCompound(toks []tdcss.Token) (Compound, bool) {
+	return parseCompoundAt(toks, 0)
+}
+
+func parseCompoundAt(toks []tdcss.Token, depth int) (Compound, bool) {
 	if len(toks) == 0 {
+		return Compound{}, false
+	}
+	if depth > maxNotDepth {
 		return Compound{}, false
 	}
 	var c Compound
 	tagSeen := false
 	for i := 0; i < len(toks); i++ {
-		t := toks[i]
-		switch t.TokenType {
-		case tdcss.IdentToken:
-			if tagSeen || c.ID != "" || len(c.Classes) > 0 ||
-				c.NthChild != nil || c.Root {
-				return Compound{}, false
-			}
-			c.Tag = string(t.Data)
-			c.Spec[2]++
-			tagSeen = true
-		case tdcss.HashToken:
-			data := t.Data
-			if len(data) > 0 && data[0] == '#' {
-				data = data[1:]
-			}
-			if len(data) == 0 || c.ID != "" {
-				return Compound{}, false
-			}
-			c.ID = string(data)
-			c.Spec[0]++
-		case tdcss.DelimToken:
-			if len(t.Data) != 1 {
-				return Compound{}, false
-			}
-			switch t.Data[0] {
-			case '.':
-				if i+1 >= len(toks) ||
-					toks[i+1].TokenType != tdcss.IdentToken {
-					return Compound{}, false
-				}
-				c.Classes = append(c.Classes, string(toks[i+1].Data))
-				c.Spec[1]++
-				i++
-			case '*':
-				if tagSeen {
-					return Compound{}, false
-				}
-				c.Tag = "*"
-				tagSeen = true
-			default:
-				return Compound{}, false
-			}
-		case tdcss.ColonToken:
-			adv, ok := parsePseudoClass(toks, i, &c)
-			if !ok {
-				return Compound{}, false
-			}
-			i = adv
-		case tdcss.WhitespaceToken:
-			return Compound{}, false
-		default:
+		adv, ok := parseCompoundToken(toks, i, &c, &tagSeen, depth)
+		if !ok {
 			return Compound{}, false
 		}
+		i = adv
 	}
-	if !tagSeen && c.ID == "" && len(c.Classes) == 0 &&
-		c.NthChild == nil && !c.Root {
+	if !compoundIsNonEmpty(&c, tagSeen) {
 		return Compound{}, false
 	}
 	return c, true
 }
 
+// parseCompoundToken handles one token in the compound stream. It
+// returns the advanced index (the loop's i++ moves past it) and
+// ok=false on rejection.
+func parseCompoundToken(
+	toks []tdcss.Token, i int, c *Compound, tagSeen *bool, depth int,
+) (int, bool) {
+	t := toks[i]
+	switch t.TokenType {
+	case tdcss.IdentToken:
+		if *tagSeen || !compoundEmpty(c) {
+			return i, false
+		}
+		c.Tag = string(t.Data)
+		c.Spec[2]++
+		*tagSeen = true
+		return i, true
+	case tdcss.HashToken:
+		return parseCompoundHash(t, i, c)
+	case tdcss.DelimToken:
+		return parseCompoundDelim(toks, i, c, tagSeen)
+	case tdcss.LeftBracketToken:
+		return parseCompoundAttr(toks, i, c)
+	case tdcss.ColonToken:
+		return parsePseudoClass(toks, i, c, depth)
+	}
+	return i, false
+}
+
+func parseCompoundHash(t tdcss.Token, i int, c *Compound) (int, bool) {
+	data := t.Data
+	if len(data) > 0 && data[0] == '#' {
+		data = data[1:]
+	}
+	if len(data) == 0 || c.ID != "" {
+		return i, false
+	}
+	c.ID = string(data)
+	c.Spec[0]++
+	return i, true
+}
+
+func parseCompoundDelim(
+	toks []tdcss.Token, i int, c *Compound, tagSeen *bool,
+) (int, bool) {
+	t := toks[i]
+	if len(t.Data) != 1 {
+		return i, false
+	}
+	switch t.Data[0] {
+	case '.':
+		if i+1 >= len(toks) ||
+			toks[i+1].TokenType != tdcss.IdentToken {
+			return i, false
+		}
+		c.Classes = append(c.Classes, string(toks[i+1].Data))
+		c.Spec[1]++
+		return i + 1, true
+	case '*':
+		if *tagSeen {
+			return i, false
+		}
+		c.Tag = "*"
+		*tagSeen = true
+		return i, true
+	}
+	return i, false
+}
+
+func parseCompoundAttr(
+	toks []tdcss.Token, i int, c *Compound,
+) (int, bool) {
+	end := skipBrackets(toks, i+1)
+	if end < 0 {
+		return i, false
+	}
+	a, ok := parseAttrSel(toks[i+1 : end])
+	if !ok {
+		return i, false
+	}
+	c.Attrs = append(c.Attrs, a)
+	c.Spec[1]++
+	return end, true
+}
+
+// compoundEmpty reports whether c carries no constraint other than a
+// possibly-pending tag selector. Used by IdentToken handling: an
+// element-name selector must come first in the compound.
+func compoundEmpty(c *Compound) bool {
+	return c.ID == "" && len(c.Classes) == 0 && len(c.Attrs) == 0 &&
+		c.NthChild == nil && !c.Root && !c.HoverPseudo &&
+		!c.FocusPseudo && c.Not == nil
+}
+
+// compoundIsNonEmpty reports whether c carries at least one selector
+// constraint. A compound chunk that produced no constraints is
+// rejected by parseCompound.
+func compoundIsNonEmpty(c *Compound, tagSeen bool) bool {
+	return tagSeen || !compoundEmpty(c)
+}
+
+// parseAttrSel parses the inner tokens of a `[...]` attribute selector
+// (the tokens between but not including the brackets). Supported
+// shapes: `name`, `name=value`, `name~=value`, `name|=value`,
+// `name^=value`, `name$=value`, `name*=value`. Value may be IdentToken,
+// NumberToken, or StringToken (quoted). Empty value is rejected for
+// operators that require a non-empty needle. Case-sensitive matching
+// (no `i` / `s` flag).
+func parseAttrSel(toks []tdcss.Token) (AttrSel, bool) {
+	toks = trimWS(toks)
+	if len(toks) == 0 || toks[0].TokenType != tdcss.IdentToken {
+		return AttrSel{}, false
+	}
+	name := strings.ToLower(string(toks[0].Data))
+	rest := trimWS(toks[1:])
+	if len(rest) == 0 {
+		return AttrSel{Name: name, Op: AttrOpExists}, true
+	}
+	op, opLen, ok := parseAttrOp(rest)
+	if !ok {
+		return AttrSel{}, false
+	}
+	rest = trimWS(rest[opLen:])
+	if len(rest) != 1 {
+		return AttrSel{}, false
+	}
+	val, ok := attrValueText(rest[0])
+	if !ok {
+		return AttrSel{}, false
+	}
+	return AttrSel{Name: name, Op: op, Value: val}, true
+}
+
+// parseAttrOp recognizes the operator tokens that follow the attribute
+// name in `[name op value]`. Returns the op, the number of tokens
+// consumed, and ok.
+func parseAttrOp(toks []tdcss.Token) (AttrOp, int, bool) {
+	if len(toks) == 0 {
+		return 0, 0, false
+	}
+	t := toks[0]
+	switch t.TokenType {
+	case tdcss.IncludeMatchToken:
+		return AttrOpInclude, 1, true
+	case tdcss.DashMatchToken:
+		return AttrOpDashMatch, 1, true
+	case tdcss.PrefixMatchToken:
+		return AttrOpPrefix, 1, true
+	case tdcss.SuffixMatchToken:
+		return AttrOpSuffix, 1, true
+	case tdcss.SubstringMatchToken:
+		return AttrOpSubstring, 1, true
+	case tdcss.DelimToken:
+		if len(t.Data) == 1 && t.Data[0] == '=' {
+			return AttrOpEqual, 1, true
+		}
+	}
+	return 0, 0, false
+}
+
+// attrValueText extracts the literal text of an attribute selector
+// value token, stripping matched quotes from string tokens.
+func attrValueText(t tdcss.Token) (string, bool) {
+	switch t.TokenType {
+	case tdcss.IdentToken, tdcss.NumberToken, tdcss.DimensionToken:
+		return string(t.Data), true
+	case tdcss.StringToken:
+		d := t.Data
+		if len(d) >= 2 {
+			q := d[0]
+			if (q == '"' || q == '\'') && d[len(d)-1] == q {
+				return string(d[1 : len(d)-1]), true
+			}
+		}
+		return string(d), true
+	}
+	return "", false
+}
+
 // parsePseudoClass handles a ColonToken at index i and updates c
-// with the recognized pseudo-class (:root or :nth-child(...)).
-// Returns the new token index (the loop's i++ moves past it) and
-// ok=false on unsupported pseudo-classes.
-func parsePseudoClass(toks []tdcss.Token, i int, c *Compound) (int, bool) {
+// with the recognized pseudo-class (:root, :hover, :focus,
+// :nth-child(...), or :not(...)). depth bounds nested `:not()`
+// recursion. Returns the new token index (the loop's i++ moves past
+// it) and ok=false on unsupported pseudo-classes.
+func parsePseudoClass(
+	toks []tdcss.Token, i int, c *Compound, depth int,
+) (int, bool) {
 	if i+1 >= len(toks) {
 		return i, false
 	}
 	nx := toks[i+1]
 	switch nx.TokenType {
 	case tdcss.IdentToken:
-		if strings.ToLower(string(nx.Data)) != "root" {
-			return i, false
+		switch strings.ToLower(string(nx.Data)) {
+		case "root":
+			c.Root = true
+			c.Spec[1]++
+			return i + 1, true
+		case "hover":
+			c.HoverPseudo = true
+			c.Spec[1]++
+			return i + 1, true
+		case "focus":
+			c.FocusPseudo = true
+			c.Spec[1]++
+			return i + 1, true
 		}
-		c.Root = true
-		c.Spec[1]++
-		return i + 1, true
+		return i, false
 	case tdcss.FunctionToken:
 		fname := strings.ToLower(
 			strings.TrimSuffix(string(nx.Data), "("))
-		if fname != "nth-child" {
-			return i, false
-		}
 		end := skipFunctionArgs(toks, i+2)
 		if end < 0 {
 			return i, false
 		}
-		f, ok := parseNthFormula(joinTokens(toks[i+2 : end]))
-		if !ok {
-			return i, false
+		switch fname {
+		case "nth-child":
+			f, ok := parseNthFormula(joinTokens(toks[i+2 : end]))
+			if !ok {
+				return i, false
+			}
+			c.NthChild = &f
+			c.Spec[1]++
+			return end, true
+		case "not":
+			if c.Not != nil {
+				return i, false
+			}
+			inner, ok := parseCompoundAt(
+				trimWS(toks[i+2:end]), depth+1,
+			)
+			if !ok {
+				return i, false
+			}
+			c.Not = &inner
+			// :not(x) adds the specificity of its argument (CSS
+			// Selectors L4). Computed with Specificity.Add (rather
+			// than the c.Spec[1]++ pattern used by other pseudos)
+			// because the inner compound carries its own composite
+			// specificity, not a single-tier bump.
+			c.Spec = c.Spec.Add(inner.Spec)
+			return end, true
 		}
-		c.NthChild = &f
-		c.Spec[1]++
-		return end, true
+		return i, false
 	}
 	return i, false
 }
