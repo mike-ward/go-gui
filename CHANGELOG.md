@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.7] - 2026-04-26
+
+### Fixed
+
+- SVG fingerprint goldens (`TestPhase0SmilSpinnerFingerprint`,
+  `TestPhaseGCssSpinnerFingerprint`) failed on Linux/WASM CI because
+  amd64 ships an asm `math.Sin`/`math.Cos` while arm64 uses pure-Go
+  — ULP-level drift in trig output flipped digest bits versus the
+  darwin-generated goldens. `hashTessellated` / `hashAnimations` now
+  quantize finite floats to a 1e-3 grid before `Float32bits`, so the
+  fingerprints stay platform-stable while still catching real
+  geometry regressions. Goldens regenerated.
+
 ## [v0.12.6] - 2026-04-25
 
 ### Added
