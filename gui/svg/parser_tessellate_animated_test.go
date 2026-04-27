@@ -36,7 +36,7 @@ func TestTessellateAnimated_FilteredGroupAnimatedPathIncluded(t *testing.T) {
 			{Paths: []VectorPath{makeAnimatedSquarePath(fgPathID)}},
 		},
 	}
-	parsed := p.buildParsed(99, vg, 1)
+	parsed := p.buildParsed(99, "", vg, 1)
 	overrides := map[uint32]gui.SvgAnimAttrOverride{
 		fgPathID: {Mask: gui.SvgAnimMaskWidth, Width: 20},
 	}
@@ -68,7 +68,7 @@ func TestTessellateAnimated_MainAndFilteredGroupBothIncluded(t *testing.T) {
 			{Paths: []VectorPath{makeAnimatedSquarePath(2)}},
 		},
 	}
-	parsed := p.buildParsed(101, vg, 1)
+	parsed := p.buildParsed(101, "", vg, 1)
 	overrides := map[uint32]gui.SvgAnimAttrOverride{
 		1: {Mask: gui.SvgAnimMaskWidth, Width: 5},
 		2: {Mask: gui.SvgAnimMaskWidth, Width: 5},
@@ -102,7 +102,7 @@ func TestTessellateAnimated_FilteredGroupClipPathedSkipped(t *testing.T) {
 			{Paths: []VectorPath{clipped}},
 		},
 	}
-	parsed := p.buildParsed(102, vg, 1)
+	parsed := p.buildParsed(102, "", vg, 1)
 	overrides := map[uint32]gui.SvgAnimAttrOverride{
 		id: {Mask: gui.SvgAnimMaskWidth, Width: 3},
 	}

@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `Parser.InvalidateSvgSource` now correctly drops file-backed cache
+  entries and every option-variant (FlatnessTolerance,
+  HoveredElementID, FocusedElementID, PrefersReducedMotion). Prior
+  impl reconstructed hashes from the path string alone, which never
+  matched file entries (whose key mixes file contents) and only
+  covered two of the option permutations. Walks the entry table by a
+  stored `sourceKey` instead.
+- `<use>` cloned subtrees no longer leak duplicate descendant ids.
+  `stripID` is now recursive; previously only the clone root and (for
+  `<symbol>` targets) its top-level children had their ids removed,
+  so any nested id collided with the original and corrupted
+  `url(#id)` resolution, CSS `#id` matching, and animation targeting.
+- `<use width=W height=H>` of a `<symbol viewBox=...>` now scales the
+  symbol's viewport to fill the requested box via a composed
+  `translate · scale · translate(-vbX,-vbY)` transform. Width/height
+  were previously dropped, so callers could not size symbol reuses.
+
+### Security
+
+- `<use x="…" y="…">` author values are parsed numerically instead of
+  spliced into the synthesized transform attribute, closing an
+  injection vector (`x="0)scale(99)"` previously emitted an extra
+  `scale` into the transform list). Also rejects percentage `x`/`y`
+  rather than treating "50%" as raw 50, and clamps `<use>`-vs-
+  -viewBox scale to ±maxCoordinate to prevent pathological tiny
+  viewBox dims from emitting absurd scale factors.
+
 ## [v0.15.0] - 2026-04-27
 
 ### Added

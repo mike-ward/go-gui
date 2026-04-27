@@ -7,6 +7,7 @@ package svg
 
 import (
 	"maps"
+	"strconv"
 	"strings"
 )
 
@@ -129,29 +130,24 @@ func synthesizeUseGroup(useNode, target *xmlNode, budget *int) xmlNode {
 		gAttrMap[a.Name] = a.Value
 	}
 
-	if x != "" || y != "" {
-		if x == "" {
-			x = "0"
-		}
-		if y == "" {
-			y = "0"
-		}
-		translate := "translate(" + x + "," + y + ")"
+	posTransform := positioningTransform(useNode, target, x, y)
+	if posTransform != "" {
+		composed := posTransform
 		if existing, ok := gAttrMap["transform"]; ok {
-			translate = existing + " " + translate
+			composed = existing + " " + posTransform
 		}
-		gAttrMap["transform"] = translate
+		gAttrMap["transform"] = composed
 		replaced := false
 		for i := range gAttrs {
 			if gAttrs[i].Name == "transform" {
-				gAttrs[i].Value = translate
+				gAttrs[i].Value = composed
 				replaced = true
 				break
 			}
 		}
 		if !replaced {
 			gAttrs = append(gAttrs,
-				xmlAttr{Name: "transform", Value: translate})
+				xmlAttr{Name: "transform", Value: composed})
 		}
 	}
 
@@ -163,6 +159,115 @@ func synthesizeUseGroup(useNode, target *xmlNode, budget *int) xmlNode {
 	}
 	g.OpenTag = buildOpenTag(g.Name, g.Attrs, false)
 	return g
+}
+
+// positioningTransform returns the SVG transform string that places
+// the synthesized <g> at the <use>'s (x,y) and, when the target is a
+// <symbol> with a viewBox plus author-specified width/height on the
+// <use>, scales the symbol's viewport to fill the requested box.
+//
+// SVG transform list reads left-to-right but applies right-to-left to
+// child points: child p gets translate(-vbX,-vbY) first, then scale,
+// then translate(x,y). Non-symbol targets and symbols without a
+// viewBox (or without numeric use width/height) get only the
+// translate.
+// Parses x/y numerically rather than splicing raw author strings into
+// the transform attribute: `<use x="0)scale(99)">` would otherwise
+// inject extra transforms. parseLength clamps to ±maxCoordinate and
+// rejects NaN/Inf.
+func positioningTransform(useNode, target *xmlNode, x, y string) string {
+	if useNode == nil || target == nil {
+		return ""
+	}
+	// Percentages on x/y resolve against the parent viewport, which is
+	// out of scope here. Drop rather than treat "50%" as raw 50.
+	if hasPercent(x) || hasPercent(y) {
+		return ""
+	}
+	wantTranslate := x != "" || y != ""
+	tx := parseLength(x)
+	ty := parseLength(y)
+	translate := "translate(" + f32ToString(tx) + "," + f32ToString(ty) + ")"
+
+	sx, sy, vbX, vbY, ok := symbolViewportScale(useNode, target)
+	if !ok {
+		if !wantTranslate {
+			return ""
+		}
+		return translate
+	}
+	out := translate
+	if sx != 1 || sy != 1 {
+		out += " scale(" + f32ToString(sx) + "," + f32ToString(sy) + ")"
+	}
+	if vbX != 0 || vbY != 0 {
+		out += " translate(" + f32ToString(-vbX) + "," + f32ToString(-vbY) + ")"
+	}
+	return out
+}
+
+// symbolViewportScale returns the scale factors and viewBox origin
+// needed to map a <symbol viewBox=...>'s viewport to the <use>'s
+// width/height box. ok is false when the target is not a <symbol>,
+// when the symbol has no usable viewBox, when use width/height are
+// missing or percentage-based, or when the resulting scale would
+// exceed ±maxCoordinate (pathological viewBox like 1e-30 against
+// use width=1).
+func symbolViewportScale(useNode, target *xmlNode) (sx, sy, vbX, vbY float32, ok bool) {
+	if target.Name != "symbol" {
+		return
+	}
+	vb := target.AttrMap["viewBox"]
+	if vb == "" {
+		vb = target.AttrMap["viewbox"]
+	}
+	useW := useNode.AttrMap["width"]
+	useH := useNode.AttrMap["height"]
+	if vb == "" || (useW == "" && useH == "") {
+		return
+	}
+	if hasPercent(useW) || hasPercent(useH) {
+		return
+	}
+	nums := parseNumberList(vb)
+	if len(nums) < 4 || nums[2] <= 0 || nums[3] <= 0 {
+		return
+	}
+	uw := parseLength(useW)
+	uh := parseLength(useH)
+	if useW == "" {
+		uw = nums[2]
+	}
+	if useH == "" {
+		uh = nums[3]
+	}
+	if uw <= 0 || uh <= 0 {
+		return
+	}
+	sx = uw / nums[2]
+	sy = uh / nums[3]
+	if !boundedScale(sx) || !boundedScale(sy) {
+		return 0, 0, 0, 0, false
+	}
+	return sx, sy, nums[0], nums[1], true
+}
+
+func boundedScale(v float32) bool {
+	if !finiteF32(v) {
+		return false
+	}
+	if v < 0 {
+		v = -v
+	}
+	return v <= maxCoordinate
+}
+
+func hasPercent(s string) bool {
+	return strings.IndexByte(s, '%') >= 0
+}
+
+func f32ToString(v float32) string {
+	return strconv.FormatFloat(float64(v), 'f', -1, 32)
 }
 
 func cloneChildrenForUse(src []xmlNode, budget *int) []xmlNode {
@@ -217,17 +322,23 @@ func cloneNode(n *xmlNode, budget *int) xmlNode {
 	return out
 }
 
+// stripID removes id attributes from n and every descendant. Cloned
+// <use> subtrees must not duplicate ids: leftover descendant ids would
+// collide with the original's ids and corrupt url(#id) resolution,
+// CSS #id selector matching, and animation targeting.
 func stripID(n *xmlNode) {
-	if _, ok := n.AttrMap["id"]; !ok {
-		return
-	}
-	delete(n.AttrMap, "id")
-	filtered := make([]xmlAttr, 0, len(n.Attrs))
-	for _, a := range n.Attrs {
-		if a.Name != "id" {
-			filtered = append(filtered, a)
+	if _, ok := n.AttrMap["id"]; ok {
+		delete(n.AttrMap, "id")
+		filtered := make([]xmlAttr, 0, len(n.Attrs))
+		for _, a := range n.Attrs {
+			if a.Name != "id" {
+				filtered = append(filtered, a)
+			}
 		}
+		n.Attrs = filtered
+		n.OpenTag = buildOpenTag(n.Name, n.Attrs, n.SelfClose)
 	}
-	n.Attrs = filtered
-	n.OpenTag = buildOpenTag(n.Name, n.Attrs, n.SelfClose)
+	for i := range n.Children {
+		stripID(&n.Children[i])
+	}
 }

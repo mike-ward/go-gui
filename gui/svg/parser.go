@@ -32,6 +32,12 @@ const maxParsedRetained = 512
 type parserCacheEntry struct {
 	parsed *gui.SvgParsed
 	vg     *VectorGraphic
+	// sourceKey identifies the user-visible source independent of
+	// parse options: "inline:<data>" for inline SVGs or
+	// "file:<absPath>" for file-backed sources. InvalidateSvgSource
+	// walks entries and drops every option-variant whose sourceKey
+	// matches the request.
+	sourceKey string
 }
 
 // New returns a new SVG parser.
@@ -66,7 +72,7 @@ func (p *Parser) ParseSvgWithOpts(
 	if err != nil {
 		return nil, err
 	}
-	return p.buildParsed(hash, vg, 1), nil
+	return p.buildParsed(hash, "inline:"+data, vg, 1), nil
 }
 
 // ParseSvgFileWithOpts loads and parses an SVG file with options.
@@ -86,7 +92,25 @@ func (p *Parser) ParseSvgFileWithOpts(
 	if err != nil {
 		return nil, err
 	}
-	return p.buildParsed(hash, vg, 1), nil
+	return p.buildParsed(hash, fileSourceKey(path), vg, 1), nil
+}
+
+// fileSourceKey returns the canonical "file:<absPath>" identity used
+// for cache invalidation. Resolves symlinks so two parses of the
+// same underlying file via different alias paths share a sourceKey
+// — matching the resolution candidateSourceKeys performs at
+// invalidation time. Falls back to the abs (or cleaned) form when
+// resolution fails.
+func fileSourceKey(path string) string {
+	clean := filepath.Clean(path)
+	abs, err := filepath.Abs(clean)
+	if err != nil {
+		return "file:" + clean
+	}
+	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
+		return "file:" + resolved
+	}
+	return "file:" + abs
 }
 
 func optsToSvg(o gui.SvgParseOpts) ParseOptions {
@@ -434,29 +458,56 @@ func (p *Parser) ReleaseParsed(parsed *gui.SvgParsed) {
 }
 
 // InvalidateSvgSource invalidates parser cache for one SVG source.
-// All option-variants of the source (e.g. with/without
-// prefers-reduced-motion) are dropped together since the source
-// string is the user-visible identity.
+// All option-variants (PrefersReducedMotion, FlatnessTolerance,
+// HoveredElementID, FocusedElementID, …) and — for file sources — all
+// content variants are dropped together since the user-visible
+// identity is the source string itself, not a particular content
+// snapshot or option permutation.
+//
+// Implementation walks the entry table by sourceKey rather than
+// reconstructing hashes. Reconstruction is unsafe: file entries hash
+// the file contents and the option struct into the cache key, neither
+// of which the caller knows at invalidation time.
 func (p *Parser) InvalidateSvgSource(svgSrc string) {
-	dropVariants := func(base uint64) {
-		p.removeHash(mixOptsHash(base, gui.SvgParseOpts{}))
-		p.removeHash(mixOptsHash(base, gui.SvgParseOpts{
-			PrefersReducedMotion: true,
-		}))
-	}
-	inline := strings.HasPrefix(svgSrc, "<")
-	if inline {
-		dropVariants(parserSourceHash(svgSrc, true))
+	if svgSrc == "" {
 		return
 	}
-	dropVariants(parserSourceHash(svgSrc, false))
-	clean := filepath.Clean(svgSrc)
-	if abs, err := filepath.Abs(clean); err == nil {
-		dropVariants(parserSourceHash(abs, false))
-		if resolved, err := filepath.EvalSymlinks(abs); err == nil {
-			dropVariants(parserSourceHash(resolved, false))
-		}
+	keys := candidateSourceKeys(svgSrc)
+	if len(keys) == 0 {
+		return
 	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for hash, entry := range p.byHash {
+		if !slices.Contains(keys, entry.sourceKey) {
+			continue
+		}
+		delete(p.byParsed, entry.parsed)
+		delete(p.byHash, hash)
+		p.removeHashFromOrder(hash)
+	}
+}
+
+// candidateSourceKeys enumerates every sourceKey form that could have
+// been stored for svgSrc: the literal inline form, plus the
+// abs-path/resolved-symlink forms used by fileSourceKey.
+func candidateSourceKeys(svgSrc string) []string {
+	if svgSrc == "" {
+		return nil
+	}
+	if strings.HasPrefix(svgSrc, "<") {
+		return []string{"inline:" + svgSrc}
+	}
+	clean := filepath.Clean(svgSrc)
+	abs, absErr := filepath.Abs(clean)
+	if absErr != nil {
+		return []string{"file:" + clean}
+	}
+	resolved, resErr := filepath.EvalSymlinks(abs)
+	if resErr != nil {
+		return []string{"file:" + clean, "file:" + abs}
+	}
+	return []string{"file:" + clean, "file:" + abs, "file:" + resolved}
 }
 
 // ClearSvgParserCache removes all retained parsed entries.
@@ -468,7 +519,7 @@ func (p *Parser) ClearSvgParserCache() {
 	p.order = nil
 }
 
-func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui.SvgParsed {
+func (p *Parser) buildParsed(hash uint64, sourceKey string, vg *VectorGraphic, scale float32) *gui.SvgParsed {
 	resolveAnimationTargets(vg)
 	tpaths := vg.getTriangles(scale)
 	result := &gui.SvgParsed{
@@ -489,7 +540,7 @@ func (p *Parser) buildParsed(hash uint64, vg *VectorGraphic, scale float32) *gui
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.byHash[hash] = parserCacheEntry{parsed: result, vg: vg}
+	p.byHash[hash] = parserCacheEntry{parsed: result, vg: vg, sourceKey: sourceKey}
 	p.byParsed[result] = hash
 	p.order = append(p.order, hash)
 	if len(p.order) > maxParsedRetained {
@@ -534,16 +585,6 @@ func (p *Parser) removeHashFromOrder(hash uint64) {
 			p.order = append(p.order[:i], p.order[i+1:]...)
 			return
 		}
-	}
-}
-
-func (p *Parser) removeHash(hash uint64) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if entry, ok := p.byHash[hash]; ok {
-		delete(p.byParsed, entry.parsed)
-		delete(p.byHash, hash)
-		p.removeHashFromOrder(hash)
 	}
 }
 

@@ -76,7 +76,7 @@ func TestBuildParsed_PropagatesViewBoxOrigin(t *testing.T) {
 			},
 		},
 	}
-	parsed := p.buildParsed(1, vg, 1)
+	parsed := p.buildParsed(1, "", vg, 1)
 	if parsed.ViewBoxX != 10 || parsed.ViewBoxY != 20 {
 		t.Fatalf("viewBox origin not propagated: x=%v y=%v",
 			parsed.ViewBoxX, parsed.ViewBoxY)
