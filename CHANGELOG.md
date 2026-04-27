@@ -57,6 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   propagate non-finite values into the path transform. Percentages
   parse via float64 so `1e30%` no longer truncates to ±Inf before
   scaling.
+- `mixOptsHash` clamps `HoveredElementID` / `FocusedElementID` via
+  `clampElementID` (256-byte cap) before the FNV mix. Hostile callers
+  passing megabyte-sized pseudo-state IDs can no longer burn CPU in
+  the cache lookup hash phase; downstream `parseSvgWith` already
+  clamped, so cache key and parsed state stay in sync.
 
 ### Fixed
 

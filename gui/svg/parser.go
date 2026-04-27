@@ -140,14 +140,16 @@ func mixOptsHash(h uint64, opts gui.SvgParseOpts) uint64 {
 	bits := math.Float32bits(opts.FlatnessTolerance)
 	h ^= uint64(bits)
 	h *= fnvPrime
-	for i := range len(opts.HoveredElementID) {
-		h ^= uint64(opts.HoveredElementID[i])
+	hovered := clampElementID(opts.HoveredElementID)
+	for i := range len(hovered) {
+		h ^= uint64(hovered[i])
 		h *= fnvPrime
 	}
 	h ^= uint64('|')
 	h *= fnvPrime
-	for i := range len(opts.FocusedElementID) {
-		h ^= uint64(opts.FocusedElementID[i])
+	focused := clampElementID(opts.FocusedElementID)
+	for i := range len(focused) {
+		h ^= uint64(focused[i])
 		h *= fnvPrime
 	}
 	return h
