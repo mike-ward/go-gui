@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `<text>` now inherits `stroke` / `stroke-width` from the cascade,
+  and `stroke="inherit"` resolves against the cascade rather than
+  forcing black. `<text stroke="none">` clears any ancestor stroke.
+- `<tspan>` honors its own `stroke`, `stroke-width`, and `opacity`
+  attrs instead of silently copying parent values. `opacity="50%"`
+  on `<tspan>` now equals 0.5 (matches CSS keyframe parity below).
+- Mixed-content `<text>` runs preserve trailing and interleaved char
+  data. `<text>A <tspan>B</tspan> C</text>` now renders all three
+  runs; previously the trailing "C" was dropped because only
+  pre-first-child `Leading` text was captured. New `xmlNode.Tail`
+  field stashes post-child char data so `<use>`-cloned subtrees
+  carry it through too.
+- CSS `@keyframes { opacity: 50% }` now compiles to 0.5 (was 1.0).
+  `compileOpacityTimeline` switched from `parseFloatTrimmed` to
+  `parseOpacityNumber` so the static cascade and animated values
+  agree on percentage notation.
 - `Parser.InvalidateSvgSource` now correctly drops file-backed cache
   entries and every option-variant (FlatnessTolerance,
   HoveredElementID, FocusedElementID, PrefersReducedMotion). Prior
@@ -35,6 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than treating "50%" as raw 50, and clamps `<use>`-vs-
   -viewBox scale to ±maxCoordinate to prevent pathological tiny
   viewBox dims from emitting absurd scale factors.
+- `stroke-width` on `<text>` and `<tspan>` clamps NaN and negative
+  values to 0 via new `sanitizeStrokeWidth`. Negative widths are
+  invalid per SVG spec; NaN propagation broke tessellation
+  (uint8/uint16 casts implementation-defined, Inf coords break
+  bbox math).
 
 ## [v0.15.0] - 2026-04-27
 

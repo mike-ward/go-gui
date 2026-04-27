@@ -555,6 +555,32 @@ func countByName(n *xmlNode, name string) int {
 	return count
 }
 
+// <use> expansion must preserve mixed-content Tail data on cloned
+// children so a referenced <text> with `<text>A <tspan>B</tspan> C`
+// keeps the trailing "C" run after expansion.
+func TestUseExpandPreservesMixedContentTail(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<defs><symbol id="s">` +
+		`<text x="0" y="10">A <tspan>B</tspan> C</text>` +
+		`</symbol></defs>` +
+		`<use href="#s"/></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{"A": false, "B": false, "C": false}
+	for _, txt := range vg.Texts {
+		if _, ok := want[txt.Text]; ok {
+			want[txt.Text] = true
+		}
+	}
+	for k, ok := range want {
+		if !ok {
+			t.Errorf("missing run %q after <use> expansion", k)
+		}
+	}
+}
+
 func walk(n *xmlNode, fn func(*xmlNode)) {
 	for i := range n.Children {
 		c := &n.Children[i]

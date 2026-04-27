@@ -80,23 +80,19 @@ func parseTextElement(n *xmlNode, inherited ComputedStyle, state *parseState) {
 		letterSpacing = parseLength(ls)
 	}
 
-	// Stroke.
-	var strokeColor gui.SvgColor
-	var strokeWidth float32
-	if sw, ok := findAttrOrStyle(elem, "stroke-width"); ok {
-		strokeWidth = parseLength(sw)
+	// stroke=inherit must resolve against the cascade, not colorBlack.
+	var startColor gui.SvgColor
+	var startWidth float32
+	sentinelFallback := colorBlack
+	if inherited.StrokeSet {
+		startColor = inherited.Stroke
+		sentinelFallback = inherited.Stroke
 	}
-	if sc, ok := findAttrOrStyle(elem, "stroke"); ok {
-		if sc != "none" {
-			strokeColor = parseSvgColor(sc)
-			if strokeColor == colorInherit {
-				strokeColor = colorBlack
-			}
-			if strokeWidth == 0 {
-				strokeWidth = 1
-			}
-		}
+	if inherited.StrokeWidth > 0 {
+		startWidth = inherited.StrokeWidth
 	}
+	strokeColor, strokeWidth := resolveStrokeAttrs(
+		elem, startColor, sentinelFallback, startWidth, true)
 
 	opacity := inherited.Opacity * parseOpacityAttr(elem, "opacity", 1.0)
 
@@ -148,15 +144,20 @@ func parseTextBody(n *xmlNode, p textParentAttrs, state *parseState) {
 		c := &n.Children[i]
 		switch c.Name {
 		case "tspan":
-			if c.SelfClose {
-				continue
+			if !c.SelfClose {
+				parseTspan(c, p, &curY, state)
 			}
-			parseTspan(c, p, &curY, state)
 		case "textPath":
-			if c.SelfClose {
-				continue
+			if !c.SelfClose {
+				parseTextPathChild(c, p, state)
 			}
-			parseTextPathChild(c, p, state)
+		}
+		if c.Tail == "" {
+			continue
+		}
+		if tail := html.UnescapeString(strings.TrimSpace(c.Tail)); tail != "" {
+			state.texts = append(state.texts, makeTextFromParent(
+				tail, p.x, curY, p))
 		}
 	}
 }
@@ -241,6 +242,13 @@ func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState)
 		}
 	}
 
+	strokeColor, strokeWidth := resolveStrokeAttrs(
+		elem, p.strokeColor, p.strokeColor, p.strokeWidth, false)
+	opacity := p.opacity
+	if v, ok := findAttrOrStyle(elem, "opacity"); ok {
+		opacity = p.opacity * clampOpacity01(parseOpacityNumber(v))
+	}
+
 	state.texts = append(state.texts, gui.SvgText{
 		Text:           text,
 		X:              tx,
@@ -254,12 +262,12 @@ func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState)
 		FillGradientID: fillGradientID,
 		FilterID:       p.filterID,
 		Anchor:         int(p.anchor),
-		Opacity:        p.opacity,
+		Opacity:        opacity,
 		Underline:      p.underline,
 		Strikethrough:  p.strikethrough,
 		LetterSpacing:  p.letterSpacing,
-		StrokeColor:    p.strokeColor,
-		StrokeWidth:    p.strokeWidth,
+		StrokeColor:    strokeColor,
+		StrokeWidth:    strokeWidth,
 	})
 }
 

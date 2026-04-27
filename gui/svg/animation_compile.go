@@ -267,7 +267,9 @@ func compileOpacityTimeline(def *css.KeyframesDef, prop string,
 	}
 	vals := make([]float32, len(raw))
 	for i, v := range raw {
-		vals[i] = clampOpacity01(parseFloatTrimmed(v))
+		// parseOpacityNumber matches applyCSSProp's static path: a
+		// trailing `%` divides by 100 instead of being clamped to 1.
+		vals[i] = clampOpacity01(parseOpacityNumber(v))
 	}
 	keyTimes := normalizeKeyTimes(offsets)
 	a := buildBaseCSSAnim(spec, pathID)

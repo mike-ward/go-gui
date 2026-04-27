@@ -1178,6 +1178,44 @@ func clampOpacity01(v float32) float32 {
 	return v
 }
 
+// sanitizeStrokeWidth maps NaN and negative widths to 0. SVG spec
+// treats negative stroke-width as an error; NaN poisons tessellation.
+func sanitizeStrokeWidth(v float32) float32 {
+	if v != v || v < 0 {
+		return 0
+	}
+	return v
+}
+
+// resolveStrokeAttrs reads stroke / stroke-width on elem and resolves
+// against caller-supplied defaults. sentinelFallback is the color to
+// use when stroke is colorInherit/colorCurrent (caller decides whether
+// to fall through to cascade or to colorBlack). bumpDefaultWidth gives
+// stroked-but-widthless elements the SVG default width of 1.
+func resolveStrokeAttrs(elem string, color, sentinelFallback gui.SvgColor,
+	width float32, bumpDefaultWidth bool) (gui.SvgColor, float32) {
+	if sw, ok := findAttrOrStyle(elem, "stroke-width"); ok {
+		width = sanitizeStrokeWidth(parseLength(sw))
+	}
+	sc, ok := findAttrOrStyle(elem, "stroke")
+	if !ok {
+		return color, width
+	}
+	if sc == "none" {
+		return gui.SvgColor{}, 0
+	}
+	c := parseSvgColor(sc)
+	if isSentinelColor(c) {
+		color = sentinelFallback
+	} else {
+		color = c
+	}
+	if bumpDefaultWidth && width == 0 {
+		width = 1
+	}
+	return color, width
+}
+
 // isSentinelColor reports whether c is a colorInherit/colorCurrent
 // sentinel. Called pre-opacity-bake so the sentinel's marker alpha
 // (A=1 or A=2) is intact; exact match avoids collisions with

@@ -39,6 +39,7 @@ type xmlNode struct {
 	OpenTag   string            // reconstructed "<name a=b c=d>" or "<name .../>"
 	Leading   string            // text content before first child element
 	Text      string            // all character data concatenated (trimmed on use)
+	Tail      string            // text following this node's close tag, before the next sibling
 	Children  []xmlNode
 	SelfClose bool
 }
@@ -124,6 +125,11 @@ func decodeSvgTree(content string) (*xmlNode, error) {
 			top.Text += s
 			if len(top.Children) == 0 {
 				top.Leading += s
+			} else {
+				// Stash post-child char data on last child's tail so
+				// downstream walkers can replay in document order.
+				last := &top.Children[len(top.Children)-1]
+				last.Tail += s
 			}
 		case xml.Comment, xml.ProcInst, xml.Directive:
 			// Ignore.

@@ -300,6 +300,7 @@ func cloneNode(n *xmlNode, budget *int) xmlNode {
 		OpenTag:   n.OpenTag,
 		Leading:   n.Leading,
 		Text:      n.Text,
+		Tail:      n.Tail,
 		SelfClose: n.SelfClose,
 	}
 	if len(n.Attrs) > 0 {

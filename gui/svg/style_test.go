@@ -488,6 +488,21 @@ func TestClampOpacity01_EdgeInputs(t *testing.T) {
 	}
 }
 
+func TestSanitizeStrokeWidth_NaNNegativeZero(t *testing.T) {
+	if sanitizeStrokeWidth(2.5) != 2.5 {
+		t.Fatal("positive unchanged")
+	}
+	if sanitizeStrokeWidth(0) != 0 {
+		t.Fatal("zero unchanged")
+	}
+	if sanitizeStrokeWidth(-3) != 0 {
+		t.Fatal("negative must clamp to 0")
+	}
+	if sanitizeStrokeWidth(float32(math.NaN())) != 0 {
+		t.Fatal("NaN must clamp to 0")
+	}
+}
+
 // --- bakePathOpacity ---
 
 func TestBakePathOpacity_SkipFlagsForceUnity(t *testing.T) {

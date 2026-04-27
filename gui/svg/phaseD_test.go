@@ -335,3 +335,31 @@ func TestPhaseD_AnimationDelayShorthand(t *testing.T) {
 		t.Errorf("delay: %v", spec.DelaySec)
 	}
 }
+
+// CSS keyframe `opacity: 50%` must compile to 0.5, matching the
+// static cascade. Earlier impl re-parsed with parseFloatTrimmed,
+// turning 50% into 50 → clamped to 1 (fully opaque), so static and
+// animated styling diverged.
+func TestPhaseD_OpacityKeyframePercentage(t *testing.T) {
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+		<style>
+		@keyframes fade { from { opacity: 100% } to { opacity: 50% } }
+		.x { animation: fade 1s }
+		</style>
+		<rect class="x" width="10" height="10"/>
+	</svg>`
+	vg := parseSvgT(t, src)
+	if len(vg.Animations) != 1 {
+		t.Fatalf("animations: %d", len(vg.Animations))
+	}
+	a := vg.Animations[0]
+	if len(a.Values) < 2 {
+		t.Fatalf("expected >=2 keyframe values, got %d", len(a.Values))
+	}
+	if a.Values[0] < 0.99 {
+		t.Errorf("from opacity = %f, want ~1.0", a.Values[0])
+	}
+	if a.Values[len(a.Values)-1] > 0.51 || a.Values[len(a.Values)-1] < 0.49 {
+		t.Errorf("to opacity = %f, want ~0.5", a.Values[len(a.Values)-1])
+	}
+}
