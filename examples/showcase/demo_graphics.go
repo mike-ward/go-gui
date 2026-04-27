@@ -388,72 +388,222 @@ func showcaseShadowCard(title, note string, bg, shadowColor gui.Color, shadowOff
 }
 
 func demoSvg(_ *gui.Window) gui.View {
-	return gui.Row(gui.ContainerCfg{
+	t := gui.CurrentTheme()
+	return gui.Column(gui.ContainerCfg{
 		Sizing:  gui.FillFit,
 		Spacing: gui.SomeF(16),
 		Padding: gui.NoPadding,
 		Content: []gui.View{
-			gui.Svg(gui.SvgCfg{
-				ID:     "svg-circle",
-				Width:  100,
-				Height: 100,
-				Sizing: gui.FixedFixed,
-				SvgData: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(16),
+				Padding: gui.NoPadding,
+				Content: []gui.View{
+					gui.Svg(gui.SvgCfg{
+						ID:     "svg-circle",
+						Width:  100,
+						Height: 100,
+						Sizing: gui.FixedFixed,
+						SvgData: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <circle cx="50" cy="50" r="40" fill="#3b82f6" opacity="0.8"/>
   <circle cx="50" cy="50" r="25" fill="#8b5cf6" opacity="0.8"/>
   <circle cx="50" cy="50" r="10" fill="#ec4899"/>
 </svg>`,
-			}),
-			gui.Svg(gui.SvgCfg{
-				ID:     "svg-star",
-				Width:  100,
-				Height: 100,
-				Sizing: gui.FixedFixed,
-				SvgData: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+					}),
+					gui.Svg(gui.SvgCfg{
+						ID:     "svg-star",
+						Width:  100,
+						Height: 100,
+						Sizing: gui.FixedFixed,
+						SvgData: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35"
     fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
 </svg>`,
-			}),
-			gui.Svg(gui.SvgCfg{
-				ID:     "svg-bars",
-				Width:  120,
-				Height: 100,
-				Sizing: gui.FixedFixed,
-				SvgData: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+					}),
+					gui.Svg(gui.SvgCfg{
+						ID:     "svg-bars",
+						Width:  120,
+						Height: 100,
+						Sizing: gui.FixedFixed,
+						SvgData: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
   <rect x="10" y="60" width="20" height="35" rx="3" fill="#10b981"/>
   <rect x="35" y="40" width="20" height="55" rx="3" fill="#3b82f6"/>
   <rect x="60" y="20" width="20" height="75" rx="3" fill="#8b5cf6"/>
   <rect x="85" y="50" width="20" height="45" rx="3" fill="#f59e0b"/>
 </svg>`,
-			}),
-			gui.Svg(gui.SvgCfg{
-				ID:      "svg-tiger",
-				Width:   120,
-				Height:  100,
-				Sizing:  gui.FixedFixed,
-				SvgData: embeddedText("assets/tiger.svg"),
-			}),
-			gui.Column(gui.ContainerCfg{
-				Clip:       true,
-				Width:      70,
-				Height:     70,
-				Sizing:     gui.FixedFixed,
-				Padding:    gui.NoPadding,
-				SizeBorder: gui.NoBorder,
-				Content: []gui.View{
+					}),
 					gui.Svg(gui.SvgCfg{
-						ID:     "svg-clip",
-						Width:  100,
-						Height: 100,
-						Sizing: gui.FixedFixed,
-						SvgData: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+						ID:      "svg-tiger",
+						Width:   120,
+						Height:  100,
+						Sizing:  gui.FixedFixed,
+						SvgData: embeddedText("assets/tiger.svg"),
+					}),
+					gui.Column(gui.ContainerCfg{
+						Clip:       true,
+						Width:      70,
+						Height:     70,
+						Sizing:     gui.FixedFixed,
+						Padding:    gui.NoPadding,
+						SizeBorder: gui.NoBorder,
+						Content: []gui.View{
+							gui.Svg(gui.SvgCfg{
+								ID:     "svg-clip",
+								Width:  100,
+								Height: 100,
+								Sizing: gui.FixedFixed,
+								SvgData: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <circle cx="50" cy="50" r="45" fill="#3b82f6"/>
   <circle cx="50" cy="50" r="30" fill="#8b5cf6"/>
   <circle cx="50" cy="50" r="15" fill="#ec4899"/>
 </svg>`,
+							}),
+						},
 					}),
 				},
 			}),
+			gui.Text(gui.TextCfg{Text: "Gradient spread methods (linearGradient + spreadMethod)", TextStyle: t.B4}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(16),
+				Padding: gui.NoPadding,
+				Content: []gui.View{
+					svgSpreadSample(t, "svg-spread-pad", "pad", "pad"),
+					svgSpreadSample(t, "svg-spread-reflect", "reflect", "reflect"),
+					svgSpreadSample(t, "svg-spread-repeat", "repeat", "repeat"),
+				},
+			}),
+			gui.Text(gui.TextCfg{Text: "Radial gradients (centered + focal offset)", TextStyle: t.B4}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(16),
+				Padding: gui.NoPadding,
+				Content: []gui.View{
+					svgRadialSample(t, "svg-radial-center", "center",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="rg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </radialGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#rg)"/>
+</svg>`),
+					svgRadialSample(t, "svg-radial-focal", "focal fx/fy",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="rg" cx="50%" cy="50%" r="55%" fx="25%" fy="25%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </radialGradient>
+  </defs>
+  <circle cx="50" cy="50" r="45" fill="url(#rg)"/>
+</svg>`),
+					svgRadialSample(t, "svg-radial-reflect", "radial reflect",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="rg" cx="50%" cy="50%" r="20%" spreadMethod="reflect">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </radialGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#rg)"/>
+</svg>`),
+				},
+			}),
+			gui.Text(gui.TextCfg{Text: "CSS selectors (class, attribute, sibling, :not, var, calc)", TextStyle: t.B4}),
+			gui.Row(gui.ContainerCfg{
+				Sizing:  gui.FillFit,
+				Spacing: gui.SomeF(16),
+				Padding: gui.NoPadding,
+				Content: []gui.View{
+					svgRadialSample(t, "svg-css-class", "class",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .dot { fill: #3b82f6; }
+    .hot { fill: #ec4899; }
+  </style>
+  <circle class="dot" cx="25" cy="50" r="15"/>
+  <circle class="hot" cx="55" cy="50" r="15"/>
+  <circle class="dot" cx="85" cy="50" r="10"/>
+</svg>`),
+					svgRadialSample(t, "svg-css-attr", "[data-state]",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    rect { fill: #475569; }
+    rect[data-state="active"] { fill: #10b981; }
+  </style>
+  <rect x="10" y="20" width="20" height="60"/>
+  <rect x="40" y="20" width="20" height="60" data-state="active"/>
+  <rect x="70" y="20" width="20" height="60"/>
+</svg>`),
+					svgRadialSample(t, "svg-css-sibling", "sibling +",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    circle { fill: #1e293b; }
+    circle + circle { fill: #f59e0b; }
+  </style>
+  <circle cx="20" cy="50" r="12"/>
+  <circle cx="50" cy="50" r="12"/>
+  <circle cx="80" cy="50" r="12"/>
+</svg>`),
+					svgRadialSample(t, "svg-css-not", ":not()",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    rect:not(.skip) { fill: #8b5cf6; }
+    rect.skip { fill: #1e293b; }
+  </style>
+  <rect x="10" y="35" width="20" height="30"/>
+  <rect x="40" y="35" width="20" height="30" class="skip"/>
+  <rect x="70" y="35" width="20" height="30"/>
+</svg>`),
+					svgRadialSample(t, "svg-css-var", "var() + calc()",
+						`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    svg { --accent: #06b6d4; --r: 18; }
+    .v { fill: var(--accent, #888); r: calc(var(--r) - 4); }
+  </style>
+  <circle class="v" cx="25" cy="50"/>
+  <circle class="v" cx="55" cy="50"/>
+  <circle class="v" cx="85" cy="50"/>
+</svg>`),
+				},
+			}),
+		},
+	})
+}
+
+func svgSpreadSample(t gui.Theme, id, label, spread string) gui.View {
+	data := `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="50%" x2="33%" y2="50%" spreadMethod="` + spread + `">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#g)"/>
+</svg>`
+	return gui.Column(gui.ContainerCfg{
+		Sizing:     gui.FitFit,
+		Spacing:    gui.SomeF(4),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{Text: label, TextStyle: t.B5}),
+			gui.Svg(gui.SvgCfg{ID: id, Width: 100, Height: 100, Sizing: gui.FixedFixed, SvgData: data}),
+		},
+	})
+}
+
+func svgRadialSample(t gui.Theme, id, label, data string) gui.View {
+	return gui.Column(gui.ContainerCfg{
+		Sizing:     gui.FitFit,
+		Spacing:    gui.SomeF(4),
+		Padding:    gui.NoPadding,
+		SizeBorder: gui.NoBorder,
+		Content: []gui.View{
+			gui.Text(gui.TextCfg{Text: label, TextStyle: t.B5}),
+			gui.Svg(gui.SvgCfg{ID: id, Width: 100, Height: 100, Sizing: gui.FixedFixed, SvgData: data}),
 		},
 	})
 }

@@ -30,16 +30,16 @@ Parse is allocation-conscious; render is per-frame and lock-free.
 
 ### Root `<svg>`
 
-| Attribute             | Status    | Notes                                       |
-| --------------------- | --------- | ------------------------------------------- |
-| `viewBox`             | Supported | Lowercase `viewbox` accepted (HTML quirk)            |
-| `width` / `height`    | Supported | Numeric, `%`, length units (px stripped)             |
-| `xmlns`               | Ignored   | Namespaces collapsed; xlink + svg both work          |
-| `preserveAspectRatio` | Supported | All 9 align values + `meet`/`slice`. `none` falls back to `xMidYMid meet` (non-uniform stretch deferred). |
-| `version`             | Ignored   | Treated as SVG 1.1                                   |
-| `aria-label`          | Supported | Surfaced via `SvgParsed.A11y.AriaLabel`              |
-| `aria-roledescription`| Supported | Surfaced via `SvgParsed.A11y.AriaRoleDesc`           |
-| `aria-hidden`         | Supported | `"true"` → `SvgParsed.A11y.AriaHidden`               |
+| Attribute              | Status    | Notes                                                                                                     |
+| ---------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `viewBox`              | Supported | Lowercase `viewbox` accepted (HTML quirk)                                                                 |
+| `width` / `height`     | Supported | Numeric, `%`, length units (px stripped)                                                                  |
+| `xmlns`                | Ignored   | Namespaces collapsed; xlink + svg both work                                                               |
+| `preserveAspectRatio`  | Supported | All 9 align values + `meet`/`slice`. `none` falls back to `xMidYMid meet` (non-uniform stretch deferred). |
+| `version`              | Ignored   | Treated as SVG 1.1                                                                                        |
+| `aria-label`           | Supported | Surfaced via `SvgParsed.A11y.AriaLabel`                                                                   |
+| `aria-roledescription` | Supported | Surfaced via `SvgParsed.A11y.AriaRoleDesc`                                                                |
+| `aria-hidden`          | Supported | `"true"` → `SvgParsed.A11y.AriaHidden`                                                                    |
 
 The viewBox dimension cap is `10000` per axis. Coordinates are
 clamped at ±`1000000`. Documents larger than `100000` elements or
@@ -47,26 +47,26 @@ clamped at ±`1000000`. Documents larger than `100000` elements or
 
 ### Shape Elements
 
-| Element              | Status                                           |
-| -------------------- | ------------------------------------------------ |
-| `<path>`             | Supported                                        |
-| `<rect>`             | Supported (`rx`/`ry` honored)                    |
-| `<circle>`           | Supported                                        |
-| `<ellipse>`          | Supported                                        |
-| `<line>`             | Supported                                        |
-| `<polygon>`          | Supported                                        |
-| `<polyline>`         | Supported                                        |
-| `<g>` / `<a>`        | Group; transforms + style cascade                |
-| `<defs>`             | Holds gradients, clipPaths, filters, paths-by-id |
-| `<text>`             | Supported (see Text below)                       |
-| `<tspan>`            | Supported (positioned text runs)                 |
-| `<textPath>`         | Supported                                        |
-| `<use>`              | Supported (href / xlink:href, x/y, attr override) |
+| Element              | Status                                                |
+| -------------------- | ----------------------------------------------------- |
+| `<path>`             | Supported                                             |
+| `<rect>`             | Supported (`rx`/`ry` honored)                         |
+| `<circle>`           | Supported                                             |
+| `<ellipse>`          | Supported                                             |
+| `<line>`             | Supported                                             |
+| `<polygon>`          | Supported                                             |
+| `<polyline>`         | Supported                                             |
+| `<g>` / `<a>`        | Group; transforms + style cascade                     |
+| `<defs>`             | Holds gradients, clipPaths, filters, paths-by-id      |
+| `<text>`             | Supported (see Text below)                            |
+| `<tspan>`            | Supported (positioned text runs)                      |
+| `<textPath>`         | Supported                                             |
+| `<use>`              | Supported (href / xlink:href, x/y, attr override)     |
 | `<symbol>`           | Supported (children inlined when targeted by `<use>`) |
-| `<image>`            | **Not supported**                                |
-| `<switch>`           | **Not supported**                                |
-| `<foreignObject>`    | **Not supported**                                |
-| `<title>` / `<desc>` | Supported (parsed → `SvgParsed.A11y.Title/Desc`) |
+| `<image>`            | **Not supported**                                     |
+| `<switch>`           | **Not supported**                                     |
+| `<foreignObject>`    | **Not supported**                                     |
+| `<title>` / `<desc>` | Supported (parsed → `SvgParsed.A11y.Title/Desc`)      |
 
 `<use href="#id">` (or `xlink:href`) is resolved by inlining a
 clone of the referenced subtree at parse time. `x`/`y` attributes
@@ -230,24 +230,24 @@ CSS lives in `<style>` blocks (any element scope) or inline
 
 ### Selectors
 
-| Selector                                                    | Status          |
-| ----------------------------------------------------------- | --------------- |
-| Tag (`circle`)                                              | Yes             |
-| `#id`                                                       | Yes             |
-| `.class`                                                    | Yes             |
-| Compound (`circle.dot#a`)                                   | Yes             |
-| Descendant (` `)                                            | Yes             |
-| Child (`>`)                                                 | Yes             |
-| Group (`,`)                                                 | Yes             |
-| Universal (`*`)                                             | Yes             |
-| `:nth-child(an+b)`                                          | Yes             |
-| `:root`                                                     | Yes (= `<svg>`) |
-| Sibling (`+`, `~`)                                          | Yes             |
-| Attribute (`[name]`, `[name=v]`, `~=`, `\|=`, `^=`, `$=`, `*=`) | Yes          |
-| `:hover` / `:focus`                                         | Selector parsed + matched; state driven via `SvgCfg.HoveredElementID` / `FocusedElementID`. Automatic mouse-event detection on the `Svg` widget itself remains deferred (v0.16) |
-| `:not(inner)`                                               | Yes (single-compound; comma-list deferred) |
-| `:active` and other pseudo-classes                          | **No**          |
-| Pseudo-elements (`::before`)                                | **No**          |
+| Selector                                                        | Status                                                                                                                                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tag (`circle`)                                                  | Yes                                                                                                                                                                             |
+| `#id`                                                           | Yes                                                                                                                                                                             |
+| `.class`                                                        | Yes                                                                                                                                                                             |
+| Compound (`circle.dot#a`)                                       | Yes                                                                                                                                                                             |
+| Descendant (` `)                                                | Yes                                                                                                                                                                             |
+| Child (`>`)                                                     | Yes                                                                                                                                                                             |
+| Group (`,`)                                                     | Yes                                                                                                                                                                             |
+| Universal (`*`)                                                 | Yes                                                                                                                                                                             |
+| `:nth-child(an+b)`                                              | Yes                                                                                                                                                                             |
+| `:root`                                                         | Yes (= `<svg>`)                                                                                                                                                                 |
+| Sibling (`+`, `~`)                                              | Yes                                                                                                                                                                             |
+| Attribute (`[name]`, `[name=v]`, `~=`, `\|=`, `^=`, `$=`, `*=`) | Yes                                                                                                                                                                             |
+| `:hover` / `:focus`                                             | Selector parsed + matched; state driven via `SvgCfg.HoveredElementID` / `FocusedElementID`. Automatic mouse-event detection on the `Svg` widget itself remains deferred (v0.16) |
+| `:not(inner)`                                                   | Yes (single-compound; comma-list deferred)                                                                                                                                      |
+| `:active` and other pseudo-classes                              | **No**                                                                                                                                                                          |
+| Pseudo-elements (`::before`)                                    | **No**                                                                                                                                                                          |
 
 ### Cascade
 
@@ -365,6 +365,16 @@ Other property names in `@keyframes` are silently dropped.
 Anything outside the supported subset of SMIL or CSS animation
 renders as the static first frame — the geometry still draws.
 
+## Hit-Testing
+
+`(*TessellatedPath).ContainsPoint(px, py float32) bool` reports
+whether a point in viewBox coordinates falls inside the path's
+filled region. Even-odd vs nonzero is honored. Use with
+`SvgParsed.Paths` after `Tessellate` to drive per-element click /
+hover handlers from the host widget. The widget's own `OnClick`
+fires for any hit on the SVG bounding box; per-element routing is
+the caller's responsibility.
+
 ## Authoring Tips
 
 - Use `fill="currentColor"` on monochrome assets so the widget's
@@ -374,6 +384,13 @@ renders as the static first frame — the geometry still draws.
 - For curve-heavy assets, raise `SvgCfg.FlatnessTolerance` (in
   viewBox units) to trade visual fidelity for vertex count. Default
   0 keeps the renderer's built-in 0.15 floor.
+- For interactive states, drive `SvgCfg.HoveredElementID` /
+  `FocusedElementID` from the host widget (hit-test via
+  `ContainsPoint`) and write `:hover` / `:focus` rules in the
+  embedded `<style>`. Automatic mouse-event wiring is deferred.
+- Prefer CSS custom properties (`--name` + `var(--name, fallback)`)
+  with `calc()` to keep theming logic inside the asset rather than
+  generating multiple SVG strings host-side.
 - Prefer `@keyframes` over `<animate>` when both are equivalent —
   CSS animation has broader timing-function coverage.
 - For motion paths, `<animateMotion>` with `rotate="auto"` is the
@@ -387,7 +404,11 @@ renders as the static first frame — the geometry still draws.
 - `go test ./gui/svg/... -run Phase` runs the phased golden tests.
   Each phase covers a feature slice (parser, transform, animation,
   CSS cascade, etc.).
-- `gui/svg/testdata/css-spinners` and `assets/svg-spinners` are the
-  reference asset corpus — copy patterns from there.
-- `examples/showcase` "Showcase" demo renders all 106 built-in
-  spinners; useful as a live regression view.
+- `gui/svg/testdata/css-spinners` and `gui/assets/svg-spinners` are
+  the reference asset corpus — copy patterns from there.
+- `examples/showcase` "Graphics → SVG" demo exercises gradient
+  `spreadMethod` (pad / reflect / repeat), centered + focal radial
+  gradients, and CSS selectors (class, attribute, sibling combinator,
+  `:not()`, `var()` + `calc()`). The "Feedback → SVG Spinner" demo
+  renders all 106 built-in spinners; both are useful as live
+  regression views.
