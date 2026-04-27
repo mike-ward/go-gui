@@ -69,6 +69,9 @@ func parseSvg(content string) (*VectorGraphic, error) {
 // parseSvgWith is the options-aware variant of parseSvg. opts is
 // snapshotted into the cascade (e.g. for @media reduced-motion).
 func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
+	if len(content) > maxSvgFileSize {
+		return nil, fmt.Errorf("svg: content too large: %d bytes", len(content))
+	}
 	root, err := decodeSvgTree(content)
 	if err != nil {
 		return nil, err
@@ -252,6 +255,13 @@ func loadSvgFile(path string) ([]byte, error) {
 // on incomplete or fragment-only SVG content (no closing tag
 // required).
 func parseSvgDimensions(content string) (float32, float32) {
+	// Cap probe input. Caller-supplied string of arbitrary length
+	// would force extractRootSVGOpenTag/findAttr to scan unbounded
+	// memory; the dimension probe never needs more than the root
+	// open tag, well under maxSvgFileSize.
+	if len(content) > maxSvgFileSize {
+		content = content[:maxSvgFileSize]
+	}
 	openTag := extractRootSVGOpenTag(content)
 	if openTag == "" {
 		openTag = content

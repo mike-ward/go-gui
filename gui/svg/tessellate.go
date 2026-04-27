@@ -49,6 +49,13 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 	}
 
 	clipGroupCounter := 0
+	// Cache tessellated clip-mask triangles per ClipPathID for this
+	// call. tolerance is constant for the duration so caching by ID is
+	// safe; without this, N paths sharing one complex clipPath force
+	// N full re-tessellations (O(N * clipComplexity) DoS). nil when
+	// no clipPaths exist (most icons/spinners) — appendClipMasks
+	// nil-guards both read and write.
+	clipTriCache := newClipTriCache(len(vg.ClipPaths))
 
 	for i := range paths {
 		path := &paths[i]
@@ -56,7 +63,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 		clipGroup := 0
 		if path.ClipPathID != "" {
 			result, clipGroup = vg.appendClipMasks(result, path,
-				tolerance, &clipGroupCounter)
+				tolerance, &clipGroupCounter, clipTriCache)
 		}
 
 		seed, bake := seedFromTransform(path)
@@ -249,11 +256,21 @@ func pivotFromTrans(tx, ty, rotDeg float32) (float32, float32, bool) {
 	return rcx, rcy, true
 }
 
+// newClipTriCache returns a presized clipPath triangle cache, or nil
+// if the graphic declares no clipPaths so callers skip the alloc.
+func newClipTriCache(nClipPaths int) map[string][][]float32 {
+	if nClipPaths == 0 {
+		return nil
+	}
+	return make(map[string][][]float32, nClipPaths)
+}
+
 // appendClipMasks emits per-subpath clip-mask TessellatedPaths for
 // the path's referenced clipPath. Bumps counter and returns the
 // assigned clipGroup so subsequent fill/stroke entries inherit it.
 func (vg *VectorGraphic) appendClipMasks(result []gui.TessellatedPath,
 	path *VectorPath, tolerance float32, counter *int,
+	cache map[string][][]float32,
 ) ([]gui.TessellatedPath, int) {
 	clipGeom, ok := vg.ClipPaths[path.ClipPathID]
 	if !ok {
@@ -261,12 +278,26 @@ func (vg *VectorGraphic) appendClipMasks(result []gui.TessellatedPath,
 	}
 	*counter++
 	clipGroup := *counter
-	for j := range clipGeom {
-		cpPoly := flattenPath(&clipGeom[j], tolerance)
-		clipTris := tessellatePolylines(cpPoly, FillRuleNonzero)
-		if len(clipTris) == 0 {
-			continue
+	var cached [][]float32
+	hit := false
+	if cache != nil {
+		cached, hit = cache[path.ClipPathID]
+	}
+	if !hit {
+		cached = make([][]float32, 0, len(clipGeom))
+		for j := range clipGeom {
+			cpPoly := flattenPath(&clipGeom[j], tolerance)
+			clipTris := tessellatePolylines(cpPoly, FillRuleNonzero)
+			if len(clipTris) == 0 {
+				continue
+			}
+			cached = append(cached, clipTris)
 		}
+		if cache != nil {
+			cache[path.ClipPathID] = cached
+		}
+	}
+	for _, clipTris := range cached {
 		result = append(result, gui.TessellatedPath{
 			Triangles:  clipTris,
 			Color:      gui.SvgColor{R: 255, G: 255, B: 255, A: 255},

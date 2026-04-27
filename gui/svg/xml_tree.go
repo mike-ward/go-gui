@@ -186,9 +186,11 @@ func buildOpenTag(name string, attrs []xmlAttr, selfClose bool) string {
 		b.WriteString(a.Name)
 		b.WriteString(`="`)
 		// Attributes come back from encoding/xml already decoded
-		// (entities expanded). Re-escape the minimal set needed for a
-		// valid embedded attr value so findAttr's quote-aware scan
-		// behaves like it did on the raw input.
+		// (entities expanded). Re-escape every character a downstream
+		// substring scanner (findAttr, findStyleProperty) could treat
+		// as a value boundary or markup token — both quote styles, &,
+		// and angle brackets — so a hostile attr value cannot smuggle
+		// a fake attribute past the cascade.
 		writeAttrEscaped(&b, a.Value)
 		b.WriteByte('"')
 	}
@@ -205,10 +207,17 @@ func writeAttrEscaped(b *strings.Builder, v string) {
 		switch v[i] {
 		case '"':
 			b.WriteString("&quot;")
+		case '\'':
+			// Escape single quote so a value cannot smuggle a fake
+			// attribute that findAttr's quote-aware scan would honor
+			// (e.g. note=" x='99' " injecting an x override).
+			b.WriteString("&#39;")
 		case '&':
 			b.WriteString("&amp;")
 		case '<':
 			b.WriteString("&lt;")
+		case '>':
+			b.WriteString("&gt;")
 		default:
 			b.WriteByte(v[i])
 		}

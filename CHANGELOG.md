@@ -121,6 +121,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   invalid per SVG spec; NaN propagation broke tessellation
   (uint8/uint16 casts implementation-defined, Inf coords break
   bbox math).
+- `writeAttrEscaped` (used to reconstruct each element's `OpenTag`
+  for substring-scanning helpers like `findAttr` /
+  `findStyleProperty`) now also escapes `'` (`&#39;`) and `>`
+  (`&gt;`). A hostile attribute value containing a single quote
+  could previously smuggle a fake attribute past the cascade
+  (`<rect note=" x='99' " x="1"/>` parsed as `x=99`). Both quote
+  styles plus `<`/`>`/`&` are now escaped so no value can terminate
+  the embedded attr or open a markup token.
+- `parseSvg(string)` and `parseSvgDimensions(string)` now enforce
+  the existing 4 MB `maxSvgFileSize` cap. The cap was previously
+  applied only to file-loaded content; callers passing arbitrarily
+  large in-memory strings (e.g. network-fetched SVGs) bypassed it,
+  letting unbounded `xml.CharData` accumulation and full-document
+  scans run on hostile input. `parseSvg` returns an error;
+  `parseSvgDimensions` truncates to the cap before probing.
+- `clipPath` triangulation is now cached per `ClipPathID` for the
+  duration of one `tessellatePaths` call. N paths sharing one
+  complex `clipPath` previously triggered N full re-tessellations
+  (`O(N · clipComplexity)` CPU DoS); the cache reduces this to one
+  tessellation per unique id. Cache is `nil` when the graphic
+  declares no `clipPath`s, so the common icon/spinner path takes
+  no extra allocation.
 
 ## [v0.15.0] - 2026-04-27
 
