@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `<text>` now routes through the CSS cascade like shapes, so author
+  rules (`text { fill: ... }`), `:hover` / `:focus` matches, and
+  `display:none` apply. Previously `<text>` only saw inherited
+  computed style with no per-element rule matching.
+- Invalid color syntax (e.g. `fill="#GGGGGG"`, `fill="rgb(abc,def,ghi)"`,
+  `stroke=""`) is now ignored by the cascade per CSS
+  "invalid → ignore", letting inherited paint survive instead of
+  clobbering with transparent black. `parseHexColor` rejects
+  non-hex digits; `parseRGBColor` rejects non-numeric channels.
+- CSS-wide control keywords (`inherit`, `unset`, `revert`,
+  `revert-layer`) on `fill` / `stroke` are no-ops so the cascade-
+  copied parent paint survives. `<text stroke="inherit">` with no
+  ancestor stroke now falls back to a visible default rather than
+  being silently dropped.
 - `<text>` now inherits `stroke` / `stroke-width` from the cascade,
   and `stroke="inherit"` resolves against the cascade rather than
   forcing black. `<text stroke="none">` clears any ancestor stroke.

@@ -243,7 +243,7 @@ func compileColorTimeline(def *css.KeyframesDef, prop string,
 	}
 	cols := make([]uint32, len(raw))
 	for i, v := range raw {
-		c := parseSvgColor(v)
+		c, _ := parseSvgColor(v)
 		cols[i] = packRGBA(c)
 	}
 	keyTimes := normalizeKeyTimes(offsets)

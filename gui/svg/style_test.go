@@ -10,87 +10,266 @@ import (
 // --- Color parsing ---
 
 func TestStyleParseSvgColorNamed(t *testing.T) {
-	c := parseSvgColor("red")
+	c, ok := parseSvgColor("red")
+	if !ok {
+		t.Fatal("expected ok for 'red'")
+	}
 	if c.R != 255 || c.G != 0 || c.B != 0 || c.A != 255 {
 		t.Fatalf("expected red, got %+v", c)
 	}
 }
 
+func TestStyleParseSvgColorNamedCaseInsensitive(t *testing.T) {
+	c, ok := parseSvgColor("RED")
+	if !ok {
+		t.Fatal("expected ok for 'RED'")
+	}
+	if c.R != 255 || c.G != 0 || c.B != 0 || c.A != 255 {
+		t.Fatalf("expected red for 'RED', got %+v", c)
+	}
+}
+
 func TestStyleParseSvgColorNone(t *testing.T) {
-	c := parseSvgColor("none")
-	if c != colorTransparent {
-		t.Fatalf("expected transparent, got %+v", c)
+	c, ok := parseSvgColor("none")
+	if !ok || c != colorTransparent {
+		t.Fatalf("expected transparent, got %+v ok=%v", c, ok)
 	}
 }
 
 func TestStyleParseSvgColorInherit(t *testing.T) {
-	c := parseSvgColor("inherit")
-	if c != colorCurrent {
-		t.Fatalf("expected currentColor sentinel, got %+v", c)
+	c, ok := parseSvgColor("inherit")
+	if !ok || c != colorCurrent {
+		t.Fatalf("expected currentColor sentinel, got %+v ok=%v", c, ok)
 	}
 }
 
 func TestStyleParseSvgColorCurrentColor(t *testing.T) {
-	c := parseSvgColor("currentColor")
-	if c != colorCurrent {
-		t.Fatalf("expected currentColor sentinel, got %+v", c)
+	c, ok := parseSvgColor("currentColor")
+	if !ok || c != colorCurrent {
+		t.Fatalf("expected currentColor sentinel, got %+v ok=%v", c, ok)
 	}
 }
 
 func TestStyleParseSvgColorEmpty(t *testing.T) {
-	c := parseSvgColor("")
+	c, ok := parseSvgColor("")
+	if ok {
+		t.Fatal("empty input must report not-parsed")
+	}
 	if c != colorInherit {
 		t.Fatalf("expected inherit sentinel for empty, got %+v", c)
 	}
 }
 
 func TestStyleParseSvgColorURL(t *testing.T) {
-	c := parseSvgColor("url(#grad1)")
-	if c != colorTransparent {
-		t.Fatalf("expected transparent for url(), got %+v", c)
+	c, ok := parseSvgColor("url(#grad1)")
+	if !ok || c != colorTransparent {
+		t.Fatalf("expected transparent for url(), got %+v ok=%v", c, ok)
 	}
 }
 
 func TestStyleParseSvgColorUnknown(t *testing.T) {
-	c := parseSvgColor("notacolor")
+	c, ok := parseSvgColor("notacolor")
+	if ok {
+		t.Fatal("unknown keyword must report not-parsed")
+	}
 	zero := gui.SvgColor{}
 	if c != zero {
 		t.Fatalf("expected zero color, got %+v", c)
 	}
 }
 
+func TestStyleParseSvgColorUnknownFunc(t *testing.T) {
+	// hsl() is a real CSS color syntax we don't yet support. Must
+	// report not-parsed so the cascade keeps inherited fill instead
+	// of clobbering it with transparent black.
+	_, ok := parseSvgColor("hsl(0, 100%, 50%)")
+	if ok {
+		t.Fatal("hsl() should report not-parsed until supported")
+	}
+}
+
 func TestStyleParseHexColorRGB(t *testing.T) {
-	c := parseHexColor("#f80")
+	c, ok := parseHexColor("#f80")
+	if !ok {
+		t.Fatal("expected ok for #f80")
+	}
 	if c.R != 0xff || c.G != 0x88 || c.B != 0x00 || c.A != 255 {
 		t.Fatalf("expected #ff8800, got %+v", c)
 	}
 }
 
 func TestStyleParseHexColorRGBA(t *testing.T) {
-	c := parseHexColor("#f80a")
+	c, _ := parseHexColor("#f80a")
 	if c.R != 0xff || c.G != 0x88 || c.B != 0x00 || c.A != 0xaa {
 		t.Fatalf("expected #ff8800aa, got %+v", c)
 	}
 }
 
 func TestStyleParseHexColorRRGGBB(t *testing.T) {
-	c := parseHexColor("#1a2b3c")
+	c, _ := parseHexColor("#1a2b3c")
 	if c.R != 0x1a || c.G != 0x2b || c.B != 0x3c || c.A != 255 {
 		t.Fatalf("expected #1a2b3c, got %+v", c)
 	}
 }
 
 func TestStyleParseHexColorRRGGBBAA(t *testing.T) {
-	c := parseHexColor("#1a2b3c80")
+	c, _ := parseHexColor("#1a2b3c80")
 	if c.R != 0x1a || c.G != 0x2b || c.B != 0x3c || c.A != 0x80 {
 		t.Fatalf("expected #1a2b3c80, got %+v", c)
 	}
 }
 
 func TestStyleParseHexColorInvalidLength(t *testing.T) {
-	c := parseHexColor("#12")
+	c, ok := parseHexColor("#12")
+	if ok {
+		t.Fatal("invalid hex length must report not-parsed")
+	}
 	if c != colorBlack {
 		t.Fatalf("expected black for invalid hex, got %+v", c)
+	}
+}
+
+func TestStyleParseHexColorNonHexDigitsRejected(t *testing.T) {
+	// hexDigit silently maps non-hex bytes to 0, which would let
+	// "#GGGGGG" / "#zzz" parse as black. parseHexColor must reject
+	// so the cascade ignores the declaration.
+	cases := []string{"#GGGGGG", "#zzz", "#12X4", "#  ff00"}
+	for _, in := range cases {
+		if _, ok := parseHexColor(in); ok {
+			t.Errorf("%q must be rejected (non-hex digit)", in)
+		}
+	}
+}
+
+func TestStyleParseRGBColorNonNumericRejected(t *testing.T) {
+	// Atoi swallows errors as 0, which previously let
+	// "rgb(abc,def,ghi)" parse silently as rgb(0,0,0).
+	cases := []string{
+		"rgb(abc,def,ghi)",
+		"rgb(100%,0,0)", // percent channels not yet supported
+		"rgb(,,)",
+	}
+	for _, in := range cases {
+		if _, ok := parseRGBColor(in); ok {
+			t.Errorf("%q must be rejected", in)
+		}
+	}
+}
+
+func TestStyleParseRGBColorNaNAlphaRejected(t *testing.T) {
+	if _, ok := parseRGBColor("rgba(0,0,0,NaN)"); ok {
+		t.Fatal("NaN alpha must be rejected, not silently clamped")
+	}
+}
+
+func TestStyleParseSvgColorWhitespaceOnlyEmpty(t *testing.T) {
+	c, ok := parseSvgColor("   \t\n")
+	if ok {
+		t.Fatal("whitespace-only must report not-parsed")
+	}
+	if c != colorInherit {
+		t.Fatalf("expected inherit sentinel, got %+v", c)
+	}
+}
+
+func TestStyleParseSvgColorURLCaseInsensitive(t *testing.T) {
+	// hasASCIIPrefixFold should match URL(...) case-insensitively.
+	c, ok := parseSvgColor("URL(#grad1)")
+	if !ok || c != colorTransparent {
+		t.Errorf("URL(#grad1) should parse as transparent, got %+v ok=%v",
+			c, ok)
+	}
+}
+
+func TestStyleParseIntStrict_EmptyAndGarbage(t *testing.T) {
+	cases := []struct {
+		in     string
+		want   int
+		wantOK bool
+	}{
+		{"", 0, false},
+		{"   ", 0, false},
+		{"42", 42, true},
+		{"  42  ", 42, true},
+		{"42px", 0, false},
+		{"abc", 0, false},
+		{"-7", -7, true},
+		{"+12", 12, true},
+	}
+	for _, tc := range cases {
+		got, ok := parseIntStrict(tc.in)
+		if got != tc.want || ok != tc.wantOK {
+			t.Errorf("parseIntStrict(%q) = (%d,%v), want (%d,%v)",
+				tc.in, got, ok, tc.want, tc.wantOK)
+		}
+	}
+}
+
+func TestStyleParseFloatStrict_NaNInfReject(t *testing.T) {
+	rejected := []string{"", "   ", "NaN", "+Inf", "-Inf", "abc",
+		"1.0e500"} // 1e500 overflows float64 → ParseFloat err
+	for _, in := range rejected {
+		if _, ok := parseFloatStrict(in); ok {
+			t.Errorf("parseFloatStrict(%q) must reject", in)
+		}
+	}
+	good := []struct {
+		in   string
+		want float32
+	}{
+		{"0.5", 0.5},
+		{"  3.14  ", 3.14},
+		{"-2", -2},
+	}
+	for _, tc := range good {
+		got, ok := parseFloatStrict(tc.in)
+		if !ok {
+			t.Errorf("parseFloatStrict(%q) must accept", tc.in)
+			continue
+		}
+		if got < tc.want-1e-5 || got > tc.want+1e-5 {
+			t.Errorf("parseFloatStrict(%q) = %f, want %f",
+				tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestHasASCIIPrefixFold_CaseAndLength(t *testing.T) {
+	cases := []struct {
+		s, prefix string
+		want      bool
+	}{
+		{"rgb(1,2,3)", "rgb", true},
+		{"RGB(1,2,3)", "rgb", true},
+		{"Rgba(1,2,3,0.5)", "rgb", true},
+		{"url(#x)", "url(", true},
+		{"URL(#x)", "url(", true},
+		{"rg", "rgb", false}, // shorter than prefix
+		{"", "rgb", false},
+		{"red", "rgb", false},
+		{"  rgb(", "rgb", false}, // leading space — caller trims
+	}
+	for _, tc := range cases {
+		got := hasASCIIPrefixFold(tc.s, tc.prefix)
+		if got != tc.want {
+			t.Errorf("hasASCIIPrefixFold(%q,%q) = %v, want %v",
+				tc.s, tc.prefix, got, tc.want)
+		}
+	}
+}
+
+func TestStyleIsHexDigit_Boundaries(t *testing.T) {
+	accept := "0123456789abcdefABCDEF"
+	for i := 0; i < len(accept); i++ {
+		if !isHexDigit(accept[i]) {
+			t.Errorf("%q must be hex digit", accept[i])
+		}
+	}
+	reject := "gGzZ /\x00\xff:" + "@`"
+	for i := 0; i < len(reject); i++ {
+		if isHexDigit(reject[i]) {
+			t.Errorf("%q must NOT be hex digit", reject[i])
+		}
 	}
 }
 
@@ -113,14 +292,17 @@ func TestStyleHexDigit(t *testing.T) {
 }
 
 func TestStyleParseRGBColor(t *testing.T) {
-	c := parseRGBColor("rgb(128,64,32)")
+	c, ok := parseRGBColor("rgb(128,64,32)")
+	if !ok {
+		t.Fatal("expected ok for rgb(...)")
+	}
 	if c.R != 128 || c.G != 64 || c.B != 32 || c.A != 255 {
 		t.Fatalf("expected rgb(128,64,32), got %+v", c)
 	}
 }
 
 func TestStyleParseRGBAColor(t *testing.T) {
-	c := parseRGBColor("rgba(100,200,50,0.5)")
+	c, _ := parseRGBColor("rgba(100,200,50,0.5)")
 	if c.R != 100 || c.G != 200 || c.B != 50 {
 		t.Fatalf("expected rgb(100,200,50), got %+v", c)
 	}
@@ -130,7 +312,7 @@ func TestStyleParseRGBAColor(t *testing.T) {
 }
 
 func TestStyleParseRGBColorClamping(t *testing.T) {
-	c := parseRGBColor("rgb(300,-10,128)")
+	c, _ := parseRGBColor("rgb(300,-10,128)")
 	if c.R != 255 || c.G != 0 || c.B != 128 {
 		t.Fatalf("expected clamped (255,0,128), got %+v", c)
 	}

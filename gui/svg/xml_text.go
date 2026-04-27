@@ -7,64 +7,71 @@ import (
 	"strings"
 
 	"github.com/mike-ward/go-gui/gui"
+	"github.com/mike-ward/go-gui/gui/svg/css"
 )
 
-// parseTextElement extracts text from a <text> element,
-// including <tspan> children and <textPath> references.
-func parseTextElement(n *xmlNode, inherited ComputedStyle, state *parseState) {
+// maxTextRunBytes caps a single emitted text run. Defends shaping
+// and atlas-cache from hostile CharData that survived file-size cap.
+const maxTextRunBytes = 64 << 10
+
+// prepareTextRun trims, length-caps, then HTML-unescapes a raw text
+// node body. Cap before unescape so entity expansion can't blow out
+// the buffer.
+func prepareTextRun(s string) string {
+	t := strings.TrimSpace(s)
+	if t == "" {
+		return ""
+	}
+	if len(t) > maxTextRunBytes {
+		t = t[:maxTextRunBytes]
+	}
+	return html.UnescapeString(t)
+}
+
+// parseTextElement extracts text from a <text> element, including
+// <tspan> children and <textPath> references. textAncestors must
+// already include this element so descendant <tspan>s see <text> as
+// a parent during their own cascade.
+func parseTextElement(n *xmlNode, computed ComputedStyle, state *parseState,
+	textAncestors []css.ElementInfo) {
 	elem := n.OpenTag
 	x := attrFloat(elem, "x", 0)
 	y := attrFloat(elem, "y", 0)
-	fontSize := float32(16)
-	if inherited.FontSize != "" {
-		fontSize = parseLength(inherited.FontSize)
-	}
-	if fs, ok := findAttrOrStyle(elem, "font-size"); ok {
-		fontSize = parseLength(fs)
-	}
-	fontFamily := cleanFontFamily(inherited.FontFamily)
-	if ff, ok := findAttrOrStyle(elem, "font-family"); ok {
-		fontFamily = cleanFontFamily(ff)
-	}
-	fillStr, _ := findAttrOrStyle(elem, "fill")
-	color := parseSvgColor(fillStr)
-	if color == colorInherit {
-		if inherited.FillSet {
-			color = inherited.Fill
-		} else {
-			color = colorBlack
-		}
-	}
+	p := buildTextAttrsFromComputed(elem, computed)
+	p.x, p.y = x, y
+	parseTextBody(n, p, state, computed, textAncestors)
+}
 
-	// Fill gradient.
-	var fillGradientID string
-	if gid, ok := parseFillURL(fillStr); ok {
-		fillGradientID = gid
+// buildTextAttrsFromComputed projects a cascaded ComputedStyle onto
+// the textParentAttrs the body/tspan/textPath emitters consume.
+// text-decoration / letter-spacing aren't in the cascade yet so they
+// still read raw attr/style on elem.
+func buildTextAttrsFromComputed(elem string, computed ComputedStyle) textParentAttrs {
+	fontSize := float32(16)
+	if computed.FontSize != "" {
+		fontSize = parseLength(computed.FontSize)
 	}
+	fontFamily := cleanFontFamily(computed.FontFamily)
+
+	color := colorBlack
+	if computed.FillSet {
+		color = computed.Fill
+	}
+	fillGradientID := computed.FillGradient
 
 	anchor := uint8(0)
-	if anc := attrOrDefault(elem, "text-anchor", inherited.TextAnchor); anc != "" {
-		switch anc {
-		case "middle":
-			anchor = 1
-		case "end":
-			anchor = 2
-		}
+	switch computed.TextAnchor {
+	case "middle":
+		anchor = 1
+	case "end":
+		anchor = 2
 	}
 
-	fontWeight := parseFontWeight(inherited.FontWeight)
-	if fw := attrOrDefault(elem, "font-weight", ""); fw != "" {
-		fontWeight = parseFontWeight(fw)
-	}
+	fontWeight := parseFontWeight(computed.FontWeight)
 	bold := fontWeight >= 600
-	italic := false
-	if fs := attrOrDefault(elem, "font-style", inherited.FontStyle); fs == "italic" || fs == "oblique" {
-		italic = true
-	}
+	italic := computed.FontStyle == "italic" || computed.FontStyle == "oblique"
 
-	// Text decoration.
-	underline := false
-	strikethrough := false
+	underline, strikethrough := false, false
 	if td, ok := findAttrOrStyle(elem, "text-decoration"); ok {
 		if strings.Contains(td, "underline") {
 			underline = true
@@ -73,32 +80,39 @@ func parseTextElement(n *xmlNode, inherited ComputedStyle, state *parseState) {
 			strikethrough = true
 		}
 	}
-
-	// Letter spacing.
 	var letterSpacing float32
 	if ls, ok := findAttrOrStyle(elem, "letter-spacing"); ok {
 		letterSpacing = parseLength(ls)
 	}
 
-	// stroke=inherit must resolve against the cascade, not colorBlack.
-	var startColor gui.SvgColor
-	var startWidth float32
-	sentinelFallback := colorBlack
-	if inherited.StrokeSet {
-		startColor = inherited.Stroke
-		sentinelFallback = inherited.Stroke
+	var strokeColor gui.SvgColor
+	var strokeWidth float32
+	if computed.StrokeSet {
+		strokeColor = computed.Stroke
+		strokeWidth = sanitizeStrokeWidth(computed.StrokeWidth)
+		// stroke="none" cascades as transparent; drop the width so
+		// renderers don't emit a zero-alpha hairline.
+		if strokeColor.A == 0 {
+			strokeWidth = 0
+		} else if isSentinelColor(strokeColor) {
+			strokeColor = colorBlack
+		}
+		if strokeColor.A != 0 && strokeWidth == 0 {
+			strokeWidth = 1
+		}
+	} else if rawStroke, ok := findAttrOrStyle(elem, "stroke"); ok {
+		// `stroke="inherit"` / `"currentColor"` on <text> with no
+		// ancestor stroke leaves StrokeSet=false. Promote to a visible
+		// default so the declaration isn't silently a no-op.
+		trimmed := strings.TrimSpace(rawStroke)
+		if isCSSInheritKeyword(trimmed) ||
+			strings.EqualFold(trimmed, "currentcolor") {
+			strokeColor = colorBlack
+			strokeWidth = 1
+		}
 	}
-	if inherited.StrokeWidth > 0 {
-		startWidth = inherited.StrokeWidth
-	}
-	strokeColor, strokeWidth := resolveStrokeAttrs(
-		elem, startColor, sentinelFallback, startWidth, true)
 
-	opacity := inherited.Opacity * parseOpacityAttr(elem, "opacity", 1.0)
-
-	// Parse body: direct text, <tspan>, and <textPath>.
-	parseTextBody(n, textParentAttrs{
-		x: x, y: y,
+	return textParentAttrs{
 		fontSize: fontSize, fontFamily: fontFamily,
 		color: color, fillGradientID: fillGradientID,
 		anchor: anchor, bold: bold, italic: italic,
@@ -106,8 +120,8 @@ func parseTextElement(n *xmlNode, inherited ComputedStyle, state *parseState) {
 		underline:  underline, strikethrough: strikethrough,
 		letterSpacing: letterSpacing,
 		strokeColor:   strokeColor, strokeWidth: strokeWidth,
-		opacity: opacity, filterID: inherited.FilterID,
-	}, state)
+		opacity: computed.Opacity, filterID: computed.FilterID,
+	}
 }
 
 // textParentAttrs holds inherited attributes from a <text> element.
@@ -129,23 +143,35 @@ type textParentAttrs struct {
 }
 
 // parseTextBody walks the direct text and <tspan>/<textPath>
-// children of a <text> element node.
-func parseTextBody(n *xmlNode, p textParentAttrs, state *parseState) {
+// children of a <text> element node. parentComputed and ancestors
+// are forwarded so each <tspan> can run its own cascade against the
+// <text> element as parent.
+func parseTextBody(n *xmlNode, p textParentAttrs, state *parseState,
+	parentComputed ComputedStyle, ancestors []css.ElementInfo) {
 	curY := p.y
 
 	// Direct text that precedes any child element.
-	lead := html.UnescapeString(strings.TrimSpace(n.Leading))
+	lead := prepareTextRun(n.Leading)
 	if lead != "" {
 		state.texts = append(state.texts, makeTextFromParent(
 			lead, p.x, curY, p))
 	}
 
+	if len(n.Children) == 0 {
+		return
+	}
+	siblings := make([]css.ElementInfo, 0, len(n.Children))
 	for i := range n.Children {
 		c := &n.Children[i]
+		info := makeElementInfo(c.Name, c.OpenTag, i+1, false, c.AttrMap)
+		applyPseudoState(&info, state)
+		sibsForThis := siblings
+		siblings = append(siblings, info)
 		switch c.Name {
 		case "tspan":
 			if !c.SelfClose {
-				parseTspan(c, p, &curY, state)
+				parseTspan(c, p, &curY, state, parentComputed,
+					info, ancestors, sibsForThis)
 			}
 		case "textPath":
 			if !c.SelfClose {
@@ -155,7 +181,7 @@ func parseTextBody(n *xmlNode, p textParentAttrs, state *parseState) {
 		if c.Tail == "" {
 			continue
 		}
-		if tail := html.UnescapeString(strings.TrimSpace(c.Tail)); tail != "" {
+		if tail := prepareTextRun(c.Tail); tail != "" {
 			state.texts = append(state.texts, makeTextFromParent(
 				tail, p.x, curY, p))
 		}
@@ -186,16 +212,26 @@ func makeTextFromParent(text string, x, y float32, p textParentAttrs) gui.SvgTex
 	}
 }
 
-// parseTspan parses a <tspan> element, inheriting parent <text>
-// attrs and applying overrides.
-func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState) {
+// parseTspan parses a <tspan> element, running the CSS cascade so
+// author rules and pseudo-state matches reach tspans the same way
+// they reach shapes. parentComputed is the <text> element's resolved
+// style; ancestors is the chain rooted at <svg> through <text>.
+func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState,
+	parentComputed ComputedStyle, info css.ElementInfo,
+	ancestors, siblings []css.ElementInfo) {
 	elem := n.OpenTag
-	text := html.UnescapeString(strings.TrimSpace(n.Text))
+	text := prepareTextRun(n.Text)
 	if text == "" {
 		return
 	}
 
-	// Position: absolute x/y or relative dy.
+	computed := computeStyle(elem, parentComputed, state, info,
+		ancestors, siblings)
+	if computed.Display == DisplayNone {
+		return
+	}
+
+	// Positional attributes are not styleable; read raw markup.
 	tx := p.x
 	if xv, ok := findAttr(elem, "x"); ok {
 		tx = parseF32(xv)
@@ -209,44 +245,61 @@ func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState)
 	}
 	*curY = ty
 
-	// Override attrs from tspan.
 	fontSize := p.fontSize
-	if fs, ok := findAttrOrStyle(elem, "font-size"); ok {
-		fontSize = parseLength(fs)
+	if computed.FontSize != "" {
+		fontSize = parseLength(computed.FontSize)
 	}
 	fontFamily := p.fontFamily
-	if ff, ok := findAttrOrStyle(elem, "font-family"); ok {
-		fontFamily = cleanFontFamily(ff)
+	if computed.FontFamily != "" {
+		fontFamily = cleanFontFamily(computed.FontFamily)
 	}
 	fontWeight := p.fontWeight
 	bold := p.bold
-	if fw, ok := findAttrOrStyle(elem, "font-weight"); ok {
-		fontWeight = parseFontWeight(fw)
+	if computed.FontWeight != "" {
+		fontWeight = parseFontWeight(computed.FontWeight)
 		bold = fontWeight >= 600
 	}
 	italic := p.italic
-	if fs, ok := findAttrOrStyle(elem, "font-style"); ok {
-		italic = fs == "italic" || fs == "oblique"
+	if computed.FontStyle != "" {
+		italic = computed.FontStyle == "italic" ||
+			computed.FontStyle == "oblique"
 	}
 	color := p.color
 	fillGradientID := p.fillGradientID
-	if f, ok := findAttrOrStyle(elem, "fill"); ok {
-		if gid, gok := parseFillURL(f); gok {
-			fillGradientID = gid
-		} else {
-			c := parseSvgColor(f)
-			if c != colorInherit {
-				color = c
-				fillGradientID = ""
-			}
-		}
+	if computed.FillSet {
+		color = computed.Fill
+		fillGradientID = computed.FillGradient
+	}
+	strokeColor := p.strokeColor
+	strokeWidth := p.strokeWidth
+	if computed.StrokeSet {
+		strokeColor = computed.Stroke
+		strokeWidth = computed.StrokeWidth
+	}
+	// computeStyle already composes opacity through the cascade.
+	// Multiplying by p.opacity here would re-apply ancestor opacity.
+	opacity := computed.Opacity
+
+	anchor := p.anchor
+	switch computed.TextAnchor {
+	case "start":
+		anchor = 0
+	case "middle":
+		anchor = 1
+	case "end":
+		anchor = 2
 	}
 
-	strokeColor, strokeWidth := resolveStrokeAttrs(
-		elem, p.strokeColor, p.strokeColor, p.strokeWidth, false)
-	opacity := p.opacity
-	if v, ok := findAttrOrStyle(elem, "opacity"); ok {
-		opacity = p.opacity * clampOpacity01(parseOpacityNumber(v))
+	// text-decoration / letter-spacing not yet in cascade.
+	underline := p.underline
+	strikethrough := p.strikethrough
+	if td, ok := findAttrOrStyle(elem, "text-decoration"); ok {
+		underline = strings.Contains(td, "underline")
+		strikethrough = strings.Contains(td, "line-through")
+	}
+	letterSpacing := p.letterSpacing
+	if ls, ok := findAttrOrStyle(elem, "letter-spacing"); ok {
+		letterSpacing = parseLength(ls)
 	}
 
 	state.texts = append(state.texts, gui.SvgText{
@@ -260,12 +313,12 @@ func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState)
 		FontWeight:     fontWeight,
 		Color:          color,
 		FillGradientID: fillGradientID,
-		FilterID:       p.filterID,
-		Anchor:         int(p.anchor),
+		FilterID:       computed.FilterID,
+		Anchor:         int(anchor),
 		Opacity:        opacity,
-		Underline:      p.underline,
-		Strikethrough:  p.strikethrough,
-		LetterSpacing:  p.letterSpacing,
+		Underline:      underline,
+		Strikethrough:  strikethrough,
+		LetterSpacing:  letterSpacing,
 		StrokeColor:    strokeColor,
 		StrokeWidth:    strokeWidth,
 	})
@@ -274,7 +327,7 @@ func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState)
 // parseTextPathChild parses a <textPath> child element.
 func parseTextPathChild(n *xmlNode, p textParentAttrs, state *parseState) {
 	elem := n.OpenTag
-	text := html.UnescapeString(strings.TrimSpace(n.Text))
+	text := prepareTextRun(n.Text)
 	if text == "" {
 		return
 	}

@@ -89,9 +89,10 @@ func parsePathElement(elem string) (VectorPath, bool) {
 	}
 	fill, _ := findAttrOrStyle(elem, "fill")
 	s := parseElementStyle(elem)
+	fillColor, _ := parseSvgColor(fill)
 
 	path := VectorPath{
-		FillColor:        parseSvgColor(fill),
+		FillColor:        fillColor,
 		Transform:        s.Transform,
 		StrokeColor:      s.StrokeColor,
 		StrokeWidth:      s.StrokeWidth,
@@ -193,12 +194,13 @@ func parseRectElement(elem string) (VectorPath, bool) {
 	ry := attrFloat(elem, "ry", 0)
 	fill, _ := findAttrOrStyle(elem, "fill")
 	s := parseElementStyle(elem)
+	fillColor, _ := parseSvgColor(fill)
 
 	segments := segmentsForRect(x, y, rw, rh, rx, ry)
 
 	vp := VectorPath{
 		Segments:         segments,
-		FillColor:        parseSvgColor(fill),
+		FillColor:        fillColor,
 		Transform:        s.Transform,
 		StrokeColor:      s.StrokeColor,
 		StrokeWidth:      s.StrokeWidth,
@@ -274,9 +276,10 @@ func parseEllipseElement(elem string) (VectorPath, bool) {
 }
 
 func ellipseToPath(cx, cy, rx, ry float32, _, fill string, s elementStyle) VectorPath {
+	fillColor, _ := parseSvgColor(fill)
 	vp := VectorPath{
 		Segments:         segmentsForEllipse(cx, cy, rx, ry),
-		FillColor:        parseSvgColor(fill),
+		FillColor:        fillColor,
 		Transform:        s.Transform,
 		StrokeColor:      s.StrokeColor,
 		StrokeWidth:      s.StrokeWidth,
@@ -316,10 +319,11 @@ func parsePolygonElement(elem string, closed bool) (VectorPath, bool) {
 	if closed {
 		segments = append(segments, PathSegment{CmdClose, nil})
 	}
+	fillColor, _ := parseSvgColor(fill)
 
 	vp := VectorPath{
 		Segments:         segments,
-		FillColor:        parseSvgColor(fill),
+		FillColor:        fillColor,
 		Transform:        s.Transform,
 		StrokeColor:      s.StrokeColor,
 		StrokeWidth:      s.StrokeWidth,

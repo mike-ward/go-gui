@@ -4,6 +4,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/svg/css"
 )
 
@@ -98,25 +99,11 @@ func applyCSSProp(name, value string, out *ComputedStyle) {
 	}
 	switch name {
 	case "fill":
-		c := parseSvgColor(v)
-		if gid, ok := parseFillURL(v); ok {
-			out.FillGradient = gid
-		} else {
-			out.FillGradient = ""
-		}
-		out.Fill = c
-		out.FillSet = true
+		applyPaintProp(v, &out.Fill, &out.FillSet, &out.FillGradient)
 	case "stroke":
-		c := parseSvgColor(v)
-		if gid, ok := parseFillURL(v); ok {
-			out.StrokeGradient = gid
-		} else {
-			out.StrokeGradient = ""
-		}
-		out.Stroke = c
-		out.StrokeSet = true
+		applyPaintProp(v, &out.Stroke, &out.StrokeSet, &out.StrokeGradient)
 	case "stroke-width":
-		out.StrokeWidth = parseLength(v)
+		out.StrokeWidth = sanitizeStrokeWidth(parseLength(v))
 	case "stroke-linecap":
 		out.StrokeCap = parseStrokeCap(v)
 	case "stroke-linejoin":
@@ -167,6 +154,40 @@ func applyCSSProp(name, value string, out *ComputedStyle) {
 			out.Visibility = VisibilityVisible
 		}
 	}
+}
+
+// applyPaintProp folds one fill/stroke declaration into the supplied
+// slots. CSS-wide control keywords are no-ops so the cascade-copied
+// parent value survives; unparseable syntax is dropped per CSS
+// "invalid → ignore" rather than clobbering with transparent black.
+func applyPaintProp(v string, color *gui.SvgColor, set *bool, gradient *string) {
+	if isCSSInheritKeyword(v) {
+		return
+	}
+	if gid, ok := parseFillURL(v); ok {
+		*gradient = gid
+		*color = colorTransparent
+		*set = true
+		return
+	}
+	c, parsed := parseSvgColor(v)
+	if !parsed {
+		return
+	}
+	*gradient = ""
+	*color = c
+	*set = true
+}
+
+// isCSSInheritKeyword reports whether v is a CSS-wide control
+// keyword that preserves the cascaded value. Trimming guards against
+// callers that haven't normalized whitespace.
+func isCSSInheritKeyword(v string) bool {
+	t := strings.TrimSpace(v)
+	return strings.EqualFold(t, "inherit") ||
+		strings.EqualFold(t, "unset") ||
+		strings.EqualFold(t, "revert") ||
+		strings.EqualFold(t, "revert-layer")
 }
 
 // parseOpacityNumber parses opacity-like values. Accepts a unitless

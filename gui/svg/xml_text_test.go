@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/mike-ward/go-gui/gui"
@@ -586,5 +587,259 @@ func TestTspanStrokeNoneClearsStroke(t *testing.T) {
 	}
 	if got.StrokeColor.A != 0 {
 		t.Errorf("StrokeColor.A = %d, want 0 (none)", got.StrokeColor.A)
+	}
+}
+
+// Author CSS rule on a <text> selector must apply. Pre-fix path
+// bypassed computeStyle for <text>, so rule-based styling was
+// silently dropped.
+func TestTextCSSRuleAppliesFill(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>.label{fill:red}</style>` +
+		`<text class="label">Hi</text></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vg.Texts) == 0 {
+		t.Fatal("no text")
+	}
+	c := vg.Texts[0].Color
+	if c.R != 255 || c.G != 0 || c.B != 0 {
+		t.Errorf("Color = %+v, want red from .label rule", c)
+	}
+}
+
+// `display:none` from a CSS rule on <text> must drop the element.
+func TestTextDisplayNoneFromRuleHidesText(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>.hidden{display:none}</style>` +
+		`<text class="hidden">Gone</text>` +
+		`<text>Kept</text></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, txt := range vg.Texts {
+		if txt.Text == "Gone" {
+			t.Errorf("display:none text leaked through: %+v", txt)
+		}
+	}
+}
+
+// `display:none` on a <tspan> via CSS rule must drop just that run.
+func TestTspanDisplayNoneFromRuleHidesRun(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>.gone{display:none}</style>` +
+		`<text><tspan class="gone">X</tspan><tspan>Y</tspan></text>` +
+		`</svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, txt := range vg.Texts {
+		if txt.Text == "X" {
+			t.Errorf("hidden tspan leaked: %+v", txt)
+		}
+	}
+}
+
+// Element-selector rule (`text { ... }`) must reach <text>.
+func TestTextElementSelectorAppliesFontSize(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>text{font-size:32}</style>` +
+		`<text>X</text></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vg.Texts) == 0 {
+		t.Fatal("no text")
+	}
+	if vg.Texts[0].FontSize != 32 {
+		t.Errorf("FontSize = %f, want 32 from element rule",
+			vg.Texts[0].FontSize)
+	}
+}
+
+// Nested opacity must compose exactly once. Earlier impl multiplied
+// the cascade-resolved tspan opacity by the parent text's already-
+// composed opacity, double-applying the ancestor factor (e.g.
+// 0.5 × 0.5 collapsed to 0.125 instead of 0.25).
+func TestTspanOpacityComposesOnce(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<text opacity="0.5"><tspan opacity="0.5">X</tspan></text></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got gui.SvgText
+	for _, txt := range vg.Texts {
+		if txt.Text == "X" {
+			got = txt
+		}
+	}
+	if got.Text != "X" {
+		t.Fatal("tspan run not found")
+	}
+	if got.Opacity < 0.249 || got.Opacity > 0.251 {
+		t.Errorf("tspan opacity = %f, want ~0.25 (0.5 * 0.5)", got.Opacity)
+	}
+}
+
+// `tspan` selector must reach <tspan> independently of the parent
+// <text>'s rule match.
+func TestTspanCSSRuleAppliesFill(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>tspan{fill:blue}</style>` +
+		`<text fill="red"><tspan>X</tspan></text></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got gui.SvgText
+	for _, txt := range vg.Texts {
+		if txt.Text == "X" {
+			got = txt
+		}
+	}
+	if got.Color.B != 255 || got.Color.R != 0 {
+		t.Errorf("tspan Color = %+v, want blue from tspan rule",
+			got.Color)
+	}
+}
+
+// prepareTextRun must cap before html.UnescapeString runs so a
+// hostile entity-bomb body cannot expand into a giant buffer. The
+// cap fires on the trimmed-byte length, so a 1MB run of the literal
+// 'a' character must come back at maxTextRunBytes.
+func TestPrepareTextRun_OversizedInputCappedBeforeUnescape(t *testing.T) {
+	// Plain bytes — cap works directly.
+	huge := strings.Repeat("a", maxTextRunBytes+1024)
+	got := prepareTextRun(huge)
+	if len(got) != maxTextRunBytes {
+		t.Errorf("plain run len = %d, want %d", len(got), maxTextRunBytes)
+	}
+	// Whitespace must be trimmed before measuring.
+	padded := "   " + strings.Repeat("b", maxTextRunBytes+10) + "   "
+	got = prepareTextRun(padded)
+	if len(got) != maxTextRunBytes {
+		t.Errorf("trimmed run len = %d, want %d", len(got), maxTextRunBytes)
+	}
+	// Entity bomb: every byte is `&amp;` (5 bytes → 1 byte after
+	// unescape). Pre-cap input is 5 * maxTextRunBytes; post-cap and
+	// post-unescape it must be at most maxTextRunBytes / 5 + a bit.
+	// The test is loose: just verify the result is far smaller than
+	// the unescaped-then-uncapped expansion would be.
+	bomb := strings.Repeat("&amp;", maxTextRunBytes)
+	got = prepareTextRun(bomb)
+	if len(got) > maxTextRunBytes {
+		t.Errorf("entity bomb expanded past cap: len = %d", len(got))
+	}
+}
+
+// Empty / whitespace input must short-circuit to "" without
+// allocating an unescape buffer.
+func TestPrepareTextRun_EmptyAndWhitespace(t *testing.T) {
+	cases := []string{"", "   ", "\t\n\r"}
+	for _, in := range cases {
+		if got := prepareTextRun(in); got != "" {
+			t.Errorf("prepareTextRun(%q) = %q, want empty",
+				in, got)
+		}
+	}
+}
+
+// Tspan `text-anchor:"start"` must override an inherited `end` /
+// `middle`. Pre-cascade tspan code didn't override anchor at all;
+// the new code switches on computed.TextAnchor.
+func TestTspanTextAnchorStartOverridesParent(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<text text-anchor="end">` +
+		`<tspan text-anchor="start">X</tspan></text></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got gui.SvgText
+	for _, txt := range vg.Texts {
+		if txt.Text == "X" {
+			got = txt
+		}
+	}
+	if got.Text != "X" {
+		t.Fatal("tspan run not found")
+	}
+	if got.Anchor != 0 {
+		t.Errorf("tspan Anchor = %d, want 0 (start)", got.Anchor)
+	}
+}
+
+// Stroke none from a CSS rule on <text> must clear stroke just like
+// the presentation-attr path. Cascade-via-rule is the new surface
+// added by the text-cascade fix.
+func TestTextStrokeNoneFromCSSRuleClears(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>text{stroke:none}</style>` +
+		`<g stroke="red" stroke-width="3"><text>X</text></g></svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vg.Texts) == 0 {
+		t.Fatal("no text")
+	}
+	got := vg.Texts[0]
+	if got.StrokeColor.A != 0 {
+		t.Errorf("StrokeColor.A = %d, want 0 (rule-set none)",
+			got.StrokeColor.A)
+	}
+	if got.StrokeWidth != 0 {
+		t.Errorf("StrokeWidth = %f, want 0 (rule-set none)",
+			got.StrokeWidth)
+	}
+}
+
+// `:hover` pseudo-class on a <text> selector now reaches text via
+// the cascade. Pre-fix this was silently dropped because text
+// bypassed computeStyle.
+func TestTextHoverPseudoStateApplies(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>text:hover{fill:blue}</style>` +
+		`<text id="t1" fill="red">X</text></svg>`
+	vg, err := parseSvgWith(svg, ParseOptions{HoveredElementID: "t1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vg.Texts) == 0 {
+		t.Fatal("no text")
+	}
+	c := vg.Texts[0].Color
+	if c.B != 255 || c.R != 0 {
+		t.Errorf("hovered text Color = %+v, want blue", c)
+	}
+}
+
+// Descendant combinator must reach <tspan> through the now-correct
+// ancestor chain. `g.bar tspan` should match a tspan whose ancestor
+// <g class="bar"> appears anywhere up the tree.
+func TestTspanDescendantCombinatorMatches(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">` +
+		`<style>g.bar tspan{fill:blue}</style>` +
+		`<g class="bar"><text fill="red"><tspan>X</tspan></text></g>` +
+		`</svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got gui.SvgText
+	for _, txt := range vg.Texts {
+		if txt.Text == "X" {
+			got = txt
+		}
+	}
+	if got.Color.B != 255 || got.Color.R != 0 {
+		t.Errorf("tspan via descendant combinator Color = %+v, want blue",
+			got.Color)
 	}
 }

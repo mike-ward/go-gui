@@ -390,8 +390,16 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 				})
 
 		case "text":
+			// Run cascade so author CSS, :hover/:focus, and display:none
+			// reach <text> the same way they reach shapes.
+			textGS := computeStyle(c.OpenTag, inherited, state, info,
+				ancestors, sibsForThis)
+			if textGS.Display == DisplayNone {
+				continue
+			}
 			state.elemCount++
-			parseTextElement(c, inherited, state)
+			textAncestors := append(ancestors, info)
+			parseTextElement(c, textGS, state, textAncestors)
 
 		case "animate":
 			state.elemCount++

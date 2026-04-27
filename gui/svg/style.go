@@ -162,61 +162,88 @@ var stringColors = map[string]gui.SvgColor{
 	"yellowgreen":          {R: 154, G: 205, B: 50, A: 255},
 }
 
-// parseSvgColor converts SVG color strings to SvgColor.
-func parseSvgColor(s string) gui.SvgColor {
+// parseSvgColor converts SVG color strings to SvgColor. ok=false
+// lets the cascade drop unparseable declarations per CSS
+// "invalid → ignore" rather than clobbering inherited paint.
+// Empty input returns colorInherit so callers can distinguish
+// "no value" from a recognized keyword. Case-insensitive.
+func parseSvgColor(s string) (gui.SvgColor, bool) {
 	str := strings.TrimSpace(s)
 	if len(str) == 0 {
-		return colorInherit
-	}
-	if str == "none" {
-		return colorTransparent
-	}
-	if str == "currentColor" || str == "inherit" {
-		return colorCurrent
-	}
-	if strings.HasPrefix(str, "url(") {
-		return colorTransparent
+		return colorInherit, false
 	}
 	if str[0] == '#' {
 		return parseHexColor(str)
 	}
-	if strings.HasPrefix(str, "rgb") {
+	if hasASCIIPrefixFold(str, "url(") {
+		return colorTransparent, true
+	}
+	if hasASCIIPrefixFold(str, "rgb") {
 		return parseRGBColor(str)
 	}
-	if c, ok := stringColors[str]; ok {
-		return c
+	if strings.EqualFold(str, "none") {
+		return colorTransparent, true
 	}
-	return gui.SvgColor{}
+	if strings.EqualFold(str, "currentColor") || strings.EqualFold(str, "inherit") {
+		return colorCurrent, true
+	}
+	if c, ok := stringColors[strings.ToLower(str)]; ok {
+		return c, true
+	}
+	return gui.SvgColor{}, false
 }
 
-// parseHexColor parses #RGB, #RRGGBB, #RGBA, #RRGGBBAA.
-func parseHexColor(s string) gui.SvgColor {
+// hasASCIIPrefixFold reports whether s starts with prefix using
+// case-insensitive ASCII comparison without lowercasing the entire
+// string. prefix must already be lowercase ASCII.
+func hasASCIIPrefixFold(s, prefix string) bool {
+	if len(s) < len(prefix) {
+		return false
+	}
+	return strings.EqualFold(s[:len(prefix)], prefix)
+}
+
+// parseHexColor parses #RGB, #RRGGBB, #RGBA, #RRGGBBAA. Returns
+// ok=false on wrong length or non-hex digit so the cascade ignores
+// the declaration per CSS "invalid → ignore".
+func parseHexColor(s string) (gui.SvgColor, bool) {
 	hex := s[1:]
+	for i := 0; i < len(hex); i++ {
+		if !isHexDigit(hex[i]) {
+			return colorBlack, false
+		}
+	}
 	switch len(hex) {
 	case 3:
 		r := hexDigit(hex[0]) * 17
 		g := hexDigit(hex[1]) * 17
 		b := hexDigit(hex[2]) * 17
-		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}
+		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}, true
 	case 4:
 		r := hexDigit(hex[0]) * 17
 		g := hexDigit(hex[1]) * 17
 		b := hexDigit(hex[2]) * 17
 		a := hexDigit(hex[3]) * 17
-		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
+		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}, true
 	case 6:
 		r := hexDigit(hex[0])*16 + hexDigit(hex[1])
 		g := hexDigit(hex[2])*16 + hexDigit(hex[3])
 		b := hexDigit(hex[4])*16 + hexDigit(hex[5])
-		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}
+		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}, true
 	case 8:
 		r := hexDigit(hex[0])*16 + hexDigit(hex[1])
 		g := hexDigit(hex[2])*16 + hexDigit(hex[3])
 		b := hexDigit(hex[4])*16 + hexDigit(hex[5])
 		a := hexDigit(hex[6])*16 + hexDigit(hex[7])
-		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
+		return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}, true
 	}
-	return colorBlack
+	return colorBlack, false
+}
+
+func isHexDigit(c byte) bool {
+	return (c >= '0' && c <= '9') ||
+		(c >= 'a' && c <= 'f') ||
+		(c >= 'A' && c <= 'F')
 }
 
 func hexDigit(c byte) int {
@@ -231,44 +258,83 @@ func hexDigit(c byte) int {
 	return 0
 }
 
-// parseRGBColor parses rgb(r,g,b) or rgba(r,g,b,a).
-func parseRGBColor(s string) gui.SvgColor {
+// parseRGBColor parses rgb(r,g,b) or rgba(r,g,b,a). Slash-alpha and
+// percent channel forms are not yet supported and return false.
+func parseRGBColor(s string) (gui.SvgColor, bool) {
 	start := strings.IndexByte(s, '(')
 	end := strings.IndexByte(s, ')')
 	if start < 0 || end < 0 || end <= start+1 {
-		return colorBlack
+		return colorBlack, false
 	}
 	body := s[start+1 : end]
 	rv, next, ok := nextCommaValue(body, 0)
 	if !ok {
-		return colorBlack
+		return colorBlack, false
 	}
 	gv, next, ok := nextCommaValue(body, next)
 	if !ok {
-		return colorBlack
+		return colorBlack, false
 	}
 	bv, next, ok := nextCommaValue(body, next)
 	if !ok {
-		return colorBlack
+		return colorBlack, false
 	}
-	r := clampByte(parseIntTrimmed(rv))
-	g := clampByte(parseIntTrimmed(gv))
-	b := clampByte(parseIntTrimmed(bv))
+	rn, ok := parseIntStrict(rv)
+	if !ok {
+		return colorBlack, false
+	}
+	gn, ok := parseIntStrict(gv)
+	if !ok {
+		return colorBlack, false
+	}
+	bn, ok := parseIntStrict(bv)
+	if !ok {
+		return colorBlack, false
+	}
+	r := clampByte(rn)
+	g := clampByte(gn)
+	b := clampByte(bn)
 	a := 255
 	if av, _, ok := nextCommaValue(body, next); ok {
-		alpha := parseFloatTrimmed(av)
+		alpha, aok := parseFloatStrict(av)
+		if !aok {
+			return colorBlack, false
+		}
 		if alpha <= 1.0 {
 			a = clampByte(int(alpha * 255))
 		} else {
 			a = clampByte(int(alpha))
 		}
 	}
-	return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
+	return gui.SvgColor{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}, true
 }
 
-func parseIntTrimmed(s string) int {
-	v, _ := strconv.Atoi(strings.TrimSpace(s))
-	return v
+// parseIntStrict parses a base-10 integer, rejecting empty or
+// non-numeric input rather than silently returning 0.
+func parseIntStrict(s string) (int, bool) {
+	t := strings.TrimSpace(s)
+	if t == "" {
+		return 0, false
+	}
+	v, err := strconv.Atoi(t)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
+}
+
+// parseFloatStrict parses a float32, rejecting empty, non-numeric,
+// NaN, and Inf. Non-finite values poison downstream byte clamping.
+func parseFloatStrict(s string) (float32, bool) {
+	t := strings.TrimSpace(s)
+	if t == "" {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(t, 32)
+	if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0, false
+	}
+	return float32(v), true
 }
 
 // parseFloatTrimmed parses s as a float32. NaN and ±Inf collapse to 0
@@ -693,7 +759,11 @@ func getStrokeColor(elem string) gui.SvgColor {
 	if !ok {
 		return colorInherit
 	}
-	return parseSvgColor(stroke)
+	c, parsed := parseSvgColor(stroke)
+	if !parsed {
+		return colorInherit
+	}
+	return c
 }
 
 func getStrokeGradientID(elem string) string {
@@ -999,13 +1069,6 @@ func resolveFillRule(elem string, parent ComputedStyle) FillRule {
 	return FillRuleNonzero
 }
 
-func attrOrDefault(elem, name, fallback string) string {
-	if val, ok := findAttrOrStyle(elem, name); ok {
-		return val
-	}
-	return fallback
-}
-
 func parseStrokeCap(v string) gui.StrokeCap {
 	switch v {
 	case "round":
@@ -1185,35 +1248,6 @@ func sanitizeStrokeWidth(v float32) float32 {
 		return 0
 	}
 	return v
-}
-
-// resolveStrokeAttrs reads stroke / stroke-width on elem and resolves
-// against caller-supplied defaults. sentinelFallback is the color to
-// use when stroke is colorInherit/colorCurrent (caller decides whether
-// to fall through to cascade or to colorBlack). bumpDefaultWidth gives
-// stroked-but-widthless elements the SVG default width of 1.
-func resolveStrokeAttrs(elem string, color, sentinelFallback gui.SvgColor,
-	width float32, bumpDefaultWidth bool) (gui.SvgColor, float32) {
-	if sw, ok := findAttrOrStyle(elem, "stroke-width"); ok {
-		width = sanitizeStrokeWidth(parseLength(sw))
-	}
-	sc, ok := findAttrOrStyle(elem, "stroke")
-	if !ok {
-		return color, width
-	}
-	if sc == "none" {
-		return gui.SvgColor{}, 0
-	}
-	c := parseSvgColor(sc)
-	if isSentinelColor(c) {
-		color = sentinelFallback
-	} else {
-		color = c
-	}
-	if bumpDefaultWidth && width == 0 {
-		width = 1
-	}
-	return color, width
 }
 
 // isSentinelColor reports whether c is a colorInherit/colorCurrent

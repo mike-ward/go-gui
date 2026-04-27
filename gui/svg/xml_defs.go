@@ -206,8 +206,8 @@ func parseGradientStops(gradient *xmlNode) []gui.SvgGradientStop {
 		if cs, ok := findAttrOrStyle(stopElem, "stop-color"); ok {
 			colorStr = cs
 		}
-		color := parseSvgColor(colorStr)
-		if color == colorInherit {
+		color, parsed := parseSvgColor(colorStr)
+		if !parsed || color == colorInherit {
 			// Bare "inherit" at gradient-stop scope has no parent to
 			// resolve against; fall back to black.
 			color = colorBlack
