@@ -18,11 +18,12 @@ type Shape struct {
 	FloatZIndex int
 
 	// Optional sub-structs (nil when unused)
-	Events *EventHandlers     // event handlers
-	TC     *ShapeTextConfig   // text/RTF fields
-	FX     *ShapeEffects      // visual effects
-	A11Y   *AccessInfo        // accessibility metadata
-	BC     *ShapeButtonColors // button hover/focus colors
+	Events  *EventHandlers     // event handlers
+	TC      *ShapeTextConfig   // text/RTF fields
+	FX      *ShapeEffects      // visual effects
+	A11Y    *AccessInfo        // accessibility metadata
+	BC      *ShapeButtonColors // button hover/focus colors
+	SvgOpts *SvgParseOpts      // per-render SVG parse overrides
 
 	// Structs
 	ShapeClip DrawClip // calculated clipping rectangle

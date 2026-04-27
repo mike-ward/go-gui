@@ -6,7 +6,7 @@
 | ------------------------ | ------------- | ---------- | ---------------- |
 | v0.13.0 SVG completeness | ✅ code+tests | 2026-04-26 | (pending commit) |
 | v0.14.0 CSS phase 2      | ✅ code+tests | 2026-04-26 | (pending commit) |
-| v0.15.0 Reuse + polish   | ☐ pending     | —          | —                |
+| v0.15.0 Reuse + polish   | ✅ code+tests | 2026-04-26 | (pending commit) |
 
 **Per-task checklist (v0.13.0):**
 
@@ -28,13 +28,24 @@
 
 **Per-task checklist (v0.15.0):**
 
-- [ ] `<use>` element
-- [ ] `<symbol>` element
-- [ ] Gradient spreadMethod
-- [ ] Tessellation tolerance tunable
-- [ ] :hover / :focus runtime mouse-event auto-toggle (carried over from v0.14.0)
-- [ ] Visual examples: svg_use_symbol, svg_gradient_spread, svg_flatness, svg_css_states
-- [ ] Docs updates
+- [x] `<use>` element (href / xlink:href, x/y → translate, attribute
+      pass-through, depth-8 cycle guard, id stripped on clone)
+- [x] `<symbol>` element (children inlined when targeted by `<use>`;
+      symbol viewBox honor deferred — minor polish, low ROI)
+- [x] Gradient spreadMethod (pad / reflect / repeat for both linear
+      and radial; subdivision still pad-based for stop boundaries)
+- [x] Tessellation tolerance tunable (`SvgCfg.FlatnessTolerance`,
+      plumbed via `SvgParseOpts`; default 0 keeps the historic 0.15
+      floor and existing fingerprints stable)
+- [x] :hover / :focus state plumbing (`SvgCfg.HoveredElementID` /
+      `FocusedElementID` → `SvgParseOpts` → cascade `MatchState`;
+      cache invalidates per-state). **Automatic mouse-driven hover
+      detection on the Svg widget itself remains deferred** — apps
+      drive the IDs by hit-testing `TessellatedPath.ContainsPoint`.
+      Tracked as a v0.16.0 followup.
+- [x] Visual examples: svg_use_symbol, svg_gradient_spread,
+      svg_flatness, svg_css_states
+- [x] Docs: README.md, docs/svg-support.md, CHANGELOG.md, per-example READMEs
 
 After each milestone lands:
 

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -11,6 +12,13 @@ import (
 
 	glyph "github.com/mike-ward/go-glyph"
 )
+
+// maxSvgCacheElementIDLen caps pseudo-state IDs participating in the
+// SVG cache key. Same bound as svg/xml.go's maxElementIDLen — kept as
+// a separate gui-package constant so the public LoadSvgWithOpts
+// surface can reject hostile inputs without importing the internal
+// svg package.
+const maxSvgCacheElementIDLen = 256
 
 const maxSvgSourceBytes = int64(4 * 1024 * 1024)
 
@@ -129,6 +137,14 @@ type svgCacheKey struct {
 	// must cache separately so a user toggling the OS pref
 	// invalidates the prior render naturally (Phase F).
 	reducedMotion bool
+	// flatness10000 is FlatnessTolerance × 10000 quantized into an
+	// int. Zero (default) keeps fingerprint stable. Quantization
+	// avoids float NaN/Inf collisions in map keys.
+	flatness10000 int32
+	// hoveredID / focusedID feed CSS :hover / :focus pseudo-class
+	// matching. Cache invalidates on transition.
+	hoveredID string
+	focusedID string
 }
 
 // cachedSvgPaths converts TessellatedPath slices to CachedSvgPath.
@@ -529,7 +545,34 @@ func buildSvgCacheLookupKey(
 		w10:           int32(width * 10),
 		h10:           int32(height * 10),
 		reducedMotion: opts.PrefersReducedMotion,
+		flatness10000: quantizeFlatness(opts.FlatnessTolerance),
+		hoveredID:     clampSvgCacheID(opts.HoveredElementID),
+		focusedID:     clampSvgCacheID(opts.FocusedElementID),
 	}
+}
+
+// quantizeFlatness maps FlatnessTolerance into the int32 cache key
+// slot. NaN/Inf and out-of-range values collapse to 0, which matches
+// the "no override" key used by callers that don't set the field.
+// Without this guard, `int32(NaN*10000)` is implementation-defined
+// and `int32(huge*10000)` overflows.
+func quantizeFlatness(t float32) int32 {
+	t64 := float64(t)
+	if math.IsNaN(t64) || math.IsInf(t64, 0) || t <= 0 {
+		return 0
+	}
+	scaled := t64 * 10000
+	if scaled > float64(math.MaxInt32) {
+		return math.MaxInt32
+	}
+	return int32(scaled)
+}
+
+func clampSvgCacheID(s string) string {
+	if len(s) > maxSvgCacheElementIDLen {
+		return s[:maxSvgCacheElementIDLen]
+	}
+	return s
 }
 
 // svgParseOpts snapshots the SVG-relevant environment toggles from
@@ -585,7 +628,24 @@ func (w *Window) resolveAndCheckSvgSource(svgSrc string) (string, error) {
 // LoadSvg loads and tessellates an SVG, caching the result.
 // svgSrc can be a file path or inline SVG data (starting with '<').
 func (w *Window) LoadSvg(svgSrc string, width, height float32) (*CachedSvg, error) {
+	return w.loadSvgWithOpts(svgSrc, width, height, w.svgParseOpts())
+}
+
+// LoadSvgWithOpts is LoadSvg with caller-supplied per-render
+// overrides. Window-derived flags (PrefersReducedMotion) are merged
+// in; override fields take precedence on FlatnessTolerance,
+// HoveredElementID, FocusedElementID.
+func (w *Window) LoadSvgWithOpts(svgSrc string, width, height float32,
+	override SvgParseOpts) (*CachedSvg, error) {
 	opts := w.svgParseOpts()
+	opts.FlatnessTolerance = override.FlatnessTolerance
+	opts.HoveredElementID = override.HoveredElementID
+	opts.FocusedElementID = override.FocusedElementID
+	return w.loadSvgWithOpts(svgSrc, width, height, opts)
+}
+
+func (w *Window) loadSvgWithOpts(svgSrc string, width, height float32,
+	opts SvgParseOpts) (*CachedSvg, error) {
 	srcHash := hashString(svgSrc)
 	cacheKey := buildSvgCacheLookupKey(srcHash, width, height, opts)
 

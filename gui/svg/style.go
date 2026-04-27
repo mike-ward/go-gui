@@ -969,6 +969,21 @@ func makeElementInfo(
 	return info
 }
 
+// applyPseudoState toggles ElementInfo.State.Hover / Focus when the
+// element's id matches parseState.hoveredID / focusedID. Empty IDs
+// disable the corresponding state.
+func applyPseudoState(info *css.ElementInfo, state *parseState) {
+	if state == nil {
+		return
+	}
+	if state.hoveredID != "" && info.ID == state.hoveredID {
+		info.State.Hover = true
+	}
+	if state.focusedID != "" && info.ID == state.focusedID {
+		info.State.Focus = true
+	}
+}
+
 // resolveFillRule reads fill-rule from elem, falling back to the
 // inherited value. "evenodd" maps to FillRuleEvenOdd; any other
 // token (including the empty string) maps to FillRuleNonzero,

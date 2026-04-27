@@ -2,6 +2,7 @@ package svg
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -10,12 +11,54 @@ import (
 	"github.com/mike-ward/go-gui/gui/svg/css"
 )
 
+// maxElementIDLen caps pseudo-state element IDs forwarded into the
+// cascade. SVG ids in practice are short (icon-set IDs rarely exceed
+// 64 bytes); a cap protects the cache key, hash mixer, and per-
+// element ID compare from a hostile multi-MB id.
+const maxElementIDLen = 256
+
+// maxFlatnessTolerance caps the upper bound on user-supplied
+// FlatnessTolerance. Beyond a few units the tessellator collapses
+// curves to chords already; refusing absurd values keeps the floor
+// math, cache keying, and hash mixing on safe ranges.
+const maxFlatnessTolerance float32 = 64
+
+// sanitizeFlatness drops NaN/Inf/negative inputs and caps the upper
+// bound. Returning 0 disables the override and falls back to the
+// built-in 0.15 floor.
+func sanitizeFlatness(t float32) float32 {
+	t64 := float64(t)
+	if math.IsNaN(t64) || math.IsInf(t64, 0) || t <= 0 {
+		return 0
+	}
+	if t > maxFlatnessTolerance {
+		return maxFlatnessTolerance
+	}
+	return t
+}
+
+// clampElementID truncates s to maxElementIDLen UTF-8 bytes. Cheap
+// byte slice; the cascade compares IDs by exact match so trimming a
+// hostile string still produces correct (no-match) behavior.
+func clampElementID(s string) string {
+	if len(s) > maxElementIDLen {
+		return s[:maxElementIDLen]
+	}
+	return s
+}
+
 // ParseOptions controls environment-dependent parsing behavior.
 // PrefersReducedMotion is the snapshot fed to
 // `@media (prefers-reduced-motion: reduce)` evaluation; see
 // docs/svg-css-design.md "prefers-reduced-motion".
+// FlatnessTolerance overrides the tessellation tolerance floor when
+// > 0. HoveredElementID / FocusedElementID feed :hover / :focus
+// pseudo-class matching during the cascade.
 type ParseOptions struct {
 	PrefersReducedMotion bool
+	FlatnessTolerance    float32
+	HoveredElementID     string
+	FocusedElementID     string
 }
 
 // parseSvg parses an SVG string and returns a VectorGraphic.
@@ -30,6 +73,7 @@ func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 	if err != nil {
 		return nil, err
 	}
+	expandUseElements(root)
 
 	vg := &VectorGraphic{
 		Width:  defaultIconSize,
@@ -79,11 +123,15 @@ func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 		defsPaths:    vg.DefsPaths,
 		cssRules:     sheet.Rules,
 		cssKeyframes: sheet.Keyframes,
+		hoveredID:    clampElementID(opts.HoveredElementID),
+		focusedID:    clampElementID(opts.FocusedElementID),
 	}
+	vg.FlatnessTolerance = sanitizeFlatness(opts.FlatnessTolerance)
 	// Merge presentation attributes (and matched author rules, when
 	// any) from the root <svg> tag so shapes that inherit e.g.
 	// fill="currentColor" pick it up.
 	rootInfo := makeElementInfo("svg", root.OpenTag, 1, true, root.AttrMap)
+	applyPseudoState(&rootInfo, state)
 	defStyle := computeStyle(root.OpenTag,
 		defaultComputedStyle(identityTransform), state, rootInfo, nil, nil)
 	ancestors := []css.ElementInfo{rootInfo}
@@ -251,6 +299,7 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 		}
 		c := &n.Children[i]
 		info := makeElementInfo(c.Name, c.OpenTag, i+1, false, c.AttrMap)
+		applyPseudoState(&info, state)
 		// sibsForThis captures preceding-sibling state at this element's
 		// position. siblings then accumulates `info` so the next
 		// iteration sees the current element as a preceding sibling.

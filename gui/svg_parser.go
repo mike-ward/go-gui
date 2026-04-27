@@ -77,8 +77,15 @@ type SvgParser interface {
 // SvgParseOpts carries per-parse environment toggles (Phase F).
 // PrefersReducedMotion is the snapshot from NativePlatform routed
 // into `@media (prefers-reduced-motion: reduce)` evaluation.
+// FlatnessTolerance, when > 0, overrides the tessellation tolerance
+// floor (default 0.15 viewBox units). HoveredElementID /
+// FocusedElementID feed CSS :hover / :focus pseudo-class matching;
+// empty disables the corresponding state.
 type SvgParseOpts struct {
 	PrefersReducedMotion bool
+	FlatnessTolerance    float32
+	HoveredElementID     string
+	FocusedElementID     string
 }
 
 // SvgParserWithOpts is an optional extension of SvgParser whose

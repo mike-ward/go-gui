@@ -103,6 +103,7 @@ func parseDefsGradients(root *xmlNode) map[string]gui.SvgGradientDef {
 			X1: x1, Y1: y1, X2: x2, Y2: y2,
 			Stops:         stops,
 			GradientUnits: unitsStr,
+			SpreadMethod:  parseSpreadMethod(lg.AttrMap["spreadMethod"]),
 		}
 	}
 
@@ -143,9 +144,22 @@ func parseDefsGradients(root *xmlNode) map[string]gui.SvgGradientDef {
 			IsRadial:      true,
 			Stops:         stops,
 			GradientUnits: unitsStr,
+			SpreadMethod:  parseSpreadMethod(rg.AttrMap["spreadMethod"]),
 		}
 	}
 	return gradients
+}
+
+// parseSpreadMethod maps the SVG spreadMethod keyword to
+// gui.SvgGradientSpread. Default and unknown values fall back to pad.
+func parseSpreadMethod(s string) gui.SvgGradientSpread {
+	switch strings.TrimSpace(s) {
+	case "reflect":
+		return gui.SvgSpreadReflect
+	case "repeat":
+		return gui.SvgSpreadRepeat
+	}
+	return gui.SvgSpreadPad
 }
 
 func parseGradientCoord(s string, isOBB bool) float32 {

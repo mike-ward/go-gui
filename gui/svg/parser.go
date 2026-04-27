@@ -90,7 +90,12 @@ func (p *Parser) ParseSvgFileWithOpts(
 }
 
 func optsToSvg(o gui.SvgParseOpts) ParseOptions {
-	return ParseOptions{PrefersReducedMotion: o.PrefersReducedMotion}
+	return ParseOptions{
+		PrefersReducedMotion: o.PrefersReducedMotion,
+		FlatnessTolerance:    o.FlatnessTolerance,
+		HoveredElementID:     o.HoveredElementID,
+		FocusedElementID:     o.FocusedElementID,
+	}
 }
 
 func parserSourceHashWithOpts(
@@ -107,6 +112,20 @@ func mixOptsHash(h uint64, opts gui.SvgParseOpts) uint64 {
 	}
 	h ^= uint64(b)
 	h *= fnvPrime
+	// FlatnessTolerance: hash bit pattern so cache invalidates on change.
+	bits := math.Float32bits(opts.FlatnessTolerance)
+	h ^= uint64(bits)
+	h *= fnvPrime
+	for i := range len(opts.HoveredElementID) {
+		h ^= uint64(opts.HoveredElementID[i])
+		h *= fnvPrime
+	}
+	h ^= uint64('|')
+	h *= fnvPrime
+	for i := range len(opts.FocusedElementID) {
+		h ^= uint64(opts.FocusedElementID[i])
+		h *= fnvPrime
+	}
 	return h
 }
 

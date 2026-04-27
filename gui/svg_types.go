@@ -121,6 +121,17 @@ type SvgGradientStop struct {
 	Color  SvgColor
 }
 
+// SvgGradientSpread selects how a gradient handles parameter values
+// outside [0,1]. Pad clamps (default), Reflect mirrors, Repeat wraps.
+type SvgGradientSpread uint8
+
+// SvgGradientSpread values.
+const (
+	SvgSpreadPad SvgGradientSpread = iota
+	SvgSpreadReflect
+	SvgSpreadRepeat
+)
+
 // SvgGradientDef defines an SVG gradient (linear or radial).
 type SvgGradientDef struct {
 	Stops         []SvgGradientStop
@@ -130,6 +141,7 @@ type SvgGradientDef struct {
 	FX, FY        float32
 	IsRadial      bool
 	GradientUnits string
+	SpreadMethod  SvgGradientSpread
 }
 
 // SvgAnimKind identifies the type of SMIL animation.

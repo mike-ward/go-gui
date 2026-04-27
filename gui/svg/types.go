@@ -149,6 +149,9 @@ type VectorGraphic struct {
 	// preserveAspectRatio attribute. Defaults: xMidYMid meet.
 	PreserveAlign gui.SvgAlign
 	PreserveSlice bool
+	// FlatnessTolerance, when > 0, overrides the default tessellation
+	// tolerance floor (0.15). Higher = coarser triangles.
+	FlatnessTolerance float32
 }
 
 // identityTransform is the identity affine matrix.
@@ -383,6 +386,11 @@ type parseState struct {
 	// group ID so resolveAnimationTargets can fan group-level
 	// animations out onto descendant paths.
 	groupParent map[string]string
+	// hoveredID / focusedID feed CSS :hover / :focus pseudo-class
+	// matching during the cascade. Empty disables the corresponding
+	// state.
+	hoveredID string
+	focusedID string
 }
 
 // elementStyle holds common style properties extracted from an SVG element.

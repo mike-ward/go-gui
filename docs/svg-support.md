@@ -61,15 +61,24 @@ clamped at ±`1000000`. Documents larger than `100000` elements or
 | `<text>`             | Supported (see Text below)                       |
 | `<tspan>`            | Supported (positioned text runs)                 |
 | `<textPath>`         | Supported                                        |
-| `<use>`              | **Not supported**                                |
-| `<symbol>`           | **Not supported**                                |
+| `<use>`              | Supported (href / xlink:href, x/y, attr override) |
+| `<symbol>`           | Supported (children inlined when targeted by `<use>`) |
 | `<image>`            | **Not supported**                                |
 | `<switch>`           | **Not supported**                                |
 | `<foreignObject>`    | **Not supported**                                |
 | `<title>` / `<desc>` | Supported (parsed → `SvgParsed.A11y.Title/Desc`) |
 
-`<use href="#id">` references are silently dropped — inline the
-referenced geometry instead, or duplicate paths.
+`<use href="#id">` (or `xlink:href`) is resolved by inlining a
+clone of the referenced subtree at parse time. `x`/`y` attributes
+on the use site become a `translate(x,y)` transform composed onto
+the clone; presentation attrs (`fill`, `class`, `style`, ...) on
+the use site cascade into the clone. Cycles are guarded by a
+visited-set + depth-8 cap. `<symbol>` targets contribute their
+children directly (the symbol wrapper is dropped); `<symbol>`
+elements not targeted by any `<use>` render as defs entries (no
+output). Symbol-level `viewBox` honoring is a future polish — for
+now, layout the symbol's children directly in the symbol's
+coordinate space.
 
 ### Path `d` Commands
 
@@ -124,8 +133,19 @@ the scanline tessellator.
   edge-falloff difference when `fx`/`fy` differ from `cx`/`cy`) is a
   future polish.
 
-**Not supported:** `gradientTransform`, `spreadMethod` (treated as
-`pad`), `<pattern>`, `<meshgradient>`.
+`spreadMethod` is honored on both linear and radial gradients:
+
+- `pad` (default) — values outside [0,1] clamp to first/last stop.
+- `reflect` — triangle wave; the gradient mirrors back and forth.
+- `repeat` — sawtooth; the gradient wraps as a tile.
+
+Internal stop-boundary subdivision still treats the gradient as
+clamped — gradients with many stops will render correctly under
+reflect/repeat at the wrap points but with slightly less anti-
+aliasing of the discontinuity than pad mode achieves.
+
+**Not supported:** `gradientTransform`, `<pattern>`,
+`<meshgradient>`.
 
 ### Stroke
 
@@ -224,7 +244,7 @@ CSS lives in `<style>` blocks (any element scope) or inline
 | `:root`                                                     | Yes (= `<svg>`) |
 | Sibling (`+`, `~`)                                          | Yes             |
 | Attribute (`[name]`, `[name=v]`, `~=`, `\|=`, `^=`, `$=`, `*=`) | Yes          |
-| `:hover` / `:focus`                                         | Selector parsed + matched; runtime mouse-event auto-toggle deferred to v0.15.0 |
+| `:hover` / `:focus`                                         | Selector parsed + matched; state driven via `SvgCfg.HoveredElementID` / `FocusedElementID`. Automatic mouse-event detection on the `Svg` widget itself remains deferred (v0.16) |
 | `:not(inner)`                                               | Yes (single-compound; comma-list deferred) |
 | `:active` and other pseudo-classes                          | **No**          |
 | Pseudo-elements (`::before`)                                | **No**          |
@@ -351,7 +371,9 @@ renders as the static first frame — the geometry still draws.
   `Color` config tints them at render time.
 - Leave `width`/`height` off the root and rely on `viewBox` so the
   layout decides the size.
-- Inline geometry rather than `<use>` references.
+- For curve-heavy assets, raise `SvgCfg.FlatnessTolerance` (in
+  viewBox units) to trade visual fidelity for vertex count. Default
+  0 keeps the renderer's built-in 0.15 floor.
 - Prefer `@keyframes` over `<animate>` when both are equivalent —
   CSS animation has broader timing-function coverage.
 - For motion paths, `<animateMotion>` with `rotate="auto"` is the

@@ -40,8 +40,12 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 
 	baseTol := 0.5 / scale
 	tolerance := baseTol
-	if tolerance < 0.15 {
-		tolerance = 0.15
+	floor := float32(0.15)
+	if vg.FlatnessTolerance > 0 {
+		floor = vg.FlatnessTolerance
+	}
+	if tolerance < floor {
+		tolerance = floor
 	}
 
 	clipGroupCounter := 0
@@ -85,7 +89,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 						for vi := range nVerts {
 							vx := fillTris[vi*2]
 							vy := fillTris[vi*2+1]
-							t := projectOntoGradient(vx, vy, grad)
+							t := projectAndSpread(vx, vy, grad)
 							c := interpolateGradient(grad.Stops, t)
 							if opacity < 1.0 {
 								c = applyOpacity(c, opacity)
@@ -141,7 +145,7 @@ func (vg *VectorGraphic) tessellatePaths(paths []VectorPath, scale float32) []gu
 						for vi := range nVerts {
 							vx := sTris[vi*2]
 							vy := sTris[vi*2+1]
-							t := projectOntoGradient(vx, vy, grad)
+							t := projectAndSpread(vx, vy, grad)
 							c := interpolateGradient(grad.Stops, t)
 							if opacity < 1.0 {
 								c = applyOpacity(c, opacity)
@@ -1126,6 +1130,78 @@ func projectOntoGradient(vx, vy float32, g gui.SvgGradientDef) float32 {
 		return 0
 	}
 	t := ((vx-g.X1)*dx + (vy-g.Y1)*dy) / lenSq
+	if t < 0 {
+		return 0
+	}
+	if t > 1 {
+		return 1
+	}
+	return t
+}
+
+// projectAndSpread projects (vx, vy) onto g without clamping to [0,1]
+// then applies g.SpreadMethod. With pad (default) the clamp matches
+// projectOntoGradient's historic behavior; reflect mirrors and
+// repeat wraps for t outside [0,1].
+func projectAndSpread(vx, vy float32, g gui.SvgGradientDef) float32 {
+	t := projectOntoGradientRaw(vx, vy, g)
+	return applySpread(t, g.SpreadMethod)
+}
+
+func projectOntoGradientRaw(vx, vy float32, g gui.SvgGradientDef) float32 {
+	if g.IsRadial {
+		r64 := float64(g.R)
+		if g.R <= 0 || math.IsNaN(r64) || math.IsInf(r64, 0) {
+			return 0
+		}
+		dx := vx - g.FX
+		dy := vy - g.FY
+		d := float32(math.Sqrt(float64(dx*dx + dy*dy)))
+		t := d / g.R
+		if t != t {
+			return 0
+		}
+		return t
+	}
+	dx := g.X2 - g.X1
+	dy := g.Y2 - g.Y1
+	lenSq := dx*dx + dy*dy
+	if lenSq == 0 {
+		return 0
+	}
+	return ((vx-g.X1)*dx + (vy-g.Y1)*dy) / lenSq
+}
+
+// applySpread maps raw gradient parameter t through SpreadMethod.
+// Pad clamps to [0,1]; reflect produces a triangle wave; repeat
+// produces a sawtooth. NaN/Inf coerced to 0.
+func applySpread(t float32, spread gui.SvgGradientSpread) float32 {
+	t64 := float64(t)
+	if math.IsNaN(t64) || math.IsInf(t64, 0) {
+		return 0
+	}
+	// Clamp to a safe int64-convertible range so math.Floor's int64
+	// cast for reflect parity cannot hit implementation-defined
+	// overflow on hostile inputs. ±2^31 covers any plausible
+	// gradient projection by many orders of magnitude.
+	const spreadLimit = float64(1 << 31)
+	if t64 > spreadLimit {
+		t64 = spreadLimit
+	} else if t64 < -spreadLimit {
+		t64 = -spreadLimit
+	}
+	switch spread {
+	case gui.SvgSpreadReflect:
+		n := math.Floor(t64)
+		frac := float32(t64 - n)
+		if int64(n)&1 != 0 {
+			return 1 - frac
+		}
+		return frac
+	case gui.SvgSpreadRepeat:
+		n := math.Floor(t64)
+		return float32(t64 - n)
+	}
 	if t < 0 {
 		return 0
 	}

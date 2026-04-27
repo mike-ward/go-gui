@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.15.0] - unreleased
+
+### Added
+
+- `<use href="#id">` (and `xlink:href`) resolution. The referenced
+  subtree is cloned at parse time, wrapped in a synthesized `<g>`
+  carrying a `translate(x,y)` transform plus the `<use>`
+  presentation attrs (`fill`, `style`, `class`, ...). Cycles are
+  guarded by a visited-set + depth-8 cap; the clone has its `id`
+  stripped to avoid duplicate ids in the post-expansion tree.
+- `<symbol>` is now honored as a `<use>` target — the symbol's
+  children are inlined directly (the wrapper is dropped). Untargeted
+  `<symbol>` elements continue to render no output. Symbol-level
+  `viewBox` / `preserveAspectRatio` honoring is a future polish.
+- `spreadMethod` on `<linearGradient>` and `<radialGradient>`:
+  `pad` (default), `reflect` (triangle wave), `repeat` (sawtooth).
+  `gui.SvgGradientDef.SpreadMethod` is the new field; the previous
+  silent-pad behavior is the zero-value default so existing
+  fingerprints stay stable.
+- `gui.SvgCfg.FlatnessTolerance float32` — tessellation tolerance
+  floor in viewBox units. Default 0 keeps the historic 0.15 floor.
+  Plumbed via a new `SvgParseOpts.FlatnessTolerance` field and a
+  `Window.LoadSvgWithOpts` method; the cache key tracks tolerance
+  per quantized 1e-4 step.
+- `gui.SvgCfg.HoveredElementID` / `FocusedElementID string` — drive
+  CSS `:hover` / `:focus` matching for the SVG element with that id.
+  Plumbed through `SvgParseOpts` into the cascade `MatchState`;
+  cache invalidates per id transition.
+- `examples/svg_use_symbol`, `examples/svg_gradient_spread`,
+  `examples/svg_flatness`, `examples/svg_css_states`.
+
+### Changed
+
+- `gui.SvgGradientDef` gains a `SpreadMethod SvgGradientSpread`
+  field. Keyed struct literals are unaffected; positional users in
+  sibling repos must update.
+- `gui.SvgParseOpts` gains `FlatnessTolerance float32`,
+  `HoveredElementID string`, `FocusedElementID string`. Additive.
+- `gui/svg.ParseOptions` mirrors the same additions.
+- `gui/svg.VectorGraphic` gains `FlatnessTolerance float32`. Internal.
+- `Window.LoadSvgWithOpts(src, w, h, opts SvgParseOpts)` is the new
+  per-render-override entry point. `Window.LoadSvg` is unchanged.
+
+### Deferred to v0.16.0
+
+- Automatic mouse-driven hover detection on the `Svg` widget.
+  v0.15.0 ships the parser/cascade/cache plumbing so apps can
+  drive `HoveredElementID` themselves (e.g. by hit-testing
+  `TessellatedPath.ContainsPoint`); built-in pointer tracking with
+  internal hit-test on the widget will land in v0.16.0.
+- `<symbol>` `viewBox` / `preserveAspectRatio` honoring.
+- `spreadMethod`-aware stop-boundary subdivision (currently
+  pad-clamped, so reflect/repeat AA at wrap points is slightly
+  softer than at first/last stop).
+
 ## [v0.14.0] - unreleased
 
 ### Added

@@ -15,7 +15,15 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 		return
 	}
 
-	cached, err := w.LoadSvg(shape.Resource, shape.Width, shape.Height)
+	var cached *CachedSvg
+	var err error
+	if shape.SvgOpts != nil {
+		cached, err = w.LoadSvgWithOpts(shape.Resource,
+			shape.Width, shape.Height, *shape.SvgOpts)
+	} else {
+		cached, err = w.LoadSvg(shape.Resource,
+			shape.Width, shape.Height)
+	}
 	if err != nil {
 		log.Printf("renderSvg: %v", err)
 		emitErrorPlaceholder(shape.X, shape.Y,

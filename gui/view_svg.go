@@ -27,6 +27,20 @@ type SvgCfg struct {
 	Padding   Opt[Padding]
 	OnClick   func(*Layout, *Event, *Window)
 
+	// FlatnessTolerance, when > 0, overrides the default tessellation
+	// tolerance floor (0.15 viewBox units). Higher = coarser triangles
+	// = lower vertex count. Cached separately per value.
+	FlatnessTolerance float32
+
+	// HoveredElementID / FocusedElementID drive CSS :hover / :focus
+	// pseudo-class matching. Set non-empty to flag the matching SVG
+	// element id as hovered/focused; cascade re-runs and the parsed
+	// result is cached separately per (id, state). Apps that want
+	// mouse-driven hover should hit-test paths in the cached result
+	// and feed the discovered element id back here on the next render.
+	HoveredElementID string
+	FocusedElementID string
+
 	// Accessibility
 	A11YLabel       string
 	A11YDescription string
@@ -68,7 +82,23 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 		}
 	}
 
-	cached, err := w.LoadSvg(svgSrc, width, height)
+	var svgOpts *SvgParseOpts
+	if c.FlatnessTolerance > 0 || c.HoveredElementID != "" ||
+		c.FocusedElementID != "" {
+		svgOpts = &SvgParseOpts{
+			FlatnessTolerance: c.FlatnessTolerance,
+			HoveredElementID:  c.HoveredElementID,
+			FocusedElementID:  c.FocusedElementID,
+		}
+	}
+
+	var cached *CachedSvg
+	var err error
+	if svgOpts != nil {
+		cached, err = w.LoadSvgWithOpts(svgSrc, width, height, *svgOpts)
+	} else {
+		cached, err = w.LoadSvg(svgSrc, width, height)
+	}
 	if err != nil {
 		log.Printf("svg: %v", err)
 		return svgErrorLayout(svgSrc, w)
@@ -129,6 +159,7 @@ func (sv *svgView) GenerateLayout(w *Window) Layout {
 			Sizing:   c.Sizing,
 			Padding:  c.Padding.Get(Padding{}),
 			Events:   events,
+			SvgOpts:  svgOpts,
 		},
 	}
 	ApplyFixedSizingConstraints(layout.Shape)
