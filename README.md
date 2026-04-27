@@ -5,7 +5,7 @@
 ![CI](https://github.com/mike-ward/go-gui/actions/workflows/ci.yml/badge.svg)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mike-ward/go-gui)
 
-**Cross-platform, immediate-mode GUI framework for Go — no virtual DOM,
+**Cross-platform, hybrid immediate-mode GUI framework for Go — no virtual DOM,
 no diffing, just fast, composable UI.**
 
 ![showcase](assets/showcase.png)
