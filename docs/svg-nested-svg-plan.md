@@ -1,9 +1,11 @@
 # Nested `<svg>` Support — Implementation Plan
 
-Status: v1 landed. Steps 1–4 (transform composition, viewBox /
-preserveAspectRatio, depth cap) implemented in `xml_nested_svg.go`
-and `xml.go::parseSvgContent`. Step 5 (clip-to-viewport) and v2 edge
-cases below remain open.
+Status: v1 + clip-to-viewport landed. All steps complete. Steps 1–4
+(transform composition, viewBox / preserveAspectRatio, depth cap) and
+step 5 (synthesized rectangle clip via `vg.ClipPaths`) implemented in
+`xml_nested_svg.go` and `xml.go::parseSvgContent`. Step 6 audit:
+`findAllByName` already recurses into nested-`<svg>` defs; regression
+tests in `xml_nested_svg_test.go` lock the behavior in.
 
 ## Problem
 
@@ -119,8 +121,9 @@ clip:
    in *outer* coordinates. Several tests fail (positioning, scaling). ✅
 3. Add viewport-rect transform composition. Positioning tests pass. ✅
 4. Add `viewBox` + `preserveAspectRatio` mapping. Scaling tests pass. ✅
-5. Add synthesized clip. Out-of-bounds-content tests pass. (deferred)
-6. Wire defs propagation if the audit at step 5 shows gaps. (deferred)
+5. Add synthesized clip. Out-of-bounds-content tests pass. ✅
+6. Audited; `findAllByName` already recurses into nested-`<svg>`
+   defs. Regression tests added; no code change needed. ✅
 
 Coverage in `xml_nested_svg_test.go`: regression (inner content
 present), translate-only viewport, viewBox uniform scale, meet
@@ -128,7 +131,22 @@ alignment residual, `preserveAspectRatio="none"` independent scales,
 SVG2 transform-attr × viewport composition order, default
 width/height inherit from parent viewport, depth cap (descendants
 past `maxGroupDepth` are dropped without panic), percentage
-width/height resolved against parent.
+width/height resolved against parent. Plus clip-to-viewport coverage:
+outside-viewport descendants inherit synth clip id, inside-viewport
+ditto, empty `<svg/>` skips emission, sibling viewports get distinct
+ids, doubly-nested innermost clip wins, defs reachability for
+`<clipPath>` / `<linearGradient>` / `<filter>` inside nested svg.
+
+## v1 Limitations
+
+- Author `clip-path=` on the inner `<svg>` element itself is
+  overwritten by the synthesized viewport clip. SVG specifies
+  intersection composition; not implemented.
+- Descendants with their own `clip-path=` override the inherited
+  viewport clip on themselves (cascade behavior) — author clip wins,
+  no intersection.
+- `overflow:visible` opt-out on the inner `<svg>` is not honored
+  (already noted under Edge Cases).
 
 ## Open Questions
 

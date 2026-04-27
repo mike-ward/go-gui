@@ -398,6 +398,10 @@ type parseState struct {
 	// percentages on a deeper nested viewport resolve against the
 	// correct ancestor.
 	curViewport viewportRect
+	// vg is nil during defs-subtree parses (parseDefsClipPaths
+	// constructs empty-literal parseStates); synth code must nil-guard.
+	vg          *VectorGraphic
+	synthClipID int
 }
 
 // elementStyle holds common style properties extracted from an SVG element.

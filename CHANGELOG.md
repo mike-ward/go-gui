@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   element's own `transform=` attr. Descendants inherit paint and
   cascade through the wrapper. Previously the inner subtree was
   dropped silently.
+- Nested `<svg>` viewports now synthesize a rectangle clip-path in
+  outer-parent coordinates so descendants outside the authored
+  viewport rect are masked at tessellation time (default
+  `overflow:hidden` for `<svg>`). Sibling viewports mint distinct
+  ids; doubly-nested viewports cascade the innermost clip onto
+  descendants. `<clipPath>`, `<linearGradient>`, and `<filter>` defs
+  inside a nested `<svg>` reach the global registry. Empty or
+  zero-area viewports skip emission. Author `clip-path=` on the
+  inner `<svg>` element is overwritten (intersection composition
+  not implemented; v1 limitation).
 - `gui.PreserveAlignFractions` exported (was `preserveAlignFractions`)
   so `gui/svg` can resolve `preserveAspectRatio` align fractions
   without duplicating the switch.

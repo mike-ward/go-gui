@@ -31,6 +31,14 @@ func finiteOrDef(v, def float32) float32 {
 // when no viewBox is authored).
 type viewportRect struct{ X, Y, W, H float32 }
 
+// clippable reports whether the rect bounds a positive area worth
+// emitting as a clip path. Zero/negative dims short-circuit synth.
+func (v viewportRect) clippable() bool { return v.W > 0 && v.H > 0 }
+
+// synthNestedClipPrefix is the id namespace for rectangle clip-paths
+// minted when entering a nested <svg> viewport.
+const synthNestedClipPrefix = "__nested_svg_clip_"
+
 // resolveViewportLength resolves an x/y/width/height attribute on a
 // nested <svg> against the parent viewport. Empty falls back to def
 // (typically 0 for x/y or the parent dim for w/h). Bare numbers parse
@@ -59,7 +67,8 @@ func resolveViewportLength(s string, base, def float32) float32 {
 
 // computeNestedSvgViewport derives the inner-viewBox-to-outer-coords
 // affine for a nested <svg>, plus the viewBox rect that descendants
-// treat as their user-space.
+// treat as their user-space and the rect in outer-parent coordinates
+// (the synthesized clip-to-viewport target).
 //
 // Rules:
 //   - x/y default 0; width/height default 100% of parent viewport.
@@ -71,15 +80,16 @@ func resolveViewportLength(s string, base, def float32) float32 {
 //     user-space inherits the rect dims at origin (0,0).
 func computeNestedSvgViewport(
 	attrs map[string]string, parent viewportRect,
-) (inner viewportRect, m [6]float32) {
+) (inner, outer viewportRect, m [6]float32) {
 	parent.W = finiteOrDef(parent.W, 0)
 	parent.H = finiteOrDef(parent.H, 0)
-	x := resolveViewportLength(attrs["x"], parent.W, 0)
-	y := resolveViewportLength(attrs["y"], parent.H, 0)
-	w := resolveViewportLength(attrs["width"], parent.W, parent.W)
-	h := resolveViewportLength(attrs["height"], parent.H, parent.H)
-	w = clampViewBoxDim(finiteOrDef(w, 0))
-	h = clampViewBoxDim(finiteOrDef(h, 0))
+	x := finiteOrDef(resolveViewportLength(attrs["x"], parent.W, 0), 0)
+	y := finiteOrDef(resolveViewportLength(attrs["y"], parent.H, 0), 0)
+	w := clampViewBoxDim(finiteOrDef(
+		resolveViewportLength(attrs["width"], parent.W, parent.W), 0))
+	h := clampViewBoxDim(finiteOrDef(
+		resolveViewportLength(attrs["height"], parent.H, parent.H), 0))
+	outer = viewportRect{X: x, Y: y, W: w, H: h}
 
 	if vb, ok := attrs["viewBox"]; ok {
 		nums := parseNumberList(vb)
@@ -113,6 +123,6 @@ func computeNestedSvgViewport(
 		}
 	}
 	inner = viewportRect{X: 0, Y: 0, W: w, H: h}
-	m = [6]float32{1, 0, 0, 1, finiteOrDef(x, 0), finiteOrDef(y, 0)}
+	m = [6]float32{1, 0, 0, 1, x, y}
 	return
 }

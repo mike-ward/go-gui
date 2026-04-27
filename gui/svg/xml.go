@@ -130,6 +130,7 @@ func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 			W: vg.Width, H: vg.Height,
 		},
 	}
+	state.vg = vg
 	vg.FlatnessTolerance = sanitizeFlatness(opts.FlatnessTolerance)
 	// Merge presentation attributes (and matched author rules, when
 	// any) from the root <svg> tag so shapes that inherit e.g.
@@ -448,22 +449,29 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 			}
 
 		case "svg":
-			// Nested viewport. Compose viewBox-to-outer transform onto
-			// the cascaded transform from the <svg>'s own attrs, then
-			// recurse with the inner viewBox swapped in as
-			// state.curViewport so deeper percentages resolve against
-			// it. Clip-to-viewport is not yet implemented; descendants
-			// outside the inner rect render unclipped.
+			// Default overflow:hidden requires clipping descendants to
+			// the viewport rect. Author clip-path on the inner <svg>
+			// is overwritten — v1 limitation, intersection composition
+			// not implemented.
 			gs := computeStyle(c.OpenTag, inherited, state, info,
 				ancestors, sibsForThis)
 			if gs.Display == DisplayNone {
 				continue
 			}
 			state.elemCount++
-			innerVB, viewportTx := computeNestedSvgViewport(
+			innerVB, outerVP, viewportTx := computeNestedSvgViewport(
 				c.AttrMap, state.curViewport)
 			gs.Transform = matrixMultiply(gs.Transform, viewportTx)
 			savedVP := state.curViewport
+			if state.vg != nil && len(c.Children) > 0 && outerVP.clippable() {
+				cid := state.synthNestedClipID()
+				state.vg.ClipPaths[cid] = []VectorPath{{
+					Segments: segmentsForRect(
+						outerVP.X, outerVP.Y, outerVP.W, outerVP.H, 0, 0),
+					Transform: identityTransform,
+				}}
+				gs.ClipPathID = cid
+			}
 			state.curViewport = innerVB
 			childAncestors := append(ancestors, info)
 			paths = append(paths,
@@ -574,11 +582,19 @@ func parseAnimateForDispatch(
 	return parseAnimateAttributeElement(elem, inherited)
 }
 
-// synthGroupID mints a fresh "__anim_N" id for a group that needs an
-// animation-binding handle but has no author id of its own.
+// mintSynthID bumps n and returns prefix+N. Callers split counters
+// per id namespace so concurrent prefixes never alias on the integer.
+func mintSynthID(prefix string, n *int) string {
+	*n++
+	return prefix + strconv.Itoa(*n)
+}
+
 func (s *parseState) synthGroupID() string {
-	s.synthID++
-	return "__anim_" + strconv.Itoa(s.synthID)
+	return mintSynthID("__anim_", &s.synthID)
+}
+
+func (s *parseState) synthNestedClipID() string {
+	return mintSynthID(synthNestedClipPrefix, &s.synthClipID)
 }
 
 // recordGroupParent registers child→parent in the GroupParent edge
