@@ -120,7 +120,9 @@ func buildTextAttrsFromComputed(elem string, computed ComputedStyle) textParentA
 		underline:  underline, strikethrough: strikethrough,
 		letterSpacing: letterSpacing,
 		strokeColor:   strokeColor, strokeWidth: strokeWidth,
-		opacity: computed.Opacity, filterID: computed.FilterID,
+		opacity:        computed.Opacity,
+		filterID:       computed.FilterID,
+		filterGroupKey: computed.FilterGroupKey,
 	}
 }
 
@@ -140,6 +142,7 @@ type textParentAttrs struct {
 	strokeWidth              float32
 	opacity                  float32
 	filterID                 string
+	filterGroupKey           uint32
 }
 
 // parseTextBody walks the direct text and <tspan>/<textPath>
@@ -153,8 +156,8 @@ func parseTextBody(n *xmlNode, p textParentAttrs, state *parseState,
 	// Direct text that precedes any child element.
 	lead := prepareTextRun(n.Leading)
 	if lead != "" {
-		state.texts = append(state.texts, makeTextFromParent(
-			lead, p.x, curY, p))
+		state.texts = append(state.texts,
+			makeTextFromParent(lead, p.x, curY, p))
 	}
 
 	if len(n.Children) == 0 {
@@ -182,8 +185,8 @@ func parseTextBody(n *xmlNode, p textParentAttrs, state *parseState,
 			continue
 		}
 		if tail := prepareTextRun(c.Tail); tail != "" {
-			state.texts = append(state.texts, makeTextFromParent(
-				tail, p.x, curY, p))
+			state.texts = append(state.texts,
+				makeTextFromParent(tail, p.x, curY, p))
 		}
 	}
 }
@@ -202,6 +205,7 @@ func makeTextFromParent(text string, x, y float32, p textParentAttrs) gui.SvgTex
 		Color:          p.color,
 		FillGradientID: p.fillGradientID,
 		FilterID:       p.filterID,
+		FilterGroupKey: p.filterGroupKey,
 		Anchor:         int(p.anchor),
 		Opacity:        p.opacity,
 		Underline:      p.underline,
@@ -314,6 +318,7 @@ func parseTspan(n *xmlNode, p textParentAttrs, curY *float32, state *parseState,
 		Color:          color,
 		FillGradientID: fillGradientID,
 		FilterID:       computed.FilterID,
+		FilterGroupKey: computed.FilterGroupKey,
 		Anchor:         int(anchor),
 		Opacity:        opacity,
 		Underline:      underline,
@@ -367,22 +372,23 @@ func parseTextPathChild(n *xmlNode, p textParentAttrs, state *parseState) {
 	}
 
 	state.textPaths = append(state.textPaths, gui.SvgTextPath{
-		Text:          text,
-		PathID:        pathID,
-		FontFamily:    p.fontFamily,
-		FontSize:      p.fontSize,
-		IsBold:        p.bold,
-		IsItalic:      p.italic,
-		FontWeight:    p.fontWeight,
-		Color:         p.color,
-		StrokeColor:   p.strokeColor,
-		StrokeWidth:   p.strokeWidth,
-		FilterID:      p.filterID,
-		Anchor:        int(anchor),
-		Opacity:       p.opacity,
-		LetterSpacing: p.letterSpacing,
-		StartOffset:   startOffset,
-		IsPercent:     isPercent,
+		Text:           text,
+		PathID:         pathID,
+		FontFamily:     p.fontFamily,
+		FontSize:       p.fontSize,
+		IsBold:         p.bold,
+		IsItalic:       p.italic,
+		FontWeight:     p.fontWeight,
+		Color:          p.color,
+		StrokeColor:    p.strokeColor,
+		StrokeWidth:    p.strokeWidth,
+		FilterID:       p.filterID,
+		FilterGroupKey: p.filterGroupKey,
+		Anchor:         int(anchor),
+		Opacity:        p.opacity,
+		LetterSpacing:  p.letterSpacing,
+		StartOffset:    startOffset,
+		IsPercent:      isPercent,
 	})
 }
 

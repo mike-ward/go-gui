@@ -9,6 +9,8 @@ import (
 	"maps"
 	"strconv"
 	"strings"
+
+	"github.com/mike-ward/go-gui/gui"
 )
 
 // maxUseDepth bounds nested <use> resolution. Real-world SVGs nest
@@ -164,13 +166,21 @@ func synthesizeUseGroup(useNode, target *xmlNode, budget *int) xmlNode {
 // positioningTransform returns the SVG transform string that places
 // the synthesized <g> at the <use>'s (x,y) and, when the target is a
 // <symbol> with a viewBox plus author-specified width/height on the
-// <use>, scales the symbol's viewport to fill the requested box.
+// <use>, scales the symbol's viewport to fit the requested box per
+// preserveAspectRatio.
 //
 // SVG transform list reads left-to-right but applies right-to-left to
 // child points: child p gets translate(-vbX,-vbY) first, then scale,
-// then translate(x,y). Non-symbol targets and symbols without a
+// then translate(x+ax, y+ay). Non-symbol targets and symbols without a
 // viewBox (or without numeric use width/height) get only the
-// translate.
+// translate. ax/ay are align offsets; with align=none they're zero
+// and the scale is non-uniform — the SVG-1.1 default for <symbol> is
+// xMidYMid meet, so authors who relied on stretch must opt in via
+// preserveAspectRatio="none" on the symbol.
+//
+// Slice scaling uses uniform max(sx,sy). TODO: emit clip-to-use-box
+// (spec requires it; without the clip, slice content can overflow).
+//
 // Parses x/y numerically rather than splicing raw author strings into
 // the transform attribute: `<use x="0)scale(99)">` would otherwise
 // inject extra transforms. parseLength clamps to ±maxCoordinate and
@@ -187,33 +197,76 @@ func positioningTransform(useNode, target *xmlNode, x, y string) string {
 	wantTranslate := x != "" || y != ""
 	tx := parseLength(x)
 	ty := parseLength(y)
-	translate := "translate(" + f32ToString(tx) + "," + f32ToString(ty) + ")"
 
-	sx, sy, vbX, vbY, ok := symbolViewportScale(useNode, target)
+	sx, sy, vbX, vbY, ax, ay, ok := symbolViewportScale(useNode, target)
 	if !ok {
 		if !wantTranslate {
 			return ""
 		}
-		return translate
+		return writeTranslate(tx, ty)
 	}
-	out := translate
-	if sx != 1 || sy != 1 {
-		out += " scale(" + f32ToString(sx) + "," + f32ToString(sy) + ")"
+	combX, combY := tx+ax, ty+ay
+	if !boundedScale(combX) || !boundedScale(combY) {
+		return ""
+	}
+	var b strings.Builder
+	b.Grow(64)
+	writeTranslateTo(&b, combX, combY)
+	switch {
+	case sx == sy && sx != 1:
+		b.WriteString(" scale(")
+		writeF32(&b, sx)
+		b.WriteByte(')')
+	case sx != 1 || sy != 1:
+		b.WriteString(" scale(")
+		writeF32(&b, sx)
+		b.WriteByte(',')
+		writeF32(&b, sy)
+		b.WriteByte(')')
 	}
 	if vbX != 0 || vbY != 0 {
-		out += " translate(" + f32ToString(-vbX) + "," + f32ToString(-vbY) + ")"
+		b.WriteString(" ")
+		writeTranslateTo(&b, -vbX, -vbY)
 	}
-	return out
+	return b.String()
 }
 
-// symbolViewportScale returns the scale factors and viewBox origin
-// needed to map a <symbol viewBox=...>'s viewport to the <use>'s
-// width/height box. ok is false when the target is not a <symbol>,
-// when the symbol has no usable viewBox, when use width/height are
-// missing or percentage-based, or when the resulting scale would
-// exceed ±maxCoordinate (pathological viewBox like 1e-30 against
-// use width=1).
-func symbolViewportScale(useNode, target *xmlNode) (sx, sy, vbX, vbY float32, ok bool) {
+func writeTranslate(x, y float32) string {
+	var b strings.Builder
+	b.Grow(32)
+	writeTranslateTo(&b, x, y)
+	return b.String()
+}
+
+func writeTranslateTo(b *strings.Builder, x, y float32) {
+	b.WriteString("translate(")
+	writeF32(b, x)
+	b.WriteByte(',')
+	writeF32(b, y)
+	b.WriteByte(')')
+}
+
+func writeF32(b *strings.Builder, v float32) {
+	var buf [32]byte
+	b.Write(strconv.AppendFloat(buf[:0], float64(v), 'f', -1, 32))
+}
+
+// symbolViewportScale returns the scale factors, viewBox origin, and
+// alignment offsets needed to map a <symbol viewBox=...>'s viewport
+// into the <use>'s width/height box per preserveAspectRatio.
+//
+// Default is xMidYMid meet (SVG 1.1): uniform min-scale + center.
+// preserveAspectRatio="none" on the symbol opts into the legacy
+// independent-axis stretch. Slice scaling uses uniform max-scale; the
+// accompanying clip-to-box is unimplemented (overflow not enforced).
+//
+// ok is false when the target is not a <symbol>, when the symbol has
+// no usable viewBox, when use width/height are missing or
+// percentage-based, or when the resulting scale would exceed
+// ±maxCoordinate (pathological viewBox like 1e-30 against use width=1).
+func symbolViewportScale(useNode, target *xmlNode) (
+	sx, sy, vbX, vbY, ax, ay float32, ok bool,
+) {
 	if target.Name != "symbol" {
 		return
 	}
@@ -244,12 +297,42 @@ func symbolViewportScale(useNode, target *xmlNode) (sx, sy, vbX, vbY float32, ok
 	if uw <= 0 || uh <= 0 {
 		return
 	}
-	sx = uw / nums[2]
-	sy = uh / nums[3]
-	if !boundedScale(sx) || !boundedScale(sy) {
-		return 0, 0, 0, 0, false
+	rawSx := uw / nums[2]
+	rawSy := uh / nums[3]
+
+	align, slice := effectivePreserveAspectRatio(target)
+	if align == gui.SvgAlignNone {
+		sx, sy = rawSx, rawSy
+	} else {
+		var s float32
+		if slice {
+			s = max(rawSx, rawSy)
+		} else {
+			s = min(rawSx, rawSy)
+		}
+		sx, sy = s, s
+		xFrac, yFrac := gui.PreserveAlignFractions(align)
+		ax = xFrac * (uw - nums[2]*s)
+		ay = yFrac * (uh - nums[3]*s)
 	}
-	return sx, sy, nums[0], nums[1], true
+	if !boundedScale(sx) || !boundedScale(sy) {
+		return 0, 0, 0, 0, 0, 0, false
+	}
+	return sx, sy, nums[0], nums[1], ax, ay, true
+}
+
+// effectivePreserveAspectRatio returns the preserveAspectRatio value
+// for a <symbol> referenced by <use>. SVG 1.1 only honors the
+// symbol's own attribute (default xMidYMid meet); SVG 2 added
+// override on <use> but is not yet supported here.
+func effectivePreserveAspectRatio(target *xmlNode) (gui.SvgAlign, bool) {
+	if target == nil || target.Name != "symbol" {
+		return gui.SvgAlignXMidYMid, false
+	}
+	if v, ok := target.AttrMap["preserveAspectRatio"]; ok && v != "" {
+		return parsePreserveAspectRatio(v)
+	}
+	return gui.SvgAlignXMidYMid, false
 }
 
 func boundedScale(v float32) bool {
@@ -264,10 +347,6 @@ func boundedScale(v float32) bool {
 
 func hasPercent(s string) bool {
 	return strings.IndexByte(s, '%') >= 0
-}
-
-func f32ToString(v float32) string {
-	return strconv.FormatFloat(float64(v), 'f', -1, 32)
 }
 
 func cloneChildrenForUse(src []xmlNode, budget *int) []xmlNode {

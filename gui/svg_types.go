@@ -70,6 +70,9 @@ type SvgText struct {
 	StrokeWidth    float32
 	FillGradientID string
 	FilterID       string
+	// FilterGroupKey is a per-occurrence id distinguishing distinct
+	// elements that share FilterID. Zero means "no filter".
+	FilterGroupKey uint32
 	Anchor         int // 0=start, 1=middle, 2=end
 	Underline      bool
 	Strikethrough  bool
@@ -92,10 +95,13 @@ type SvgTextPath struct {
 	StrokeColor   SvgColor
 	StrokeWidth   float32
 	FilterID      string
-	Anchor        int // 0=start, 1=middle, 2=end
-	Method        int // 0=align, 1=stretch
-	Side          int // 0=left, 1=right
-	IsPercent     bool
+	// FilterGroupKey is a per-occurrence id distinguishing distinct
+	// elements that share FilterID. Zero means "no filter".
+	FilterGroupKey uint32
+	Anchor         int // 0=start, 1=middle, 2=end
+	Method         int // 0=align, 1=stretch
+	Side           int // 0=left, 1=right
+	IsPercent      bool
 }
 
 // SvgFilter holds a parsed SVG filter definition.

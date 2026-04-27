@@ -87,9 +87,14 @@ type VectorPath struct {
 	FillOpacity      float32
 	StrokeOpacity    float32
 	GroupID          string
-	Animated         bool
-	Primitive        gui.SvgPrimitive
-	FillRule         FillRule
+	// FilterGroupKey is a per-occurrence id assigned at parse time.
+	// Distinct elements with filter="url(#X)" get distinct keys so the
+	// renderer can composite their offscreen buffers separately and in
+	// document order, while FilterID remains the actual filter def id.
+	FilterGroupKey uint32
+	Animated       bool
+	Primitive      gui.SvgPrimitive
+	FillRule       FillRule
 	// Computed snapshots the resolved cascade context (transform,
 	// fill, stroke, opacity, font, …) at parse time. Phase A only
 	// records the result; later CSS phases will use it as the hot-
@@ -115,9 +120,14 @@ type bbox struct {
 func (b bbox) Width() float32  { return b.MaxX - b.MinX }
 func (b bbox) Height() float32 { return b.MaxY - b.MinY }
 
-// svgFilteredGroup holds paths/texts belonging to a filtered <g>.
+// svgFilteredGroup holds paths/texts belonging to a single filter
+// occurrence — the subtree under one element that set
+// filter="url(#X)". FilterID is the filter def to apply; GroupKey is
+// the per-occurrence id that disambiguates non-contiguous uses of the
+// same filter.
 type svgFilteredGroup struct {
 	FilterID  string
+	GroupKey  uint32
 	Paths     []VectorPath
 	Texts     []gui.SvgText
 	TextPaths []gui.SvgTextPath
@@ -225,7 +235,11 @@ type ComputedStyle struct {
 
 	ClipPathID string
 	FilterID   string
-	GroupID    string
+	// FilterGroupKey is bumped each time an element introduces a fresh
+	// filter="url(#X)" via the cascade; descendants inherit the same
+	// key. Zero means "no filter applies in this subtree".
+	FilterGroupKey uint32
+	GroupID        string
 
 	// Text-related properties remain strings until text shaping
 	// consumes them.
@@ -402,6 +416,8 @@ type parseState struct {
 	// constructs empty-literal parseStates); synth code must nil-guard.
 	vg          *VectorGraphic
 	synthClipID int
+	// Per-occurrence counter for filter cascade; 0 = no filter.
+	nextFilterGroup uint32
 }
 
 // elementStyle holds common style properties extracted from an SVG element.

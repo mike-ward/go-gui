@@ -261,9 +261,12 @@ func TestExpandUseStripsNestedClonedID(t *testing.T) {
 }
 
 // <use width=W height=H> referencing a <symbol viewBox=...> must scale
-// the symbol's viewport to fill the requested box. Earlier impl
-// dropped width/height entirely, so symbol+viewBox reuse rendered at
-// authored size regardless of caller request.
+// the symbol's viewport to fit the requested box. Default
+// preserveAspectRatio is xMidYMid meet (uniform scale + center) per
+// SVG 1.1 — earlier impl always stretched independently, distorting
+// 10x10 symbols when used at non-square boxes. 20x40 box of 10x10
+// symbol → uniform 2x; 20x20 of content centered in 20x40 → ay=10,
+// so y-translate = 6+10 = 16.
 func TestExpandUseSymbolHonorsWidthHeight(t *testing.T) {
 	root, err := decodeSvgTree(
 		`<svg viewBox="0 0 100 100">` +
@@ -279,11 +282,93 @@ func TestExpandUseSymbolHonorsWidthHeight(t *testing.T) {
 		t.Fatalf("expected synthesized <g>")
 	}
 	tr := g.AttrMap["transform"]
+	if !strings.Contains(tr, "translate(5,16)") {
+		t.Fatalf("missing translate(5,16) (xMidYMid meet centers Y): %q", tr)
+	}
+	if !strings.Contains(tr, "scale(2)") {
+		t.Fatalf("missing uniform scale(2): %q", tr)
+	}
+}
+
+// preserveAspectRatio="none" on the symbol opts back into independent
+// per-axis scaling — the legacy stretch behavior.
+func TestExpandUseSymbolPreserveNoneStretches(t *testing.T) {
+	root, err := decodeSvgTree(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="none"><rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="5" y="6" width="20" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	expandUseElements(root)
+	g := findFirstByName(root, "g")
+	if g == nil {
+		t.Fatalf("expected synthesized <g>")
+	}
+	tr := g.AttrMap["transform"]
 	if !strings.Contains(tr, "translate(5,6)") {
-		t.Fatalf("missing translate: %q", tr)
+		t.Fatalf("missing translate(5,6): %q", tr)
 	}
 	if !strings.Contains(tr, "scale(2,4)") {
-		t.Fatalf("missing scale(2,4) for 20x40 use of 10x10 viewBox: %q", tr)
+		t.Fatalf("missing scale(2,4) for none stretch: %q", tr)
+	}
+}
+
+// preserveAspectRatio="xMinYMin meet" pins to the box origin: no
+// align offset, uniform scale = min.
+func TestExpandUseSymbolPreserveXMinYMin(t *testing.T) {
+	root, err := decodeSvgTree(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMinYMin meet"><rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="5" y="6" width="20" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	expandUseElements(root)
+	g := findFirstByName(root, "g")
+	if g == nil {
+		t.Fatalf("expected synthesized <g>")
+	}
+	tr := g.AttrMap["transform"]
+	if !strings.Contains(tr, "translate(5,6)") {
+		t.Fatalf("xMinYMin must zero align offsets: %q", tr)
+	}
+	if !strings.Contains(tr, "scale(2)") {
+		t.Fatalf("missing uniform scale(2): %q", tr)
+	}
+}
+
+// KNOWN GAP — clip-to-use-box unimplemented for slice scaling.
+// xMidYMid slice produces uniform max-scale + center alignment, which
+// this test verifies. Spec also requires content to be clipped to the
+// <use> width/height box — currently the synth <g> emits no
+// clip-path, so oversize content overflows. Will fix alongside the
+// nested-svg clip intersection (TODOIntersect) when the clip-mask
+// renderer lands. Intent-correct geometry is closer to spec than the
+// previous unconditional stretch, so this is shipped as-is.
+func TestExpandUseSymbolPreserveSlice_TODOClipToBox(t *testing.T) {
+	root, err := decodeSvgTree(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMidYMid slice"><rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="20" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	expandUseElements(root)
+	g := findFirstByName(root, "g")
+	if g == nil {
+		t.Fatalf("expected synthesized <g>")
+	}
+	tr := g.AttrMap["transform"]
+	// Slice → s = max(2,4) = 4. ax = 0.5*(20 - 10*4) = -10. ay = 0.
+	if !strings.Contains(tr, "translate(-10,0)") {
+		t.Fatalf("slice align offset wrong: %q", tr)
+	}
+	if !strings.Contains(tr, "scale(4)") {
+		t.Fatalf("missing uniform scale(4) for slice: %q", tr)
 	}
 }
 
@@ -448,9 +533,13 @@ func TestExpandUseSymbolHonorsHeightOnly(t *testing.T) {
 		t.Fatalf("expected synthesized <g>")
 	}
 	tr := g.AttrMap["transform"]
-	// height=40 vs vb=10 → sy=4. width defaults to vb=10 → sx=1.
-	if !strings.Contains(tr, "scale(1,4)") {
-		t.Fatalf("expected scale(1,4) with height-only: %q", tr)
+	// height=40 vs vb=10. width defaults to vb=10 → raw sx=1. Default
+	// preserveAspectRatio is xMidYMid meet → uniform min = 1; the
+	// extra height becomes a center-Y offset of (40-10)/2 = 15. With
+	// no x/y the leading translate carries (0,15). scale(1) collapses
+	// to identity in the emitter, so only the translate appears.
+	if !strings.Contains(tr, "translate(0,15)") {
+		t.Fatalf("expected translate(0,15) with height-only meet: %q", tr)
 	}
 }
 
@@ -471,8 +560,10 @@ func TestExpandUseSymbolLowercaseViewBoxScales(t *testing.T) {
 		t.Fatalf("expected synthesized <g>")
 	}
 	tr := g.AttrMap["transform"]
-	if !strings.Contains(tr, "scale(3,3)") {
-		t.Fatalf("expected scale(3,3) from lowercase viewbox: %q", tr)
+	// 30x30 use of 10x10 symbol → uniform 3x; emitter collapses
+	// scale(s,s) to scale(s).
+	if !strings.Contains(tr, "scale(3)") {
+		t.Fatalf("expected scale(3) from lowercase viewbox: %q", tr)
 	}
 }
 

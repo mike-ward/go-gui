@@ -144,44 +144,70 @@ func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 
 	// Separate filtered paths from main paths.
 	if len(vg.Filters) > 0 {
-		filtered := map[string][]VectorPath{}
-		filteredTexts := map[string][]gui.SvgText{}
-		filteredTextPaths := map[string][]gui.SvgTextPath{}
-
+		// Bucket by per-occurrence key: non-contiguous filter uses must
+		// composite separately or z-order against unfiltered siblings
+		// between them is wrong. Map records first-seen index per key
+		// so groups stay in document order across map iteration.
+		idx := map[uint32]int{}
 		for _, p := range allPaths {
-			if p.FilterID != "" {
-				if _, ok := vg.Filters[p.FilterID]; ok {
-					filtered[p.FilterID] = append(filtered[p.FilterID], p)
-					continue
-				}
+			key := p.FilterGroupKey
+			if key == 0 || p.FilterID == "" {
+				vg.Paths = append(vg.Paths, p)
+				continue
 			}
-			vg.Paths = append(vg.Paths, p)
+			if _, ok := vg.Filters[p.FilterID]; !ok {
+				vg.Paths = append(vg.Paths, p)
+				continue
+			}
+			i, ok := idx[key]
+			if !ok {
+				i = len(vg.FilteredGroups)
+				idx[key] = i
+				vg.FilteredGroups = append(vg.FilteredGroups,
+					svgFilteredGroup{FilterID: p.FilterID, GroupKey: key})
+			}
+			vg.FilteredGroups[i].Paths = append(
+				vg.FilteredGroups[i].Paths, p)
 		}
 		for _, t := range state.texts {
-			if t.FilterID != "" {
-				if _, ok := vg.Filters[t.FilterID]; ok {
-					filteredTexts[t.FilterID] = append(filteredTexts[t.FilterID], t)
-					continue
-				}
+			key := t.FilterGroupKey
+			if key == 0 || t.FilterID == "" {
+				vg.Texts = append(vg.Texts, t)
+				continue
 			}
-			vg.Texts = append(vg.Texts, t)
+			if _, ok := vg.Filters[t.FilterID]; !ok {
+				vg.Texts = append(vg.Texts, t)
+				continue
+			}
+			gi, ok := idx[key]
+			if !ok {
+				gi = len(vg.FilteredGroups)
+				idx[key] = gi
+				vg.FilteredGroups = append(vg.FilteredGroups,
+					svgFilteredGroup{FilterID: t.FilterID, GroupKey: key})
+			}
+			vg.FilteredGroups[gi].Texts = append(
+				vg.FilteredGroups[gi].Texts, t)
 		}
 		for _, tp := range state.textPaths {
-			if tp.FilterID != "" {
-				if _, ok := vg.Filters[tp.FilterID]; ok {
-					filteredTextPaths[tp.FilterID] = append(filteredTextPaths[tp.FilterID], tp)
-					continue
-				}
+			key := tp.FilterGroupKey
+			if key == 0 || tp.FilterID == "" {
+				vg.TextPaths = append(vg.TextPaths, tp)
+				continue
 			}
-			vg.TextPaths = append(vg.TextPaths, tp)
-		}
-		for fid, fpaths := range filtered {
-			vg.FilteredGroups = append(vg.FilteredGroups, svgFilteredGroup{
-				FilterID:  fid,
-				Paths:     fpaths,
-				Texts:     filteredTexts[fid],
-				TextPaths: filteredTextPaths[fid],
-			})
+			if _, ok := vg.Filters[tp.FilterID]; !ok {
+				vg.TextPaths = append(vg.TextPaths, tp)
+				continue
+			}
+			gi, ok := idx[key]
+			if !ok {
+				gi = len(vg.FilteredGroups)
+				idx[key] = gi
+				vg.FilteredGroups = append(vg.FilteredGroups,
+					svgFilteredGroup{FilterID: tp.FilterID, GroupKey: key})
+			}
+			vg.FilteredGroups[gi].TextPaths = append(
+				vg.FilteredGroups[gi].TextPaths, tp)
 		}
 	} else {
 		vg.Paths = allPaths

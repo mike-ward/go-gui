@@ -488,6 +488,9 @@ func isNumberToken(s string) bool {
 	return (c >= '0' && c <= '9') || c == '-' || c == '+' || c == '.'
 }
 
+// parseF32 silently zeros for malformed/NaN/Inf input. Reserved for
+// tolerant geometry paths; SMIL endpoints use parseFloatStrict so a
+// bogus 0 cannot synthesize a real animation endpoint.
 func parseF32(s string) float32 {
 	v, _ := strconv.ParseFloat(s, 32)
 	if math.IsNaN(v) || math.IsInf(v, 0) {

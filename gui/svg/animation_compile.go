@@ -243,7 +243,14 @@ func compileColorTimeline(def *css.KeyframesDef, prop string,
 	}
 	cols := make([]uint32, len(raw))
 	for i, v := range raw {
-		c, _ := parseSvgColor(v)
+		c, ok := parseSvgColor(v)
+		if !ok {
+			// Invalid paint in a keyframe stop drops the whole color
+			// timeline, matching applyPaintProp's "invalid → ignore"
+			// rule for static declarations. Emitting cols[i]=0 would
+			// silently animate to/from black instead.
+			return 0
+		}
 		cols[i] = packRGBA(c)
 	}
 	keyTimes := normalizeKeyTimes(offsets)

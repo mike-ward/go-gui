@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `<use>` referencing `<symbol viewBox=...>` now honors
+  `preserveAspectRatio`. Default is `xMidYMid meet` (uniform scale +
+  center) per SVG 1.1; `preserveAspectRatio="none"` opts back into
+  legacy independent-axis stretch; `slice` uses uniform max-scale
+  (clip-to-use-box still TODO). Earlier impl always stretched.
+- Distinct elements sharing one `filter="url(#X)"` now composite as
+  separate offscreen groups in document order. Previously they were
+  merged by FilterID and z-ordered against unfiltered siblings
+  incorrectly. Each occurrence carries a per-element `FilterGroupKey`
+  (parser counter assigned during cascade).
 - Nested `<svg>` elements now establish a child viewport. `x`, `y`,
   `width`, `height` accept user-space units or percentages of the
   parent viewport; an inner `viewBox` (with `preserveAspectRatio`
@@ -32,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Hardened
 
+- SMIL `from`/`to`/`by`/`values` reject malformed tokens (NaN, Inf,
+  garbage) instead of coercing to 0. Bogus 0 endpoints would
+  previously synthesize real animation timelines; now the timeline
+  drops. Color keyframe stops with invalid paint also drop the
+  whole color timeline.
+- `<use>` `symbolViewportScale` rejects degenerate viewBox
+  (`<= 0` width/height) and clamps combined translate (`tx+ax`,
+  `ty+ay`) via `boundedScale` so alignment offsets cannot push the
+  transform past `±maxCoordinate`.
 - Nested-`<svg>` viewport math sanitizes NaN, ±Inf, and oversized
   inputs on `x`/`y`/`width`/`height`, `viewBox`, `parent.W`/`parent.H`,
   and the resulting scale/translate so a poisoned attribute cannot

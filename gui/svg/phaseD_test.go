@@ -132,6 +132,23 @@ func TestPhaseD_CompileColorTween(t *testing.T) {
 	}
 }
 
+func TestPhaseD_InvalidKeyframeColorDropsTimeline(t *testing.T) {
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+		<style>
+		@keyframes bad { from { fill: red } to { fill: bogus } }
+		.x { animation: bad 1s }
+		</style>
+		<rect class="x" width="10" height="10"/>
+	</svg>`
+	vg := parseSvgT(t, src)
+	for i, a := range vg.Animations {
+		if a.Kind == gui.SvgAnimColor {
+			t.Fatalf("anim %d: emitted color timeline despite "+
+				"unparseable keyframe stop; cols=%v", i, a.ColorValues)
+		}
+	}
+}
+
 func TestPhaseD_CompileOpacityTween(t *testing.T) {
 	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
 		<style>

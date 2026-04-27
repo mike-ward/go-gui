@@ -68,6 +68,33 @@ func TestAnimationParseSemicolonFloatsEmpty(t *testing.T) {
 	}
 }
 
+// SMIL from/to/by/values must reject malformed tokens rather than
+// coerce to 0. parseF32 silently zeros for tolerant geometry paths;
+// animations need ok=false so the malformed timeline is dropped
+// instead of producing a real endpoint at zero.
+func TestAnimationParseScalarValuesRejectsMalformed(t *testing.T) {
+	cases := []string{
+		`<animate attributeName="x" from="wat" to="10" dur="1s"/>`,
+		`<animate attributeName="x" from="0" to="NaN" dur="1s"/>`,
+		`<animate attributeName="x" by="Inf" dur="1s"/>`,
+		`<animate attributeName="x" to="bogus" dur="1s"/>`,
+		`<animate attributeName="x" values="0;wat;1" dur="1s"/>`,
+	}
+	for _, elem := range cases {
+		if _, _, ok := parseScalarValues(elem); ok {
+			t.Errorf("expected reject for %q", elem)
+		}
+	}
+}
+
+func TestAnimationParseScalarValuesAccepts(t *testing.T) {
+	if vs, _, ok := parseScalarValues(
+		`<animate attributeName="x" from="0" to="10" dur="1s"/>`,
+	); !ok || len(vs) != 2 || vs[0] != 0 || vs[1] != 10 {
+		t.Fatalf("from/to baseline broken: %v ok=%v", vs, ok)
+	}
+}
+
 func TestAnimationParseSpaceFloats(t *testing.T) {
 	vals := parseSpaceFloats("10 20 30")
 	if len(vals) != 3 {

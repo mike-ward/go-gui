@@ -937,8 +937,11 @@ func computeStyle(
 	}
 	if fid, ok := parseFilterURL(elem); ok {
 		out.FilterID = fid
+		state.nextFilterGroup++
+		out.FilterGroupKey = state.nextFilterGroup
 	} else {
 		out.FilterID = parent.FilterID
+		out.FilterGroupKey = parent.FilterGroupKey
 	}
 	if gid, ok := findAttr(elem, "id"); ok {
 		out.GroupID = gid
@@ -1110,6 +1113,9 @@ func applyComputedStyle(path *VectorPath, inh ComputedStyle) {
 	}
 	if path.FilterID == "" && inh.FilterID != "" {
 		path.FilterID = inh.FilterID
+	}
+	if path.FilterGroupKey == 0 {
+		path.FilterGroupKey = inh.FilterGroupKey
 	}
 
 	// Fill — gradient takes precedence over color. Honor cascade

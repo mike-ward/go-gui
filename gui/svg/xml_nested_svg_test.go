@@ -736,11 +736,19 @@ func TestNestedSvg_DegenerateViewportNoClip(t *testing.T) {
 	}
 }
 
-// v1 limitation: author clip-path on the nested <svg> element itself
-// is overwritten by the synthesized viewport clip. Spec requires
-// intersection composition; not implemented. Regression locks the
-// current behavior so any future fix flips this assertion.
-func TestNestedSvg_AuthorClipPathOnSvgOverwritten(t *testing.T) {
+// KNOWN GAP — to fix when the clip-mask renderer lands.
+// Spec: an inner <svg> with an author clip-path AND default
+// overflow:hidden must clip by the INTERSECTION of the author clip
+// and the viewport rect. Current parser writes a single ClipPathID
+// per VectorPath, so the synthesized viewport clip overwrites the
+// author's. All backends presently no-op on IsClipMask, so this is
+// structural data loss only — no visible rendering impact today.
+// When the renderer learns to clip, the data model must carry both
+// (e.g. []string ClipPathIDs with stencil-AND across the group); at
+// that point this test should flip to assert both ids participate.
+// Until then it pins the current overwrite as a deliberately
+// punted state, not validated behavior.
+func TestNestedSvg_AuthorClipPathOnSvgOverwritten_TODOIntersect(t *testing.T) {
 	svg := `<svg viewBox="0 0 100 100">
 		<defs>
 			<clipPath id="author">

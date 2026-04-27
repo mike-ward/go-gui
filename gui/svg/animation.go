@@ -63,8 +63,8 @@ func parseAnimateElement(
 // Explicit additive="sum" may further upgrade the flag.
 func parseScalarValues(elem string) ([]float32, bool, bool) {
 	if valStr, ok := findAttr(elem, "values"); ok && valStr != "" {
-		vs := parseSemicolonFloats(valStr)
-		if len(vs) < 2 {
+		vs, vok := parseSemicolonFloatsOK(valStr)
+		if !vok || len(vs) < 2 {
 			return nil, false, false
 		}
 		return vs, false, true
@@ -72,15 +72,28 @@ func parseScalarValues(elem string) ([]float32, bool, bool) {
 	fromStr, fromOK := findAttr(elem, "from")
 	toStr, toOK := findAttr(elem, "to")
 	if fromOK && toOK {
-		return []float32{parseF32(fromStr), parseF32(toStr)}, false, true
+		f, fok := parseFloatStrict(fromStr)
+		t, tok := parseFloatStrict(toStr)
+		if !fok || !tok {
+			return nil, false, false
+		}
+		return []float32{f, t}, false, true
 	}
 	if byStr, ok := findAttr(elem, "by"); ok {
-		return []float32{0, parseF32(byStr)}, true, true
+		b, bok := parseFloatStrict(byStr)
+		if !bok {
+			return nil, false, false
+		}
+		return []float32{0, b}, true, true
 	}
 	if toOK {
 		// to= without from= is spec-legal but needs the base value
 		// at apply time. Emit [0, to] + additive so the base sums in.
-		return []float32{0, parseF32(toStr)}, true, true
+		t, tok := parseFloatStrict(toStr)
+		if !tok {
+			return nil, false, false
+		}
+		return []float32{0, t}, true, true
 	}
 	return nil, false, false
 }
@@ -1079,6 +1092,14 @@ func parseSemicolonFloats(s string) []float32 {
 		func(b byte) bool { return b == ';' })
 }
 
+// parseSemicolonFloatsOK is the strict variant: any malformed token
+// (incl. NaN/Inf) returns ok=false so SMIL values= can be rejected as
+// a unit rather than coerced to silent zeros.
+func parseSemicolonFloatsOK(s string) ([]float32, bool) {
+	return scanFloatListOK(s, maxKeyframes,
+		func(b byte) bool { return b == ';' })
+}
+
 // parseSpaceFloats splits a space-separated string into float32
 // values.
 func parseSpaceFloats(s string) []float32 {
@@ -1086,6 +1107,48 @@ func parseSpaceFloats(s string) []float32 {
 		func(b byte) bool {
 			return b == ' ' || b == '\t' || b == '\n' || b == '\r'
 		})
+}
+
+// scanFloatListOK runs scanFloatList's split logic with strict parse:
+// returns ok=false on the first unparseable token.
+func scanFloatListOK(
+	s string, limit int, isSep func(byte) bool,
+) ([]float32, bool) {
+	if limit == 0 {
+		limit = len(s)
+	}
+	var out []float32
+	for i := 0; i < len(s); {
+		start := i
+		for start < len(s) && isSep(s[start]) {
+			start++
+		}
+		if start >= len(s) {
+			break
+		}
+		end := start
+		for end < len(s) && !isSep(s[end]) {
+			end++
+		}
+		if tok := strings.TrimSpace(s[start:end]); tok != "" {
+			v, ok := parseFloatStrict(tok)
+			if !ok {
+				return nil, false
+			}
+			if out == nil {
+				out = make([]float32, 0, min(limit, 8))
+			}
+			out = append(out, v)
+			if len(out) >= limit {
+				break
+			}
+		}
+		i = end
+	}
+	if len(out) == 0 {
+		return nil, false
+	}
+	return out, true
 }
 
 func scanFloatList(s string, limit int, isSep func(byte) bool) []float32 {
