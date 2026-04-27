@@ -10,8 +10,22 @@ no diffing, just fast, composable UI.**
 
 ![showcase](assets/showcase.png)
 
-Showcase contains the framework documentation. Every widget demo has a button
-in the upper-right corner that displays documentation about the widget.
+_Showcase contains the framework documentation. Every widget demo has a button
+in the upper-right corner that displays documentation about the widget._
+
+Sibling projects:
+
+- **go-charts**\
+  Interactive chart widgets. https://github.com/mike-ward/go-charts
+
+- **go-edit**\
+  Code editor widget. https://github.com/mike-ward/go-edit
+
+- **go-map**\
+  SMIL map widgets. https://github.com/mike-ward/go-map
+
+- **go-glyph**\
+  Text rendering engine on steriods. https://github.com/mike-ward/go-glyph
 
 ---
 
@@ -408,53 +422,53 @@ gui.Input(gui.InputCfg{
 
 35 example applications ship with the framework:
 
-| Directory                                                  | Description                                 |
-| ---------------------------------------------------------- | ------------------------------------------- |
-| [`animations`](examples/animations/)                       | Animation subsystem showcase                |
-| [`benchmark`](examples/benchmark/)                         | Frame timing and allocation benchmarks      |
-| [`blur_demo`](examples/blur_demo/)                         | Blur visual effect                          |
-| [`calculator`](examples/calculator/)                       | Styled desktop calculator                   |
-| [`color_picker`](examples/color_picker/)                   | Color picker widget                         |
-| [`command_demo`](examples/command_demo/)                   | Command registry, hotkeys, command palette  |
-| [`context_menu`](examples/context_menu/)                   | Right-click context menus                   |
-| [`custom_shader`](examples/custom_shader/)                 | Custom GPU shader rendering                 |
-| [`data_grid_data_source`](examples/data_grid_data_source/) | DataGrid with async data source             |
-| [`date_picker_options`](examples/date_picker_options/)     | Date picker configurations                  |
-| [`dialogs`](examples/dialogs/)                             | Native and custom dialogs                   |
-| [`digital_rain`](examples/digital_rain/)                   | Matrix-style digital rain effect            |
-| [`dock_layout`](examples/dock_layout/)                     | IDE-style docking panels with drag-and-drop |
-| [`draw_canvas`](examples/draw_canvas/)                     | Custom-draw canvas surface                  |
-| [`floating_layout`](examples/floating_layout/)             | Float-anchored overlay positioning          |
-| [`get_started`](examples/get_started/)                     | Minimal hello-world app                     |
-| [`gradient_demo`](examples/gradient_demo/)                 | OpenGL gradient rendering                   |
-| [`ios_demo`](examples/ios_demo/)                           | iOS demo app (Metal + UIKit)                |
-| [`listbox`](examples/listbox/)                             | ListBox widget demo                         |
-| [`markdown`](examples/markdown/)                           | Markdown rendering with code-block copy     |
-| [`menu_demo`](examples/menu_demo/)                         | Pull-down menu bar                          |
-| [`multi_window`](examples/multi_window/)                   | Multi-window with cross-window messaging    |
-| [`multiline_input`](examples/multiline_input/)             | Multiline text input                        |
-| [`native_menu`](examples/native_menu/)                     | OS-native menu bar                          |
-| [`rotated_box`](examples/rotated_box/)                     | Quarter-turn rotation widget                |
-| [`rtf`](examples/rtf/)                                     | RTF document viewer                         |
-| [`scroll_demo`](examples/scroll_demo/)                     | Scrollable content layouts                  |
-| [`shadow_demo`](examples/shadow_demo/)                     | Box shadow effects                          |
-| [`showcase`](examples/showcase/)                           | Interactive widget showcase                 |
-| [`snake`](examples/snake/)                                 | Snake game                                  |
-| [`svg`](examples/svg/)                                     | SVG loading and display                     |
+| Directory                                                  | Description                                  |
+| ---------------------------------------------------------- | -------------------------------------------- |
+| [`animations`](examples/animations/)                       | Animation subsystem showcase                 |
+| [`benchmark`](examples/benchmark/)                         | Frame timing and allocation benchmarks       |
+| [`blur_demo`](examples/blur_demo/)                         | Blur visual effect                           |
+| [`calculator`](examples/calculator/)                       | Styled desktop calculator                    |
+| [`color_picker`](examples/color_picker/)                   | Color picker widget                          |
+| [`command_demo`](examples/command_demo/)                   | Command registry, hotkeys, command palette   |
+| [`context_menu`](examples/context_menu/)                   | Right-click context menus                    |
+| [`custom_shader`](examples/custom_shader/)                 | Custom GPU shader rendering                  |
+| [`data_grid_data_source`](examples/data_grid_data_source/) | DataGrid with async data source              |
+| [`date_picker_options`](examples/date_picker_options/)     | Date picker configurations                   |
+| [`dialogs`](examples/dialogs/)                             | Native and custom dialogs                    |
+| [`digital_rain`](examples/digital_rain/)                   | Matrix-style digital rain effect             |
+| [`dock_layout`](examples/dock_layout/)                     | IDE-style docking panels with drag-and-drop  |
+| [`draw_canvas`](examples/draw_canvas/)                     | Custom-draw canvas surface                   |
+| [`floating_layout`](examples/floating_layout/)             | Float-anchored overlay positioning           |
+| [`get_started`](examples/get_started/)                     | Minimal hello-world app                      |
+| [`gradient_demo`](examples/gradient_demo/)                 | OpenGL gradient rendering                    |
+| [`ios_demo`](examples/ios_demo/)                           | iOS demo app (Metal + UIKit)                 |
+| [`listbox`](examples/listbox/)                             | ListBox widget demo                          |
+| [`markdown`](examples/markdown/)                           | Markdown rendering with code-block copy      |
+| [`menu_demo`](examples/menu_demo/)                         | Pull-down menu bar                           |
+| [`multi_window`](examples/multi_window/)                   | Multi-window with cross-window messaging     |
+| [`multiline_input`](examples/multiline_input/)             | Multiline text input                         |
+| [`native_menu`](examples/native_menu/)                     | OS-native menu bar                           |
+| [`rotated_box`](examples/rotated_box/)                     | Quarter-turn rotation widget                 |
+| [`rtf`](examples/rtf/)                                     | RTF document viewer                          |
+| [`scroll_demo`](examples/scroll_demo/)                     | Scrollable content layouts                   |
+| [`shadow_demo`](examples/shadow_demo/)                     | Box shadow effects                           |
+| [`showcase`](examples/showcase/)                           | Interactive widget showcase                  |
+| [`snake`](examples/snake/)                                 | Snake game                                   |
+| [`svg`](examples/svg/)                                     | SVG loading and display                      |
 | [`svg_a11y`](examples/svg_a11y/)                           | SVG accessibility metadata (title/desc/aria) |
-| [`svg_aspect`](examples/svg_aspect/)                       | preserveAspectRatio alignment grid          |
-| [`svg_css_selectors`](examples/svg_css_selectors/)         | Sibling, attribute, `:not()` selectors      |
-| [`svg_css_states`](examples/svg_css_states/)               | `:hover` / `:focus` driven by SvgCfg ids    |
-| [`svg_css_vars`](examples/svg_css_vars/)                   | `var()` fallback + `calc()` arithmetic      |
-| [`svg_flatness`](examples/svg_flatness/)                   | FlatnessTolerance vs vertex count           |
-| [`svg_gradient_spread`](examples/svg_gradient_spread/)     | spreadMethod pad / reflect / repeat         |
-| [`svg_hittest`](examples/svg_hittest/)                     | Click-hit test on tessellated SVG paths     |
-| [`svg_radial`](examples/svg_radial/)                       | radialGradient rendering                    |
-| [`svg_use_symbol`](examples/svg_use_symbol/)               | `<use>` + `<symbol>` reuse                  |
-| [`system_tray`](examples/system_tray/)                     | System tray icon and menu                   |
-| [`time_travel`](examples/time_travel/)                     | Counter with time-travel scrubber window    |
-| [`todo`](examples/todo/)                                   | Classic todo app                            |
-| [`web_demo`](examples/web_demo/)                           | Browser demo via WASM                       |
+| [`svg_aspect`](examples/svg_aspect/)                       | preserveAspectRatio alignment grid           |
+| [`svg_css_selectors`](examples/svg_css_selectors/)         | Sibling, attribute, `:not()` selectors       |
+| [`svg_css_states`](examples/svg_css_states/)               | `:hover` / `:focus` driven by SvgCfg ids     |
+| [`svg_css_vars`](examples/svg_css_vars/)                   | `var()` fallback + `calc()` arithmetic       |
+| [`svg_flatness`](examples/svg_flatness/)                   | FlatnessTolerance vs vertex count            |
+| [`svg_gradient_spread`](examples/svg_gradient_spread/)     | spreadMethod pad / reflect / repeat          |
+| [`svg_hittest`](examples/svg_hittest/)                     | Click-hit test on tessellated SVG paths      |
+| [`svg_radial`](examples/svg_radial/)                       | radialGradient rendering                     |
+| [`svg_use_symbol`](examples/svg_use_symbol/)               | `<use>` + `<symbol>` reuse                   |
+| [`system_tray`](examples/system_tray/)                     | System tray icon and menu                    |
+| [`time_travel`](examples/time_travel/)                     | Counter with time-travel scrubber window     |
+| [`todo`](examples/todo/)                                   | Classic todo app                             |
+| [`web_demo`](examples/web_demo/)                           | Browser demo via WASM                        |
 
 Run any example:
 
