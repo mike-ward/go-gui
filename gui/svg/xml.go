@@ -125,6 +125,10 @@ func parseSvgWith(content string, opts ParseOptions) (*VectorGraphic, error) {
 		cssKeyframes: sheet.Keyframes,
 		hoveredID:    clampElementID(opts.HoveredElementID),
 		focusedID:    clampElementID(opts.FocusedElementID),
+		curViewport: viewportRect{
+			X: vg.ViewBoxX, Y: vg.ViewBoxY,
+			W: vg.Width, H: vg.Height,
+		},
 	}
 	vg.FlatnessTolerance = sanitizeFlatness(opts.FlatnessTolerance)
 	// Merge presentation attributes (and matched author rules, when
@@ -442,6 +446,29 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 						len(state.animations)-1)
 				}
 			}
+
+		case "svg":
+			// Nested viewport. Compose viewBox-to-outer transform onto
+			// the cascaded transform from the <svg>'s own attrs, then
+			// recurse with the inner viewBox swapped in as
+			// state.curViewport so deeper percentages resolve against
+			// it. Clip-to-viewport is not yet implemented; descendants
+			// outside the inner rect render unclipped.
+			gs := computeStyle(c.OpenTag, inherited, state, info,
+				ancestors, sibsForThis)
+			if gs.Display == DisplayNone {
+				continue
+			}
+			state.elemCount++
+			innerVB, viewportTx := computeNestedSvgViewport(
+				c.AttrMap, state.curViewport)
+			gs.Transform = matrixMultiply(gs.Transform, viewportTx)
+			savedVP := state.curViewport
+			state.curViewport = innerVB
+			childAncestors := append(ancestors, info)
+			paths = append(paths,
+				parseSvgContent(c, gs, depth+1, state, childAncestors)...)
+			state.curViewport = savedVP
 
 		default:
 			// Unknown element: ignore. (Descendants also ignored —

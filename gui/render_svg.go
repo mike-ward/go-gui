@@ -41,7 +41,7 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	// default xMidYMid centers — historic behavior.
 	slackX := shape.Width - cached.Width*cached.Scale
 	slackY := shape.Height - cached.Height*cached.Scale
-	xFrac, yFrac := preserveAlignFractions(cached.PreserveAlign)
+	xFrac, yFrac := PreserveAlignFractions(cached.PreserveAlign)
 	clipX := shape.X + slackX*xFrac
 	clipY := shape.Y + slackY*yFrac
 	// ViewBoxX/Y are folded into sx/sy as an outer translate so
@@ -151,11 +151,11 @@ func renderSvg(shape *Shape, clip DrawClip, w *Window) {
 	emitClipCmd(clip, w)
 }
 
-// preserveAlignFractions returns the (x, y) slack fraction for an
+// PreserveAlignFractions returns the (x, y) slack fraction for an
 // SvgAlign value. xMin / yMin → 0 (origin), xMid / yMid → 0.5
 // (center), xMax / yMax → 1 (right/bottom). SvgAlignNone falls back
 // to xMidYMid pending non-uniform stretch support.
-func preserveAlignFractions(a SvgAlign) (float32, float32) {
+func PreserveAlignFractions(a SvgAlign) (float32, float32) {
 	switch a {
 	case SvgAlignXMinYMin:
 		return 0, 0

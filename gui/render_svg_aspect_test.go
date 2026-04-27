@@ -22,7 +22,7 @@ func TestPreserveAlignFractions(t *testing.T) {
 		{SvgAlignNone, 0.5, 0.5},
 	}
 	for _, c := range cases {
-		x, y := preserveAlignFractions(c.a)
+		x, y := PreserveAlignFractions(c.a)
 		if x != c.wantX || y != c.wantY {
 			t.Errorf("align %v: got (%v,%v), want (%v,%v)",
 				c.a, x, y, c.wantX, c.wantY)
@@ -35,7 +35,7 @@ func TestPreserveAlignFractionsDefaultZeroValue(t *testing.T) {
 	// Zero-value SvgAlign must equal xMidYMid so that callers
 	// constructing SvgParsed without setting PreserveAlign keep
 	// historic centered behavior.
-	x, y := preserveAlignFractions(0)
+	x, y := PreserveAlignFractions(0)
 	if x != 0.5 || y != 0.5 {
 		t.Errorf("zero-value align: got (%v,%v), want (0.5,0.5)", x, y)
 	}

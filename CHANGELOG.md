@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Nested `<svg>` elements now establish a child viewport. `x`, `y`,
+  `width`, `height` accept user-space units or percentages of the
+  parent viewport; an inner `viewBox` (with `preserveAspectRatio`
+  meet/slice/none) composes onto the cascaded transform from the
+  element's own `transform=` attr. Descendants inherit paint and
+  cascade through the wrapper. Previously the inner subtree was
+  dropped silently.
+- `gui.PreserveAlignFractions` exported (was `preserveAlignFractions`)
+  so `gui/svg` can resolve `preserveAspectRatio` align fractions
+  without duplicating the switch.
+
+### Hardened
+
+- Nested-`<svg>` viewport math sanitizes NaN, ±Inf, and oversized
+  inputs on `x`/`y`/`width`/`height`, `viewBox`, `parent.W`/`parent.H`,
+  and the resulting scale/translate so a poisoned attribute cannot
+  propagate non-finite values into the path transform. Percentages
+  parse via float64 so `1e30%` no longer truncates to ±Inf before
+  scaling.
+
 ### Fixed
 
 - `<text>` now routes through the CSS cascade like shapes, so author

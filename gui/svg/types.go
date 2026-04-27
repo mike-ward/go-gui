@@ -391,6 +391,13 @@ type parseState struct {
 	// state.
 	hoveredID string
 	focusedID string
+	// curViewport is the active SVG viewport in user-space units.
+	// parseSvgWith seeds it from the root <svg>; nested <svg> pushes
+	// the inner viewBox (or viewport rect when no viewBox) and the
+	// switch case restores the previous value on return so x/y/w/h
+	// percentages on a deeper nested viewport resolve against the
+	// correct ancestor.
+	curViewport viewportRect
 }
 
 // elementStyle holds common style properties extracted from an SVG element.
