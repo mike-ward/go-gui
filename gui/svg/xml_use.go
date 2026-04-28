@@ -61,9 +61,21 @@ type useCtx struct {
 	nextClipID int
 }
 
+// mintUseClipID returns a fresh synth clipPath id that does not
+// collide with any author-supplied id already in the document.
+// Without the idIndex check an authored id="__use_clip_1" would
+// either shadow the synth rect (redirecting authored url(#…)
+// references) or be shadowed by it. Synth ids are monotonically
+// numbered so two synth ids can never collide with each other —
+// only authored collisions need to be skipped.
 func (c *useCtx) mintUseClipID() string {
-	c.nextClipID++
-	return synthUseClipPrefix + strconv.Itoa(c.nextClipID)
+	for {
+		c.nextClipID++
+		id := synthUseClipPrefix + strconv.Itoa(c.nextClipID)
+		if _, taken := c.idIndex[id]; !taken {
+			return id
+		}
+	}
 }
 
 // makeUseClipDefs wraps the synthesized <clipPath> nodes in a single

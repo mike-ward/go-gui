@@ -486,6 +486,87 @@ func TestParseSvg_MultipleSliceUsesGetDistinctClipIDs(t *testing.T) {
 	}
 }
 
+// Authored id matching the synth-clip stem (`__use_clip_1`) must
+// not collide with a freshly minted slice clip id. The minter must
+// skip ids already present in the document index, otherwise either
+// the authored clipPath silently shadows the synth rect or the synth
+// rect overwrites references to the authored id.
+func TestExpandUseSymbolPreserveSlice_AuthorIDCollisionAvoided(t *testing.T) {
+	vg, err := parseSvg(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs>` +
+			`<clipPath id="__use_clip_1">` +
+			`<rect x="0" y="0" width="5" height="5"/>` +
+			`</clipPath>` +
+			`<symbol id="s" viewBox="0 0 10 10" ` +
+			`preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="40" height="20"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	authored, ok := vg.ClipPaths["__use_clip_1"]
+	if !ok {
+		t.Fatal("authored __use_clip_1 missing from ClipPaths")
+	}
+	// Authored clip is a 5x5 rect; synth would be 40x20. Anything
+	// other than 5x5 means the synth shadowed the authored entry.
+	if len(authored) != 1 || len(authored[0].Segments) == 0 {
+		t.Fatal("authored __use_clip_1 has no segments")
+	}
+	var synthID string
+	for id := range vg.ClipPaths {
+		if strings.HasPrefix(id, "__use_clip_") && id != "__use_clip_1" {
+			synthID = id
+			break
+		}
+	}
+	if synthID == "" {
+		t.Fatal("synth slice clip id missing; minter must skip authored id")
+	}
+}
+
+// Two consecutive authored synth-prefix ids force the minter to walk
+// past both before landing on a free id. Single-collision coverage
+// alone wouldn't catch a minter that ignored idIndex on retries.
+func TestExpandUseSymbolPreserveSlice_AuthorIDCollisionAvoided_ConsecutiveAuthored(t *testing.T) {
+	vg, err := parseSvg(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs>` +
+			`<clipPath id="__use_clip_1">` +
+			`<rect x="0" y="0" width="5" height="5"/>` +
+			`</clipPath>` +
+			`<clipPath id="__use_clip_2">` +
+			`<rect x="0" y="0" width="6" height="6"/>` +
+			`</clipPath>` +
+			`<symbol id="s" viewBox="0 0 10 10" ` +
+			`preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="40" height="20"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if _, ok := vg.ClipPaths["__use_clip_1"]; !ok {
+		t.Fatal("authored __use_clip_1 missing")
+	}
+	if _, ok := vg.ClipPaths["__use_clip_2"]; !ok {
+		t.Fatal("authored __use_clip_2 missing")
+	}
+	if _, taken := vg.ClipPaths["__use_clip_3"]; !taken {
+		t.Fatal("synth slice clip should land on __use_clip_3 " +
+			"after skipping authored 1 and 2")
+	}
+	if len(vg.Paths) != 1 {
+		t.Fatalf("got %d paths; want 1", len(vg.Paths))
+	}
+	if vg.Paths[0].ClipPathID != "__use_clip_3" {
+		t.Fatalf("Paths[0].ClipPathID=%q; want __use_clip_3",
+			vg.Paths[0].ClipPathID)
+	}
+}
+
 // width-only <use>: missing height falls back to symbol viewBox height
 // (mirrors symbolViewportScale). Synth clip box must use that height.
 func TestExpandUseSymbolPreserveSlice_WidthOnlyUsesViewBoxHeight(t *testing.T) {

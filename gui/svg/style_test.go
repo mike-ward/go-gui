@@ -741,6 +741,36 @@ func TestBakePathOpacity_SentinelAlphaPromoted(t *testing.T) {
 	}
 }
 
+// isValidClipOrFilterValue is the cascade gate that decides whether
+// a clip-path/filter declaration counts as authored. Direct unit
+// coverage for edges that parseSvg-level tests reach only indirectly.
+func TestIsValidClipOrFilterValue_EdgeCases(t *testing.T) {
+	cases := []struct {
+		in   string
+		want bool
+	}{
+		{"", false},
+		{"   ", false},
+		{"none", true},
+		{"NONE", true},
+		{"  None  ", true},
+		{"url(#a)", true},
+		{"  url(#abc) ", true},
+		{"url()", false},
+		{"url(#)", false},
+		{"url(#a", false},
+		{"bogus", false},
+		{"inherit", false},
+		{"initial", false},
+	}
+	for _, c := range cases {
+		if got := isValidClipOrFilterValue(c.in); got != c.want {
+			t.Errorf("isValidClipOrFilterValue(%q)=%v; want %v",
+				c.in, got, c.want)
+		}
+	}
+}
+
 func TestBakePathOpacity_NaNInputClampsSafely(t *testing.T) {
 	// Hostile NaN opacity must not reach applyOpacity's uint8 cast.
 	// Phase C: opacity is now sourced from the cascade-resolved

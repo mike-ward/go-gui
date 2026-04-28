@@ -244,3 +244,89 @@ func TestParseSvg_FilterFromInlineStyleOnRedeclaringChildGetsOwnGroup(t *testing
 			vg.FilteredGroups[0].GroupKey)
 	}
 }
+
+// Invalid filter declaration (e.g. `filter: bogus`) must be ignored
+// per CSS rather than allocating its own per-occurrence group buffer.
+// Regression: the cascade used to mark the child as authored on
+// property name alone, which then minted a fresh FilterGroupKey for
+// a declaration that contributed no actual filter.
+func TestParseSvg_InvalidFilterDeclarationIgnored(t *testing.T) {
+	vg, err := parseSvg(`<svg viewBox="0 0 100 100">
+		<defs>
+			<filter id="b"><feGaussianBlur stdDeviation="1"/></filter>
+		</defs>
+		<g filter="url(#b)">
+			<rect id="inh"    x="0"  y="0" width="10" height="10"/>
+			<rect id="bogus" x="20" y="0" width="10" height="10"
+				style="filter: bogus"/>
+		</g>
+	</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if got := len(vg.FilteredGroups); got != 1 {
+		t.Fatalf("FilteredGroups=%d; invalid filter must be ignored, "+
+			"both rects share inherited parent group → want 1", got)
+	}
+}
+
+// `clip-path: url()` (empty id, parseFillURL fails) must be ignored
+// the same as `clip-path: bogus`. Without the value-validation gate,
+// the cascade would still mark the declaration authored even though
+// no usable id was supplied.
+func TestParseSvg_EmptyURLClipPathTreatedAsInvalid(t *testing.T) {
+	vg, err := parseSvg(`<svg viewBox="0 0 100 100">
+		<defs>
+			<clipPath id="cp"><rect x="0" y="0" width="50" height="50"/></clipPath>
+		</defs>
+		<g clip-path="url(#cp)">
+			<svg x="0" y="0" width="40" height="40"
+				style="clip-path: url()">
+				<rect x="0" y="0" width="100" height="100"/>
+			</svg>
+		</g>
+	</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(vg.Paths) == 0 {
+		t.Fatal("no paths parsed")
+	}
+	got := vg.Paths[0].ClipPathID
+	if got == "" || got == "cp" {
+		t.Fatalf("ClipPathID=%q; nested svg with empty url() clip-path "+
+			"must receive synth viewport clip", got)
+	}
+}
+
+// Invalid clip-path declaration on a nested <svg> must not suppress
+// the synthesized viewport clip. Regression: AuthoredClipPath was
+// flipped on property name alone, so an invalid value left the flag
+// set while ClipPathID remained inherited from the parent — the
+// nested-svg synth-clip gate read that as "author already clipped"
+// and skipped the spec-required viewport clip.
+func TestParseSvg_InvalidClipPathOnNestedSvgKeepsViewportClip(t *testing.T) {
+	vg, err := parseSvg(`<svg viewBox="0 0 100 100">
+		<defs>
+			<clipPath id="cp"><rect x="0" y="0" width="50" height="50"/></clipPath>
+		</defs>
+		<g clip-path="url(#cp)">
+			<svg x="0" y="0" width="40" height="40"
+				style="clip-path: bogus">
+				<rect x="0" y="0" width="100" height="100"/>
+			</svg>
+		</g>
+	</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(vg.Paths) == 0 {
+		t.Fatal("no paths parsed")
+	}
+	got := vg.Paths[0].ClipPathID
+	if got == "" || got == "cp" {
+		t.Fatalf("ClipPathID=%q; nested svg with invalid clip-path "+
+			"must receive synth viewport clip (not inherited cp, not empty)",
+			got)
+	}
+}

@@ -682,6 +682,20 @@ func findAttrOrStyle(elem, name string) (string, bool) {
 	return findAttr(elem, name)
 }
 
+// isValidClipOrFilterValue reports whether v is a parseable
+// clip-path/filter declaration value that the cascade should treat
+// as authored. Accepts url(#id) references and the "none" keyword;
+// rejects bogus tokens so an invalid declaration is ignored rather
+// than promoted to authored state.
+func isValidClipOrFilterValue(v string) bool {
+	t := strings.TrimSpace(v)
+	if strings.EqualFold(t, "none") {
+		return true
+	}
+	_, ok := parseFillURL(t)
+	return ok
+}
+
 // parseFillURL extracts gradient ID from fill="url(#id)".
 func parseFillURL(fill string) (string, bool) {
 	str := strings.TrimSpace(fill)
@@ -939,12 +953,6 @@ func computeStyle(
 		if d.CustomProp {
 			continue
 		}
-		switch d.Name {
-		case "clip-path":
-			out.AuthoredClipPath = true
-		case "filter":
-			authoredFilter = true
-		}
 		v := resolveVarRefs(d.Value, out.Vars)
 		if v == "" {
 			continue
@@ -955,6 +963,22 @@ func computeStyle(
 		}
 		if applyCSSAnimProp(d.Name, v, &out.Animation) {
 			continue
+		}
+		// Mark authored only when the declaration parses as a usable
+		// value (url(#id) or the "none" keyword). A bogus value like
+		// `clip-path: bogus` must be ignored per CSS, otherwise it
+		// would either suppress the synthesized nested-svg viewport
+		// clip (clip-path) or allocate a fresh per-occurrence filter
+		// group buffer (filter) without any actual filter applying.
+		switch d.Name {
+		case "clip-path":
+			if isValidClipOrFilterValue(v) {
+				out.AuthoredClipPath = true
+			}
+		case "filter":
+			if isValidClipOrFilterValue(v) {
+				authoredFilter = true
+			}
 		}
 		applyCSSProp(d.Name, v, &out)
 	}

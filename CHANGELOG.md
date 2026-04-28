@@ -82,6 +82,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   falling back to viewBox dims for missing `<use>` width/height; a
   hostile `viewBox="0 0 NaN Inf"` can no longer survive `<= 0`
   coercion and propagate into the clip rect.
+- Synthesized slice-clip ids (`__use_clip_N`) now skip any id
+  already present in the document index, so an authored
+  `id="__use_clip_1"` cannot silently shadow or be shadowed by the
+  synthesized rect. Synth ids remain monotonic so two synth ids
+  never collide with each other.
 
 ### Fixed
 
@@ -131,6 +136,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   symbol's viewport to fill the requested box via a composed
   `translate · scale · translate(-vbX,-vbY)` transform. Width/height
   were previously dropped, so callers could not size symbol reuses.
+- `clip-path` / `filter` declarations are now marked authored only
+  after the value resolves to a usable `url(#id)` reference or the
+  `none` keyword. Previously the cascade flipped the authored flag
+  on property name alone, so `clip-path: bogus` could suppress the
+  synthesized nested-`<svg>` viewport clip and `filter: bogus` could
+  allocate a fresh per-occurrence offscreen group buffer for a
+  declaration that contributed no actual filter.
 
 ### Security
 
