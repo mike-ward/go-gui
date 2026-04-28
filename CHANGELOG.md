@@ -87,6 +87,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `id="__use_clip_1"` cannot silently shadow or be shadowed by the
   synthesized rect. Synth ids remain monotonic so two synth ids
   never collide with each other.
+- `clampCycle` rejects NaN explicitly (NaN compares false against
+  both `<= 0` and `> maxCycleSec`, so it would otherwise fall through
+  unchanged into downstream cycle/floor math). `parseTimeValue`
+  layers `finiteF32` so `dur="NaN"` / `dur="1e9999s"` cannot reach
+  cycle math even if `parseF32` ever loosens.
+- `parseKeySplinesIfSpline` switches to `parseFloatStrict` and
+  rejects control points outside `[0, 1]`. `parseF32` would coerce
+  `NaN`/`Inf` tokens to 0 and slip past the range check, silently
+  producing wrong easing on hostile authoring.
+- `parseAnimateDashArrayElement` defers `flat` allocation until
+  stride is known from the first frame, sizing it to
+  `len(frames) × stride` instead of `len(frames) × SvgAnimDashArrayCap`
+  (4× less waste for the common stride=2 case).
+- `Parser.animatedScratch` pool is now bounded by
+  `maxAnimatedScratchCap` (4096) on both ends. `putAnimatedScratch`
+  rejects oversized buffers so one pathological frame cannot pin a
+  giant backing array; `getAnimatedScratch` clamps `minCap` so a
+  hostile SVG with synthesized millions of animated paths cannot
+  force a giant `make` per frame.
 
 ### Fixed
 

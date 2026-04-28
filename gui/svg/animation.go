@@ -339,6 +339,8 @@ func parseAnimateDashArrayElement(
 	if len(frames) > maxKeyframes {
 		frames = frames[:maxKeyframes]
 	}
+	// flat is sized at frames × stride once stride is known from the
+	// first frame, avoiding 4× over-allocation for the common stride=2.
 	var flat []float32
 	stride := -1
 	for _, f := range frames {
@@ -355,6 +357,7 @@ func parseAnimateDashArrayElement(
 		}
 		if stride < 0 {
 			stride = len(nums)
+			flat = make([]float32, 0, len(frames)*stride)
 		} else if len(nums) != stride {
 			return gui.SvgAnimation{}, false
 		}
@@ -758,6 +761,11 @@ const maxRepeatCountCycle = 1_000_000
 const maxCycleSec = float32(3600 * 24)
 
 func clampCycle(v float32) float32 {
+	// NaN compares false against both bounds below, so guard it
+	// explicitly. -Inf and +Inf fall through to the natural branches.
+	if math.IsNaN(float64(v)) {
+		return 0
+	}
 	if v <= 0 {
 		return 0
 	}
@@ -1070,18 +1078,25 @@ func propagateGlobalCycle(
 	}
 }
 
-// parseTimeValue converts a time string like "1.5s" or "200ms"
-// to seconds.
+// parseTimeValue converts a time string (e.g. "1.5s", "200ms") to
+// seconds. Negative passes through — CSS animation-delay uses it to
+// seek forward at start. Non-finite maps to 0.
 func parseTimeValue(s string) float32 {
 	s = strings.TrimSpace(s)
-	if strings.HasSuffix(s, "ms") {
-		return parseF32(s[:len(s)-2]) / 1000
+	var v float32
+	switch {
+	case strings.HasSuffix(s, "ms"):
+		v = parseF32(s[:len(s)-2]) / 1000
+	case strings.HasSuffix(s, "s"):
+		v = parseF32(s[:len(s)-1])
+	default:
+		// Bare number defaults to seconds per SVG spec.
+		v = parseF32(s)
 	}
-	if strings.HasSuffix(s, "s") {
-		return parseF32(s[:len(s)-1])
+	if !finiteF32(v) {
+		return 0
 	}
-	// Bare number defaults to seconds per SVG spec.
-	return parseF32(s)
+	return v
 }
 
 // parseSemicolonFloats splits a semicolon-separated string into
@@ -1330,7 +1345,13 @@ func parseKeySplinesIfSpline(elem string, nVals int) []float32 {
 			return nil
 		}
 		for _, q := range quads {
-			out = append(out, parseF32(q))
+			// Strict parse so "NaN"/"Inf" tokens reject the list
+			// instead of coercing to 0 and slipping past [0,1].
+			f, ok := parseFloatStrict(q)
+			if !ok || f < 0 || f > 1 {
+				return nil
+			}
+			out = append(out, f)
 		}
 	}
 	if len(out) != 4*segs {

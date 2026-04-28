@@ -32,6 +32,12 @@ type Parser struct {
 
 const maxParsedRetained = 512
 
+// maxAnimatedScratchCap bounds both the pool retention and the seed
+// capacity in getAnimatedScratch. A hostile SVG with millions of
+// synthesized animated paths would otherwise pin a giant backing
+// array in the pool and force one giant make() per frame.
+const maxAnimatedScratchCap = 4096
+
 type parserCacheEntry struct {
 	parsed *gui.SvgParsed
 	vg     *VectorGraphic
@@ -277,6 +283,14 @@ func collectAnimatedPaths(dst []VectorPath, src []VectorPath,
 }
 
 func (p *Parser) getAnimatedScratch(minCap int) []VectorPath {
+	// Bound seed cap so hostile minCap cannot force a giant make().
+	// append grows past the cap naturally when real usage exceeds it.
+	if minCap < 0 {
+		minCap = 0
+	}
+	if minCap > maxAnimatedScratchCap {
+		minCap = maxAnimatedScratchCap
+	}
 	if v := p.animatedScratch.Get(); v != nil {
 		if buf, ok := v.(*[]VectorPath); ok && cap(*buf) >= minCap {
 			return (*buf)[:0]
@@ -286,7 +300,7 @@ func (p *Parser) getAnimatedScratch(minCap int) []VectorPath {
 }
 
 func (p *Parser) putAnimatedScratch(buf []VectorPath) {
-	if cap(buf) == 0 {
+	if cap(buf) == 0 || cap(buf) > maxAnimatedScratchCap {
 		return
 	}
 	for i := range buf {
