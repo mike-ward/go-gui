@@ -106,6 +106,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   giant backing array; `getAnimatedScratch` clamps `minCap` so a
   hostile SVG with synthesized millions of animated paths cannot
   force a giant `make` per frame.
+- `findAttr` reverses the five entity escapes emitted by
+  `buildOpenTag` (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`) before
+  returning attribute values. `encoding/xml` decodes attribute
+  entities once, so without this reversal a legitimate `&` in an
+  attribute round-tripped as the literal sequence `&amp;` and
+  reached downstream parsers (color, url, id, transform) as
+  garbage. Unknown entities pass through unchanged; allocation
+  occurs only when at least one `&` is present.
+- `decodeSvgTree` now accumulates per-node CharData into a parallel
+  stack of `strings.Builder` frames instead of `top.Text += s` /
+  `last.Tail += s`. A hostile `<text>` body fragmented into many
+  small chunks (e.g. by sprinkling numeric entity refs) was O(N²)
+  under the prior incremental concat; the builder rewrite is linear.
+  Tail accumulation flushes to `Children[idx].Tail` before the next
+  sibling append so a slice grow cannot strand pending tail data.
 
 ### Fixed
 

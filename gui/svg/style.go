@@ -589,6 +589,50 @@ func isIdentityTransform(m [6]float32) bool {
 
 // --- Attribute extraction ---
 
+// unescapeAttrEntities reverses the five entity escapes emitted by
+// buildOpenTag's writeAttrEscaped. encoding/xml hands attribute values
+// back already entity-decoded, so a legitimate `&` (written as `&amp;`
+// in source) round-trips through buildOpenTag as `&amp;`. Downstream
+// parsers (color, url, id, transform, …) expect the decoded form, so
+// findAttr restores it before returning. Only the five escapes the
+// re-encoder produces are reversed; unknown entities pass through
+// unchanged. Allocates only when at least one `&` is present.
+func unescapeAttrEntities(s string) string {
+	if !strings.ContainsRune(s, '&') {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); {
+		if s[i] != '&' {
+			b.WriteByte(s[i])
+			i++
+			continue
+		}
+		switch {
+		case strings.HasPrefix(s[i:], "&amp;"):
+			b.WriteByte('&')
+			i += 5
+		case strings.HasPrefix(s[i:], "&lt;"):
+			b.WriteByte('<')
+			i += 4
+		case strings.HasPrefix(s[i:], "&gt;"):
+			b.WriteByte('>')
+			i += 4
+		case strings.HasPrefix(s[i:], "&quot;"):
+			b.WriteByte('"')
+			i += 6
+		case strings.HasPrefix(s[i:], "&#39;"):
+			b.WriteByte('\'')
+			i += 5
+		default:
+			b.WriteByte(s[i])
+			i++
+		}
+	}
+	return b.String()
+}
+
 // findAttr extracts an attribute value from raw element text.
 func findAttr(elem, name string) (string, bool) {
 	pos := 0
@@ -629,7 +673,7 @@ func findAttr(elem, name string) (string, bool) {
 			return "", false
 		}
 		if attrLen > 0 {
-			return elem[start : start+endIdx], true
+			return unescapeAttrEntities(elem[start : start+endIdx]), true
 		}
 		return "", false
 	}

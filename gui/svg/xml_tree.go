@@ -56,6 +56,20 @@ func decodeSvgTree(content string) (*xmlNode, error) {
 
 	var root *xmlNode
 	stack := make([]*xmlNode, 0, 16)
+	// Parallel builder stack avoids O(N²) string concatenation when a
+	// hostile <text> body is delivered as many small CharData chunks.
+	// pendingTailIdx tracks which child of the current node the next
+	// chunk of post-child CharData attaches to; -1 means "no pending
+	// tail yet". The builder is flushed into Children[idx].Tail at
+	// EndElement or before a new sibling append (which can reallocate
+	// the backing array and invalidate index targets).
+	type bldrFrame struct {
+		text           strings.Builder
+		leading        strings.Builder
+		tail           strings.Builder
+		pendingTailIdx int
+	}
+	bstack := make([]*bldrFrame, 0, 16)
 	elemCount := 0
 	depth := 0
 
@@ -100,17 +114,38 @@ func decodeSvgTree(content string) (*xmlNode, error) {
 				stack = append(stack, &n)
 			} else {
 				parent := stack[len(stack)-1]
+				pf := bstack[len(bstack)-1]
+				// Flush any pending tail before append: a grow of
+				// parent.Children invalidates pointer targets but not
+				// the index-based flush since we write before the
+				// append below.
+				if pf.pendingTailIdx >= 0 && pf.tail.Len() > 0 {
+					parent.Children[pf.pendingTailIdx].Tail = pf.tail.String()
+				}
+				pf.tail.Reset()
+				pf.pendingTailIdx = -1
 				parent.Children = append(parent.Children, n)
 				// Push pointer to the slot we just appended.
 				stack = append(stack, &parent.Children[len(parent.Children)-1])
 			}
+			bstack = append(bstack, &bldrFrame{pendingTailIdx: -1})
 		case xml.EndElement:
 			if len(stack) == 0 {
 				return nil, fmt.Errorf("svg: unbalanced close </%s>",
 					t.Name.Local)
 			}
 			top := stack[len(stack)-1]
+			pf := bstack[len(bstack)-1]
+			// Flush pending tail before this node finalizes; pendingTailIdx
+			// indexes into top.Children whose backing array is stable for
+			// the remainder of this scope.
+			if pf.pendingTailIdx >= 0 && pf.tail.Len() > 0 {
+				top.Children[pf.pendingTailIdx].Tail = pf.tail.String()
+			}
+			top.Text = pf.text.String()
+			top.Leading = pf.leading.String()
 			stack = stack[:len(stack)-1]
+			bstack = bstack[:len(bstack)-1]
 			depth--
 			if len(stack) == 0 {
 				// Finished the root element.
@@ -121,15 +156,24 @@ func decodeSvgTree(content string) (*xmlNode, error) {
 				continue
 			}
 			top := stack[len(stack)-1]
+			pf := bstack[len(bstack)-1]
 			s := string(t)
-			top.Text += s
+			pf.text.WriteString(s)
 			if len(top.Children) == 0 {
-				top.Leading += s
+				pf.leading.WriteString(s)
 			} else {
-				// Stash post-child char data on last child's tail so
-				// downstream walkers can replay in document order.
-				last := &top.Children[len(top.Children)-1]
-				last.Tail += s
+				// Tail belongs to the most recent child. If a previous
+				// pending tail targeted an earlier child (shouldn't
+				// happen — appends flush first — but defend anyway),
+				// flush it before retargeting.
+				curIdx := len(top.Children) - 1
+				if pf.pendingTailIdx >= 0 && pf.pendingTailIdx != curIdx &&
+					pf.tail.Len() > 0 {
+					top.Children[pf.pendingTailIdx].Tail = pf.tail.String()
+					pf.tail.Reset()
+				}
+				pf.pendingTailIdx = curIdx
+				pf.tail.WriteString(s)
 			}
 		case xml.Comment, xml.ProcInst, xml.Directive:
 			// Ignore.
