@@ -703,48 +703,6 @@ func parseFillURL(fill string) (string, bool) {
 	return "", false
 }
 
-// parseClipPathURL extracts clip path ID from clip-path="url(#id)".
-func parseClipPathURL(elem string) (string, bool) {
-	val, ok := findAttr(elem, "clip-path")
-	if !ok {
-		return "", false
-	}
-	hashPos := strings.IndexByte(val, '#')
-	if hashPos < 0 {
-		return "", false
-	}
-	endPos := strings.IndexByte(val[hashPos:], ')')
-	if endPos < 0 {
-		return "", false
-	}
-	endPos += hashPos
-	if endPos > hashPos+1 {
-		return val[hashPos+1 : endPos], true
-	}
-	return "", false
-}
-
-// parseFilterURL extracts filter ID from filter="url(#id)".
-func parseFilterURL(elem string) (string, bool) {
-	val, ok := findAttr(elem, "filter")
-	if !ok {
-		return "", false
-	}
-	hashPos := strings.IndexByte(val, '#')
-	if hashPos < 0 {
-		return "", false
-	}
-	endPos := strings.IndexByte(val[hashPos:], ')')
-	if endPos < 0 {
-		return "", false
-	}
-	endPos += hashPos
-	if endPos > hashPos+1 {
-		return val[hashPos+1 : endPos], true
-	}
-	return "", false
-}
-
 // --- Stroke attribute extraction ---
 
 func getTransform(elem string) [6]float32 {
@@ -891,6 +849,7 @@ var presAttrCascadeNames = []string{
 	"text-anchor",
 	"transform-origin",
 	"display", "visibility",
+	"clip-path", "filter",
 }
 
 // computeStyle walks one element under parent, returning the
@@ -930,19 +889,17 @@ func computeStyle(
 	// own cascade resolves to display:none.
 	out.Display = DisplayInline
 
-	if cid, ok := parseClipPathURL(elem); ok {
-		out.ClipPathID = cid
-	} else {
-		out.ClipPathID = parent.ClipPathID
-	}
-	if fid, ok := parseFilterURL(elem); ok {
-		out.FilterID = fid
-		state.nextFilterGroup++
-		out.FilterGroupKey = state.nextFilterGroup
-	} else {
-		out.FilterID = parent.FilterID
-		out.FilterGroupKey = parent.FilterGroupKey
-	}
+	// clip-path / filter participate in the cascade so CSS rules and
+	// inline style="" can set them, not only the bare attribute. Seed
+	// from parent (inherited); the cascade fold below overwrites when
+	// the element declares its own value via any origin. After the
+	// fold, a fresh FilterID allocates a new per-occurrence FilterGroupKey
+	// so two siblings sharing one filter render to two offscreen
+	// buffers (composite-z correctness).
+	out.ClipPathID = parent.ClipPathID
+	out.FilterID = parent.FilterID
+	out.FilterGroupKey = parent.FilterGroupKey
+	out.AuthoredClipPath = false
 	if gid, ok := findAttr(elem, "id"); ok {
 		out.GroupID = gid
 	} else {
@@ -977,9 +934,16 @@ func computeStyle(
 	css.SortCascade(decls)
 
 	out.Vars = collectVars(decls, parent.Vars)
+	var authoredFilter bool
 	for _, d := range decls {
 		if d.CustomProp {
 			continue
+		}
+		switch d.Name {
+		case "clip-path":
+			out.AuthoredClipPath = true
+		case "filter":
+			authoredFilter = true
 		}
 		v := resolveVarRefs(d.Value, out.Vars)
 		if v == "" {
@@ -995,6 +959,19 @@ func computeStyle(
 		applyCSSProp(d.Name, v, &out)
 	}
 	out.Opacity = parent.Opacity * out.Opacity
+	// Filter group key is per-occurrence: any element that declares
+	// filter via its own cascade origin gets a fresh key so two
+	// siblings allocate distinct offscreen buffers — even when the
+	// declared id matches the inherited one. Pure inheritance (no
+	// authored decl) shares the parent's group.
+	if authoredFilter {
+		if out.FilterID != "" {
+			state.nextFilterGroup++
+			out.FilterGroupKey = state.nextFilterGroup
+		} else {
+			out.FilterGroupKey = 0
+		}
+	}
 	return out
 }
 

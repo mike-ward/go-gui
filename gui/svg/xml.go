@@ -486,9 +486,13 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 
 		case "svg":
 			// Default overflow:hidden requires clipping descendants to
-			// the viewport rect. Author clip-path on the inner <svg>
-			// is overwritten — v1 limitation, intersection composition
-			// not implemented.
+			// the viewport rect. When the inner <svg> already carries
+			// an author clip-path, the spec requires intersection of
+			// the two regions; the renderer applies one mask per shape
+			// (no two-pass clip), so true intersection is unimplemented.
+			// Prefer the authored clip when present — it is the asset's
+			// explicit semantic, so preserving it loses overflow
+			// clipping rather than the author's intent.
 			gs := computeStyle(c.OpenTag, inherited, state, info,
 				ancestors, sibsForThis)
 			if gs.Display == DisplayNone {
@@ -499,7 +503,15 @@ func parseSvgContent(n *xmlNode, inherited ComputedStyle, depth int,
 				c.AttrMap, state.curViewport)
 			gs.Transform = matrixMultiply(gs.Transform, viewportTx)
 			savedVP := state.curViewport
-			if state.vg != nil && len(c.Children) > 0 && outerVP.clippable() {
+			// Authored = this element declared clip-path via any cascade
+			// origin (presentation attr / CSS / inline style), as
+			// opposed to inheriting from the parent. Inner nested <svg>s
+			// without their own clip still receive a fresh synth clip
+			// (innermost wins). Catches the "redeclared same id as
+			// parent" case that pure value comparison would miss.
+			authoredClip := gs.AuthoredClipPath && gs.ClipPathID != ""
+			if !authoredClip && state.vg != nil &&
+				len(c.Children) > 0 && outerVP.clippable() {
 				cid := state.synthNestedClipID()
 				state.vg.ClipPaths[cid] = []VectorPath{{
 					Segments: segmentsForRect(

@@ -405,20 +405,6 @@ func TestStyleParseFillURLNotURL(t *testing.T) {
 	}
 }
 
-func TestStyleParseClipPathURL(t *testing.T) {
-	id, ok := parseClipPathURL(`<g clip-path="url(#clip1)">`)
-	if !ok || id != "clip1" {
-		t.Fatalf("expected 'clip1', got %q ok=%v", id, ok)
-	}
-}
-
-func TestStyleParseFilterURL(t *testing.T) {
-	id, ok := parseFilterURL(`<g filter="url(#blur1)">`)
-	if !ok || id != "blur1" {
-		t.Fatalf("expected 'blur1', got %q ok=%v", id, ok)
-	}
-}
-
 // --- Transform parsing ---
 
 func TestStyleMatrixMultiplyIdentity(t *testing.T) {

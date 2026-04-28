@@ -24,10 +24,18 @@ const maxUseDepth = 8
 // hundred-million-node tree before any later pass can reject it.
 const maxUseExpandClones = maxElements
 
+// synthUseClipPrefix is the id stem for clipPaths minted by
+// mintUseSliceClipID. Mirrors synthNestedClipPrefix in xml_nested_svg.go.
+const synthUseClipPrefix = "__use_clip_"
+
 // expandUseElements rewrites root in place: every <use href="#id">
 // element is replaced with a synthesized <g> that wraps a clone of
 // the referenced subtree. The clone has its id stripped so the
-// post-expansion tree carries no duplicate ids.
+// post-expansion tree carries no duplicate ids. Use targets that
+// require a clip-to-use-box (a <symbol> referenced via <use> with
+// preserveAspectRatio="... slice") get a synthesized <clipPath>
+// emitted into a defs node appended to root, so spec-required slice
+// cropping holds.
 func expandUseElements(root *xmlNode) {
 	if root == nil || !hasUseElement(root) {
 		return
@@ -36,7 +44,37 @@ func expandUseElements(root *xmlNode) {
 	indexByID(root, idIndex)
 	visited := make(map[string]struct{}, 4)
 	budget := maxUseExpandClones
-	expandUseRec(root, idIndex, visited, 0, &budget)
+	ctx := &useCtx{idIndex: idIndex, visited: visited, budget: &budget}
+	expandUseRec(root, ctx, 0)
+	if len(ctx.clipDefs) > 0 {
+		root.Children = append(root.Children, makeUseClipDefs(ctx.clipDefs))
+	}
+}
+
+// useCtx threads expansion state (id index, cycle set, clone budget)
+// plus a registry of synthesized use-box clipPaths.
+type useCtx struct {
+	idIndex    map[string]*xmlNode
+	visited    map[string]struct{}
+	budget     *int
+	clipDefs   []xmlNode
+	nextClipID int
+}
+
+func (c *useCtx) mintUseClipID() string {
+	c.nextClipID++
+	return synthUseClipPrefix + strconv.Itoa(c.nextClipID)
+}
+
+// makeUseClipDefs wraps the synthesized <clipPath> nodes in a single
+// <defs> for parseDefsClipPaths to pick up via its ordinary walk.
+func makeUseClipDefs(clipPaths []xmlNode) xmlNode {
+	defs := xmlNode{
+		Name:     "defs",
+		Children: clipPaths,
+	}
+	defs.OpenTag = buildOpenTag("defs", nil, false)
+	return defs
 }
 
 // hasUseElement returns true if the subtree contains any <use> node.
@@ -66,10 +104,9 @@ func indexByID(n *xmlNode, out map[string]*xmlNode) {
 	}
 }
 
-func expandUseRec(n *xmlNode, idIndex map[string]*xmlNode,
-	visited map[string]struct{}, depth int, budget *int) {
+func expandUseRec(n *xmlNode, ctx *useCtx, depth int) {
 	for i := range n.Children {
-		if *budget <= 0 {
+		if *ctx.budget <= 0 {
 			return
 		}
 		c := &n.Children[i]
@@ -85,20 +122,20 @@ func expandUseRec(n *xmlNode, idIndex map[string]*xmlNode,
 				continue
 			}
 			id := href[1:]
-			if _, cyc := visited[id]; cyc {
+			if _, cyc := ctx.visited[id]; cyc {
 				continue
 			}
-			target, ok := idIndex[id]
+			target, ok := ctx.idIndex[id]
 			if !ok {
 				continue
 			}
-			visited[id] = struct{}{}
-			*c = synthesizeUseGroup(c, target, budget)
-			expandUseRec(c, idIndex, visited, depth+1, budget)
-			delete(visited, id)
+			ctx.visited[id] = struct{}{}
+			*c = synthesizeUseGroup(c, target, ctx)
+			expandUseRec(c, ctx, depth+1)
+			delete(ctx.visited, id)
 			continue
 		}
-		expandUseRec(c, idIndex, visited, depth, budget)
+		expandUseRec(c, ctx, depth)
 	}
 }
 
@@ -108,15 +145,15 @@ func expandUseRec(n *xmlNode, idIndex map[string]*xmlNode,
 // translate(x,y) transform composed with any author-supplied
 // transform on the <use>. <symbol> targets contribute their children;
 // other targets are inlined as a single cloned subtree.
-func synthesizeUseGroup(useNode, target *xmlNode, budget *int) xmlNode {
+func synthesizeUseGroup(useNode, target *xmlNode, ctx *useCtx) xmlNode {
 	x := useNode.AttrMap["x"]
 	y := useNode.AttrMap["y"]
 
 	var children []xmlNode
 	if target.Name == "symbol" {
-		children = cloneChildrenForUse(target.Children, budget)
+		children = cloneChildrenForUse(target.Children, ctx.budget)
 	} else {
-		clone := cloneNode(target, budget)
+		clone := cloneNode(target, ctx.budget)
 		stripID(&clone)
 		children = []xmlNode{clone}
 	}
@@ -153,6 +190,17 @@ func synthesizeUseGroup(useNode, target *xmlNode, budget *int) xmlNode {
 		}
 	}
 
+	if cid, ok := mintUseSliceClipID(useNode, target, ctx); ok {
+		// Authored clip-path on the <use> wins per cascade; only set
+		// the synth clip when the <use> doesn't already declare one.
+		if _, has := gAttrMap["clip-path"]; !has {
+			ref := "url(#" + cid + ")"
+			gAttrMap["clip-path"] = ref
+			gAttrs = append(gAttrs,
+				xmlAttr{Name: "clip-path", Value: ref})
+		}
+	}
+
 	g := xmlNode{
 		Name:     "g",
 		Attrs:    gAttrs,
@@ -161,6 +209,111 @@ func synthesizeUseGroup(useNode, target *xmlNode, budget *int) xmlNode {
 	}
 	g.OpenTag = buildOpenTag(g.Name, g.Attrs, false)
 	return g
+}
+
+// mintUseSliceClipID emits a synth <clipPath> covering the <use>'s
+// (x, y, width, height) box when the target is a <symbol> with
+// preserveAspectRatio="... slice" — the SVG spec requires that
+// content overflowing the use box be clipped, otherwise slice
+// scaling produces visible overflow. Returns the synth clip id
+// (already registered in ctx.clipDefs) and ok=true when a clip
+// applies. The clipPath default clipPathUnits="userSpaceOnUse"
+// resolves the rect in the parent's coordinate system, matching the
+// space the <g>'s clip-path is referenced from.
+func mintUseSliceClipID(
+	useNode, target *xmlNode, ctx *useCtx,
+) (string, bool) {
+	if useNode == nil || target == nil || target.Name != "symbol" {
+		return "", false
+	}
+	_, slice := effectivePreserveAspectRatio(target)
+	if !slice {
+		return "", false
+	}
+	// Use box dimensions: mirror symbolViewportScale's fallback so the
+	// clip rect matches the box the same code path scales content into.
+	// When width/height absent on the <use>, fall back to the symbol's
+	// viewBox dim (scale on that axis = 1, but the other axis can still
+	// overflow under slice scaling — the clip still has to bound it).
+	useW := useNode.AttrMap["width"]
+	useH := useNode.AttrMap["height"]
+	if useW == "" && useH == "" {
+		return "", false
+	}
+	if hasPercent(useW) || hasPercent(useH) {
+		return "", false
+	}
+	vb := target.AttrMap["viewBox"]
+	if vb == "" {
+		vb = target.AttrMap["viewbox"]
+	}
+	vbNums := parseNumberList(vb)
+	// `<= 0` admits NaN; reject explicitly so an Inf/NaN viewBox never
+	// flows into the fallback below. Also bound vb width/height to
+	// boundedScale so downstream rect coords stay finite.
+	if len(vbNums) < 4 ||
+		!finiteF32(vbNums[2]) || !finiteF32(vbNums[3]) ||
+		vbNums[2] <= 0 || vbNums[3] <= 0 ||
+		!boundedScale(vbNums[2]) || !boundedScale(vbNums[3]) {
+		return "", false
+	}
+	uw := parseLength(useW)
+	uh := parseLength(useH)
+	if useW == "" {
+		uw = vbNums[2]
+	}
+	if useH == "" {
+		uh = vbNums[3]
+	}
+	if !(uw > 0) || !(uh > 0) || !boundedScale(uw) || !boundedScale(uh) {
+		return "", false
+	}
+	x := useNode.AttrMap["x"]
+	y := useNode.AttrMap["y"]
+	if hasPercent(x) || hasPercent(y) {
+		return "", false
+	}
+	tx := parseLength(x)
+	ty := parseLength(y)
+	if !boundedScale(tx) || !boundedScale(ty) {
+		return "", false
+	}
+
+	cid := ctx.mintUseClipID()
+	xs, ys := f32String(tx), f32String(ty)
+	ws, hs := f32String(uw), f32String(uh)
+	rect := xmlNode{
+		Name:      "rect",
+		SelfClose: true,
+	}
+	rect.Attrs = []xmlAttr{
+		{Name: "x", Value: xs},
+		{Name: "y", Value: ys},
+		{Name: "width", Value: ws},
+		{Name: "height", Value: hs},
+	}
+	rect.AttrMap = map[string]string{
+		"x":      xs,
+		"y":      ys,
+		"width":  ws,
+		"height": hs,
+	}
+	rect.OpenTag = buildOpenTag(rect.Name, rect.Attrs, true)
+
+	cp := xmlNode{
+		Name:     "clipPath",
+		Children: []xmlNode{rect},
+	}
+	cp.Attrs = []xmlAttr{{Name: "id", Value: cid}}
+	cp.AttrMap = map[string]string{"id": cid}
+	cp.OpenTag = buildOpenTag(cp.Name, cp.Attrs, false)
+	ctx.clipDefs = append(ctx.clipDefs, cp)
+	return cid, true
+}
+
+func f32String(v float32) string {
+	var buf [32]byte
+	return string(strconv.AppendFloat(buf[:0], float64(v), 'f', -1, 32))
 }
 
 // positioningTransform returns the SVG transform string that places
@@ -178,8 +331,10 @@ func synthesizeUseGroup(useNode, target *xmlNode, budget *int) xmlNode {
 // xMidYMid meet, so authors who relied on stretch must opt in via
 // preserveAspectRatio="none" on the symbol.
 //
-// Slice scaling uses uniform max(sx,sy). TODO: emit clip-to-use-box
-// (spec requires it; without the clip, slice content can overflow).
+// Slice scaling uses uniform max(sx,sy). The accompanying
+// clip-to-use-box that the SVG spec requires is emitted by
+// mintUseSliceClipID via expandUseElements, so slice content can't
+// overflow the requested width/height.
 //
 // Parses x/y numerically rather than splicing raw author strings into
 // the transform attribute: `<use x="0)scale(99)">` would otherwise
@@ -258,7 +413,7 @@ func writeF32(b *strings.Builder, v float32) {
 // Default is xMidYMid meet (SVG 1.1): uniform min-scale + center.
 // preserveAspectRatio="none" on the symbol opts into the legacy
 // independent-axis stretch. Slice scaling uses uniform max-scale; the
-// accompanying clip-to-box is unimplemented (overflow not enforced).
+// accompanying clip-to-box is emitted by mintUseSliceClipID.
 //
 // ok is false when the target is not a <symbol>, when the symbol has
 // no usable viewBox, when use width/height are missing or

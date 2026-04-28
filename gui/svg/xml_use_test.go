@@ -340,15 +340,10 @@ func TestExpandUseSymbolPreserveXMinYMin(t *testing.T) {
 	}
 }
 
-// KNOWN GAP — clip-to-use-box unimplemented for slice scaling.
-// xMidYMid slice produces uniform max-scale + center alignment, which
-// this test verifies. Spec also requires content to be clipped to the
-// <use> width/height box — currently the synth <g> emits no
-// clip-path, so oversize content overflows. Will fix alongside the
-// nested-svg clip intersection (TODOIntersect) when the clip-mask
-// renderer lands. Intent-correct geometry is closer to spec than the
-// previous unconditional stretch, so this is shipped as-is.
-func TestExpandUseSymbolPreserveSlice_TODOClipToBox(t *testing.T) {
+// xMidYMid slice produces uniform max-scale + center alignment, plus
+// a synth clipPath constraining content to the use box (spec
+// requirement; without the clip, slice content would overflow).
+func TestExpandUseSymbolPreserveSlice(t *testing.T) {
 	root, err := decodeSvgTree(
 		`<svg viewBox="0 0 100 100">` +
 			`<defs><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMidYMid slice"><rect width="10" height="10"/></symbol></defs>` +
@@ -369,6 +364,236 @@ func TestExpandUseSymbolPreserveSlice_TODOClipToBox(t *testing.T) {
 	}
 	if !strings.Contains(tr, "scale(4)") {
 		t.Fatalf("missing uniform scale(4) for slice: %q", tr)
+	}
+	cp := g.AttrMap["clip-path"]
+	if !strings.HasPrefix(cp, "url(#__use_clip_") {
+		t.Fatalf("expected synth use-box clip-path on <g>; got %q", cp)
+	}
+}
+
+// Slice scaling end-to-end: the synth use-box clipPath must reach
+// vg.ClipPaths and the inlined shape must reference it.
+func TestParseSvg_UseSymbolPreserveSliceClipsToBox(t *testing.T) {
+	vg, err := parseSvg(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="20" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var clipID string
+	for id := range vg.ClipPaths {
+		if strings.HasPrefix(id, "__use_clip_") {
+			clipID = id
+			break
+		}
+	}
+	if clipID == "" {
+		t.Fatal("expected a __use_clip_* entry in vg.ClipPaths")
+	}
+	if len(vg.Paths) == 0 {
+		t.Fatal("no paths from inlined symbol")
+	}
+	if vg.Paths[0].ClipPathID != clipID {
+		t.Fatalf("inlined shape ClipPathID=%q; want %q",
+			vg.Paths[0].ClipPathID, clipID)
+	}
+}
+
+// preserveAspectRatio="meet" (default) does NOT need the use-box clip
+// because uniform min-scale leaves content inside the box. Confirm
+// no synth clip is emitted in that case.
+func TestExpandUseSymbolPreserveMeet_NoUseBoxClip(t *testing.T) {
+	root, err := decodeSvgTree(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="20" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	expandUseElements(root)
+	g := findFirstByName(root, "g")
+	if g == nil {
+		t.Fatal("expected synthesized <g>")
+	}
+	if cp := g.AttrMap["clip-path"]; cp != "" {
+		t.Fatalf("meet mode must not synth clip; got clip-path=%q", cp)
+	}
+}
+
+// Author clip-path on the <use> itself wins; synth use-box clip must
+// not overwrite it (cascade origin precedence).
+func TestExpandUseSymbolPreserveSlice_AuthorClipOnUseSuppressesSynth(t *testing.T) {
+	root, err := decodeSvgTree(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs>` +
+			`<clipPath id="author"><rect width="50" height="50"/></clipPath>` +
+			`<symbol id="s" viewBox="0 0 10 10" preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="10"/></symbol>` +
+			`</defs>` +
+			`<use href="#s" x="0" y="0" width="20" height="40" ` +
+			`clip-path="url(#author)"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	expandUseElements(root)
+	g := findFirstByName(root, "g")
+	if g == nil {
+		t.Fatal("expected synthesized <g>")
+	}
+	if cp := g.AttrMap["clip-path"]; cp != "url(#author)" {
+		t.Fatalf("author clip-path should win; got %q", cp)
+	}
+}
+
+// Two slice <use> elements sharing one symbol must each mint a
+// distinct __use_clip_N id — collision would make one shape clip to
+// the other's box.
+func TestParseSvg_MultipleSliceUsesGetDistinctClipIDs(t *testing.T) {
+	vg, err := parseSvg(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 10 10" ` +
+			`preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="20" height="40"/>` +
+			`<use href="#s" x="50" y="0" width="40" height="20"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var ids []string
+	for id := range vg.ClipPaths {
+		if strings.HasPrefix(id, "__use_clip_") {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) != 2 {
+		t.Fatalf("got %d __use_clip_* entries; want 2 (one per <use>)", len(ids))
+	}
+	if ids[0] == ids[1] {
+		t.Fatalf("clip ids collide: %q", ids[0])
+	}
+	if len(vg.Paths) != 2 {
+		t.Fatalf("got %d paths; want 2", len(vg.Paths))
+	}
+	if vg.Paths[0].ClipPathID == vg.Paths[1].ClipPathID {
+		t.Fatalf("paths reference same clip id %q; each <use> should have own",
+			vg.Paths[0].ClipPathID)
+	}
+}
+
+// width-only <use>: missing height falls back to symbol viewBox height
+// (mirrors symbolViewportScale). Synth clip box must use that height.
+func TestExpandUseSymbolPreserveSlice_WidthOnlyUsesViewBoxHeight(t *testing.T) {
+	vg, err := parseSvg(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 10 7" ` +
+			`preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="7"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var clipID string
+	for id := range vg.ClipPaths {
+		if strings.HasPrefix(id, "__use_clip_") {
+			clipID = id
+		}
+	}
+	if clipID == "" {
+		t.Fatal("expected synth __use_clip_* with width-only <use>")
+	}
+	rect := vg.ClipPaths[clipID][0]
+	w := rect.Segments[1].Points[0] - rect.Segments[0].Points[0]
+	h := rect.Segments[2].Points[1] - rect.Segments[1].Points[1]
+	if w != 40 {
+		t.Errorf("clip width=%v; want 40 (use width)", w)
+	}
+	if h != 7 {
+		t.Errorf("clip height=%v; want 7 (viewBox fallback)", h)
+	}
+}
+
+// height-only <use>: missing width falls back to symbol viewBox width.
+func TestExpandUseSymbolPreserveSlice_HeightOnlyUsesViewBoxWidth(t *testing.T) {
+	vg, err := parseSvg(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 5 10" ` +
+			`preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="5" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var clipID string
+	for id := range vg.ClipPaths {
+		if strings.HasPrefix(id, "__use_clip_") {
+			clipID = id
+		}
+	}
+	if clipID == "" {
+		t.Fatal("expected synth __use_clip_* with height-only <use>")
+	}
+	rect := vg.ClipPaths[clipID][0]
+	w := rect.Segments[1].Points[0] - rect.Segments[0].Points[0]
+	h := rect.Segments[2].Points[1] - rect.Segments[1].Points[1]
+	if w != 5 {
+		t.Errorf("clip width=%v; want 5 (viewBox fallback)", w)
+	}
+	if h != 40 {
+		t.Errorf("clip height=%v; want 40 (use height)", h)
+	}
+}
+
+// NaN viewBox dimensions must be rejected by mintUseSliceClipID — no
+// synth clip emitted, expansion still produces the <g>.
+func TestExpandUseSymbolPreserveSlice_NaNViewBoxRejected(t *testing.T) {
+	root, err := decodeSvgTree(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 NaN NaN" ` +
+			`preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="20" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	expandUseElements(root)
+	g := findFirstByName(root, "g")
+	if g == nil {
+		t.Fatal("expected synthesized <g>")
+	}
+	if cp := g.AttrMap["clip-path"]; cp != "" {
+		t.Fatalf("NaN viewBox must not produce clip; got %q", cp)
+	}
+}
+
+// Inf viewBox dimensions likewise rejected — boundedScale + finiteF32
+// gate fails fast in the harden path.
+func TestExpandUseSymbolPreserveSlice_InfViewBoxRejected(t *testing.T) {
+	root, err := decodeSvgTree(
+		`<svg viewBox="0 0 100 100">` +
+			`<defs><symbol id="s" viewBox="0 0 Inf 10" ` +
+			`preserveAspectRatio="xMidYMid slice">` +
+			`<rect width="10" height="10"/></symbol></defs>` +
+			`<use href="#s" x="0" y="0" width="20" height="40"/>` +
+			`</svg>`)
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	expandUseElements(root)
+	g := findFirstByName(root, "g")
+	if g == nil {
+		t.Fatal("expected synthesized <g>")
+	}
+	if cp := g.AttrMap["clip-path"]; cp != "" {
+		t.Fatalf("Inf viewBox must not produce clip; got %q", cp)
 	}
 }
 

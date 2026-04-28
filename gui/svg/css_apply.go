@@ -97,6 +97,15 @@ func applyCSSProp(name, value string, out *ComputedStyle) {
 	if v == "" {
 		return
 	}
+	if applyCSSPaintProp(name, v, out) {
+		return
+	}
+	applyCSSLayoutProp(name, v, out)
+}
+
+// applyCSSPaintProp handles paint, stroke, and opacity declarations.
+// Returns true when name matched and the property was folded.
+func applyCSSPaintProp(name, v string, out *ComputedStyle) bool {
 	switch name {
 	case "fill":
 		applyPaintProp(v, &out.Fill, &out.FillSet, &out.FillGradient)
@@ -128,6 +137,16 @@ func applyCSSProp(name, value string, out *ComputedStyle) {
 		} else {
 			out.FillRule = FillRuleNonzero
 		}
+	default:
+		return false
+	}
+	return true
+}
+
+// applyCSSLayoutProp handles font/text, display/visibility, transform
+// origin, and the clip-path/filter url() references.
+func applyCSSLayoutProp(name, v string, out *ComputedStyle) {
+	switch name {
 	case "font-family":
 		out.FontFamily = v
 	case "font-size":
@@ -152,6 +171,18 @@ func applyCSSProp(name, value string, out *ComputedStyle) {
 			out.Visibility = VisibilityHidden
 		default:
 			out.Visibility = VisibilityVisible
+		}
+	case "clip-path":
+		if id, ok := parseFillURL(v); ok {
+			out.ClipPathID = id
+		} else if strings.EqualFold(v, "none") {
+			out.ClipPathID = ""
+		}
+	case "filter":
+		if id, ok := parseFillURL(v); ok {
+			out.FilterID = id
+		} else if strings.EqualFold(v, "none") {
+			out.FilterID = ""
 		}
 	}
 }

@@ -1,7 +1,10 @@
 package svg
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -72,7 +75,25 @@ func (p *Parser) ParseSvgWithOpts(
 	if err != nil {
 		return nil, err
 	}
-	return p.buildParsed(hash, "inline:"+data, vg, 1), nil
+	return p.buildParsed(hash, inlineSourceKey(data), vg, 1), nil
+}
+
+// inlineSourceKey is the cache identity for an inline SVG. Hashes the
+// data so retained sourceKeys are O(1) per entry instead of O(len(data)).
+// Without this, 512 cache entries × 4 MB parse cap = 2 GB of source-string
+// retention from sourceKey alone (hostile-caller DoS surface).
+// candidateSourceKeys hashes the same way so InvalidateSvgSource matches.
+func inlineSourceKey(data string) string {
+	h := sha256.New()
+	// sha256.digest.Write never errors — discard explicitly for the
+	// linter and to avoid the []byte(data) copy that Sum256 would do.
+	_, _ = io.WriteString(h, data)
+	var sum [sha256.Size]byte
+	h.Sum(sum[:0])
+	var buf [7 + sha256.Size*2]byte
+	copy(buf[:7], "inline:")
+	hex.Encode(buf[7:], sum[:])
+	return string(buf[:])
 }
 
 // ParseSvgFileWithOpts loads and parses an SVG file with options.
@@ -498,7 +519,7 @@ func candidateSourceKeys(svgSrc string) []string {
 		return nil
 	}
 	if strings.HasPrefix(svgSrc, "<") {
-		return []string{"inline:" + svgSrc}
+		return []string{inlineSourceKey(svgSrc)}
 	}
 	clean := filepath.Clean(svgSrc)
 	abs, absErr := filepath.Abs(clean)

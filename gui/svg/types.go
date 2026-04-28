@@ -240,6 +240,13 @@ type ComputedStyle struct {
 	// key. Zero means "no filter applies in this subtree".
 	FilterGroupKey uint32
 	GroupID        string
+	// AuthoredClipPath = true when this element declared clip-path
+	// itself (presentation attr / CSS rule / inline style), as opposed
+	// to inheriting the value from its parent. Distinguishes "redeclared
+	// same id as parent" from "inherited unchanged" — the synth-clip
+	// path in xml.go uses it to skip the viewport clip on author-clipped
+	// nested <svg>s without false negatives.
+	AuthoredClipPath bool
 
 	// Text-related properties remain strings until text shaping
 	// consumes them.

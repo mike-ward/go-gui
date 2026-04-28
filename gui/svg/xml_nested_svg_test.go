@@ -739,16 +739,13 @@ func TestNestedSvg_DegenerateViewportNoClip(t *testing.T) {
 // KNOWN GAP — to fix when the clip-mask renderer lands.
 // Spec: an inner <svg> with an author clip-path AND default
 // overflow:hidden must clip by the INTERSECTION of the author clip
-// and the viewport rect. Current parser writes a single ClipPathID
-// per VectorPath, so the synthesized viewport clip overwrites the
-// author's. All backends presently no-op on IsClipMask, so this is
-// structural data loss only — no visible rendering impact today.
-// When the renderer learns to clip, the data model must carry both
-// (e.g. []string ClipPathIDs with stencil-AND across the group); at
-// that point this test should flip to assert both ids participate.
-// Until then it pins the current overwrite as a deliberately
-// punted state, not validated behavior.
-func TestNestedSvg_AuthorClipPathOnSvgOverwritten_TODOIntersect(t *testing.T) {
+// and the viewport rect. The renderer applies one mask per shape (no
+// two-pass clip), so true intersection is unimplemented. The parser
+// preserves the authored clip — losing overflow clipping rather than
+// the asset's explicit semantic. When the renderer learns multi-clip
+// composition, the data model must carry both (e.g. []string with
+// stencil-AND); that's when this test should flip.
+func TestNestedSvg_AuthorClipPathOnSvgPreserved(t *testing.T) {
 	svg := `<svg viewBox="0 0 100 100">
 		<defs>
 			<clipPath id="author">
@@ -764,9 +761,13 @@ func TestNestedSvg_AuthorClipPathOnSvgOverwritten_TODOIntersect(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 	p := firstShapePath(t, vg)
-	if p.ClipPathID != "__nested_svg_clip_1" {
-		t.Fatalf("ClipPathID=%q; want __nested_svg_clip_1 (synth wins over author)",
+	if p.ClipPathID != "author" {
+		t.Fatalf("ClipPathID=%q; want author (authored clip wins, viewport clip skipped)",
 			p.ClipPathID)
+	}
+	// Synth clip must NOT have been allocated for this <svg>.
+	if _, ok := vg.ClipPaths["__nested_svg_clip_1"]; ok {
+		t.Fatal("synth viewport clip allocated despite authored clip")
 	}
 }
 
@@ -953,5 +954,60 @@ func TestNestedSvg_HardenInnerViewportSane(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Inner <svg> redeclaring the SAME clip-path id its parent already
+// carries must still suppress the synth viewport clip. Pure value
+// comparison would miss this (parent.ClipPathID == child.ClipPathID);
+// suppression keys off AuthoredClipPath instead.
+func TestNestedSvg_RedeclaredSameClipPathSuppressesSynthClip(t *testing.T) {
+	svg := `<svg viewBox="0 0 100 100" clip-path="url(#a)">
+		<defs>
+			<clipPath id="a"><rect width="50" height="50"/></clipPath>
+		</defs>
+		<svg viewBox="0 0 100 100" width="100" height="100"
+			clip-path="url(#a)">
+			<rect width="100" height="100"/>
+		</svg>
+	</svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	p := firstShapePath(t, vg)
+	if p.ClipPathID != "a" {
+		t.Fatalf("ClipPathID=%q; redeclared author clip should win → want a",
+			p.ClipPathID)
+	}
+	if _, ok := vg.ClipPaths["__nested_svg_clip_1"]; ok {
+		t.Fatal("synth viewport clip allocated despite redeclared authored clip")
+	}
+}
+
+// Inner <svg> author clip declared via inline style="" must also
+// suppress the synth viewport clip (cascade origin parity with the
+// bare attr / CSS rule cases).
+func TestNestedSvg_InnerSvgInlineStyleClipPathSuppressesSynthClip(t *testing.T) {
+	svg := `<svg viewBox="0 0 100 100">
+		<defs>
+			<clipPath id="author"><rect width="50" height="50"/></clipPath>
+		</defs>
+		<svg viewBox="0 0 100 100" width="100" height="100"
+			style="clip-path:url(#author)">
+			<rect width="100" height="100"/>
+		</svg>
+	</svg>`
+	vg, err := parseSvg(svg)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	p := firstShapePath(t, vg)
+	if p.ClipPathID != "author" {
+		t.Fatalf("ClipPathID=%q; inline-style author clip should win → want author",
+			p.ClipPathID)
+	}
+	if _, ok := vg.ClipPaths["__nested_svg_clip_1"]; ok {
+		t.Fatal("synth viewport clip allocated despite inline-style author clip")
 	}
 }

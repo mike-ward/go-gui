@@ -13,7 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `preserveAspectRatio`. Default is `xMidYMid meet` (uniform scale +
   center) per SVG 1.1; `preserveAspectRatio="none"` opts back into
   legacy independent-axis stretch; `slice` uses uniform max-scale
-  (clip-to-use-box still TODO). Earlier impl always stretched.
+  and now mints a synthesized `clipPath` covering the `<use>` box
+  so overflow from max-scale is cropped per spec. Author
+  `clip-path=` on the `<use>` itself wins over the synth clip.
+  Earlier impl always stretched and never clipped slice overflow.
+- `clip-path` and `filter` now participate in the cascade: CSS rules
+  (`<style>.cls { clip-path: url(#cp) }`) and inline `style=""`
+  declarations set them, not only the bare presentation attribute.
+  `clip-path: none` / `filter: none` clear inherited values per
+  cascade origin precedence.
 - Distinct elements sharing one `filter="url(#X)"` now composite as
   separate offscreen groups in document order. Previously they were
   merged by FilterID and z-ordered against unfiltered siblings
@@ -33,9 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ids; doubly-nested viewports cascade the innermost clip onto
   descendants. `<clipPath>`, `<linearGradient>`, and `<filter>` defs
   inside a nested `<svg>` reach the global registry. Empty or
-  zero-area viewports skip emission. Author `clip-path=` on the
-  inner `<svg>` element is overwritten (intersection composition
-  not implemented; v1 limitation).
+  zero-area viewports skip emission. When the inner `<svg>` carries
+  an authored `clip-path` (presentation attr / CSS / inline style),
+  the synth viewport clip is suppressed so the asset's explicit
+  semantic survives — true intersection of viewport and author
+  clip awaits a multi-clip renderer.
 - `gui.PreserveAlignFractions` exported (was `preserveAlignFractions`)
   so `gui/svg` can resolve `preserveAspectRatio` align fractions
   without duplicating the switch.
@@ -62,6 +72,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   passing megabyte-sized pseudo-state IDs can no longer burn CPU in
   the cache lookup hash phase; downstream `parseSvgWith` already
   clamped, so cache key and parsed state stay in sync.
+- Inline-SVG cache `sourceKey` now hashes the source via SHA-256
+  instead of retaining the raw string. With the 4 MB parse cap and
+  512 cache slots, the prior format pinned up to 2 GB of source
+  retention from cache keys alone. Hashing is incremental (no
+  `[]byte(data)` copy) and produces a fixed 71-byte key.
+- `mintUseSliceClipID` (slice `<use>` clip emitter) rejects
+  non-finite or out-of-range `viewBox` numbers explicitly before
+  falling back to viewBox dims for missing `<use>` width/height; a
+  hostile `viewBox="0 0 NaN Inf"` can no longer survive `<= 0`
+  coercion and propagate into the clip rect.
 
 ### Fixed
 

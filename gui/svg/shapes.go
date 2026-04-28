@@ -8,9 +8,6 @@ func parsePathWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool)
 	if !ok {
 		return VectorPath{}, false
 	}
-	if clipID, found := parseClipPathURL(elem); found {
-		path.ClipPathID = clipID
-	}
 	path.FillRule = resolveFillRule(elem, inherited)
 	applyComputedStyle(&path, inherited)
 	return path, true
@@ -20,9 +17,6 @@ func parseRectWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool)
 	path, ok := parseRectElement(elem)
 	if !ok {
 		return VectorPath{}, false
-	}
-	if clipID, found := parseClipPathURL(elem); found {
-		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
 	applyComputedStyle(&path, inherited)
@@ -34,9 +28,6 @@ func parseCircleWithStyle(elem string, inherited ComputedStyle) (VectorPath, boo
 	if !ok {
 		return VectorPath{}, false
 	}
-	if clipID, found := parseClipPathURL(elem); found {
-		path.ClipPathID = clipID
-	}
 	path.FillRule = resolveFillRule(elem, inherited)
 	applyComputedStyle(&path, inherited)
 	return path, true
@@ -46,9 +37,6 @@ func parseEllipseWithStyle(elem string, inherited ComputedStyle) (VectorPath, bo
 	path, ok := parseEllipseElement(elem)
 	if !ok {
 		return VectorPath{}, false
-	}
-	if clipID, found := parseClipPathURL(elem); found {
-		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
 	applyComputedStyle(&path, inherited)
@@ -60,9 +48,6 @@ func parsePolygonWithStyle(elem string, inherited ComputedStyle, closed bool) (V
 	if !ok {
 		return VectorPath{}, false
 	}
-	if clipID, found := parseClipPathURL(elem); found {
-		path.ClipPathID = clipID
-	}
 	path.FillRule = resolveFillRule(elem, inherited)
 	applyComputedStyle(&path, inherited)
 	return path, true
@@ -72,9 +57,6 @@ func parseLineWithStyle(elem string, inherited ComputedStyle) (VectorPath, bool)
 	path, ok := parseLineElement(elem)
 	if !ok {
 		return VectorPath{}, false
-	}
-	if clipID, found := parseClipPathURL(elem); found {
-		path.ClipPathID = clipID
 	}
 	path.FillRule = resolveFillRule(elem, inherited)
 	applyComputedStyle(&path, inherited)
