@@ -2,6 +2,7 @@ package gui
 
 import (
 	"errors"
+	"math"
 	"testing"
 	"time"
 
@@ -422,6 +423,184 @@ func TestRtfRunsKeyStable(t *testing.T) {
 	if rtfRunsKey(&rt2) == k1 {
 		t.Error("different content should produce different key")
 	}
+}
+
+// --- rtfMathStateKey tests ---
+
+func TestRtfMathStateKey_NilInputs_ReturnFnvOffset(t *testing.T) {
+	// Nil rt or nil cache returns the FNV-1a offset basis,
+	// matching the no-math-runs case so toggling cache nilness
+	// doesn't shift the layout cache key for non-math content.
+	want := fnvOffset64
+	if got := rtfMathStateKey(nil, nil); got != want {
+		t.Fatalf("nil rt+cache: got %d, want %d", got, want)
+	}
+	rt := RichText{Runs: []RichTextRun{{MathID: "x"}}}
+	if got := rtfMathStateKey(&rt, nil); got != want {
+		t.Fatalf("nil cache: got %d, want %d", got, want)
+	}
+	cache := NewBoundedDiagramCache(4)
+	if got := rtfMathStateKey(nil, cache); got != want {
+		t.Fatalf("nil rt: got %d, want %d", got, want)
+	}
+}
+
+func TestRtfMathStateKey_NoMathRuns_StableKey(t *testing.T) {
+	cache := NewBoundedDiagramCache(4)
+	rt := RichText{Runs: []RichTextRun{
+		{Text: "alpha"}, {Text: "beta"},
+	}}
+	k1 := rtfMathStateKey(&rt, cache)
+	k2 := rtfMathStateKey(&rt, cache)
+	if k1 != k2 {
+		t.Fatalf("non-math runs should yield stable key")
+	}
+}
+
+func TestRtfMathStateKey_LoadingVsReady_KeyDiffers(t *testing.T) {
+	cache := NewBoundedDiagramCache(4)
+	rt := RichText{Runs: []RichTextRun{
+		{MathID: "math_1", MathLatex: "a+b"},
+	}}
+	hash := diagramCacheHash("math_1")
+
+	cache.Set(hash, DiagramCacheEntry{State: DiagramLoading})
+	loadingKey := rtfMathStateKey(&rt, cache)
+
+	cache.Set(hash, DiagramCacheEntry{
+		State: DiagramReady, Width: 80, Height: 24, DPI: 200,
+	})
+	readyKey := rtfMathStateKey(&rt, cache)
+
+	if loadingKey == readyKey {
+		t.Fatal("Loading→Ready transition must change key")
+	}
+}
+
+func TestRtfMathStateKey_DifferentDimensions_KeyDiffers(t *testing.T) {
+	cache := NewBoundedDiagramCache(4)
+	rt := RichText{Runs: []RichTextRun{{MathID: "m"}}}
+	hash := diagramCacheHash("m")
+
+	cache.Set(hash, DiagramCacheEntry{
+		State: DiagramReady, Width: 80, Height: 24, DPI: 200,
+	})
+	k1 := rtfMathStateKey(&rt, cache)
+
+	cache.Set(hash, DiagramCacheEntry{
+		State: DiagramReady, Width: 90, Height: 24, DPI: 200,
+	})
+	if k2 := rtfMathStateKey(&rt, cache); k1 == k2 {
+		t.Fatal("Width change must change key")
+	}
+
+	cache.Set(hash, DiagramCacheEntry{
+		State: DiagramReady, Width: 80, Height: 30, DPI: 200,
+	})
+	if k3 := rtfMathStateKey(&rt, cache); k1 == k3 {
+		t.Fatal("Height change must change key")
+	}
+
+	cache.Set(hash, DiagramCacheEntry{
+		State: DiagramReady, Width: 80, Height: 24, DPI: 150,
+	})
+	if k4 := rtfMathStateKey(&rt, cache); k1 == k4 {
+		t.Fatal("DPI change must change key")
+	}
+}
+
+func TestRtfMathStateKey_CacheMissVsHit_KeyDiffers(t *testing.T) {
+	cache := NewBoundedDiagramCache(4)
+	rt := RichText{Runs: []RichTextRun{{MathID: "m"}}}
+	missKey := rtfMathStateKey(&rt, cache)
+
+	cache.Set(diagramCacheHash("m"), DiagramCacheEntry{
+		State: DiagramReady, Width: 10, Height: 10, DPI: 100,
+	})
+	hitKey := rtfMathStateKey(&rt, cache)
+
+	if missKey == hitKey {
+		t.Fatal("cache miss vs hit should produce different keys")
+	}
+}
+
+func TestRtfMathStateKey_NaNDimensions_NoPanic(t *testing.T) {
+	cache := NewBoundedDiagramCache(4)
+	rt := RichText{Runs: []RichTextRun{{MathID: "m"}}}
+	nan := float32(math.NaN())
+	inf := float32(math.Inf(1))
+	cache.Set(diagramCacheHash("m"), DiagramCacheEntry{
+		State: DiagramReady, Width: nan, Height: inf, DPI: nan,
+	})
+	// Must not panic; key is well-defined.
+	_ = rtfMathStateKey(&rt, cache)
+}
+
+// --- layoutWrapRTF cache invalidation across math state transition ---
+
+func TestLayoutWrapRTF_MathReadyInvalidatesLoadingLayout(t *testing.T) {
+	w := &Window{windowBackend: windowBackend{
+		textMeasurer: &rtfStubTextMeasurer{
+			layout: glyph.Layout{
+				Width:  80,
+				Height: 24,
+				Items: []glyph.Item{
+					{IsObject: true, ObjectID: "math_1",
+						GlyphStart: 0, GlyphCount: 1},
+				},
+			},
+		},
+	}}
+	cache := NewBoundedDiagramCache(4)
+	w.viewState.diagramCache = cache
+	mathID := "math_1"
+	hash := diagramCacheHash(mathID)
+	cache.Set(hash, DiagramCacheEntry{State: DiagramLoading})
+
+	rt := RichText{Runs: []RichTextRun{{
+		MathID:    mathID,
+		MathLatex: "a+b",
+		Style:     TextStyle{Size: 12},
+	}}}
+	baseStyle := glyph.TextStyle{Size: 12}
+	mkShape := func() *Shape {
+		return &Shape{
+			ShapeType: ShapeRTF,
+			Width:     200,
+			TC: &ShapeTextConfig{
+				TextMode:     TextModeWrap,
+				RtfBaseStyle: baseStyle,
+				RtfRuns:      &rt,
+			},
+		}
+	}
+
+	s1 := mkShape()
+	layoutWrapRTF(s1, s1.TC, w)
+	if n := rtfLayoutCacheLen(w); n != 1 {
+		t.Fatalf("expected 1 cached layout after Loading, got %d", n)
+	}
+
+	cache.Set(hash, DiagramCacheEntry{
+		State:  DiagramReady,
+		Width:  80,
+		Height: 24,
+		DPI:    200,
+	})
+
+	s2 := mkShape()
+	layoutWrapRTF(s2, s2.TC, w)
+	if n := rtfLayoutCacheLen(w); n != 2 {
+		t.Fatalf("Ready transition must store new layout entry, "+
+			"got %d", n)
+	}
+}
+
+func rtfLayoutCacheLen(w *Window) int {
+	if w.viewState.rtfLayoutCache == nil {
+		return 0
+	}
+	return w.viewState.rtfLayoutCache.Len()
 }
 
 // --- RTF link context menu tests ---

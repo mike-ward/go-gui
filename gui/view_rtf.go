@@ -277,42 +277,55 @@ func rtfAmendTooltip(_ *Layout, w *Window) {
 	}
 }
 
+const (
+	fnvOffset64 uint64 = 14695981039346656037
+	fnvPrime64  uint64 = 1099511628211
+	// fnvFieldSep marks boundaries between hashed fields so
+	// concatenating different fields cannot produce the same
+	// digest as a single longer field.
+	fnvFieldSep uint64 = 0x1F
+	// diagramCacheMissSentinel is mixed into rtfMathStateKey
+	// for math runs whose diagram cache entry is absent. Chosen
+	// outside the DiagramState (uint8 0..2) range.
+	diagramCacheMissSentinel uint64 = 0xFF
+)
+
 // rtfRunsKey computes an FNV-1a hash of RichText content
 // including Link, Tooltip, MathID, and MathLatex for
 // tooltip/menu block matching and cross-frame caching.
 func rtfRunsKey(rt *RichText) uint64 {
-	h := uint64(14695981039346656037)
+	h := fnvOffset64
 	for _, r := range rt.Runs {
 		for i := range len(r.Text) {
 			h ^= uint64(r.Text[i])
-			h *= 1099511628211
+			h *= fnvPrime64
 		}
-		h ^= 0x1F // field separator
-		h *= 1099511628211
+		h ^= fnvFieldSep
+		h *= fnvPrime64
 		for i := range len(r.Link) {
 			h ^= uint64(r.Link[i])
-			h *= 1099511628211
+			h *= fnvPrime64
 		}
-		h ^= 0x1F
-		h *= 1099511628211
+		h ^= fnvFieldSep
+		h *= fnvPrime64
 		for i := range len(r.Tooltip) {
 			h ^= uint64(r.Tooltip[i])
-			h *= 1099511628211
+			h *= fnvPrime64
 		}
-		h ^= 0x1F
-		h *= 1099511628211
+		h ^= fnvFieldSep
+		h *= fnvPrime64
 		for i := range len(r.MathID) {
 			h ^= uint64(r.MathID[i])
-			h *= 1099511628211
+			h *= fnvPrime64
 		}
-		h ^= 0x1F
-		h *= 1099511628211
+		h ^= fnvFieldSep
+		h *= fnvPrime64
 		for i := range len(r.MathLatex) {
 			h ^= uint64(r.MathLatex[i])
-			h *= 1099511628211
+			h *= fnvPrime64
 		}
-		h ^= 0x1F // run separator
-		h *= 1099511628211
+		h ^= fnvFieldSep
+		h *= fnvPrime64
 	}
 	return h
 }
@@ -320,17 +333,51 @@ func rtfRunsKey(rt *RichText) uint64 {
 // rtfStyleKey hashes layout-affecting fields of a base style
 // for use in the cross-frame RTF layout cache key.
 func rtfStyleKey(s glyph.TextStyle) uint64 {
-	h := uint64(14695981039346656037)
+	h := fnvOffset64
 	for i := range len(s.FontName) {
 		h ^= uint64(s.FontName[i])
-		h *= 1099511628211
+		h *= fnvPrime64
 	}
 	h ^= uint64(s.Typeface)
-	h *= 1099511628211
+	h *= fnvPrime64
 	h ^= uint64(math.Float32bits(s.Size))
-	h *= 1099511628211
+	h *= fnvPrime64
 	h ^= uint64(math.Float32bits(s.LetterSpacing))
-	h *= 1099511628211
+	h *= fnvPrime64
+	return h
+}
+
+// rtfMathStateKey mixes per-math-run diagram cache state into
+// the layout cache key. A Loading→Ready transition flips the
+// key, forcing re-shape: raw LaTeX text fallback and the
+// InlineObject placeholder produce different glyph runs and
+// dimensions.
+func rtfMathStateKey(
+	rt *RichText, cache *BoundedDiagramCache,
+) uint64 {
+	h := fnvOffset64
+	if rt == nil || cache == nil {
+		return h
+	}
+	for _, r := range rt.Runs {
+		if r.MathID == "" {
+			continue
+		}
+		entry, ok := cache.Get(diagramCacheHash(r.MathID))
+		if !ok {
+			h ^= diagramCacheMissSentinel
+			h *= fnvPrime64
+			continue
+		}
+		h ^= uint64(entry.State)
+		h *= fnvPrime64
+		h ^= uint64(math.Float32bits(entry.Width))
+		h *= fnvPrime64
+		h ^= uint64(math.Float32bits(entry.Height))
+		h *= fnvPrime64
+		h ^= uint64(math.Float32bits(entry.DPI))
+		h *= fnvPrime64
+	}
 	return h
 }
 

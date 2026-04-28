@@ -199,10 +199,14 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	}
 
 	// Cross-frame cache: content hash XOR'd with width and
-	// base style bits so different styles don't collide.
+	// base style bits so different styles don't collide. Math
+	// cache state mixed in so layout invalidates when an inline
+	// math fetch transitions Loading→Ready (different glyph
+	// runs: raw LaTeX text vs InlineObject placeholder).
 	contentKey := rtfRunsKey(tc.RtfRuns)
 	styleKey := rtfStyleKey(tc.RtfBaseStyle)
-	cacheKey := contentKey ^ styleKey ^
+	mathKey := rtfMathStateKey(tc.RtfRuns, w.viewState.diagramCache)
+	cacheKey := contentKey ^ styleKey ^ mathKey ^
 		uint64(math.Float32bits(shape.Width))
 	vs := &w.viewState
 

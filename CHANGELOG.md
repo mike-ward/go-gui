@@ -177,6 +177,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   synthesized nested-`<svg>` viewport clip and `filter: bogus` could
   allocate a fresh per-occurrence offscreen group buffer for a
   declaration that contributed no actual filter.
+- Markdown inline math (`$...$`) now renders after the async
+  codecogs fetch completes. The cross-frame RTF layout cache key
+  did not include diagram cache state, so the layout shaped on the
+  first frame with the raw-LaTeX text fallback (cache=Loading) was
+  reused after the fetch transitioned to Ready — the InlineObject
+  placeholder was never emitted and `renderRtf` produced no
+  `RenderImage`. New `rtfMathStateKey` mixes per-math-run
+  State/Width/Height/DPI into the cache key so a Loading→Ready
+  transition forces re-shape. Display math (`$$...$$`) was
+  unaffected because it renders through the `Image` view, not RTF.
+  FNV-1a constants in `view_rtf.go` extracted to package consts
+  (`fnvOffset64`, `fnvPrime64`, `fnvFieldSep`).
 
 ### Security
 
