@@ -190,8 +190,8 @@ func chainKey(i int) string {
 		rev = append(rev, digits[i%10])
 		i /= 10
 	}
-	for j := len(rev) - 1; j >= 0; j-- {
-		out = append(out, rev[j])
+	for _, b := range slices.Backward(rev) {
+		out = append(out, b)
 	}
 	return string(out)
 }

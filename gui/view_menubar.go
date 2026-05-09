@@ -1,5 +1,7 @@
 package gui
 
+import "slices"
+
 // MenubarCfg configures a horizontal menubar or standalone
 // menu.
 type MenubarCfg struct {
@@ -285,9 +287,9 @@ func firstSelectable(items []MenuItemCfg) (MenuItemCfg, bool) {
 }
 
 func lastSelectable(items []MenuItemCfg) (MenuItemCfg, bool) {
-	for i := len(items) - 1; i >= 0; i-- {
-		if isSelectableMenuID(items[i].ID) {
-			return items[i], true
+	for _, item := range slices.Backward(items) {
+		if isSelectableMenuID(item.ID) {
+			return item, true
 		}
 	}
 	return MenuItemCfg{}, false

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"math"
+	"slices"
 	"time"
 )
 
@@ -488,7 +489,7 @@ func emitGestureSwipe(
 // the inverse rotation via MouseX/MouseY fields.
 func gestureHandler(layout *Layout, e *Event, w *Window) {
 	ox, oy := rotateCentroidInverse(layout.Shape, e)
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}

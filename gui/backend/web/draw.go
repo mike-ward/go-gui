@@ -5,6 +5,7 @@ package web
 import (
 	"log"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall/js"
@@ -117,7 +118,7 @@ func (b *Backend) drawClip(r *gui.RenderCmd) {
 		h:    r.H,
 	}
 	if replaced := false; len(b.clipStack) > 0 {
-		for i := len(b.clipStack) - 1; i >= 0; i-- {
+		for i := range slices.Backward(b.clipStack) {
 			if b.clipStack[i].kind == clipKindRect {
 				b.clipStack[i] = next
 				replaced = true
@@ -146,7 +147,7 @@ func (b *Backend) beginStencilClip(r *gui.RenderCmd) {
 }
 
 func (b *Backend) endStencilClip() {
-	for i := len(b.clipStack) - 1; i >= 0; i-- {
+	for i := range slices.Backward(b.clipStack) {
 		if b.clipStack[i].kind == clipKindStencil {
 			b.clipStack = append(
 				b.clipStack[:i], b.clipStack[i+1:]...)

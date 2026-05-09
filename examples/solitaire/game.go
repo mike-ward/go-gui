@@ -2,7 +2,10 @@
 // testing.
 package main
 
-import "math/rand/v2"
+import (
+	"math/rand/v2"
+	"slices"
+)
 
 // Suit identifies a card's suit.
 type Suit uint8
@@ -170,7 +173,7 @@ func (g *Game) Draw() {
 			return
 		}
 		// Recycle: reverse waste back to stock.
-		for i := len(g.Waste) - 1; i >= 0; i-- {
+		for i := range slices.Backward(g.Waste) {
 			g.Waste[i].FaceUp = false
 			g.Stock = append(g.Stock, g.Waste[i])
 		}

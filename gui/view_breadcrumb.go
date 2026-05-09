@@ -1,5 +1,7 @@
 package gui
 
+import "slices"
+
 // BreadcrumbItemCfg configures one item in a Breadcrumb.
 type BreadcrumbItemCfg struct {
 	ID       string
@@ -366,8 +368,8 @@ func bcFirstEnabledIndex(items []BreadcrumbItemCfg) int {
 }
 
 func bcLastEnabledIndex(items []BreadcrumbItemCfg) int {
-	for i := len(items) - 1; i >= 0; i-- {
-		if !items[i].Disabled {
+	for i, item := range slices.Backward(items) {
+		if !item.Disabled {
 			return i
 		}
 	}

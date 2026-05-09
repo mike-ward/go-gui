@@ -368,8 +368,7 @@ func showcaseDataGridApplyQuery(rows []gui.GridRow, query gui.GridQueryState) []
 			filtered = append(filtered, row)
 		}
 	}
-	for i := len(query.Sorts) - 1; i >= 0; i-- {
-		gridSort := query.Sorts[i]
+	for _, gridSort := range slices.Backward(query.Sorts) {
 		slices.SortStableFunc(filtered, func(a, b gui.GridRow) int {
 			va := a.Cells[gridSort.ColID]
 			vb := b.Cells[gridSort.ColID]

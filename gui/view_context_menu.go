@@ -82,9 +82,12 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 					return
 				}
 			}
-			sm := StateMap[string, contextMenuState](
-				w, nsContextMenu, capFew)
 			if e.MouseButton == MouseRight {
+				// Save current focus in a namespace dismissPopups doesn't clear.
+				fs := StateMap[string, uint32](w, nsContextMenuFocus, capFew)
+				fs.Set(cfg.ID, w.IDFocus())
+				sm := StateMap[string, contextMenuState](
+					w, nsContextMenu, capFew)
 				sm.Set(cfg.ID, contextMenuState{
 					Open: true,
 					X:    e.MouseX,
@@ -92,6 +95,8 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 				})
 				w.SetIDFocus(idFocus)
 			} else {
+				sm := StateMap[string, contextMenuState](
+					w, nsContextMenu, capFew)
 				sm.Set(cfg.ID, contextMenuState{})
 			}
 			e.IsHandled = true
@@ -103,6 +108,11 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 				if sm != nil {
 					sm.Delete(cfg.ID)
 				}
+				fs := StateMapRead[string, uint32](
+					w, nsContextMenuFocus)
+				if fs != nil {
+					fs.Delete(cfg.ID)
+				}
 			}
 		},
 		Content: content,
@@ -112,6 +122,13 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 // contextMenuPopup builds the floating menu popup.
 func contextMenuPopup(w *Window, cfg ContextMenuCfg, mx, my float32) View {
 	action := func(id string, e *Event, w *Window) {
+		// Restore focus saved before the menu opened. nsContextMenuFocus
+		// survives dismissPopups (which only clears nsContextMenu/nsMenu).
+		fs := StateMap[string, uint32](w, nsContextMenuFocus, capFew)
+		if prev, ok := fs.Get(cfg.ID); ok && prev > 0 {
+			w.SetIDFocus(prev)
+		}
+		fs.Delete(cfg.ID)
 		sm := StateMap[string, contextMenuState](
 			w, nsContextMenu, capFew)
 		sm.Set(cfg.ID, contextMenuState{})

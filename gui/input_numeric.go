@@ -2,6 +2,7 @@ package gui
 
 import (
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -179,7 +180,7 @@ func numericGroupIntegerPart(raw string, groupSep rune, groupSizes []int) string
 	count := 0
 	groupIdx := 0
 	gs := numericGroupSize(groupSizes, groupIdx)
-	for i := len(digits) - 1; i >= 0; i-- {
+	for i := range slices.Backward(digits) {
 		reversed = append(reversed, digits[i])
 		count++
 		if i > 0 && count == gs {
@@ -222,8 +223,7 @@ func numericFormatValue(value float64, decimals int, loc NumericLocaleCfg) strin
 func numericIntegerGroupsValid(intSegment []rune, groupSep rune, groupSizes []int) bool {
 	var groupLengths []int
 	count := 0
-	for i := len(intSegment) - 1; i >= 0; i-- {
-		ch := intSegment[i]
+	for _, ch := range slices.Backward(intSegment) {
 		if ch == groupSep {
 			if count == 0 {
 				return false

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -265,7 +266,7 @@ func inspectorPickRecurse(layout *Layout, path string, x, y float32) string {
 	if !layout.Shape.PointInShape(x, y) {
 		return ""
 	}
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		childPath := path + "." + strconv.Itoa(i)
 		if picked := inspectorPickRecurse(
 			&layout.Children[i], childPath, x, y); picked != "" {

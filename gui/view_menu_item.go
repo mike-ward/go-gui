@@ -188,13 +188,18 @@ func menuItemClick(cfg MenubarCfg, itemCfg MenuItemCfg) func(*Layout, *Event, *W
 		if itemCfg.Action != nil {
 			itemCfg.Action(&itemCfg, e, w)
 		}
+		focusBeforeAction := w.IDFocus()
 		if cfg.Action != nil {
 			cfg.Action(itemCfg.ID, e, w)
 		}
 
-		// Close menu if leaf item (no submenu).
+		// Close menu if leaf item (no submenu). Only reset focus to
+		// zero if neither action callback changed it — an action that
+		// restores a previous focus should win.
 		if len(itemCfg.Submenu) == 0 {
-			w.SetIDFocus(0)
+			if w.IDFocus() == focusBeforeAction {
+				w.SetIDFocus(0)
+			}
 			sm.Delete(cfg.IDFocus)
 		}
 

@@ -1,5 +1,7 @@
 package gui
 
+import "slices"
+
 // charHandler handles character input events (typing).
 // Traverses forward (depth-first) and delivers to focused element.
 func charHandler(layout *Layout, e *Event, w *Window) {
@@ -106,7 +108,7 @@ func mouseDownHandler(
 	}
 	// Traverse children in reverse (topmost/last child first).
 	ox, oy := rotateMouseInverse(layout.Shape, e)
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
@@ -121,7 +123,7 @@ func mouseDownHandler(
 		return
 	}
 	if layout.Shape.PointInShape(e.MouseX, e.MouseY) {
-		if layout.Shape.IDFocus > 0 {
+		if layout.Shape.IDFocus > 0 && e.MouseButton != MouseRight {
 			w.SetIDFocus(layout.Shape.IDFocus)
 			e.IsHandled = true
 		}
@@ -144,7 +146,7 @@ func mouseMoveHandler(layout *Layout, e *Event, w *Window) {
 		return
 	}
 	ox, oy := rotateMouseInverse(layout.Shape, e)
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
@@ -173,7 +175,7 @@ func mouseUpHandler(layout *Layout, e *Event, w *Window) {
 		return
 	}
 	ox, oy := rotateMouseInverse(layout.Shape, e)
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
@@ -225,7 +227,7 @@ func mouseScrollHandler(layout *Layout, e *Event, w *Window) {
 
 func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 	ox, oy := rotateMouseInverse(layout.Shape, e)
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}
@@ -267,7 +269,7 @@ func mouseScrollFallbackHandler(layout *Layout, e *Event, w *Window) {
 // fileDropHandler handles file-drop events. Does not change focus.
 func fileDropHandler(layout *Layout, e *Event, w *Window) {
 	ox, oy := rotateMouseInverse(layout.Shape, e)
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		if !isChildEnabled(&layout.Children[i]) {
 			continue
 		}

@@ -53,7 +53,7 @@ func layoutArrange(layout *Layout, w *Window) []Layout {
 	}
 
 	// Hover processing: topmost first.
-	for i := len(layouts) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layouts) {
 		handled := layoutHover(&layouts[i], w)
 		if handled && i > 0 {
 			// Cursor inside a floating layer blocks lower layers.

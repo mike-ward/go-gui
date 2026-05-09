@@ -1,5 +1,7 @@
 package gui
 
+import "slices"
+
 // TabItemCfg configures one tab in a TabControl.
 type TabItemCfg struct {
 	ID       string
@@ -521,8 +523,8 @@ func tabFirstEnabledIndex(disabled []bool) int {
 }
 
 func tabLastEnabledIndex(disabled []bool) int {
-	for i := len(disabled) - 1; i >= 0; i-- {
-		if !disabled[i] {
+	for i, d := range slices.Backward(disabled) {
+		if !d {
 			return i
 		}
 	}

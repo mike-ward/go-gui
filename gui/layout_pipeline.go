@@ -2,6 +2,7 @@ package gui
 
 import (
 	"math"
+	"slices"
 
 	"github.com/mike-ward/go-glyph"
 )
@@ -61,7 +62,7 @@ func layoutHover(layout *Layout, w *Window) bool {
 		w.viewState.mousePosX, w.viewState.mousePosY =
 			rotateCoordsInverse(layout.Shape, savedX, savedY)
 	}
-	for i := len(layout.Children) - 1; i >= 0; i-- {
+	for i := range slices.Backward(layout.Children) {
 		if layoutHover(&layout.Children[i], w) {
 			w.viewState.mousePosX, w.viewState.mousePosY = savedX, savedY
 			return true

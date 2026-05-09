@@ -125,6 +125,7 @@ const (
 	nsTableColWidths      = "gui.table.col_widths"
 	nsDockDrag            = "gui.dock_drag"
 	nsContextMenu         = "gui.context_menu"
+	nsContextMenuFocus    = "gui.context_menu.focus"
 	nsRtfLinkMenu         = "gui.rtf_link_menu"
 	nsForm                = "gui.form"
 	nsSpellCheck          = "gui.spell_check"

@@ -606,7 +606,7 @@ func (p *Parser) cachedParsed(hash uint64) *gui.SvgParsed {
 }
 
 func (p *Parser) touchHash(hash uint64) {
-	for i := len(p.order) - 1; i >= 0; i-- {
+	for i := range slices.Backward(p.order) {
 		if p.order[i] == hash {
 			copy(p.order[i:], p.order[i+1:])
 			p.order[len(p.order)-1] = hash

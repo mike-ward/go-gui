@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"slices"
 	"strconv"
 	"time"
 )
@@ -102,7 +103,7 @@ func toastContainerView(w *Window) View {
 		style.Anchor == ToastTopRight
 
 	if isTop {
-		for i := len(w.toasts) - 1; i >= 0; i-- {
+		for i := range slices.Backward(w.toasts) {
 			items = append(items,
 				toastItemView(&w.toasts[i], style))
 		}

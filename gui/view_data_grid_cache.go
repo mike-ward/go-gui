@@ -301,7 +301,7 @@ func dataGridGroupRanges(rows []GridRow, indices []int, groupCols []string) map[
 		}
 	}
 	last := len(indices) - 1
-	for depth := len(groupCols) - 1; depth >= 0; depth-- {
+	for depth := range slices.Backward(groupCols) {
 		ranges[dataGridGroupRangeKey(depth, starts[depth])] = last
 	}
 	return ranges

@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/mike-ward/go-gui/gui"
 	"github.com/mike-ward/go-gui/gui/backend"
@@ -47,7 +48,7 @@ func hitLabel(cached *gui.CachedSvg, localX, localY float32) string {
 	}
 	vx := cached.ViewBoxX + localX/scale
 	vy := cached.ViewBoxY + localY/scale
-	for i := len(cached.Parsed.Paths) - 1; i >= 0; i-- {
+	for i := range slices.Backward(cached.Parsed.Paths) {
 		p := &cached.Parsed.Paths[i]
 		if p.ContainsPoint(vx, vy) {
 			return fmt.Sprintf(

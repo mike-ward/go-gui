@@ -90,7 +90,7 @@ func (cs ComplexSelector) Matches(
 	}
 	ai := len(ancestors) - 1
 	si := len(siblings) - 1
-	for i := len(parts) - 2; i >= 0; i-- {
+	for i := range slices.Backward(parts[:len(parts)-1]) {
 		comb := parts[i+1].Combinator
 		switch comb {
 		case CombChild:
