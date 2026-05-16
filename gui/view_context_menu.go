@@ -84,8 +84,12 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 			}
 			if e.MouseButton == MouseRight {
 				// Save current focus in a namespace dismissPopups doesn't clear.
+				// Skip the save if the context menu already owns focus (repeated
+				// right-click) so we don't overwrite the original caller's focus.
 				fs := StateMap[string, uint32](w, nsContextMenuFocus, capFew)
-				fs.Set(cfg.ID, w.IDFocus())
+				if w.IDFocus() != idFocus {
+					fs.Set(cfg.ID, w.IDFocus())
+				}
 				sm := StateMap[string, contextMenuState](
 					w, nsContextMenu, capFew)
 				sm.Set(cfg.ID, contextMenuState{
@@ -111,6 +115,9 @@ func ContextMenu(w *Window, cfg ContextMenuCfg) View {
 				fs := StateMapRead[string, uint32](
 					w, nsContextMenuFocus)
 				if fs != nil {
+					if prev, ok := fs.Get(cfg.ID); ok && prev > 0 {
+						w.setIDFocusLocked(prev)
+					}
 					fs.Delete(cfg.ID)
 				}
 			}
