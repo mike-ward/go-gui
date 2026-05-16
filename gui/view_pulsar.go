@@ -42,8 +42,8 @@ func Pulsar(cfg PulsarCfg, w *Window) View {
 	if !w.hasAnimationLocked(blinkCursorAnimationID) {
 		w.animationAdd(NewBlinkCursorAnimation())
 	}
-	if !w.hasAnimationLocked(pulsarAnimationID) {
-		w.animationAdd(&Animate{
+	if !w.touchViewBoundAnimation(pulsarAnimationID) {
+		w.animationAddViewBound(&Animate{
 			AnimID:  pulsarAnimationID,
 			Delay:   blinkCursorAnimationDelay,
 			Repeat:  true,

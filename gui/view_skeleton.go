@@ -88,7 +88,7 @@ func skeletonAmendLayout(
 	id string, colorBase, colorHL Color,
 ) {
 	animID := "skeleton_" + id
-	if _, ok := w.animations[animID]; !ok {
+	if !w.touchViewBoundAnimation(animID) {
 		kf := &KeyframeAnimation{
 			AnimID:   animID,
 			Repeat:   true,
@@ -103,7 +103,7 @@ func skeletonAmendLayout(
 				pm.Set(id, v)
 			},
 		}
-		w.animationAdd(kf)
+		w.animationAddViewBound(kf)
 	}
 
 	t := StateReadOr(w, nsSkeleton, id, float32(0))

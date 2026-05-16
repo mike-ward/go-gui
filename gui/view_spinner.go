@@ -168,8 +168,8 @@ func Spinner(cfg SpinnerCfg, w *Window) View {
 	animID := "spinner_" + id
 	dur := time.Duration(float64(5*time.Second) / float64(cfg.Speed))
 
-	if !w.hasAnimationLocked(animID) {
-		w.animationAdd(&KeyframeAnimation{
+	if !w.touchViewBoundAnimation(animID) {
+		w.animationAddViewBound(&KeyframeAnimation{
 			AnimID:   animID,
 			Duration: dur,
 			Repeat:   true,
@@ -189,8 +189,8 @@ func Spinner(cfg SpinnerCfg, w *Window) View {
 	rotKey := id + "_rot"
 	rotAnimID := "spinner_rot_" + id
 	if cfg.Rotate {
-		if !w.hasAnimationLocked(rotAnimID) {
-			w.animationAdd(&KeyframeAnimation{
+		if !w.touchViewBoundAnimation(rotAnimID) {
+			w.animationAddViewBound(&KeyframeAnimation{
 				AnimID:   rotAnimID,
 				Duration: 30 * time.Second,
 				Repeat:   true,

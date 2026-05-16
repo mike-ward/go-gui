@@ -131,6 +131,22 @@ func TestSkeletonDisabled(t *testing.T) {
 	}
 }
 
+func TestSkeletonAnimationIsViewBound(t *testing.T) {
+	v := Skeleton(SkeletonCfg{ID: "sk1"})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.Events == nil || layout.Shape.Events.AmendLayout == nil {
+		t.Fatal("AmendLayout not set")
+	}
+	layout.Shape.Events.AmendLayout(&layout, w)
+	if w.animViewBound == nil {
+		t.Fatal("animViewBound nil after skeleton AmendLayout — animation not view-bound")
+	}
+	if _, ok := w.animViewBound["skeleton_sk1"]; !ok {
+		t.Error("skeleton animation not registered as view-bound")
+	}
+}
+
 func TestSkeletonAmendLayoutSetsGradient(t *testing.T) {
 	v := Skeleton(SkeletonCfg{ID: "s13"})
 	w := &Window{}

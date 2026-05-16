@@ -40,6 +40,9 @@ type windowRender struct {
 type windowAnimation struct {
 	// Active animations keyed by ID.
 	animations map[string]Animation
+	// View-bound animation heartbeats: animID → last-seen UnixNano.
+	// Nil until first view-bound animation is registered.
+	animViewBound map[string]int64
 	// Animation loop lifecycle.
 	animationStop      chan struct{}
 	animationDone      chan struct{}

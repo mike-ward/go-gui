@@ -156,7 +156,7 @@ func progressBarAmendLayout(
 	if indefinite {
 		percent = 0.3
 		animID := id + "_indefinite"
-		if _, ok := w.animations[animID]; !ok {
+		if !w.touchViewBoundAnimation(animID) {
 			kf := &KeyframeAnimation{
 				AnimID:   animID,
 				Repeat:   true,
@@ -172,7 +172,7 @@ func progressBarAmendLayout(
 					pm.Set(id, v)
 				},
 			}
-			w.animationAdd(kf)
+			w.animationAddViewBound(kf)
 		}
 		pm := StateMap[string, float32](w, nsProgress, capModerate)
 		if progress, ok := pm.Get(id); ok {

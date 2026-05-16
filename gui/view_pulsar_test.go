@@ -147,3 +147,14 @@ func TestPulsarRegistersLayoutAnimation(t *testing.T) {
 			a.RefreshKind())
 	}
 }
+
+func TestPulsarAnimationIsViewBound(t *testing.T) {
+	w := &Window{}
+	Pulsar(PulsarCfg{}, w)
+	if w.animViewBound == nil {
+		t.Fatal("animViewBound nil after Pulsar — animation not view-bound")
+	}
+	if _, ok := w.animViewBound[pulsarAnimationID]; !ok {
+		t.Error("pulsar animation not registered as view-bound")
+	}
+}

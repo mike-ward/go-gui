@@ -4,6 +4,10 @@ import "time"
 
 const animationCycle = 16 * time.Millisecond
 
+// animViewBoundStale is the heartbeat threshold for view-bound animations.
+// An animation not touched for this duration is cancelled automatically.
+const animViewBoundStale = 2 * int64(time.Second)
+
 // AnimationAdd registers a new animation. If an animation with the
 // same ID exists, it is replaced.
 func (w *Window) AnimationAdd(a Animation) {
@@ -48,11 +52,36 @@ func (w *Window) animationResume() {
 	}
 }
 
+// animationAddViewBound registers an animation and marks it as view-bound.
+// View-bound animations auto-cancel when their widget leaves the view tree.
+// Caller must hold w.mu.
+func (w *Window) animationAddViewBound(a Animation) {
+	w.animationAdd(a)
+	if w.animViewBound == nil {
+		w.animViewBound = make(map[string]int64)
+	}
+	w.animViewBound[a.ID()] = w.Now().UnixNano()
+}
+
+// touchViewBoundAnimation updates the heartbeat for a view-bound animation
+// and reports whether the animation exists. Called each frame the widget is
+// visible. Caller must hold w.mu.
+func (w *Window) touchViewBoundAnimation(id string) bool {
+	if !w.hasAnimationLocked(id) {
+		return false
+	}
+	if _, ok := w.animViewBound[id]; ok {
+		w.animViewBound[id] = w.Now().UnixNano()
+	}
+	return true
+}
+
 // AnimationRemove stops and removes an animation by ID.
 func (w *Window) AnimationRemove(id string) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	delete(w.animations, id)
+	delete(w.animViewBound, id)
 }
 
 func (w *Window) hasAnimationLocked(id string) bool {
@@ -116,8 +145,16 @@ func (w *Window) animationLoop() {
 				stoppedIDs = append(stoppedIDs, a.ID())
 			}
 		}
+		// Auto-cancel view-bound animations whose widget left the view tree.
+		now := w.Now().UnixNano()
+		for id, seen := range w.animViewBound {
+			if now-seen > animViewBoundStale {
+				stoppedIDs = append(stoppedIDs, id)
+			}
+		}
 		for _, id := range stoppedIDs {
 			delete(w.animations, id)
+			delete(w.animViewBound, id)
 		}
 		idle := len(w.animations) == 0
 		w.mu.Unlock()

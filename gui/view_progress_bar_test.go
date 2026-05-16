@@ -226,6 +226,22 @@ func TestProgressBarTextBackgroundColor(t *testing.T) {
 	}
 }
 
+func TestProgressBarIndefiniteAnimationIsViewBound(t *testing.T) {
+	v := ProgressBar(ProgressBarCfg{ID: "pb-vb", Indefinite: true})
+	w := &Window{}
+	layout := GenerateViewLayout(v, w)
+	if layout.Shape.Events == nil || layout.Shape.Events.AmendLayout == nil {
+		t.Fatal("AmendLayout not set on progress bar layout")
+	}
+	layout.Shape.Events.AmendLayout(&layout, w)
+	if w.animViewBound == nil {
+		t.Fatal("animViewBound nil after indefinite progress bar AmendLayout — animation not view-bound")
+	}
+	if _, ok := w.animViewBound["pb-vb_indefinite"]; !ok {
+		t.Error("indefinite progress bar animation not registered as view-bound")
+	}
+}
+
 func TestProgressBarSizeBorderNone(t *testing.T) {
 	v := ProgressBar(ProgressBarCfg{
 		ID:       "pb-test",

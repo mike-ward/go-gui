@@ -247,3 +247,14 @@ func TestSpinnerParticlesClamped(t *testing.T) {
 		t.Error("layout not generated")
 	}
 }
+
+func TestSpinnerAnimationIsViewBound(t *testing.T) {
+	w := &Window{}
+	Spinner(SpinnerCfg{ID: "sp1"}, w)
+	if w.animViewBound == nil {
+		t.Fatal("animViewBound nil after Spinner — animation not view-bound")
+	}
+	if _, ok := w.animViewBound["spinner_sp1"]; !ok {
+		t.Error("spinner animation not registered as view-bound")
+	}
+}
