@@ -52,7 +52,8 @@ const (
 	EventClipboardPasted
 	EventFileDropped
 	EventIMEComposition
-	EventGesture // gesture recognized from touch input
+	EventGesture     // gesture recognized from touch input
+	EventScrollBegan // trackpad finger touch (zero-delta phase begin)
 )
 
 // MouseButton identifies which mouse button was pressed/released.

@@ -116,6 +116,8 @@ func (b *Backend) Run(w *gui.Window) {
 	// binding calls SDL_free on a Cocoa-allocated string).
 	fileDropInitBridge(b.window, w)
 	defer fileDropDestroyBridge(b.window)
+	scrollPhaseInitBridge(b.window, w)
+	defer scrollPhaseDestroyBridge(b.window)
 
 	wakeType := sdl.RegisterEvents(1)
 	w.SetWakeMainFn(func() {
@@ -205,6 +207,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 		app.Register(sdlID, w)
 		injectInterfaces(w, ws)
 		fileDropInitBridge(ws.window, w)
+		scrollPhaseInitBridge(ws.window, w)
 		if w.Config.OnInit != nil {
 			w.Config.OnInit(w)
 		}
@@ -212,6 +215,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 	defer func() {
 		for _, ws := range states {
 			fileDropDestroyBridge(ws.window)
+			scrollPhaseDestroyBridge(ws.window)
 		}
 	}()
 
@@ -274,6 +278,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 				injectInterfaces(w, ws)
 				setWakeFn(w)
 				fileDropInitBridge(ws.window, w)
+				scrollPhaseInitBridge(ws.window, w)
 				if cfg.OnInit != nil {
 					cfg.OnInit(w)
 				}
@@ -337,6 +342,7 @@ func RunApp(app *gui.App, initialWindows ...*gui.Window) {
 			}
 			w.WindowCleanup()
 			fileDropDestroyBridge(ws.window)
+			scrollPhaseDestroyBridge(ws.window)
 			ws.destroy()
 			delete(states, wid)
 			if app.Unregister(wid) {
