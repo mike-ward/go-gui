@@ -4,6 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![CI](https://github.com/mike-ward/go-gui/actions/workflows/ci.yml/badge.svg)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mike-ward/go-gui)
+[![Wiki](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/mike-ward/go-gui/wiki)
 
 **Cross-platform, hybrid immediate-mode GUI framework for Go — no virtual DOM,
 no diffing, just fast, composable UI.**
@@ -12,6 +13,8 @@ no diffing, just fast, composable UI.**
 
 _Showcase contains the framework documentation. Every widget demo has a button
 in the upper-right corner that displays documentation about the widget._
+
+📜 [Documentation](https://github.com/mike-ward/go-gui/wiki)
 
 Sibling projects:
 
