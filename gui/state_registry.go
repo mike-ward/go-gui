@@ -132,6 +132,8 @@ const (
 	nsSkeleton            = "gui.skeleton"
 	nsSpinner             = "gui.spinner"
 	nsHoverInside         = "gui.hover.inside"
+	nsMdSel               = "gui.markdown.sel"
+	nsMdBlocks            = "gui.markdown.blocks"
 )
 
 // Capacity tiers.

@@ -838,3 +838,52 @@ func TestRtfRunsKeyIncludesLinkAndTooltip(t *testing.T) {
 		t.Error("different tooltips should produce different keys")
 	}
 }
+
+// --- rtfFlatTextFromRuns ---
+
+func TestRtfFlatTextFromRuns_Nil(t *testing.T) {
+	got := rtfFlatTextFromRuns(nil)
+	if got != "" {
+		t.Errorf("got %q, want empty", got)
+	}
+}
+
+func TestRtfFlatTextFromRuns_EmptyRuns(t *testing.T) {
+	got := rtfFlatTextFromRuns(&RichText{})
+	if got != "" {
+		t.Errorf("got %q, want empty", got)
+	}
+}
+
+func TestRtfFlatTextFromRuns_SingleRun(t *testing.T) {
+	rt := &RichText{Runs: []RichTextRun{{Text: "hello"}}}
+	got := rtfFlatTextFromRuns(rt)
+	if got != "hello" {
+		t.Errorf("got %q, want %q", got, "hello")
+	}
+}
+
+func TestRtfFlatTextFromRuns_MultipleRuns_Concatenated(t *testing.T) {
+	rt := &RichText{Runs: []RichTextRun{
+		{Text: "foo"},
+		{Text: "bar"},
+		{Text: "baz"},
+	}}
+	got := rtfFlatTextFromRuns(rt)
+	want := "foobarbaz"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestRtfFlatTextFromRuns_MultibyteUTF8(t *testing.T) {
+	rt := &RichText{Runs: []RichTextRun{
+		{Text: "héllo"},
+		{Text: " wörld"},
+	}}
+	got := rtfFlatTextFromRuns(rt)
+	want := "héllo wörld"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}

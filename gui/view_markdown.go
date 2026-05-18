@@ -470,7 +470,7 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 			e.IsHandled = true
 		}))
 
-	return Column(ContainerCfg{
+	colCfg := ContainerCfg{
 		A11YRole:    AccessRoleGroup,
 		Color:       cfg.Color,
 		ColorBorder: cfg.ColorBorder,
@@ -480,7 +480,14 @@ func (w *Window) Markdown(cfg MarkdownCfg) View {
 		Spacing:     Some(cfg.Style.BlockSpacing),
 		Sizing:      sizing,
 		Content:     content,
-	})
+	}
+	if cfg.IDFocus > 0 {
+		colCfg.IDFocus = cfg.IDFocus
+		colCfg.FocusSkip = true
+		colCfg.AmendLayout = markdownContainerAmendLayout
+		colCfg.OnKeyDown = markdownContainerOnKeyDown
+	}
+	return Column(colCfg)
 }
 
 // markdownTriggerMathFetches starts async fetches for inline math
@@ -525,6 +532,17 @@ func markdownBuildContent(
 	content := make([]View, 0, len(blocks))
 	var listItems []View
 	prevWasBQ := false
+	runeOffset := uint32(0)
+	selEnabled := cfg.IDFocus > 0
+
+	makeCtx := func(block MarkdownBlock) *mdBlockCtx {
+		if !selEnabled {
+			return nil
+		}
+		ctx := &mdBlockCtx{ID: cfg.IDFocus, Start: runeOffset}
+		runeOffset += uint32(rtfRuneCountFromRuns(&block.Content))
+		return ctx
+	}
 
 	for i, block := range blocks {
 		if prevWasBQ && !block.IsBlockquote {
@@ -553,25 +571,30 @@ func markdownBuildContent(
 		case block.IsHR:
 			content = append(content, mdRenderHR(cfg))
 		case block.IsBlockquote:
-			content = append(content, mdRenderBlockquote(block, cfg, mode))
+			content = append(content,
+				mdRenderBlockquote(block, cfg, mode, makeCtx(block)))
 		case block.IsImage:
 			content = append(content, mdRenderImage(block))
 		case block.HeaderLevel > 0:
-			content = append(content, mdRenderHeading(block, cfg, mode)...)
+			content = append(content,
+				mdRenderHeading(block, cfg, mode, makeCtx(block))...)
 		case block.IsDefTerm:
-			content = append(content, mdRenderDefTerm(block, mode))
+			content = append(content,
+				mdRenderDefTerm(block, mode, makeCtx(block)))
 		case block.IsDefValue:
-			content = append(content, mdRenderDefValue(block, cfg, mode))
+			content = append(content,
+				mdRenderDefValue(block, cfg, mode, makeCtx(block)))
 		case block.IsList:
 			listItems = append(listItems,
-				mdRenderListItem(block, cfg, mode))
+				mdRenderListItem(block, cfg, mode, makeCtx(block)))
 			if i == len(blocks)-1 && len(listItems) > 0 {
 				content = append(content,
 					mdFlushListItems(listItems, cfg))
 				listItems = nil
 			}
 		default:
-			content = append(content, mdRenderParagraph(block, cfg, mode))
+			content = append(content,
+				mdRenderParagraph(block, cfg, mode, makeCtx(block)))
 		}
 	}
 	return content
@@ -653,11 +676,25 @@ func mdRenderHR(cfg MarkdownCfg) View {
 	})
 }
 
+func applyMdCtx(cfg *RtfCfg, ctx *mdBlockCtx) {
+	if ctx != nil {
+		cfg.markdownID = ctx.ID
+		cfg.markdownBlockStart = ctx.Start
+	}
+}
+
 func mdRenderBlockquote(
 	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+	ctx *mdBlockCtx,
 ) View {
 	leftMargin := float32(
 		block.BlockquoteDepth-1) * cfg.Style.NestIndent
+	rtfCfg := RtfCfg{
+		RichText:      block.Content,
+		Mode:          mode,
+		BaseTextStyle: &block.BaseStyle,
+	}
+	applyMdCtx(&rtfCfg, ctx)
 	return Row(ContainerCfg{
 		Sizing:     FillFit,
 		Padding:    SomeP(0, 0, 0, leftMargin),
@@ -673,13 +710,7 @@ func mdRenderBlockquote(
 				Sizing:     FillFit,
 				Padding:    NoPadding,
 				SizeBorder: NoBorder,
-				Content: []View{
-					RTF(RtfCfg{
-						RichText:      block.Content,
-						Mode:          mode,
-						BaseTextStyle: &block.BaseStyle,
-					}),
-				},
+				Content:    []View{RTF(rtfCfg)},
 			}),
 		},
 	})
@@ -697,6 +728,7 @@ func mdRenderImage(block MarkdownBlock) View {
 // plus the heading container.
 func mdRenderHeading(
 	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+	ctx *mdBlockCtx,
 ) []View {
 	var views []View
 	if block.HeaderLevel == 1 {
@@ -705,14 +737,14 @@ func mdRenderHeading(
 			Height: 3,
 		}))
 	}
-	headingContent := []View{
-		RTF(RtfCfg{
-			ID:            block.AnchorSlug,
-			RichText:      block.Content,
-			Mode:          mode,
-			BaseTextStyle: &block.BaseStyle,
-		}),
+	rtfCfg := RtfCfg{
+		ID:            block.AnchorSlug,
+		RichText:      block.Content,
+		Mode:          mode,
+		BaseTextStyle: &block.BaseStyle,
 	}
+	applyMdCtx(&rtfCfg, ctx)
+	headingContent := []View{RTF(rtfCfg)}
 	if (block.HeaderLevel == 1 && cfg.Style.H1Separator) ||
 		(block.HeaderLevel == 2 && cfg.Style.H2Separator) {
 		headingContent = append(headingContent,
@@ -732,33 +764,35 @@ func mdRenderHeading(
 	return views
 }
 
-func mdRenderDefTerm(block MarkdownBlock, mode TextMode) View {
-	return RTF(RtfCfg{
+func mdRenderDefTerm(block MarkdownBlock, mode TextMode, ctx *mdBlockCtx) View {
+	rtfCfg := RtfCfg{
 		RichText:      block.Content,
 		Mode:          mode,
 		BaseTextStyle: &block.BaseStyle,
-	})
+	}
+	applyMdCtx(&rtfCfg, ctx)
+	return RTF(rtfCfg)
 }
 
 func mdRenderDefValue(
-	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+	block MarkdownBlock, cfg MarkdownCfg, mode TextMode, ctx *mdBlockCtx,
 ) View {
+	rtfCfg := RtfCfg{
+		RichText:      block.Content,
+		Mode:          mode,
+		BaseTextStyle: &block.BaseStyle,
+	}
+	applyMdCtx(&rtfCfg, ctx)
 	return Row(ContainerCfg{
-		Sizing: FillFit,
-		Padding: SomeP(
-			0, 0, 0, cfg.Style.NestIndent),
-		Content: []View{
-			RTF(RtfCfg{
-				RichText:      block.Content,
-				Mode:          mode,
-				BaseTextStyle: &block.BaseStyle,
-			}),
-		},
+		Sizing:  FillFit,
+		Padding: SomeP(0, 0, 0, cfg.Style.NestIndent),
+		Content: []View{RTF(rtfCfg)},
 	})
 }
 
 func mdRenderListItem(
 	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+	ctx *mdBlockCtx,
 ) View {
 	indentW := float32(block.ListIndent) *
 		cfg.Style.NestIndent
@@ -769,6 +803,12 @@ func mdRenderListItem(
 	} else if block.ListIndent > 0 {
 		indentW += 4
 	}
+	rtfCfg := RtfCfg{
+		RichText:      block.Content,
+		Mode:          mode,
+		BaseTextStyle: &block.BaseStyle,
+	}
+	applyMdCtx(&rtfCfg, ctx)
 	return Row(ContainerCfg{
 		Sizing:     FillFit,
 		Padding:    SomeP(0, 0, 0, indentW),
@@ -790,13 +830,7 @@ func mdRenderListItem(
 				Sizing:     FillFit,
 				Padding:    NoPadding,
 				SizeBorder: NoBorder,
-				Content: []View{
-					RTF(RtfCfg{
-						RichText:      block.Content,
-						Mode:          mode,
-						BaseTextStyle: &block.BaseStyle,
-					}),
-				},
+				Content:    []View{RTF(rtfCfg)},
 			}),
 		},
 	})
@@ -804,10 +838,10 @@ func mdRenderListItem(
 
 func mdRenderParagraph(
 	block MarkdownBlock, cfg MarkdownCfg, mode TextMode,
+	ctx *mdBlockCtx,
 ) View {
-	return RTF(RtfCfg{
+	rtfCfg := RtfCfg{
 		ID:            cfg.ID,
-		IDFocus:       cfg.IDFocus,
 		Clip:          cfg.Clip,
 		FocusSkip:     cfg.FocusSkip,
 		Disabled:      cfg.Disabled,
@@ -815,5 +849,10 @@ func mdRenderParagraph(
 		Mode:          mode,
 		RichText:      block.Content,
 		BaseTextStyle: &block.BaseStyle,
-	})
+	}
+	applyMdCtx(&rtfCfg, ctx)
+	if ctx == nil {
+		rtfCfg.IDFocus = cfg.IDFocus
+	}
+	return RTF(rtfCfg)
 }

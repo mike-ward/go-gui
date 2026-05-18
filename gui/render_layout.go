@@ -802,6 +802,11 @@ func renderRtf(shape *Shape, clip DrawClip, w *Window) {
 		LayoutPtr: shape.TC.RtfLayout,
 	}, w)
 
+	if shape.TC.RtfFlatText != "" {
+		renderInputSelection(shape, shape.TC.RtfFlatText,
+			baseX, baseY, *shape.TC.RtfLayout, true, w)
+	}
+
 	// Emit RenderImage for inline math objects.
 	// Use rtfMathHashes (populated by toGlyphRichTextWithMath)
 	// instead of item.ObjectID, which is unreliable due to

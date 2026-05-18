@@ -226,6 +226,9 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 			tc.wrapCacheWidth = shape.Width
 			tc.wrapCacheHeight = entry.Layout.Height
 			tc.wrapCacheValid = true
+			if tc.RtfFlatText == "" {
+				tc.RtfFlatText = rtfFlatTextFromRuns(tc.RtfRuns)
+			}
 			return
 		}
 	}
@@ -263,6 +266,9 @@ func layoutWrapRTF(shape *Shape, tc *ShapeTextConfig, w *Window) {
 	tc.wrapCacheWidth = shape.Width
 	tc.wrapCacheHeight = l.Height
 	tc.wrapCacheValid = true
+	if tc.RtfFlatText == "" {
+		tc.RtfFlatText = rtfFlatTextFromRuns(tc.RtfRuns)
+	}
 
 	// Store in cross-frame cache.
 	if vs.rtfLayoutCache == nil {

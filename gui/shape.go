@@ -225,29 +225,33 @@ type DrawClip struct {
 
 // ShapeTextConfig holds text/RTF-specific fields for a Shape.
 type ShapeTextConfig struct {
-	Text              string
-	TextStyle         *TextStyle
-	TextMode          TextMode
-	TextSelBeg        uint32
-	TextSelEnd        uint32
-	TextTabSize       uint32
-	TextIsPassword    bool
-	TextIsPlaceholder bool
-	HangingIndent     float32
-	TextLayout        *glyph.Layout
-	RtfRuns           *RichText
-	RtfLayout         *glyph.Layout
-	RtfBaseStyle      glyph.TextStyle
-	rtfGlyphRT        *glyph.RichText // cached conversion
-	rtfMathHashes     []int64         // cache keys per inline math object
-	wrapCacheWidth    float32
-	wrapCacheValid    bool
-	wrapCacheHeight   float32
-	textLayoutWidth   float32
-	textLayoutValid   bool
-	textLayoutText    string
-	textLayoutStyle   TextStyle
-	textLayoutMode    TextMode
+	Text               string
+	TextStyle          *TextStyle
+	TextMode           TextMode
+	TextSelBeg         uint32
+	TextSelEnd         uint32
+	TextTabSize        uint32
+	TextIsPassword     bool
+	TextIsPlaceholder  bool
+	HangingIndent      float32
+	TextLayout         *glyph.Layout
+	RtfRuns            *RichText
+	RtfLayout          *glyph.Layout
+	RtfBaseStyle       glyph.TextStyle
+	RtfFlatText        string          // concatenation of all run texts; rune↔byte conversion for selection
+	MarkdownID         uint32          // non-zero when this RTF block belongs to a markdown widget
+	MarkdownBlockStart uint32          // rune offset of this block within the markdown flat text
+	MarkdownRuneLen    uint32          // rune count of this block's flat text
+	rtfGlyphRT         *glyph.RichText // cached conversion
+	rtfMathHashes      []int64         // cache keys per inline math object
+	wrapCacheWidth     float32
+	wrapCacheValid     bool
+	wrapCacheHeight    float32
+	textLayoutWidth    float32
+	textLayoutValid    bool
+	textLayoutText     string
+	textLayoutStyle    TextStyle
+	textLayoutMode     TextMode
 }
 
 // HasRtfLayout returns true if the shape has an RTF layout.

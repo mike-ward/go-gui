@@ -623,3 +623,63 @@ func abs32(x float32) float32 {
 	}
 	return x
 }
+
+// --- layoutWrapRTF: RtfFlatText population ---
+
+func TestLayoutWrapRTF_RtfFlatText_SetOnCacheMiss(t *testing.T) {
+	w := &Window{windowBackend: windowBackend{
+		textMeasurer: &rtfStubTextMeasurer{
+			layout: glyph.Layout{Width: 100, Height: 20},
+		},
+	}}
+	rt := RichText{Runs: []RichTextRun{
+		{Text: "hello"},
+		{Text: " world"},
+	}}
+	shape := &Shape{
+		ShapeType: ShapeRTF,
+		Width:     200,
+		TC: &ShapeTextConfig{
+			TextMode:     TextModeWrap,
+			RtfRuns:      &rt,
+			RtfBaseStyle: glyph.TextStyle{Size: 12},
+		},
+	}
+	layoutWrapRTF(shape, shape.TC, w)
+
+	want := "hello world"
+	if shape.TC.RtfFlatText != want {
+		t.Errorf("RtfFlatText = %q, want %q", shape.TC.RtfFlatText, want)
+	}
+}
+
+func TestLayoutWrapRTF_RtfFlatText_NotOverwrittenOnCacheHit(t *testing.T) {
+	w := &Window{windowBackend: windowBackend{
+		textMeasurer: &rtfStubTextMeasurer{
+			layout: glyph.Layout{Width: 100, Height: 20},
+		},
+	}}
+	rt := RichText{Runs: []RichTextRun{{Text: "hello"}}}
+	shape := &Shape{
+		ShapeType: ShapeRTF,
+		Width:     200,
+		TC: &ShapeTextConfig{
+			TextMode:     TextModeWrap,
+			RtfRuns:      &rt,
+			RtfBaseStyle: glyph.TextStyle{Size: 12},
+		},
+	}
+	// First call: cache miss, RtfFlatText gets populated.
+	layoutWrapRTF(shape, shape.TC, w)
+	if shape.TC.RtfFlatText == "" {
+		t.Fatal("RtfFlatText should be set after first call")
+	}
+	// Overwrite to verify the cache-hit path respects the if-empty guard.
+	shape.TC.RtfFlatText = "already-set"
+	// Second call: cache hit (same shape.Width), should not overwrite.
+	layoutWrapRTF(shape, shape.TC, w)
+	if shape.TC.RtfFlatText != "already-set" {
+		t.Errorf("RtfFlatText overwritten on cache hit, got %q",
+			shape.TC.RtfFlatText)
+	}
+}

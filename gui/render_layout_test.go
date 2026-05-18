@@ -569,6 +569,95 @@ func TestRenderInputSelectionFallbackEmitsRect(t *testing.T) {
 	}
 }
 
+// --- renderRtf: RtfFlatText selection highlight ---
+
+// makeCharLayout builds a glyph.Layout with CharRects for each byte of text
+// (ASCII assumed: one byte per char). Each char is 10px wide, 20px tall.
+// GetSelectionRects uses CharRects/Lines, not Items, so this is sufficient.
+func makeCharLayout(text string) glyph.Layout {
+	n := len(text)
+	charRects := make([]glyph.CharRect, n)
+	charRectByIndex := make(map[int]int, n)
+	for i := range n {
+		charRects[i] = glyph.CharRect{
+			Rect:  glyph.Rect{X: float32(i) * 10, Y: 0, Width: 10, Height: 20},
+			Index: i,
+		}
+		charRectByIndex[i] = i
+	}
+	return glyph.Layout{
+		Text:            text,
+		CharRects:       charRects,
+		CharRectByIndex: charRectByIndex,
+		Lines: []glyph.Line{{
+			StartIndex: 0,
+			Length:     n,
+			Rect:       glyph.Rect{X: 0, Y: 0, Width: float32(n) * 10, Height: 20},
+		}},
+		Width:  float32(n) * 10,
+		Height: 20,
+	}
+}
+
+func TestRenderRtf_SelectionHighlight_Emitted(t *testing.T) {
+	w := makeWindow()
+	const text = "hello world"
+	gl := makeCharLayout(text)
+	style := DefaultTextStyle
+	shape := &Shape{
+		ShapeType: ShapeRTF,
+		Width:     float32(len(text)) * 10, Height: 20,
+		Opacity: 1.0,
+		TC: &ShapeTextConfig{
+			RtfLayout:   &gl,
+			RtfFlatText: text,
+			TextSelBeg:  2,
+			TextSelEnd:  7,
+			TextStyle:   &style,
+		},
+	}
+	clip := makeClip(0, 0, 200, 200)
+	renderRtf(shape, clip, w)
+
+	found := false
+	for _, r := range w.renderers {
+		if r.Kind == RenderRect && r.Fill {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected selection highlight rect when RtfFlatText is set and selection is non-empty")
+	}
+}
+
+func TestRenderRtf_EmptyRtfFlatText_NoSelectionHighlight(t *testing.T) {
+	w := makeWindow()
+	const text = "hello world"
+	gl := makeCharLayout(text)
+	style := DefaultTextStyle
+	shape := &Shape{
+		ShapeType: ShapeRTF,
+		Width:     float32(len(text)) * 10, Height: 20,
+		Opacity: 1.0,
+		TC: &ShapeTextConfig{
+			RtfLayout:   &gl,
+			RtfFlatText: "", // empty → renderInputSelection not called
+			TextSelBeg:  2,
+			TextSelEnd:  7,
+			TextStyle:   &style,
+		},
+	}
+	clip := makeClip(0, 0, 200, 200)
+	renderRtf(shape, clip, w)
+
+	for _, r := range w.renderers {
+		if r.Kind == RenderRect && r.Fill {
+			t.Error("should not emit selection highlight when RtfFlatText is empty")
+			return
+		}
+	}
+}
+
 // --- Utility functions ---
 
 func TestTextStyleOrDefaultNilTC(t *testing.T) {
