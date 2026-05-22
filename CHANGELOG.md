@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.20.1] - 2026-05-22
+
+### Fixed
+
+- `DrawContext.Scale` (device pixel ratio) is now correctly populated from the
+  backend's DPI scale and included in the `DrawCanvasCache` key, so a canvas
+  is re-tessellated when the display scale changes (e.g. window moved between
+  Retina and non-Retina monitors).
+- All backends (gl, metal, sdl2) now refresh `dpiScale` on window resize, so
+  display migration no longer leaves a stale scale for the lifetime of the
+  window.
+- Web backend now sets `w.BackingScale` each frame; previously `DrawContext.Scale`
+  was always 1 on web regardless of `devicePixelRatio`.
+- Scale sanitization guard relaxed from `< 1` to `<= 0`, allowing valid sub-1
+  device pixel ratios (e.g. browser zoomed below 100%) to pass through.
+
 ## [v0.20.0] - 2026-05-18
 
 ### Added
