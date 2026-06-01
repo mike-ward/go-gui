@@ -9,6 +9,8 @@
 **Cross-platform, hybrid immediate-mode GUI framework for Go — no virtual DOM,
 no diffing, just fast, composable UI.**
 
+https://go-gui.com
+
 ![showcase](assets/showcase.png)
 
 _Showcase contains the framework documentation. Every widget demo has a button
